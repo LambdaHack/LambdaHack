@@ -60,8 +60,6 @@ cmdAction cmd = case cmd of
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode{..} ->
     byAimModeHuman (cmdAction exploration) (cmdAction aiming)
-  ByItemMode{..} ->
-    byItemModeHuman ts (cmdAction notChosen) (cmdAction chosen)
   ComposeIfLocal cmd1 cmd2 ->
     composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
   ComposeUnlessError cmd1 cmd2 ->

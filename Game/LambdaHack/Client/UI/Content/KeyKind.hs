@@ -127,10 +127,7 @@ aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)
 
 projectICmd :: [TriggerItem] -> HumanCmd
-projectICmd ts = ByItemMode
-  { ts
-  , notChosen = ComposeUnlessError (ChooseItemProject ts) Project
-  , chosen = Project }
+projectICmd ts = ComposeUnlessError (ChooseItemProject ts) Project
 
 projectI :: [TriggerItem] -> CmdTriple
 projectI ts = ([], descIs ts, projectICmd ts)
@@ -146,18 +143,12 @@ flingTs = [TriggerItem { tiverb = "fling"
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
-  ([], descIs ts, ByItemMode
-    { ts
-    , notChosen = ComposeUnlessError (ChooseItemApply ts) Apply
-    , chosen = Apply })
+  ([], descIs ts, ComposeUnlessError (ChooseItemApply ts) Apply)
 
 applyI :: [TriggerItem] -> CmdTriple
 applyI ts =
   let apply = Compose2ndLocal Apply ItemClear
-  in ([], descIs ts, ByItemMode
-       { ts
-       , notChosen = ComposeUnlessError (ChooseItemApply ts) apply
-       , chosen = apply })
+  in ([], descIs ts, ComposeUnlessError (ChooseItemApply ts) apply)
 
 grabCmd :: HumanCmd
 grabCmd = MoveItem [CGround] CEqp (Just "grab") True

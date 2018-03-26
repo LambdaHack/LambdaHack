@@ -94,7 +94,6 @@ data HumanCmd =
     Macro [String]
   | ByArea [(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
   | ByAimMode {exploration :: HumanCmd, aiming :: HumanCmd}
-  | ByItemMode {ts :: [TriggerItem], notChosen :: HumanCmd, chosen :: HumanCmd}
   | ComposeIfLocal HumanCmd HumanCmd
   | ComposeUnlessError HumanCmd HumanCmd
   | Compose2ndLocal HumanCmd HumanCmd

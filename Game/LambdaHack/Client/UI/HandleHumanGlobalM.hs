@@ -7,7 +7,7 @@
 -- by the server, for all clients that witness the results of the commands.
 module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   ( -- * Meta commands
-    byAreaHuman, byAimModeHuman, byItemModeHuman
+    byAreaHuman, byAimModeHuman
   , composeIfLocalHuman, composeUnlessErrorHuman, compose2ndLocalHuman
   , loopOnNothingHuman, executeIfClearHuman
     -- * Global commands that usually take time
@@ -163,27 +163,6 @@ byAimModeHuman :: MonadClientUI m
 byAimModeHuman cmdNotAimingM cmdAimingM = do
   aimMode <- getsSession saimMode
   if isNothing aimMode then cmdNotAimingM else cmdAimingM
-
--- * ByItemMode
-
-byItemModeHuman :: MonadClientUI m
-                => [TriggerItem]
-                -> m (Either MError ReqUI) -> m (Either MError ReqUI)
-                -> m (Either MError ReqUI)
-byItemModeHuman ts cmdNotChosenM cmdChosenM = do
-  itemSel <- getsSession sitemSel
-  let triggerSyms = triggerSymbols ts
-  case itemSel of
-    Just (fromCStore, iid) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bag <- getsState $ getBodyStoreBag b fromCStore
-      itemKind <- getsState $ getIidKind iid
-      case iid `EM.lookup` bag of
-        Just _ | null triggerSyms || IK.isymbol itemKind `elem` triggerSyms ->
-                 cmdChosenM
-        _ -> cmdNotChosenM
-    Nothing -> cmdNotChosenM
 
 -- * ComposeIfLocal
 
@@ -1109,7 +1088,6 @@ itemMenuHuman cmdAction = do
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
                 ByAimMode{..} -> greyedOut exploration || greyedOut aiming
-                ByItemMode{..} -> greyedOut notChosen || greyedOut chosen
                 ComposeIfLocal cmd1  _ -> greyedOut cmd1
                 ComposeUnlessError cmd1 _ -> greyedOut cmd1
                 Compose2ndLocal cmd1 _ -> greyedOut cmd1
