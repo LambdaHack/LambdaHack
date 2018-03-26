@@ -594,8 +594,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
-    Just (fromCStore, iid) | fromCStore /= destCStore
-                             && fromCStore `elem` cLegalRaw -> do
+    Just (iid, fromCStore, _) | fromCStore /= destCStore
+                                && fromCStore `elem` cLegalRaw -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -623,7 +623,8 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
       case mis of
         Left err -> return $ Left err
         Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
-          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          modifySession $ \sess ->
+            sess {sitemSel = Just (iid, fromCStore, False)}
           moveItemHuman cLegalRaw destCStore mverb auto
         Right is -> moveItems cLegalRaw is destCStore
 
@@ -738,7 +739,7 @@ projectHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbProject))
 projectHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
-    Just (fromCStore, iid) -> do
+    Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -782,7 +783,7 @@ applyHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbApply))
 applyHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
-    Just (fromCStore, iid) -> do
+    Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -1041,7 +1042,7 @@ itemMenuHuman :: MonadClientUI m
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
   case itemSel of
-    Just (fromCStore, iid) -> do
+    Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bUI <- getsSession $ getActorUI leader
@@ -1134,10 +1135,16 @@ itemMenuHuman cmdAction = do
                      | otherwise -> do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
-                         sess {sitemSel = Just (newCStore, iid)}
+                         sess {sitemSel = Just (iid, newCStore, False)}
                        itemMenuHuman cmdAction
                 _ -> error $ "" `showFailure` km
-              Just (_desc, _cats, cmd) -> cmdAction cmd
+              Just (_desc, _cats, cmd) -> do
+                modifySession $ \sess ->
+                  sess {sitemSel = Just (iid, fromCStore, True)}
+                res <- cmdAction cmd
+                modifySession $ \sess ->
+                  sess {sitemSel = Just (iid, fromCStore, False)}
+                return res
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> error $ "" `showFailure` ekm
     Nothing -> weaveJust <$> failWith "no item to open item menu for"

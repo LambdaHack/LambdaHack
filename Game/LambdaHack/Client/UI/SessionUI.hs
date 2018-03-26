@@ -39,13 +39,16 @@ data SessionUI = SessionUI
   { sxhair         :: Target             -- ^ the common xhair
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
   , sslots         :: ItemSlots          -- ^ map from slots to items
-  , slastItemMove  :: Maybe (CStore, CStore)  -- ^ last item move stores
+  , slastItemMove  :: Maybe (CStore, CStore)
+                                         -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
   , sUIOptions     :: UIOptions          -- ^ UI options as set by the player
   , saimMode       :: Maybe AimMode      -- ^ aiming mode
   , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
-  , sitemSel       :: Maybe (CStore, ItemId)  -- ^ selected item, if any
+  , sitemSel       :: Maybe (ItemId, CStore, Bool)
+                                    -- ^ selected item, if any, it's store and
+                                    --   whether to override suitability check
   , sselected      :: ES.EnumSet ActorId
                                     -- ^ the set of currently selected actors
   , srunning       :: Maybe RunParams

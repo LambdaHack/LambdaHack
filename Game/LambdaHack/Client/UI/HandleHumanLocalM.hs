@@ -187,7 +187,8 @@ chooseItemDialogMode c = do
           ix0 = fromJust $ findIndex (== iid) lSlotsElems
       case c2 of
         MStore fromCStore -> do
-          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          modifySession $ \sess ->
+            sess {sitemSel = Just (iid, fromCStore, False)}
           return $ Right c2
         MOrgans -> do
           let blurb itemKind
@@ -203,7 +204,8 @@ chooseItemDialogMode c = do
                 Nothing -> case found of
                   (aid, (_, store)) : _ -> (aid, store)
                   [] -> error $ "" `showFailure` iid
-          modifySession $ \sess -> sess {sitemSel = Just (bestStore, iid)}
+          modifySession $ \sess ->
+            sess {sitemSel = Just (iid, bestStore, False)}
           arena <- getArenaUI
           b2 <- getsState $ getActorBody newAid
           fact <- getsState $ (EM.! bfid b2) . sfactionD
@@ -272,7 +274,8 @@ chooseItemProjectHuman ts = do
     Right psuitReqFun -> do
       itemSel <- getsSession sitemSel
       case itemSel of
-        Just (fromCStore, iid) -> do
+        Just (_, _, True) -> return Nothing
+        Just (iid, fromCStore, False) -> do
           itemFull <- getsState $ itemToFull iid
           bag <- getsState $ getBodyStoreBag b fromCStore
           case iid `EM.lookup` bag of
@@ -292,7 +295,8 @@ chooseItemProjectHuman ts = do
           ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
           case ggi of
             Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
-              modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+              modifySession $ \sess ->
+                sess {sitemSel = Just (iid, fromCStore, False)}
               return Nothing
             Left err -> failMsg err
             _ -> error $ "" `showFailure` ggi
@@ -395,7 +399,8 @@ posFromXhair = do
             Just reqFail -> return $ Left $ showReqFailure reqFail
     Left cause -> return $ Left cause
 
--- | On top of @permittedProjectClient@, it also checks projection range.
+-- | On top of @permittedProjectClient@, it also checks LOS, legality
+-- of aiming at the target, projection range.
 psuitReq :: MonadClientUI m
          => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq = do
@@ -440,7 +445,8 @@ chooseItemApplyHuman ts = do
       promptGeneric = "What to apply"
   itemSel <- getsSession sitemSel
   case itemSel of
-    Just (fromCStore, iid) -> do
+    Just (_, _, True) -> return Nothing
+    Just (iid, fromCStore, False) -> do
       itemFull <- getsState $ itemToFull iid
       bag <- getsState $ getBodyStoreBag b fromCStore
       mp <- permittedApplyClient
@@ -461,7 +467,8 @@ chooseItemApplyHuman ts = do
       ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
       case ggi of
         Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
-          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          modifySession $ \sess ->
+            sess {sitemSel = Just (iid, fromCStore, False)}
           return Nothing
         Left err -> failMsg err
         _ -> error $ "" `showFailure` ggi

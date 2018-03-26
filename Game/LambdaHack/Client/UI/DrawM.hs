@@ -437,7 +437,7 @@ drawFrameStatus drawnLevelId = do
             tgtBlurb = maybe leaderName (\t ->
               "Target:" <+> trimTgtDesc n t) mtgtDesc
         case (sitemSel, mleader) of
-          (Just (fromCStore, iid), Just leader) -> do
+          (Just (iid, fromCStore, _), Just leader) -> do
             b <- getsState $ getActorBody leader
             bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
