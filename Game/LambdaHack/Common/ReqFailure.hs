@@ -140,7 +140,8 @@ showReqFailure reqFailure = case reqFailure of
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious calmE forced itemFull =
   let isPrecious = IK.Precious `elem` IK.ifeature (itemKind itemFull)
-  in if not calmE && not forced && isPrecious then Left NotCalmPrecious
+  in if not calmE && not forced && isPrecious
+     then Left NotCalmPrecious
      else Right $ IK.Durable `elem` IK.ifeature (itemKind itemFull)
                   || case itemDisco itemFull of
                        ItemDiscoFull{} -> True
@@ -152,12 +153,12 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
     | not forced
       && IK.Lobable `elem` IK.ifeature itemKind
       && skill < 3 -> Left ProjectLobable
-    | otherwise -> 
-        let goodSlot = case IK.getEqpSlot itemKind of
-              Just IA.EqpSlotLightSource -> True
-              Just _ -> False
-              Nothing -> not (IK.goesIntoEqp itemKind)
-        in if not goodSlot
+    | otherwise ->
+        let badSlot = case IK.getEqpSlot itemKind of
+              Just IA.EqpSlotLightSource -> False
+              Just _ -> True
+              Nothing ->  IK.goesIntoEqp itemKind
+        in if badSlot
            then Right False
            else permittedPrecious calmE forced itemFull
 

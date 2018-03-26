@@ -382,6 +382,7 @@ posFromXhair = do
             Just reqFail -> return $ Left $ showReqFailure reqFail
     Left cause -> return $ Left cause
 
+-- | On top of @permittedProjectClient@, it also checks projection range.
 psuitReq :: MonadClientUI m
          => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq = do

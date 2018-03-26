@@ -1105,13 +1105,27 @@ itemMenuHuman cmdAction = do
               ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI
           keyb <- getsSession sbinding
+          actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
+                ByAimMode{..} -> greyedOut exploration || greyedOut aiming
+                ByItemMode{..} -> greyedOut notChosen || greyedOut chosen
+                ComposeIfLocal cmd1  _ -> greyedOut cmd1
+                ComposeUnlessError cmd1 _ -> greyedOut cmd1
+                Compose2ndLocal cmd1 _ -> greyedOut cmd1
                 MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
                   || not calmE && CSha == destCStore
                   || destCStore == CEqp && eqpOverfull b 1
-                _ -> False  -- project and apply commands are too complex
+                Apply{} ->
+                  let skill = EM.findWithDefault 0 AbApply actorSk
+                  in not $ either (const False) id
+                     $ permittedApply localTime skill calmE itemFull kit
+                Project{} ->
+                  let skill = EM.findWithDefault 0 AbProject actorSk
+                  in not $ either (const False) id
+                     $ permittedProject False skill calmE itemFull
+                _ -> False
               fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
