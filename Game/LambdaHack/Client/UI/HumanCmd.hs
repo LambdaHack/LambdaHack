@@ -180,7 +180,7 @@ instance Binary HumanCmd
 -- | Description of how item manipulation is triggered and communicated
 -- to the player.
 data TriggerItem =
-  TriggerItem {tiverb :: MU.Part, tiobject :: MU.Part, tisymbol :: Char}
+  TriggerItem {tiverb :: MU.Part, tiobject :: MU.Part, tisymbols :: [Char]}
   deriving (Show, Eq, Ord, Generic)
 
 instance Read TriggerItem where

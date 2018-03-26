@@ -180,8 +180,7 @@ byItemModeHuman ts cmdNotChosenM cmdChosenM = do
       bag <- getsState $ getBodyStoreBag b fromCStore
       itemKind <- getsState $ getIidKind iid
       case iid `EM.lookup` bag of
-        Just _ | ' ' `elem` triggerSyms
-                 || IK.isymbol itemKind `elem` triggerSyms ->
+        Just _ | null triggerSyms || IK.isymbol itemKind `elem` triggerSyms ->
                  cmdChosenM
         _ -> cmdNotChosenM
     Nothing -> cmdNotChosenM

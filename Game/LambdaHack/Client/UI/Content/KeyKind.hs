@@ -142,7 +142,7 @@ projectA ts = replaceCmd ByAimMode { exploration = AimTgt
 flingTs :: [TriggerItem]
 flingTs = [TriggerItem { tiverb = "fling"
                        , tiobject = "projectile"
-                       , tisymbol = ' ' }]
+                       , tisymbols = "" }]
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =

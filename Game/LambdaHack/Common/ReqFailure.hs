@@ -169,8 +169,7 @@ permittedProject forced skill calmE triggerSyms itemFull@ItemFull{itemKind} =
         Left{} -> legal
         Right False -> legal
         Right True -> Right $
-          if | null triggerSyms -> True
-             | ' ' `elem` triggerSyms ->
+          if | null triggerSyms ->
                case IK.getEqpSlot itemKind of
                  Just IA.EqpSlotLightSource -> True
                  Just _ -> False
@@ -210,6 +209,6 @@ permittedApply localTime skill calmE triggerSyms
               Left{} -> legal
               Right False -> legal
               Right True -> Right $
-                if ' ' `elem` triggerSyms
+                if null triggerSyms
                 then IK.Applicable `elem` IK.ifeature itemKind
                 else IK.isymbol itemKind `elem` triggerSyms

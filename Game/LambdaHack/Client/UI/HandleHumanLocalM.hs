@@ -404,7 +404,7 @@ psuitReq ts = do
 
 triggerSymbols :: [TriggerItem] -> [Char]
 triggerSymbols [] = []
-triggerSymbols (TriggerItem{tisymbol} : ts) = tisymbol : triggerSymbols ts
+triggerSymbols (TriggerItem{tisymbols} : ts) = tisymbols ++ triggerSymbols ts
 
 -- * ChooseItemApply
 
