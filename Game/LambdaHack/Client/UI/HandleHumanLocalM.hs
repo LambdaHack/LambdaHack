@@ -270,22 +270,35 @@ chooseItemProjectHuman ts = do
     -- If xhair aim invalid, no item is considered a (suitable) missile.
     Left err -> failMsg err
     Right psuitReqFun -> do
-      let psuit =
-            return $ SuitsSomething $ \itemFull _kit ->
-              either (const False) snd (psuitReqFun itemFull)
-              && (null triggerSyms
-                  || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-          prompt = makePhrase ["What", object1, "to", verb1]
-          promptGeneric = "What to fling"
-      ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
-      case ggi of
-        Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
-          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-          return Nothing
-        Left err -> failMsg err
-        _ -> error $ "" `showFailure` ggi
+      itemSel <- getsSession sitemSel
+      case itemSel of
+        Just (fromCStore, iid) -> do
+          itemFull <- getsState $ itemToFull iid
+          bag <- getsState $ getBodyStoreBag b fromCStore
+          case iid `EM.lookup` bag of
+            Just _ | either (const False) snd (psuitReqFun itemFull) ->
+              return Nothing
+            _ -> do
+              modifySession $ \sess -> sess {sitemSel = Nothing}
+              chooseItemProjectHuman ts
+        Nothing -> do
+          let psuit =
+                return $ SuitsSomething $ \itemFull _kit ->
+                  either (const False) snd (psuitReqFun itemFull)
+                  && (null triggerSyms
+                      || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
+              prompt = makePhrase ["What", object1, "to", verb1]
+              promptGeneric = "What to fling"
+          ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+          case ggi of
+            Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
+              modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+              return Nothing
+            Left err -> failMsg err
+            _ -> error $ "" `showFailure` ggi
 
-permittedProjectClient :: MonadClientUI m=> m (ItemFull -> Either ReqFailure Bool)
+permittedProjectClient :: MonadClientUI m
+                       => m (ItemFull -> Either ReqFailure Bool)
 permittedProjectClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -425,20 +438,33 @@ chooseItemApplyHuman ts = do
       triggerSyms = triggerSymbols ts
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
-      psuit :: m Suitability
-      psuit = do
-        mp <- permittedApplyClient
-        return $ SuitsSomething $ \itemFull kit ->
-          either (const False) id (mp itemFull kit)
-          && (null triggerSyms
-              || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-  ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
-  case ggi of
-    Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
-      modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
-      return Nothing
-    Left err -> failMsg err
-    _ -> error $ "" `showFailure` ggi
+  itemSel <- getsSession sitemSel
+  case itemSel of
+    Just (fromCStore, iid) -> do
+      itemFull <- getsState $ itemToFull iid
+      bag <- getsState $ getBodyStoreBag b fromCStore
+      mp <- permittedApplyClient
+      case iid `EM.lookup` bag of
+        Just kit | either (const False) id (mp itemFull kit) ->
+          return Nothing
+        _ -> do
+          modifySession $ \sess -> sess {sitemSel = Nothing}
+          chooseItemApplyHuman ts
+    Nothing -> do
+      let psuit :: m Suitability
+          psuit = do
+            mp <- permittedApplyClient
+            return $ SuitsSomething $ \itemFull kit ->
+              either (const False) id (mp itemFull kit)
+              && (null triggerSyms
+                  || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
+      ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+      case ggi of
+        Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
+          modifySession $ \sess -> sess {sitemSel = Just (fromCStore, iid)}
+          return Nothing
+        Left err -> failMsg err
+        _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
                      => m (ItemFull -> ItemQuant -> Either ReqFailure Bool)
