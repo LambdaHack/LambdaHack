@@ -1088,9 +1088,9 @@ itemMenuHuman cmdAction = do
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
                 ByAimMode{..} -> greyedOut exploration || greyedOut aiming
-                ComposeIfLocal cmd1  _ -> greyedOut cmd1
-                ComposeUnlessError cmd1 _ -> greyedOut cmd1
-                Compose2ndLocal cmd1 _ -> greyedOut cmd1
+                ComposeIfLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
+                ComposeUnlessError cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
+                Compose2ndLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
                 MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
                   || not calmE && CSha == destCStore
