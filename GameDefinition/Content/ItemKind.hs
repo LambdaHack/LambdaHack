@@ -326,8 +326,7 @@ flaskTemplate = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ HideAs "flask unknown"
-               , Applicable, Lobable, Fragile
+  , ifeature = [ HideAs "flask unknown", Lobable, Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."
   , ikit     = []
@@ -501,8 +500,7 @@ potionTemplate = ItemKind
   , idamage  = 0
   , iaspects = []
   , ieffects = []
-  , ifeature = [ HideAs "potion unknown"
-               , Applicable, Lobable, Fragile
+  , ifeature = [ HideAs "potion unknown", Lobable, Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
   , ikit     = []
@@ -675,7 +673,6 @@ scrollTemplate = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ HideAs "scroll unknown"
-               , Applicable
                , toVelocity 30 ]  -- bad shape, even rolled up
   , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimensional map? Is this formula a secret call sign?"
   , ikit     = []
@@ -785,7 +782,7 @@ jumpingPole = ItemKind
                  -- in total, the explorations speed is unchanged,
                  -- but it's useful when fleeing in the dark to make distance
                  -- and when initiating combat, so it's OK that AI uses it
-  , ifeature = [Durable, Applicable]
+  , ifeature = [Durable]
   , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
   , ikit     = []
   }
@@ -1393,8 +1390,7 @@ wandTemplate = ItemKind
   , idamage  = 0
   , iaspects = [AddShine 1, AddSpeed (-1)]  -- pulsing with power, distracts
   , ieffects = []
-  , ifeature = [ HideAs "wand unknown"
-               , Applicable, Durable
+  , ifeature = [ HideAs "wand unknown", Durable
                , toVelocity 125 ]  -- magic
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."  -- will have math flavour
   , ikit     = []
@@ -1454,7 +1450,7 @@ gem5 = gem1
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
   , ieffects = [RefillCalm 10, RefillHP 40]
-  , ifeature = [ELabel "of youth", Applicable, Precious]  -- not hidden
+  , ifeature = [ELabel "of youth", Precious]  -- not hidden
   , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
   }
 currencyTemplate = ItemKind

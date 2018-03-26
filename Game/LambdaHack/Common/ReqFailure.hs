@@ -209,6 +209,4 @@ permittedApply localTime skill calmE triggerSyms
               Left{} -> legal
               Right False -> legal
               Right True -> Right $
-                if null triggerSyms
-                then IK.Applicable `elem` IK.ifeature itemKind
-                else IK.isymbol itemKind `elem` triggerSyms
+                null triggerSyms || IK.isymbol itemKind `elem` triggerSyms

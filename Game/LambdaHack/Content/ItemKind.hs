@@ -159,7 +159,6 @@ data Feature =
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
   | HideAs (GroupName ItemKind)
                        -- ^ until identified, presents as this unique kind
-  | Applicable         -- ^ AI and UI flag: consider applying
   | Equipable          -- ^ AI and UI flag: consider equipping (independent of
                        --   'EqpSlot', e.g., in case of mixed blessings)
   | Meleeable          -- ^ AI and UI flag: consider meleeing with
@@ -479,8 +478,8 @@ validateSingle ik@ItemKind{..} =
           ts = filter f ifeature
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
-       [ Fragile, Lobable, Durable, Applicable
-       , Equipable, Meleeable, Precious, Blast, Unique, Periodic]
+       [ Fragile, Lobable, Durable, Equipable, Meleeable, Precious, Blast
+       , Unique, Periodic]
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
