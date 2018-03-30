@@ -1,3 +1,43 @@
+## [v0.8.0.0, aka 'Explosive dashboard'](https://github.com/LambdaHack/LambdaHack/compare/v0.7.1.0...v0.8.0.0)
+
+- rework greying out menu items and permitting item application and projection
+- rework history collection; merge message repetitions more aggressively
+- display HP in red when below (configurable) warning threshold
+- tweak AI: actors remember they are fleeing; better leader choice, etc.
+- add to content specialized explosive projectiles; tune the effects
+- calculate loot score component based on fraction of dungeon loot collected
+- don't hardwire item price, but let it be specified in content
+- let all valuables glitter in the dark to avoid complete level exploration
+- teach AI to cure ailments and shake off impressions
+- rework detection effects; add detection of items embedded in tiles
+- automatically identify stolen items
+- let projectiles hit each other if fragile and solid enough
+- rework item kind identification code; change the way it's defined in content
+- make more item kinds (including some traps) secret
+- protect paralyzed actors with a stasis condition to avoid infinite paralysis
+- implement dumping screenshots in SDL2 and create animated GIFs in Makefile
+- generate most common consumables less often, but in depth-scaled bunches
+- make pushed actors alter tiles and trigger effects of embedded items
+- validate and cross-validate more content; reduce content creation boilerplate
+- make summoning more varied and prevent chain-summoning
+- add many ways to conditionally sequence effects
+- create large, merged rooms more often
+- generalize the terrain altering player command (C-c, mouse)
+- let RET, SPACE and ESC clear pending messages, if any
+- add dashboard with links to all menus and info screens
+- scale some organ and trap damage with level depth
+- simplify level-scaled dice roll semantics
+- change scaled dice notation 'dl' to 'dL' for readability in-game
+- rebalance items and decrease dice variety to unclutter backpack
+- colour-code beneficial and harmful temporary conditions in menu and in HUD
+- display item lore (also for organs, embedded items, explosions, etc.)
+- display embedded item descriptions as if they were tile descriptions
+- tweak blast visuals, lower particle counts, beautify their spread
+- tweak projectile visuals, e.g., display an extra frame when projectile dies
+- add intro screen and work on other ways to convey story
+- simplify a lot of code, including a bit of game rules
+- fix some bugs, tweak content, speed up some AI bottlenecks
+
 ## [v0.7.1.0, aka 'Ancient troubles'](https://github.com/LambdaHack/LambdaHack/compare/v0.7.0.0...v0.7.1.0)
 
 - add amazing cave and item (actor, blast, organ) descriptions
