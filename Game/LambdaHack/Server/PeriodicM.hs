@@ -54,23 +54,24 @@ spawnMonster = do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf arenas
-  totalDepth <- getsState stotalDepth
   Level{lkind, ldepth} <- getLevel arena
   let ck = okind cocave lkind
-  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
-  rc <- rndToAction
-        $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
-  when rc $ do
-    modifyServer $ \ser ->
-      ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
-    localTime <- getsState $ getLocalTime arena
-    maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
-    case maid of
-      Nothing -> return ()
-      Just aid -> do
-        b <- getsState $ getActorBody aid
-        mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-        when (isNothing mleader) $ supplantLeader (bfid b) aid
+  unless (CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck)) $ do
+    totalDepth <- getsState stotalDepth
+    lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
+    rc <- rndToAction
+          $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
+    when rc $ do
+      modifyServer $ \ser ->
+        ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
+      localTime <- getsState $ getLocalTime arena
+      maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
+      case maid of
+        Nothing -> return ()  -- suspect content
+        Just aid -> do
+          b <- getsState $ getActorBody aid
+          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+          when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -108,8 +109,8 @@ addAnyActor summoned actorFreq lid time mpos = do
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
-      registerActor summoned itemKnownRaw (itemFullRaw, kit)
-                    seed fid pos lid time
+      Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
+                             seed fid pos lid time
 
 rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State

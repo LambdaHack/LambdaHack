@@ -380,12 +380,12 @@ addActorFromGroup actorGroup bfid pos lid time = do
   case m4 of
     Nothing -> return Nothing
     Just (itemKnown, itemFullKit, seed, _) ->
-      registerActor False itemKnown itemFullKit seed bfid pos lid time
+      Just <$> registerActor False itemKnown itemFullKit seed bfid pos lid time
 
 registerActor :: MonadServerAtomic m
               => Bool -> ItemKnown -> ItemFullKit -> IA.ItemSeed
               -> FactionId -> Point -> LevelId -> Time
-              -> m (Maybe ActorId)
+              -> m ActorId
 registerActor summoned (kindIx, ar, _) (itemFullRaw, kit)
               seed bfid pos lid time = do
   let container = CTrunk bfid lid pos
@@ -413,7 +413,7 @@ addProjectile bpos rest iid (_, it) blid bfid btime = do
 addNonProjectile :: MonadServerAtomic m
                  => Bool -> ItemId -> ItemFullKit -> FactionId -> Point
                  -> LevelId -> Time
-                 -> m (Maybe ActorId)
+                 -> m ActorId
 addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
   let tweakBody b = b { borgan = EM.singleton trunkId kit
                       , bcalm = if summoned
@@ -425,7 +425,7 @@ addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
 addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor) -> Time
-            -> m (Maybe ActorId)
+            -> m ActorId
 addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
@@ -478,7 +478,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
         -- The items are create in inventory, so won't be picked up,
         -- so we have to discover them now, if eligible.
         discoverIfMinorEffects container iid (itemKindId itemFull2)
-  return $ Just aid
+  return aid
 
 discoverIfMinorEffects :: MonadServerAtomic m
                        => Container -> ItemId -> ContentId ItemKind -> m ()

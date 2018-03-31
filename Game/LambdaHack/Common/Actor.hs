@@ -170,7 +170,6 @@ eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
 -- | Chance that a new monster is generated. Depends on the number
 -- of monsters already present, and on the level depth and its cave kind.
 monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
-monsterGenChance _ _ _ 0 = return False  -- special case
 monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
                  lvlAlreadySpawned actorCoeff =
   assert (totalDepth > 0 && n > 0) $
