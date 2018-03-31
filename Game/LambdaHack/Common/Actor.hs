@@ -167,24 +167,22 @@ eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
              in assert (size <= 10 `blame` (b, size))
                 $ 10 - size
 
--- | Chance that a new monster is generated. Currently depends on the
--- number of monsters already present, and on the level. In the future,
--- the strength of the character and the strength of the monsters present
--- could further influence the chance, and the chance could also affect
--- which monster is generated. How many and which monsters are generated
--- will also depend on the cave kind used to build the level.
+-- | Chance that a new monster is generated. Depends on the number
+-- of monsters already present, and on the level depth and its cave kind.
 monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
-monsterGenChance _ _ _ 0 = return False
+monsterGenChance _ _ _ 0 = return False  -- special case
 monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
-                 lvlSpawned actorCoeff =
-  assert (totalDepth > 0 && n > 0)
-  -- Mimics @castDice@. On level 5/10, first 6 monsters appear fast.
-  $ let scaledDepth = n * 10 `div` totalDepth
-        -- Heroes have to endure two lvl-sized waves of spawners for each level.
-        numSpawnedCoeff = lvlSpawned `div` 2
-    in chance $ 1%fromIntegral
-                    ((actorCoeff * (numSpawnedCoeff - scaledDepth))
-                     `max` 1)  -- monsters up to level depth spawned at once
+                 lvlAlreadySpawned actorCoeff =
+  assert (totalDepth > 0 && n > 0) $
+    -- Heroes have to endure two level depth-sized waves of immediate
+    -- spawners for each level and only then the monsters start
+    -- to trickle more and more slowly, at the speed dictated
+    -- by @actorCoeff@ specified in cave kind.
+    -- On level 1/10, first 4 monsters spawned immediately, at level 5/10,
+    -- 12 spawned immediately. In general at level n, 2*n+2 spawned at once.
+    let scaledDepth = n * 10 `div` totalDepth
+        coeff = actorCoeff * (lvlAlreadySpawned `div` 2 - scaledDepth)
+    in chance $ 1%fromIntegral (coeff `max` 1)
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
