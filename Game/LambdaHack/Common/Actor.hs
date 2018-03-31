@@ -174,14 +174,14 @@ monsterGenChance _ _ _ 0 = return False  -- special case
 monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
                  lvlAlreadySpawned actorCoeff =
   assert (totalDepth > 0 && n > 0) $
-    -- Heroes have to endure two level depth-sized waves of immediate
+    -- Heroes have to endure a level depth-sized wave of immediate
     -- spawners for each level and only then the monsters start
     -- to trickle more and more slowly, at the speed dictated
     -- by @actorCoeff@ specified in cave kind.
-    -- On level 1/10, first 4 monsters spawned immediately, at level 5/10,
-    -- 12 spawned immediately. In general at level n, 2*n+2 spawned at once.
+    -- On level 1/10, first 4 monsters spawn immediately, at level 5/10,
+    -- 8 spawn immediately. In general at level n, n+3 spawn at once.
     let scaledDepth = n * 10 `div` totalDepth
-        coeff = actorCoeff * (lvlAlreadySpawned `div` 2 - scaledDepth)
+        coeff = actorCoeff * (lvlAlreadySpawned - scaledDepth - 2)
     in chance $ 1%fromIntegral (coeff `max` 1)
 
 -- | How long until an actor's smell vanishes from a tile.
