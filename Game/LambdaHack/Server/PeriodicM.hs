@@ -277,9 +277,21 @@ leadLevelSwitch = do
                              && not (fhasGender $ gplayer fact)
                   ]
                 (oursSeen, oursNotSeen) = partition (fst . snd) oursRaw
-                -- Only the shallowest not fully explored level is permitted.
+                -- Monster AI changes leadership mostly to move from level
+                -- to level and, in particular, to quickly bring troops
+                -- to the frontline level and so prevent human from killing
+                -- monsters at numerical advantage.
+                -- However, an AI boss that can't move between levels
+                -- distrupts this by hogging leadership. To prevent that,
+                -- assuming the boss resides below the frontline level,
+                -- only the two shallowest levels that are not yet fully
+                -- explored are considered to choose the new leader from.
+                -- This frontier moves as the levels are explored or emptied
+                -- and sometimes the level with the boss is counted among
+                -- them, but it never happens in the crucial periods when
+                -- AI armies are transferred from level to level.
                 f (lid, _) = abs $ fromEnum lid
-                ours = oursSeen ++ take 1 (sortBy (comparing f) oursNotSeen)
+                ours = oursSeen ++ take 2 (sortBy (comparing f) oursNotSeen)
             -- Sole stranded actors tend to become (or stay) leaders
             -- so that they can join the main force ASAP.
             let freqList = [ (k, (lid, a))
