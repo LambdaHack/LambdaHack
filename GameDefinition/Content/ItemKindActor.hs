@@ -522,8 +522,7 @@ geyserBoiling = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddMaxHP 10, AddMaxCalm 999, AddSpeed 11, AddNocto 2
-               , AddAbility AbWait 1, AddAbility AbMelee 1
-               , AddArmorMelee 40, AddArmorRanged 20 ]  -- hard material
+               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
   , ieffects = []
   , ifeature = [Durable]
   , idesc    = "A jet of acidic water, hot enough to melt flesh."
