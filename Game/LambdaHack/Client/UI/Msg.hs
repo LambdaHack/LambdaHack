@@ -162,12 +162,14 @@ addToReport History{..} msg n =
     Nothing -> (newH, False)
 
 -- | Archive old report to history, filtering out prompts.
+-- Set up new report with a new timestamp.
 archiveReport :: History -> Time -> History
 archiveReport History{newReport=Report newMsgs, ..} !newT =
   let f (RepMsgN _ n) = n > 0
       newReportNon0 = Report $ filter f newMsgs
   in if nullReport newReportNon0
-     then History{newReport=newReportNon0, ..}
+     then -- Drop empty new report. Start a new one with the new timestamp.
+          History emptyReport newT oldReport oldTime archivedHistory
      else let lU = map attrLineToU $ renderTimeReport oldTime oldReport
           in History emptyReport newT newReportNon0 newTime
              $ foldl' (flip RB.cons) archivedHistory (reverse lU)

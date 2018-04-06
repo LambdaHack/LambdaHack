@@ -306,13 +306,15 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
-    when (lengthHistory history == 0) $ do
+    if lengthHistory history == 0 then do
       let title = rtitle $ getStdRuleset cops
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       sUIOptions <- getsSession sUIOptions
       shistory <- defaultHistory $ uHistoryMax sUIOptions
       modifySession $ \sess -> sess {shistory}
+    else
+      recordHistory
     lid <- getArenaUI
     lvl <- getLevel lid
     mode <- getGameMode
