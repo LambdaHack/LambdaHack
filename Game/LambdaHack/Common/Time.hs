@@ -4,9 +4,9 @@ module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeEpsilon, timeClip, timeTurn, timeSecond
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
   , timeFit, timeFitUp
-  , Delta(..), timeShift, timeDeltaToFrom
-  , timeDeltaSubtract, timeDeltaReverse, timeDeltaScale, timeDeltaPercent
-  , timeDeltaDiv, timeDeltaToDigit
+  , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
+  , timeDeltaReverse, timeDeltaScale, timeDeltaPercent, timeDeltaDiv
+  , timeDeltaToDigit
   , Speed, toSpeed, fromSpeed, minSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, speedAdd, speedNegate
@@ -109,6 +109,11 @@ timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
 timeDeltaToFrom :: Time -> Time -> Delta Time
 {-# INLINE timeDeltaToFrom #-}
 timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
+
+-- | Addition of time deltas.
+timeDeltaAdd :: Delta Time -> Delta Time -> Delta Time
+{-# INLINE timeDeltaAdd #-}
+timeDeltaAdd (Delta (Time t1)) (Delta (Time t2)) = Delta $ Time (t1 - t2)
 
 -- | Subtraction of time deltas.
 -- The arguments are in the same order as in the underlying scalar subtraction.

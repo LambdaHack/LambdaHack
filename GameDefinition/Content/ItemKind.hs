@@ -883,7 +883,7 @@ necklace1 = necklaceTemplate
   }
 necklace2 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
-      -- just too nasty to call it useful
+      -- too nasty to call it just a "common item"
   , iaspects = [Timeout 30]
   , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")

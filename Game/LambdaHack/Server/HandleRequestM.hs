@@ -638,7 +638,7 @@ computeRndTimeout localTime ItemFull{itemKind, itemDisco} =
   case IA.aTimeout $ itemAspect itemDisco of
     t | t /= 0 && IK.Periodic `elem` IK.ifeature itemKind -> do
       rndT <- randomR (0, t)
-      let rndTurns = timeDeltaScale (Delta timeTurn) rndT
+      let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
       return $ Just $ timeShift localTime rndTurns
     _ -> return Nothing
 
