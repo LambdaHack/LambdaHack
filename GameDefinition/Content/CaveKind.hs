@@ -213,7 +213,7 @@ raid = rogue
   , cactorCoeff   = 250  -- deep level with no kit, so slow spawning
   , cactorFreq    = [("animal", 100)]
   , citemNum      = 6 `d` 8  -- just one level, hard enemies, treasure
-  , citemFreq     = [("common item", 33), ("gem", 33), ("currency", 33)]
+  , citemFreq     = [("common item", 100), ("currency", 500)]
   , cescapeGroup  = Just "escape up"
   , cdesc         = ""
   }
@@ -296,7 +296,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 6 `d` 8
-  , citemFreq     = [ ("common item", 30), ("treasure", 30), ("gem", 100)
+  , citemFreq     = [ ("common item", 30), ("gem", 150)
                     , ("weak arrow", 500), ("harpoon", 400)
                     , ("explosive", 100) ]
   , cplaceFreq    = [("park", 100)]  -- the same rooms as in ambush
