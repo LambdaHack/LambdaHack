@@ -16,7 +16,8 @@ module Game.LambdaHack.Common.Prelude
 
 import Prelude ()
 
-import Prelude.Compat hiding (appendFile, length, null, readFile, writeFile)
+import Prelude.Compat hiding (appendFile, length, null, readFile, writeFile,
+                       (<>))
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
