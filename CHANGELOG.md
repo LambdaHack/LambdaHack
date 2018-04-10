@@ -10,8 +10,8 @@
 - let all valuables glitter in the dark to avoid complete level exploration
 - teach AI to cure ailments and shake off impressions
 - rework detection effects; add detection of items embedded in tiles
-- automatically identify stolen items
-- let projectiles hit each other if fragile and solid enough
+- automatically identify stolen items that only have minor effects
+- let projectiles hit each other if fragile and substantial enough
 - rework item kind identification code; change the way it's defined in content
 - make more item kinds (including some traps) secret
 - protect paralyzed actors with a stasis condition to avoid infinite paralysis

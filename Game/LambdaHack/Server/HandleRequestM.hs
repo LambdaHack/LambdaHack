@@ -212,7 +212,7 @@ reqMove source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- This predicate is symmetric wrt source and target, though the effect
-  -- of collision may not be (the source projectiles applies it's effect
+  -- of collision may not be (the source projectiles applies its effect
   -- on the target particles, but loses 1 HP due to the collision).
   -- The condision implies that it's impossible to shoot down a bullet
   -- with a bullet, but a bullet can shoot down a burstable target,
@@ -263,7 +263,7 @@ reqMove source dir = do
 -- * ReqMelee
 
 -- | Resolves the result of an actor moving into another.
--- Actors on blocked positions can be attacked without any restrictions.
+-- Actors on unwalkable positions can be attacked without any restrictions.
 -- For instance, an actor embedded in a wall can be attacked from
 -- an adjacent position. This function is analogous to projectGroupItem,
 -- but for melee and not using up the weapon.
@@ -315,17 +315,31 @@ reqMelee source target iid cstore = do
           execUpdAtomic $ UpdTrajectory target btra $ Just ([], speed)
         _ -> return ()
     else do
-      -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
-      -- the source part of the strike.
-      execSfxAtomic $ SfxStrike source target iid cstore
-      let c = CActor source cstore
-      -- Msgs inside @itemEffect@ describe the target part of the strike.
-      -- If any effects and aspects, this is also where they are identified.
-      -- Here also the melee damage is applied, before any effects are.
-      meleeEffectAndDestroy source target iid c
+      if bproj sb && bproj tb then do
+        -- Special case for collision of projectiles, because they just
+        -- symmetrically ram into each other, so picking one to hit another,
+        -- based on random timing, would be wrong.
+        -- Instead of suffering melee attack, let the target projectile
+        -- get smashed and burst (if fragile and if not piercing).
+        -- The source projectile terminates flight (unless pierces) later on.
+        when (bhp tb > oneM) $
+          execUpdAtomic $ UpdRefillHP target minusM
+        when (bhp tb <= oneM) $
+          -- If projectile has too low HP to pierce, terminate its flight.
+          execUpdAtomic
+          $ UpdTrajectory target (btrajectory tb) (Just ([], speedZero))
+      else do
+        -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
+        -- the source part of the strike.
+        execSfxAtomic $ SfxStrike source target iid cstore
+        let c = CActor source cstore
+        -- Msgs inside @itemEffect@ describe the target part of the strike.
+        -- If any effects and aspects, this is also where they are identified.
+        -- Here also the melee damage is applied, before any effects are.
+        meleeEffectAndDestroy source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
-        Just (tra, speed) | not (null tra) -> do
+        Just (tra, _speed) | not (null tra) -> do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
           -- Don't deduct if no pierce, to prevent spam.
@@ -341,9 +355,8 @@ reqMelee source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
-            -- Only hard targets stop flying actors.
             execUpdAtomic
-            $ UpdTrajectory source (btrajectory sb2) (Just ([], speed))
+            $ UpdTrajectory source (btrajectory sb2) (Just ([], speedZero))
         _ -> return ()
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.
