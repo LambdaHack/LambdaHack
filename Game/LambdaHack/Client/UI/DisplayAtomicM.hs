@@ -520,8 +520,7 @@ createActorUI born aid body = do
                      (_, _, object1, object2) =
                        partItemShortest (bfid body) factionD localTime
                                         itemFull (1, [])
-                 in ( makePhrase
-                        [MU.AW $ MU.Text adj, object1, object2]
+                 in ( makePhrase [adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n

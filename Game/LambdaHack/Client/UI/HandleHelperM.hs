@@ -375,7 +375,9 @@ lookAtActors p lidV = do
               -- Even if it's the leader, give his proper name, not 'you'.
               subjects = map (\(_, _, bUI) -> partActor bUI)
                              inhabitantsUI
-              subject = MU.WWandW subjects
+              -- No "a" prefix even if singular and inanimate, to distinguish
+              -- from items lying on the floor (and to simplify code).
+              (subject, person) = squashedWWandW subjects
               verb = "be here"
               factDesc = case jfid $ itemBase itemFull of
                 Just tfid | tfid /= bfid body ->
@@ -394,7 +396,7 @@ lookAtActors p lidV = do
               desc = if sameTrunks then factDesc <+> idesc else ""
               -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
-          in makeSentence [MU.SubjectVerbSg subject verb] <+> pdesc
+          in makeSentence [MU.SubjectVerb person MU.Yes subject verb] <+> pdesc
   return $! actorsBlurb
 
 -- | Produces a textual description of items at a position.
@@ -419,6 +421,10 @@ lookAtItems canSee p aid = do
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
         partItemWs side factionD k localTime (itemToF iid) kit
+  -- Here @squashedWWandW@ is not needed, because identical items at the same
+  -- position are already merged in the floor item bag and multiple identical
+  -- messages concerning different positions are merged with <x7>
+  -- to distinguish from a stack of items at a single position.
   return $! if EM.null is then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map (snd . nWs) $ EM.assocs is]

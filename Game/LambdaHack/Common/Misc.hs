@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , GroupName, Tactic(..)
   , toGroupName, describeTactic
-  , makePhrase, makeSentence, normalLevelBound
+  , makePhrase, makeSentence, squashedWWandW, normalLevelBound
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   ) where
 
@@ -163,6 +163,24 @@ describeTactic TPatrol = "find and patrol an area (WIP)"
 makePhrase, makeSentence :: [MU.Part] -> Text
 makePhrase = MU.makePhrase MU.defIrregular
 makeSentence = MU.makeSentence MU.defIrregular
+
+-- | Apply the @WWandW@ constructor, first representing repetitions
+-- as @CardinalWs@.
+-- The parts are not sorted, only grouped, to keep the order.
+-- The internal structure of speech parts is compared, not their string
+-- rendering, so some coincidental clashes are avoided (and code is simpler).
+squashedWWandW :: [MU.Part] -> (MU.Part, MU.Person)
+squashedWWandW parts =
+  let repetitions = group parts
+      f [] = error $ "empty group" `showFailure` parts
+      f [part] = (part, MU.Sg3rd)  -- avoid prefixing hero names with "a"
+      f l@(part : _) = (MU.CardinalWs (length l) part, MU.PlEtc)
+      cars = map f repetitions
+      person = case cars of
+        [] -> error $ "empty cars" `showFailure` parts
+        [(_, person1)] -> person1
+        _ -> MU.PlEtc
+  in (MU.WWandW $ map fst cars, person)
 
 -- | Level bounds.
 normalLevelBound :: (Int, Int)
