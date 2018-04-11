@@ -39,10 +39,13 @@ main = do
   !serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
-  ex <- waitCatch a
-  case ex of
+  resOrEx <- waitCatch a
+  let unwrapEx e = case Ex.fromException e of
+        Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+        _ -> e
+  case resOrEx of
     Right () -> return ()
-    Left e -> case Ex.fromException e of
+    Left e -> case Ex.fromException $ unwrapEx e of
       Just ExitSuccess ->
         exitSuccess  -- we are in the main thread, so here it really exits
       _ -> Ex.throwIO e
