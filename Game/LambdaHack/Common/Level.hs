@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
@@ -87,8 +88,10 @@ type ItemFloor = EM.EnumMap Point ItemBag
 -- | Items located on map tiles.
 type ActorMap = EM.EnumMap Point [ActorId]
 
+type instance PointArray.WordRep (ContentId k) = Word16
+
 -- | Tile kinds on the map.
-type TileMap = PointArray.GArray Word16 (ContentId TileKind)
+type TileMap = PointArray.Array (ContentId TileKind)
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point Time

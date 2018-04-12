@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
   ( FrameST, FrameForall(..), writeLine
@@ -51,8 +51,10 @@ writeLine offset l = FrameForall $ \v -> do
 -- Note that we don't provide a list of color-highlighed positions separately,
 -- because overlays need to obscure not only map, but the highlights as well.
 newtype SingleFrame = SingleFrame
-  {singleFrame :: PointArray.GArray Word32 Color.AttrCharW32}
+  {singleFrame :: PointArray.Array Color.AttrCharW32}
   deriving (Eq, Show)
+
+type instance PointArray.WordRep Color.AttrCharW32 = Word32
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe FrameForall]

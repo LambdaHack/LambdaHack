@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of atomic commands shared by client and server.
 --
 -- See

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, fillBfs
@@ -31,6 +31,8 @@ newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
 -- | State of legality of moves between adjacent points.
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToClosed | MoveToUnknown
   deriving Eq
+
+type instance PointArray.WordRep BfsDistance = Word8
 
 -- | The minimal distance value assigned to paths that don't enter
 -- any unknown tiles.
