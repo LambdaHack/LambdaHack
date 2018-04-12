@@ -151,7 +151,7 @@ data AttrChar = AttrChar
 -- can be done without going to and from @Int@.
 -- | Optimized representation of 'AttrChar'.
 newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
-  deriving (Show, Eq, Enum, Binary)
+  deriving (Show, Eq, Bounded, Enum, Binary)
 
 attrCharToW32 :: AttrChar -> AttrCharW32
 attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $

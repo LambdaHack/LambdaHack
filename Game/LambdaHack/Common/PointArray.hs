@@ -57,9 +57,14 @@ instance (U.Unbox (WordRep c), Binary (WordRep c)) => Binary (Array c) where
     avector <- get
     return $! Array{..}
 
-toWordRep :: (Enum c, Enum (WordRep c)) => c -> WordRep c
+toWordRep :: forall c. (Bounded (WordRep c), Enum c, Enum (WordRep c))
+          => c -> WordRep c
 {-# INLINE toWordRep #-}
-toWordRep = toEnum . fromEnum
+toWordRep c =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (fromEnum c <= fromEnum (maxBound :: WordRep c)) $
+#endif
+    toEnum . fromEnum $ c
 
 fromWordRep :: (Enum c, Enum (WordRep c)) => WordRep c -> c
 {-# INLINE fromWordRep #-}
@@ -90,13 +95,15 @@ accessI :: U.Unbox (WordRep c) => Array c -> Int -> WordRep c
 accessI Array{..} p = avector `U.unsafeIndex` p
 
 -- | Construct an array updated with the association list.
-(//) :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+(//) :: ( Bounded (WordRep c)
+        , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
      => Array c -> [(Point, c)] -> Array c
 {-# INLINE (//) #-}
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** toWordRep) l
                    in Array{avector = v, ..}
 
-unsafeUpdateA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+unsafeUpdateA :: ( Bounded (WordRep c)
+                 , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
               => Array c -> [(Point, c)] -> ()
 {-# INLINE unsafeUpdateA #-}
 unsafeUpdateA Array{..} l = runST $ do
@@ -104,7 +111,8 @@ unsafeUpdateA Array{..} l = runST $ do
   mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (toWordRep c)) l
   void $ U.unsafeFreeze vThawed
 
-unsafeWriteA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+unsafeWriteA :: ( Bounded (WordRep c)
+                , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
              => Array c -> Point -> c -> ()
 {-# INLINE unsafeWriteA #-}
 unsafeWriteA Array{..} p c = runST $ do
@@ -112,7 +120,8 @@ unsafeWriteA Array{..} p c = runST $ do
   VM.write vThawed (pindex axsize p) (toWordRep c)
   void $ U.unsafeFreeze vThawed
 
-unsafeWriteManyA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+unsafeWriteManyA :: ( Bounded (WordRep c)
+                    , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
                  => Array c -> [Point] -> c -> ()
 {-# INLINE unsafeWriteManyA #-}
 unsafeWriteManyA Array{..} l c = runST $ do
@@ -122,14 +131,16 @@ unsafeWriteManyA Array{..} l c = runST $ do
   void $ U.unsafeFreeze vThawed
 
 -- | Create an array from a replicated element.
-replicateA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+replicateA :: ( Bounded (WordRep c)
+              , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
            => X -> Y -> c -> Array c
 {-# INLINE replicateA #-}
 replicateA axsize aysize c =
   Array{avector = U.replicate (axsize * aysize) $ toWordRep c, ..}
 
 -- | Create an array from a replicated monadic action.
-replicateMA :: (Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+replicateMA :: ( Bounded (WordRep c)
+               , Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
             => X -> Y -> m c -> m (Array c)
 {-# INLINE replicateMA #-}
 replicateMA axsize aysize m = do
@@ -137,7 +148,8 @@ replicateMA axsize aysize m = do
   return $! Array{avector = v, ..}
 
 -- | Create an array from a function.
-generateA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+generateA :: ( Bounded (WordRep c)
+             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
           => X -> Y -> (Point -> c) -> Array c
 {-# INLINE generateA #-}
 generateA axsize aysize f =
@@ -145,7 +157,8 @@ generateA axsize aysize f =
   in Array{avector = U.generate (axsize * aysize) g, ..}
 
 -- | Create an array from a monadic function.
-generateMA :: (Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+generateMA :: ( Bounded (WordRep c)
+              , Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
            => X -> Y -> (Point -> m c) -> m (Array c)
 {-# INLINE generateMA #-}
 generateMA axsize aysize fm = do
@@ -153,7 +166,8 @@ generateMA axsize aysize fm = do
   v <- U.generateM (axsize * aysize) gm
   return $! Array{avector = v, ..}
 
-unfoldrNA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+unfoldrNA :: ( Bounded (WordRep c)
+             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
           => X -> Y -> (b -> (c, b)) -> b -> Array c
 {-# INLINE unfoldrNA #-}
 unfoldrNA axsize aysize fm b =
@@ -227,7 +241,8 @@ ifoldMA' f z0 Array{..} =
   U.ifoldM' (\a n c -> f a (punindex axsize n) (fromWordRep c)) z0 avector
 
 -- | Map over an array.
-mapA :: ( U.Unbox (WordRep c), Enum c, Enum (WordRep c)
+mapA :: ( Bounded (WordRep d)
+        , U.Unbox (WordRep c), Enum c, Enum (WordRep c)
         , U.Unbox (WordRep d), Enum d, Enum (WordRep d) )
      => (c -> d) -> Array c -> Array d
 {-# INLINE mapA #-}
@@ -235,7 +250,8 @@ mapA f Array{..} =
   Array{avector = U.map (toWordRep . f . fromWordRep) avector, ..}
 
 -- | Map over an array (function applied to each element and its index).
-imapA :: ( U.Unbox (WordRep c), Enum c, Enum (WordRep c)
+imapA :: ( Bounded (WordRep d)
+         , U.Unbox (WordRep c), Enum c, Enum (WordRep c)
          , U.Unbox (WordRep d), Enum d, Enum (WordRep d) )
       =>  (Point -> c -> d) -> Array c -> Array d
 {-# INLINE imapA #-}
@@ -253,7 +269,8 @@ imapMA_ f Array{..} =
   U.imapM_ (\n c -> f (punindex axsize n) (fromWordRep c)) avector
 
 -- | Set all elements to the given value, in place.
-unsafeSetA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+unsafeSetA :: ( Bounded (WordRep c)
+              , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
            => c -> Array c -> Array c
 {-# INLINE unsafeSetA #-}
 unsafeSetA c Array{..} = runST $ do
@@ -263,7 +280,8 @@ unsafeSetA c Array{..} = runST $ do
   return $! Array{avector = vFrozen, ..}
 
 -- | Set all elements to the given value, in place, if possible.
-safeSetA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+safeSetA :: ( Bounded (WordRep c)
+            , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
          => c -> Array c -> Array c
 {-# INLINE safeSetA #-}
 safeSetA c Array{..} =
@@ -320,7 +338,8 @@ forceA :: U.Unbox (WordRep c) => Array c -> Array c
 {-# INLINE forceA #-}
 forceA Array{..} = Array{avector = U.force avector, ..}
 
-fromListA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+fromListA :: ( Bounded (WordRep c)
+             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
           => X -> Y -> [c] -> Array c
 {-# INLINE fromListA #-}
 fromListA axsize aysize l =
