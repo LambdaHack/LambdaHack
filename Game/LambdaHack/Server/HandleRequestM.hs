@@ -281,6 +281,12 @@ reqMelee source target iid cstore = do
   else do
     let sfid = bfid sb
         tfid = bfid tb
+        -- Let the missile drop down, but don't remove its trajectory
+        -- so that it doesn't pretend to have hit a wall.
+        haltProjectile aid b = case btrajectory b of
+          btra@(Just (l, speed)) | not $ null l ->
+            execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
+          _ -> return ()
     sfact <- getsState $ (EM.! sfid) . sfactionD
     itemKind <- getsState $ getIidKindServer $ btrunk tb
     -- Only catch with appendages, never with weapons. Never steal trunk
@@ -308,12 +314,7 @@ reqMelee source target iid cstore = do
           itemFull <- getsState $ itemToFull iid2
           discoverIfMinorEffects (CActor source CInv) iid2 (itemKindId itemFull)
         err -> error $ "" `showFailure` err
-      -- Let the caught missile vanish, but don't remove its trajectory
-      -- so that it doesn't pretend to have hit a wall.
-      case btrajectory tb of
-        btra@(Just (l, speed)) | not $ null l ->
-          execUpdAtomic $ UpdTrajectory target btra $ Just ([], speed)
-        _ -> return ()
+      haltProjectile target tb
     else do
       if bproj sb && bproj tb then do
         -- Special case for collision of projectiles, because they just
@@ -326,8 +327,7 @@ reqMelee source target iid cstore = do
           execUpdAtomic $ UpdRefillHP target minusM
         when (bhp tb <= oneM) $
           -- If projectile has too low HP to pierce, terminate its flight.
-          execUpdAtomic
-          $ UpdTrajectory target (btrajectory tb) (Just ([], speedZero))
+          haltProjectile target tb
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
         -- the source part of the strike.
@@ -355,8 +355,7 @@ reqMelee source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
-            execUpdAtomic
-            $ UpdTrajectory source (btrajectory sb2) (Just ([], speedZero))
+             haltProjectile source sb2
         _ -> return ()
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.
