@@ -88,8 +88,6 @@ type ItemFloor = EM.EnumMap Point ItemBag
 -- | Items located on map tiles.
 type ActorMap = EM.EnumMap Point [ActorId]
 
-type instance PointArray.WordRep (ContentId k) = Word16
-
 -- | Tile kinds on the map.
 type TileMap = PointArray.Array (ContentId TileKind)
 

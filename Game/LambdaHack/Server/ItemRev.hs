@@ -63,11 +63,11 @@ buildItem COps{coitem} (FlavourMap flavourMap) (DiscoveryKindRev discoRev)
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
           in IdentityCovered
-               (toEnum $ fromEnum $ discoRev U.! fromEnum ikChosen)
+               (toEnum $ fromEnum $ discoRev U.! contentIdIndex ikChosen)
                kindHidden
         Nothing -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
-      jflavour = toEnum $ fromEnum $ flavourMap U.! fromEnum ikChosen
+      jflavour = toEnum $ fromEnum $ flavourMap U.! contentIdIndex ikChosen
   in Item{..}
 
 -- | Generate an item based on level.

@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies,
-             UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
-  ( WordRep, Array(..), pindex, punindex
+  ( UnboxRepClass(..), Array(..), pindex, punindex
   , (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
@@ -11,7 +10,7 @@ module Game.LambdaHack.Common.PointArray
   , fromListA, toListA
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , toWordRep, fromWordRep
+  , toUnboxRep
 #endif
   ) where
 
@@ -29,24 +28,35 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 
 import Game.LambdaHack.Common.Point
 
-type family WordRep c
+class ( Ord c, Eq (UnboxRep c), Ord (UnboxRep c), Bounded (UnboxRep c)
+      , Binary (UnboxRep c), U.Unbox (UnboxRep c) )
+      => UnboxRepClass c where
+  type UnboxRep c
+  type instance UnboxRep c = c
+  toUnboxRepUnsafe :: c -> UnboxRep c  -- has to be total
+  fromUnboxRep :: UnboxRep c -> c  -- has to be total
 
-type instance WordRep Bool = Bool
-type instance WordRep Word8 = Word8
+instance UnboxRepClass Bool where
+  toUnboxRepUnsafe c = c
+  fromUnboxRep c = c
+
+instance UnboxRepClass Word8 where
+  toUnboxRepUnsafe c = c
+  fromUnboxRep c = c
 
 -- | Arrays indexed by @Point@.
 data Array c = Array
   { axsize  :: X
   , aysize  :: Y
-  , avector :: U.Vector (WordRep c)
+  , avector :: U.Vector (UnboxRep c)
   }
 
-deriving instance (Eq (WordRep c), U.Unbox (WordRep c)) => Eq (Array c)
+deriving instance UnboxRepClass c => Eq (Array c)
 
 instance Show (Array c) where
   show a = "PointArray.Array with size " ++ show (axsize a, aysize a)
 
-instance (U.Unbox (WordRep c), Binary (WordRep c)) => Binary (Array c) where
+instance UnboxRepClass c => Binary (Array c) where
   put Array{..} = do
     put axsize
     put aysize
@@ -57,18 +67,13 @@ instance (U.Unbox (WordRep c), Binary (WordRep c)) => Binary (Array c) where
     avector <- get
     return $! Array{..}
 
-toWordRep :: forall c. (Bounded (WordRep c), Enum c, Enum (WordRep c))
-          => c -> WordRep c
-{-# INLINE toWordRep #-}
-toWordRep c =
+toUnboxRep :: UnboxRepClass c => c -> UnboxRep c
+{-# INLINE toUnboxRep #-}
+toUnboxRep c =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (fromEnum c <= fromEnum (maxBound :: WordRep c)) $
+  assert (c <= fromUnboxRep maxBound) $
 #endif
-    toEnum . fromEnum $ c
-
-fromWordRep :: (Enum c, Enum (WordRep c)) => WordRep c -> c
-{-# INLINE fromWordRep #-}
-fromWordRep = toEnum . fromEnum
+    toUnboxRepUnsafe c
 
 -- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
 -- We need to keep it that way, because we want close xs to have close indexes.
@@ -85,93 +90,75 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 -- since the extra few additions in @fromPoint@ may be less expensive than
 -- memory or register allocations needed for the extra @Int@ in @Point@.
 -- | Array lookup.
-(!) :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-    => Array c -> Point -> c
+(!) :: UnboxRepClass c => Array c -> Point -> c
 {-# INLINE (!) #-}
-(!) Array{..} p = fromWordRep $ avector U.! pindex axsize p
+(!) Array{..} p = fromUnboxRep $ avector U.! pindex axsize p
 
-accessI :: U.Unbox (WordRep c) => Array c -> Int -> WordRep c
+accessI :: UnboxRepClass c => Array c -> Int -> UnboxRep c
 {-# INLINE accessI #-}
 accessI Array{..} p = avector `U.unsafeIndex` p
 
 -- | Construct an array updated with the association list.
-(//) :: ( Bounded (WordRep c)
-        , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-     => Array c -> [(Point, c)] -> Array c
+(//) :: UnboxRepClass c => Array c -> [(Point, c)] -> Array c
 {-# INLINE (//) #-}
-(//) Array{..} l = let v = avector U.// map (pindex axsize *** toWordRep) l
+(//) Array{..} l = let v = avector U.// map (pindex axsize *** toUnboxRep) l
                    in Array{avector = v, ..}
 
-unsafeUpdateA :: ( Bounded (WordRep c)
-                 , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-              => Array c -> [(Point, c)] -> ()
+unsafeUpdateA :: UnboxRepClass c => Array c -> [(Point, c)] -> ()
 {-# INLINE unsafeUpdateA #-}
 unsafeUpdateA Array{..} l = runST $ do
   vThawed <- U.unsafeThaw avector
-  mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (toWordRep c)) l
+  mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (toUnboxRep c)) l
   void $ U.unsafeFreeze vThawed
 
-unsafeWriteA :: ( Bounded (WordRep c)
-                , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-             => Array c -> Point -> c -> ()
+unsafeWriteA :: UnboxRepClass c => Array c -> Point -> c -> ()
 {-# INLINE unsafeWriteA #-}
 unsafeWriteA Array{..} p c = runST $ do
   vThawed <- U.unsafeThaw avector
-  VM.write vThawed (pindex axsize p) (toWordRep c)
+  VM.write vThawed (pindex axsize p) (toUnboxRep c)
   void $ U.unsafeFreeze vThawed
 
-unsafeWriteManyA :: ( Bounded (WordRep c)
-                    , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-                 => Array c -> [Point] -> c -> ()
+unsafeWriteManyA :: UnboxRepClass c => Array c -> [Point] -> c -> ()
 {-# INLINE unsafeWriteManyA #-}
 unsafeWriteManyA Array{..} l c = runST $ do
   vThawed <- U.unsafeThaw avector
-  let d = toWordRep c
+  let d = toUnboxRep c
   mapM_ (\p -> VM.write vThawed (pindex axsize p) d) l
   void $ U.unsafeFreeze vThawed
 
 -- | Create an array from a replicated element.
-replicateA :: ( Bounded (WordRep c)
-              , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-           => X -> Y -> c -> Array c
+replicateA :: UnboxRepClass c => X -> Y -> c -> Array c
 {-# INLINE replicateA #-}
 replicateA axsize aysize c =
-  Array{avector = U.replicate (axsize * aysize) $ toWordRep c, ..}
+  Array{avector = U.replicate (axsize * aysize) $ toUnboxRep c, ..}
 
 -- | Create an array from a replicated monadic action.
-replicateMA :: ( Bounded (WordRep c)
-               , Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-            => X -> Y -> m c -> m (Array c)
+replicateMA :: (Monad m, UnboxRepClass c) => X -> Y -> m c -> m (Array c)
 {-# INLINE replicateMA #-}
 replicateMA axsize aysize m = do
-  v <- U.replicateM (axsize * aysize) $ liftM toWordRep m
+  v <- U.replicateM (axsize * aysize) $ liftM toUnboxRep m
   return $! Array{avector = v, ..}
 
 -- | Create an array from a function.
-generateA :: ( Bounded (WordRep c)
-             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-          => X -> Y -> (Point -> c) -> Array c
+generateA :: UnboxRepClass c => X -> Y -> (Point -> c) -> Array c
 {-# INLINE generateA #-}
 generateA axsize aysize f =
-  let g n = toWordRep $ f $ punindex axsize n
+  let g n = toUnboxRep $ f $ punindex axsize n
   in Array{avector = U.generate (axsize * aysize) g, ..}
 
 -- | Create an array from a monadic function.
-generateMA :: ( Bounded (WordRep c)
-              , Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
+generateMA :: (Monad m, UnboxRepClass c)
            => X -> Y -> (Point -> m c) -> m (Array c)
 {-# INLINE generateMA #-}
 generateMA axsize aysize fm = do
-  let gm n = liftM toWordRep $ fm $ punindex axsize n
+  let gm n = liftM toUnboxRep $ fm $ punindex axsize n
   v <- U.generateM (axsize * aysize) gm
   return $! Array{avector = v, ..}
 
-unfoldrNA :: ( Bounded (WordRep c)
-             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-          => X -> Y -> (b -> (c, b)) -> b -> Array c
+unfoldrNA :: UnboxRepClass c => X -> Y -> (b -> (c, b)) -> b -> Array c
 {-# INLINE unfoldrNA #-}
 unfoldrNA axsize aysize fm b =
-  let gm = Just . first toWordRep . fm
+  let gm = Just . first toUnboxRep . fm
       v = U.unfoldrN (axsize * aysize) gm b
   in Array {avector = v, ..}
 
@@ -181,121 +168,104 @@ sizeA :: Array c -> (X, Y)
 sizeA Array{..} = (axsize, aysize)
 
 -- | Fold right over an array.
-foldrA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-       => (c -> a -> a) -> a -> Array c -> a
+foldrA :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
 {-# INLINE foldrA #-}
 foldrA f z0 Array{..} =
-  U.foldr (\c a-> f (fromWordRep c) a) z0 avector
+  U.foldr (\c a-> f (fromUnboxRep c) a) z0 avector
 
 -- | Fold right strictly over an array.
-foldrA' :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => (c -> a -> a) -> a -> Array c -> a
+foldrA' :: UnboxRepClass c => (c -> a -> a) -> a -> Array c -> a
 {-# INLINE foldrA' #-}
 foldrA' f z0 Array{..} =
-  U.foldr' (\c a-> f (fromWordRep c) a) z0 avector
+  U.foldr' (\c a-> f (fromUnboxRep c) a) z0 avector
 
 -- | Fold left strictly over an array.
-foldlA' :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => (a -> c -> a) -> a -> Array c -> a
+foldlA' :: UnboxRepClass c => (a -> c -> a) -> a -> Array c -> a
 {-# INLINE foldlA' #-}
 foldlA' f z0 Array{..} =
-  U.foldl' (\a c -> f a (fromWordRep c)) z0 avector
+  U.foldl' (\a c -> f a (fromUnboxRep c)) z0 avector
 
 -- | Fold left strictly over an array
 -- (function applied to each element and its index).
-ifoldlA' :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-         => (a -> Point -> c -> a) -> a -> Array c -> a
+ifoldlA' :: UnboxRepClass c => (a -> Point -> c -> a) -> a -> Array c -> a
 {-# INLINE ifoldlA' #-}
 ifoldlA' f z0 Array{..} =
-  U.ifoldl' (\a n c -> f a (punindex axsize n) (fromWordRep c)) z0 avector
+  U.ifoldl' (\a n c -> f a (punindex axsize n) (fromUnboxRep c)) z0 avector
 
 -- | Fold right over an array
 -- (function applied to each element and its index).
-ifoldrA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => (Point -> c -> a -> a) -> a -> Array c -> a
+ifoldrA :: UnboxRepClass c => (Point -> c -> a -> a) -> a -> Array c -> a
 {-# INLINE ifoldrA #-}
 ifoldrA f z0 Array{..} =
-  U.ifoldr (\n c a -> f (punindex axsize n) (fromWordRep c) a) z0 avector
+  U.ifoldr (\n c a -> f (punindex axsize n) (fromUnboxRep c) a) z0 avector
 
 -- | Fold right strictly over an array
 -- (function applied to each element and its index).
-ifoldrA' :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-         => (Point -> c -> a -> a) -> a -> Array c -> a
+ifoldrA' :: UnboxRepClass c => (Point -> c -> a -> a) -> a -> Array c -> a
 {-# INLINE ifoldrA' #-}
 ifoldrA' f z0 Array{..} =
-  U.ifoldr' (\n c a -> f (punindex axsize n) (fromWordRep c) a) z0 avector
+  U.ifoldr' (\n c a -> f (punindex axsize n) (fromUnboxRep c) a) z0 avector
 
 -- | Fold monadically strictly over an array.
-foldMA' :: (Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => (a -> c -> m a) -> a -> Array c -> m a
+foldMA' :: (Monad m, UnboxRepClass c) => (a -> c -> m a) -> a -> Array c -> m a
 {-# INLINE foldMA' #-}
 foldMA' f z0 Array{..} =
-  U.foldM' (\a c -> f a (fromWordRep c)) z0 avector
+  U.foldM' (\a c -> f a (fromUnboxRep c)) z0 avector
 
 -- | Fold monadically strictly over an array
 -- (function applied to each element and its index).
-ifoldMA' :: (Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c))
+ifoldMA' :: (Monad m, UnboxRepClass c)
          => (a -> Point -> c -> m a) -> a -> Array c -> m a
 {-# INLINE ifoldMA' #-}
 ifoldMA' f z0 Array{..} =
-  U.ifoldM' (\a n c -> f a (punindex axsize n) (fromWordRep c)) z0 avector
+  U.ifoldM' (\a n c -> f a (punindex axsize n) (fromUnboxRep c)) z0 avector
 
 -- | Map over an array.
-mapA :: ( Bounded (WordRep d)
-        , U.Unbox (WordRep c), Enum c, Enum (WordRep c)
-        , U.Unbox (WordRep d), Enum d, Enum (WordRep d) )
-     => (c -> d) -> Array c -> Array d
+mapA :: (UnboxRepClass c, UnboxRepClass d) => (c -> d) -> Array c -> Array d
 {-# INLINE mapA #-}
 mapA f Array{..} =
-  Array{avector = U.map (toWordRep . f . fromWordRep) avector, ..}
+  Array{avector = U.map (toUnboxRep . f . fromUnboxRep) avector, ..}
 
 -- | Map over an array (function applied to each element and its index).
-imapA :: ( Bounded (WordRep d)
-         , U.Unbox (WordRep c), Enum c, Enum (WordRep c)
-         , U.Unbox (WordRep d), Enum d, Enum (WordRep d) )
+imapA :: (UnboxRepClass c, UnboxRepClass d)
       =>  (Point -> c -> d) -> Array c -> Array d
 {-# INLINE imapA #-}
 imapA f Array{..} =
   let v = U.imap (\n c ->
-                   toWordRep $ f (punindex axsize n) (fromWordRep c)) avector
+                   toUnboxRep $ f (punindex axsize n) (fromUnboxRep c)) avector
   in Array{avector = v, ..}
 
 -- | Map monadically over an array (function applied to each element
 -- and its index) and ignore the results.
-imapMA_ :: (Monad m, U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => (Point -> c -> m ()) -> Array c -> m ()
+imapMA_ :: (Monad m, UnboxRepClass c) => (Point -> c -> m ()) -> Array c -> m ()
 {-# INLINE imapMA_ #-}
 imapMA_ f Array{..} =
-  U.imapM_ (\n c -> f (punindex axsize n) (fromWordRep c)) avector
+  U.imapM_ (\n c -> f (punindex axsize n) (fromUnboxRep c)) avector
 
 -- | Set all elements to the given value, in place.
-unsafeSetA :: ( Bounded (WordRep c)
-              , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-           => c -> Array c -> Array c
+unsafeSetA :: UnboxRepClass c => c -> Array c -> Array c
 {-# INLINE unsafeSetA #-}
 unsafeSetA c Array{..} = runST $ do
   vThawed <- U.unsafeThaw avector
-  VM.set vThawed (toWordRep c)
+  VM.set vThawed (toUnboxRep c)
   vFrozen <- U.unsafeFreeze vThawed
   return $! Array{avector = vFrozen, ..}
 
 -- | Set all elements to the given value, in place, if possible.
-safeSetA :: ( Bounded (WordRep c)
-            , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-         => c -> Array c -> Array c
+safeSetA :: UnboxRepClass c => c -> Array c -> Array c
 {-# INLINE safeSetA #-}
 safeSetA c Array{..} =
-  Array{avector = U.modify (\v -> VM.set v (toWordRep c)) avector, ..}
+  Array{avector = U.modify (\v -> VM.set v (toUnboxRep c)) avector, ..}
 
 -- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.
-minIndexA :: (Ord (WordRep c), U.Unbox (WordRep c)) => Array c -> Point
+minIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE minIndexA #-}
 minIndexA Array{..} = punindex axsize $ U.minIndex avector
 
 -- | Yield the point coordinates of the last minimum element of the array.
 -- The array may not be empty.
-minLastIndexA :: (Ord (WordRep c), U.Unbox (WordRep c)) => Array c -> Point
+minLastIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE minLastIndexA #-}
 minLastIndexA Array{..} =
   punindex axsize
@@ -306,7 +276,7 @@ minLastIndexA Array{..} =
 
 -- | Yield the point coordinates of all the minimum elements of the array.
 -- The array may not be empty.
-minIndexesA :: (Ord (WordRep c), U.Unbox (WordRep c)) => Array c -> [Point]
+minIndexesA :: UnboxRepClass c => Array c -> [Point]
 {-# INLINE minIndexesA #-}
 minIndexesA Array{..} =
   map (punindex axsize)
@@ -318,13 +288,13 @@ minIndexesA Array{..} =
 
 -- | Yield the point coordinates of the first maximum element of the array.
 -- The array may not be empty.
-maxIndexA :: (Ord (WordRep c), U.Unbox (WordRep c)) => Array c -> Point
+maxIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxIndexA #-}
 maxIndexA Array{..} = punindex axsize $ U.maxIndex avector
 
 -- | Yield the point coordinates of the last maximum element of the array.
 -- The array may not be empty.
-maxLastIndexA :: (Ord (WordRep c), U.Unbox (WordRep c)) => Array c -> Point
+maxLastIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxLastIndexA #-}
 maxLastIndexA Array{..} =
   punindex axsize
@@ -334,18 +304,15 @@ maxLastIndexA Array{..} =
   imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
 
 -- | Force the array not to retain any extra memory.
-forceA :: U.Unbox (WordRep c) => Array c -> Array c
+forceA :: UnboxRepClass c => Array c -> Array c
 {-# INLINE forceA #-}
 forceA Array{..} = Array{avector = U.force avector, ..}
 
-fromListA :: ( Bounded (WordRep c)
-             , U.Unbox (WordRep c), Enum c, Enum (WordRep c) )
-          => X -> Y -> [c] -> Array c
+fromListA :: UnboxRepClass c => X -> Y -> [c] -> Array c
 {-# INLINE fromListA #-}
 fromListA axsize aysize l =
-  Array{avector = U.fromListN (axsize * aysize) $ map toWordRep l, ..}
+  Array{avector = U.fromListN (axsize * aysize) $ map toUnboxRep l, ..}
 
-toListA :: (U.Unbox (WordRep c), Enum c, Enum (WordRep c))
-        => Array c -> [c]
+toListA :: UnboxRepClass c => Array c -> [c]
 {-# INLINE toListA #-}
-toListA Array{..} = map fromWordRep $ U.toList avector
+toListA Array{..} = map fromUnboxRep $ U.toList avector

@@ -371,8 +371,7 @@ closestTriggers fleeVia aid = do
       vicAll = concatMap vicTrigger efeat
   return $  -- keep lazy
     let mix (benefit, ppbag) dist =
-          let maxd = fromEnum (maxBound :: BfsDistance)
-                     - fromEnum apartBfs
+          let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
               v = (fromIntegral maxd * 10) / (fromIntegral dist + 1)
           in (ceiling $ benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
@@ -420,8 +419,7 @@ closestItems aid = do
     if EM.null lfloor then return [] else do
       bfs <- getCacheBfs aid
       let mix pbag dist =
-            let maxd = fromEnum (maxBound :: BfsDistance)
-                       - fromEnum apartBfs
+            let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
                 -- Bewqre of overflowing 32-bit integers here.
                 -- Here distance is the only factor influencing frequency,
                 -- unless item not desirable, which is checked later on.

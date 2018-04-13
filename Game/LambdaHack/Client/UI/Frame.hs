@@ -54,8 +54,6 @@ newtype SingleFrame = SingleFrame
   {singleFrame :: PointArray.Array Color.AttrCharW32}
   deriving (Eq, Show)
 
-type instance PointArray.WordRep Color.AttrCharW32 = Word32
-
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe FrameForall]
 

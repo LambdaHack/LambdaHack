@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
-import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
@@ -58,7 +58,7 @@ createTabWithKey cotile prop = TK.Tab $ U.convert $ oimapVector cotile prop
 -- with the newtype.
 accessTab :: U.Unbox a => TK.Tab a -> ContentId TileKind -> a
 {-# INLINE accessTab #-}
-accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` fromEnum ki
+accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` contentIdIndex ki
 
 speedupTile :: Bool -> ContentData TileKind -> TileSpeedup
 speedupTile allClear cotile =

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -10,7 +10,7 @@
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
   ( ContentId(ContentId), ContentData, Freqs, Rarity
-  , validateRarity, emptyContentData, makeContentData
+  , contentIdIndex, validateRarity, emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength
@@ -30,13 +30,19 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Common.Misc
+import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Random
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Generic)
+  deriving (Show, Eq, Ord, Enum, Binary, Generic)
+
+instance PointArray.UnboxRepClass (ContentId k) where
+  type UnboxRep (ContentId k) = Word16
+  toUnboxRepUnsafe (ContentId k) = k
+  fromUnboxRep = ContentId
 
 instance NFData (ContentId c)
 
@@ -58,6 +64,12 @@ type Freqs a = [(GroupName a, Int)]
 
 -- | Rarity on given depths.
 type Rarity = [(Double, Int)]
+
+maxContentId :: ContentId k
+maxContentId = ContentId maxBound
+
+contentIdIndex :: ContentId k -> Int
+contentIdIndex (ContentId k) = fromEnum k
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
@@ -92,7 +104,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
   let contentVector = V.fromList content
       groupFreq =
         let tuples = [ (cgroup, (n, (i, k)))
-                     | (i, k) <- zip [ContentId 0..] content
+                     | (i, k) <- zip (map ContentId [0..]) content
                      , (cgroup, n) <- getFreq k
                      , n > 0 ]
             f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
@@ -116,13 +128,13 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
      assert (null allOffences
              `blame` contentName ++ ": the content set is not valid"
              `swith` allOffences) $
-     assert (V.length contentVector <= fromEnum (maxBound :: ContentId a)
+     assert (V.length contentVector <= contentIdIndex maxContentId
              `blame` contentName ++ ": the content has too many elements")
      contentData
 
 -- | Content element at given id.
 okind :: ContentData a -> ContentId a -> a
-okind ContentData{contentVector} !i = contentVector V.! fromEnum i
+okind ContentData{contentVector} !i = contentVector V.! contentIdIndex i
 
 omemberGroup :: ContentData a -> GroupName a -> Bool
 omemberGroup ContentData{groupFreq} cgroup = cgroup `M.member` groupFreq
@@ -160,12 +172,12 @@ opick ContentData{groupFreq} !cgroup !p =
 -- | Fold over all content elements of @a@.
 ofoldrWithKey :: ContentData a -> (ContentId a -> a -> b -> b) -> b -> b
 ofoldrWithKey ContentData{contentVector} f z =
-  V.ifoldr (\i c a -> f (toEnum i) c a) z contentVector
+  V.ifoldr (\i c a -> f (ContentId $ toEnum i) c a) z contentVector
 
 -- | Fold strictly over all content @a@.
 ofoldlWithKey' :: ContentData a -> (b -> ContentId a -> a -> b) -> b -> b
 ofoldlWithKey' ContentData{contentVector} f z =
-  V.ifoldl' (\a i c -> f a (toEnum i) c) z contentVector
+  V.ifoldl' (\a i c -> f a (ContentId $ toEnum i) c) z contentVector
 
 -- | Fold over the given group only.
 ofoldlGroup' :: ContentData a
@@ -183,7 +195,7 @@ omapVector :: ContentData a -> (a -> b) -> V.Vector b
 omapVector d f = V.map f $ contentVector d
 
 oimapVector :: ContentData a -> (ContentId a -> a -> b) -> V.Vector b
-oimapVector d f = V.imap (\i a -> f (toEnum i) a) $ contentVector d
+oimapVector d f = V.imap (\i a -> f (ContentId $ toEnum i) a) $ contentVector d
 
 -- | Size of content @a@.
 olength :: ContentData a -> Int

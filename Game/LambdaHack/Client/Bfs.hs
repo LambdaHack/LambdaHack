@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, fillBfs
+  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
   , AndPath(..), findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
@@ -26,18 +26,21 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
-  deriving (Show, Eq, Ord, Enum, Bounded, Bits)
+  deriving (Show, Eq, Ord, Enum, Bits)
+
+instance PointArray.UnboxRepClass BfsDistance where
+  type UnboxRep BfsDistance = Word8
+  toUnboxRepUnsafe = bfsDistance
+  fromUnboxRep = BfsDistance
 
 -- | State of legality of moves between adjacent points.
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToClosed | MoveToUnknown
   deriving Eq
 
-type instance PointArray.WordRep BfsDistance = Word8
-
 -- | The minimal distance value assigned to paths that don't enter
 -- any unknown tiles.
 minKnownBfs :: BfsDistance
-minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
+minKnownBfs = BfsDistance $ toEnum $ (1 + fromEnum (maxBound :: Word8)) `div` 2
 
 -- | The distance value that denotes no legal path between points,
 -- either due to blocked tiles or pathfinding aborted at earlier tiles,
@@ -45,13 +48,17 @@ minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 apartBfs :: BfsDistance
 apartBfs = pred minKnownBfs
 
+-- | Maximum value of the type.
+maxBfsDistance :: BfsDistance
+maxBfsDistance = BfsDistance (maxBound :: Word8)
+
 -- | The distance value that denotes that path search was aborted
 -- at this tile due to too large actual distance
 -- and that the tile was known and not blocked.
 -- It is also a true distance value for this tile
 -- (shifted by minKnownBfs, as all distances of known tiles).
 abortedKnownBfs :: BfsDistance
-abortedKnownBfs = pred maxBound
+abortedKnownBfs = pred maxBfsDistance
 
 -- | The distance value that denotes that path search was aborted
 -- at this tile due to too large actual distance

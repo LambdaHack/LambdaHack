@@ -205,7 +205,7 @@ emptyItemSpeedup :: ItemSpeedup
 emptyItemSpeedup = ItemSpeedup V.empty
 
 getKindMean :: ContentId ItemKind -> ItemSpeedup -> IA.KindMean
-getKindMean kindId (ItemSpeedup is) = is V.! fromEnum kindId
+getKindMean kindId (ItemSpeedup is) = is V.! contentIdIndex kindId
 
 speedupItem :: ContentData ItemKind -> ItemSpeedup
 speedupItem coitem =
