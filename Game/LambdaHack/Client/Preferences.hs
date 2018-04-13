@@ -139,9 +139,9 @@ effectToBenefit cops fact insideRecharging eff =
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)
-    IK.SendFlying _ -> (1, -10)  -- very context dependent, but it's better
-    IK.PushActor _ -> (1, -10)   -- to be the one that decides and not the one
-    IK.PullActor _ -> (1, -10)   -- that is interrupted in the middle of fleeing
+    IK.SendFlying _ -> (1, -100)  -- very context dependent, but it's better
+    IK.PushActor _ -> (1, -100)   -- to be the one that decides whether to fly;
+    IK.PullActor _ -> (1, -100)   -- pushing others may crush them against wall
     IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
     IK.ActivateInv ' ' -> delta $ -200  -- brutal and deadly
     IK.ActivateInv _ -> delta $ -50  -- depends on the items

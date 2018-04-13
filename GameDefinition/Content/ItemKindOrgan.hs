@@ -53,7 +53,7 @@ foot = fist
   , idesc    = "A weapon you can still use if disarmed."
   }
 
--- * Universal weapon organs
+-- * Other weapon organs
 
 hookedClaw = fist
   { iname    = "hooked claw"
@@ -133,9 +133,6 @@ rhinoHorn = fist
   , ieffects = [Recharging Impress]  -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
   }
-
--- * Special weapon organs
-
 tentacle = fist
   { iname    = "tentacle"
   , ifreq    = [("tentacle", 50)]
@@ -236,7 +233,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbHit = "knock"
-  , idamage  = 6 `d` 1
+  , idamage  = 7 `d` 1
   , iaspects = [Timeout $ 1 + 1 `d` 3, AddHurtMelee 20]
   , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps
   , idesc    = "Slow but heavy."
