@@ -31,7 +31,7 @@ import Game.LambdaHack.Common.Point
 
 type family WordRep c
 
-type instance WordRep Bool = Word8
+type instance WordRep Bool = Bool
 type instance WordRep Word8 = Word8
 
 -- | Arrays indexed by @Point@.
