@@ -25,7 +25,7 @@
 - generalize the terrain altering player command (C-c, mouse)
 - let RET, SPACE and ESC clear pending messages, if any
 - add dashboard with links to all menus and info screens
-- scale some organ and trap damage with level depth
+- scale some organ and trap power with level depth
 - simplify level-scaled dice roll semantics
 - change scaled dice notation 'dl' to 'dL' for readability in-game
 - rebalance items and decrease dice variety to unclutter backpack

@@ -274,10 +274,9 @@ reqMelee :: MonadServerAtomic m
 reqMelee source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  let adj = checkAdjacent sb tb
-      req = ReqMelee target iid cstore
+  let req = ReqMelee target iid cstore
   if source == target then execFailure source req MeleeSelf
-  else if not adj then execFailure source req MeleeDistant
+  else if not (checkAdjacent sb tb) then execFailure source req MeleeDistant
   else do
     let sfid = bfid sb
         tfid = bfid tb
@@ -377,12 +376,11 @@ reqDisplace source target = do
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
-      adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
   dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar
-  if | not adj -> execFailure source req DisplaceDistant
+  if | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do  -- if not at war, can displace always
        -- We don't fail with DisplaceImmobile and DisplaceSupported.
        -- because it's quite common they can't be determined by the attacker,
@@ -462,7 +460,8 @@ reqAlterFail source tpos = do
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> IK.iname itemKind) reqFail
           _ -> itemEffectEmbedded source lid tpos iid
-  if not $ adjacent (bpos sb) tpos then return $ Just AlterDistant
+  if chessDist tpos (bpos sb) > 1
+  then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
     if alterSkill <= 1

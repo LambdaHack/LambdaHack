@@ -877,7 +877,7 @@ alterTileAtPos ts tpos pText = do
   case filter hasFeat ts of
     [] | not $ null ts -> failWith $ guessAlter cops ts t
     _ | not modifiable && EM.null embeds -> failSer AlterNothing
-    _ | not $ adjacent tpos (bpos b) -> failSer AlterDistant
+    _ | chessDist tpos (bpos b) > 1 -> failSer AlterDistant
     _ | alterSkill <= 1 -> failSer AlterUnskilled
     _ | not (Tile.isSuspect coTileSpeedup t)
         && alterSkill < alterMinSkill -> failSer AlterUnwalked
