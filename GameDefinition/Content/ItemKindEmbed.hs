@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit]
 
-scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardMap, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -28,7 +28,7 @@ scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTr
 -- of the level by bumping the least number of secret walls.
 scratchOnWall = ItemKind
   { isymbol  = '?'
-  , iname    = "scratch on wall"
+  , iname    = "claw mark"
   , ifreq    = [("scratch on wall", 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 1
@@ -92,7 +92,7 @@ treasureCache = stairsUp
   }
 treasureCacheTrap = ItemKind
   { isymbol  = '^'
-  , iname    = "treasure cache trap"
+  , iname    = "cache trap"
   , ifreq    = [("treasure cache trap", 1)]
   , iflavour = zipPlain [Red]
   , icount   = 1
@@ -113,7 +113,7 @@ treasureCacheTrap = ItemKind
   }
 signboardExit = ItemKind
   { isymbol  = '?'
-  , iname    = "signboard with exits"
+  , iname    = "inscription"
   , ifreq    = [("signboard", 80)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
@@ -124,14 +124,14 @@ signboardExit = ItemKind
   , iaspects = []
   , ieffects = [Detect DetectExit 100]
   , ifeature = [Durable]
-  , idesc    = "A battered sign, carved by unknown hands."
+  , idesc    = "Crude big arrows hastily carved by unknown hands."
   , ikit     = []
   }
-signboardMap = signboardExit
-  { iname    = "signboard with a map"
+signboardEmbed = signboardExit
+  { iname    = "notice"
   , ifreq    = [("signboard", 20)]
   , ieffects = [Detect DetectEmbed 12]
-  , idesc    = ""
+  , idesc    = "The battered poster is untitled and unsigned."
   }
 fireSmall = ItemKind
   { isymbol  = '%'
@@ -232,7 +232,7 @@ doorwayTrap3 = doorwayTrapTemplate
   }
 stairsUp = ItemKind
   { isymbol  = '<'
-  , iname    = "staircase up"
+  , iname    = "flight of steps"
   , ifreq    = [("staircase up", 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
@@ -249,14 +249,14 @@ stairsUp = ItemKind
   }
 stairsDown = stairsUp
   { isymbol  = '>'
-  , iname    = "staircase down"
+  , iname    = "flight of steps"
   , ifreq    = [("staircase down", 1)]
   , ieffects = [Ascend False]
   , idesc    = ""
   }
 escape = stairsUp
   { isymbol  = 'E'
-  , iname    = "escape"
+  , iname    = "way"
   , ifreq    = [("escape", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffects = [Escape]
@@ -291,7 +291,7 @@ staircaseTrapDown = staircaseTrapUp
   }
 pulpit = ItemKind
   { isymbol  = '?'
-  , iname    = "pulpit"
+  , iname    = "lectern"
   , ifreq    = [("pulpit", 1)]
   , iflavour = zipFancy [BrYellow]
   , icount   = 1

@@ -93,7 +93,7 @@ effectToSuffix detailLevel effect =
     PolyItem -> "of repurpose on the ground"
     Identify -> "of identify"
     Detect d radius ->
-      "of" <+> detectToObject d <+> "detection" <+> wrapInParens (tshow radius)
+      "of" <+> detectToObject d <+> "location" <+> wrapInParens (tshow radius)
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
@@ -120,16 +120,16 @@ detectToObject d = case d of
   DetectItem -> "item"
   DetectExit -> "exit"
   DetectHidden -> "secret"
-  DetectEmbed -> "interesting feature"
+  DetectEmbed -> "feature"
 
 detectToVerb :: DetectKind -> Text
 detectToVerb d = case d of
-  DetectAll -> "perceive surrounding area"
-  DetectActor -> "spy nearby"
-  DetectItem -> "detect nearby"
+  DetectAll -> "map surrounding area"
+  DetectActor -> "spot nearby"
+  DetectItem -> "locate nearby"
   DetectExit -> "learn nearby"
   DetectHidden -> "uncover nearby"
-  DetectEmbed -> "map"
+  DetectEmbed -> "notice nearby"
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of

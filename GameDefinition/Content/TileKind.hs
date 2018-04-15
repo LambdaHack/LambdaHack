@@ -194,7 +194,7 @@ pillar = TileKind
   }
 pillarCache = TileKind
   { tsymbol  = 'O'
-  , tname    = "cache"
+  , tname    = "smoothed rock"
   , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal", 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
@@ -263,7 +263,7 @@ treeBurning = tree
   }
 rubble = TileKind
   { tsymbol  = '&'
-  , tname    = "rubble"
+  , tname    = "rubble pile"
   , tfreq    = []  -- [("floorCorridorLit", 1)]
                    -- disabled while it's all or nothing per cave and per room;
                    -- we need a new mechanism, Spice is not enough, because
@@ -277,7 +277,7 @@ rubble = TileKind
   }
 rubbleSpice = TileKind
   { tsymbol  = '&'
-  , tname    = "rubble"
+  , tname    = "rubble pile"
   , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
                , ("zooSet", 100), ("ambushSet", 20) ]
   , tcolor   = BrYellow
