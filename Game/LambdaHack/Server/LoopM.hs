@@ -30,6 +30,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -80,7 +81,10 @@ loopSer serverOptions executorClient = do
       updConn
       initPer
       pers <- getsServer sperFid
-      mapM_ (\fid -> sendUpdate fid $ UpdResume fid (pers EM.! fid))
+      let clear = const emptyPer
+          persFid fid | sknowEvents serverOptions = EM.map clear (pers EM.! fid)
+                      | otherwise = pers EM.! fid
+      mapM_ (\fid -> sendUpdate fid $ UpdResume fid (persFid fid))
             (EM.keys factionD)
       -- We dump RNG seeds here, based on @soptionsNxt@, in case the game
       -- wasn't run with @--dumpInitRngs@ previously, but we need the seeds,
