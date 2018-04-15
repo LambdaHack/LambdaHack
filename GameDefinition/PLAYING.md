@@ -15,7 +15,7 @@ while tirelessly chasing the elusive heroes by sight, sound and smell.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this rudimentary example game, but it has its own quirky style
+for this modest sample game, but it has its own distinct quirky mood
 and is playable and winnable. Contributions are welcome.
 
 If the game window is too large for your screen or you experience
