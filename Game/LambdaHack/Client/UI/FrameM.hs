@@ -96,11 +96,14 @@ promptGetKey dm ov onBlank frontKeyKeys = do
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do
-  modifySession $ \sess -> sess
-    { slastPlay = []
-    , slastRecord = LastRecord [] [] 0
-        -- Needed to cancel macros that contain apostrophes.
-    }
+  lastPlayOld <- getsSession slastPlay
+  unless (null lastPlayOld) $ do
+    modifySession $ \sess -> sess {slastPlay = []}
+    LastRecord _ _ k <- getsSession slastRecord
+    when (k > 0) $ do
+      -- Needed to properly cancel macros that contain apostrophes.
+      modifySession $ \sess -> sess {slastRecord = LastRecord [] [] 0}
+      promptAdd0 "Macro recording aborted."
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
