@@ -613,19 +613,24 @@ maxK = 100
 
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
+  lastPlayOld <- getsSession slastPlay
   LastRecord _seqCurrent seqPrevious k <- getsSession slastRecord
   case k of
     0 -> do
       let slastRecord = LastRecord [] [] maxK
       modifySession $ \sess -> sess {slastRecord}
-      promptAdd0 $ "Macro will be recorded for up to"
-                   <+> tshow maxK
-                   <+> "actions. Stop recording with the same key."
+      when (null lastPlayOld) $
+        -- Don't spam if recording is a part of playing back a macro.
+        promptAdd0 $ "Macro will be recorded for up to"
+                     <+> tshow maxK
+                     <+> "actions. Stop recording with the same key."
     _ -> do
       let slastRecord = LastRecord seqPrevious [] 0
       modifySession $ \sess -> sess {slastRecord}
-      promptAdd0 $ "Macro recording stopped after"
-                   <+> tshow (maxK - k - 1) <+> "actions."
+      when (null lastPlayOld) $
+        -- Don't spam if recording is a part of playing back a macro.
+        promptAdd0 $ "Macro recording stopped after"
+                     <+> tshow (maxK - k - 1) <+> "actions."
 
 -- * History
 
