@@ -555,7 +555,7 @@ validateAll content coitem =
 hardwiredItemGroups :: [GroupName ItemKind]
 hardwiredItemGroups =
   -- From Preferences.hs:
-  ["temporary condition", "common item"]
+  ["condition", "common item"]
     -- the others are optional:
     -- "curious item", "treasure", "any scroll", "any vial",
     -- "potion", "explosive", "any jewelry"

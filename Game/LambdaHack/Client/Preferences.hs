@@ -35,7 +35,7 @@ import           Game.LambdaHack.Content.ModeKind
 -- nothing better to do than to melee, or when the actor is stuck or idle
 -- or laying in wait or luring an enemy from a safe distance.
 -- So there is less than @averageTurnValue@ included in each benefit,
--- so in case when turn is not spent, e.g, periodic or temporary conditions,
+-- so in case when turn is not spent, e.g, periodic or conditions,
 -- the difference in value is only slight.
 effectToBenefit :: COps -> Faction -> Bool -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact insideRecharging eff =
@@ -99,7 +99,7 @@ effectToBenefit cops fact insideRecharging eff =
                      then (1, 0)     -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
-    IK.CreateItem COrgan "temporary condition" _ ->
+    IK.CreateItem COrgan "condition" _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
       let noneResult = averageTurnValue + 1  -- copy count used instead
@@ -119,7 +119,7 @@ effectToBenefit cops fact insideRecharging eff =
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fact
       in (total / fromIntegral count, 0)
-    IK.DropItem _ _ COrgan "temporary condition" ->
+    IK.DropItem _ _ COrgan "condition" ->
       delta 30  -- save for curing own bad conditions
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
@@ -212,7 +212,7 @@ durabilityMult = avgItemLife / avgItemDelay
 -- effects, knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
 -- hence we take the self component of valuation. We multiply by the count
--- of created/dropped organs, because for temporary conditions it determines
+-- of created/dropped organs, because for conditions it determines
 -- how many times the effect is applied, before the last copy expires.
 --
 -- The temporary organs are not durable nor in infnite copies, so to give

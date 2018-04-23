@@ -307,7 +307,7 @@ blanket = ItemKind
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
--- In reality, they just cover all temporary conditions, which in turn matches
+-- In reality, they just cover all conditions, which in turn matches
 -- all aspects.
 --
 -- There is no flask nor temporary organ of Calm depletion,
@@ -576,7 +576,7 @@ potion8 = potionTemplate
                           -- not mix fantasy with too much technical jargon
   , ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
   , icount   = 3 `dL` 1
-  , ieffects = [ DropItem 1 maxBound COrgan "temporary condition"
+  , ieffects = [ DropItem 1 maxBound COrgan "condition"
                , OnSmash (Explode "violent concussion") ]
       -- not fragmentation nor glass hail, because not enough glass
   }
@@ -888,7 +888,7 @@ necklace2 = necklaceTemplate
   , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
                , Recharging Impress
-               , Recharging (DropItem 1 maxBound COrgan "temporary condition") ]
+               , Recharging (DropItem 1 maxBound COrgan "condition") ]
                ++ ieffects necklaceTemplate
   , ifeature = [Unique, ELabel "of Live Bait", Durable]
                ++ ifeature necklaceTemplate
@@ -1329,7 +1329,7 @@ swordNullify = sword
   , iaspects = [Timeout 10]
   , ieffects = ieffects sword
                ++ [ Recharging
-                    $ DropItem 1 maxBound COrgan "temporary condition"
+                    $ DropItem 1 maxBound COrgan "condition"
                   , Recharging $ RefillCalm (-10) ]
   , ifeature = [Unique] ++ ifeature sword
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."

@@ -762,11 +762,11 @@ applyItem aid applyGroup = do
             dropsGrps = IK.getDropOrgans itemKind
             dropsBadOrgans =
               not (null myBadGrps)
-              && toGroupName "temporary condition" `elem` dropsGrps
+              && toGroupName "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myBadGrps))
             dropsGoodOrgans =
               not (null myGoodGrps)
-              && toGroupName "temporary condition" `elem` dropsGrps
+              && toGroupName "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myGoodGrps))
             wastesDrop = null myBadGrps && not (null dropsGrps)
             durable = IK.Durable `elem` IK.ifeature itemKind

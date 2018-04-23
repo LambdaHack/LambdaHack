@@ -91,7 +91,7 @@ spreadFragmentation = ItemKind
   , idamage  = 3 `d` 1  -- deadly and adjacent actor hit by 2 on average;
                         -- however, moderate armour blocks completely
   , iaspects = [AddShine 3, AddHurtMelee $ -12 * 5]
-  , ieffects = [DropItem 1 maxBound COrgan "temporary condition"]
+  , ieffects = [DropItem 1 maxBound COrgan "condition"]
   , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
   , idesc    = ""
   , ikit     = []
@@ -136,7 +136,7 @@ spreadConcussion = ItemKind
   , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , DropItem 1 maxBound COrgan "temporary condition" ]
+               , DropItem 1 maxBound COrgan "condition" ]
   , ifeature = [toLinger 20, Lobable, Fragile, Blast]  -- 4 steps, 1 turn
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond

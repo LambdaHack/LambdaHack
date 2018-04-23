@@ -157,7 +157,7 @@ boilingFissure = fist
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
   , iaspects = [AddHurtMelee 20]  -- decreasing as count decreases
-  , ieffects = [DropItem 1 1 COrgan "temporary condition"]  -- useful; limited
+  , ieffects = [DropItem 1 1 COrgan "condition"]  -- useful; limited
   , ifeature = [Meleeable]  -- not Durable
   , idesc    = "A deep crack to the underworld."
   }
@@ -398,7 +398,7 @@ sulfurVent = armoredSkin
 -- * Special
 
 bonusHP = armoredSkin
-  { isymbol  = 'H'  -- '+' reserved for temporary conditions
+  { isymbol  = 'H'  -- '+' reserved for conditions
   , iname    = "bonus HP"
   , iflavour = zipPlain [BrBlue]
   , ifreq    = [("bonus HP", 1)]
@@ -411,11 +411,11 @@ impressed = armoredSkin
   { isymbol  = '!'
   , iname    = "impressed"
   , iflavour = zipPlain [BrRed]
-  , ifreq    = [("impressed", 1), ("temporary condition", 1)]
+  , ifreq    = [("impressed", 1), ("condition", 1)]
   , iverbHit = "confuse"
   , iweight  = 0
   , iaspects = [AddMaxCalm (-1)]  -- to help player notice on main screen
-                                  -- and to count as bad tmp condition
+                                  -- and to count as bad condition
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
   , ifeature = [Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
@@ -484,7 +484,7 @@ pupil = fist
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1
   , iaspects = [AddSight 12, Timeout 12]
-  , ieffects = [ Recharging (DropItem 1 maxBound COrgan "temporary condition")
+  , ieffects = [ Recharging (DropItem 1 maxBound COrgan "condition")
                , Recharging $ RefillCalm (-10)
                ]
   , idesc    = ""

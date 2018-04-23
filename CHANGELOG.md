@@ -29,7 +29,7 @@
 - simplify level-scaled dice roll semantics
 - change scaled dice notation 'dl' to 'dL' for readability in-game
 - rebalance items and decrease dice variety to unclutter backpack
-- colour-code beneficial and harmful temporary conditions in menu and in HUD
+- colour-code beneficial and harmful conditions in menu and in HUD
 - display item lore (also for organs, embedded items, explosions, etc.)
 - display embedded item descriptions as if they were tile descriptions
 - tweak blast visuals, lower particle counts, beautify their spread

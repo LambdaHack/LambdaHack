@@ -83,7 +83,7 @@ ppSLore :: SLore -> Text
 ppSLore SItem = "item"
 ppSLore SOrgan = "organ"
 ppSLore STrunk = "creature"
-ppSLore STmp = "temporary condition"
+ppSLore STmp = "condition"
 ppSLore SBlast = "blast"
 ppSLore SEmbed = "terrain"
 
