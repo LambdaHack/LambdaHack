@@ -81,8 +81,7 @@ refreshTarget (aid, body) = do
     -- trace _debug $ return $ Just tgtMPath
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy TgtAndPath)
+targetStrategy :: forall m. MonadClient m => ActorId -> m (Strategy TgtAndPath)
 {-# INLINE targetStrategy #-}
 targetStrategy aid = do
   cops@COps{coTileSpeedup} <- getsState scops

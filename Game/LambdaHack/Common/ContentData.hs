@@ -69,6 +69,7 @@ maxContentId :: ContentId k
 maxContentId = ContentId maxBound
 
 contentIdIndex :: ContentId k -> Int
+{-# INLINE contentIdIndex #-}
 contentIdIndex (ContentId k) = fromEnum k
 
 validateRarity :: Rarity -> [Text]
@@ -134,6 +135,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
 
 -- | Content element at given id.
 okind :: ContentData a -> ContentId a -> a
+{-# INLINE okind #-}
 okind ContentData{contentVector} !i = contentVector V.! contentIdIndex i
 
 omemberGroup :: ContentData a -> GroupName a -> Bool
