@@ -198,10 +198,10 @@ registerScore status fid = do
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a
 rndToAction r = do
-  gen <- getsServer srandom
-  let (gen1, gen2) = R.split gen
-  modifyServer $ \ser -> ser {srandom = gen1}
-  return $! St.evalState r gen2
+  gen1 <- getsServer srandom
+  let (a, gen2) = St.runState r gen1
+  modifyServer $ \ser -> ser {srandom = gen2}
+  return a
 
 -- | Gets a random generator from the user-submitted options or, if not present,
 -- generates one.
