@@ -294,8 +294,7 @@ manageCalmAndDomination aid b = do
     then maybe (return False) (dominateFidSfx aid) hiImpression
     else return False
   unless dominated $ do
-    ar <- getsState $ getActorAspect aid
-    newCalmDelta <- getsState $ regenCalmDelta b ar
+    newCalmDelta <- getsState $ regenCalmDelta aid b
     unless (newCalmDelta == 0) $
       -- Update delta for the current player turn.
       udpateCalm aid newCalmDelta

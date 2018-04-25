@@ -266,17 +266,19 @@ memActor aid lid s =
 getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ sdungeon s EM.! lid
 
-regenCalmDelta :: Actor -> IA.AspectRecord -> State -> Int64
-regenCalmDelta body IA.AspectRecord{aMaxCalm} s =
+regenCalmDelta :: ActorId -> Actor -> State -> Int64
+regenCalmDelta aid body s =
   let calmIncr = oneM  -- normal rate of calm regen
+      IA.AspectRecord{aMaxCalm} = getActorAspect aid s
       maxDeltaCalm = xM aMaxCalm - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
-      isHeardFoe b = blid b == blid body
-                     && chessDist (bpos b) (bpos body) <= 3  -- a bit costly
-                     && not (waitedLastTurn b)  -- uncommon
-                     && inline isAtWar fact (bfid b)  -- costly
+      isHeardFoe !b = bfid b /= bfid body  -- shortcut
+                      && blid b == blid body
+                      && inline chessDist (bpos b) (bpos body) <= 3
+                      && not (waitedLastTurn b)  -- uncommon
+                      && inline isAtWar fact (bfid b)  -- costly
   in if any isHeardFoe $ EM.elems $ sactorD s
      then minusM  -- even if all calmness spent, keep informing the client
      else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max

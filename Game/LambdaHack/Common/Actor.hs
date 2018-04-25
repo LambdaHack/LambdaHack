@@ -135,6 +135,7 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
   in Actor{..}
 
 waitedLastTurn :: Actor -> Bool
+{-# INLINE waitedLastTurn #-}
 waitedLastTurn = bwait
 
 actorDying :: Actor -> Bool
