@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.AI.PickTargetM
   ( refreshTarget
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , targetStrategy
+  , computeTarget
 #endif
   ) where
 
@@ -16,7 +16,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Client.AI.ConditionM
-import           Game.LambdaHack.Client.AI.Strategy
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.CommonM
@@ -58,32 +57,31 @@ refreshTarget (aid, body) = do
   let !_A = assert (isNothing (btrajectory body) && not (bproj body)
                     `blame` "AI gets to manually move its trajectory actors"
                     `swith` (aid, body, side)) ()
-  stratTarget <- targetStrategy aid
-  if nullStrategy stratTarget then do
-    -- Melee in progress and the actor can't contribute
-    -- and would slow down others if he acted.
-    modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
-    return Nothing
-  else do
-    -- _debugoldTgt <- getsClient $ EM.lookup aid . stargetD
-    -- Choose a target from those proposed by AI for the actor.
-    tgtMPath <- rndToAction $ frequency $ bestVariant stratTarget
-    modifyClient $ \cli ->
-      cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
-    return $ Just tgtMPath
-    -- let _debug = T.unpack
-    --       $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
-    --       <> ", aid:"               <+> tshow aid
-    --       <> ", pos:"               <+> tshow (bpos body)
-    --       <> "\nHandleAI oldTgt:"   <+> tshow _debugoldTgt
-    --       <> "\nHandleAI strTgt:"   <+> tshow stratTarget
-    --       <> "\nHandleAI target:"   <+> tshow tgtMPath
-    -- trace _debug $ return $ Just tgtMPath
+  mtarget <- computeTarget aid
+  case mtarget of
+    Nothing -> do
+      -- Melee in progress and the actor can't contribute
+      -- and would slow down others if he acted.
+      modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
+      return Nothing
+    Just tgtMPath -> do
+      -- _debugoldTgt <- getsClient $ EM.lookup aid . stargetD
+      -- Choose a target from those proposed by AI for the actor.
+      modifyClient $ \cli ->
+        cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
+      return mtarget
+      -- let _debug = T.unpack
+      --       $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
+      --       <> ", aid:"               <+> tshow aid
+      --       <> ", pos:"               <+> tshow (bpos body)
+      --       <> "\nHandleAI oldTgt:"   <+> tshow _debugoldTgt
+      --       <> "\nHandleAI strTgt:"   <+> tshow stratTarget
+      --       <> "\nHandleAI target:"   <+> tshow tgtMPath
+      -- trace _debug $ return $ Just tgtMPath
 
--- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: forall m. MonadClient m => ActorId -> m (Strategy TgtAndPath)
-{-# INLINE targetStrategy #-}
-targetStrategy aid = do
+computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
+{-# INLINE computeTarget #-}
+computeTarget aid = do
   cops@COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
@@ -204,7 +202,7 @@ targetStrategy aid = do
       slackTactic =
         ftactic (gplayer fact)
           `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
-      setPath :: Target -> m (Strategy TgtAndPath)
+      setPath :: Target -> m (Maybe TgtAndPath)
       setPath tgt = do
         let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
@@ -218,13 +216,13 @@ targetStrategy aid = do
               else tap
             take7 tap = tap
         tgtpath <- createPath aid tgt
-        return $! returN "setPath" $ take7 tgtpath
-      pickNewTarget :: m (Strategy TgtAndPath)
+        return $ Just $ take7 tgtpath
+      pickNewTarget :: m (Maybe TgtAndPath)
       pickNewTarget = do
         cfoes <- closestFoes nearbyFoes aid
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
-          [] | condInMelee -> return reject  -- don't slow down fighters
+          [] | condInMelee -> return Nothing  -- don't slow down fighters
             -- this looks a bit strange, because teammates stop in their tracks
             -- all around the map (unless very close to the combatant),
             -- but the intuition is, not being able to help immediately,
@@ -257,7 +255,7 @@ targetStrategy aid = do
                                 pathList = nub tra
                                 pathGoal = last pathList
                                 pathLen = length pathList
-                            return $! returN "tgt with no exploration"
+                            return $ Just $
                               TgtAndPath
                                 { tapTgt = TVector v
                                 , tapPath = if pathLen == 0
@@ -317,7 +315,7 @@ targetStrategy aid = do
       followingWrong permit =
         permit && (condInMelee  -- in melee, stop following
                    || mleader == Just aid)  -- a leader, never follow
-      updateTgt :: TgtAndPath -> m (Strategy TgtAndPath)
+      updateTgt :: TgtAndPath -> m (Maybe TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
       updateTgt _ | EM.member aid fleeD = pickNewTarget
         -- forget enemy positions to prevent attacking them again soon
@@ -332,7 +330,7 @@ targetStrategy aid = do
                pickNewTarget
              | followingWrong permit -> pickNewTarget
              | bpos body == pathGoal ->
-               return $! returN "TEnemy" tap
+               return $ Just tap
                  -- The enemy didn't move since the target acquired.
                  -- If any walls were added that make the enemy
                  -- unreachable, AI learns that the hard way,
@@ -347,7 +345,7 @@ targetStrategy aid = do
                case mpath of
                  NoPath -> pickNewTarget  -- enemy became unreachable
                  AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
-                 AndPath{} -> return $! returN "TEnemy" tap{tapPath=mpath}
+                 AndPath{} -> return $ Just tap{tapPath=mpath}
           -- In this case, need to retarget, to focus on foes that melee ours
           -- and not, e.g., on remembered foes or items.
         _ | condInMelee -> pickNewTarget
@@ -358,7 +356,7 @@ targetStrategy aid = do
           TEnemyPos _ permit  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
             | followingWrong permit -> pickNewTarget
-            | otherwise -> return $! returN "TEnemyPos" tap
+            | otherwise -> return $ Just tap
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
           -- and only in this case it is invalidated.
@@ -383,7 +381,7 @@ targetStrategy aid = do
                      -- stay there one turn (high chance to become leader)
                      -- to enable triggering; if trigger fails
                      -- (e.g, changed skills), will retarget next turn (@TAny@)
-               | otherwise -> return $! returN "TEmbed" tap
+               | otherwise -> return $ Just tap
           TItem bag -> do
             bag2 <- getsState $ getFloorBag lid pos
             if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
@@ -391,14 +389,14 @@ targetStrategy aid = do
                    setPath $ TPoint TAny lid (bpos b)
                      -- stay there one turn (high chance to become leader)
                      -- to enable pickup; if pickup fails, will retarget
-               | otherwise -> return $! returN "TItem" tap
+               | otherwise -> return $ Just tap
           TSmell ->
             let lvl2 = sdungeon s EM.! lid
             in if not canSmell
                   || let sml = EM.findWithDefault timeZero pos (lsmell lvl2)
                      in sml <= ltime lvl2
                then pickNewTarget  -- others will notice soon enough
-               else return $! returN "TSmell" tap
+               else return $ Just tap
           TUnknown ->
             let lvl2 = sdungeon s EM.! lid
                 t = lvl2 `at` pos
@@ -409,7 +407,7 @@ targetStrategy aid = do
                        -- and getting there only to explore 1 tile and get back
                        -- looks silly
                then pickNewTarget  -- others will notice soon enough
-               else return $! returN "TUnknown" tap
+               else return $ Just tap
           TKnown -> do  -- e.g., staircase or first unknown tile of an area
             explored <- getsClient sexplored
             let allExplored = ES.size explored == EM.size dungeon
@@ -423,13 +421,13 @@ targetStrategy aid = do
                     -- tile is no longer unwalkable, so was explored
                     -- so time to recalculate target
             then pickNewTarget  -- others unconcerned
-            else return $! returN "TKnown" tap
+            else return $ Just tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         TVector{} -> if pathLen > 1
-                     then return $! returN "TVector" tap
+                     then return $ Just tap
                      else pickNewTarget
   if canMove
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $! returN "NoMove" $ TgtAndPath (TEnemy aid True) NoPath
+  else return $ Just $ TgtAndPath (TEnemy aid True) NoPath
