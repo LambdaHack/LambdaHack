@@ -279,12 +279,13 @@ minLastIndexA Array{..} =
 minIndexesA :: UnboxRepClass c => Array c -> [Point]
 {-# INLINE minIndexesA #-}
 minIndexesA Array{..} =
-  map (punindex axsize)
-  $ Bundle.foldr imin [] . Bundle.indexed . G.stream
-  $ avector
+  Bundle.foldr imin [] . Bundle.indexed . G.stream $ avector
  where
-  imin (i, x) acc = i `seq` if x == minE then i : acc else acc
-  minE = U.minimum avector
+  imin (i, x) acc = if x == minE
+                    then let !j = punindex axsize i
+                         in j : acc
+                    else acc
+  !minE = U.minimum avector
 
 -- | Yield the point coordinates of the first maximum element of the array.
 -- The array may not be empty.
