@@ -427,7 +427,9 @@ anyFoeAdj aid s =
       f !mv = case posToAidsLvl (shift (bpos body) mv) lvl of
         [] -> False
         aid2 : _ -> g $ getActorBody aid2 s
-      g !b = isAtWar fact (bfid b) && bhp b > 0
+      g !b = bfid b /= bfid body  -- shortcut
+             && isAtWar fact (bfid b)
+             && bhp b > 0  -- uncommon
   in any f moves
 
 actorAdjacentAssocs :: Actor -> State -> [(ActorId, Actor)]
@@ -455,7 +457,10 @@ armorHurtBonus source target s =
 inMelee :: Actor -> State -> Bool
 inMelee bodyOur s =
   let fact = sfactionD s EM.! bfid bodyOur
-      f !b = blid b == blid bodyOur && isAtWar fact (bfid b) && bhp b > 0
+      f !b = bfid b /= bfid bodyOur  -- shortcut
+             && blid b == blid bodyOur
+             && inline isAtWar fact (bfid b)  -- costly
+             && bhp b > 0  -- uncommon
       -- We assume foes are less numerous, because usually they are heroes,
       -- and so we compute them once and use many times.
       -- For the same reason @anyFoeAdj@ would not speed up this computation
