@@ -238,22 +238,23 @@ ceilingMeanDice d = ceiling $ Dice.meanDice d
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
   { aTimeout     = 0
-  , aHurtMelee   = sum $ mapScale aHurtMelee l
-  , aArmorMelee  = sum $ mapScale aArmorMelee l
-  , aArmorRanged = sum $ mapScale aArmorRanged l
-  , aMaxHP       = sum $ mapScale aMaxHP l
-  , aMaxCalm     = sum $ mapScale aMaxCalm l
-  , aSpeed       = sum $ mapScale aSpeed l
-  , aSight       = sum $ mapScale aSight l
-  , aSmell       = sum $ mapScale aSmell l
-  , aShine       = sum $ mapScale aShine l
-  , aNocto       = sum $ mapScale aNocto l
-  , aAggression  = sum $ mapScale aAggression l
-  , aSkills      = EM.unionsWith (+) $ mapScaleAbility l
+  , aHurtMelee   = sumScaled aHurtMelee
+  , aArmorMelee  = sumScaled aArmorMelee
+  , aArmorRanged = sumScaled aArmorRanged
+  , aMaxHP       = sumScaled aMaxHP
+  , aMaxCalm     = sumScaled aMaxCalm
+  , aSpeed       = sumScaled aSpeed
+  , aSight       = sumScaled aSight
+  , aSmell       = sumScaled aSmell
+  , aShine       = sumScaled aShine
+  , aNocto       = sumScaled aNocto
+  , aAggression  = sumScaled aAggression
+  , aSkills      = sumScaledAbility
   }
  where
-  mapScale f = map (\(ar, k) -> f ar * k)
-  mapScaleAbility = map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar)
+  sumScaled f = sum $ map (\(ar, k) -> f ar * k) l
+  sumScaledAbility =
+    EM.unionsWith (+) $ map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar) l
 
 aspectRecordToList :: AspectRecord -> [Aspect]
 aspectRecordToList AspectRecord{..} =
