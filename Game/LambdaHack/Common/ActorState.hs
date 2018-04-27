@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Data.Int (Int64)
+import qualified Data.IntSet as ES
 import           GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -457,18 +458,27 @@ armorHurtBonus source target s =
 inMelee :: Actor -> State -> Bool
 inMelee bodyOur s =
   let fact = sfactionD s EM.! bfid bodyOur
+      -- Instead of performing nested iterations of foes and ours in O(n^2),
+      -- we compute sets of their positions and intersect them in O(n).
+      -- With many actors, precisely when most needed, it pays off.
+      -- Unfortunately, it allocates more, always.
       f !b = bfid b /= bfid bodyOur  -- shortcut
              && blid b == blid bodyOur
              && inline isAtWar fact (bfid b)  -- costly
              && bhp b > 0  -- uncommon
-      -- We assume foes are less numerous, because usually they are heroes,
-      -- and so we compute them once and use many times.
-      -- For the same reason @anyFoeAdj@ would not speed up this computation
-      -- in normal gameplay (as opposed to AI vs AI benchmarks).
       allFoes = filter f $ EM.elems $ sactorD s
-  in any (\body ->
-    bfid bodyOur == bfid body
-    && blid bodyOur == blid body
-    && not (bproj body)
-    && bhp body > 0
-    && any (\b -> adjacent (bpos b) (bpos body)) allFoes) $ sactorD s
+      g !b = bfid b == bfid bodyOur
+             && blid b == blid bodyOur
+             && not (bproj b)
+             && bhp b > 0
+      allOurs = filter g $ EM.elems $ sactorD s
+      -- We assume foes are more numerous, because they may come
+      -- from multiple factions and they contain projectiles.
+      -- So we don't blow up their set of positions, by taking adjacent
+      -- locations, but we enlarge our set instead.
+      --
+      -- TODO: switch this to honest EnumSets and remove fromEnum
+      -- as soon as ES.disjoint is implemented.
+      setFoes = ES.fromList $ map (fromEnum . bpos) allFoes
+      setOurVicinity = ES.fromList $ concatMap (map fromEnum . vicinityUnsafe . bpos) allOurs
+  in not $ ES.disjoint setFoes setOurVicinity

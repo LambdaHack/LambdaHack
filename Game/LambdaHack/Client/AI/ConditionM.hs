@@ -101,8 +101,7 @@ condAdjTriggerableM aid = do
 -- e.g., when terrain gets revealed. We don't consider non-moving actors,
 -- because they can't chase us and also because they can't be aggresive
 -- so to resolve the stalemate, the opposing AI has to be aggresive
--- by ignoring them and then when melee is started, it's usually too late
--- to retreat.
+-- by ignoring them and closing in to melee distance.
 meleeThreatDistList :: MonadStateRead m
                     => ActorId -> m [(Int, (ActorId, Actor))]
 meleeThreatDistList aid = do
@@ -265,9 +264,9 @@ condSupport param aid = do
                                   && actorCanMelee actorAspect aid2 b2
       closeAndStrongFriends = filter closeAndStrong friends
       -- The smaller the area scanned for friends, the lower number required.
-      suport = length closeAndStrongFriends >= min 2 param - IA.aAggression ar
-               || length friends <= 1  -- solo fighters aggresive
-  return suport
+      support = length closeAndStrongFriends >= min 2 param - IA.aAggression ar
+                || length friends <= 1  -- solo fighters aggresive
+  return support
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
