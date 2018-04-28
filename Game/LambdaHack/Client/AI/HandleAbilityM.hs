@@ -738,9 +738,9 @@ applyItem aid applyGroup = do
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
-  benList <- benAvailableItems aid stores
-  getKind <- getsState $ flip getIidKind
   discoBenefit <- getsClient sdiscoBenefit
+  benList <- getsState $ benAvailableItems discoBenefit aid stores
+  getKind <- getsState $ flip getIidKind
   let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
         in if IK.isTmpCondition itemKind

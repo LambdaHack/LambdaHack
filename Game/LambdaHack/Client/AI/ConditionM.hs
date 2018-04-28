@@ -155,6 +155,7 @@ condProjectListM skill aid = do
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
+  discoBenefit <- getsClient sdiscoBenefit
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough b ar
       condNotCalmEnough = not calmE
@@ -169,23 +170,20 @@ condProjectListM skill aid = do
             || not (IK.isMelee $ itemKind itemFull)  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
         && permittedProjectAI skill calmE itemFull
-  filter q <$> benAvailableItems aid ([CEqp, CInv, CGround] ++ [CSha | calmE])
+      stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+  filter q <$> getsState (benAvailableItems discoBenefit aid stores)
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
-benAvailableItems :: MonadClient m
-                  => ActorId -> [CStore]
-                  -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
-benAvailableItems aid cstores = do
-  itemToF <- getsState $ flip itemToFull
-  b <- getsState $ getActorBody aid
-  discoBenefit <- getsClient sdiscoBenefit
-  s <- getState
-  let ben cstore bag =
-        [ (discoBenefit EM.! iid, cstore, iid, itemToF iid, kit)
+benAvailableItems :: DiscoveryBenefit -> ActorId -> [CStore] -> State
+                  -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+benAvailableItems discoBenefit aid cstores s =
+  let b = getActorBody aid s
+      ben cstore bag =
+        [ (discoBenefit EM.! iid, cstore, iid, itemToFull iid s, kit)
         | (iid, kit) <- EM.assocs bag]
       benCStore cs = ben cs $ getBodyStoreBag b cs s
-  return $ concatMap benCStore cstores
+  in concatMap benCStore cstores
 
 hinders :: Bool -> Bool -> Bool -> Bool -> IA.AspectRecord -> ItemFull
         -> Bool
@@ -219,10 +217,12 @@ benGroundItems :: MonadClient m
 benGroundItems aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
+  discoBenefit <- getsClient sdiscoBenefit
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (ben, _, _, ItemFull{itemKind}, _) =
         desirableItem canEsc (benPickup ben) itemKind
-  filter isDesirable <$> benAvailableItems aid [CGround]
+  filter isDesirable
+    <$> getsState (benAvailableItems discoBenefit aid [CGround])
 
 desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
 desirableItem canEsc benPickup itemKind =
