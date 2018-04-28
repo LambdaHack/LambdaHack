@@ -289,11 +289,16 @@ regenCalmDelta aid body s =
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
-      isHeardFoe !b = blid b == blid body
-                      && inline chessDist (bpos b) (bpos body) <= 3
-                      && not (waitedLastTurn b)  -- uncommon
-                      && inline isFoe (bfid body) fact (bfid b)  -- costly
-  in if any isHeardFoe $ EM.elems $ sactorD s
+      isHeardFoe (!p, l) =
+        -- In case of multiple projectiles on the same position,
+        -- the following is not reliable, but that's OK (and fast).
+        let b = case l of
+              aid2 : _ -> getActorBody aid2 s
+              [] -> error $ "" `showFailure` (aid, body, p)
+        in inline chessDist p (bpos body) <= 3
+           && not (waitedLastTurn b)  -- uncommon
+           && inline isFoe (bfid body) fact (bfid b)  -- costly
+  in if any isHeardFoe $ EM.assocs $ lactor $ sdungeon s EM.! blid body
      then minusM  -- even if all calmness spent, keep informing the client
      else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
 
