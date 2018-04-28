@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Data.Ord
-import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.CommonM
@@ -108,8 +107,7 @@ meleeThreatDistList :: ActorId -> State -> [(Int, (ActorId, Actor))]
 meleeThreatDistList aid s =
   let actorAspect = sactorAspect s
       b = getActorBody aid s
-      fact = sfactionD s EM.! bfid b
-      allAtWar = actorRegularAssocs (inline isFoe (bfid b) fact) (blid b) s
+      allAtWar = foeRegularAssocs (bfid b) (blid b) s
       strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
             actorMaxSkE = IA.aSkills ar
@@ -260,7 +258,6 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
       mtgtPos = case btarget of
         Nothing -> Nothing
         Just target -> aidTgtToPos aid (blid b) target s
-      fact = sfactionD s EM.! bfid b
       approaching b2 = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           chessDist (bpos b2) tgtPos <= 1 + param
@@ -269,7 +266,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
                        in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
-      friends = actorRegularAssocs (inline isFriend (bfid b) fact) (blid b) s
+      friends = friendRegularAssocs (bfid b) (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
   in not $ n > 0 && null (drop (n - 1) closeAndStrongFriends)
        -- optimized: length closeAndStrongFriends >= n

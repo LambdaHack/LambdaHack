@@ -2,8 +2,9 @@
 -- | Operations on the 'Actor' type, and related, that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
-  ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
-  , foeRegularList, friendRegularList, fidActorRegularIds
+  ( fidActorNotProjAssocs, actorAssocs
+  , fidActorRegularAssocs, fidActorRegularIds
+  , foeRegularAssocs, foeRegularList, friendRegularAssocs, friendRegularList
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
@@ -65,19 +66,33 @@ actorRegularAssocs p lid s =
   let f (_, b) = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
   in filter f $ EM.assocs $ sactorD s
 
+fidActorRegularAssocs :: FactionId -> LevelId -> State ->  [(ActorId, Actor)]
+fidActorRegularAssocs fid lid s =
+  actorRegularAssocs (== fid) lid s
+
+fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
+fidActorRegularIds fid lid s =
+  map fst $ actorRegularAssocs (== fid) lid s
+
+foeRegularAssocs :: FactionId -> LevelId -> State -> [(ActorId, Actor)]
+foeRegularAssocs fid lid s =
+  let fact = (EM.! fid) . sfactionD $ s
+  in actorRegularAssocs (inline isFoe fid fact) lid s
+
 foeRegularList :: FactionId -> LevelId -> State -> [Actor]
 foeRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
   in map snd $ actorRegularAssocs (inline isFoe fid fact) lid s
 
+friendRegularAssocs :: FactionId -> LevelId -> State -> [(ActorId, Actor)]
+friendRegularAssocs fid lid s =
+  let fact = (EM.! fid) . sfactionD $ s
+  in actorRegularAssocs (inline isFriend fid fact) lid s
+
 friendRegularList :: FactionId -> LevelId -> State -> [Actor]
 friendRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
   in map snd $ actorRegularAssocs (inline isFriend fid fact) lid s
-
-fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
-fidActorRegularIds fid lid s =
-  map fst $ actorRegularAssocs (== fid) lid s
 
 bagAssocs :: State -> ItemBag -> [(ItemId, Item)]
 bagAssocs s bag =

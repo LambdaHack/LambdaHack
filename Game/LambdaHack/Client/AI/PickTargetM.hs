@@ -14,7 +14,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Client.AI.ConditionM
 import           Game.LambdaHack.Client.Bfs
@@ -136,8 +135,7 @@ computeTarget aid = do
              NoPath -> error $ "" `showFailure` tap
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <-
-    getsState $ actorRegularAssocs (inline isFoe (bfid b) fact) (blid b)
+  allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
   dungeon <- getsState sdungeon
   let canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
                 || EM.findWithDefault 0 AbDisplace actorMaxSk > 0

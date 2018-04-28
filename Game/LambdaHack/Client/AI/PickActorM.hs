@@ -43,7 +43,7 @@ pickActorToMove maidToAvoid = do
   fact <- getsState $ (EM.! side) . sfactionD
   -- Find our actors on the current level only.
   ours <- getsState $ filter (isNothing . btrajectory . snd)
-                      . actorRegularAssocs (== side) arena
+                      . fidActorRegularAssocs side arena
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return oldAid
