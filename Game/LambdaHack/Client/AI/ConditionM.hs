@@ -143,6 +143,7 @@ condNoEqpWeaponM aid =
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
+{-# INLINE condCanProjectM #-}
 condCanProjectM skill aid =
   -- Compared to conditions in @projectItem@, range and charge are ignored,
   -- because they may change by the time the position for the fling is reached.
@@ -151,13 +152,21 @@ condCanProjectM skill aid =
 condProjectListM :: MonadClient m
                  => Int -> ActorId
                  -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+{-# INLINE condProjectListM #-}
 condProjectListM skill aid = do
-  b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough b ar
+  getsState $ projectList discoBenefit skill aid
+                         condShineWouldBetray condAimEnemyPresent
+
+projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
+            -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+projectList discoBenefit skill aid
+            condShineWouldBetray condAimEnemyPresent s =
+  let b = getActorBody aid s
+      ar = getActorAspect aid s
+      calmE = calmEnough b ar
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
@@ -171,7 +180,7 @@ condProjectListM skill aid = do
                && hind itemFull)  -- hinders now, so possibly often, so away!
         && permittedProjectAI skill calmE itemFull
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
-  filter q <$> getsState (benAvailableItems discoBenefit aid stores)
+  in filter q $ benAvailableItems discoBenefit aid stores s
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
