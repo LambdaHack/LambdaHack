@@ -184,12 +184,11 @@ pickActorToMove maidToAvoid = do
           actorNoSupport ((aid, _), _) = do
             threatDistL <- meleeThreatDistList aid
             condSupport2 <- condSupport 2 aid
-            condSolo <- condSoloM aid  -- solo fighters aggresive
             let condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
             -- If foes far, friends may still come, so we let him move.
             -- The net effect is that lone heroes close to foes freeze
             -- until support comes.
-            return $! condThreat 5 && not condSupport2 && not condSolo
+            return $! condThreat 5 && not condSupport2
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
           -- These are not necessarily stuck (perhaps can go around),
