@@ -17,6 +17,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , benGroundItems
   , desirableItem
   , condSupport
+  , condSoloM
   , condShineWouldBetrayM
   , fleeList
   ) where
@@ -246,11 +247,11 @@ condSupport param aid = do
   btarget <- getsClient $ getTarget aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
-  getsState $ support param aid btarget
-                      condAimEnemyPresent condAimEnemyRemembered
+  getsState $ strongSupport param aid btarget
+                            condAimEnemyPresent condAimEnemyRemembered
 
-support :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
-support param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
+strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
+strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
   let actorAspect = sactorAspect s
       b = getActorBody aid s
       mtgtPos = case btarget of
@@ -271,7 +272,16 @@ support param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
       closeAndStrongFriends = filter closeAndStrong friends
       -- The smaller the area scanned for friends, the lower number required.
   in length closeAndStrongFriends >= min 2 param - IA.aAggression ar
-     || length friends <= 1  -- solo fighters aggresive
+
+condSoloM :: MonadClient m => ActorId -> m Bool
+condSoloM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
+  return $ case friends of
+    [_] -> True
+    _ -> False
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,

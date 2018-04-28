@@ -110,6 +110,7 @@ pickActorToMove maidToAvoid = do
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport3 <- condSupport 3 aid
+            condSolo <- condSoloM aid  -- solo fighters aggresive
             canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (gearSpeed ar)
@@ -133,12 +134,14 @@ pickActorToMove maidToAvoid = do
             return $!
               -- This is a part of the condition for @flee@ in @HandleAbilityM@.
               not condFastThreatAdj
-              && if | condThreat 1 -> not condCanMelee
-                                      || condManyThreatAdj && not condSupport1
+              && if | condThreat 1 ->
+                        not condCanMelee
+                        || condManyThreatAdj && not condSupport1 && not condSolo
                     | not condInMelee
                       && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                       not condCanMelee
-                      || not condSupport3 && not heavilyDistressed
+                      || not condSupport3 && not condSolo
+                         && not heavilyDistressed
                     -- not used: | condThreat 5 -> False
                     -- because actor should be picked anyway, to try to melee
                     | otherwise ->
@@ -181,11 +184,12 @@ pickActorToMove maidToAvoid = do
           actorNoSupport ((aid, _), _) = do
             threatDistL <- meleeThreatDistList aid
             condSupport2 <- condSupport 2 aid
+            condSolo <- condSoloM aid  -- solo fighters aggresive
             let condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
             -- If foes far, friends may still come, so we let him move.
             -- The net effect is that lone heroes close to foes freeze
             -- until support comes.
-            return $! condThreat 5 && not condSupport2
+            return $! condThreat 5 && not condSupport2 && not condSolo
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
           -- These are not necessarily stuck (perhaps can go around),

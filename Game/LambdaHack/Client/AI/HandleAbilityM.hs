@@ -98,6 +98,7 @@ actionStrategy aid retry = do
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
+  condSolo <- condSoloM aid  -- solo fighters aggresive
   canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
   condCanProject <- condCanProjectM (EM.findWithDefault 0 AbProject actorSk) aid
@@ -117,7 +118,7 @@ actionStrategy aid retry = do
       condNotCalmEnough = not (calmEnough body ar)
       speed1_5 = speedScale (3%2) (gearSpeed ar)
       condCanMelee = actorCanMelee actorAspect aid body
-      condMeleeBad1 = not (condSupport1 && condCanMelee)
+      condMeleeBad1 = not ((condSolo || condSupport1) && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
@@ -177,15 +178,16 @@ actionStrategy aid retry = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them.
             not condFastThreatAdj
-            && if | condThreat 1 -> not condCanMelee
-                                    || condManyThreatAdj && not condSupport1
+            && if | condThreat 1 ->
+                      not condCanMelee
+                      || condManyThreatAdj && not condSupport1 && not condSolo
                   | not condInMelee
                     && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport3 && not heavilyDistressed
+                    || not condSupport3 && not condSolo && not heavilyDistressed
                   | condThreat 5 ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; advance.
