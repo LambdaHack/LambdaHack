@@ -113,7 +113,7 @@ targetDesc mtarget = do
       case mleader of
         Nothing -> return (Just "a relative shift", Nothing)
         Just aid -> do
-          tgtPos <- aidTgtToPos aid lidV target
+          tgtPos <- getsState $ aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> tshow p
           return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
@@ -325,7 +325,7 @@ drawFrameExtra dm drawnLevelId = do
         mtgt <- getsClient $ getTarget leader
         case mtgt of
           Nothing -> return Nothing
-          Just tgt -> aidTgtToPos leader drawnLevelId tgt
+          Just tgt -> getsState $ aidTgtToPos leader drawnLevelId tgt
   let visionMarks =
         if smarkVision
         then map (PointArray.pindex lxsize) $ ES.toList totVisible

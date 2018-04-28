@@ -44,24 +44,18 @@ getPerFid lid = do
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.
-aidTgtToPos :: MonadStateRead m
-            => ActorId -> LevelId -> Target -> m (Maybe Point)
-aidTgtToPos aid lidV tgt =
-  case tgt of
-    TEnemy a _ -> do
-      body <- getsState $ getActorBody a
-      return $! if blid body == lidV
-                then Just (bpos body)
-                else Nothing
-    TPoint _ lid p ->
-      return $! if lid == lidV then Just p else Nothing
-    TVector v -> do
-      b <- getsState $ getActorBody aid
-      Level{lxsize, lysize} <- getLevel lidV
-      let shifted = shiftBounded lxsize lysize (bpos b) v
-      return $! if shifted == bpos b && v /= Vector 0 0
-                then Nothing
-                else Just shifted
+aidTgtToPos :: ActorId -> LevelId -> Target -> State -> Maybe Point
+aidTgtToPos aid lidV tgt s = case tgt of
+  TEnemy a _ ->
+    let body = getActorBody a s
+    in if blid body == lidV then Just (bpos body) else Nothing
+  TPoint _ lid p ->
+    if lid == lidV then Just p else Nothing
+  TVector v ->
+    let b = getActorBody aid s
+        Level{lxsize, lysize} = sdungeon s EM.! lidV
+        shifted = shiftBounded lxsize lysize (bpos b) v
+    in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
 -- | Counts the number of steps until the projectile would hit
 -- an actor or obstacle. Starts searching with the given eps and returns

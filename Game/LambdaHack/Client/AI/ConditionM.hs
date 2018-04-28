@@ -241,20 +241,25 @@ desirableItem canEsc benPickup itemKind =
        in benPickup > 0 && not preciousNotUseful
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
+{-# INLINE condSupport #-}
 condSupport param aid = do
-  actorAspect <- getsState sactorAspect
-  b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
-  mtgtPos <- case btarget of
-    Nothing -> return Nothing
-    Just target -> aidTgtToPos aid (blid b) target
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  getsState $ support param aid btarget
+                      condAimEnemyPresent condAimEnemyRemembered
+
+support :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
+support param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
+  let actorAspect = sactorAspect s
+      b = getActorBody aid s
+      mtgtPos = case btarget of
+        Nothing -> Nothing
+        Just target -> aidTgtToPos aid (blid b) target s
+      fact = sfactionD s EM.! bfid b
+      friendlyFid fid = fid == bfid b || isAllied fact fid
       ar = actorAspect EM.! aid
-  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
-  let approaching = case mtgtPos of
+      approaching = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           \b2 -> chessDist (bpos b2) tgtPos <= 1 + param
         _ -> const False
@@ -262,11 +267,11 @@ condSupport param aid = do
                        in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
+      friends = actorRegularAssocs friendlyFid (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
       -- The smaller the area scanned for friends, the lower number required.
-      support = length closeAndStrongFriends >= min 2 param - IA.aAggression ar
-                || length friends <= 1  -- solo fighters aggresive
-  return support
+  in length closeAndStrongFriends >= min 2 param - IA.aAggression ar
+     || length friends <= 1  -- solo fighters aggresive
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,

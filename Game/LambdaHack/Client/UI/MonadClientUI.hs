@@ -212,7 +212,7 @@ leaderTgtToPos = do
       mtgt <- getsClient $ getTarget aid
       case mtgt of
         Nothing -> return Nothing
-        Just tgt -> aidTgtToPos aid lidV tgt
+        Just tgt -> getsState $ aidTgtToPos aid lidV tgt
 
 xhairToPos :: MonadClientUI m => m (Maybe Point)
 xhairToPos = do
@@ -221,7 +221,8 @@ xhairToPos = do
   sxhair <- getsSession sxhair
   case mleader of
     Nothing -> return Nothing  -- e.g., when game start and no leader yet
-    Just aid -> aidTgtToPos aid lidV sxhair  -- e.g., xhair on another level
+    Just aid -> getsState $ aidTgtToPos aid lidV sxhair
+                  -- e.g., xhair on another level
 
 -- Reset xhair and move it to actor's position.
 clearXhair :: MonadClientUI m => m ()

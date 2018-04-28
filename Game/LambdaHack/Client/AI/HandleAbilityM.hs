@@ -651,7 +651,7 @@ projectItem aid = do
   b <- getsState $ getActorBody aid
   mfpos <- case btarget of
     Nothing -> return Nothing
-    Just target -> aidTgtToPos aid (blid b) target
+    Just target -> getsState $ aidTgtToPos aid (blid b) target
   seps <- getsClient seps
   case (btarget, mfpos) of
     (_, Just fpos) | adjacent (bpos b) fpos -> return reject
