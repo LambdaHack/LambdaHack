@@ -252,26 +252,28 @@ condSupport param aid = do
 
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
 strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
-  let actorAspect = sactorAspect s
+  -- The smaller the area scanned for friends, the lower number required.
+  let n = min 2 param - IA.aAggression ar
+      actorAspect = sactorAspect s
+      ar = actorAspect EM.! aid
       b = getActorBody aid s
       mtgtPos = case btarget of
         Nothing -> Nothing
         Just target -> aidTgtToPos aid (blid b) target s
       fact = sfactionD s EM.! bfid b
-      friendlyFid fid = fid == bfid b || isAllied fact fid
-      ar = actorAspect EM.! aid
-      approaching = case mtgtPos of
+      approaching b2 = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
-          \b2 -> chessDist (bpos b2) tgtPos <= 1 + param
-        _ -> const False
+          chessDist (bpos b2) tgtPos <= 1 + param
+        _ -> False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
+      friendlyFid fid = fid == bfid b || isAllied fact fid
       friends = actorRegularAssocs friendlyFid (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
-      -- The smaller the area scanned for friends, the lower number required.
-  in length closeAndStrongFriends >= min 2 param - IA.aAggression ar
+  in not $ n > 0 && null (drop (n - 1) closeAndStrongFriends)
+       -- optimized: length closeAndStrongFriends >= n
 
 condSoloM :: MonadClient m => ActorId -> m Bool
 condSoloM aid = do

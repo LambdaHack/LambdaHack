@@ -118,7 +118,7 @@ actionStrategy aid retry = do
       condNotCalmEnough = not (calmEnough body ar)
       speed1_5 = speedScale (3%2) (gearSpeed ar)
       condCanMelee = actorCanMelee actorAspect aid body
-      condMeleeBad1 = not ((condSolo || condSupport1) && condCanMelee)
+      condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
@@ -157,7 +157,7 @@ actionStrategy aid retry = do
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
             && ((condNotCalmEnough || condHpTooLow)  -- flee
-                && condMeleeBad1 && condThreat 1
+                && condMeleeBad && condThreat 1
                 || (lidExplored || condEnoughGear)  -- explore
                    && not condDesirableFloorItem) )
         , ( [AbDisplace]
@@ -265,7 +265,7 @@ actionStrategy aid retry = do
                 else (condAimEnemyPresent || condAimEnemyRemembered)
                      && (not (condThreat 2)
                          || heavilyDistressed  -- if under fire, do something!
-                         || not condMeleeBad1)
+                         || not condMeleeBad)
                        -- this results in animals in corridor never attacking
                        -- (unless distressed by, e.g., being hit by missiles),
                        -- because they can't swarm opponent, which is logical,
@@ -286,7 +286,7 @@ actionStrategy aid retry = do
                        && heavilyDistressed
                        && aCanDeLight) retry
           , if condInMelee then condCanMelee && condAimEnemyPresent
-            else not (condThreat 2) || not condMeleeBad1 )
+            else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =
         [ ( [AbWait], (toAny :: ToAny 'AbWait)
