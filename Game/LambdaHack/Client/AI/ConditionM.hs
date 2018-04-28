@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Data.Ord
+import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.CommonM
@@ -109,7 +110,8 @@ meleeThreatDistList aid = do
   actorAspect <- getsState sactorAspect
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allAtWar <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
+  allAtWar <-
+    getsState $ actorRegularAssocs (inline isFoe (bfid b) fact) (blid b)
   let strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
             actorMaxSkE = IA.aSkills ar
@@ -269,8 +271,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
                        in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorAspect aid2 b2
-      friendlyFid fid = fid == bfid b || isAllied fact fid
-      friends = actorRegularAssocs friendlyFid (blid b) s
+      friends = actorRegularAssocs (inline isFriend (bfid b) fact) (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
   in not $ n > 0 && null (drop (n - 1) closeAndStrongFriends)
        -- optimized: length closeAndStrongFriends >= n
@@ -278,9 +279,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
 condSoloM :: MonadClient m => ActorId -> m Bool
 condSoloM aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularAssocs friendlyFid (blid b)
+  friends <- getsState $ friendRegularList (bfid b) (blid b)
   return $ case friends of
     [_] -> True
     _ -> False
@@ -308,7 +307,7 @@ fleeList aid = do
           _ -> Right pathList
         _ -> Right []
   b <- getsState $ getActorBody aid
-  allFoes <- getsState $ warActorRegularList (bfid b) (blid b)
+  allFoes <- getsState $ foeRegularList (bfid b) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   s <- getState
   let posFoes = map bpos allFoes

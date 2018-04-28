@@ -743,7 +743,7 @@ findStairExit side moveUp lid pos = do
       posOcc s k p = case posToAssocs p lid s of
         [] -> k == 0
         (_, b) : _ | bproj b -> k == 3
-        (_, b) : _ | isAtWar fact (bfid b) -> k == 1  -- non-proj foe
+        (_, b) : _ | isFoe side fact (bfid b) -> k == 1  -- non-proj foe
         _ -> k == 2  -- moving a non-projectile friend
   unocc <- getsState posOcc
   case concatMap (\k -> filter (unocc k) ps) [0..3] of

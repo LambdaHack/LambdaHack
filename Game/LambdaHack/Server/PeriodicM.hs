@@ -118,7 +118,7 @@ rollSpawnPos :: COps -> ES.EnumSet Point
 rollSpawnPos COps{coTileSpeedup} visible
              mobile lid lvl@Level{ltile, lxsize, lysize, lstair} fid s = do
   let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
-      inhabitants = warActorRegularList fid lid s
+      inhabitants = foeRegularList fid lid s
       nearInh df p = all (\b -> df $ chessDist (bpos b) p) inhabitants
       -- Monsters often appear from deeper levels or at least we try
       -- to suggest that.

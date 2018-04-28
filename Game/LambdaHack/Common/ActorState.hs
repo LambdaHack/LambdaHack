@@ -3,7 +3,7 @@
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocs, actorRegularAssocs
-  , warActorRegularList, friendlyActorRegularList, fidActorRegularIds
+  , foeRegularList, friendRegularList, fidActorRegularIds
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
@@ -65,16 +65,15 @@ actorRegularAssocs p lid s =
   let f (_, b) = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
   in filter f $ EM.assocs $ sactorD s
 
-warActorRegularList :: FactionId -> LevelId -> State -> [Actor]
-warActorRegularList fid lid s =
+foeRegularList :: FactionId -> LevelId -> State -> [Actor]
+foeRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
-  in map snd $ actorRegularAssocs (inline isAtWar fact) lid s
+  in map snd $ actorRegularAssocs (inline isFoe fid fact) lid s
 
-friendlyActorRegularList :: FactionId -> LevelId -> State -> [Actor]
-friendlyActorRegularList fid lid s =
+friendRegularList :: FactionId -> LevelId -> State -> [Actor]
+friendRegularList fid lid s =
   let fact = (EM.! fid) . sfactionD $ s
-      friendlyFid fid2 = fid2 == fid || inline isAllied fact fid2
-  in map snd $ actorRegularAssocs friendlyFid lid s
+  in map snd $ actorRegularAssocs (inline isFriend fid fact) lid s
 
 fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
 fidActorRegularIds fid lid s =
@@ -275,11 +274,10 @@ regenCalmDelta aid body s =
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
-      isHeardFoe !b = bfid b /= bfid body  -- shortcut
-                      && blid b == blid body
+      isHeardFoe !b = blid b == blid body
                       && inline chessDist (bpos b) (bpos body) <= 3
                       && not (waitedLastTurn b)  -- uncommon
-                      && inline isAtWar fact (bfid b)  -- costly
+                      && inline isFoe (bfid body) fact (bfid b)  -- costly
   in if any isHeardFoe $ EM.elems $ sactorD s
      then minusM  -- even if all calmness spent, keep informing the client
      else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
@@ -317,21 +315,21 @@ actorSkills mleader aid s =
 -- If the actor is not, in fact, an enemy, we let it displace.
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
 dispEnemy source target actorMaxSk s =
-  let hasSupport b =
+  let hasBackup b =
         let adjacentAssocs = actorAdjacentAssocs b s
-            fact = (EM.! bfid b) . sfactionD $ s
-            friendlyFid fid = fid == bfid b || isAllied fact fid
+            fact = sfactionD s EM.! bfid b
             friend (_, b2) =
-              not (bproj b2) && friendlyFid (bfid b2) && bhp b2 > 0
+              not (bproj b2) && isFriend (bfid b) fact (bfid b2) && bhp b2 > 0
         in any friend adjacentAssocs
       sb = getActorBody source s
       tb = getActorBody target s
+      tfact = sfactionD s EM.! bfid tb
   in bproj tb
-     || not (isAtWar ((EM.! bfid tb) . sfactionD $ s) (bfid sb))
+     || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
              || braced tb
              || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
-             || hasSupport sb && hasSupport tb)  -- solo actors are flexible
+             || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull
 itemToFull iid s =
@@ -428,8 +426,7 @@ anyFoeAdj aid s =
       f !mv = case posToAidsLvl (shift (bpos body) mv) lvl of
         [] -> False
         aid2 : _ -> g $ getActorBody aid2 s
-      g !b = bfid b /= bfid body  -- shortcut
-             && isAtWar fact (bfid b)
+      g !b = inline isFoe (bfid body) fact (bfid b)
              && bhp b > 0  -- uncommon
   in any f moves
 
@@ -462,9 +459,8 @@ inMelee bodyOur s =
       -- we compute sets of their positions and intersect them in O(n).
       -- With many actors, precisely when most needed, it pays off.
       -- Unfortunately, it allocates more, always.
-      f !b = bfid b /= bfid bodyOur  -- shortcut
-             && blid b == blid bodyOur
-             && inline isAtWar fact (bfid b)  -- costly
+      f !b = blid b == blid bodyOur
+             && inline isFoe (bfid bodyOur) fact (bfid b)  -- costly
              && bhp b > 0  -- uncommon
       allFoes = filter f $ EM.elems $ sactorD s
       g !b = bfid b == bfid bodyOur

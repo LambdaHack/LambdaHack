@@ -591,9 +591,9 @@ meleeBlocker aid = do
                || bproj body2  -- displacing saves a move
                   && EM.findWithDefault 0 AbDisplace actorSk <= 0 ->
                return reject
-             | isAtWar fact (bfid body2)  -- at war with us, hit, not disp
-               || (bfid body2 == bfid b
-                   || isAllied fact (bfid body2)) -- don't start a war
+             | isFoe (bfid b) fact (bfid body2)
+                 -- at war with us, so hit, not displace
+               || isFriend (bfid b) fact (bfid body2) -- don't start a war
                   && EM.findWithDefault 0 AbDisplace actorSk <= 0  -- can't disp
                   && EM.findWithDefault 0 AbMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
@@ -611,7 +611,8 @@ meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
+  let foe (_, b2) =
+        not (bproj b2) && isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
       adjFoes = filter foe adjacentAssocs
   btarget <- getsClient $ getTarget aid
   mtarget <- case btarget of
@@ -812,9 +813,10 @@ displaceFoe aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  friends <- getsState $ friendlyActorRegularList (bfid b) (blid b)
+  friends <- getsState $ friendRegularList (bfid b) (blid b)
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) = not (bproj b2) && isAtWar fact (bfid b2) && bhp b2 > 0
+  let foe (_, b2) =
+        not (bproj b2) && isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
       adjFoes = filter foe adjacentAssocs
       displaceable body =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` bpos body)
@@ -885,7 +887,7 @@ displaceTowards aid target retry = do
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- maxActorSkillsClient aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
-            if not (isAtWar tfact (bfid b)) || dEnemy then
+            if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, etc.
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
@@ -927,8 +929,8 @@ moveTowards aid target goal relaxed = do
                     `blame` (source, target, aid, b, goal)) ()
   fact <- getsState $ (EM.! bfid b) . sfactionD
   salter <- getsClient salter
-  let noF = isAtWar fact . bfid
-  noFriends <- getsState $ \s p -> all (noF . snd) $ posToAssocs p (blid b) s
+  noFriends <- getsState $ \s p -> all (isFoe (bfid b) fact . bfid . snd)
+                                       (posToAssocs p (blid b) s)
   let lalter = salter EM.! blid b
       -- Only actors with AbAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
@@ -981,7 +983,8 @@ moveOrRunAid source dir = do
            || not (Tile.isWalkable coTileSpeedup $ lvl `at` tpos) ->
              -- DisplaceAccess
            return Nothing
-         | isAtWar tfact (bfid sb) && not dEnemy -> do  -- DisplaceDying, etc.
+         | isFoe (bfid b2) tfact (bfid sb)
+           && not dEnemy -> do  -- DisplaceDying, etc.
            -- If really can't displace, melee.
            wps <- pickWeaponClient source target
            case wps of

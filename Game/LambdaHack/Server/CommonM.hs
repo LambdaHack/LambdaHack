@@ -182,7 +182,7 @@ deduceQuits fid0 status = do
       assocsUI = filter (factHasUI . snd) assocsInGame
       nonHorrorAIG = filter (not . isHorrorFact . snd) assocsInGame
       worldPeace =
-        all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
+        all (\(fid1, _) -> all (\(fid2, fact2) -> not $ isFoe fid2 fact2 fid1)
                            nonHorrorAIG)
         nonHorrorAIG
       othersInGame = filter ((/= fid0) . fst) assocsInGame
@@ -201,7 +201,8 @@ deduceQuits fid0 status = do
      | stOutcome status == Escape -> do
        -- Otherwise, in a game with many warring teams alive,
        -- only complete Victory matters, until enough of them die.
-       let (victors, losers) = partition (flip isAllied fid0 . snd) othersInGame
+       let (victors, losers) =
+             partition (\(fi, _) -> isFriend fid0 fact0 fi) othersInGame
        mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
      | otherwise -> quitF status fid0
 
@@ -435,7 +436,6 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       calm = xM (max 0 $ IA.aMaxCalm $ itemAspect itemDisco)
   -- Create actor.
   factionD <- getsState sfactionD
-  let fact = factionD EM.! bfid
   curChalSer <- getsServer $ scurChalSer . soptions
   nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
@@ -446,11 +446,12 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
         fhasUI gplayer || nU == 0 && fcanEscape gplayer
       boostFact = not bproj
                   && if diffBonusCoeff > 0
-                     then hasUIorEscapes fact
-                          || any hasUIorEscapes
-                                 (filter (`isAllied` bfid) $ EM.elems factionD)
-                     else any hasUIorEscapes
-                              (filter (`isAtWar` bfid) $ EM.elems factionD)
+                     then any (hasUIorEscapes . snd)
+                              (filter (\(fi, fa) -> isFriend fi fa bfid)
+                                      (EM.assocs factionD))
+                     else any (hasUIorEscapes . snd)
+                              (filter (\(fi, fa) -> isFoe fi fa bfid)
+                                      (EM.assocs factionD))
       diffHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
                            then xM 999 - hp -- as much as UI can stand
                            else hp * 2 ^ abs diffBonusCoeff

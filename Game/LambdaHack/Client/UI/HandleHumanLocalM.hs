@@ -878,7 +878,7 @@ aimEnemyHuman = do
         TPoint (TEnemyPos _ permit) _ _ -> (permit, pickUnderXhair)
         _ -> (False, pickUnderXhair)  -- the sensible default is only-foes
       gtlt = gt ++ lt
-      isEnemy b = isAtWar fact (bfid b)
+      isEnemy b = isFoe side fact (bfid b)
                   && not (bproj b)
                   && bhp b > 0
       lf = filter (isEnemy . snd) gtlt

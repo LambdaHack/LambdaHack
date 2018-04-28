@@ -164,7 +164,7 @@ pickActorToMove maidToAvoid = do
             | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
-            allFoes <- getsState $ warActorRegularList side (blid b)
+            allFoes <- getsState $ foeRegularList side (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
                 mildlyDistressed = deltaMild (bcalmDelta b)
             return $! mildlyDistressed  -- e.g., actor hears an enemy

@@ -361,9 +361,8 @@ reqMelee source target iid cstore = do
       let friendlyFire = bproj sb2 || bproj tb
           fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
       unless (friendlyFire
-              || isAtWar sfact tfid  -- already at war
-              || isAllied sfact tfid  -- allies never at war
-              || sfid == tfid) $
+              || isFoe sfid sfact tfid  -- already at war
+              || isFriend sfid sfact tfid) $  -- allies never at war
         execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 -- * ReqDisplace
@@ -376,7 +375,7 @@ reqDisplace source target = do
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
-      atWar = isAtWar tfact (bfid sb)
+      atWar = isFoe (bfid tb) tfact (bfid sb)
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
   dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar

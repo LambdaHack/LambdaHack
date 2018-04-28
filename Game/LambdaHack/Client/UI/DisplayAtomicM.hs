@@ -189,11 +189,11 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       fact <- getsState $ (EM.! side) . sfactionD
       body <- getsState $ getActorBody aid
       when (bfid body == side) $ do
-        let closeFoe b =  -- mimics isHeardFoe
-                     blid b == blid body
-                     && chessDist (bpos b) (bpos body) <= 3  -- a bit costly
-                     && not (waitedLastTurn b)  -- uncommon
-                     && inline isAtWar fact (bfid b)  -- costly
+        let closeFoe !b =  -- mimics isHeardFoe
+                      blid b == blid body
+                      && inline chessDist (bpos b) (bpos body) <= 3
+                      && not (waitedLastTurn b)  -- uncommon
+                      && inline isFoe side fact (bfid b)  -- costly
         anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
         unless anyCloseFoes $ do  -- obvious where the feeling comes from
           duplicated <- aidVerbDuplicateMU aid "hear something"
@@ -399,10 +399,10 @@ lookAtMove aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjacentAssocs <- getsState $ actorAdjacentAssocs body
   if not (bproj body) && side == bfid body then do
-    let foe (_, b2) = isAtWar fact (bfid b2)
+    let foe (_, b2) = isFoe (bfid body) fact (bfid b2)
         adjFoes = filter foe adjacentAssocs
     unless (null adjFoes) stopPlayBack
-  else when (isAtWar fact side) $ do
+  else when (isFoe (bfid body) fact side) $ do
     let our (_, b2) = not (bproj b2) && bfid b2 == side
         adjOur = filter our adjacentAssocs
     unless (null adjOur) stopPlayBack
@@ -477,7 +477,8 @@ itemAidVerbMU aid verb iid ek cstore = do
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   side <- getsClient sside
-  fact <- getsState $ (EM.! bfid body) . sfactionD
+  factionD <- getsState sfactionD
+  let fact = factionD EM.! bfid body
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
@@ -510,7 +511,6 @@ createActorUI born aid body = do
                  mhs = map findHeroK [0..]
                  n = fromJust $ elemIndex False mhs
              return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
-      factionD <- getsState sfactionD
       let (bname, bpronoun) =
             if | bproj body ->
                  let adj = case btrajectory body of
@@ -546,7 +546,7 @@ createActorUI born aid body = do
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
   when (bfid body /= side) $ do
-    when (not (bproj body) && isAtWar fact side) $
+    when (not (bproj body) && isFoe (bfid body) fact side) $
       -- Aim even if nobody can shoot at the enemy. Let's home in on him
       -- and then we can aim or melee. We set permit to False, because it's
       -- technically very hard to check aimability here, because we are

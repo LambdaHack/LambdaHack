@@ -335,8 +335,9 @@ meleeAid target = do
                 f _ = Just $ TEnemy target False
             modifyClient $ updateTarget leader f
             return $ Right wp
-          res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
-              | isAllied sfact (bfid tb) = do
+          res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
+              | isFriend (bfid sb) sfact (bfid tb) = do
+                let !_A = assert (bfid sb /= bfid tb) ()
                 go1 <- displayYesNo ColorBW
                          "You are bound by an alliance. Really attack?"
                 if not go1 then failWith "attack canceled" else returnCmd
@@ -363,7 +364,7 @@ displaceAid target = do
   let immobile = EM.findWithDefault 0 AbMove actorMaxSk <= 0
       tpos = bpos tb
       adj = checkAdjacent sb tb
-      atWar = isAtWar tfact (bfid sb)
+      atWar = isFoe (bfid tb) tfact (bfid sb)
   if | not adj -> failSer DisplaceDistant
      | not (bproj tb) && atWar
        && actorDying tb ->

@@ -150,7 +150,6 @@ restoreScore cops = do
 registerScore :: MonadServer m => Status -> FactionId -> m ()
 registerScore status fid = do
   cops <- getsState scops
-  fact <- getsState $ (EM.! fid) . sfactionD
   total <- getsState $ snd . calculateTotal fid
   let stdRuleset = getStdRuleset cops
       scoresFile = rscoresFile stdRuleset
@@ -166,7 +165,8 @@ registerScore status fid = do
   factionD <- getsState sfactionD
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
   noConfirmsGame <- isNoConfirmsGame
-  let path = dataDir </> scoresFile
+  let fact = factionD EM.! fid
+      path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If testing or fooling around, dump instead of registering.
         -- In particular don't register score for the auto-* scenarios.
@@ -180,11 +180,11 @@ registerScore status fid = do
       chal | fhasUI $ gplayer fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
-      theirVic (fi, fa) | isAtWar fact fi
+      theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
-      ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
+      ourVic (fi, fa) | isFriend fid fact fi = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       table = HighScore.getTable gameModeId scoreDict

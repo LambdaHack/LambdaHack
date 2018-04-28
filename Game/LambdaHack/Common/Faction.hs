@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Faction
   , Target(..), TGoal(..), Challenge(..)
   , gleader, tgtKindDescription, isHorrorFact
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
-  , isAtWar, isAllied
+  , isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge
 #ifdef EXPOSE_INTERNAL
@@ -175,12 +175,19 @@ automatePlayer st pl =
   in pl {fleaderMode = autoLeader st pl}
 
 -- | Check if factions are at war. Assumes symmetry.
-isAtWar :: Faction -> FactionId -> Bool
-isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
+isFoe :: FactionId -> Faction -> FactionId -> Bool
+isFoe fid1 fact1 fid2 =
+  fid1 /= fid2  -- shortcut
+  && War == EM.findWithDefault Unknown fid2 (gdipl fact1)
 
 -- | Check if factions are allied. Assumes symmetry.
-isAllied :: Faction -> FactionId -> Bool
-isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
+isAlly :: Faction -> FactionId -> Bool
+{-# INLINE isAlly #-}
+isAlly fact1 fid2 = Alliance == EM.findWithDefault Unknown fid2 (gdipl fact1)
+
+-- | Check if factions are allied or are the same faction. Assumes symmetry.
+isFriend :: FactionId -> Faction -> FactionId -> Bool
+isFriend fid1 fact1 fid2 = fid1 == fid2 || isAlly fact1 fid2
 
 difficultyBound :: Int
 difficultyBound = 9

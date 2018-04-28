@@ -255,7 +255,6 @@ scoreToSlideshow total status = do
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   fid <- getsClient sside
-  fact <- getsState $ (EM.! fid) . sfactionD
   scoreDict <- getsState shigh
   gameModeId <- getsState sgameModeId
   gameMode <- getGameMode
@@ -265,16 +264,17 @@ scoreToSlideshow total status = do
   tz <- liftIO $ getTimeZone $ posixSecondsToUTCTime date
   curChalSer <- getsClient scurChal
   factionD <- getsState sfactionD
-  let table = HighScore.getTable gameModeId scoreDict
+  let fact = factionD EM.! fid
+      table = HighScore.getTable gameModeId scoreDict
       gameModeName = mname gameMode
       chal | fhasUI $ gplayer fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
-      theirVic (fi, fa) | isAtWar fact fi
+      theirVic (fi, fa) | isFoe fid fact fi
                           && not (isHorrorFact fa) = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
-      ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
+      ourVic (fi, fa) | isFriend fid fact fi = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       (worthMentioning, (ntable, pos)) =

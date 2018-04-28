@@ -246,10 +246,10 @@ populateDungeon = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
             indexff (fid, _) = findIndex ((== fid) . fst) arenaFactions
-            representsAlliance ff2@(_, fact2) =
+            representsAlliance ff2@(fid2, fact2) =
               not $ any (\ff3@(fid3, _) ->
                            indexff ff3 < indexff ff2
-                           && isAllied fact2 fid3) arenaFactions
+                           && isFriend fid2 fact2 fid3) arenaFactions
             arenaAlliances = filter representsAlliance arenaFactions
         entryPoss <- rndToAction
                      $ findEntryPoss cops lid lvl (length arenaAlliances)
@@ -259,7 +259,7 @@ populateDungeon = do
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
             placeAlliance ((fid3, _), ppos, timeOffset) =
               mapM_ (\(fid4, fact4) ->
-                      when (isAllied fact4 fid3 || fid4 == fid3) $
+                      when (isFriend fid4 fact4 fid3) $
                         placeActors lid ((fid4, fact4), ppos, timeOffset))
                     arenaFactions
         mapM_ placeAlliance usedPoss
