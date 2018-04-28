@@ -94,7 +94,7 @@ actionStrategy aid retry = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
-  threatDistL <- meleeThreatDistList aid
+  threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid

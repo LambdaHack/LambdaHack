@@ -104,15 +104,13 @@ condAdjTriggerableM aid = do
 -- because they can't chase us and also because they can't be aggresive
 -- so to resolve the stalemate, the opposing AI has to be aggresive
 -- by ignoring them and closing in to melee distance.
-meleeThreatDistList :: MonadStateRead m
-                    => ActorId -> m [(Int, (ActorId, Actor))]
-meleeThreatDistList aid = do
-  actorAspect <- getsState sactorAspect
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  allAtWar <-
-    getsState $ actorRegularAssocs (inline isFoe (bfid b) fact) (blid b)
-  let strongActor (aid2, b2) =
+meleeThreatDistList :: ActorId -> State -> [(Int, (ActorId, Actor))]
+meleeThreatDistList aid s =
+  let actorAspect = sactorAspect s
+      b = getActorBody aid s
+      fact = sfactionD s EM.! bfid b
+      allAtWar = actorRegularAssocs (inline isFoe (bfid b) fact) (blid b) s
+      strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
             actorMaxSkE = IA.aSkills ar
             nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
@@ -120,40 +118,35 @@ meleeThreatDistList aid = do
            && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
-  return $ sortBy (comparing fst) $ map addDist allThreats
+  in sortBy (comparing fst) $ map addDist allThreats
 
 -- | Require the actor blocks the paths of any of his party members.
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
-  ours <- getsState $ fidActorRegularIds (bfid b) (blid b)
   targetD <- getsClient stargetD
   let blocked aid2 = aid2 /= aid &&
         case EM.lookup aid2 targetD of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}} | q == bpos b -> True
           _ -> False
-  return $ any blocked ours
+  any blocked <$> getsState (fidActorRegularIds (bfid b) (blid b))
 
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
-condFloorWeaponM aid = do
-  floorAssocs <- getsState $ fullAssocs aid [CGround]
-  let lootIsWeapon = any (IK.isMelee . itemKind . snd) floorAssocs
-  return lootIsWeapon
+condFloorWeaponM aid =
+  any (IK.isMelee . itemKind . snd) <$> getsState (fullAssocs aid [CGround])
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
-condNoEqpWeaponM aid = do
-  eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  return $ all (not . IK.isMelee . itemKind . snd) eqpAssocs
+condNoEqpWeaponM aid =
+  all (not . IK.isMelee . itemKind . snd) <$> getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
-condCanProjectM skill aid = do
+condCanProjectM skill aid =
   -- Compared to conditions in @projectItem@, range and charge are ignored,
   -- because they may change by the time the position for the fling is reached.
-  benList <- condProjectListM skill aid
-  return $ not $ null benList
+  not . null <$> condProjectListM skill aid
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
@@ -176,8 +169,7 @@ condProjectListM skill aid = do
             || not (IK.isMelee $ itemKind itemFull)  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
         && permittedProjectAI skill calmE itemFull
-  benList <- benAvailableItems aid $ [CEqp, CInv, CGround] ++ [CSha | calmE]
-  return $ filter q benList
+  filter q <$> benAvailableItems aid ([CEqp, CInv, CGround] ++ [CSha | calmE])
 
 -- | Produce the list of items with a given property available to the actor
 -- and the items' values.
@@ -217,9 +209,7 @@ hinders condShineWouldBetray condAimEnemyPresent
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
-condDesirableFloorItemM aid = do
-  benItemL <- benGroundItems aid
-  return $ not $ null benItemL
+condDesirableFloorItemM aid = not . null <$> benGroundItems aid
 
 -- | Produce the list of items on the ground beneath the actor
 -- that are worth picking up.
@@ -232,8 +222,7 @@ benGroundItems aid = do
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (ben, _, _, ItemFull{itemKind}, _) =
         desirableItem canEsc (benPickup ben) itemKind
-  benList <- benAvailableItems aid [CGround]
-  return $ filter isDesirable benList
+  filter isDesirable <$> benAvailableItems aid [CGround]
 
 desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
 desirableItem canEsc benPickup itemKind =
@@ -279,10 +268,9 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
 condSoloM :: MonadClient m => ActorId -> m Bool
 condSoloM aid = do
   b <- getsState $ getActorBody aid
-  friends <- getsState $ friendRegularList (bfid b) (blid b)
-  return $ case friends of
-    [_] -> True
-    _ -> False
+  let isSingleton [_] = True
+      isSingleton _ = False
+  isSingleton <$> getsState (friendRegularList (bfid b) (blid b))
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
@@ -307,10 +295,9 @@ fleeList aid = do
           _ -> Right pathList
         _ -> Right []
   b <- getsState $ getActorBody aid
-  allFoes <- getsState $ foeRegularList (bfid b) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   s <- getState
-  let posFoes = map bpos allFoes
+  let posFoes = map bpos $ foeRegularList (bfid b) (blid b) s
       myVic = vicinity lxsize lysize $ bpos b
       dist p | null posFoes = 100
              | otherwise = minimum $ map (chessDist p) posFoes

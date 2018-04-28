@@ -106,7 +106,7 @@ pickActorToMove maidToAvoid = do
                                         (scondInMelee EM.! blid body)
                 ar = fromMaybe (error $ "" `showFailure` aid)
                                (EM.lookup aid actorAspect)
-            threatDistL <- meleeThreatDistList aid
+            threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport3 <- condSupport 3 aid
@@ -182,7 +182,7 @@ pickActorToMove maidToAvoid = do
           targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
-            threatDistL <- meleeThreatDistList aid
+            threatDistL <- getsState $ meleeThreatDistList aid
             condSupport2 <- condSupport 2 aid
             let condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
             -- If foes far, friends may still come, so we let him move.
