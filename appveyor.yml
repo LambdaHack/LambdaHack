@@ -7,10 +7,10 @@ install:
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
   - cabal update
-  - cabal install happy --constraint="containers>=0.5.11.0" --force-reinstalls
+  - cabal install happy
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - cd sdl2
-  - cabal install -fno-linear --constraint="containers>=0.5.11.0" --force-reinstalls
+  - cabal install -fno-linear
   - cd ..
 
   - pwd
@@ -58,7 +58,7 @@ install:
   - echo "no cabal install happy"
   - echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
   - cd sdl2
-  - cabal install -fno-linear --constraint="containers>=0.5.11.0" --force-reinstalls
+  - cabal install -fno-linear
   - cd ..
 
   - pwd

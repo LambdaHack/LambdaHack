@@ -121,28 +121,28 @@ install:
  - sed -i 's/^jobsColon/jobs:/' ${HOME}/.cabal/config
  - |
    if [ $GTKVTY = "gtk" ]; then
-     cabal install --force-reinstalls --only-dependencies --dry -v gtk2hs-buildtools --constraint="containers>=0.5.11.0" > installplan.txt
-     cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "gtk-v2" ]; then
-     cabal install --force-reinstalls --only-dependencies --dry -v2 gtk2hs-buildtools --constraint="containers>=0.5.11.0" > installplan.txt
-     cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
+     cabal install --only-dependencies --dry -v2 gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
    elif [ $GTKVTY = "sdl" ]; then
-     cabal install --force-reinstalls -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "sdl-v2" ]; then
-     cabal install --force-reinstalls -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
+     cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks --dry -v2 >> installplan.txt
    elif [ $GTKVTY = "vty" ]; then
-     cabal install --force-reinstalls -fvty --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
+     cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt
    elif [ $GTKVTY = "curses" ]; then
-     cabal install --force-reinstalls -fcurses -f-release --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt # test -f-release together with the curses frontend
+     cabal install -fcurses -f-release --only-dependencies --enable-tests --enable-benchmarks --dry -v > installplan.txt # test -f-release together with the curses frontend
    elif [ $GTKVTY = "noopt" ]; then
-     cabal install --force-reinstalls --only-dependencies --dry -v gtk2hs-buildtools --constraint="containers>=0.5.11.0" > installplan.txt
-     cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "opt2" ]; then
-     cabal install --force-reinstalls --only-dependencies --dry -v gtk2hs-buildtools --constraint="containers>=0.5.11.0" > installplan.txt
-     cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    elif [ $GTKVTY = "asserts" ]; then
-     cabal install --force-reinstalls --only-dependencies --dry -v gtk2hs-buildtools --constraint="containers>=0.5.11.0" > installplan.txt
-     cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
+     cabal install --only-dependencies --dry -v gtk2hs-buildtools > installplan.txt
+     cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks --dry -v >> installplan.txt
    else exit 7
    fi
 
@@ -160,28 +160,28 @@ install:
      rm -rf $HOME/.cabsnap;
      mkdir -p $HOME/.ghc $HOME/.cabal/lib $HOME/.cabal/share $HOME/.cabal/bin;
      if [ $GTKVTY = "gtk" ]; then
-       cabal install --force-reinstalls gtk2hs-buildtools --constraint="containers>=0.5.11.0";
-       cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "gtk-v2" ]; then
-       cabal install --force-reinstalls -v2 gtk2hs-buildtools --constraint="containers>=0.5.11.0";
-       cabal install --force-reinstalls -v2 -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -v2 gtk2hs-buildtools;
+       cabal install -v2 -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "sdl" ]; then
-       cabal install --force-reinstalls -fsdl --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -fsdl --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "sdl-v2" ]; then
-       cabal install --force-reinstalls -v2 -fsdl --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -v2 -fsdl --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "vty" ]; then
-       cabal install --force-reinstalls -fvty --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -fvty --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "curses" ]; then
-       cabal install --force-reinstalls -fcurses -f-release --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install -fcurses -f-release --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "noopt" ]; then
-       cabal install --force-reinstalls gtk2hs-buildtools --constraint="containers>=0.5.11.0";
-       cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "opt2" ]; then
-       cabal install --force-reinstalls gtk2hs-buildtools --constraint="containers>=0.5.11.0";
-       cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      elif [ $GTKVTY = "asserts" ]; then
-       cabal install --force-reinstalls gtk2hs-buildtools --constraint="containers>=0.5.11.0";
-       cabal install --force-reinstalls -fgtk --only-dependencies --enable-tests --enable-benchmarks;
+       cabal install gtk2hs-buildtools;
+       cabal install -fgtk --only-dependencies --enable-tests --enable-benchmarks;
      else exit 7;
      fi
    fi

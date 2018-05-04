@@ -197,7 +197,7 @@ version:
 	dist/build/LambdaHack/LambdaHack --version
 
 build-binary-common:
-	cabal install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation -f-release --only-dependencies
+	cabal install --disable-library-profiling --disable-profiling --disable-documentation -f-release --only-dependencies
 	cabal configure --disable-library-profiling --disable-profiling -f-release --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
