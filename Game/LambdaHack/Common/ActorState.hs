@@ -472,6 +472,10 @@ armorHurtBonus source target s =
                     else block200 50 (IA.aArmorMelee tar)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
+-- | Check if any non-dying foe (projectile or not) is adjacent
+-- to any of our normal actors (whether they can melee or just need to flee,
+-- in which case alert is needed so that they are not slowed down by others).
+-- This is needed only by AI and computed as lazily as possible.
 inMelee :: FactionId -> LevelId -> State -> Bool
 inMelee !fid !lid s =
   let fact = sfactionD s EM.! fid

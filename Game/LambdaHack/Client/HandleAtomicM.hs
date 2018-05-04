@@ -78,10 +78,15 @@ cmdAtomicSemCli oldState cmd = case cmd of
     mapM_ (addItemToDiscoBenefit . fst) ais
   UpdLoseItemBag (CActor aid store) _bag _ais ->
     wipeBfsIfItemAffectsSkills [store] aid
-  UpdMoveActor aid _ _ -> invalidateBfsAid aid
+  UpdMoveActor aid _ _ -> do
+    invalidateBfsAid aid
+    b <- getsState $ getActorBody aid
+    recomputeInMelee (blid b)
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
+    b <- getsState $ getActorBody source
+    recomputeInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
@@ -142,11 +147,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
-  UpdAgeGame arenas ->
-    -- This tweak is only needed in AI client, but it's fairly cheap.
-    modifyClient $ \cli ->
-      let g !em !lid = EM.insert lid Nothing em
-      in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed -> do
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
@@ -213,6 +213,17 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdWriteSave -> saveClient
   _ -> return ()
 
+-- This tweak is only needed in AI client, but it's lazy for each level
+-- and so fairly cheap.
+recomputeInMelee :: MonadClient m => LevelId -> m ()
+recomputeInMelee lid = do
+  side <- getsClient sside
+  s <- getState
+  modifyClient $ \cli ->
+    cli {scondInMelee = EM.insert lid
+                                  (Just $ inMelee side lid s)
+                                  (scondInMelee cli)}
+
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
 wipeBfsIfItemAffectsSkills stores aid =
@@ -235,6 +246,7 @@ createActor aid b ais = do
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
+  recomputeInMelee (blid b)
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -256,6 +268,7 @@ destroyActor aid b destroy = do
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
+  recomputeInMelee (blid b)
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()
 addItemToDiscoBenefit iid = do

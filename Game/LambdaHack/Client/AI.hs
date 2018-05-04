@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.AI
   ( queryAI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , pickActorAndAction, udpdateCondInMelee
+  , pickActorAndAction
 #endif
   ) where
 
@@ -21,7 +21,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
@@ -39,9 +38,6 @@ queryAI aid = do
   unless (Just aid == mleader || mleader == mleaderCli) $
     -- @aid@ is not the leader, so he can't change leader
     modifyClient $ \cli -> cli {_sleader = mleader}
-  -- @condInMelee@ will most probably be needed in the following functions,
-  -- but even if not, it's OK, it's not forced, because wrapped in @Maybe@:
-  udpdateCondInMelee aid
   (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
   (aidToMove2, treq2) <-
     case treq of
@@ -81,21 +77,3 @@ pickActorAndAction maid aid = do
       return treqOld  -- no better leader found
     _ -> pickAction aidToMove (isJust maid)
   return (aidToMove, treq, oldFlee)
-
--- | Check if any non-dying foe (projectile or not) is adjacent
--- to any of our normal actors (whether they can melee or just need to flee,
--- in which case alert is needed so that they are not slowed down by others)
--- and record this per-level. This is needed only by AI and computed
--- as lazily as possible before each round of AI deliberations.
-udpdateCondInMelee :: MonadClient m => ActorId -> m ()
-udpdateCondInMelee aid = do
-  b <- getsState $ getActorBody aid
-  condInMelee <- getsClient $ (EM.! blid b) . scondInMelee
-  case condInMelee of
-    Just{} -> return ()  -- still up to date
-    Nothing -> do
-      s <- getState
-      modifyClient $ \cli ->
-        cli {scondInMelee = EM.insert (blid b)
-                                      (Just $ inMelee (bfid b) (blid b) s)
-                                      (scondInMelee cli)}
