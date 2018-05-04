@@ -26,8 +26,8 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
-import qualified Data.IntSet as ES
 import           GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -472,29 +472,29 @@ armorHurtBonus source target s =
                     else block200 50 (IA.aArmorMelee tar)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
-inMelee :: Actor -> State -> Bool
-inMelee bodyOur s =
-  let fact = sfactionD s EM.! bfid bodyOur
-      -- Instead of performing nested iterations of foes and ours in O(n^2),
-      -- we compute sets of their positions and intersect them in O(n).
-      -- With many actors, precisely when most needed, it pays off.
-      -- Unfortunately, it allocates more, always.
-      f !b = blid b == blid bodyOur
-             && inline isFoe (bfid bodyOur) fact (bfid b)  -- costly
+inMelee :: FactionId -> LevelId -> State -> Bool
+inMelee !fid !lid s =
+  let fact = sfactionD s EM.! fid
+      f !b = blid b == lid
+             && inline isFoe fid fact (bfid b)  -- costly
              && bhp b > 0  -- uncommon
       allFoes = filter f $ EM.elems $ sactorD s
-      g !b = bfid b == bfid bodyOur
-             && blid b == blid bodyOur
+      g !b = bfid b == fid
+             && blid b == lid
              && not (bproj b)
              && bhp b > 0
       allOurs = filter g $ EM.elems $ sactorD s
-      -- We assume foes are more numerous, because they may come
-      -- from multiple factions and they contain projectiles.
-      -- So we don't blow up their set of positions, by taking adjacent
-      -- locations, but we enlarge our set instead.
-      --
-      -- TODO: switch this to honest EnumSets and remove fromEnum
-      -- as soon as ES.disjoint is implemented.
-      setFoes = ES.fromList $ map (fromEnum . bpos) allFoes
-      setOurVicinity = ES.fromList $ concatMap (map fromEnum . vicinityUnsafe . bpos) allOurs
-  in not $ ES.disjoint setFoes setOurVicinity
+      -- We assume foes are less numerous, even though they may come
+      -- from multiple factions and they contain projectiles,
+      -- because we see all our actors, while many foes may be hidden.
+      -- Consequently, we allocate the set of foe positions
+      -- and avoid allocating ours, by iterating over our actors.
+      -- This in O(mn) instead of O(m+n), but it allocates
+      -- less and multiplicative constants are lower.
+      -- We inspect adjacent locations of foe positions, not of ours,
+      -- thus increasing allocation a bit, but not by much, because
+      -- the set should be rather saturated.
+      -- If there are no foes in sight, we don't iterate at all.
+      setFoeVicinity = ES.fromList $ concatMap (vicinityUnsafe . bpos) allFoes
+  in not (ES.null setFoeVicinity)  -- shortcut
+     && any (\b -> bpos b `ES.member` setFoeVicinity) allOurs

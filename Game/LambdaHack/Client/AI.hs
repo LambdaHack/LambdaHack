@@ -39,7 +39,7 @@ queryAI aid = do
   unless (Just aid == mleader || mleader == mleaderCli) $
     -- @aid@ is not the leader, so he can't change leader
     modifyClient $ \cli -> cli {_sleader = mleader}
-  -- @condInMelee@ will most proably be needed in the following functions,
+  -- @condInMelee@ will most probably be needed in the following functions,
   -- but even if not, it's OK, it's not forced, because wrapped in @Maybe@:
   udpdateCondInMelee aid
   (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
@@ -94,8 +94,8 @@ udpdateCondInMelee aid = do
   case condInMelee of
     Just{} -> return ()  -- still up to date
     Nothing -> do
-      newCond <- getsState $ inMelee b
-        -- lazy and kept that way due to @Maybe@
+      s <- getState
       modifyClient $ \cli ->
-        cli {scondInMelee =
-               EM.adjust (const $ Just newCond) (blid b) (scondInMelee cli)}
+        cli {scondInMelee = EM.insert (blid b)
+                                      (Just $ inMelee (bfid b) (blid b) s)
+                                      (scondInMelee cli)}

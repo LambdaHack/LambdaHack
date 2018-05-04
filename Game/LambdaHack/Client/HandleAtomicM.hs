@@ -145,7 +145,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdAgeGame arenas ->
     -- This tweak is only needed in AI client, but it's fairly cheap.
     modifyClient $ \cli ->
-      let g !em !lid = EM.adjust (const Nothing) lid em
+      let g !em !lid = EM.insert lid Nothing em
       in cli {scondInMelee = foldl' g (scondInMelee cli) arenas}
   UpdDiscover c iid ik seed -> do
     item <- getsState $ getItemBody iid
