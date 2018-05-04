@@ -12,6 +12,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -91,8 +92,7 @@ computeTarget aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAspect <- getsState sactorAspect
   let lalter = salter EM.! blid b
-      condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
-                              (scondInMelee EM.! blid b)
+      condInMelee = scondInMelee LEM.! blid b
       stdRuleset = getStdRuleset cops
       nearby = rnearby stdRuleset
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)

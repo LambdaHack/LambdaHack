@@ -18,6 +18,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Data.Either
+import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Function
@@ -89,8 +90,7 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
   scondInMelee <- getsClient scondInMelee
-  let condInMelee = fromMaybe (error $ "" `showFailure` condInMelee)
-                              (scondInMelee EM.! blid body)
+  let condInMelee = scondInMelee LEM.! blid body
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid

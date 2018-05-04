@@ -15,6 +15,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -195,7 +196,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , snxtScenario
-                  , scondInMelee = EM.map (const Nothing) (sdungeon s)
+                  , scondInMelee = LEM.fromAscList
+                                   $ map (\lid -> (lid, False))
+                                   $ EM.keys (sdungeon s)
                   , svictories
                   , soptions }
     salter <- getsState createSalter
@@ -220,9 +223,7 @@ recomputeInMelee lid = do
   side <- getsClient sside
   s <- getState
   modifyClient $ \cli ->
-    cli {scondInMelee = EM.insert lid
-                                  (Just $ inMelee side lid s)
-                                  (scondInMelee cli)}
+    cli {scondInMelee = LEM.insert lid (inMelee side lid s) (scondInMelee cli)}
 
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()

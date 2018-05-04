@@ -11,6 +11,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Data.Binary
+import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -58,8 +59,8 @@ data StateClient = StateClient
   , snxtChal      :: Challenge      -- ^ next game challenge setup
   , snxtScenario  :: Int            -- ^ next game scenario number
   , smarkSuspect  :: Int            -- ^ whether to mark suspect features
-  , scondInMelee  :: EM.EnumMap LevelId (Maybe Bool)
-                                    -- ^ last in-melee condition for each level
+  , scondInMelee  :: LEM.EnumMap LevelId Bool
+                                    -- ^ whether we are in melee, per level
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options
@@ -104,7 +105,7 @@ emptyStateClient _sside =
     , snxtChal = defaultChallenge
     , snxtScenario = 0
     , smarkSuspect = 1
-    , scondInMelee = EM.empty
+    , scondInMelee = LEM.empty
     , svictories = EM.empty
     , soptions = defClientOptions
     }

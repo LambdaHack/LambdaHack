@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Char as Char
+import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Fixed as Fixed
@@ -211,6 +212,10 @@ tenthM = 100000
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
   get = EM.fromDistinctAscList <$> get
+
+instance (Enum k, Binary k, Binary e) => Binary (LEM.EnumMap k e) where
+  put m = put (LEM.size m) >> mapM_ put (LEM.toAscList m)
+  get = LEM.fromDistinctAscList <$> get
 
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
