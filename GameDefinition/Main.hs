@@ -10,14 +10,18 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
-import qualified GHC.IO.Handle
 import qualified Options.Applicative as OA
 import           System.Exit
+
+#ifndef USE_JSFILE
+import qualified GHC.IO.Handle
 import           System.FilePath
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
+#endif
+
 import Game.LambdaHack.Server (serverOptionsPI)
 import TieKnot
 
@@ -25,7 +29,9 @@ import TieKnot
 -- run the game and handle exit.
 main :: IO ()
 main = do
+#ifndef USE_JSFILE
   -- For the case when the game is started not on a console.
+  -- This is broken with JS and also bloats the outcome file.
   isTerminal <- SIO.hIsTerminalDevice SIO.stdout
   unless isTerminal $ do
     dataDir <- appDataDir
@@ -34,6 +40,7 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
+#endif
   -- Fail here, not inside server code, so that savefiles are not removed,
   -- because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
