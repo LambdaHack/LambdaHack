@@ -20,7 +20,7 @@ chrome-prof:
 	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" ../lambdahack.github.io/index.html
 
 minific:
-	ccjs dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" --externs=node > ../lambdahack.github.io/lambdahack.all.js
+	ccjs dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" --externs=node --externs=dist/build/LambdaHack/LambdaHack.jsexe/all.js.externs > ../lambdahack.github.io/lambdahack.all.js
 
 # Low delay to display animations swiftly and not bore the public too much.
 # Delay can't be lower than 2, because browsers sometimes treat delay 1
