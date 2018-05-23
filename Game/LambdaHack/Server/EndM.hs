@@ -117,7 +117,7 @@ verifyCaches = do
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
-  unless (bproj b) $ do
+  b2 <- if bproj b then return b else do
     kindId <- getsState $ getIidKindIdServer $ btrunk b
     execUpdAtomic $ UpdRecordKill aid kindId 1
     -- At this point the actor's body exists and his items are not dropped.
@@ -129,11 +129,12 @@ dieSer aid b = do
     -- would not see the actor that drops the stash, leading to a crash.
     -- But this is OK; projectiles can't be leaders, so stash dropped earlier.
     when (isNothing $ gleader fact) $ moveStores False aid CSha CInv
+    getsState $ getActorBody aid
   -- If the actor was a projectile and no effect was triggered by hitting
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered:
-  dropAllItems aid b
-  b2 <- getsState $ getActorBody aid
-  execUpdAtomic $ UpdDestroyActor aid b2 []
+  dropAllItems aid b2
+  b3 <- getsState $ getActorBody aid
+  execUpdAtomic $ UpdDestroyActor aid b3 []
 
 -- | Drop all actor's items.
 dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
