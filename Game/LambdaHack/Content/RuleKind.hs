@@ -36,7 +36,7 @@ data RuleKind = RuleKind
   , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
   , rfirstDeathEnds :: Bool      -- ^ whether first non-spawner actor death
                                  --   ends the game
-  , rwriteSaveClips :: Int       -- ^ game is saved that often
+  , rwriteSaveClips :: Int       -- ^ game is saved that often (not on browser)
   , rleadLevelClips :: Int       -- ^ server switches leader level that often
   , rscoresFile     :: FilePath  -- ^ name of the scores file
   , rnearby         :: Int       -- ^ what distance between actors is 'nearby'
