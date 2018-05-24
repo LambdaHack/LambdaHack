@@ -167,6 +167,7 @@ data SfxMsg =
   | SfxPurposeNothing CStore
   | SfxPurposeTooFew Int Int
   | SfxPurposeUnique
+  | SfxPurposeNotCommon
   | SfxColdFish
   | SfxTimerExtended LevelId ActorId ItemId CStore
   | SfxCollideActor LevelId ActorId ActorId

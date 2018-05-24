@@ -1117,12 +1117,15 @@ effectPolyItem execSfx source target = do
     (iid, ( ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
       let maxCount = Dice.maxDice $ IK.icount itemKind
-      if | itemK < maxCount -> do
+      if | IK.Unique `elem` IK.ifeature itemKind -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
+           return UseId
+         | maybe True (<= 0) $ lookup "common item" $ IK.ifreq itemKind -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeNotCommon
+           return UseId
+         | itemK < maxCount -> do
            execSfxAtomic $ SfxMsgFid (bfid sb)
                          $ SfxPurposeTooFew maxCount itemK
-           return UseId
-         | IK.Unique `elem` IK.ifeature itemKind -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId
          | otherwise -> do
            -- Only the required number of items is used up, not all of them.

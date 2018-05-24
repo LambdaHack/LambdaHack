@@ -1168,6 +1168,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     "The purpose of repurpose is served by" <+> tshow maxCount
     <+> "pieces of this item, not by" <+> tshow itemK <> "."
   SfxPurposeUnique -> return "Unique items can't be repurposed."
+  SfxPurposeNotCommon -> return "Only ordinary common items can be repurposed."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
   SfxTimerExtended lid aid iid cstore -> do
     aidSeen <- getsState $ memActor aid lid
