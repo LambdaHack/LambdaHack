@@ -141,7 +141,7 @@ slotToSentence es = case es of
   EqpSlotAddSpeed -> "The slughish equip it to speed up their whole life."
   EqpSlotAddSight -> "The short-sighted wear it to spot their demise sooner."
   EqpSlotLightSource -> "Explorers brave enough to highlight themselves put it in their equipment."
-  EqpSlotWeapon -> "Melee fighters consider it for their weapon combo."
+  EqpSlotWeapon -> "Melee fighters pick it for their weapon combo."
   EqpSlotMiscAbility -> "Those that don't scorn uncanny skills may equip it."
   EqpSlotAbMove -> "Those unskilled in movement equip it."
   EqpSlotAbMelee -> "Those unskilled in melee equip it."
