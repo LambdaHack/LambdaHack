@@ -670,6 +670,10 @@ displaceActorUI source target = do
   when (bfid sb /= bfid tb) $ do
     lookAtMove source
     lookAtMove target
+  mleader <- getsClient sleader
+  side <- getsClient sside
+  -- Ours involved, but definitely not requested by player via UI.
+  when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
   let ps = (bpos tb, bpos sb)
   animate (blid sb) $ swapPlaces ps
 
