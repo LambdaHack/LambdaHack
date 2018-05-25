@@ -240,4 +240,5 @@ fadeout out step lxsize lysize = do
         return $! concatMap fadeLine [0..ybound]
       fs | out = [3, 3 + step .. lxsize - 14]
          | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
+                       ++ [0]  -- no remnants of fadein onscreen, in case of lag
   Animation <$> mapM rollFrame fs
