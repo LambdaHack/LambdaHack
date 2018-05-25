@@ -519,7 +519,9 @@ potion2 = potionTemplate
   , irarity  = [(5, 8), (10, 8)]
   , ieffects = [ Impress, RefillCalm (-20)
                , OnSmash (Explode "pheromone") ]
-  , ifeature = [Unique, ELabel "of Attraction"] ++ ifeature potionTemplate
+  , ifeature = [Unique, ELabel "of Attraction"]
+               ++ [ Lobable, Fragile  -- identified
+                  , toVelocity 50 ]
   -- , idesc    = ""
   }
 potion3 = potionTemplate
@@ -587,7 +589,9 @@ potion9 = potionTemplate
   , ieffects = [ RefillHP 60, Impress, RefillCalm (-60)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "pheromone") ]
-  , ifeature = [Unique, ELabel "of Love"] ++ ifeature potionTemplate
+  , ifeature = [Unique, ELabel "of Love"]
+               ++ [ Lobable, Fragile  -- identified
+                  , toVelocity 50 ]
   -- , idesc    = ""
   }
 
