@@ -178,8 +178,12 @@ pickActorToMove maidToAvoid = do
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorAspect aid body
-          targetTEnemy (_, TgtAndPath{tapTgt=TEnemy{}}) = True
-          targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} _ _}) = True
+          targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _ permit}) =
+            not permit
+          targetTEnemy
+            ( (_, b)
+            , TgtAndPath{tapTgt=TPoint (TEnemyPos _ permit) lid _} ) =
+              lid == blid b && not permit
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
             threatDistL <- getsState $ meleeThreatDistList aid
@@ -191,20 +195,18 @@ pickActorToMove maidToAvoid = do
             return $! condThreat 5 && not condSupport2
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
-          -- These are not necessarily stuck (perhaps can go around),
-          -- but their current path is blocked by friends.
           notSwapReady abt@((_, b), _)
                        (ab2, Just t2@TgtAndPath{tapPath=
                                        AndPath{pathList=q : _}}) =
             let source = bpos b
-                retry = False  -- avoid forced displace, unless all need it
-                enemyTgtOrenemyPos = targetTEnemy abt
-                enemyTgt2OrenemyPos2 = targetTEnemy (ab2, t2)
+                tenemy = targetTEnemy abt
+                tenemy2 = targetTEnemy (ab2, t2)
             -- Copied from 'displaceTowards':
             in not (q == source  -- friend wants to swap
-                    || retry  -- desperate
-                    || enemyTgtOrenemyPos && not enemyTgt2OrenemyPos2)
+                    || tenemy && not tenemy2)
           notSwapReady _ _ = True
+          -- These are not necessarily stuck (perhaps can go around),
+          -- but their current path is blocked by friends (and they waited).
           targetBlocked abt@((aid, body), TgtAndPath{tapPath}) = case tapPath of
             AndPath{pathList= q : _} ->
                waitedLastTurn body  -- 1 free sidestep

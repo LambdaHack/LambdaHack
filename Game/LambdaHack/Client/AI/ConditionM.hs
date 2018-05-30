@@ -69,7 +69,7 @@ condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
-    Just (TPoint (TEnemyPos _ permit) lid _) | lid == blid b -> not permit
+    Just (TPoint (TEnemyPos _ permit) lid _) -> lid == blid b && not permit
     _ -> False
 
 -- | Check if the target is nonmoving.
