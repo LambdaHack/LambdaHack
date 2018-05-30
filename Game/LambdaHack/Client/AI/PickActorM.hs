@@ -206,15 +206,14 @@ pickActorToMove maidToAvoid = do
                     || tenemy && not tenemy2)
           notSwapReady _ _ = True
           -- These are not necessarily stuck (perhaps can go around),
-          -- but their current path is blocked by friends (and they waited).
-          targetBlocked abt@((aid, body), TgtAndPath{tapPath}) = case tapPath of
+          -- but their current path is blocked by friends.
+          targetBlocked abt@((aid, _), TgtAndPath{tapPath}) = case tapPath of
             AndPath{pathList= q : _} ->
-               waitedLastTurn body  -- 1 free sidestep
-               && any (\abt2@((aid2, body2), _) ->
-                         aid2 /= aid  -- in case pushed on goal
-                         && bpos body2 == q
-                         && notSwapReady abt abt2)
-                      oursTgtRaw
+              any (\abt2@((aid2, body2), _) ->
+                     aid2 /= aid  -- in case pushed on goal
+                     && bpos body2 == q
+                     && notSwapReady abt abt2)
+                  oursTgtRaw
             _ -> False
           (oursTEnemyBlocked, oursTEnemy) =
             partition targetBlocked oursTEnemyAll
