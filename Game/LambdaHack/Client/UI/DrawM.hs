@@ -520,8 +520,10 @@ drawLeaderStatus waitT = do
             let b@Actor{bhp, bcalm} = getActorBody leader s
             in ( bhp, not (actorInAmbient b s)
                , braced b, bhpDelta b, bcalmDelta b
-               , showTrunc $ IA.aMaxHP ar, showTrunc (bhp `divUp` oneM)
-               , showTrunc $ IA.aMaxCalm ar, showTrunc (bcalm `divUp` oneM))
+               , showTrunc $ max 0 $ IA.aMaxHP ar
+               , showTrunc (bhp `divUp` oneM)
+               , showTrunc $ max 0 $ IA.aMaxCalm ar
+               , showTrunc (bcalm `divUp` oneM))
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
