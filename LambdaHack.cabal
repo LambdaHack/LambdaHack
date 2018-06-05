@@ -230,7 +230,7 @@ library
   other-modules:      Paths_LambdaHack
   build-depends:
                       assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.9 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.8,
@@ -329,7 +329,7 @@ executable LambdaHack
                       template-haskell >= 2.6,
 
                       assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.9 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.8,
@@ -402,7 +402,7 @@ test-suite test
                       template-haskell >= 2.6,
 
                       assert-failure >= 0.1.2 && < 0.2,
-                      async      >= 2,
+                      async      >= 2.2.1,
                       base       >= 4.9 && < 99,
                       base-compat >= 0.8.0,
                       binary     >= 0.8,
