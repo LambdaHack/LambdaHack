@@ -23,7 +23,8 @@ import Game.LambdaHack.Common.Misc
 #endif
 
 import Game.LambdaHack.Server (serverOptionsPI)
-import TieKnot
+
+import Implementation.TieKnot
 
 -- | Parse commandline options, tie the engine, content and clients knot,
 -- run the game and handle exit.

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The implementation of our custom game server monads. Just as any other
 -- component of the library, this implementation can be substituted.
-module Game.LambdaHack.SampleImplementation.SampleMonadServer
+module Implementation.MonadServerImplementation
   ( executorSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -34,7 +34,6 @@ import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Thread
-import           Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
 import           Game.LambdaHack.Server
 import           Game.LambdaHack.Server.BroadcastAtomic
 import           Game.LambdaHack.Server.HandleAtomicM
@@ -42,6 +41,8 @@ import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ProtocolM
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
+
+import Implementation.MonadClientImplementation (executorCli)
 
 data SerState = SerState
   { serState  :: State           -- ^ current global state

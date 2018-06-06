@@ -5,7 +5,7 @@ name:           LambdaHack
 -- PVP summary:+-+------- breaking API changes
 --             | | +----- minor or non-breaking API additions
 --             | | | +--- code changes with no API change
-version:       0.8.0.1
+version:       0.8.1.0
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
 description:   LambdaHack is a Haskell game engine library for ASCII roguelike
                games of arbitrary theme, size and complexity, with optional
@@ -199,8 +199,6 @@ library
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
-                      Game.LambdaHack.SampleImplementation.SampleMonadClient
-                      Game.LambdaHack.SampleImplementation.SampleMonadServer
                       Game.LambdaHack.Server
                       Game.LambdaHack.Server.BroadcastAtomic
                       Game.LambdaHack.Server.Commandline
@@ -323,7 +321,9 @@ executable LambdaHack
                       Content.PlaceKind,
                       Content.RuleKind,
                       Content.TileKind,
-                      TieKnot,
+                      Implementation.MonadClientImplementation,
+                      Implementation.MonadServerImplementation,
+                      Implementation.TieKnot,
                       Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
@@ -396,7 +396,9 @@ test-suite test
                       Content.PlaceKind,
                       Content.RuleKind,
                       Content.TileKind,
-                      TieKnot,
+                      Implementation.MonadClientImplementation,
+                      Implementation.MonadServerImplementation,
+                      Implementation.TieKnot,
                       Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,

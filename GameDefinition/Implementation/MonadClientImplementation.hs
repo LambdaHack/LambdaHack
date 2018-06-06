@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The implementation of our custom game client monads. Just as any other
 -- component of the library, this implementation can be substituted.
-module Game.LambdaHack.SampleImplementation.SampleMonadClient
+module Implementation.MonadClientImplementation
   ( executorCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
