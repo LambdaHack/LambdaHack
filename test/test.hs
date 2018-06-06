@@ -5,7 +5,7 @@ import Options.Applicative
 import Game.LambdaHack.Common.Prelude
 import Game.LambdaHack.Server
 
-import TieKnot
+import Implementation.TieKnot
 
 main :: IO ()
 main = do
