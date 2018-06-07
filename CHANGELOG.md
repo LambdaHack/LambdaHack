@@ -1,3 +1,9 @@
+## [v0.8.1.0](https://github.com/LambdaHack/LambdaHack/compare/v0.8.0.0...v0.8.1.0)
+
+- no player-visible changes
+- significantly reduce RAM usage when compiling library
+- update and extend CI
+
 ## [v0.8.0.0, aka 'Explosive dashboard'](https://github.com/LambdaHack/LambdaHack/compare/v0.7.1.0...v0.8.0.0)
 
 - rework greying out menu items and permitting item application and projection
