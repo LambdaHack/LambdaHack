@@ -231,7 +231,7 @@ Further information
 For more information, visit the wiki[4]
 and see [PLAYING.md](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md),
 [CREDITS](https://github.com/LambdaHack/LambdaHack/blob/master/CREDITS)
-and [LICENSE](https://github.com/LambdaHack/LambdaHack/blob/master/LICENSE).
+and [COPYLEFT](https://github.com/LambdaHack/LambdaHack/blob/master/COPYLEFT).
 
 Have fun!
 

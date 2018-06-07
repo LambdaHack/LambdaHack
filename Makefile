@@ -214,6 +214,7 @@ build-binary-common:
 	cp README.md LambdaHackTheGame
 	cp CHANGELOG.md LambdaHackTheGame
 	cp LICENSE LambdaHackTheGame
+	cp COPYLEFT LambdaHackTheGame
 	cp CREDITS LambdaHackTheGame
 
 build-binary: build-binary-common
