@@ -44,7 +44,7 @@ description:   LambdaHack is a Haskell game engine library for ASCII roguelike
 homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD3
-license-file:  LICENSE
+license-file:  COPYRIGHT
 tested-with:   GHC==8.0.2, GHC==8.2.2, GHC==8.4.3
 data-files:    GameDefinition/config.ui.default,
                GameDefinition/fonts/16x16x.fon,
@@ -57,6 +57,7 @@ data-files:    GameDefinition/config.ui.default,
                README.md,
                CHANGELOG.md,
                LICENSE,
+               COPYRIGHT,
                CREDITS
 extra-source-files: GameDefinition/MainMenu.ascii,
                     GameDefinition/PLAYING.md,
