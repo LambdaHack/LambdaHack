@@ -1,13 +1,9 @@
-resolver: lts-9.8
+resolver: nightly-2018-06-07
 
 packages: ['.']
 
-extra-deps:
-- assert-failure-0.1.2.2
-- hsini-0.5.1.1
-- miniutter-0.4.6.0
-- minimorph-0.1.6.1
-- sdl2-ttf-2.0.1
+extra-deps: []
 
 flags: {}
+
 extra-package-dbs: []
