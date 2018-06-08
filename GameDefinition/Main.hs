@@ -56,4 +56,4 @@ main = do
     Left e -> case Ex.fromException $ unwrapEx e of
       Just ExitSuccess ->
         exitSuccess  -- we are in the main thread, so here it really exits
-      _ -> Ex.throwIO e
+      _ -> Ex.throwIO $ unwrapEx e
