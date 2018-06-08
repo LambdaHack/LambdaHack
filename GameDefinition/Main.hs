@@ -49,7 +49,9 @@ main = do
   a <- async $ tieKnot serverOptions
   resOrEx <- waitCatch a
   let unwrapEx e = case Ex.fromException e of
+#if MIN_VERSION_async(2,2,1)
         Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+#endif
         _ -> e
   case resOrEx of
     Right () -> return ()
