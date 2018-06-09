@@ -980,7 +980,7 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
   , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [AddSight $ 1 + 1 `d` 2, AddHurtMelee $ (1 `d` 2) * 3]
   , ifeature = [EqpSlot EqpSlotAddSight] ++ ifeature ringTemplate
-  , idesc    = "Let's you better focus your weaker eye."
+  , idesc    = "Lets you better focus your weaker eye."
   }
 -- Don't add standard effects to rings, because they go in and out
 -- of eqp and so activating them would require UI tedium: looking for
