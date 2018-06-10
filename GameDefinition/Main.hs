@@ -48,11 +48,13 @@ main = do
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
   resOrEx <- waitCatch a
-  let unwrapEx e = case Ex.fromException e of
+  let unwrapEx e =
 #if MIN_VERSION_async(2,2,1)
-        Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+        case Ex.fromException e of
+          Just (ExceptionInLinkedThread _ ex) -> unwrapEx ex
+          _ ->
 #endif
-        _ -> e
+               e
   case resOrEx of
     Right () -> return ()
     Left e -> case Ex.fromException $ unwrapEx e of

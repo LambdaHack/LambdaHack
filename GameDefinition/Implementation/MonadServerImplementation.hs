@@ -179,7 +179,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
   -- Wait for clients to exit even in case of server crash
   -- (or server and client crash), which gives them time to save
   -- and report their own inconsistencies, if any.
-  Ex.handle (\(ex :: Ex.SomeException) -> case Ex.fromException ex of
+  Ex.handle (\ex -> case Ex.fromException ex of
                Just ExitSuccess ->
                  -- User-forced shutdown, not crash, so the intention is
                  -- to keep old saves and also clients may be not ready to save.
