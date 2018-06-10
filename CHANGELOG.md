@@ -1,3 +1,8 @@
+## [v0.8.1.2](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.1...v0.8.1.2)
+
+- Fix typos detected by lintian
+- Fix the code that runs in case of old async (bug introduced in v0.8.1.1)
+
 ## [v0.8.1.1](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.0...v0.8.1.1)
 
 - no player-visible changes
