@@ -30,9 +30,14 @@ import Implementation.TieKnot
 -- run the game and handle exit.
 main :: IO ()
 main = do
+  -- This may be broken with JS and also bloats the outcome file, so disabled.
 #ifndef USE_JSFILE
-  -- For the case when the game is started not on a console.
-  -- This is broken with JS and also bloats the outcome file.
+  -- Special case hack, when the game is started not on a console.
+  -- Without this, any attempt to output on stdout crashes a Windows exe
+  -- (at least on Windows Vista) launched from the desktop or start menu.
+  -- This is very crude and results in the inability to, e.g., process
+  -- the output of @--help@ through a unix pipe. However, this should be
+  -- effective on all Windows version, without the need to test all.
   isTerminal <- SIO.hIsTerminalDevice SIO.stdout
   unless isTerminal $ do
     dataDir <- appDataDir
