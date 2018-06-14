@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds, GADTs #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that return server requests.
 -- A couple of them do not take time, the rest does.
@@ -230,7 +229,7 @@ executeIfClearHuman c1 = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m (RequestTimed 'AbWait)
+waitHuman :: MonadClientUI m => m RequestTimed
 waitHuman = do
   modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait
@@ -238,7 +237,7 @@ waitHuman = do
 -- * Wait10
 
 -- | Leader waits a 1/10th of a turn (and doesn't block, etc.).
-waitHuman10 :: MonadClientUI m => m (RequestTimed 'AbWait)
+waitHuman10 :: MonadClientUI m => m RequestTimed
 waitHuman10 = do
   modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
   return ReqWait10
@@ -247,7 +246,7 @@ waitHuman10 = do
 
 moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
-             -> m (FailOrCmd RequestAnyAbility)
+             -> m (FailOrCmd RequestTimed)
 moveRunHuman initialStep finalGoal run runAhead dir = do
   arena <- getArenaUI
   leader <- getLeaderUI
@@ -295,7 +294,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     [(target, _)] | run && initialStep ->
       -- No @stopPlayBack@: initial displace is benign enough.
       -- Displacing requires accessibility, but it's checked later on.
-      RequestAnyAbility <$$> displaceAid target
+      displaceAid target
     _ : _ : _ | run && initialStep -> do
       let !_A = assert (all (bproj . snd) tgts) ()
       failSer DisplaceProjectiles
@@ -312,12 +311,12 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
         failWith "by bumping"
       else
         -- Attacking does not require full access, adjacency is enough.
-        RequestAnyAbility <$$> meleeAid target
+        meleeAid target
     _ : _ -> failWith "actor in the way"
 
 -- | Actor attacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> m (FailOrCmd (RequestTimed 'AbMelee))
+         => ActorId -> m (FailOrCmd RequestTimed)
 meleeAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -352,7 +351,7 @@ meleeAid target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> m (FailOrCmd (RequestTimed 'AbDisplace))
+            => ActorId -> m (FailOrCmd RequestTimed)
 displaceAid target = do
   COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
@@ -389,7 +388,7 @@ displaceAid target = do
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.
-moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestAnyAbility)
+moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestTimed)
 moveSearchAlter dir = do
   COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
@@ -420,7 +419,7 @@ moveSearchAlter dir = do
     -- Movement requires full access.
     if | Tile.isWalkable coTileSpeedup t ->
          -- A potential invisible actor is hit. War started without asking.
-         return $ Right $ RequestAnyAbility $ ReqMove dir
+         return $ Right $ ReqMove dir
        -- No free access, so search and/or alter the tile.
        | not (modifiable || canApplyEmbeds) ->
            failWith "never mind"  -- misclick? related to AlterNothing
@@ -432,7 +431,7 @@ moveSearchAlter dir = do
        | otherwise -> do  -- promising
             verAlters <- verifyAlters (blid sb) tpos
             case verAlters of
-              Right() -> return $ Right $ RequestAnyAbility $ ReqAlter tpos
+              Right() -> return $ Right $ ReqAlter tpos
               Left err -> return $ Left err
             -- We don't use ReqMove, because we don't hit invisible actors,
             -- e.g., hidden in a wall. If server performed an attack for free
@@ -487,10 +486,10 @@ runOnceAheadHuman = do
 
 -- * MoveOnceToXhair
 
-moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 moveOnceToXhairHuman = goToXhair True False
 
-goToXhair :: MonadClientUI m => Bool -> Bool -> m (FailOrCmd RequestAnyAbility)
+goToXhair :: MonadClientUI m => Bool -> Bool -> m (FailOrCmd RequestTimed)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -503,7 +502,7 @@ goToXhair initialStep run = do
       Nothing -> failWith "crosshair position invalid"
       Just c | c == bpos b ->
         if initialStep
-        then return $ Right $ RequestAnyAbility ReqWait
+        then return $ Right $ ReqWait
         else failWith "position reached"
       Just c -> do
         running <- getsSession srunning
@@ -574,12 +573,12 @@ multiActorGoTo arena c paramOld =
 
 -- * RunOnceToXhair
 
-runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 runOnceToXhairHuman = goToXhair True True
 
 -- * ContinueToXhair
 
-continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestAnyAbility)
+continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
@@ -590,7 +589,7 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 -- grabbing of multiple items as a distinct command is too high a proce.
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
-              -> m (FailOrCmd (RequestTimed 'AbMoveItem))
+              -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
@@ -680,7 +679,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemFullKit)]) -> CStore
-          -> m (FailOrCmd (RequestTimed 'AbMoveItem))
+          -> m (FailOrCmd RequestTimed)
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -736,7 +735,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 -- * Project
 
-projectHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbProject))
+projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 projectHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -754,7 +753,7 @@ projectHuman = do
 
 projectItem :: MonadClientUI m
             => (CStore, (ItemId, ItemFull))
-            -> m (FailOrCmd (RequestTimed 'AbProject))
+            -> m (FailOrCmd RequestTimed)
 projectItem (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -780,7 +779,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => m (FailOrCmd (RequestTimed 'AbApply))
+applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
   itemSel <- getsSession sitemSel
   case itemSel of
@@ -797,7 +796,7 @@ applyHuman = do
 
 applyItem :: MonadClientUI m
           => (CStore, (ItemId, ItemFullKit))
-          -> m (FailOrCmd (RequestTimed 'AbApply))
+          -> m (FailOrCmd RequestTimed)
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -814,7 +813,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 
 -- | Ask for a direction and alter a tile in the specified way, if possible.
 alterDirHuman :: MonadClientUI m
-              => [TriggerTile] -> m (FailOrCmd (RequestTimed 'AbAlter))
+              => [TriggerTile] -> m (FailOrCmd RequestTimed)
 alterDirHuman ts = do
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   let verb1 = case ts of
@@ -844,7 +843,7 @@ alterDirHuman ts = do
 
 -- | Try to alter a tile using a feature in the given direction.
 alterTile :: MonadClientUI m
-          => [TriggerTile] -> Vector -> m (FailOrCmd (RequestTimed 'AbAlter))
+          => [TriggerTile] -> Vector -> m (FailOrCmd RequestTimed)
 alterTile ts dir = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -860,7 +859,7 @@ alterTile ts dir = do
 -- the time will be wasted and the server will describe the failure in detail.
 alterTileAtPos :: MonadClientUI m
                => [TriggerTile] -> Point -> Text
-               -> m (FailOrCmd (RequestTimed 'AbAlter))
+               -> m (FailOrCmd RequestTimed)
 alterTileAtPos ts tpos pText = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
@@ -956,7 +955,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Try to alter a tile using a feature under the pointer.
 alterWithPointerHuman :: MonadClientUI m
-                      => [TriggerTile] -> m (FailOrCmd (RequestTimed 'AbAlter))
+                      => [TriggerTile] -> m (FailOrCmd RequestTimed)
 alterWithPointerHuman ts = do
   COps{cotile} <- getsState scops
   lidV <- viewedLevelUI

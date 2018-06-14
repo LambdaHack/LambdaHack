@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
@@ -136,7 +135,7 @@ currentSkillsClient aid = do
 -- primitive and random here as well.
 pickWeaponClient :: MonadClient m
                  => ActorId -> ActorId
-                 -> m (Maybe (RequestTimed 'Ability.AbMelee))
+                 -> m (Maybe RequestTimed)
 pickWeaponClient source target = do
   eqpAssocs <- getsState $ kitAssocs source [CEqp]
   bodyAssocs <- getsState $ kitAssocs source [COrgan]

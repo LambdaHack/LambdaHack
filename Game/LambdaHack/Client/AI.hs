@@ -1,4 +1,3 @@
-{-# LANGUAGE GADTs #-}
 -- | Ways for the client to use AI to produce server requests, based on
 -- the client's view of the game state.
 module Game.LambdaHack.Client.AI
@@ -41,7 +40,7 @@ queryAI aid = do
   (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
   (aidToMove2, treq2) <-
     case treq of
-      RequestAnyAbility ReqWait | mleader == Just aid -> do
+      ReqWait | mleader == Just aid -> do
         -- Leader waits; a waste; try once to pick a yet different leader.
         -- Undo state changes in @pickAction@:
         modifyClient $ \cli -> cli
@@ -58,8 +57,8 @@ queryAI aid = do
 -- | Pick an actor to move and an action for him to perform, given an optional
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
-                   => Maybe (ActorId, RequestAnyAbility) -> ActorId
-                   -> m (ActorId, RequestAnyAbility, Maybe Point)
+                   => Maybe (ActorId, RequestTimed) -> ActorId
+                   -> m (ActorId, RequestTimed, Maybe Point)
 -- This inline speeds up execution by 15% and decreases allocation by 15%,
 -- despite probably bloating executable:
 {-# INLINE pickActorAndAction #-}

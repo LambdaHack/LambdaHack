@@ -52,7 +52,7 @@ import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 execFailure :: MonadServerAtomic m
-            => ActorId -> RequestTimed a -> ReqFailure -> m ()
+            => ActorId -> RequestTimed -> ReqFailure -> m ()
 execFailure aid req failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it to the client, but do not crash

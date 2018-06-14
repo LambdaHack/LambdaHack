@@ -1,18 +1,15 @@
-{-# LANGUAGE DataKinds, GADTs, KindSignatures, StandaloneDeriving #-}
 -- | Abstract syntax of requests.
 --
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.Request
-  ( RequestAI, ReqAI(..), RequestUI, ReqUI(..)
-  , RequestAnyAbility(..), RequestTimed(..)
+  ( RequestAI, ReqAI(..), RequestUI, ReqUI(..), RequestTimed(..)
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -28,7 +25,7 @@ type RequestAI = (ReqAI, Maybe ActorId)
 -- | Possible forms of requests sent by AI clients.
 data ReqAI =
     ReqAINop
-  | ReqAITimed RequestAnyAbility
+  | ReqAITimed RequestTimed
   deriving Show
 
 -- | Requests sent by UI clients to the server. If faction leader is to be
@@ -38,7 +35,7 @@ type RequestUI = (ReqUI, Maybe ActorId)
 -- | Possible forms of requests sent by UI clients.
 data ReqUI =
     ReqUINop
-  | ReqUITimed RequestAnyAbility
+  | ReqUITimed RequestTimed
   | ReqUIGameRestart (GroupName ModeKind) Challenge
   | ReqUIGameDropAndExit
   | ReqUIGameSaveAndExit
@@ -47,22 +44,16 @@ data ReqUI =
   | ReqUIAutomate
   deriving Show
 
--- | Basic form of requests, sent by both AI and UI clients to the server.
-data RequestAnyAbility = forall a. RequestAnyAbility (RequestTimed a)
-
-deriving instance Show RequestAnyAbility
-
 -- | Requests that take game time, indexed by actor ability
 -- that is needed for performing the corresponding actions.
-data RequestTimed :: Ability -> * where
-  ReqMove :: Vector -> RequestTimed 'AbMove
-  ReqMelee :: ActorId -> ItemId -> CStore -> RequestTimed 'AbMelee
-  ReqDisplace :: ActorId -> RequestTimed 'AbDisplace
-  ReqAlter :: Point -> RequestTimed 'AbAlter
-  ReqWait :: RequestTimed 'AbWait
-  ReqWait10 :: RequestTimed 'AbWait
-  ReqMoveItems :: [(ItemId, Int, CStore, CStore)] -> RequestTimed 'AbMoveItem
-  ReqProject :: Point -> Int -> ItemId -> CStore -> RequestTimed 'AbProject
-  ReqApply :: ItemId -> CStore -> RequestTimed 'AbApply
-
-deriving instance Show (RequestTimed a)
+data RequestTimed =
+    ReqMove Vector
+  | ReqMelee ActorId ItemId CStore
+  | ReqDisplace ActorId
+  | ReqAlter Point
+  | ReqWait
+  | ReqWait10
+  | ReqMoveItems [(ItemId, Int, CStore, CStore)]
+  | ReqProject Point Int ItemId CStore
+  | ReqApply ItemId CStore
+  deriving Show

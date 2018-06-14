@@ -1,4 +1,3 @@
-{-# LANGUAGE GADTs #-}
 -- | Semantics of requests
 -- .
 -- A couple of them do not take time, the rest does.
@@ -60,7 +59,7 @@ import           Game.LambdaHack.Server.State
 -- AI always takes time and so doesn't loop.
 handleRequestAI :: MonadServerAtomic m
                 => ReqAI
-                -> m (Maybe RequestAnyAbility)
+                -> m (Maybe RequestTimed)
 handleRequestAI cmd = case cmd of
   ReqAITimed cmdT -> return $ Just cmdT
   ReqAINop -> return Nothing
@@ -68,7 +67,7 @@ handleRequestAI cmd = case cmd of
 -- | The semantics of server commands. Only the first two cases affect time.
 handleRequestUI :: MonadServerAtomic m
                 => FactionId -> ActorId -> ReqUI
-                -> m (Maybe RequestAnyAbility)
+                -> m (Maybe RequestTimed)
 handleRequestUI fid aid cmd = case cmd of
   ReqUITimed cmdT -> return $ Just cmdT
   ReqUIGameRestart t d -> reqGameRestart aid t d >> return Nothing
@@ -83,7 +82,7 @@ handleRequestUI fid aid cmd = case cmd of
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
 setBWait :: MonadServerAtomic m
-         => RequestTimed a -> ActorId -> Actor -> m (Maybe Bool)
+         => RequestTimed -> ActorId -> Actor -> m (Maybe Bool)
 {-# INLINE setBWait #-}
 setBWait cmd aid b = do
   let mwait = case cmd of
@@ -95,7 +94,7 @@ setBWait cmd aid b = do
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
-                   => FactionId -> ActorId -> RequestTimed a -> m Bool
+                   => FactionId -> ActorId -> RequestTimed -> m Bool
 handleRequestTimed fid aid cmd = do
   b <- getsState $ getActorBody aid
   mwait <- setBWait cmd aid b
@@ -123,7 +122,7 @@ managePerRequest aid = do
     execUpdAtomic $ UpdRefillHP aid clearMark
 
 handleRequestTimedCases :: MonadServerAtomic m
-                        => ActorId -> RequestTimed a -> m ()
+                        => ActorId -> RequestTimed -> m ()
 handleRequestTimedCases aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target iid cstore -> reqMelee aid target iid cstore

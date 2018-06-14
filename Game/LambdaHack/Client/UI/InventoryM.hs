@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 -- | UI of inventory management.
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)

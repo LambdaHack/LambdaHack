@@ -46,7 +46,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Continue running in the given direction.
 continueRun :: MonadClientUI m
             => LevelId -> RunParams
-            -> m (Either Text RequestAnyAbility)
+            -> m (Either Text RequestTimed)
 continueRun arena paramOld = case paramOld of
   RunParams{ runMembers = []
            , runStopMsg = Just stopMsg } -> return $ Left stopMsg
@@ -88,7 +88,7 @@ continueRun arena paramOld = case paramOld of
              s <- getState
              modifyClient $ updateLeader r s
              modifySession $ \sess -> sess {srunning = Just paramNew}
-             return $ Right $ RequestAnyAbility $ ReqMove dir
+             return $ Right $ ReqMove dir
          -- The potential invisible actor is hit. War is started without asking.
 
 -- | This function implements the actual logic of running. It checks if we

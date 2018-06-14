@@ -1,4 +1,3 @@
-{-# LANGUAGE GADTs #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopM
@@ -506,7 +505,7 @@ hActors as@(aid : rest) = do
         mtimed <- handleRequestUI side aidNew cmd
         return (aidNew, mtimed)
     case mtimed of
-      Just (RequestAnyAbility timed) -> do
+      Just timed -> do
         nonWaitMove <- handleRequestTimed side aidNew timed
         -- Even if the actor got a free turn of time via a scroll,
         -- he will not act again this clip, only next clip.

@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 -- | AI procedure for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityM
   ( pickAction
@@ -56,7 +55,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick the most desirable AI ation for the actor.
-pickAction :: MonadClient m => ActorId -> Bool -> m RequestAnyAbility
+pickAction :: MonadClient m => ActorId -> Bool -> m RequestTimed
 {-# INLINE pickAction #-}
 pickAction aid retry = do
   side <- getsClient sside
@@ -77,15 +76,10 @@ pickAction aid retry = do
   -- Run the AI: chose an action from those given by the AI strategy.
   rndToAction $ frequency bestAction
 
-type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
-
-toAny :: ToAny a
-toAny strat = RequestAnyAbility <$> strat
-
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> Bool -> m (Strategy RequestAnyAbility)
+               => ActorId -> Bool -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
 actionStrategy aid retry = do
   body <- getsState $ getActorBody aid
@@ -136,8 +130,9 @@ actionStrategy aid retry = do
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
-      stratToFreq :: Int -> m (Strategy RequestAnyAbility)
-                  -> m (Frequency RequestAnyAbility)
+      stratToFreq :: Int
+                  -> m (Strategy RequestTimed)
+                  -> m (Frequency RequestTimed)
       stratToFreq scale mstrat = do
         st <- mstrat
         return $! if scale == 0
@@ -146,13 +141,13 @@ actionStrategy aid retry = do
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
-      prefix, suffix :: [([Ability], m (Strategy RequestAnyAbility), Bool)]
+      prefix, suffix :: [([Ability], m (Strategy RequestTimed), Bool)]
       prefix =
-        [ ( [AbApply], (toAny :: ToAny 'AbApply)
-            <$> applyItem aid ApplyFirstAid
+        [ ( [AbApply]
+          , applyItem aid ApplyFirstAid
           , not condAnyFoeAdj && condHpTooLow)
-        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid ViaStairs
+        , ( [AbAlter]
+          , trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
@@ -163,13 +158,13 @@ actionStrategy aid retry = do
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condAnyFoeAdj && condBlocksFriends)  -- later checks foe eligible
-        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
-            <$> pickup aid True
+        , ( [AbMoveItem]
+          , pickup aid True
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
             && condFloorWeapon && not condHpTooLow
             && abInMaxSkill AbMelee )
-        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid ViaEscape
+        , ( [AbAlter]
+          , trigger aid ViaEscape
           , condAdjTriggerable && not condAimEnemyPresent
             && not condDesirableFloorItem )  -- collect the last loot
         , ( [AbMove]
@@ -200,22 +195,22 @@ actionStrategy aid retry = do
                     not condInMelee
                     && heavilyDistressed
                     && (not condCanProject || canFleeFromLight) )
-        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
-            <$> meleeBlocker aid  -- only melee blocker
+        , ( [AbMelee]
+          , meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
             || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
                && condAimEnemyPresent )  -- excited
                     -- So animals block each other until hero comes and then
                     -- the stronger makes a show for him and kills the weaker.
-        , ( [AbAlter], (toAny :: ToAny 'AbAlter)
-            <$> trigger aid ViaNothing
+        , ( [AbAlter]
+          , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
             && condAdjTriggerable && not condAimEnemyPresent )
         , ( [AbDisplace]  -- prevents some looping movement
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
-        , ( [AbMelee], (toAny :: ToAny 'AbMelee)
-            <$> meleeAny aid
+        , ( [AbMelee]
+          ,  meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( [AbMove]
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
@@ -226,16 +221,15 @@ actionStrategy aid retry = do
       -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
       -- Only the best variant of @chase@ is taken, but it's almost always
       -- good, and if not, the @chase@ in @suffix@ may fix that.
-      distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
+      distant :: [([Ability], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [AbMoveItem]
           , stratToFreq (if condInMelee then 2 else 20000)
-            $ (toAny :: ToAny 'AbMoveItem)
-            <$> yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
+            $ yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [AbMoveItem]
-          , stratToFreq 1 $ (toAny :: ToAny 'AbMoveItem)
-            <$> equipItems aid  -- doesn't take long, very useful if safe
+          , stratToFreq 1
+            $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
                  || condNotCalmEnough
@@ -243,12 +237,11 @@ actionStrategy aid retry = do
         , ( [AbProject]
           , stratToFreq (if condTgtNonmoving then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
-            $ (toAny :: ToAny 'AbProject)
-            <$> projectItem aid  -- equivalent of @condCanProject@ called inside
+            $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
         , ( [AbApply]
-          , stratToFreq 1 $ (toAny :: ToAny 'AbApply)
-            <$> applyItem aid ApplyAll  -- use any potion or scroll
+          , stratToFreq 1
+            $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if | condInMelee ->
@@ -275,11 +268,11 @@ actionStrategy aid retry = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
-            <$> pickup aid False  -- e.g., to give to other party members
+        [ ( [AbMoveItem]
+          , pickup aid False  -- e.g., to give to other party members
           , not condInMelee )
-        , ( [AbMoveItem], (toAny :: ToAny 'AbMoveItem)
-            <$> unEquipItems aid  -- late, because these items not bad
+        , ( [AbMoveItem]
+          , unEquipItems aid  -- late, because these items not bad
           , not condInMelee )
         , ( [AbMove]
           , chase aid (not condInMelee
@@ -289,8 +282,8 @@ actionStrategy aid retry = do
             else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =
-        [ ( [AbWait], (toAny :: ToAny 'AbWait)
-            <$> waitBlockNow
+        [ ( [AbWait]
+          , waitBlockNow
             -- Wait until friends sidestep; ensures strategy is never empty.
           , True )
         ]
@@ -314,11 +307,10 @@ actionStrategy aid retry = do
   sumFallback <- sumS fallback
   return $! sumPrefix .| comDistant .| sumSuffix .| sumFallback
 
-waitBlockNow :: MonadClient m => m (Strategy (RequestTimed 'AbWait))
+waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
 
-pickup :: MonadClient m
-       => ActorId -> Bool -> m (Strategy (RequestTimed 'AbMoveItem))
+pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 pickup aid onlyWeapon = do
   benItemL <- benGroundItems aid
   b <- getsState $ getActorBody aid
@@ -356,8 +348,7 @@ pickup aid onlyWeapon = do
 -- and with @inEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
 -- from inv or sha to eqp.
-equipItems :: MonadClient m
-           => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 equipItems aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
@@ -421,8 +412,7 @@ toShare IA.EqpSlotMiscBonus = False
 toShare IA.EqpSlotMiscAbility = False
 toShare _ = True
 
-yieldUnneeded :: MonadClient m
-              => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
@@ -457,8 +447,7 @@ yieldUnneeded aid = do
 -- and with @inEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
 -- from inv or eqp to sha.
-unEquipItems :: MonadClient m
-             => ActorId -> m (Strategy (RequestTimed 'AbMoveItem))
+unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
@@ -561,7 +550,7 @@ harmful discoBenefit iid =
   not $ benInEqp $ discoBenefit EM.! iid
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
+meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   actorAspect <- getsState sactorAspect
@@ -606,7 +595,7 @@ meleeBlocker aid = do
 
 -- Everybody melees in a pinch, skills and weapons allowing,
 -- even though some prefer ranged attacks.
-meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed 'AbMelee))
+meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -634,7 +623,7 @@ meleeAny aid = do
 -- the actor doesn't target a visible enemy at this point.
 trigger :: MonadClient m
         => ActorId -> FleeViaStairsOrEscape
-        -> m (Strategy (RequestTimed 'AbAlter))
+        -> m (Strategy RequestTimed)
 trigger aid fleeVia = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
@@ -647,8 +636,7 @@ trigger aid fleeVia = do
     [ (ceiling benefit, ReqAlter pos)
     | (benefit, (pos, _)) <- efeat ]
 
-projectItem :: MonadClient m
-            => ActorId -> m (Strategy (RequestTimed 'AbProject))
+projectItem :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
@@ -698,7 +686,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
   deriving Eq
 
 applyItem :: MonadClient m
-          => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed 'AbApply))
+          => ActorId -> ApplyItemGroup -> m (Strategy RequestTimed)
 applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
@@ -796,7 +784,7 @@ applyItem aid applyGroup = do
 -- and as far from the attackers, as possible. Usually fleeing from
 -- foes will lead towards friends, but we don't insist on that.
 flee :: MonadClient m
-     => ActorId -> [(Int, Point)] -> m (Strategy RequestAnyAbility)
+     => ActorId -> [(Int, Point)] -> m (Strategy RequestTimed)
 flee aid fleeL = do
   b <- getsState $ getActorBody aid
   -- Regardless if fleeing accomplished, mark the need.
@@ -807,7 +795,7 @@ flee aid fleeL = do
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
-displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
+displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displaceFoe aid = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -835,7 +823,7 @@ displaceFoe aid = do
   mapStrategyM (moveOrRunAid aid) str
 
 displaceBlocker :: MonadClient m
-                => ActorId -> Bool -> m (Strategy RequestAnyAbility)
+                => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -893,8 +881,7 @@ displaceTowards aid target retry = do
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
-chase :: MonadClient m
-      => ActorId -> Bool -> Bool -> m (Strategy RequestAnyAbility)
+chase :: MonadClient m => ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
 chase aid avoidAmbient retry = do
   COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -955,8 +942,7 @@ moveTowards aid target goal relaxed = do
 -- Actor moves or searches or alters or attacks.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
-moveOrRunAid :: MonadClient m
-             => ActorId -> Vector -> m (Maybe RequestAnyAbility)
+moveOrRunAid :: MonadClient m => ActorId -> Vector -> m (Maybe RequestTimed)
 moveOrRunAid source dir = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -989,9 +975,9 @@ moveOrRunAid source dir = do
            wps <- pickWeaponClient source target
            case wps of
              Nothing -> return Nothing
-             Just wp -> return $ Just $ RequestAnyAbility wp
+             Just wp -> return $ Just wp
          | otherwise ->
-           return $ Just $ RequestAnyAbility $ ReqDisplace target
+           return $ Just $ ReqDisplace target
     (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., projectile)
       -- If really can't displace, melee.
       -- No problem if there are many projectiles at the spot. We just
@@ -1000,11 +986,11 @@ moveOrRunAid source dir = do
       wps <- pickWeaponClient source target
       case wps of
         Nothing -> return Nothing
-        Just wp -> return $ Just $ RequestAnyAbility wp
+        Just wp -> return $ Just wp
     [] -- move or search or alter
        | Tile.isWalkable coTileSpeedup $ lvl `at` tpos ->
          -- Movement requires full access.
-         return $ Just $ RequestAnyAbility $ ReqMove dir
+         return $ Just $ ReqMove dir
          -- The potential invisible actor is hit.
        | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
          error $ "AI causes AlterUnwalked" `showFailure` (source, dir)
@@ -1013,4 +999,4 @@ moveOrRunAid source dir = do
          error $ "AI causes AlterBlockItem" `showFailure` (source, dir)
        | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
-         return $ Just $ RequestAnyAbility $ ReqAlter tpos
+         return $ Just $ ReqAlter tpos

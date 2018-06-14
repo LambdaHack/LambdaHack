@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHumanM
   ( cmdHumanSem
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdAction, addNoError, fmapTimedToUI
+  , noRemoteHumanCmd, cmdAction, addNoError
 #endif
   ) where
 
@@ -69,8 +69,8 @@ cmdAction cmd = case cmd of
   LoopOnNothing cmd1 -> loopOnNothingHuman (cmdAction cmd1)
   ExecuteIfClear cmd1 -> executeIfClearHuman (cmdAction cmd1)
 
-  Wait -> weaveJust <$> Right <$> fmapTimedToUI waitHuman
-  Wait10 -> weaveJust <$> Right <$> fmapTimedToUI waitHuman10
+  Wait -> weaveJust <$> Right <$> ReqUITimed <$> waitHuman
+  Wait10 -> weaveJust <$> Right <$> ReqUITimed <$> waitHuman10
   MoveDir v ->
     weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
@@ -80,12 +80,12 @@ cmdAction cmd = case cmd of
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)
   MoveItem cLegalRaw toCStore mverb auto ->
     weaveJust
-    <$> (fmapTimedToUI <$> moveItemHuman cLegalRaw toCStore mverb auto)
-  Project -> weaveJust <$> (fmapTimedToUI <$> projectHuman)
-  Apply -> weaveJust <$> (fmapTimedToUI <$> applyHuman)
-  AlterDir ts -> weaveJust <$> (fmapTimedToUI <$> alterDirHuman ts)
+    <$> (ReqUITimed <$$> moveItemHuman cLegalRaw toCStore mverb auto)
+  Project -> weaveJust <$> (ReqUITimed <$$> projectHuman)
+  Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman)
+  AlterDir ts -> weaveJust <$> (ReqUITimed <$$> alterDirHuman ts)
   AlterWithPointer ts -> weaveJust
-                         <$> (fmapTimedToUI <$> alterWithPointerHuman ts)
+                         <$> (ReqUITimed <$$> alterWithPointerHuman ts)
   Help -> helpHuman cmdAction
   Hint -> hintHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction
@@ -145,6 +145,3 @@ cmdAction cmd = case cmd of
 
 addNoError :: Monad m => m () -> m (Either MError ReqUI)
 addNoError cmdCli = cmdCli >> return (Left Nothing)
-
-fmapTimedToUI :: Monad m => m (RequestTimed a) -> m ReqUI
-fmapTimedToUI mr = ReqUITimed . RequestAnyAbility <$> mr

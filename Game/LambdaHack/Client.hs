@@ -9,8 +9,7 @@ module Game.LambdaHack.Client
   ( -- * Re-exported from "Game.LambdaHack.Client.LoopM"
     loopCli
     -- * Re-exported from "Game.LambdaHack.Client.Request"
-  , RequestAI, ReqAI(..), RequestUI, ReqUI(..)
-  , RequestAnyAbility(..), RequestTimed(..)
+  , RequestAI, ReqAI(..), RequestUI, ReqUI(..), RequestTimed(..)
     -- * Re-exported from "Game.LambdaHack.Client.Response"
   , Response (..)
     -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
