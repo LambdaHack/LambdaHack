@@ -807,7 +807,7 @@ displaceFoe aid = do
   let foe (_, b2) = not (bproj b2) && isFoe (bfid b) fact (bfid b2)
         -- DisplaceProjectiles
       adjFoes = filter foe adjacentAssocs
-      displaceable p =  -- DisplaceAccess
+      walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
         boldpos body /= Just p || waitedLastTurn body
@@ -818,7 +818,7 @@ displaceFoe aid = do
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
-        return $! if displaceable (bpos body2) && dEnemy && nFrOld < nFrNew
+        return $! if walkable (bpos body2) && dEnemy && nFrOld < nFrNew
                      && notLooping b (bpos body2)
                   then Just (nFrOld * nFrOld, ReqDisplace aid2)
                   else Nothing
@@ -847,11 +847,11 @@ displaceTgt aid target retry = do
   let source = bpos b
   let !_A = assert (adjacent source target) ()
   lvl <- getLevel $ blid b
-  let displaceable p =  -- DisplaceAccess
+  let walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
         boldpos body /= Just p || waitedLastTurn body
-  if displaceable target && notLooping b target then do
+  if walkable target && notLooping b target then do
     mleader <- getsClient sleader
     mBlocker <- getsState $ posToAssocs target (blid b)
     case mBlocker of
@@ -954,11 +954,10 @@ moveOrRunAid source dir = do
   actorSk <- currentSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
-  let displaceable p =  -- DisplaceAccess
-        Tile.isWalkable coTileSpeedup (lvl `at` p)
+  let walkable =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` tpos)
       notLooping body p =  -- avoid displace loops
         boldpos body /= Just p || waitedLastTurn body
-      alterSkill = EM.findWithDefault 0 AbAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -968,7 +967,9 @@ moveOrRunAid source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
-    [(target, b2)] | displaceable tpos && notLooping sb tpos -> do
+    [(target, b2)] | walkable
+                     && EM.findWithDefault 0 AbDisplace actorSk > 0
+                     && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       actorMaxSk <- maxActorSkillsClient target
@@ -977,17 +978,16 @@ moveOrRunAid source dir = do
       if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
       then return Nothing
       else return $ Just $ ReqDisplace target
-    [] -- move or search or alter
-       | Tile.isWalkable coTileSpeedup $ lvl `at` tpos ->
-         -- Movement requires full access.
-         return $ Just $ ReqMove dir
-         -- The potential invisible actor is hit.
-       | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
-         error $ "AI causes AlterUnwalked" `showFailure` (source, dir)
-       | EM.member tpos $ lfloor lvl ->
-         -- Only possible if items allowed inside unwalkable tiles.
-         error $ "AI causes AlterBlockItem" `showFailure` (source, dir)
-       | otherwise ->
-         -- Not walkable, but alter skill suffices, so search or alter the tile.
-         return $ Just $ ReqAlter tpos
+    [] | walkable && EM.findWithDefault 0 AbMove actorSk > 0 ->
+      -- Movement requires full access. The potential invisible actor is hit.
+      return $ Just $ ReqMove dir
+    [] | not walkable
+         && EM.findWithDefault 0 AbAlter actorSk
+              >= Tile.alterMinWalk coTileSpeedup t  -- AlterUnwalked
+         -- Only possible if items allowed inside unwalkable tiles:
+         && EM.notMember tpos (lfloor lvl) ->  -- AlterBlockItem
+      -- Not walkable, but alter skill suffices, so search or alter the tile.
+      -- We assume that unalterable unwalkable tiles are protected
+      -- by high skill req. We don't alter walkable tiles (e.g., close doors).
+      return $ Just $ ReqAlter tpos
     _ -> return Nothing  -- can't displace, move nor alter
