@@ -954,7 +954,11 @@ moveOrRunAid source dir = do
   actorSk <- currentSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
-  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
+  let displaceable p =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` p)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
+      alterSkill = EM.findWithDefault 0 AbAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -964,34 +968,15 @@ moveOrRunAid source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
-    [(target, b2)] -> do
+    [(target, b2)] | displaceable tpos && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       actorMaxSk <- maxActorSkillsClient target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
-      if | boldpos sb == Just tpos && not (waitedLastTurn sb)
-             -- avoid displace loops
-           || not (Tile.isWalkable coTileSpeedup $ lvl `at` tpos) ->
-             -- DisplaceAccess
-           return Nothing
-         | isFoe (bfid b2) tfact (bfid sb)
-           && not dEnemy -> do  -- DisplaceDying, etc.
-           -- If really can't displace, melee.
-           wps <- pickWeaponClient source target
-           case wps of
-             Nothing -> return Nothing
-             Just wp -> return $ Just wp
-         | otherwise ->
-           return $ Just $ ReqDisplace target
-    (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., projectile)
-      -- If really can't displace, melee.
-      -- No problem if there are many projectiles at the spot. We just
-      -- attack the first one.
-      -- Attacking does not require full access, adjacency is enough.
-      wps <- pickWeaponClient source target
-      case wps of
-        Nothing -> return Nothing
-        Just wp -> return $ Just wp
+        -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
+      if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
+      then return Nothing
+      else return $ Just $ ReqDisplace target
     [] -- move or search or alter
        | Tile.isWalkable coTileSpeedup $ lvl `at` tpos ->
          -- Movement requires full access.
@@ -1005,3 +990,4 @@ moveOrRunAid source dir = do
        | otherwise ->
          -- Not walkable, but alter skill suffices, so search or alter the tile.
          return $ Just $ ReqAlter tpos
+    _ -> return Nothing  -- can't displace, move nor alter
