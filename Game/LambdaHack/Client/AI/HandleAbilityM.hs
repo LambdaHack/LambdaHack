@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.AI.HandleAbilityM
   , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, ApplyItemGroup, applyItem, flee
-  , displaceFoe, displaceBlocker, displaceTowards
+  , displaceFoe, displaceBlocker, displaceTgt
   , chase, moveTowards, moveOrRunAid
 #endif
   ) where
@@ -803,11 +803,13 @@ displaceFoe aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) =
-        not (bproj b2) && isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
+  let foe (_, b2) = not (bproj b2) && isFoe (bfid b) fact (bfid b2)
+        -- DisplaceProjectiles
       adjFoes = filter foe adjacentAssocs
-      displaceable body =  -- DisplaceAccess
-        Tile.isWalkable coTileSpeedup (lvl `at` bpos body)
+      displaceable p =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` p)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -815,40 +817,40 @@ displaceFoe aid = do
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
-        return $! if displaceable body2 && dEnemy && nFrOld < nFrNew
-                  then Just (nFrOld * nFrOld, bpos body2 `vectorToFrom` bpos b)
+        return $! if displaceable (bpos body2) && dEnemy && nFrOld < nFrNew
+                     && notLooping b (bpos body2)
+                  then Just (nFrOld * nFrOld, ReqDisplace aid2)
                   else Nothing
-  vFoes <- mapM qualifyActor adjFoes
-  let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
-  mapStrategyM (moveOrRunAid aid) str
+  foes <- mapM qualifyActor adjFoes
+  return $! liftFrequency $ toFreq "displaceFoe" $ catMaybes foes
 
-displaceBlocker :: MonadClient m
-                => ActorId -> Bool -> m (Strategy RequestTimed)
+displaceBlocker :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  str <- case mtgtMPath of
+  case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal && not retry ->
         return reject  -- not a real blocker but goal, possibly enemy to melee
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target
-      displaceTowards aid q retry
+      displaceTgt aid q retry
     _ -> return reject  -- goal reached
-  mapStrategyM (moveOrRunAid aid) str
 
-displaceTowards :: MonadClient m
-                => ActorId -> Point -> Bool -> m (Strategy Vector)
-displaceTowards aid target retry = do
+displaceTgt :: MonadClient m
+            => ActorId -> Point -> Bool -> m (Strategy RequestTimed)
+displaceTgt aid target retry = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   let source = bpos b
   let !_A = assert (adjacent source target) ()
   lvl <- getLevel $ blid b
-  if boldpos b /= Just target -- avoid trivial loops
-     && Tile.isWalkable coTileSpeedup (lvl `at` target) then do
-       -- DisplaceAccess
+  let displaceable p =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` p)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
+  if displaceable target && notLooping b target then do
     mleader <- getsClient sleader
     mBlocker <- getsState $ posToAssocs target (blid b)
     case mBlocker of
@@ -869,15 +871,17 @@ displaceTowards aid target retry = do
                  -- he doesn't have Enemy target and I have, so push him aside,
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself
-              return $! returN "displace friend" $ target `vectorToFrom` source
+              return $! returN "displace friend" $ ReqDisplace aid2
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- maxActorSkillsClient aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
+              -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
+              -- DisplaceSupported
             if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
-              return $! returN "displace other" $ target `vectorToFrom` source
-            else return reject  -- DisplaceDying, etc.
+              return $! returN "displace other" $ ReqDisplace aid2
+            else return reject
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
