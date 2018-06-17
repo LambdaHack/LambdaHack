@@ -130,6 +130,7 @@ actionStrategy aid retry = do
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
+      runSkills = [AbMove, AbDisplace, AbAlter]
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
                   -> m (Frequency RequestTimed)
@@ -167,7 +168,7 @@ actionStrategy aid retry = do
           , trigger aid ViaEscape
           , condAdjTriggerable && not condAimEnemyPresent
             && not condDesirableFloorItem )  -- collect the last loot
-        , ( [AbMove]
+        , ( runSkills
           , flee aid fleeL
           , -- Flee either from melee, if our melee is bad and enemy close
             -- or from missiles, if hit and enemies are only far away,
@@ -210,9 +211,9 @@ actionStrategy aid retry = do
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
         , ( [AbMelee]
-          ,  meleeAny aid
+          , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
-        , ( [AbMove]
+        , ( runSkills
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
         ]
@@ -243,7 +244,7 @@ actionStrategy aid retry = do
           , stratToFreq 1
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
-        , ( [AbMove]
+        , ( runSkills
           , stratToFreq (if | condInMelee ->
                               400  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
@@ -274,7 +275,7 @@ actionStrategy aid retry = do
         , ( [AbMoveItem]
           , unEquipItems aid  -- late, because these items not bad
           , not condInMelee )
-        , ( [AbMove]
+        , ( runSkills
           , chase aid (not condInMelee
                        && heavilyDistressed
                        && aCanDeLight) retry
@@ -291,7 +292,7 @@ actionStrategy aid retry = do
   -- as non-leader action.
   let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
-      checkAction (abts, _, cond) = all abInSkill abts && cond
+      checkAction (abts, _, cond) = any abInSkill abts && cond
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- mapM (\(_, m, _) -> m) as
