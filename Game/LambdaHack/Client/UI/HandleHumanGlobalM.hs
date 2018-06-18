@@ -601,14 +601,23 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
--- This cannot be structured as projecting or applying, with @ByItemMode@
--- and @ChooseItemToMove@, because at least in case of grabbing items,
--- more than one item is chosen, which doesn't fit @sitemSel@. Separating
--- grabbing of multiple items as a distinct command is too high a proce.
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbMoveItem actorSk > 0 then
+    moveOrSelectItem cLegalRaw destCStore mverb auto
+  else failSer MoveItemUnskilled
+
+-- This cannot be structured as projecting or applying, with @ByItemMode@
+-- and @ChooseItemToMove@, because at least in case of grabbing items,
+-- more than one item is chosen, which doesn't fit @sitemSel@. Separating
+-- grabbing of multiple items as a distinct command is too high a price.
+moveOrSelectItem :: forall m. MonadClientUI m
+                 => [CStore] -> CStore -> Maybe MU.Part -> Bool
+                 -> m (FailOrCmd RequestTimed)
+moveOrSelectItem cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
@@ -755,19 +764,23 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 projectHuman = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just (iid, fromCStore, _) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bag <- getsState $ getBodyStoreBag b fromCStore
-      case iid `EM.lookup` bag of
-        Nothing -> failWith "no item to fling"
-        Just _kit -> do
-          itemFull <- getsState $ itemToFull iid
-          let i = (fromCStore, (iid, itemFull))
-          projectItem i
-    Nothing -> failWith "no item to fling"
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbProject actorSk >= 0 then  -- detailed check later
+    failSer ProjectUnskilled
+  else do
+    itemSel <- getsSession sitemSel
+    case itemSel of
+      Just (iid, fromCStore, _) -> do
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        bag <- getsState $ getBodyStoreBag b fromCStore
+        case iid `EM.lookup` bag of
+          Nothing -> failWith "no item to fling"
+          Just _kit -> do
+            itemFull <- getsState $ itemToFull iid
+            let i = (fromCStore, (iid, itemFull))
+            projectItem i
+      Nothing -> failWith "no item to fling"
 
 projectItem :: MonadClientUI m
             => (CStore, (ItemId, ItemFull))
@@ -799,18 +812,22 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just (iid, fromCStore, _) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bag <- getsState $ getBodyStoreBag b fromCStore
-      case iid `EM.lookup` bag of
-        Nothing -> failWith "no item to apply"
-        Just kit -> do
-          itemFull <- getsState $ itemToFull iid
-          applyItem (fromCStore, (iid, (itemFull, kit)))
-    Nothing -> failWith "no item to apply"
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbApply actorSk >= 0 then  -- detailed check later
+    failSer ApplyUnskilled
+  else do
+    itemSel <- getsSession sitemSel
+    case itemSel of
+      Just (iid, fromCStore, _) -> do
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        bag <- getsState $ getBodyStoreBag b fromCStore
+        case iid `EM.lookup` bag of
+          Nothing -> failWith "no item to apply"
+          Just kit -> do
+            itemFull <- getsState $ itemToFull iid
+            applyItem (fromCStore, (iid, (itemFull, kit)))
+      Nothing -> failWith "no item to apply"
 
 applyItem :: MonadClientUI m
           => (CStore, (ItemId, ItemFullKit))

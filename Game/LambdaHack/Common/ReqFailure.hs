@@ -40,6 +40,7 @@ data ReqFailure =
   | AlterBlockItem
   | AlterNothing
   | WaitUnskilled
+  | MoveItemUnskilled
   | EqpOverfull
   | EqpStackFull
   | ApplyUnskilled
@@ -80,7 +81,8 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
-  WaitUnskilled -> True
+  WaitUnskilled -> False  -- unidentified skill items
+  MoveItemUnskilled -> False  -- unidentified skill items
   EqpOverfull -> True
   EqpStackFull -> True
   ApplyUnskilled -> False  -- unidentified skill items
@@ -119,6 +121,7 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   WaitUnskilled -> "unskilled actors cannot wait"
+  MoveItemUnskilled -> "unskilled actors cannot move items"
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
   ApplyUnskilled -> "unskilled actors cannot apply items"
