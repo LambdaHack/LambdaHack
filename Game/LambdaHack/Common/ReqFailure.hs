@@ -23,9 +23,12 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Possible causes of failure of request.
 data ReqFailure =
-    MoveNothing
+    MoveUnskilled
+  | MoveNothing
+  | MeleeUnskilled
   | MeleeSelf
   | MeleeDistant
+  | DisplaceUnskilled
   | DisplaceDistant
   | DisplaceAccess
   | DisplaceProjectiles
@@ -65,9 +68,12 @@ instance Binary ReqFailure
 
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
+  MoveUnskilled -> False  -- unidentified skill items
   MoveNothing -> True
+  MeleeUnskilled -> False  -- unidentified skill items
   MeleeSelf -> True
   MeleeDistant -> True
+  DisplaceUnskilled -> False  -- unidentified skill items
   DisplaceDistant -> True
   DisplaceAccess -> True
   DisplaceProjectiles -> True
@@ -104,9 +110,12 @@ impossibleReqFailure reqFailure = case reqFailure of
 
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
+  MoveUnskilled -> "unskilled actors cannot move"
   MoveNothing -> "wasting time on moving into obstacle"
+  MeleeUnskilled -> "unskilled actors cannot melee"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
+  DisplaceUnskilled -> "unskilled actors cannot displace"
   DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "switching places without access"
   DisplaceProjectiles -> "trying to displace multiple projectiles"

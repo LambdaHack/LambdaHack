@@ -24,8 +24,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
-  , multiActorGoTo, selectItemsToMove, moveItems, projectItem, applyItem
-  , alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
+  , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
+  , applyItem, alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
   , artWithVersion, generateMenu, nxtGameMode
 #endif
   ) where
