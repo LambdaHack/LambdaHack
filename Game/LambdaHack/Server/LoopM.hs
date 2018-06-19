@@ -20,7 +20,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client (ReqUI (..))
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction

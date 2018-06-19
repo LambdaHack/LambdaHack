@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client (RequestTimed)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState

@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client
+import Game.LambdaHack.Client (sbenchmark)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

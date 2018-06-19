@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client
+import Game.LambdaHack.Client (Response (..))
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

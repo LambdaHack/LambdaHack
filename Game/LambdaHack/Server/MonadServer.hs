@@ -33,7 +33,7 @@ import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client (sbenchmark)
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File

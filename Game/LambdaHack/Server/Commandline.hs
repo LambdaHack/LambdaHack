@@ -24,7 +24,7 @@ import qualified System.Random as R
 -- remaining commandline should be passed and parsed by the client to extract
 -- client and ui options from and singnal an error if anything was left.
 
-import Game.LambdaHack.Client
+import Game.LambdaHack.Client (ClientOptions (..))
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind

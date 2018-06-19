@@ -26,7 +26,8 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client
+import           Game.LambdaHack.Client (ReqAI (..), ReqUI (..),
+                                         RequestTimed (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
