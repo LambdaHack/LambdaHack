@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.HandleRequestM
   , reqMove, reqDisplace, reqAlterFail, reqGameDropAndExit, reqGameSaveAndExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , setBWait, managePerRequest, handleRequestTimedCases
+  , execFailure, setBWait, managePerRequest, handleRequestTimedCases
   , affectSmell, reqMelee, reqMeleeChecked, reqAlter
   , reqWait, reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
@@ -24,6 +24,8 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text as T
+import qualified Text.Show.Pretty as Show.Pretty
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ReqAI (..), ReqUI (..),
@@ -55,6 +57,26 @@ import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
+
+execFailure :: MonadServerAtomic m
+            => ActorId -> RequestTimed -> ReqFailure -> m ()
+execFailure aid req failureSer = do
+  -- Clients should rarely do that (only in case of invisible actors)
+  -- so we report it to the client, but do not crash
+  -- (server should work OK with stupid clients, too).
+  body <- getsState $ getActorBody aid
+  let fid = bfid body
+      msg = showReqFailure failureSer
+      impossible = impossibleReqFailure failureSer
+      debugShow :: Show a => a -> Text
+      debugShow = T.pack . Show.Pretty.ppShow
+      possiblyAlarm = if impossible
+                      then debugPossiblyPrintAndExit
+                      else debugPossiblyPrint
+  possiblyAlarm $
+    "execFailure:" <+> msg <> "\n"
+    <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
+  execSfxAtomic $ SfxMsgFid fid $ SfxUnexpected failureSer
 
 -- | The semantics of server commands.
 -- AI always takes time and so doesn't loop.
