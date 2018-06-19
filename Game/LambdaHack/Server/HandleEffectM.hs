@@ -34,7 +34,6 @@ import           Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -389,14 +388,14 @@ effectExplode execSfx cgroup target = do
               ++ [zip (repeat True)
                   $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
-          let req = ReqProject tpxy veryrandom iid COrgan
-              center = centerRaw && itemK >= 8  -- if few, keep them regular
+          let center = centerRaw && itemK >= 8  -- if few, keep them regular
           mfail <- projectFail target tpxy veryrandom center iid COrgan True
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
             Just ProjectBlockActor | not $ bproj tb -> return ()
-            Just failMsg -> execFailure target req failMsg
+            Just failMsg ->
+              execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxUnexpected failMsg
       tryFlying 0 = return ()
       tryFlying k100 = do
         -- Explosion particles are placed among organs of the victim:
