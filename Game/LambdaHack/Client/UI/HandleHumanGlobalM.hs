@@ -232,7 +232,7 @@ executeIfClearHuman c1 = do
 waitHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman = do
   actorSk <- leaderSkillsClientUI
-  if EM.findWithDefault 0 AbAlter actorSk > 0 then do
+  if EM.findWithDefault 0 AbWait actorSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait
   else failSer WaitUnskilled
@@ -243,7 +243,7 @@ waitHuman = do
 waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman10 = do
   actorSk <- leaderSkillsClientUI
-  if EM.findWithDefault 0 AbAlter actorSk > 0 then do
+  if EM.findWithDefault 0 AbWait actorSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait10
   else failSer WaitUnskilled
