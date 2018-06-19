@@ -69,12 +69,12 @@ cmdAction cmd = case cmd of
   LoopOnNothing cmd1 -> loopOnNothingHuman (cmdAction cmd1)
   ExecuteIfClear cmd1 -> executeIfClearHuman (cmdAction cmd1)
 
-  Wait -> weaveJust <$> Right <$> ReqUITimed <$> waitHuman
-  Wait10 -> weaveJust <$> Right <$> ReqUITimed <$> waitHuman10
+  Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman)
+  Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10)
   MoveDir v ->
     weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)
-  RunOnceAhead -> runOnceAheadHuman
+  RunOnceAhead -> ReqUITimed <$$> runOnceAheadHuman
   MoveOnceToXhair -> weaveJust <$> (ReqUITimed <$$> moveOnceToXhairHuman)
   RunOnceToXhair  -> weaveJust <$> (ReqUITimed <$$> runOnceToXhairHuman)
   ContinueToXhair -> weaveJust <$> (ReqUITimed <$$> continueToXhairHuman)

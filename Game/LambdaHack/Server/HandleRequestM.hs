@@ -13,8 +13,8 @@ module Game.LambdaHack.Server.HandleRequestM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMelee, reqAlter, reqWait
-  , reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
+  , affectSmell, reqMelee, reqMeleeChecked, reqAlter
+  , reqWait, reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
   ) where
@@ -205,8 +205,11 @@ affectSmell aid = do
 reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
 reqMove source dir = do
   COps{coTileSpeedup} <- getsState scops
+  actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
-  let lid = blid sb
+  let abInSkill ab = isJust (btrajectory sb)
+                     || EM.findWithDefault 0 ab actorSk > 0
+      lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
@@ -249,15 +252,20 @@ reqMove source dir = do
       -- Below the only weapon (the only item) of projectiles is picked.
       mweapon <- pickWeaponServer source
       case mweapon of
-        Nothing -> reqWait source
-        Just (wp, cstore) -> reqMelee source target wp cstore
-    _ | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
-          -- Movement requires full access.
+        Just (wp, cstore) | abInSkill Ability.AbMelee ->
+          reqMeleeChecked source target wp cstore
+        _ -> return ()  -- waiting, even if no @AbWait@ ability
+    _ -> do
+      -- Either the position is empty, or all involved actors are proj.
+      -- Movement requires full access and skill.
+      if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
+        if abInSkill Ability.AbMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
-      | otherwise ->
-          -- Client foolishly tries to move into blocked, boring tile.
-          execFailure source (ReqMove dir) MoveNothing
+        else execFailure source (ReqMove dir) MoveUnskilled
+      else
+        -- Client foolishly tries to move into unwalkable tile.
+        execFailure source (ReqMove dir) MoveNothing
 
 -- * ReqMelee
 
@@ -271,6 +279,14 @@ reqMove source dir = do
 reqMelee :: MonadServerAtomic m
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMelee source target iid cstore = do
+  actorSk <- currentSkillsServer source
+  if EM.findWithDefault 0 Ability.AbMelee actorSk > 0 then
+    reqMeleeChecked source target iid cstore
+  else execFailure source (ReqMelee target iid cstore) MeleeUnskilled
+
+reqMeleeChecked :: MonadServerAtomic m
+                => ActorId -> ActorId -> ItemId -> CStore -> m ()
+reqMeleeChecked source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let req = ReqMelee target iid cstore
@@ -370,7 +386,10 @@ reqMelee source target iid cstore = do
 reqDisplace :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 reqDisplace source target = do
   COps{coTileSpeedup} <- getsState scops
+  actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
+  let abInSkill ab = isJust (btrajectory sb)
+                     || EM.findWithDefault 0 ab actorSk > 0
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
@@ -378,7 +397,9 @@ reqDisplace source target = do
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
   dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar
-  if | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant
+  if | not (abInSkill Ability.AbDisplace) ->
+         execFailure source req DisplaceUnskilled
+     | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do  -- if not at war, can displace always
        -- We don't fail with DisplaceImmobile and DisplaceSupported.
        -- because it's quite common they can't be determined by the attacker,
@@ -388,8 +409,9 @@ reqDisplace source target = do
        -- verify here that they don't occur, for simplicity.
        mweapon <- pickWeaponServer source
        case mweapon of
-         Nothing -> reqWait source
-         Just (wp, cstore) -> reqMelee source target wp cstore
+         Just (wp, cstore) | abInSkill Ability.AbMelee ->
+           reqMeleeChecked source target wp cstore
+         _ -> return ()  -- waiting, even if no @AbWait@ ability
      | otherwise -> do
        let lid = blid sb
        lvl <- getLevel lid
@@ -572,19 +594,25 @@ reqAlterFail source tpos = do
 -- Something is sometimes done in 'setBWait'.
 reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
-reqWait _ = return ()
+reqWait source = do
+  actorSk <- currentSkillsServer source
+  unless (EM.findWithDefault 0 Ability.AbWait actorSk > 0) $
+    execFailure source ReqWait WaitUnskilled
 
 -- * ReqMoveItems
 
 reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
-reqMoveItems aid l = do
-  b <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  -- Server accepts item movement based on calm at the start, not end
-  -- or in the middle, to avoid interrupted or partially ignored commands.
-  let calmE = calmEnough b ar
-  mapM_ (reqMoveItem aid calmE) l
+reqMoveItems source l = do
+  actorSk <- currentSkillsServer source
+  if EM.findWithDefault 0 Ability.AbMoveItem actorSk > 0 then do
+    b <- getsState $ getActorBody source
+    ar <- getsState $ getActorAspect source
+    -- Server accepts item movement based on calm at the start, not end
+    -- or in the middle, to avoid interrupted or partially ignored commands.
+    let calmE = calmEnough b ar
+    mapM_ (reqMoveItem source calmE) l
+  else execFailure source (ReqMoveItems l) MoveItemUnskilled
 
 reqMoveItem :: MonadServerAtomic m
             => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()

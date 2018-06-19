@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.AI.HandleAbilityM
   , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, ApplyItemGroup, applyItem, flee
-  , displaceFoe, displaceBlocker, displaceTowards
+  , displaceFoe, displaceBlocker, displaceTgt
   , chase, moveTowards, moveOrRunAid
 #endif
   ) where
@@ -130,6 +130,7 @@ actionStrategy aid retry = do
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
       abInMaxSkill ab = EM.findWithDefault 0 ab actorMaxSk > 0
+      runSkills = [AbMove, AbDisplace, AbAlter]
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
                   -> m (Frequency RequestTimed)
@@ -167,7 +168,7 @@ actionStrategy aid retry = do
           , trigger aid ViaEscape
           , condAdjTriggerable && not condAimEnemyPresent
             && not condDesirableFloorItem )  -- collect the last loot
-        , ( [AbMove]
+        , ( runSkills
           , flee aid fleeL
           , -- Flee either from melee, if our melee is bad and enemy close
             -- or from missiles, if hit and enemies are only far away,
@@ -210,9 +211,9 @@ actionStrategy aid retry = do
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
         , ( [AbMelee]
-          ,  meleeAny aid
+          , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
-        , ( [AbMove]
+        , ( runSkills
           , flee aid panicFleeL  -- ultimate panic mode, displaces foes
           , condAnyFoeAdj )
         ]
@@ -243,7 +244,7 @@ actionStrategy aid retry = do
           , stratToFreq 1
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
-        , ( [AbMove]
+        , ( runSkills
           , stratToFreq (if | condInMelee ->
                               400  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
@@ -274,7 +275,7 @@ actionStrategy aid retry = do
         , ( [AbMoveItem]
           , unEquipItems aid  -- late, because these items not bad
           , not condInMelee )
-        , ( [AbMove]
+        , ( runSkills
           , chase aid (not condInMelee
                        && heavilyDistressed
                        && aCanDeLight) retry
@@ -291,7 +292,7 @@ actionStrategy aid retry = do
   -- as non-leader action.
   let abInSkill ab = EM.findWithDefault 0 ab actorSk > 0
       checkAction :: ([Ability], m a, Bool) -> Bool
-      checkAction (abts, _, cond) = all abInSkill abts && cond
+      checkAction (abts, _, cond) = any abInSkill abts && cond
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- mapM (\(_, m, _) -> m) as
@@ -803,11 +804,13 @@ displaceFoe aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) =
-        not (bproj b2) && isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
+  let foe (_, b2) = not (bproj b2) && isFoe (bfid b) fact (bfid b2)
+        -- DisplaceProjectiles
       adjFoes = filter foe adjacentAssocs
-      displaceable body =  -- DisplaceAccess
-        Tile.isWalkable coTileSpeedup (lvl `at` bpos body)
+      walkable p =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` p)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -815,40 +818,40 @@ displaceFoe aid = do
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
-        return $! if displaceable body2 && dEnemy && nFrOld < nFrNew
-                  then Just (nFrOld * nFrOld, bpos body2 `vectorToFrom` bpos b)
+        return $! if walkable (bpos body2) && dEnemy && nFrOld < nFrNew
+                     && notLooping b (bpos body2)
+                  then Just (nFrOld * nFrOld, ReqDisplace aid2)
                   else Nothing
-  vFoes <- mapM qualifyActor adjFoes
-  let str = liftFrequency $ toFreq "displaceFoe" $ catMaybes vFoes
-  mapStrategyM (moveOrRunAid aid) str
+  foes <- mapM qualifyActor adjFoes
+  return $! liftFrequency $ toFreq "displaceFoe" $ catMaybes foes
 
-displaceBlocker :: MonadClient m
-                => ActorId -> Bool -> m (Strategy RequestTimed)
+displaceBlocker :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  str <- case mtgtMPath of
+  case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal && not retry ->
         return reject  -- not a real blocker but goal, possibly enemy to melee
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target
-      displaceTowards aid q retry
+      displaceTgt aid q retry
     _ -> return reject  -- goal reached
-  mapStrategyM (moveOrRunAid aid) str
 
-displaceTowards :: MonadClient m
-                => ActorId -> Point -> Bool -> m (Strategy Vector)
-displaceTowards aid target retry = do
+displaceTgt :: MonadClient m
+            => ActorId -> Point -> Bool -> m (Strategy RequestTimed)
+displaceTgt aid target retry = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   let source = bpos b
   let !_A = assert (adjacent source target) ()
   lvl <- getLevel $ blid b
-  if boldpos b /= Just target -- avoid trivial loops
-     && Tile.isWalkable coTileSpeedup (lvl `at` target) then do
-       -- DisplaceAccess
+  let walkable p =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` p)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
+  if walkable target && notLooping b target then do
     mleader <- getsClient sleader
     mBlocker <- getsState $ posToAssocs target (blid b)
     case mBlocker of
@@ -869,15 +872,17 @@ displaceTowards aid target retry = do
                  -- he doesn't have Enemy target and I have, so push him aside,
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself
-              return $! returN "displace friend" $ target `vectorToFrom` source
+              return $! returN "displace friend" $ ReqDisplace aid2
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- maxActorSkillsClient aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
+              -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
+              -- DisplaceSupported
             if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
-              return $! returN "displace other" $ target `vectorToFrom` source
-            else return reject  -- DisplaceDying, etc.
+              return $! returN "displace other" $ ReqDisplace aid2
+            else return reject
       _ -> return reject  -- DisplaceProjectiles or trying to displace leader
   else return reject
 
@@ -949,7 +954,10 @@ moveOrRunAid source dir = do
   actorSk <- currentSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
-  let alterSkill = EM.findWithDefault 0 AbAlter actorSk
+  let walkable =  -- DisplaceAccess
+        Tile.isWalkable coTileSpeedup (lvl `at` tpos)
+      notLooping body p =  -- avoid displace loops
+        boldpos body /= Just p || waitedLastTurn body
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -959,44 +967,27 @@ moveOrRunAid source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
-    [(target, b2)] -> do
+    [(target, b2)] | walkable
+                     && EM.findWithDefault 0 AbDisplace actorSk > 0
+                     && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
       actorMaxSk <- maxActorSkillsClient target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
-      if | boldpos sb == Just tpos && not (waitedLastTurn sb)
-             -- avoid displace loops
-           || not (Tile.isWalkable coTileSpeedup $ lvl `at` tpos) ->
-             -- DisplaceAccess
-           return Nothing
-         | isFoe (bfid b2) tfact (bfid sb)
-           && not dEnemy -> do  -- DisplaceDying, etc.
-           -- If really can't displace, melee.
-           wps <- pickWeaponClient source target
-           case wps of
-             Nothing -> return Nothing
-             Just wp -> return $ Just wp
-         | otherwise ->
-           return $ Just $ ReqDisplace target
-    (target, _) : _ -> do  -- can be a foe, as well as friend (e.g., projectile)
-      -- If really can't displace, melee.
-      -- No problem if there are many projectiles at the spot. We just
-      -- attack the first one.
-      -- Attacking does not require full access, adjacency is enough.
-      wps <- pickWeaponClient source target
-      case wps of
-        Nothing -> return Nothing
-        Just wp -> return $ Just wp
-    [] -- move or search or alter
-       | Tile.isWalkable coTileSpeedup $ lvl `at` tpos ->
-         -- Movement requires full access.
-         return $ Just $ ReqMove dir
-         -- The potential invisible actor is hit.
-       | alterSkill < Tile.alterMinWalk coTileSpeedup t ->
-         error $ "AI causes AlterUnwalked" `showFailure` (source, dir)
-       | EM.member tpos $ lfloor lvl ->
-         -- Only possible if items allowed inside unwalkable tiles.
-         error $ "AI causes AlterBlockItem" `showFailure` (source, dir)
-       | otherwise ->
-         -- Not walkable, but alter skill suffices, so search or alter the tile.
-         return $ Just $ ReqAlter tpos
+        -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
+      if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
+      then return Nothing
+      else return $ Just $ ReqDisplace target
+    [] | walkable && EM.findWithDefault 0 AbMove actorSk > 0 ->
+      -- Movement requires full access. The potential invisible actor is hit.
+      return $ Just $ ReqMove dir
+    [] | not walkable
+         && EM.findWithDefault 0 AbAlter actorSk
+              >= Tile.alterMinWalk coTileSpeedup t  -- AlterUnwalked
+         -- Only possible if items allowed inside unwalkable tiles:
+         && EM.notMember tpos (lfloor lvl) ->  -- AlterBlockItem
+      -- Not walkable, but alter skill suffices, so search or alter the tile.
+      -- We assume that unalterable unwalkable tiles are protected
+      -- by high skill req. We don't alter walkable tiles (e.g., close doors).
+      return $ Just $ ReqAlter tpos
+    _ -> return Nothing  -- can't displace, move nor alter

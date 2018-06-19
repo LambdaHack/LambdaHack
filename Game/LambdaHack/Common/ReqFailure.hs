@@ -23,9 +23,12 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Possible causes of failure of request.
 data ReqFailure =
-    MoveNothing
+    MoveUnskilled
+  | MoveNothing
+  | MeleeUnskilled
   | MeleeSelf
   | MeleeDistant
+  | DisplaceUnskilled
   | DisplaceDistant
   | DisplaceAccess
   | DisplaceProjectiles
@@ -39,6 +42,8 @@ data ReqFailure =
   | AlterBlockActor
   | AlterBlockItem
   | AlterNothing
+  | WaitUnskilled
+  | MoveItemUnskilled
   | EqpOverfull
   | EqpStackFull
   | ApplyUnskilled
@@ -63,9 +68,12 @@ instance Binary ReqFailure
 
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
+  MoveUnskilled -> False  -- unidentified skill items
   MoveNothing -> True
+  MeleeUnskilled -> False  -- unidentified skill items
   MeleeSelf -> True
   MeleeDistant -> True
+  DisplaceUnskilled -> False  -- unidentified skill items
   DisplaceDistant -> True
   DisplaceAccess -> True
   DisplaceProjectiles -> True
@@ -79,6 +87,8 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
+  WaitUnskilled -> False  -- unidentified skill items
+  MoveItemUnskilled -> False  -- unidentified skill items
   EqpOverfull -> True
   EqpStackFull -> True
   ApplyUnskilled -> False  -- unidentified skill items
@@ -100,9 +110,12 @@ impossibleReqFailure reqFailure = case reqFailure of
 
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
+  MoveUnskilled -> "unskilled actors cannot move"
   MoveNothing -> "wasting time on moving into obstacle"
+  MeleeUnskilled -> "unskilled actors cannot melee"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
+  DisplaceUnskilled -> "unskilled actors cannot displace"
   DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "switching places without access"
   DisplaceProjectiles -> "trying to displace multiple projectiles"
@@ -116,6 +129,8 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
+  WaitUnskilled -> "unskilled actors cannot wait"
+  MoveItemUnskilled -> "unskilled actors cannot move items"
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
   ApplyUnskilled -> "unskilled actors cannot apply items"

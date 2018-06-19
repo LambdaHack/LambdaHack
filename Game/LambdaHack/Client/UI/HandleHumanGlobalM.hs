@@ -24,8 +24,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
-  , multiActorGoTo, selectItemsToMove, moveItems, projectItem, applyItem
-  , alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
+  , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
+  , applyItem, alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
   , artWithVersion, generateMenu, nxtGameMode
 #endif
   ) where
@@ -229,18 +229,24 @@ executeIfClearHuman c1 = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m RequestTimed
+waitHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman = do
-  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
-  return ReqWait
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbWait actorSk > 0 then do
+    modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
+    return $ Right ReqWait
+  else failSer WaitUnskilled
 
 -- * Wait10
 
 -- | Leader waits a 1/10th of a turn (and doesn't block, etc.).
-waitHuman10 :: MonadClientUI m => m RequestTimed
+waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman10 = do
-  modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
-  return ReqWait10
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbWait actorSk > 0 then do
+    modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
+    return $ Right ReqWait10
+  else failSer WaitUnskilled
 
 -- * MoveDir and RunDir
 
@@ -248,6 +254,7 @@ moveRunHuman :: MonadClientUI m
              => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (FailOrCmd RequestTimed)
 moveRunHuman initialStep finalGoal run runAhead dir = do
+  actorSk <- leaderSkillsClientUI
   arena <- getArenaUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -291,27 +298,35 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
           -- Don't check @initialStep@ and @finalGoal@
           -- and don't stop going to target: door opening is mundane enough.
           return $ Right runCmd
-    [(target, _)] | run && initialStep ->
+    [(target, _)] | run
+                    && initialStep
+                    && EM.findWithDefault 0 AbDisplace actorSk > 0 ->
       -- No @stopPlayBack@: initial displace is benign enough.
       -- Displacing requires accessibility, but it's checked later on.
       displaceAid target
-    _ : _ : _ | run && initialStep -> do
+    _ : _ : _ | run
+                && initialStep
+                && EM.findWithDefault 0 AbDisplace actorSk > 0 -> do
       let !_A = assert (all (bproj . snd) tgts) ()
       failSer DisplaceProjectiles
-    (target, tb) : _ | initialStep && finalGoal -> do
+    (target, tb) : _ | not run
+                       && initialStep && finalGoal
+                       && bfid tb == bfid sb && not (bproj tb) -> do
+      stopPlayBack  -- don't ever auto-repeat leader choice
+      -- We always see actors from our own faction.
+      -- Select one of adjacent actors by bumping into him. Takes no time.
+      success <- pickLeader True target
+      let !_A = assert (success `blame` "bump self"
+                                `swith` (leader, target, tb)) ()
+      failWith "by bumping"
+    (target, tb) : _ | not run
+                       && initialStep && finalGoal
+                       && (bfid tb /= bfid sb || bproj tb)
+                       && EM.findWithDefault 0 AbMelee actorSk > 0 -> do
       stopPlayBack  -- don't ever auto-repeat melee
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
-      -- We always see actors from our own faction.
-      if bfid tb == bfid sb && not (bproj tb) then do
-        -- Select adjacent actor by bumping into him. Takes no time.
-        success <- pickLeader True target
-        let !_A = assert (success `blame` "bump self"
-                                  `swith` (leader, target, tb)) ()
-        failWith "by bumping"
-      else
-        -- Attacking does not require full access, adjacency is enough.
-        meleeAid target
+      meleeAid target
     _ : _ -> failWith "actor in the way"
 
 -- | Actor attacks an enemy actor or his own projectile.
@@ -391,11 +406,12 @@ displaceAid target = do
 moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestTimed)
 moveSearchAlter dir = do
   COps{coTileSpeedup} <- getsState scops
+  actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
-  actorSk <- leaderSkillsClientUI
   let calmE = calmEnough sb ar
+      moveSkill = EM.findWithDefault 0 AbMove actorSk
       alterSkill = EM.findWithDefault 0 AbAlter actorSk
       applySkill = EM.findWithDefault 0 AbApply actorSk
       spos = bpos sb           -- source position
@@ -417,12 +433,13 @@ moveSearchAlter dir = do
                    || Tile.isSuspect coTileSpeedup t
   runStopOrCmd <-
     -- Movement requires full access.
-    if | Tile.isWalkable coTileSpeedup t ->
+    if | Tile.isWalkable coTileSpeedup t && moveSkill > 0 ->
          -- A potential invisible actor is hit. War started without asking.
          return $ Right $ ReqMove dir
-       -- No free access, so search and/or alter the tile.
+       -- No free access or skill, so search and/or alter the tile.
        | not (modifiable || canApplyEmbeds) ->
-           failWith "never mind"  -- misclick? related to AlterNothing
+           failWith "never mind"
+             -- misclick? walkable but no move skill? related to AlterNothing
        | alterSkill <= 1 -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t)
          && alterSkill < alterMinSkill -> failSer AlterUnwalked
@@ -447,7 +464,7 @@ moveSearchAlter dir = do
 
 -- * RunOnceAhead
 
-runOnceAheadHuman :: MonadClientUI m => m (Either MError ReqUI)
+runOnceAheadHuman :: MonadClientUI m => m (Either MError RequestTimed)
 runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -482,7 +499,7 @@ runOnceAheadHuman = do
           then weaveJust <$> failWith ("run stop:" <+> stopMsg)
           else return $ Left Nothing
         Right runCmd ->
-          return $ Right $ ReqUITimed runCmd
+          return $ Right runCmd
 
 -- * MoveOnceToXhair
 
@@ -500,8 +517,9 @@ goToXhair initialStep run = do
     xhairPos <- xhairToPos
     case xhairPos of
       Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b ->
-        if initialStep
+      Just c | c == bpos b -> do
+        actorSk <- leaderSkillsClientUI
+        if initialStep && EM.findWithDefault 0 AbWait actorSk > 0
         then return $ Right $ ReqWait
         else failWith "position reached"
       Just c -> do
@@ -583,14 +601,23 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
 
--- This cannot be structured as projecting or applying, with @ByItemMode@
--- and @ChooseItemToMove@, because at least in case of grabbing items,
--- more than one item is chosen, which doesn't fit @sitemSel@. Separating
--- grabbing of multiple items as a distinct command is too high a proce.
 moveItemHuman :: forall m. MonadClientUI m
               => [CStore] -> CStore -> Maybe MU.Part -> Bool
               -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbMoveItem actorSk > 0 then
+    moveOrSelectItem cLegalRaw destCStore mverb auto
+  else failSer MoveItemUnskilled
+
+-- This cannot be structured as projecting or applying, with @ByItemMode@
+-- and @ChooseItemToMove@, because at least in case of grabbing items,
+-- more than one item is chosen, which doesn't fit @sitemSel@. Separating
+-- grabbing of multiple items as a distinct command is too high a price.
+moveOrSelectItem :: forall m. MonadClientUI m
+                 => [CStore] -> CStore -> Maybe MU.Part -> Bool
+                 -> m (FailOrCmd RequestTimed)
+moveOrSelectItem cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
@@ -737,19 +764,23 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 projectHuman = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just (iid, fromCStore, _) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bag <- getsState $ getBodyStoreBag b fromCStore
-      case iid `EM.lookup` bag of
-        Nothing -> failWith "no item to fling"
-        Just _kit -> do
-          itemFull <- getsState $ itemToFull iid
-          let i = (fromCStore, (iid, itemFull))
-          projectItem i
-    Nothing -> failWith "no item to fling"
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbProject actorSk >= 0 then  -- detailed check later
+    failSer ProjectUnskilled
+  else do
+    itemSel <- getsSession sitemSel
+    case itemSel of
+      Just (iid, fromCStore, _) -> do
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        bag <- getsState $ getBodyStoreBag b fromCStore
+        case iid `EM.lookup` bag of
+          Nothing -> failWith "no item to fling"
+          Just _kit -> do
+            itemFull <- getsState $ itemToFull iid
+            let i = (fromCStore, (iid, itemFull))
+            projectItem i
+      Nothing -> failWith "no item to fling"
 
 projectItem :: MonadClientUI m
             => (CStore, (ItemId, ItemFull))
@@ -781,18 +812,22 @@ projectItem (fromCStore, (iid, itemFull)) = do
 
 applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
-  itemSel <- getsSession sitemSel
-  case itemSel of
-    Just (iid, fromCStore, _) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      bag <- getsState $ getBodyStoreBag b fromCStore
-      case iid `EM.lookup` bag of
-        Nothing -> failWith "no item to apply"
-        Just kit -> do
-          itemFull <- getsState $ itemToFull iid
-          applyItem (fromCStore, (iid, (itemFull, kit)))
-    Nothing -> failWith "no item to apply"
+  actorSk <- leaderSkillsClientUI
+  if EM.findWithDefault 0 AbApply actorSk >= 0 then  -- detailed check later
+    failSer ApplyUnskilled
+  else do
+    itemSel <- getsSession sitemSel
+    case itemSel of
+      Just (iid, fromCStore, _) -> do
+        leader <- getLeaderUI
+        b <- getsState $ getActorBody leader
+        bag <- getsState $ getBodyStoreBag b fromCStore
+        case iid `EM.lookup` bag of
+          Nothing -> failWith "no item to apply"
+          Just kit -> do
+            itemFull <- getsState $ itemToFull iid
+            applyItem (fromCStore, (iid, (itemFull, kit)))
+      Nothing -> failWith "no item to apply"
 
 applyItem :: MonadClientUI m
           => (CStore, (ItemId, ItemFullKit))
