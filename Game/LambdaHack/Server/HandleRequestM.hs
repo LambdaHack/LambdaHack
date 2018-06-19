@@ -13,7 +13,7 @@ module Game.LambdaHack.Server.HandleRequestM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMelee, reqMeleeChecked, reqDisplaceChecked, reqAlter
+  , affectSmell, reqMelee, reqMeleeChecked, reqAlter
   , reqWait, reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
@@ -207,7 +207,9 @@ reqMove source dir = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
-  let lid = blid sb
+  let abInSkill ab = isJust (btrajectory sb)
+                     || EM.findWithDefault 0 ab actorSk > 0
+      lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
@@ -250,14 +252,14 @@ reqMove source dir = do
       -- Below the only weapon (the only item) of projectiles is picked.
       mweapon <- pickWeaponServer source
       case mweapon of
-        Just (wp, cstore) | EM.findWithDefault 0 Ability.AbMelee actorSk > 0 ->
+        Just (wp, cstore) | abInSkill Ability.AbMelee ->
           reqMeleeChecked source target wp cstore
         _ -> return ()  -- waiting, even if no @AbWait@ ability
     _ -> do
       -- Either the position is empty, or all involved actors are proj.
       -- Movement requires full access and skill.
       if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-        if EM.findWithDefault 0 Ability.AbMove actorSk > 0 then do
+        if abInSkill Ability.AbMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
         else execFailure source (ReqMove dir) MoveUnskilled
@@ -383,16 +385,11 @@ reqMeleeChecked source target iid cstore = do
 -- | Actor tries to swap positions with another.
 reqDisplace :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 reqDisplace source target = do
-  actorSk <- currentSkillsServer source
-  if EM.findWithDefault 0 Ability.AbDisplace actorSk > 0 then
-    reqDisplaceChecked source target
-  else execFailure source (ReqDisplace target) DisplaceUnskilled
-
-reqDisplaceChecked :: MonadServerAtomic m => ActorId -> ActorId -> m ()
-reqDisplaceChecked source target = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
+  let abInSkill ab = isJust (btrajectory sb)
+                     || EM.findWithDefault 0 ab actorSk > 0
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
@@ -400,7 +397,9 @@ reqDisplaceChecked source target = do
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
   dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar
-  if | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant
+  if | not (abInSkill Ability.AbDisplace) ->
+         execFailure source req DisplaceUnskilled
+     | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant
      | atWar && not dEnemy -> do  -- if not at war, can displace always
        -- We don't fail with DisplaceImmobile and DisplaceSupported.
        -- because it's quite common they can't be determined by the attacker,
@@ -410,7 +409,7 @@ reqDisplaceChecked source target = do
        -- verify here that they don't occur, for simplicity.
        mweapon <- pickWeaponServer source
        case mweapon of
-         Just (wp, cstore) | EM.findWithDefault 0 Ability.AbMelee actorSk > 0 ->
+         Just (wp, cstore) | abInSkill Ability.AbMelee ->
            reqMeleeChecked source target wp cstore
          _ -> return ()  -- waiting, even if no @AbWait@ ability
      | otherwise -> do
