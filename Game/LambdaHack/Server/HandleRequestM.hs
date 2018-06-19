@@ -594,19 +594,25 @@ reqAlterFail source tpos = do
 -- Something is sometimes done in 'setBWait'.
 reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
-reqWait _ = return ()
+reqWait source = do
+  actorSk <- currentSkillsServer source
+  unless (EM.findWithDefault 0 Ability.AbWait actorSk > 0) $
+    execFailure source ReqWait WaitUnskilled
 
 -- * ReqMoveItems
 
 reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
-reqMoveItems aid l = do
-  b <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  -- Server accepts item movement based on calm at the start, not end
-  -- or in the middle, to avoid interrupted or partially ignored commands.
-  let calmE = calmEnough b ar
-  mapM_ (reqMoveItem aid calmE) l
+reqMoveItems source l = do
+  actorSk <- currentSkillsServer source
+  if EM.findWithDefault 0 Ability.AbMoveItem actorSk > 0 then do
+    b <- getsState $ getActorBody source
+    ar <- getsState $ getActorAspect source
+    -- Server accepts item movement based on calm at the start, not end
+    -- or in the middle, to avoid interrupted or partially ignored commands.
+    let calmE = calmEnough b ar
+    mapM_ (reqMoveItem source calmE) l
+  else execFailure source (ReqMoveItems l) MoveItemUnskilled
 
 reqMoveItem :: MonadServerAtomic m
             => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
