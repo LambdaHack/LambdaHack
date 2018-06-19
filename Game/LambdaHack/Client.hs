@@ -13,7 +13,7 @@ module Game.LambdaHack.Client
     -- * Re-exported from "Game.LambdaHack.Client.Response"
   , Response (..)
     -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
-  , ClientOptions, defClientOptions, sbenchmark
+  , ClientOptions(..), defClientOptions
     -- * Re-exported from "Game.LambdaHack.Client.UI"
   , KeyKind
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions

@@ -19,7 +19,6 @@ import           Control.Monad.Trans.State.Strict hiding (State)
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.LoopM
