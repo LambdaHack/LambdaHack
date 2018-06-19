@@ -53,7 +53,7 @@ handleCmdAtomicServer cmd = do
   return (ps, atomicBroken, executedOnServer)
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: (MonadServerAtomic m, MonadServerReadRequest m)
+handleAndBroadcast :: (MonadServerAtomic m, MonadServerComm m)
                    => PosAtomic -> [UpdAtomic] -> CmdAtomic -> m ()
 handleAndBroadcast ps atomicBroken atomic = do
   -- This is calculated in the server State before action (simulating
@@ -148,7 +148,7 @@ loudSfxAtomic local cmd =
       return $ Just $ SfxLoudSummon (bproj b) grp p
     _ -> return Nothing
 
-sendPer :: (MonadServerAtomic m, MonadServerReadRequest m)
+sendPer :: (MonadServerAtomic m, MonadServerComm m)
         => FactionId -> LevelId -> Perception -> Perception -> Perception
         -> m ()
 {-# INLINE sendPer #-}

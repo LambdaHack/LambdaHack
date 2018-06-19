@@ -32,7 +32,7 @@ import Game.LambdaHack.Server.ServerOptions
 import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
-endOrLoop :: (MonadServerAtomic m, MonadServerReadRequest m)
+endOrLoop :: (MonadServerAtomic m, MonadServerComm m)
           => m () -> (Maybe (GroupName ModeKind) -> m ())
           -> m ()
 endOrLoop loop restart = do
@@ -62,7 +62,7 @@ endOrLoop loop restart = do
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
 
-gameExit :: (MonadServerAtomic m, MonadServerReadRequest m) => m ()
+gameExit :: (MonadServerAtomic m, MonadServerComm m) => m ()
 gameExit = do
 --  debugPossiblyPrint "Verifying all perceptions."
   -- Verify that the possibly not saved caches are equal to future

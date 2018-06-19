@@ -52,7 +52,7 @@ import           Game.LambdaHack.Server.State
 -- communicating with the clients.
 --
 -- The loop is started in server state that is empty, see 'emptyStateServer'.
-loopSer :: (MonadServerAtomic m, MonadServerReadRequest m)
+loopSer :: (MonadServerAtomic m, MonadServerComm m)
         => ServerOptions
              -- ^ player-supplied server options
         -> (Bool -> FactionId -> ChanServer -> IO ())
@@ -128,7 +128,7 @@ arenasForLoop = do
                     `swith` factionD) ()
   return $! arenas
 
-handleFidUpd :: (MonadServerAtomic m, MonadServerReadRequest m)
+handleFidUpd :: (MonadServerAtomic m, MonadServerComm m)
              => (FactionId -> m ()) -> FactionId -> Faction -> m ()
 {-# INLINE handleFidUpd #-}
 handleFidUpd updatePerFid fid fact = do
@@ -158,7 +158,7 @@ handleFidUpd updatePerFid fid fact = do
 -- | Handle a clip (the smallest fraction of a game turn for which a frame may
 -- potentially be generated). Run the leader and other actors moves.
 -- Eventually advance the time and repeat.
-loopUpd :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
+loopUpd :: forall m. (MonadServerAtomic m, MonadServerComm m)
         => m () -> m ()
 loopUpd updConn = do
   let updatePerFid :: FactionId -> m ()
@@ -435,7 +435,7 @@ setTrajectory aid b = do
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
 
-handleActors :: (MonadServerAtomic m, MonadServerReadRequest m)
+handleActors :: (MonadServerAtomic m, MonadServerComm m)
              => LevelId -> FactionId -> m Bool
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
@@ -459,7 +459,7 @@ handleActors lid fid = do
     Just aid | aid `elem` l -> aid : delete aid l
     _ -> l
 
-hActors :: forall m. (MonadServerAtomic m, MonadServerReadRequest m)
+hActors :: forall m. (MonadServerAtomic m, MonadServerComm m)
         => [ActorId] -> m Bool
 hActors [] = return False
 hActors as@(aid : rest) = do
