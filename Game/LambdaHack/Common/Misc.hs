@@ -11,12 +11,14 @@ module Game.LambdaHack.Common.Misc
   , toGroupName, describeTactic
   , makePhrase, makeSentence, squashedWWandW, normalLevelBound
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
+  , archDependentWorkaroundOnMainThreadMVar
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.Concurrent
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Char as Char
@@ -34,6 +36,7 @@ import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
+import           System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Common.Point
 
@@ -205,6 +208,11 @@ minusM = xM (-1)
 minusM1 = xM (-1) - 1
 oneM = xM 1
 tenthM = 100000
+
+-- Global variable for passing the action to run on main thread, if any.
+archDependentWorkaroundOnMainThreadMVar :: MVar (IO ())
+{-# NOINLINE archDependentWorkaroundOnMainThreadMVar #-}
+archDependentWorkaroundOnMainThreadMVar = unsafePerformIO newEmptyMVar
 
 -- Data.Binary orphan instances
 

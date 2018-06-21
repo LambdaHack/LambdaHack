@@ -16,6 +16,7 @@ import qualified Control.Concurrent.STM as STM
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 
 -- | Raw frontend definition. The minimal closed set of values that need
@@ -31,8 +32,16 @@ data RawFrontend = RawFrontend
 startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
 startupBound k = do
   rfMVar <- newEmptyMVar
+# ifdef OS_Mac
+  -- Run the frontend on the main thread:
+  putMVar archDependentWorkaroundOnMainThreadMVar $ k rfMVar
+# else
+  -- Trigger void workaround:
+  putMVar archDependentWorkaroundOnMainThreadMVar $ return ()
+  -- Run the frontend on any bound thread:
   a <- asyncBound $ k rfMVar
   link a
+# endif
   takeMVar rfMVar
 
 createRawFrontend :: (SingleFrame -> IO ()) -> IO () -> IO RawFrontend

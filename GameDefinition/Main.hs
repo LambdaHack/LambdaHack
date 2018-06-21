@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Options.Applicative as OA
@@ -19,9 +20,9 @@ import           System.FilePath
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.File (tryCreateDir)
-import Game.LambdaHack.Common.Misc
 #endif
 
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server (serverOptionsPI)
 
 import Implementation.TieKnot
@@ -52,6 +53,11 @@ main = do
   !serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
+  -- Run a (possibly void) workaround for architectures that need
+  -- to perform some actions on the main thread (not just any bound thread),
+  -- e.g., newer OS X drawing with SDL2.
+  workaround <- takeMVar archDependentWorkaroundOnMainThreadMVar
+  workaround
   resOrEx <- waitCatch a
   let unwrapEx e =
 #if MIN_VERSION_async(2,2,1)
