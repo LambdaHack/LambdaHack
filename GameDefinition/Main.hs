@@ -53,11 +53,13 @@ main = do
   !serverOptions <- OA.execParser serverOptionsPI
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
+#ifndef USE_JSFILE
   -- Run a (possibly void) workaround for architectures that need
   -- to perform some actions on the main thread (not just any bound thread),
   -- e.g., newer OS X drawing with SDL2.
   workaround <- takeMVar archDependentWorkaroundOnMainThreadMVar
   workaround
+#endif
   resOrEx <- waitCatch a
   let unwrapEx e =
 #if MIN_VERSION_async(2,2,1)
