@@ -578,8 +578,8 @@ meleeBlocker aid = do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           if | actorDying body2
-               || bproj body2  -- displacing saves a move
-                  && EM.findWithDefault 0 AbDisplace actorSk <= 0 ->
+               || bproj body2  -- displacing saves a move, so don't melee
+                  && EM.findWithDefault 0 AbDisplace actorSk > 0 ->
                return reject
              | isFoe (bfid b) fact (bfid body2)
                  -- at war with us, so hit, not displace
