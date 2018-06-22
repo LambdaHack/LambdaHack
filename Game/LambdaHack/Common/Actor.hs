@@ -99,7 +99,7 @@ actorCanMelee :: ActorAspect -> ActorId -> Actor -> Bool
 actorCanMelee actorAspect aid b =
   let ar = actorAspect EM.! aid
       actorMaxSk = IA.aSkills ar
-      condUsableWeapon = bweapon b >= 0
+      condUsableWeapon = bweapon b > 0
       canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
