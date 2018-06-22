@@ -36,10 +36,11 @@ startupBound :: (MVar RawFrontend -> IO ()) -> IO RawFrontend
 startupBound k = do
   rfMVar <- newEmptyMVar
 # ifdef OS_Mac
-  -- Run the frontend on the main thread:
+  -- Run the frontend on the main thread. See the comment for
+  -- Game.LambdaHack.Client.UI.Frontend.Sdl.startup
   putMVar archDependentWorkaroundOnMainThreadMVar $ k rfMVar
 # else
-  -- Run the frontend on any bound thread:
+  -- Run the frontend on any bound thread.
   a <- asyncBound $ k rfMVar
   link a
 # endif
