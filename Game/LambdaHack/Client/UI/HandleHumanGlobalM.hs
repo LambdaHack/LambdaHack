@@ -1208,8 +1208,8 @@ artAtSize = do
   let stdRuleset = getStdRuleset cops
       lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
-      xoffset = (110 - lxsize) `div` 2
-      yoffset = (60 - lysize) `div` 2
+      xoffset = (80 - lxsize) `div` 2
+      yoffset = (45 - lysize) `div` 2
       tlines = T.lines $ rmainMenuArt stdRuleset
       f = T.take lxsize . T.drop xoffset
   return $! map f $ take lysize $ drop yoffset tlines

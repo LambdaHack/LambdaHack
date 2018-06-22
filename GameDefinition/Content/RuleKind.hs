@@ -44,17 +44,10 @@ standard = RuleKind
   -- The keybindings overwrite places marked with left curly brace signs.
   -- This sign is forbidden anywhere else in the picture.
   -- The picture and the whole main menu is displayed dull white on black.
-  --
-  -- The picture should be exactly 60 rows by 110 columns,
-  -- but only the middle rectangle of 24 rows by 80 columns is partially
-  -- overwritten with UI information and the curly brace signs are allowed
-  -- only there. So, the rectangle is 15 characters distant from the left
-  -- and 18 from top. For screen sizes larger than 60 by 100,
-  -- the picture is centered and padded with spaces, so it makes sense
-  -- for some or all of the picture borders to be spaces, as well.
-  -- If the screen is smaller than 60 by 100, borders of the picture
-  -- are cut off. Minimal screes size is 24 by 80 and the picture
-  -- should look well at this size, as well.
+  -- The glyphs, or at least the character cells, are perfect squares.
+  -- The picture should be exactly 45 rows by 80 columns.
+  -- For larger screen sizes, the picture is centered and padded with spaces,
+  -- so it makes sense for some or all of the picture borders to be spaces.
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path

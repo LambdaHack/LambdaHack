@@ -2,6 +2,7 @@
 
 - Add a hack to run SDL2 on OS X in the main thread, fixing the crash
 - Complete and fine tune AI and server skill checks
+- Change the requirements for the main menu ASCII art
 
 ## [v0.8.1.2](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.1...v0.8.1.2)
 

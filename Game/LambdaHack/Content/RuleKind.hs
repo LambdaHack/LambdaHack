@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.ContentData
 
 -- | The type of game rule sets and assorted game data.
 --
--- In principle, it'se possible to have many rule sets
+-- In principle, it's possible to have many rule sets
 -- and switch between them during a game session or even a single game.
 data RuleKind = RuleKind
   { rsymbol         :: Char      -- ^ a symbol
@@ -54,12 +54,12 @@ instance NFData RuleKind
 validateSingle :: RuleKind -> [Text]
 validateSingle RuleKind{rmainMenuArt} =
   let ts = T.lines rmainMenuArt
-      tsNot110 = filter ((/= 110) . T.length) ts
-  in case tsNot110 of
-     [] -> [ "rmainMenuArt doesn't have 60 lines, but " <> tshow (length ts)
-           | length ts /= 60]
-     tNot110 : _ ->
-       ["rmainMenuArt has a line with length other than 110:" <> tNot110]
+      tsNot80 = filter ((/= 80) . T.length) ts
+  in case tsNot80 of
+     [] -> [ "rmainMenuArt doesn't have 45 lines, but " <> tshow (length ts)
+           | length ts /= 45]
+     tNot80 : _ ->
+       ["rmainMenuArt has a line with length other than 80:" <> tNot80]
 
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
 validateAll :: [RuleKind] -> ContentData RuleKind -> [Text]
