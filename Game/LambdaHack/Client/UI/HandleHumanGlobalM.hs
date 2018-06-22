@@ -765,7 +765,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 projectHuman = do
   actorSk <- leaderSkillsClientUI
-  if EM.findWithDefault 0 AbProject actorSk >= 0 then  -- detailed check later
+  if EM.findWithDefault 0 AbProject actorSk <= 0 then  -- detailed check later
     failSer ProjectUnskilled
   else do
     itemSel <- getsSession sitemSel
@@ -813,7 +813,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
 applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
   actorSk <- leaderSkillsClientUI
-  if EM.findWithDefault 0 AbApply actorSk >= 0 then  -- detailed check later
+  if EM.findWithDefault 0 AbApply actorSk <= 0 then  -- detailed check later
     failSer ApplyUnskilled
   else do
     itemSel <- getsSession sitemSel
