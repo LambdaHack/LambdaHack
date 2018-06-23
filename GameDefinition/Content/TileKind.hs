@@ -117,7 +117,6 @@ wallSuspect = TileKind  -- only on client
   , talter   = 2
   , tfeature = [ RevealAs "trapped vertical door Lit"
                , ObscureAs "obscured vertical wall Lit"
-
                ]
   }
 wallObscured = TileKind
@@ -129,7 +128,6 @@ wallObscured = TileKind
   , talter   = 5
   , tfeature = [ Embed "scratch on wall"
                , HideAs "suspect vertical wall Lit"
-
                ]
   }
 wallH = TileKind
@@ -139,9 +137,7 @@ wallH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
-  , tfeature = [ BuildAs "suspect horizontal wall Lit"
-
-               ]
+  , tfeature = [BuildAs "suspect horizontal wall Lit"]
   }
 wallSuspectH = TileKind  -- only on client
   { tsymbol  = '-'
@@ -152,7 +148,6 @@ wallSuspectH = TileKind  -- only on client
   , talter   = 2
   , tfeature = [ RevealAs "trapped horizontal door Lit"
                , ObscureAs "obscured horizontal wall Lit"
-
                ]
   }
 wallObscuredDefacedH = TileKind
@@ -164,7 +159,6 @@ wallObscuredDefacedH = TileKind
   , talter   = 5
   , tfeature = [ Embed "obscene pictogram"
                , HideAs "suspect horizontal wall Lit"
-
                ]
   }
 wallObscuredFrescoedH = TileKind
@@ -176,7 +170,6 @@ wallObscuredFrescoedH = TileKind
   , talter   = 5
   , tfeature = [ Embed "subtle fresco"
                , HideAs "suspect horizontal wall Lit"
-
                ]  -- a bit beneficial, but AI would loop if allowed to trigger
                   -- so no @ConsideredByAI@
   }
@@ -222,7 +215,6 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
   , talter   = 5
   , tfeature = [ ConsideredByAI  -- changes after use, so safe for AI
                , RevealAs "signboard"  -- to display as hidden
-
                ]
   }
 signboardRead = TileKind
@@ -299,7 +291,6 @@ doorTrapped = TileKind
   , tfeature = [ Embed "doorway trap"
                , OpenTo "open vertical door Lit"
                , HideAs "suspect vertical wall Lit"
-
                ]
   }
 doorClosed = TileKind
@@ -321,7 +312,6 @@ doorTrappedH = TileKind
   , tfeature = [ Embed "doorway trap"
                , OpenTo "open horizontal door Lit"
                , HideAs "suspect horizontal wall Lit"
-
                ]
   }
 doorClosedH = TileKind

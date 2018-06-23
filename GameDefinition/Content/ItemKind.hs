@@ -233,7 +233,8 @@ net = ItemKind
 light1 = ItemKind
   { isymbol  = symbolLight
   , iname    = "wooden torch"
-  , ifreq    = [("common item", 100), ("light source", 100), ("wooden torch", 1)]
+  , ifreq    = [ ("common item", 100), ("light source", 100)
+               , ("wooden torch", 1) ]
   , iflavour = zipPlain [Brown]
   , icount   = 1 `dL` 4
   , irarity  = [(1, 15)]
@@ -245,7 +246,7 @@ light1 = ItemKind
   , ieffects = [Burn 1]
   , ifeature = [Lobable, Equipable, EqpSlot EqpSlotLightSource]
                  -- not Fragile; reusable flare
-  , idesc    = "A smoking, heavy wooden torch, burning in an unsteady glow."
+  , idesc    = "A heavy smoking wooden torch, improvised using a cloth soaked in tar, burning in an unsteady glow."
   , ikit     = []
   }
 light2 = ItemKind
