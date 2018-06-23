@@ -54,10 +54,10 @@ main = do
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnot serverOptions
 #ifndef USE_JSFILE
-  -- Run a (possibly void) workaround for architectures that need
-  -- to perform some actions on the main thread (not just any bound thread),
-  -- e.g., newer OS X drawing with SDL2.
-  workaround <- takeMVar archDependentWorkaroundOnMainThreadMVar
+  -- Run a (possibly void) workaround. It's needed for architectures/frontends
+  -- that need to perform some actions on the main thread
+  -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
+  workaround <- takeMVar workaroundOnMainThreadMVar
   workaround
 #endif
   resOrEx <- waitCatch a

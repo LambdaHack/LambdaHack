@@ -71,16 +71,8 @@ frontendName = "sdl"
 
 -- | Set up and start the main loop providing input and output.
 --
--- Apparently some SDL backends are not thread-safe
--- (<https://wiki.libsdl.org/FAQDevelopment>;
--- "this should only be run in the thread that initialized the video subsystem,
--- and for extra safety, you should consider only doing those things
--- on the main thread in any case")
--- so we stick to a single bound thread. Normally we don't restrict
--- ourselves to the main thread; enough is enough and at least in the case
--- of OpenGL all bound threads are supposed to be as good as the main thread.
--- However, for newer OS X, we need to hack in @startupBound@ to run this
--- in the main thread, see https://github.com/AllureOfTheStars/Allure/issues/79
+-- Because of Windows and OS X, SDL2 needs to be on a bound thread,
+-- so we can't avoid the communication overhead of bound threads.
 startup :: ClientOptions -> IO RawFrontend
 startup soptions = startupBound $ startupFun soptions
 

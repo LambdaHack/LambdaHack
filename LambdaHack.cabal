@@ -300,9 +300,6 @@ library
     build-depends:    zlib >= 0.5.3.1
   }
 
-  if os(darwin)
-    cpp-options:      -DOS_Mac
-
   if flag(with_expensive_assertions)
     cpp-options:      -DWITH_EXPENSIVE_ASSERTIONS
 

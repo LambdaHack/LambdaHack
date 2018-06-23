@@ -85,7 +85,7 @@ chanFrontendIO soptions = do
       delta = max 1 $ microInSec `div` maxFps
   rf <- startup
   -- Set up void workaround if nothing specific required.
-  void $ tryPutMVar archDependentWorkaroundOnMainThreadMVar $ return ()
+  void $ tryPutMVar workaroundOnMainThreadMVar $ return ()
   fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
   fdelay <- newMVar 0
   fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf

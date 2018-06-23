@@ -1,6 +1,6 @@
 ## [v0.8.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.2...v0.8.3.0)
 
-- Add a hack to run SDL2 on OS X in the main thread, fixing the crash
+- Add a hack to run SDL2 on the main thread, fixing the OS X crash
 - Fix, complete and fine tune UI, AI and server skill and weapon checks
 - Change the requirements for the main menu ASCII art
 

@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Misc
   , toGroupName, describeTactic
   , makePhrase, makeSentence, squashedWWandW, normalLevelBound
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
-  , archDependentWorkaroundOnMainThreadMVar
+  , workaroundOnMainThreadMVar
   ) where
 
 import Prelude ()
@@ -210,9 +210,9 @@ oneM = xM 1
 tenthM = 100000
 
 -- Global variable for passing the action to run on main thread, if any.
-archDependentWorkaroundOnMainThreadMVar :: MVar (IO ())
-{-# NOINLINE archDependentWorkaroundOnMainThreadMVar #-}
-archDependentWorkaroundOnMainThreadMVar = unsafePerformIO newEmptyMVar
+workaroundOnMainThreadMVar :: MVar (IO ())
+{-# NOINLINE workaroundOnMainThreadMVar #-}
+workaroundOnMainThreadMVar = unsafePerformIO newEmptyMVar
 
 -- Data.Binary orphan instances
 
