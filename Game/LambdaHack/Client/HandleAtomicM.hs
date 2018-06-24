@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.HandleAtomicM
     -- * Internal operations
   , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs, createActor, destroyActor
   , addItemToDiscoBenefit, perception
-  , discoverKind, coverKind, discoverSeed, coverSeed
+  , discoverKind, coverKind, discoverAspect, coverAspect
   , killExit
 #endif
   ) where
@@ -156,9 +156,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered ix _ik | ix `EM.notMember` discoKind ->
         discoverKind c ix ik
       IdentityCovered _ix _ik -> return ()
-    discoverSeed c iid aspectRecord
+    discoverAspect c iid aspectRecord
   UpdCover c iid ik aspectRecord -> do
-    coverSeed c iid aspectRecord
+    coverAspect c iid aspectRecord
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
     case jkind item of
@@ -168,8 +168,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered _ix _ik -> return ()
   UpdDiscoverKind c ix ik -> discoverKind c ix ik
   UpdCoverKind c ix ik -> coverKind c ix ik
-  UpdDiscoverSeed c iid aspectRecord -> discoverSeed c iid aspectRecord
-  UpdCoverSeed c iid aspectRecord -> coverSeed c iid aspectRecord
+  UpdDiscoverAspect c iid aspectRecord -> discoverAspect c iid aspectRecord
+  UpdCoverAspect c iid aspectRecord -> coverAspect c iid aspectRecord
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
     COps{cocave, comode} <- getsState scops
@@ -332,8 +332,9 @@ discoverKind _c ix _ik = do
 coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 coverKind _c _ix _ik = undefined
 
-discoverSeed :: MonadClient m => Container -> ItemId -> IA.AspectRecord -> m ()
-discoverSeed _c iid _aspectRecord = do
+discoverAspect :: MonadClient m
+               => Container -> ItemId -> IA.AspectRecord -> m ()
+discoverAspect _c iid _aspectRecord = do
   cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -346,8 +347,8 @@ discoverSeed _c iid _aspectRecord = do
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
-coverSeed :: Container -> ItemId -> IA.AspectRecord -> m ()
-coverSeed _c _iid _aspectRecord = undefined
+coverAspect :: Container -> ItemId -> IA.AspectRecord -> m ()
+coverAspect _c _iid _aspectRecord = undefined
 
 killExit :: MonadClient m => m ()
 killExit = do

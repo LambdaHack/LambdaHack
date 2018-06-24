@@ -296,8 +296,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCover{} -> return ()  -- don't spam when doing undo
   UpdDiscoverKind{} -> return ()  -- don't spam when server tweaks stuff
   UpdCoverKind{} -> return ()  -- don't spam when doing undo
-  UpdDiscoverSeed{} -> return ()  -- don't spam when server tweaks stuff
-  UpdCoverSeed{} -> return ()  -- don't spam when doing undo
+  UpdDiscoverAspect{} -> return ()  -- don't spam when server tweaks stuff
+  UpdCoverAspect{} -> return ()  -- don't spam when doing undo
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()

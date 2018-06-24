@@ -108,8 +108,8 @@ data UpdAtomic =
   | UpdCover Container ItemId (ContentId ItemKind) IA.AspectRecord
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
-  | UpdDiscoverSeed Container ItemId IA.AspectRecord
-  | UpdCoverSeed Container ItemId IA.AspectRecord
+  | UpdDiscoverAspect Container ItemId IA.AspectRecord
+  | UpdCoverAspect Container ItemId IA.AspectRecord
   | UpdDiscoverServer ItemId IA.AspectRecord
   | UpdCoverServer ItemId IA.AspectRecord
   | UpdPerception LevelId Perception Perception
@@ -219,8 +219,10 @@ undoUpdAtomic cmd = case cmd of
   UpdCover c iid ik aspectRecord -> Just $ UpdDiscover c iid ik aspectRecord
   UpdDiscoverKind c ix ik -> Just $ UpdCoverKind c ix ik
   UpdCoverKind c ix ik -> Just $ UpdDiscoverKind c ix ik
-  UpdDiscoverSeed c iid aspectRecord -> Just $ UpdCoverSeed c iid aspectRecord
-  UpdCoverSeed c iid aspectRecord -> Just $ UpdDiscoverSeed c iid aspectRecord
+  UpdDiscoverAspect c iid aspectRecord ->
+    Just $ UpdCoverAspect c iid aspectRecord
+  UpdCoverAspect c iid aspectRecord ->
+    Just $ UpdDiscoverAspect c iid aspectRecord
   UpdDiscoverServer iid aspectRecord -> Just $ UpdCoverServer iid aspectRecord
   UpdCoverServer iid aspectRecord -> Just $ UpdDiscoverServer iid aspectRecord
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer

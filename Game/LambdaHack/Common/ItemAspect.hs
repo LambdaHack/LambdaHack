@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemAspect
   ( Aspect(..), AspectRecord(..), KindMean(..), EqpSlot(..)
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
-  , sumAspectRecord, aspectRecordToList, seedToAspect, prEqpSlot
+  , sumAspectRecord, aspectRecordToList, rollAspectRecord, prEqpSlot
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice
@@ -266,8 +266,9 @@ aspectRecordToList AspectRecord{..} =
   ++ [AddAggression $ Dice.intToDice aAggression | aAggression /= 0]
   ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
-seedToAspect :: [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth -> Rnd AspectRecord
-seedToAspect ass ldepth totalDepth =
+rollAspectRecord :: [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
+                 -> Rnd AspectRecord
+rollAspectRecord ass ldepth totalDepth =
   foldlM' (castAspect ldepth totalDepth) emptyAspectRecord ass
 
 prEqpSlot :: EqpSlot -> AspectRecord -> Int

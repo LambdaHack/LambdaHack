@@ -17,7 +17,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
   , updAgeGame, updUnAgeGame, ageLevel, updDiscover, updCover
   , updDiscoverKind, discoverKind, updCoverKind
-  , updDiscoverSeed, discoverSeed, updCoverSeed
+  , updDiscoverAspect, discoverAspect, updCoverAspect
   , updDiscoverServer, updCoverServer
   , updRestart, updRestartServer, updResumeServer
 #endif
@@ -111,8 +111,8 @@ handleUpdAtomic cmd = case cmd of
   UpdCover c iid ik aspectRecord -> updCover c iid ik aspectRecord
   UpdDiscoverKind c ix ik -> updDiscoverKind c ix ik
   UpdCoverKind c ix ik -> updCoverKind c ix ik
-  UpdDiscoverSeed c iid aspectRecord -> updDiscoverSeed c iid aspectRecord
-  UpdCoverSeed c iid aspectRecord -> updCoverSeed c iid aspectRecord
+  UpdDiscoverAspect c iid aspectRecord -> updDiscoverAspect c iid aspectRecord
+  UpdCoverAspect c iid aspectRecord -> updCoverAspect c iid aspectRecord
   UpdDiscoverServer iid aspectRecord -> updDiscoverServer iid aspectRecord
   UpdCoverServer iid aspectRecord -> updCoverServer iid aspectRecord
   UpdPerception _ outPer inPer ->
@@ -564,20 +564,20 @@ updDiscover _c iid ik aspectRecord = do
   COps{coItemSpeedup} <- getsState scops
   let kmIsConst = IA.kmConst $ IK.getKindMean ik coItemSpeedup
   discoKind <- getsState sdiscoKind
-  let discoverAtMostSeed = do
+  let discoverAtMostAspect = do
         discoAspect <- getsState sdiscoAspect
         if kmIsConst || iid `EM.member` discoAspect
         then atomicFail "item already fully discovered"
-        else discoverSeed iid aspectRecord
+        else discoverAspect iid aspectRecord
   case EM.lookup iid itemD of
     Nothing -> atomicFail "discovered item unheard of"
     Just item -> case jkind item of
-      IdentityObvious _ -> discoverAtMostSeed
+      IdentityObvious _ -> discoverAtMostAspect
       IdentityCovered ix _ik -> case EM.lookup ix discoKind of
-        Just{} -> discoverAtMostSeed
+        Just{} -> discoverAtMostAspect
         Nothing -> do
           discoverKind ix ik
-          unless kmIsConst $ discoverSeed iid aspectRecord
+          unless kmIsConst $ discoverAspect iid aspectRecord
   resetActorAspect
 
 updCover :: Container -> ItemId -> ContentId ItemKind -> IA.AspectRecord -> m ()
@@ -603,9 +603,9 @@ discoverKind ix kindId = do
 updCoverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 updCoverKind _c _ix _ik = undefined
 
-updDiscoverSeed :: MonadStateWrite m
-                => Container -> ItemId -> IA.AspectRecord -> m ()
-updDiscoverSeed _c iid aspectRecord = do
+updDiscoverAspect :: MonadStateWrite m
+                  => Container -> ItemId -> IA.AspectRecord -> m ()
+updDiscoverAspect _c iid aspectRecord = do
   COps{coItemSpeedup} <- getsState scops
   itemD <- getsState sitemD
   case EM.lookup iid itemD of
@@ -618,19 +618,19 @@ updDiscoverSeed _c iid aspectRecord = do
       if kmIsConst || iid `EM.member` discoAspect
       then atomicFail "item aspectRecord already discovered"
       else do
-        discoverSeed iid aspectRecord
+        discoverAspect iid aspectRecord
         resetActorAspect
 
-discoverSeed :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
-discoverSeed iid aspectRecord = do
+discoverAspect :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
+discoverAspect iid aspectRecord = do
   let f Nothing = Just aspectRecord
       f Just{} = error $ "already discovered" `showFailure` (iid, aspectRecord)
   -- At this point we know the item is not @kmConst@.
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
     EM.alter f iid discoAspect1
 
-updCoverSeed :: Container -> ItemId -> IA.AspectRecord -> m ()
-updCoverSeed _c _iid _aspectRecord = undefined
+updCoverAspect :: Container -> ItemId -> IA.AspectRecord -> m ()
+updCoverAspect _c _iid _aspectRecord = undefined
 
 updDiscoverServer :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
 updDiscoverServer iid aspectRecord =
