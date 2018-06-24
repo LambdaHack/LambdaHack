@@ -227,7 +227,8 @@ build-binary-macosx: build-binary-common
 	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
 	dist/build/LambdaHack/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
-	tar -czf LambdaHack_$${LH_VERSION}_macosx-amd64.tar.gz LambdaHackTheGame
+	OS_VERSION=$$(sw_vers -productVersion); \
+	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
 
 new-build-dev:
 	cabal new-build --datadir=. --disable-optimization -j1
