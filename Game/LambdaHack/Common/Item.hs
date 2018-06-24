@@ -45,9 +45,9 @@ newtype ItemId = ItemId Int
 -- Then they are presented as having a template kind that is really
 -- not their own, though usually close. Full kind information about
 -- item's kind is available through the @ItemKindIx@ index once the item
--- is identified and full information about the value of item's aspects
+-- is identified and full information about the value of item's aspect record
 -- is available elsewhere (both @IdentityObvious@ and @IdentityCovered@
--- items may or may not need identification of their aspects).
+-- items may or may not need identification of their aspect record).
 data Item = Item
   { jkind    :: ItemIdentity  -- ^ the kind of the item, or an indiretion
   , jlid     :: LevelId       -- ^ lowest level the item was created at
@@ -74,7 +74,8 @@ instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
 
--- | The map of item ids to item aspects. The full map is known by the server.
+-- | The map of item ids to item aspect reocrd. The full map is known
+-- by the server.
 type DiscoveryAspect = EM.EnumMap ItemId IA.AspectRecord
 
 -- | An index of the kind identifier of an item. Clients have partial knowledge
@@ -84,7 +85,7 @@ newtype ItemKindIx = ItemKindIx Word16
   deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
 
 -- | The secret part of the information about an item. If a faction
--- knows the aspects of the item (the @kmConst@ flag is set or
+-- knows the aspect record of the item (the @kmConst@ flag is set or
 -- the @itemAspect@ field is @Left@), this is a complete secret information.
 -- Items that don't need second identification may be identified or not and both
 -- cases are OK (their display flavour will differ and that may be the point).
@@ -166,7 +167,7 @@ itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
       itemKind = okind coitem itemKindId
       km = IK.getKindMean itemKindId coItemSpeedup
       -- If the kind is not identified, we know nothing about the real
-      -- aspects, so we at least assume they are variable.
+      -- aspect record, so we at least assume they are variable.
       itemAspectMean | itemSuspect = km {IA.kmConst = False}
                      | otherwise = km
       itemDisco = case EM.lookup iid discoAspect of

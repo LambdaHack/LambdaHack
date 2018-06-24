@@ -276,8 +276,9 @@ addItemToDiscoBenefit iid = do
   cops <- getsState scops
   discoBenefit <- getsClient sdiscoBenefit
   case EM.lookup iid discoBenefit of
-    Just{} -> return ()  -- already there, with real or provisional aspects,
-                         -- but we haven't learned anything new about the item
+    Just{} -> return ()
+      -- already there, with real or provisional aspect record,
+      -- but we haven't learned anything new about the item
     Nothing -> do
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD

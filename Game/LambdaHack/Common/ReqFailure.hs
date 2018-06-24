@@ -94,7 +94,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   ApplyUnskilled -> False  -- unidentified skill items
   ApplyRead -> False  -- unidentified skill items
   ApplyOutOfReach -> True
-  ApplyCharging -> False  -- if aspects unknown, charging unknown
+  ApplyCharging -> False  -- if aspect record unknown, charging unknown
   ApplyNoEffects -> False  -- if effects unknown, can't prevent it
   ItemNothing -> True
   ItemNotCalm -> False  -- unidentified skill items

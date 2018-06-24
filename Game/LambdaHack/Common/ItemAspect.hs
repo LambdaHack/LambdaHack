@@ -65,11 +65,11 @@ data AspectRecord = AspectRecord
 
 -- | Partial information about an item, deduced from its item kind.
 -- These are assigned to each 'ItemKind'. The @kmConst@ flag says whether
--- the item's aspects are constant rather than random or dependent
+-- the item's aspect record is constant rather than random or dependent
 -- on item creation dungeon level.
 data KindMean = KindMean
   { kmConst :: Bool  -- ^ whether the item doesn't need second identification
-  , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspects
+  , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspect records
   }
   deriving (Show, Eq, Ord, Generic)
 

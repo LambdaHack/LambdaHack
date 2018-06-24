@@ -65,7 +65,7 @@ data State = State
   , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
   , _sdiscoKind   :: DiscoveryKind    -- ^ item kind discoveries data
   , _sdiscoAspect :: DiscoveryAspect  -- ^ item aspect data; could be recomputed
-  , _sactorAspect :: ActorAspect      -- ^ actor aspects; is recomputed
+  , _sactorAspect :: ActorAspect      -- ^ actor aspect records; is recomputed
   }
   deriving (Show, Eq)
 
@@ -275,7 +275,7 @@ updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid
 
--- This is best guess, including mean aspects, so we can take into
+-- This is best guess, including mean aspect record, so we can take into
 -- consideration even the kind the item hides under.
 aspectRecordFromItem :: ItemId -> Item -> State -> IA.AspectRecord
 aspectRecordFromItem iid item s =
