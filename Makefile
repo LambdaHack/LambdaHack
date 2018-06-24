@@ -217,11 +217,18 @@ build-binary-common:
 	cp COPYLEFT LambdaHackTheGame
 	cp CREDITS LambdaHackTheGame
 
-build-binary: build-binary-common
+build-binary-ubuntu: build-binary-common
 	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
 	dist/build/LambdaHack/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	tar -czf LambdaHack_$${LH_VERSION}_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
+
+build-binary-macosx: build-binary-common
+	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
+	dist/build/LambdaHack/LambdaHack --version > /dev/null; \
+	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
+	OS_VERSION=$$(sw_vers -productVersion); \
+	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
 
 new-build-dev:
 	cabal new-build --datadir=. --disable-optimization -j1
