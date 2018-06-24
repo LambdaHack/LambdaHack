@@ -354,23 +354,22 @@ addActorFromGroup actorGroup bfid pos lid time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the constant properties.
   let trunkFreq = [(actorGroup, 1)]
-  m4 <- rollItem 0 lid trunkFreq
-  case m4 of
+  m3 <- rollItem 0 lid trunkFreq
+  case m3 of
     Nothing -> return Nothing
-    Just (itemKnown, itemFullKit, seed, _) ->
-      Just <$> registerActor False itemKnown itemFullKit seed bfid pos lid time
+    Just (itemKnown, itemFullKit, _) ->
+      Just <$> registerActor False itemKnown itemFullKit bfid pos lid time
 
 registerActor :: MonadServerAtomic m
-              => Bool -> ItemKnown -> ItemFullKit -> IA.ItemSeed
+              => Bool -> ItemKnown -> ItemFullKit
               -> FactionId -> Point -> LevelId -> Time
               -> m ActorId
-registerActor summoned (kindIx, ar, _) (itemFullRaw, kit)
-              seed bfid pos lid time = do
+registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   let container = CTrunk bfid lid pos
       jfid = Just bfid
       itemKnown = (kindIx, ar, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-  trunkId <- registerItem (itemFull, kit) itemKnown seed container False
+  trunkId <- registerItem (itemFull, kit) itemKnown container False
   addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
 
 addProjectile :: MonadServerAtomic m

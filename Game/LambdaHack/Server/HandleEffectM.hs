@@ -973,9 +973,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   bagBefore <- getsState $ getBodyStoreBag tb store
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
-  m4 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, (itemFullRaw, kitRaw), seed, _) =
-        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m4
+  m3 <- rollItem 0 (blid tb) litemFreq
+  let (itemKnownRaw, (itemFullRaw, kitRaw), _) =
+        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m3
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
       -- allowed to be duplicated, because they provide really useful info
@@ -1018,7 +1018,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
-      iid <- registerItem (itemFull, kitNew) itemKnown seed c True
+      iid <- registerItem (itemFull, kitNew) itemKnown c True
       -- If created not on the ground, ID it, because it won't be on pickup.
       when (store /= CGround) $
         discoverIfMinorEffects c iid (itemKindId itemFull)

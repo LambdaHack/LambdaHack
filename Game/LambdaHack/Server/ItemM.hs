@@ -23,7 +23,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -42,8 +41,8 @@ import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
-onlyRegisterItem :: MonadServerAtomic m => ItemKnown -> IA.ItemSeed -> m ItemId
-onlyRegisterItem itemKnown@(_, aspectRecord, _) seed = do
+onlyRegisterItem :: MonadServerAtomic m => ItemKnown -> m ItemId
+onlyRegisterItem itemKnown@(_, aspectRecord, _) = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
     Just iid -> return iid
@@ -53,17 +52,16 @@ onlyRegisterItem itemKnown@(_, aspectRecord, _) seed = do
         execUpdAtomicSer $ UpdDiscoverServer icounter aspectRecord
       let !_A = assert executedOnServer ()
       modifyServer $ \ser ->
-        ser { sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
-            , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
+        ser { sitemRev = HM.insert itemKnown icounter (sitemRev ser)
             , sicounter = succ icounter }
       return $! icounter
 
 registerItem :: MonadServerAtomic m
-             => ItemFullKit -> ItemKnown -> IA.ItemSeed -> Container -> Bool
+             => ItemFullKit -> ItemKnown -> Container -> Bool
              -> m ItemId
 registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown@(_, aspectRecord, _) seed container verbose = do
-  iid <- onlyRegisterItem itemKnown seed
+             itemKnown@(_, aspectRecord, _) container verbose = do
+  iid <- onlyRegisterItem itemKnown
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
@@ -93,7 +91,7 @@ embedItem lid pos tk = do
 
 rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFullKit, IA.ItemSeed, GroupName ItemKind))
+         -> m (Maybe (ItemKnown, ItemFullKit, GroupName ItemKind))
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -101,15 +99,15 @@ rollItem lvlSpawned lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m4 <- rndToAction $ newItem cops flavour discoRev uniqueSet
+  m3 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
-  case m4 of
-    Just (_, (ItemFull{itemKindId, itemKind}, _), _, _) ->
+  case m3 of
+    Just (_, (ItemFull{itemKindId, itemKind}, _), _) ->
       when (IK.Unique `elem` IK.ifeature itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()
-  return m4
+  return m3
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
@@ -117,12 +115,12 @@ rollAndRegisterItem :: MonadServerAtomic m
                     -> m (Maybe (ItemId, (ItemFullKit, GroupName ItemKind)))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
-  m4 <- rollItem 0 lid itemFreq
-  case m4 of
+  m3 <- rollItem 0 lid itemFreq
+  case m3 of
     Nothing -> return Nothing
-    Just (itemKnown, (itemFull, kit), seed, itemGroup) -> do
+    Just (itemKnown, (itemFull, kit), itemGroup) -> do
       let kit2 = (fromMaybe (fst kit) mk, snd kit)
-      iid <- registerItem (itemFull, kit2) itemKnown seed container verbose
+      iid <- registerItem (itemFull, kit2) itemKnown container verbose
       return $ Just (iid, ((itemFull, kit2), itemGroup))
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m

@@ -36,7 +36,6 @@ data StateServer = StateServer
   , sdiscoKindRev :: DiscoveryKindRev
                                     -- ^ reverse map, used for item creation
   , suniqueSet    :: UniqueSet      -- ^ already generated unique items
-  , sitemSeedD    :: ItemSeedDict   -- ^ map from item ids to item seeds
   , sitemRev      :: ItemRev        -- ^ reverse id map, used for item creation
   , sflavour      :: FlavourMap     -- ^ association of flavour to items
   , sacounter     :: ActorId        -- ^ stores next actor index
@@ -76,7 +75,6 @@ emptyStateServer =
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
-    , sitemSeedD = EM.empty
     , sitemRev = HM.empty
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
@@ -118,7 +116,6 @@ instance Binary StateServer where
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
-    put sitemSeedD
     put sitemRev
     put sflavour
     put sacounter
@@ -133,7 +130,6 @@ instance Binary StateServer where
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get
-    sitemSeedD <- get
     sitemRev <- get
     sflavour <- get
     sacounter <- get

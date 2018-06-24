@@ -4,7 +4,7 @@
 module Game.LambdaHack.Server.ItemRev
   ( ItemKnown, ItemRev, UniqueSet, buildItem, newItem
     -- * Item discovery types
-  , DiscoveryKindRev, ItemSeedDict, emptyDiscoveryKindRev, serverDiscos
+  , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
   ) where
@@ -73,7 +73,7 @@ buildItem COps{coitem} (FlavourMap flavourMap) (DiscoveryKindRev discoRev)
 -- | Generate an item based on level.
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFullKit, IA.ItemSeed, GroupName ItemKind))
+        -> Rnd (Maybe (ItemKnown, ItemFullKit, GroupName ItemKind))
 newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFreq lvlSpawned lid
         ldepth@(Dice.AbsDepth ldAbs) totalDepth@(Dice.AbsDepth depth) = do
@@ -124,7 +124,6 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, itemAspect, jfid itemBase)
                   , (itemFull, (itemK, itemTimer))
-                  , seed
                   , itemGroup )
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
@@ -132,9 +131,6 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
 -- Morally, it's indexed by @ContentId ItemKind@ and elements are @ItemKindIx@.
 newtype DiscoveryKindRev = DiscoveryKindRev (U.Vector Word16)
   deriving (Show, Binary)
-
--- | The map of item ids to item seeds, needed for item creation.
-type ItemSeedDict = EM.EnumMap ItemId IA.ItemSeed
 
 emptyDiscoveryKindRev :: DiscoveryKindRev
 emptyDiscoveryKindRev = DiscoveryKindRev U.empty
