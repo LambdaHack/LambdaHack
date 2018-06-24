@@ -104,12 +104,12 @@ data UpdAtomic =
   | UpdTimeItem ItemId Container ItemTimer ItemTimer
   | UpdAgeGame [LevelId]
   | UpdUnAgeGame [LevelId]
-  | UpdDiscover Container ItemId (ContentId ItemKind) IA.ItemSeed
-  | UpdCover Container ItemId (ContentId ItemKind) IA.ItemSeed
+  | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord
+  | UpdCover Container ItemId (ContentId ItemKind) IA.AspectRecord
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
-  | UpdDiscoverSeed Container ItemId IA.ItemSeed
-  | UpdCoverSeed Container ItemId IA.ItemSeed
+  | UpdDiscoverSeed Container ItemId IA.AspectRecord
+  | UpdCoverSeed Container ItemId IA.AspectRecord
   | UpdDiscoverServer ItemId IA.AspectRecord
   | UpdCoverServer ItemId IA.AspectRecord
   | UpdPerception LevelId Perception Perception
@@ -215,12 +215,12 @@ undoUpdAtomic cmd = case cmd of
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
   UpdAgeGame lids -> Just $ UpdUnAgeGame lids
   UpdUnAgeGame lids -> Just $ UpdAgeGame lids
-  UpdDiscover c iid ik seed -> Just $ UpdCover c iid ik seed
-  UpdCover c iid ik seed -> Just $ UpdDiscover c iid ik seed
+  UpdDiscover c iid ik aspectRecord -> Just $ UpdCover c iid ik aspectRecord
+  UpdCover c iid ik aspectRecord -> Just $ UpdDiscover c iid ik aspectRecord
   UpdDiscoverKind c ix ik -> Just $ UpdCoverKind c ix ik
   UpdCoverKind c ix ik -> Just $ UpdDiscoverKind c ix ik
-  UpdDiscoverSeed c iid seed -> Just $ UpdCoverSeed c iid seed
-  UpdCoverSeed c iid seed -> Just $ UpdDiscoverSeed c iid seed
+  UpdDiscoverSeed c iid aspectRecord -> Just $ UpdCoverSeed c iid aspectRecord
+  UpdCoverSeed c iid aspectRecord -> Just $ UpdDiscoverSeed c iid aspectRecord
   UpdDiscoverServer iid aspectRecord -> Just $ UpdCoverServer iid aspectRecord
   UpdCoverServer iid aspectRecord -> Just $ UpdDiscoverServer iid aspectRecord
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer

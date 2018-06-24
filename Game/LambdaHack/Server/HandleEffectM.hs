@@ -255,8 +255,8 @@ itemEffectDisco source target iid itemKind c recharged periodic effs = do
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
   when (ur >= UseId && not (IK.onlyMinorEffects itemKind)) $ do
     kindId <- getsState $ getIidKindIdServer iid
-    seed <- getsServer $ (EM.! iid) . sitemSeedD
-    execUpdAtomic $ UpdDiscover c iid kindId seed
+    discoAspect <- getsState sdiscoAspect
+    execUpdAtomic $ UpdDiscover c iid kindId $ discoAspect EM.! iid
   return ur
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -1177,8 +1177,8 @@ effectIdentify execSfx iidId source target = do
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> ContentId ItemKind -> m ()
 identifyIid iid c itemKindId = do
-  seed <- getsServer $ (EM.! iid) . sitemSeedD
-  execUpdAtomic $ UpdDiscover c iid itemKindId seed
+  discoAspect <- getsState sdiscoAspect
+  execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
 
 -- ** Detect
 

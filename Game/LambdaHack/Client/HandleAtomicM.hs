@@ -148,7 +148,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
-  UpdDiscover c iid ik seed -> do
+  UpdDiscover c iid ik aspectRecord -> do
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
     case jkind item of
@@ -156,9 +156,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered ix _ik | ix `EM.notMember` discoKind ->
         discoverKind c ix ik
       IdentityCovered _ix _ik -> return ()
-    discoverSeed c iid seed
-  UpdCover c iid ik seed -> do
-    coverSeed c iid seed
+    discoverSeed c iid aspectRecord
+  UpdCover c iid ik aspectRecord -> do
+    coverSeed c iid aspectRecord
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
     case jkind item of
@@ -168,8 +168,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered _ix _ik -> return ()
   UpdDiscoverKind c ix ik -> discoverKind c ix ik
   UpdCoverKind c ix ik -> coverKind c ix ik
-  UpdDiscoverSeed c iid seed -> discoverSeed c iid seed
-  UpdCoverSeed c iid seed -> coverSeed c iid seed
+  UpdDiscoverSeed c iid aspectRecord -> discoverSeed c iid aspectRecord
+  UpdCoverSeed c iid aspectRecord -> coverSeed c iid aspectRecord
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
     COps{cocave, comode} <- getsState scops
@@ -332,8 +332,8 @@ discoverKind _c ix _ik = do
 coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
 coverKind _c _ix _ik = undefined
 
-discoverSeed :: MonadClient m => Container -> ItemId -> IA.ItemSeed -> m ()
-discoverSeed _c iid _seed = do
+discoverSeed :: MonadClient m => Container -> ItemId -> IA.AspectRecord -> m ()
+discoverSeed _c iid _aspectRecord = do
   cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -346,8 +346,8 @@ discoverSeed _c iid _seed = do
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
-coverSeed :: Container -> ItemId -> IA.ItemSeed -> m ()
-coverSeed _c _iid _seed = undefined
+coverSeed :: Container -> ItemId -> IA.AspectRecord -> m ()
+coverSeed _c _iid _aspectRecord = undefined
 
 killExit :: MonadClient m => m ()
 killExit = do

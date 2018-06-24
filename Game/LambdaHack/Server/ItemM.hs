@@ -62,7 +62,7 @@ registerItem :: MonadServerAtomic m
              => ItemFullKit -> ItemKnown -> IA.ItemSeed -> Container -> Bool
              -> m ItemId
 registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown seed container verbose = do
+             itemKnown@(_, aspectRecord, _) seed container verbose = do
   iid <- onlyRegisterItem itemKnown seed
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
@@ -71,7 +71,7 @@ registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
-    _ -> execUpdAtomic $ UpdDiscover container iid itemKindId seed
+    _ -> execUpdAtomic $ UpdDiscover container iid itemKindId aspectRecord
   return iid
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()

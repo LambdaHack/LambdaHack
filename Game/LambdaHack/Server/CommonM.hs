@@ -56,8 +56,8 @@ revealItems mfid = do
         let itemKind = okind coitem itemKindId
             c = CActor aid store
         unless (IK.isHumanTrinket itemKind) $ do  -- a hack
-          seed <- getsServer $ (EM.! iid) . sitemSeedD
-          execUpdAtomic $ UpdDiscover c iid itemKindId seed
+          discoAspect <- getsState sdiscoAspect
+          execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -465,8 +465,8 @@ discoverIfMinorEffects c iid itemKindId = do
   let itemKind = okind coitem itemKindId
   if IK.onlyMinorEffects itemKind
   then do
-    seed <- getsServer $ (EM.! iid) . sitemSeedD
-    execUpdAtomic $ UpdDiscover c iid itemKindId seed
+    discoAspect <- getsState sdiscoAspect
+    execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
   else return ()  -- discover by use when item's effects get activated later on
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
