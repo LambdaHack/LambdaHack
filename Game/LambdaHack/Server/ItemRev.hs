@@ -110,17 +110,15 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     ((itemKindId, itemKind), itemGroup) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice ldepth totalDepth (IK.icount itemKind)
-    seed <- toEnum <$> random
     let itemBase = buildItem cops flavourMap discoRev itemKindId itemKind lid
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
         itemTimer = [timeZero | IK.Periodic `elem` IK.ifeature itemKind]
                       -- delay first discharge of single organs
         itemSuspect = False
-        itemDisco = ItemDiscoFull {..}
         -- Bonuses on items/actors unaffected by number of spawned actors.
-        itemAspect =
-          IA.seedToAspect seed (IK.iaspects itemKind) ldepth totalDepth
+    itemAspect <- IA.seedToAspect (IK.iaspects itemKind) ldepth totalDepth
+    let itemDisco = ItemDiscoFull {..}
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, itemAspect, jfid itemBase)
                   , (itemFull, (itemK, itemTimer))

@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.ItemAspect
-  ( Aspect(..), AspectRecord(..), KindMean(..), ItemSeed, EqpSlot(..)
+  ( Aspect(..), AspectRecord(..), KindMean(..), EqpSlot(..)
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, seedToAspect, prEqpSlot
 #ifdef EXPOSE_INTERNAL
@@ -72,12 +72,6 @@ data KindMean = KindMean
   , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspects
   }
   deriving (Show, Eq, Ord, Generic)
-
--- | A seed for rolling aspects of an item
--- Clients have partial knowledge of how item ids map to the seeds.
--- They gain knowledge by identifying items.
-newtype ItemSeed = ItemSeed Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
@@ -272,11 +266,9 @@ aspectRecordToList AspectRecord{..} =
   ++ [AddAggression $ Dice.intToDice aAggression | aAggression /= 0]
   ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
-seedToAspect :: ItemSeed -> [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
-             -> AspectRecord
-seedToAspect (ItemSeed itemSeed) ass ldepth totalDepth =
-  let rollM = foldlM' (castAspect ldepth totalDepth) emptyAspectRecord ass
-  in St.evalState rollM (R.mkStdGen itemSeed)
+seedToAspect :: [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth -> Rnd AspectRecord
+seedToAspect ass ldepth totalDepth =
+  foldlM' (castAspect ldepth totalDepth) emptyAspectRecord ass
 
 prEqpSlot :: EqpSlot -> AspectRecord -> Int
 prEqpSlot eqpSlot ar@AspectRecord{..} =
