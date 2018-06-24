@@ -2,6 +2,7 @@
 
 - Add a hack to run SDL2 on the main thread, fixing the OS X crash
 - Fix, complete and fine tune UI, AI and server skill and weapon checks
+- Fix a bug where item aspects look different to clients than to the server
 - Change the requirements for the main menu ASCII art
 
 ## [v0.8.1.2](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.1...v0.8.1.2)
