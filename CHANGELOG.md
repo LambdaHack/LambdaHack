@@ -2,6 +2,7 @@
 
 - Add a hack to run SDL2 on the main thread, fixing the OS X crash
 - Warn visually when impressed and Calm running low, risking domination
+- Display actor as red when low Calm and impressed or when low HP
 - Fix, complete and fine tune UI, AI and server skill and weapon checks
 - Fix a bug where item aspects look different to clients than to the server
 - Change the requirements for the main menu ASCII art

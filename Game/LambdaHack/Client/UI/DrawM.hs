@@ -270,12 +270,11 @@ drawFramePath drawnLevelId = do
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
-  SessionUI{sselected} <- getSession
+  SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   Level{lxsize, lactor} <- getLevel drawnLevelId
   side <- getsClient sside
   mleader <- getsClient sleader
   s <- getState
-  sactorUI <- getsSession sactorUI
   let {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
@@ -292,8 +291,14 @@ drawFrameActor drawnLevelId = do
                                        then Color.HighlightWhite
                                        else Color.HighlightMagenta
                         | otherwise -> Color.HighlightNone
-          in Color.attrCharToW32
-             $ Color.AttrChar Color.Attr{fg=bcolor, bg} symbol
+              fg | bfid /= side || bproj || bhp <= 0 = bcolor
+                 | otherwise =
+                let (hpCheckWarning, calmCheckWarning) =
+                      checkWarnings sUIOptions aid s
+                in if hpCheckWarning || calmCheckWarning
+                   then Color.Red
+                   else bcolor
+         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} symbol
         [] -> error $ "lactor not sparse" `showFailure` ()
       mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s
@@ -518,14 +523,14 @@ drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
-  uiOptions <- getsSession sUIOptions
+  sUIOptions <- getsSession sUIOptions
   mleader <- getsClient sleader
   case mleader of
     Just leader -> do
       b <- getsState $ getActorBody leader
       ar <- getsState $ getActorAspect leader
       (hpCheckWarning, calmCheckWarning)
-        <- getsState $ checkWarnings uiOptions leader
+        <- getsState $ checkWarnings sUIOptions leader
       bdark <- getsState $ \s -> not (actorInAmbient b s)
       let showTrunc x = let t = show x
                         in if length t > 3
