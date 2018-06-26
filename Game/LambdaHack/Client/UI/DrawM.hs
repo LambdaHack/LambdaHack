@@ -515,16 +515,7 @@ drawLeaderStatus waitT = do
                         in if length t > 3
                            then if x > 0 then "***" else "---"
                            else t
-          (bhpM, darkL, bracedL, hpDelta, bcalmM, calmDelta,
-           ahpS, bhpS, acalmS, bcalmS, organs) =
-            let b@Actor{bhp, bcalm} = getActorBody leader s
-            in ( bhp, not (actorInAmbient b s)
-               , braced b, bhpDelta b, bcalm, bcalmDelta b
-               , showTrunc $ max 0 $ IA.aMaxHP ar
-               , showTrunc (bhp `divUp` oneM)
-               , showTrunc $ max 0 $ IA.aMaxCalm ar
-               , showTrunc (bcalm `divUp` oneM)
-               , borgan b )
+          b = getActorBody leader s
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -537,34 +528,39 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
           hpCheckWarning =
-            if bhpM <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
+            if bhp b <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
             then addColor Color.Red
             else stringToAL
           calmCheckWarning =
-            if bcalmM <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
+            if bcalm b <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
                && isImpressed
             then addColor Color.Red
             else stringToAL
           isImpression iid =
             maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
-          isImpressed = any isImpression $ EM.keys organs
-          calmAddAttr = checkDelta calmDelta
+          isImpressed = any isImpression $ EM.keys $ borgan b
+          calmAddAttr = checkDelta $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
           -- if a tile is lit, because it it's seen it may be due to ambient
           -- or dynamic light or due to infravision.
-          darkPick | darkL   = "."
+          bdark = not (actorInAmbient b s)
+          darkPick | bdark = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
-          calmText = bcalmS <> (if darkL || not bracedL
-                                then slashPick
-                                else "/") <> acalmS
-          bracePick | bracedL   = "}"
+          calmText = showTrunc (bcalm b `divUp` oneM)
+                     <> (if bdark || not (braced b)
+                         then slashPick
+                         else "/")
+                     <> showTrunc (max 0 $ IA.aMaxCalm ar)
+          bracePick | braced b  = "}"
                     | otherwise = ":"
-          hpAddAttr = checkDelta hpDelta
+          hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
-          hpText = bhpS <> (if bracedL || not darkL
-                            then slashPick
-                            else "/") <> ahpS
+          hpText = showTrunc (bhp b `divUp` oneM)
+                   <> (if braced b || not bdark
+                       then slashPick
+                       else "/")
+                   <> showTrunc (max 0 $ IA.aMaxHP ar)
           justifyRight n t = replicate (n - length t) ' ' ++ t
       return $! calmHeader <> calmCheckWarning (justifyRight 7 calmText)
                 <+:> hpHeader <> hpCheckWarning (justifyRight 7 hpText)
