@@ -501,21 +501,36 @@ drawArenaStatus COps{cocave}
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
                 <+> seenStatus
 
+checkWarnings :: UIOptions -> ActorId -> State -> (Bool, Bool)
+checkWarnings UIOptions{uhpWarningPercent} leader s =
+  let b = getActorBody leader s
+      ar = getActorAspect leader s
+      isImpression iid =
+        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
+      isImpressed = any isImpression $ EM.keys $ borgan b
+      hpCheckWarning = bhp b <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
+      calmCheckWarning =
+        bcalm b <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
+        && isImpressed
+  in (hpCheckWarning, calmCheckWarning)
+
 drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
-  UIOptions{uhpWarningPercent} <- getsSession sUIOptions
+  uiOptions <- getsSession sUIOptions
   mleader <- getsClient sleader
   case mleader of
     Just leader -> do
+      b <- getsState $ getActorBody leader
       ar <- getsState $ getActorAspect leader
-      s <- getState
+      (hpCheckWarning, calmCheckWarning)
+        <- getsState $ checkWarnings uiOptions leader
+      bdark <- getsState $ \s -> not (actorInAmbient b s)
       let showTrunc x = let t = show x
                         in if length t > 3
                            then if x > 0 then "***" else "---"
                            else t
-          b = getActorBody leader s
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -527,23 +542,10 @@ drawLeaderStatus waitT = do
             | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
-          hpCheckWarning =
-            if bhp b <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
-            then addColor Color.Red
-            else stringToAL
-          calmCheckWarning =
-            if bcalm b <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
-               && isImpressed
-            then addColor Color.Red
-            else stringToAL
-          isImpression iid =
-            maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
-          isImpressed = any isImpression $ EM.keys $ borgan b
           calmAddAttr = checkDelta $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
           -- if a tile is lit, because it it's seen it may be due to ambient
           -- or dynamic light or due to infravision.
-          bdark = not (actorInAmbient b s)
           darkPick | bdark = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
@@ -562,8 +564,11 @@ drawLeaderStatus waitT = do
                        else "/")
                    <> showTrunc (max 0 $ IA.aMaxHP ar)
           justifyRight n t = replicate (n - length t) ' ' ++ t
-      return $! calmHeader <> calmCheckWarning (justifyRight 7 calmText)
-                <+:> hpHeader <> hpCheckWarning (justifyRight 7 hpText)
+          colorWarning w = if w then addColor Color.Red else stringToAL
+      return $! calmHeader
+                <> colorWarning calmCheckWarning (justifyRight 7 calmText)
+                <+:> hpHeader
+                <> colorWarning hpCheckWarning (justifyRight 7 hpText)
     Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
