@@ -515,15 +515,16 @@ drawLeaderStatus waitT = do
                         in if length t > 3
                            then if x > 0 then "***" else "---"
                            else t
-          (bhpM, darkL, bracedL, hpDelta, calmDelta,
-           ahpS, bhpS, acalmS, bcalmS) =
+          (bhpM, darkL, bracedL, hpDelta, bcalmM, calmDelta,
+           ahpS, bhpS, acalmS, bcalmS, organs) =
             let b@Actor{bhp, bcalm} = getActorBody leader s
             in ( bhp, not (actorInAmbient b s)
-               , braced b, bhpDelta b, bcalmDelta b
+               , braced b, bhpDelta b, bcalm, bcalmDelta b
                , showTrunc $ max 0 $ IA.aMaxHP ar
                , showTrunc (bhp `divUp` oneM)
                , showTrunc $ max 0 $ IA.aMaxCalm ar
-               , showTrunc (bcalm `divUp` oneM))
+               , showTrunc (bcalm `divUp` oneM)
+               , borgan b )
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command.
           slashes = ["/", "|", "\\", "|"]
@@ -535,10 +536,18 @@ drawLeaderStatus waitT = do
             | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
-          checkWarning =
+          hpCheckWarning =
             if bhpM <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
             then addColor Color.Red
             else stringToAL
+          calmCheckWarning =
+            if bcalmM <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
+               && isImpressed
+            then addColor Color.Red
+            else stringToAL
+          isImpression iid =
+            maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
+          isImpressed = any isImpression $ EM.keys organs
           calmAddAttr = checkDelta calmDelta
           -- We only show ambient light, because in fact client can't tell
           -- if a tile is lit, because it it's seen it may be due to ambient
@@ -557,8 +566,8 @@ drawLeaderStatus waitT = do
                             then slashPick
                             else "/") <> ahpS
           justifyRight n t = replicate (n - length t) ' ' ++ t
-      return $! calmHeader <> stringToAL (justifyRight 7 calmText)
-                <+:> hpHeader <> checkWarning (justifyRight 7 hpText)
+      return $! calmHeader <> calmCheckWarning (justifyRight 7 calmText)
+                <+:> hpHeader <> hpCheckWarning (justifyRight 7 hpText)
     Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
                          <+:> stringToAL (hpHeaderText <> ":  --/--")
 
