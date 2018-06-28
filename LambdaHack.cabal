@@ -11,7 +11,7 @@ description:   LambdaHack is a Haskell game engine library for ASCII roguelike
                games of arbitrary theme, size and complexity, with optional
                tactical squad combat. It's packaged together with a sample
                dungeon crawler in fantasy setting that can be tried out
-               in the browser: <http://lambdahack.github.io>
+               in the browser at <http://lambdahack.github.io>.
                (It runs fastest on Chrome. Keyboard commands and savefiles
                are supported only on recent enough versions of browsers.
                Mouse should work everywhere.)
@@ -93,7 +93,7 @@ flag sdl
   manual:             True
 
 flag jsaddle
-  description:        switch to the JSaddle frontend
+  description:        switch to the JSaddle frontend (may be bit-rotted)
   default:            False
   manual:             True
 

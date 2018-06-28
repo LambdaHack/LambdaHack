@@ -9,7 +9,7 @@ LambdaHack is a Haskell[1] game engine library for ASCII roguelike[2]
 games of arbitrary theme, size and complexity, with optional
 tactical squad combat. It's packaged together with a sample
 dungeon crawler in fantasy setting that can be tried out
-in the browser: http://lambdahack.github.io
+in the browser at http://lambdahack.github.io.
 (It runs fastest on Chrome. Keyboard commands and savefiles
 are supported only on recent enough versions of browsers.
 Mouse should work everywhere.)
@@ -89,8 +89,8 @@ if available.
 
 On Linux, make sure you have the SDL2 libraries installed on your system
 (e.g., libsdl2-2.0-0, libsdl2-ttf-2.0-0 on Ubuntu).
-On Mac OS X, you need SDL2 installed, as well, e.g.,
-from [libsdlorg](https://www.libsdl.org/download-2.0.php)
+On Mac OS X, you need SDL2 installed, e.g.,
+from [libsdlorg](https://www.libsdl.org/download-2.0.php).
 For Windows, the SDL2 and all other needed libraries are already
 contained in the game's binary archive.
 Note that Windows binaries no longer work on Windows XP, since Cygwin
@@ -158,7 +158,7 @@ as follows
     cabal update
     cabal install LambdaHack
 
-For a newer snapshot, download the source code from github[5]
+For a newer snapshot, clone the source code from github[5]
 and run Cabal from the main directory
 
     cabal install
