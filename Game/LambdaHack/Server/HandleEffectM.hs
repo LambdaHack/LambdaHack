@@ -124,6 +124,18 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
         [] -> return ()
         aid : _ -> execUpdAtomic $ UpdLeadFaction (bfid tb) mleader $ Just aid
 
+cutCalm :: MonadServerAtomic m => ActorId -> m ()
+cutCalm target = do
+  tb <- getsState $ getActorBody target
+  ar <- getsState $ getActorAspect target
+  let upperBound = if hpTooLow tb ar
+                   then 2  -- to trigger domination on next attack, etc.
+                   else xM $ IA.aMaxCalm ar
+      deltaCalm = min minusM1 (upperBound - bcalm tb)
+  -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
+  -- which is emitted when decreasing Calm by @minusM@.
+  udpateCalm target deltaCalm
+
 -- Here melee damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
 meleeEffectAndDestroy :: MonadServerAtomic m
@@ -437,18 +449,6 @@ effectRefillHP power0 source target = do
        execSfxAtomic $ SfxEffect (bfid sb) target reportedEffect deltaHP
        refillHP source target deltaHP
        return UseUp
-
-cutCalm :: MonadServerAtomic m => ActorId -> m ()
-cutCalm target = do
-  tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
-  let upperBound = if hpTooLow tb ar
-                   then 0  -- to trigger domination, etc.
-                   else xM $ IA.aMaxCalm ar
-      deltaCalm = min minusM1 (upperBound - bcalm tb)
-  -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
-  -- which is emitted when decreasing Calm by @minusM@.
-  udpateCalm target deltaCalm
 
 -- ** RefillCalm
 
