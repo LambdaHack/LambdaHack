@@ -186,8 +186,9 @@ gameReset serverOptions mGameMode mrandom = do
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
                   DungeonGen.FreshDungeon, ContentId ModeKind)
       rnd = do
-        modeKindId <- fromMaybe (error $ "" `showFailure` gameMode)
-                      <$> opick comode gameMode (const True)
+        modeKindId <-
+          fromMaybe (error $ "Unknown game mode:" `showFailure` gameMode)
+          <$> opick comode gameMode (const True)
         let mode = okind comode modeKindId
             automatePS ps = ps {rosterList =
               map (first $ automatePlayer True) $ rosterList ps}
