@@ -136,6 +136,7 @@ library
                       Game.LambdaHack.Client.UI.ActorUI
                       Game.LambdaHack.Client.UI.Animation
                       Game.LambdaHack.Client.UI.Content.Input
+                      Game.LambdaHack.Client.UI.ContentClientUI
                       Game.LambdaHack.Client.UI.DrawM
                       Game.LambdaHack.Client.UI.DisplayAtomicM
                       Game.LambdaHack.Client.UI.EffectDescription
