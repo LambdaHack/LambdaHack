@@ -54,17 +54,20 @@ main = do
   -- Fail here, not inside server code, so that savefiles are not removed,
   -- because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
-  -- Avoid the bound thread that would slow down the communication.
-  a <- async $ tieKnot serverOptions
+  let run = do
+        -- Avoid the bound thread that would slow down the communication.
+        a <- async $ tieKnot serverOptions
 #ifndef USE_JSFILE
-               `Ex.finally` fillWorkaround
-  -- Run a (possibly void) workaround. It's needed for architectures/frontends
-  -- that need to perform some actions on the main thread
-  -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
-  workaround <- takeMVar workaroundOnMainThreadMVar
-  workaround
+                     `Ex.finally` fillWorkaround
+        link a
+        -- Run a (possibly void) workaround. It's needed for OSes/frontends
+        -- that need to perform some actions on the main thread
+        -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
+        workaround <- takeMVar workaroundOnMainThreadMVar
+        workaround
 #endif
-  resOrEx <- waitCatch a
+        wait a
+  resOrEx :: Either Ex.SomeException () <- Ex.try run
   let unwrapEx e =
 #if MIN_VERSION_async(2,2,1)
         case Ex.fromException e of
