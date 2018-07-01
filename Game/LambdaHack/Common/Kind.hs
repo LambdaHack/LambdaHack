@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( ContentId, ContentData, COps(..)
@@ -11,8 +10,6 @@ module Game.LambdaHack.Common.Kind
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
-
-import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Content.CaveKind
@@ -33,7 +30,6 @@ data COps = COps
   , coItemSpeedup :: ItemSpeedup
   , coTileSpeedup :: TileSpeedup
   }
-  deriving Generic
 
 instance Show COps where
   show _ = "game content"
