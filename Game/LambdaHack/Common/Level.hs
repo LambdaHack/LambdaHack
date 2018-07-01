@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon
-  , ascendInBranch, whereTo
+  , dungeonBounds, ascendInBranch, whereTo
     -- * The @Level@ type and its components
   , ItemFloor, ActorMap, TileMap, SmellMap, Level(..)
     -- * Component updates
@@ -39,15 +39,18 @@ import           Game.LambdaHack.Content.TileKind (TileKind)
 -- | The complete dungeon is a map from level identifiers to levels.
 type Dungeon = EM.EnumMap LevelId Level
 
+dungeonBounds :: Dungeon -> (LevelId, LevelId)
+dungeonBounds dungeon
+  | Just ((s, _), _) <- EM.minViewWithKey dungeon
+  , Just ((e, _), _) <- EM.maxViewWithKey dungeon
+  = (s, e)
+dungeonBounds dungeon = error $ "empty dungeon" `showFailure` dungeon
+
 -- | Levels in the current branch, one level up (or down) from the current.
 ascendInBranch :: Dungeon -> Bool -> LevelId -> [LevelId]
 ascendInBranch dungeon up lid =
   -- Currently there is just one branch, so the computation is simple.
-  let (minD, maxD) | Just ((s, _), _) <- EM.minViewWithKey dungeon
-                   , Just ((e, _), _) <- EM.maxViewWithKey dungeon
-                   = (s, e)
-                   | otherwise
-                   = error $ "null dungeon" `showFailure` dungeon
+  let (minD, maxD) = dungeonBounds dungeon
       ln = max minD $ min maxD $ toEnum $ fromEnum lid + if up then 1 else -1
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]

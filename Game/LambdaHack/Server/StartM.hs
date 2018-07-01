@@ -227,10 +227,7 @@ populateDungeon = do
                              [] -> []
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
-      (minD, maxD) =
-        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
-          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> error $ "empty dungeon" `showFailure` dungeon
+      (minD, maxD) = dungeonBounds dungeon
       -- Players that escape go first to be started over stairs, if possible.
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.

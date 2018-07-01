@@ -56,10 +56,7 @@ isNoConfirmsGame = do
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
 getEntryArena fact = do
   dungeon <- getsState sdungeon
-  let (minD, maxD) =
-        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
-          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> error $ "empty dungeon" `showFailure` dungeon
+  let (minD, maxD) = dungeonBounds dungeon
       f [] = 0
       f ((ln, _, _) : _) = ln
   return $! max minD $ min maxD $ toEnum $ f $ ginitial fact
