@@ -46,8 +46,7 @@ standard = RuleKind
   -- The picture and the whole main menu is displayed dull white on black.
   -- The glyphs, or at least the character cells, are perfect squares.
   -- The picture should be exactly 45 rows by 80 columns.
-  -- For larger screen sizes, the picture is centered and padded with spaces,
-  -- so it makes sense for some or all of the picture borders to be spaces.
+  -- For larger screen sizes, the picture is centered and padded with spaces.
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path
