@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Frame
   ( FrameST, FrameForall(..), writeLine
   , SingleFrame(..), Frames
-  , blankSingleFrame, overlayFrame, overlayFrameWithLines
+  , normalLevelBound, blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , truncateAttrLine
@@ -22,7 +22,6 @@ import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
@@ -56,6 +55,10 @@ newtype SingleFrame = SingleFrame
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe FrameForall]
+
+-- | Bounds of the area for displaying a level, indexed from 0.
+normalLevelBound :: (Int, Int)
+normalLevelBound = (79, 20)
 
 blankSingleFrame :: SingleFrame
 blankSingleFrame =

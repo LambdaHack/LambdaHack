@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , GroupName, Tactic(..)
   , toGroupName, describeTactic
-  , makePhrase, makeSentence, squashedWWandW, normalLevelBound
+  , makePhrase, makeSentence, squashedWWandW
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   , workaroundOnMainThreadMVar
   ) where
@@ -184,10 +184,6 @@ squashedWWandW parts =
         [(_, person1)] -> person1
         _ -> MU.PlEtc
   in (MU.WWandW $ map fst cars, person)
-
--- | Level bounds.
-normalLevelBound :: (Int, Int)
-normalLevelBound = (79, 20)
 
 -- | Personal data directory for the game. Depends on the OS and the game,
 -- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.

@@ -19,7 +19,6 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
