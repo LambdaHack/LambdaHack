@@ -122,7 +122,7 @@ instance MonadClientAtomic CliImplementation where
 
 -- | Run the main client loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorCli :: KeyKind -> UIOptions -> ClientOptions
+executorCli :: InputContentData -> UIOptions -> ClientOptions
             -> COps
             -> Bool
             -> FactionId

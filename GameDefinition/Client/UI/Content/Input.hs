@@ -1,14 +1,14 @@
 -- | The default game key-command mapping to be used for UI. Can be overridden
 -- via macros in the config file.
-module Client.UI.Content.KeyKind
-  ( standardKeys
+module Client.UI.Content.Input
+  ( standardKeysAndMouse
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Game.LambdaHack.Client.UI.Content.KeyKind
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.HandleHelperM (ppSLore)
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Common.Misc
@@ -18,8 +18,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 --
 -- In addition to these commands, mouse and keys have a standard meaning
 -- when navigating various menus.
-standardKeys :: KeyKind
-standardKeys = KeyKind $ map evalKeyDef $
+standardKeysAndMouse :: InputContentData
+standardKeysAndMouse = InputContentData $ map evalKeyDef $
   -- All commands are defined here, except some movement and leader picking
   -- commands. All commands are shown on help screens except debug commands
   -- and macros with empty descriptions.

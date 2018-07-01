@@ -1,7 +1,7 @@
 -- | The type of definitions of key-command mappings to be used for the UI
 -- and shorthands for specifying command triples in the content files.
-module Game.LambdaHack.Client.UI.Content.KeyKind
-  ( KeyKind(..), evalKeyDef
+module Game.LambdaHack.Client.UI.Content.Input
+  ( InputContentData(..), evalKeyDef
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
@@ -26,7 +26,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.
-newtype KeyKind = KeyKind [(K.KM, CmdTriple)]  -- ^ default client UI commands
+newtype InputContentData =
+  InputContentData [(K.KM, CmdTriple)]  -- ^ default client UI commands
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
 evalKeyDef (t, triple@(cats, _, _)) =

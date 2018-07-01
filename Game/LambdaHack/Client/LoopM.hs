@@ -34,7 +34,7 @@ initAI = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => KeyKind -> UIOptions -> m ()
+initUI :: MonadClientUI m => InputContentData -> UIOptions -> m ()
 initUI copsClient sUIOptions = do
   side <- getsClient sside
   soptions <- getsClient soptions
@@ -62,7 +62,7 @@ loopCli :: ( MonadClientSetup m
            , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => KeyKind -> UIOptions -> ClientOptions -> m ()
+        => InputContentData -> UIOptions -> ClientOptions -> m ()
 loopCli copsClient sUIOptions soptions = do
   modifyClient $ \cli -> cli {soptions}
   hasUI <- clientHasUI

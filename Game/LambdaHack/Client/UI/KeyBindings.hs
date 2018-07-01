@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Client.UI.Content.KeyKind
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -32,10 +32,10 @@ data Binding = Binding
 
 -- | Create binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: KeyKind    -- ^ default key bindings from the content
+stdBinding :: InputContentData  -- ^ default key bindings from the content
            -> UIOptions  -- ^ UI client options
            -> Binding    -- ^ concrete binding
-stdBinding (KeyKind copsClient) UIOptions{uCommands, uVi, uLaptop} =
+stdBinding (InputContentData copsClient) UIOptions{uCommands, uVi, uLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v

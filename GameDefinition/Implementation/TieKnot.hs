@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server
 
-import qualified Client.UI.Content.KeyKind as Content.KeyKind
+import qualified Client.UI.Content.Input as Content.Input
 import qualified Content.CaveKind
 import qualified Content.ItemKind
 import qualified Content.ModeKind
@@ -71,7 +71,7 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         }
       -- Client content operations containing default keypresses
       -- and command descriptions.
-      !copsClient = Content.KeyKind.standardKeys
+      !copsClient = Content.Input.standardKeysAndMouse
   -- Wire together game content, the main loops of game clients
   -- and the game server loop.
   executorSer cops copsClient soptionsNxt

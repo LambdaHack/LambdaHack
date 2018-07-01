@@ -133,7 +133,7 @@ instance MonadServerAtomic SerImplementation where
 -- for easy access of code analysis tools.
 -- | Run the main server loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorSer :: COps -> KeyKind -> ServerOptions -> IO ()
+executorSer :: COps -> InputContentData -> ServerOptions -> IO ()
 executorSer cops copsClient soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
