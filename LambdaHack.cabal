@@ -258,7 +258,8 @@ library
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, StrictData, CPP
+                      LambdaCase, DefaultSignatures, InstanceSigs,
+                      MonadFailDesugaring, StrictData, CPP
   other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
@@ -359,7 +360,8 @@ executable LambdaHack
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, StrictData, CPP
+                      LambdaCase, DefaultSignatures, InstanceSigs,
+                      MonadFailDesugaring, StrictData, CPP
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
   ghc-options:        -Wall-missed-specialisations
@@ -432,7 +434,8 @@ test-suite test
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, StrictData, CPP
+                      LambdaCase, DefaultSignatures, InstanceSigs,
+                      MonadFailDesugaring, StrictData, CPP
   other-extensions:   TemplateHaskell
   ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
   ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
