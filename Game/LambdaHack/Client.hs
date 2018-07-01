@@ -15,7 +15,7 @@ module Game.LambdaHack.Client
     -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
   , ClientOptions(..), defClientOptions
     -- * Re-exported from "Game.LambdaHack.Client.UI"
-  , InputContentData
+  , CCUI
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
   ) where
 

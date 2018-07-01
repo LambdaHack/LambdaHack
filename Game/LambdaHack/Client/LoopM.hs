@@ -34,14 +34,14 @@ initAI = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => InputContentData -> UIOptions -> m ()
-initUI copsClient sUIOptions = do
+initUI :: MonadClientUI m => CCUI -> UIOptions -> m ()
+initUI CCUI{coinput} sUIOptions = do
   side <- getsClient sside
   soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend soptions
-  let !sbinding = stdBinding copsClient sUIOptions
+  let !sbinding = stdBinding coinput sUIOptions
         -- evaluate to check for errors
   modifySession $ \sess ->
     sess { schanF
@@ -62,11 +62,11 @@ loopCli :: ( MonadClientSetup m
            , MonadClientAtomic m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
-        => InputContentData -> UIOptions -> ClientOptions -> m ()
-loopCli copsClient sUIOptions soptions = do
+        => CCUI -> UIOptions -> ClientOptions -> m ()
+loopCli ccui sUIOptions soptions = do
   modifyClient $ \cli -> cli {soptions}
   hasUI <- clientHasUI
-  if not hasUI then initAI else initUI copsClient sUIOptions
+  if not hasUI then initAI else initUI ccui sUIOptions
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   restoredG <- tryRestore

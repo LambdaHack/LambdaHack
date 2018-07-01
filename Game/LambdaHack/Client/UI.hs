@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI
     -- * Updating UI state wrt game state changes
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- * Startup and initialization
-  , InputContentData
+  , CCUI(..)
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
     -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
   , ChanFrontend, chanFrontend, msgAdd, tryRestore, stdBinding
@@ -32,7 +32,7 @@ import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Client.UI.Content.Input
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DisplayAtomicM
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend

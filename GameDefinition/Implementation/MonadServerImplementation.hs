@@ -133,8 +133,8 @@ instance MonadServerAtomic SerImplementation where
 -- for easy access of code analysis tools.
 -- | Run the main server loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorSer :: COps -> InputContentData -> ServerOptions -> IO ()
-executorSer cops copsClient soptionsNxtCmdline = do
+executorSer :: COps -> CCUI -> ServerOptions -> IO ()
+executorSer cops ccui soptionsNxtCmdline = do
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
   let benchmark = sbenchmark $ sclientOptions soptionsNxtCmdline
@@ -150,7 +150,7 @@ executorSer cops copsClient soptionsNxtCmdline = do
   let clientOptions = applyUIOptions cops sUIOptions
                       $ sclientOptions soptionsNxt
       -- Partially applied main loop of the clients.
-      executorClient = executorCli copsClient sUIOptions clientOptions cops
+      executorClient = executorCli ccui sUIOptions clientOptions cops
   -- Wire together game content, the main loop of game clients
   -- and the game server loop.
   let stateToFileName (_, ser) =
