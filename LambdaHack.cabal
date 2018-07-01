@@ -136,6 +136,7 @@ library
                       Game.LambdaHack.Client.UI.ActorUI
                       Game.LambdaHack.Client.UI.Animation
                       Game.LambdaHack.Client.UI.Content.Input
+                      Game.LambdaHack.Client.UI.Content.Screen
                       Game.LambdaHack.Client.UI.ContentClientUI
                       Game.LambdaHack.Client.UI.DrawM
                       Game.LambdaHack.Client.UI.DisplayAtomicM
@@ -312,6 +313,7 @@ executable LambdaHack
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
   other-modules:      Client.UI.Content.Input,
+                      Client.UI.Content.Screen,
                       Content.CaveKind,
                       Content.ItemKind,
                       Content.ItemKindEmbed,
@@ -386,6 +388,7 @@ test-suite test
   hs-source-dirs:     GameDefinition, test
   main-is:            test.hs
   other-modules:      Client.UI.Content.Input,
+                      Client.UI.Content.Screen,
                       Content.CaveKind,
                       Content.ItemKind,
                       Content.ItemKindEmbed,

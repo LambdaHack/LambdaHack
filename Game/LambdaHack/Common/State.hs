@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.State
     -- * Internal operations
   , unknownLevel, unknownTileMap
 #endif
- ) where
+  ) where
 
 import Prelude ()
 

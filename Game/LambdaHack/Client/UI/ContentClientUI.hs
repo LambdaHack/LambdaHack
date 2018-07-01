@@ -6,8 +6,10 @@ module Game.LambdaHack.Client.UI.ContentClientUI
 import Prelude ()
 
 import Game.LambdaHack.Client.UI.Content.Input
+import Game.LambdaHack.Client.UI.Content.Screen
 
 -- | Operations for all content types, gathered together.
 data CCUI = CCUI
-  { coinput :: InputContentData
+  { coinput  :: InputContentData
+  , coscreen :: ScreenContentData
   }

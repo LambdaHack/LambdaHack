@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.Content.Input
     -- * Internal operations
   , replaceCmd, projectICmd, grabCmd, dropCmd
 #endif
- ) where
+  ) where
 
 import Prelude ()
 
@@ -26,8 +26,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.
-newtype InputContentData =
-  InputContentData [(K.KM, CmdTriple)]  -- ^ default client UI commands
+newtype InputContentData = InputContentData [(K.KM, CmdTriple)]
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
 evalKeyDef (t, triple@(cats, _, _)) =
