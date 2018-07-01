@@ -206,8 +206,8 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
       allAssocs = concatMap storeAssocs (cCur : cRest)
-  case (cRest, allAssocs) of
-    ([], [(iid, k)]) | not askWhenLone -> do
+  case allAssocs of
+    [(iid, k)] | null cRest && not askWhenLone -> do
       ItemSlots itemSlots <- getsSession sslots
       let lSlots = itemSlots EM.! loreFromMode cCur
           slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))

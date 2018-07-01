@@ -84,13 +84,10 @@ moveStores verbose aid fromStore toStore = do
 generalMoveItem :: MonadStateRead m
                 => Bool -> ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
-generalMoveItem verbose iid k c1 c2 =
-  case (c1, c2) of
-    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2
-                                                 && cstore1 /= CSha
-                                                 && cstore2 /= CSha ->
-      return [UpdMoveItem iid k aid1 cstore1 cstore2]
-    _ -> containerMoveItem verbose iid k c1 c2
+generalMoveItem _ iid k (CActor aid1 cstore1) (CActor aid2 cstore2)
+  | aid1 == aid2 && cstore1 /= CSha && cstore2 /= CSha
+  = return [UpdMoveItem iid k aid1 cstore1 cstore2]
+generalMoveItem verbose iid k c1 c2 = containerMoveItem verbose iid k c1 c2
 
 containerMoveItem :: MonadStateRead m
                   => Bool -> ItemId -> Int -> Container -> Container

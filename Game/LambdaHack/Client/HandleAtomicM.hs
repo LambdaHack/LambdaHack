@@ -110,9 +110,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
       Nothing -> return Nothing
       Just leader -> getsClient $ EM.lookup leader . stargetD
     modifyClient $ \cli ->
-      cli { stargetD = case (mtgt, mleader) of
-              (Just tgt, Just leader) -> EM.singleton leader tgt
-              _ -> EM.empty }
+      let stargetD | Just tgt <- mtgt
+                   , Just leader <- mleader
+                   = EM.singleton leader tgt
+                   | otherwise = EM.empty
+      in cli {stargetD}
   UpdAlterTile lid p fromTile toTile -> do
     updateSalter lid [(p, toTile)]
     cops <- getsState scops

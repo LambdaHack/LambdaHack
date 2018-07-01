@@ -230,10 +230,11 @@ data FreshDungeon = FreshDungeon
 -- | Generate the dungeon for a new game.
 dungeonGen :: COps -> Caves -> Rnd FreshDungeon
 dungeonGen cops caves = do
-  let (minD, maxD) =
-        case (IM.minViewWithKey caves, IM.maxViewWithKey caves) of
-          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> error $ "no caves" `showFailure` caves
+  let (minD, maxD) | Just ((s, _), _) <- IM.minViewWithKey caves
+                   , Just ((e, _), _) <- IM.maxViewWithKey caves
+                   = (s, e)
+                   | otherwise
+                   = error $ "no caves" `showFailure` caves
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)

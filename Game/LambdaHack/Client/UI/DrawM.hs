@@ -392,11 +392,13 @@ drawFrameStatus drawnLevelId = do
       widthStats = widthX - widthTgt - 1
       arenaStatus = drawArenaStatus cops lvl widthStats
       displayPathText mp mt =
-        let (plen, llen) = case (mp, mbfs, mbpos) of
-              (Just target, Just bfs, Just bpos)
-                | mblid == Just drawnLevelId ->
-                  (fromMaybe 0 (accessBfs bfs target), chessDist bpos target)
-              _ -> (0, 0)
+        let (plen, llen) | Just target <- mp
+                         , Just bfs <- mbfs
+                         , Just bpos <- mbpos
+                         , mblid == Just drawnLevelId
+                         = ( fromMaybe 0 (accessBfs bfs target)
+                           , chessDist bpos target )
+                         | otherwise = (0, 0)
             pText | plen == 0 = ""
                   | otherwise = "p" <> tshow plen
             lText | llen == 0 = ""
@@ -429,20 +431,23 @@ drawFrameStatus drawnLevelId = do
                                                - selectedStatusWidth)
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let statusGap = emptyAttrLine (widthStats - leaderStatusWidth
+  -- The indicators must fit, they are the actual information.
+  let pathTgt = displayPathText tgtPos mtargetHP
+      widthTgtOrItem = widthTgt - T.length pathTgt - 8
+      statusGap = emptyAttrLine (widthStats - leaderStatusWidth
                                             - selectedStatusWidth
                                             - length damageStatus)
-      tgtOrItem n = do
-        let fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
-                       then "This faction never picks a leader"
-                       else "Waiting for a team member to spawn"
-            leaderName =
-              maybe fallback (\body ->
-                "Leader:" <+> trimTgtDesc n (bname body)) mbodyUI
-            tgtBlurb = maybe leaderName (\t ->
-              "Target:" <+> trimTgtDesc n t) mtgtDesc
-        case (sitemSel, mleader) of
-          (Just (iid, fromCStore, _), Just leader) -> do
+      fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
+                 then "This faction never picks a leader"
+                 else "Waiting for a team member to spawn"
+      leaderName = maybe fallback (\body ->
+        "Leader:" <+> trimTgtDesc widthTgtOrItem (bname body)) mbodyUI
+      tgtBlurb = maybe leaderName (\t ->
+        "Target:" <+> trimTgtDesc widthTgtOrItem t) mtgtDesc
+      tgtOrItem
+        | Just (iid, fromCStore, _) <- sitemSel
+        , Just leader <- mleader
+        = do
             b <- getsState $ getActorBody leader
             bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
@@ -457,11 +462,10 @@ drawFrameStatus drawnLevelId = do
                         $ if k == 1
                           then [name, stats]  -- "a sword" too wordy
                           else [MU.CarWs k name, stats]
-                return $! "Item:" <+> trimTgtDesc n t
-          _ -> return $! tgtBlurb
-      -- The indicators must fit, they are the actual information.
-      pathTgt = displayPathText tgtPos mtargetHP
-  targetText <- tgtOrItem $ widthTgt - T.length pathTgt - 8
+                return $! "Item:" <+> trimTgtDesc widthTgtOrItem t
+        | otherwise =
+            return $! tgtBlurb
+  targetText <- tgtOrItem
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt

@@ -43,10 +43,11 @@ type Dungeon = EM.EnumMap LevelId Level
 ascendInBranch :: Dungeon -> Bool -> LevelId -> [LevelId]
 ascendInBranch dungeon up lid =
   -- Currently there is just one branch, so the computation is simple.
-  let (minD, maxD) =
-        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
-          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> error $ "null dungeon" `showFailure` dungeon
+  let (minD, maxD) | Just ((s, _), _) <- EM.minViewWithKey dungeon
+                   , Just ((e, _), _) <- EM.maxViewWithKey dungeon
+                   = (s, e)
+                   | otherwise
+                   = error $ "null dungeon" `showFailure` dungeon
       ln = max minD $ min maxD $ toEnum $ fromEnum lid + if up then 1 else -1
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
