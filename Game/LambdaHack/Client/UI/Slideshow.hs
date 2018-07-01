@@ -2,10 +2,10 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
-  , wrapOKX, splitOverlay, splitOKX
+  , wrapOKX, splitOverlay, splitOKX, highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , moreMsg, endMsg, keysOKX
+  , moreMsg, endMsg, keysOKX, showTable, showNearbyScores
 #endif
   ) where
 
@@ -13,11 +13,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Data.Time.LocalTime
+
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Point
 
 -- | A key or an item slot label at a given position on the screen.
@@ -129,3 +132,36 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
                    then assert (null kxs0) []
                    else splitO 0 (header, rkxs) (ls0, kxs0)
   in initSlides ++ mainSlides
+
+-- | Generate a slideshow with the current and previous scores.
+highSlideshow :: X          -- ^ width of the display area
+              -> Y          -- ^ height of the display area
+              -> HighScore.ScoreTable -- ^ current score table
+              -> Int        -- ^ position of the current score in the table
+              -> Text       -- ^ the name of the game mode
+              -> TimeZone   -- ^ the timezone where the game is run
+              -> Slideshow
+highSlideshow lxsize lysize table pos gameModeName tz =
+  let height = (lysize - 3)`div` 3
+      msg = HighScore.showAward height table pos gameModeName
+      tts = showNearbyScores tz pos table height
+      al = textToAL msg
+      splitScreen ts =
+        splitOKX lxsize lysize al [K.spaceKM, K.escKM] (ts, [])
+  in toSlideshow $ concat $ map (splitScreen . map textToAL) tts
+
+-- | Show a screenful of the high scores table.
+-- Parameter height is the number of (3-line) scores to be shown.
+showTable :: TimeZone -> HighScore.ScoreTable -> Int -> Int -> [Text]
+showTable tz table start height =
+  let zipped    = zip [1..] $ HighScore.unTable table
+      screenful = take height . drop (start - 1) $ zipped
+  in "" : intercalate [""] (map (HighScore.showScore tz) screenful)
+
+-- | Produce a couple of renderings of the high scores table.
+showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> [[Text]]
+showNearbyScores tz pos h height =
+  if pos <= height
+  then [showTable tz h 1 height]
+  else [showTable tz h 1 height,
+        showTable tz h (max (height + 1) (pos - height `div` 2)) height]

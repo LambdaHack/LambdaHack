@@ -252,8 +252,6 @@ clearAimMode = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
-  lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV
   fid <- getsClient sside
   scoreDict <- getsState shigh
   gameModeId <- getsState sgameModeId
@@ -282,11 +280,8 @@ scoreToSlideshow total status = do
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-      (msg, tts) = HighScore.highSlideshow ntable pos gameModeName tz
-      al = textToAL msg
-      splitScreen ts =
-        splitOKX lxsize (lysize + 3) al [K.spaceKM, K.escKM] (ts, [])
-      sli = toSlideshow $ concat $ map (splitScreen . map textToAL) tts
+      (xbound, ybound) = normalLevelBound
+      sli = highSlideshow (xbound + 1) (ybound + 3) ntable pos gameModeName tz
   return $! if worthMentioning
             then sli
             else emptySlideshow

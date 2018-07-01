@@ -2,10 +2,10 @@
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, ScoreDict
-  , empty, register, showScore, getTable, getRecord, highSlideshow
+  , empty, register, showScore, showAward, getTable, unTable, getRecord
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ScoreRecord, insertPos, showTable, showNearbyScores
+  , ScoreRecord, insertPos
 #endif
   ) where
 
@@ -46,7 +46,7 @@ data ScoreRecord = ScoreRecord
 instance Binary ScoreRecord
 
 -- | The list of scores, in decreasing order.
-newtype ScoreTable = ScoreTable [ScoreRecord]
+newtype ScoreTable = ScoreTable {unTable :: [ScoreRecord]}
   deriving (Eq, Binary)
 
 instance Show ScoreTable where
@@ -144,32 +144,13 @@ getRecord pos (ScoreTable table) =
   fromMaybe (error $ "" `showFailure` (pos, table))
   $ listToMaybe $ drop (pred pos) table
 
--- | Show a screenful of the high scores table.
--- Parameter height is the number of (3-line) scores to be shown.
-showTable :: TimeZone -> ScoreTable -> Int -> Int -> [Text]
-showTable tz (ScoreTable table) start height =
-  let zipped    = zip [1..] table
-      screenful = take height . drop (start - 1) $ zipped
-  in "" : intercalate [""] (map (showScore tz) screenful)
-
--- | Produce a couple of renderings of the high scores table.
-showNearbyScores :: TimeZone -> Int -> ScoreTable -> Int -> [[Text]]
-showNearbyScores tz pos h height =
-  if pos <= height
-  then [showTable tz h 1 height]
-  else [showTable tz h 1 height,
-        showTable tz h (max (height + 1) (pos - height `div` 2)) height]
-
--- | Generate a slideshow with the current and previous scores.
-highSlideshow :: ScoreTable -- ^ current score table
-              -> Int        -- ^ position of the current score in the table
-              -> Text       -- ^ the name of the game mode
-              -> TimeZone   -- ^ the timezone where the game is run
-              -> (Text, [[Text]])
-highSlideshow table pos gameModeName tz =
-  let (_, nlines) = normalLevelBound
-      height = nlines `div` 3
-      posStatus = status $ getRecord pos table
+showAward :: Int        -- ^ number of (3-line) scores to be shown
+          -> ScoreTable -- ^ current score table
+          -> Int        -- ^ position of the current score in the table
+          -> Text       -- ^ the name of the game mode
+          -> Text
+showAward height table pos gameModeName =
+  let posStatus = status $ getRecord pos table
       (efforts, person, msgUnless) =
         case stOutcome posStatus of
           Killed | stDepth posStatus <= 1 ->
@@ -195,7 +176,6 @@ highSlideshow table pos gameModeName tz =
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
       subject = makePhrase [efforts, "in", MU.Text gameModeName]
-      msg = makeSentence
-        [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
-        , MU.Ordinal pos, "place", msgUnless ]
-  in (msg, showNearbyScores tz pos table height)
+  in makeSentence
+       [ MU.SubjectVerb person MU.Yes (MU.Text subject) "award you"
+       , MU.Ordinal pos, "place", msgUnless ]
