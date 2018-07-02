@@ -12,10 +12,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Control.DeepSeq
-import qualified Data.Text as T
-import           Data.Version
-import           GHC.Generics (Generic)
+import Control.DeepSeq
+import Data.Version
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
 
@@ -32,8 +31,6 @@ data RuleKind = RuleKind
   , rexeVersion     :: Version   -- ^ version of the game
   , rcfgUIName      :: FilePath  -- ^ name of the UI config file
   , rcfgUIDefault   :: String    -- ^ the default UI settings config file
-  , rmainMenuArt    :: Text      -- ^ the ASCII art for the main menu
-  , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
   , rfirstDeathEnds :: Bool      -- ^ whether first non-spawner actor death
                                  --   ends the game
   , rwriteSaveClips :: Int       -- ^ game is saved that often (not on browser)
@@ -52,14 +49,7 @@ instance NFData RuleKind
 
 -- | Catch invalid rule kind definitions.
 validateSingle :: RuleKind -> [Text]
-validateSingle RuleKind{rmainMenuArt} =
-  let ts = T.lines rmainMenuArt
-      tsNot80 = filter ((/= 80) . T.length) ts
-  in case tsNot80 of
-     [] -> [ "rmainMenuArt doesn't have 45 lines, but " <> tshow (length ts)
-           | length ts /= 45]
-     tNot80 : _ ->
-       ["rmainMenuArt has a line with length other than 80:" <> tNot80]
+validateSingle _ = []
 
 -- | Since we have only one rule kind, the set of rule kinds is always valid.
 validateAll :: [RuleKind] -> ContentData RuleKind -> [Text]

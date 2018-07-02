@@ -35,7 +35,7 @@ initAI = do
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => CCUI -> UIOptions -> m ()
-initUI CCUI{coinput} sUIOptions = do
+initUI sccui@CCUI{coinput} sUIOptions = do
   side <- getsClient sside
   soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
@@ -46,6 +46,7 @@ initUI CCUI{coinput} sUIOptions = do
   modifySession $ \sess ->
     sess { schanF
          , sbinding
+         , sccui
          , sxhair = TVector $ Vector 1 1 }
              -- a step south-east, less alarming
 
@@ -75,8 +76,9 @@ loopCli ccui sUIOptions soptions = do
       -- Restore game.
       schanF <- getsSession schanF
       sbinding <- getsSession sbinding
+      sccui <- getsSession sccui
       maybe (return ()) (\sess -> modifySession $ \_ ->
-        sess {schanF, sbinding, sUIOptions}) msess
+        sess {schanF, sbinding, sccui, sUIOptions}) msess
       putClient cli {soptions}
       return True
     Just (_, msessR) -> do

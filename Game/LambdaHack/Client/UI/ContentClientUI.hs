@@ -1,6 +1,6 @@
 -- | General content types and operations.
 module Game.LambdaHack.Client.UI.ContentClientUI
-  ( CCUI(..)
+  ( CCUI(..), emptyCCUI
   ) where
 
 import Prelude ()
@@ -12,4 +12,12 @@ import Game.LambdaHack.Client.UI.Content.Screen
 data CCUI = CCUI
   { coinput  :: InputContentData
   , coscreen :: ScreenContentData
+  }
+
+emptyCCUI :: CCUI
+emptyCCUI = CCUI
+  { coinput = InputContentData []
+  , coscreen = ScreenContentData { rmainMenuArt = ""
+                                 , rintroScreen = []
+                                 }
   }

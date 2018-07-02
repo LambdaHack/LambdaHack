@@ -16,6 +16,7 @@ import qualified Data.Map.Strict as M
 import           Data.Time.Clock.POSIX
 
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -43,6 +44,7 @@ data SessionUI = SessionUI
                                          -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
   , sbinding       :: Binding            -- ^ binding of keys to commands
+  , sccui          :: CCUI               -- ^ UI client content
   , sUIOptions     :: UIOptions          -- ^ UI options as set by the player
   , saimMode       :: Maybe AimMode      -- ^ aiming mode
   , sxhairMoused   :: Bool               -- ^ last mouse aiming not vacuus
@@ -115,6 +117,7 @@ emptySessionUI sUIOptions =
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
     , sbinding = Binding M.empty [] M.empty
+    , sccui = emptyCCUI
     , sUIOptions
     , saimMode = Nothing
     , sxhairMoused = True
@@ -182,6 +185,7 @@ instance Binary SessionUI where
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
         sbinding = Binding M.empty [] M.empty
+        sccui = emptyCCUI
         sxhairMoused = True
         spointer = originPoint
         slastRecord = LastRecord [] [] 0

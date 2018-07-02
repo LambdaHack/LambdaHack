@@ -51,6 +51,8 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
@@ -1015,10 +1017,11 @@ helpHuman :: MonadClientUI m
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   cops <- getsState scops
+  ccui <- getsSession sccui
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   keyb <- getsSession sbinding
-  let keyH = keyHelp cops keyb 1
+  let keyH = keyHelp cops ccui keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
@@ -1205,13 +1208,12 @@ chooseItemMenuHuman cmdAction c = do
 
 artAtSize :: MonadClientUI m => m [Text]
 artAtSize = do
-  cops <- getsState scops
-  let stdRuleset = getStdRuleset cops
-      lxsize = fst normalLevelBound + 1
+  CCUI{coscreen=ScreenContentData{rmainMenuArt}} <- getsSession sccui
+  let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       xoffset = (80 - lxsize) `div` 2
       yoffset = (45 - lysize) `div` 2
-      tlines = T.lines $ rmainMenuArt stdRuleset
+      tlines = T.lines rmainMenuArt
       f = T.take lxsize . T.drop xoffset
   return $! map f $ take lysize $ drop yoffset tlines
 

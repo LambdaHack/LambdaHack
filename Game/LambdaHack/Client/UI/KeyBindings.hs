@@ -12,6 +12,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.Content.Input
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -79,13 +81,14 @@ stdBinding (InputContentData copsClient) UIOptions{uCommands, uVi, uLaptop} =
   }
 
 -- | Produce a set of help/menu screens from the key bindings.
-keyHelp :: COps -> Binding -> Int -> [(Text, OKX)]
-keyHelp cops keyb@Binding{..} offset = assert (offset > 0) $
+keyHelp :: COps -> CCUI -> Binding -> Int -> [(Text, OKX)]
+keyHelp cops CCUI{coscreen=ScreenContentData{rintroScreen}}
+        keyb@Binding{..} offset = assert (offset > 0) $
   let
     stdRuleset = getStdRuleset cops
     introBlurb =
       ""
-      : map T.pack (rintroScreen stdRuleset)
+      : map T.pack rintroScreen
       ++
       [ ""
       , "Press SPACE for help or ESC to see the map again."
