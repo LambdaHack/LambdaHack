@@ -29,6 +29,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
@@ -769,8 +770,7 @@ quitFactionUI fid toSt = do
       when (side == fid) recordHistory
         -- we are going to exit or restart, so record and clear, but only once
       when go $ do
-        lidV <- viewedLevelUI
-        Level{lxsize, lysize} <- getLevel lidV
+        CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
         revCmd <- revCmdMap
         let currencyName = MU.Text $ IK.iname
                            $ okind coitem $ ouniqGroup coitem "currency"
@@ -792,7 +792,7 @@ quitFactionUI fid toSt = do
               itemFull2 <- getsState $ itemToFull iid2
               let attrLine = itemDesc True side factionD 0
                                       CGround localTime itemFull2 kit2
-                  ov = splitAttrLine lxsize attrLine
+                  ov = splitAttrLine rwidth attrLine
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= lSlotsBound]
@@ -804,7 +804,7 @@ quitFactionUI fid toSt = do
                           | otherwise = makeSentence
                     ["this item is not worth any", MU.Ws currencyName]
               promptAdd0 lootMsg
-              slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
+              slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> return True
@@ -829,7 +829,7 @@ quitFactionUI fid toSt = do
               let lSlots = EM.filter (`EM.member` itemBag)
                            $ itemSlots EM.! SItem
               io <- itemOverlay lSlots arena itemBag
-              itemSlides <- overlayToSlideshow (lysize + 1) keysPre io
+              itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
               let keyOfEKM (Left km) = km
                   keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
                   allOKX = concatMap snd $ slideshow itemSlides

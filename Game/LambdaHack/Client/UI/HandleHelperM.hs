@@ -22,6 +22,8 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -197,8 +199,8 @@ pickLeader verbose aid = do
 
 pickLeaderWithPointer :: MonadClientUI m => m MError
 pickLeaderWithPointer = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   lidV <- viewedLevelUI
-  Level{lysize} <- getLevel lidV
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   arena <- getArenaUI
@@ -216,8 +218,8 @@ pickLeaderWithPointer = do
                return Nothing
   Point{..} <- getsSession spointer
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == lysize + 2 && px == 0 -> memberBack True
-     | py == lysize + 2 ->
+  if | py == rheight - 1 && px == 0 -> memberBack True
+     | py == rheight - 1 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
              -- relaxed, due to subtleties of display of selected actors

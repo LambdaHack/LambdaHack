@@ -29,7 +29,7 @@ import           Game.LambdaHack.Common.Point
 type AttrLine = [Color.AttrCharW32]
 
 emptyAttrLine :: Int -> AttrLine
-emptyAttrLine xsize = replicate xsize Color.spaceAttrW32
+emptyAttrLine w = replicate w Color.spaceAttrW32
 
 textToAL :: Text -> AttrLine
 textToAL !t =

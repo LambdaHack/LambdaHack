@@ -19,6 +19,8 @@ import qualified NLP.Miniutter.English as MU
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -34,7 +36,6 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.ReqFailure
@@ -477,10 +478,9 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       keyLabels = filter (not . T.null) keyLabelsRaw
       choice = T.intercalate " " $ map wrapB $ nub keyLabels
   promptAdd0 $ prompt <+> choice
-  lidV <- viewedLevelUI
-  Level{lysize} <- getLevel lidV
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
-    okxs <- overlayToSlideshow (lysize + 1) keys okx
+    okxs <- overlayToSlideshow (rheight - 2) keys okx
     displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of

@@ -34,6 +34,8 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -476,14 +478,14 @@ drawFrameStatus drawnLevelId = do
 -- | Draw the whole screen: level map and status area.
 drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m FrameForall
 drawBaseFrame dm drawnLevelId = do
-  Level{lxsize, lysize} <- getLevel drawnLevelId
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   updTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
   updPath <- drawFramePath drawnLevelId
   updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
   frameStatus <- drawFrameStatus drawnLevelId
-  let !_A = assert (length frameStatus == 2 * lxsize
+  let !_A = assert (length frameStatus == 2 * rwidth
                     `blame` map Color.charFromW32 frameStatus) ()
       upd = FrameForall $ \v -> do
         unFrameForall updTerrain v
@@ -491,7 +493,7 @@ drawBaseFrame dm drawnLevelId = do
         unFrameForall updPath v
         unFrameForall updActor v
         unFrameForall updExtra v
-        unFrameForall (writeLine (lxsize * (lysize + 1)) frameStatus) v
+        unFrameForall (writeLine (rwidth * (rheight - 2)) frameStatus) v
   return upd
 
 -- Comfortably accomodates 3-digit level numbers and 25-character

@@ -11,6 +11,8 @@ import           Data.Either
 import qualified Data.Map.Strict as M
 import           Game.LambdaHack.Common.Prelude
 
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -20,36 +22,31 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow y keys okx = do
-  lidV <- viewedLevelUI
-  Level{lxsize} <- getLevel lidV
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
-  return $! splitOverlay lxsize y report keys okx
+  return $! splitOverlay rwidth y report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
-  lidV <- viewedLevelUI
-  Level{lysize} <- getLevel lidV
-  overlayToSlideshow (lysize + 1) keys ([], [])
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  overlayToSlideshow (rheight - 2) keys ([], [])
 
 -- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshowKeep keys = do
-  lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
-  return $! splitOverlay lxsize (lysize + 1) report keys ([], [])
+  return $! splitOverlay rwidth (rheight - 2) report keys ([], [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).

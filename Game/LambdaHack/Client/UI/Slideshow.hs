@@ -94,22 +94,22 @@ keysOKX ystart xstart xBound keys =
   in wrapOKX ystart xstart xBound ks
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
-splitOverlay lxsize yspace report keys (ls0, kxs0) =
-  toSlideshow $ splitOKX lxsize yspace (renderReport report) keys (ls0, kxs0)
+splitOverlay width height report keys (ls0, kxs0) =
+  toSlideshow $ splitOKX width height (renderReport report) keys (ls0, kxs0)
 
 splitOKX :: X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
-splitOKX lxsize yspace rrep keys (ls0, kxs0) =
-  assert (yspace > 2) $  -- and kxs0 is sorted
-  let msgRaw = splitAttrLine lxsize rrep
+splitOKX width height rrep keys (ls0, kxs0) =
+  assert (height > 2) $  -- and kxs0 is sorted
+  let msgRaw = splitAttrLine width rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
       (lX, keysX) | null msgRaw = (lX0, keysX0)
                   | otherwise = keysOKX (length msgRaw - 1)
                                         (length (last msgRaw) + 1)
-                                        lxsize keys
+                                        width keys
       msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if length (glueLines msgRaw lX0) * 2 > yspace
+        if length (glueLines msgRaw lX0) * 2 > height
         then (msgOkx, ( [intercalate [Color.spaceAttrW32] lX0 <+:> rrep]
                       , keysX0 ))
                -- will display "$" (unless has EOLs)
@@ -117,8 +117,8 @@ splitOKX lxsize yspace rrep keys (ls0, kxs0) =
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
       splitO yoffset (hdr, rk) (ls, kxs) =
         let zipRenumber = map $ renumber $ length hdr - yoffset
-            (pre, post) = splitAt (yspace - 1) $ hdr ++ ls
-            yoffsetNew = yoffset + yspace - length hdr - 1
+            (pre, post) = splitAt (height - 1) $ hdr ++ ls
+            yoffsetNew = yoffset + height - length hdr - 1
         in if null post
            then [(pre, rk ++ zipRenumber kxs)]  -- all fits on one screen
            else let (preX, postX) =
@@ -141,27 +141,27 @@ highSlideshow :: X          -- ^ width of the display area
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
-highSlideshow lxsize lysize table pos gameModeName tz =
-  let height = (lysize - 3)`div` 3
-      msg = HighScore.showAward height table pos gameModeName
-      tts = showNearbyScores tz pos table height
+highSlideshow width height table pos gameModeName tz =
+  let entries = (height - 3)`div` 3
+      msg = HighScore.showAward entries table pos gameModeName
+      tts = showNearbyScores tz pos table entries
       al = textToAL msg
       splitScreen ts =
-        splitOKX lxsize lysize al [K.spaceKM, K.escKM] (ts, [])
+        splitOKX width height al [K.spaceKM, K.escKM] (ts, [])
   in toSlideshow $ concat $ map (splitScreen . map textToAL) tts
 
 -- | Show a screenful of the high scores table.
--- Parameter height is the number of (3-line) scores to be shown.
+-- Parameter @entries@ is the number of (3-line) scores to be shown.
 showTable :: TimeZone -> HighScore.ScoreTable -> Int -> Int -> [Text]
-showTable tz table start height =
+showTable tz table start entries =
   let zipped    = zip [1..] $ HighScore.unTable table
-      screenful = take height . drop (start - 1) $ zipped
+      screenful = take entries . drop (start - 1) $ zipped
   in "" : intercalate [""] (map (HighScore.showScore tz) screenful)
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> [[Text]]
-showNearbyScores tz pos h height =
-  if pos <= height
-  then [showTable tz h 1 height]
-  else [showTable tz h 1 height,
-        showTable tz h (max (height + 1) (pos - height `div` 2)) height]
+showNearbyScores tz pos h entries =
+  if pos <= entries
+  then [showTable tz h 1 entries]
+  else [showTable tz h 1 entries,
+        showTable tz h (max (entries + 1) (pos - entries `div` 2)) entries]
