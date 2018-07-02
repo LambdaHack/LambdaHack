@@ -1208,7 +1208,7 @@ chooseItemMenuHuman cmdAction c = do
 
 artAtSize :: MonadClientUI m => m [Text]
 artAtSize = do
-  CCUI{coscreen=ScreenContentData{rmainMenuArt}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rmainMenuArt}} <- getsSession sccui
   let lxsize = fst normalLevelBound + 1
       lysize = snd normalLevelBound + 4
       xoffset = (80 - lxsize) `div` 2

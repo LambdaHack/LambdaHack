@@ -10,16 +10,16 @@ import Game.LambdaHack.Client.UI.Content.Screen
 
 -- | Operations for all content types, gathered together.
 data CCUI = CCUI
-  { coinput  :: InputContentData
-  , coscreen :: ScreenContentData
+  { coinput  :: InputContent
+  , coscreen :: ScreenContent
   }
 
 emptyCCUI :: CCUI
 emptyCCUI = CCUI
-  { coinput = InputContentData []
-  , coscreen = ScreenContentData { rwidth = 0
-                                 , rheight = 0
-                                 , rmainMenuArt = ""
-                                 , rintroScreen = []
-                                 }
+  { coinput = InputContent []
+  , coscreen = ScreenContent { rwidth = 0
+                             , rheight = 0
+                             , rmainMenuArt = ""
+                             , rintroScreen = []
+                             }
   }

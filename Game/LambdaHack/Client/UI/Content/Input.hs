@@ -1,7 +1,7 @@
 -- | The type of definitions of key-command mappings to be used for the UI
 -- and shorthands for specifying command triples in the content files.
 module Game.LambdaHack.Client.UI.Content.Input
-  ( InputContentData(..), makeData
+  ( InputContent(..), makeData
   , evalKeyDef
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
@@ -27,9 +27,9 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.
-newtype InputContentData = InputContentData [(K.KM, CmdTriple)]
+newtype InputContent = InputContent [(K.KM, CmdTriple)]
 
-makeData :: InputContentData -> InputContentData
+makeData :: InputContent -> InputContent
 makeData = id  -- always correct, not transformed
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)

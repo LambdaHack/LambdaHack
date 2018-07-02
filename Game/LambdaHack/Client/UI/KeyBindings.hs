@@ -34,10 +34,10 @@ data Binding = Binding
 
 -- | Create binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: InputContentData  -- ^ default key bindings from the content
+stdBinding :: InputContent  -- ^ default key bindings from the content
            -> UIOptions  -- ^ UI client options
            -> Binding    -- ^ concrete binding
-stdBinding (InputContentData copsClient) UIOptions{uCommands, uVi, uLaptop} =
+stdBinding (InputContent copsClient) UIOptions{uCommands, uVi, uLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
@@ -82,7 +82,7 @@ stdBinding (InputContentData copsClient) UIOptions{uCommands, uVi, uLaptop} =
 
 -- | Produce a set of help/menu screens from the key bindings.
 keyHelp :: COps -> CCUI -> Binding -> Int -> [(Text, OKX)]
-keyHelp cops CCUI{coscreen=ScreenContentData{rintroScreen}}
+keyHelp cops CCUI{coscreen=ScreenContent{rintroScreen}}
         keyb@Binding{..} offset = assert (offset > 0) $
   let
     stdRuleset = getStdRuleset cops

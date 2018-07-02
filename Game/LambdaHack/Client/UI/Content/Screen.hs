@@ -1,6 +1,6 @@
 -- | The type of definitions of screen layout and features.
 module Game.LambdaHack.Client.UI.Content.Screen
-  ( ScreenContentData(..), makeData
+  ( ScreenContent(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle
@@ -14,7 +14,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 
 -- | Screen layout and features definition.
-data ScreenContentData = ScreenContentData
+data ScreenContent = ScreenContent
   { rwidth       :: Int
   , rheight      :: Int
   , rmainMenuArt :: Text      -- ^ the ASCII art for the main menu
@@ -22,8 +22,8 @@ data ScreenContentData = ScreenContentData
   }
 
 -- | Catch invalid rule kind definitions.
-validateSingle :: ScreenContentData -> [Text]
-validateSingle ScreenContentData{rmainMenuArt} =
+validateSingle :: ScreenContent -> [Text]
+validateSingle ScreenContent{rmainMenuArt} =
   let ts = T.lines rmainMenuArt
       tsNot80 = filter ((/= 80) . T.length) ts
   in case tsNot80 of
@@ -32,7 +32,7 @@ validateSingle ScreenContentData{rmainMenuArt} =
      tNot80 : _ ->
        ["rmainMenuArt has a line with length other than 80:" <> tNot80]
 
-makeData :: ScreenContentData -> ScreenContentData
+makeData :: ScreenContent -> ScreenContent
 makeData sc =
   let singleOffenders = validateSingle sc
   in assert (null singleOffenders

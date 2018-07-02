@@ -14,8 +14,8 @@ import System.IO (readFile)
 import Game.LambdaHack.Client.UI.Content.Screen
 
 -- | Description of default screen layout and features.
-standardLayoutAndFeatures :: ScreenContentData
-standardLayoutAndFeatures = ScreenContentData
+standardLayoutAndFeatures :: ScreenContent
+standardLayoutAndFeatures = ScreenContent
   { rwidth = 80
   , rheight = 24
   -- ASCII art for the main menu. Only pure 7-bit ASCII characters are allowed.
