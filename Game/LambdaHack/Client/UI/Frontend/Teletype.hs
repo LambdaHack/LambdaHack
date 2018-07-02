@@ -14,6 +14,7 @@ import qualified Data.Char as Char
 import qualified System.IO as SIO
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -28,9 +29,9 @@ frontendName :: String
 frontendName = "teletype"
 
 -- | Set up the frontend input and output.
-startup :: ClientOptions -> IO RawFrontend
-startup _soptions = do
-  rf <- createRawFrontend display shutdown
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup coscreen _soptions = do
+  rf <- createRawFrontend coscreen display shutdown
   let storeKeys :: IO ()
       storeKeys = do
         l <- SIO.getLine  -- blocks here, so no polling
@@ -55,9 +56,9 @@ display SingleFrame{singleFrame} =
             acChar = if Char.ord acCharRaw == 183 then '.' else acCharRaw
         in acChar : l
       levelChar = chunk $ PointArray.foldrA f [] singleFrame
-      lxsize = fst normalLevelBound + 1
+      width = 80
       chunk [] = []
-      chunk l = let (ch, r) = splitAt lxsize l
+      chunk l = let (ch, r) = splitAt width l
                 in ch : chunk r
   in SIO.hPutStrLn SIO.stderr $ unlines levelChar
 

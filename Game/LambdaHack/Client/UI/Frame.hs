@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Frame
   ( FrameST, FrameForall(..), writeLine
   , SingleFrame(..), Frames
-  , normalLevelBound, blankSingleFrame, overlayFrame, overlayFrameWithLines
+  , blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , truncateAttrLine
@@ -20,6 +20,7 @@ import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word
 
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Point
@@ -56,30 +57,22 @@ newtype SingleFrame = SingleFrame
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe FrameForall]
 
--- | Bounds of the area for displaying a level, indexed from 0.
-normalLevelBound :: (Int, Int)
-normalLevelBound = (79, 20)
-
-blankSingleFrame :: SingleFrame
-blankSingleFrame =
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 4
-  in SingleFrame $ PointArray.replicateA lxsize lysize Color.spaceAttrW32
+blankSingleFrame :: ScreenContent -> SingleFrame
+blankSingleFrame ScreenContent{rwidth, rheight} =
+  SingleFrame $ PointArray.replicateA rwidth rheight Color.spaceAttrW32
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
-truncateLines :: Bool -> Overlay -> Overlay
-truncateLines onBlank l =
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 1
-      canvasLength = if onBlank then lysize + 3 else lysize + 1
+truncateLines :: ScreenContent -> Bool -> Overlay -> Overlay
+truncateLines ScreenContent{rwidth, rheight} onBlank l =
+  let canvasLength = if onBlank then rheight else rheight - 2
       topLayer = if length l <= canvasLength
                  then l ++ [[] | length l < canvasLength && length l > 3]
                  else take (canvasLength - 1) l
                       ++ [stringToAL "--a portion of the text trimmed--"]
       f lenPrev lenNext layerLine =
-        truncateAttrLine lxsize layerLine (max lenPrev lenNext)
-      lens = map (min (lxsize - 1) . length) topLayer
+        truncateAttrLine rwidth layerLine (max lenPrev lenNext)
+      lens = map (min (rwidth - 1) . length) topLayer
   in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) topLayer
 
 -- | Add a space at the message end, for display overlayed over the level map.
@@ -106,9 +99,9 @@ overlayFrame ov ff = FrameForall $ \v -> do
   unFrameForall ff v
   mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov
 
-overlayFrameWithLines :: Bool -> Overlay -> FrameForall -> FrameForall
-overlayFrameWithLines onBlank l msf =
-  let lxsize = fst normalLevelBound + 1
-      ov = map (\(y, al) -> (y * lxsize, al))
-           $ zip [0..] $ truncateLines onBlank l
+overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> FrameForall
+                      -> FrameForall
+overlayFrameWithLines coscreen@ScreenContent{rwidth} onBlank l msf =
+  let ov = map (\(y, al) -> (y * rwidth, al))
+           $ zip [0..] $ truncateLines coscreen onBlank l
   in overlayFrame ov msf

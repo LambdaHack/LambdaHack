@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
 
+import Game.LambdaHack.Client.UI.Content.Screen
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Common.Color
@@ -45,19 +46,18 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrChar2ToW32 color symbol
 
-mapPosToOffset :: (Point, AttrCharW32) -> (Int, [AttrCharW32])
-mapPosToOffset (Point{..}, attr) =
-  let lxsize = fst normalLevelBound + 1
-  in ((py + 1) * lxsize + px, [attr])
+mapPosToOffset :: ScreenContent -> (Point, AttrCharW32) -> (Int, [AttrCharW32])
+mapPosToOffset ScreenContent{rwidth} (Point{..}, attr) =
+  ((py + 1) * rwidth + px, [attr])
 
-mzipSingleton :: Point -> Maybe AttrCharW32 -> IntOverlay
-mzipSingleton p1 mattr1 = map mapPosToOffset $
+mzipSingleton :: ScreenContent -> Point -> Maybe AttrCharW32 -> IntOverlay
+mzipSingleton coscreen p1 mattr1 = map (mapPosToOffset coscreen) $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes [mzip (p1, mattr1)]
 
-mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
+mzipPairs :: ScreenContent -> (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
           -> IntOverlay
-mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToOffset $
+mzipPairs coscreen (p1, p2) (mattr1, mattr2) = map (mapPosToOffset coscreen) $
   let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
   in catMaybes $ if p1 /= p2
                  then [mzip (p1, mattr1), mzip (p2, mattr2)]
@@ -68,9 +68,9 @@ mzipPairs (p1, p2) (mattr1, mattr2) = map mapPosToOffset $
 pushAndDelay :: Animation
 pushAndDelay = Animation [[]]
 
-blinkColorActor :: Point -> Char -> Color -> Color -> Animation
-blinkColorActor pos symbol fromCol toCol =
-  Animation $ map (mzipSingleton pos)
+blinkColorActor :: ScreenContent -> Point -> Char -> Color -> Color -> Animation
+blinkColorActor coscreen pos symbol fromCol toCol =
+  Animation $ map (mzipSingleton coscreen pos)
   [ cSym toCol symbol
   , cSym toCol symbol
   , cSym fromCol symbol
@@ -78,8 +78,8 @@ blinkColorActor pos symbol fromCol toCol =
   ]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
-twirlSplash :: (Point, Point) -> Color -> Color -> Animation
-twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
+twirlSplash :: ScreenContent -> (Point, Point) -> Color -> Color -> Animation
+twirlSplash coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -94,8 +94,8 @@ twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
   ]
 
 -- | Attack that hits through a block.
-blockHit :: (Point, Point) -> Color -> Color -> Animation
-blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
+blockHit :: ScreenContent -> (Point, Point) -> Color -> Color -> Animation
+blockHit coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -116,8 +116,8 @@ blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
   ]
 
 -- | Attack that is blocked.
-blockMiss :: (Point, Point) -> Animation
-blockMiss poss = Animation $ map (mzipPairs poss)
+blockMiss :: ScreenContent -> (Point, Point) -> Animation
+blockMiss coscreen poss = Animation $ map (mzipPairs coscreen poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '^')
   , (cSym BrBlue  '{', cSym BrYellow '\'')
@@ -130,8 +130,8 @@ blockMiss poss = Animation $ map (mzipPairs poss)
   ]
 
 -- | Attack that is subtle (e.g., damage dice 0).
-subtleHit :: Point -> Animation
-subtleHit pos = Animation $ map (mzipSingleton pos)
+subtleHit :: ScreenContent -> Point -> Animation
+subtleHit coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   [ cSym BrCyan '\''
   , cSym BrYellow '\''
   , cSym BrYellow '^'
@@ -140,8 +140,8 @@ subtleHit pos = Animation $ map (mzipSingleton pos)
   ]
 
 -- | Death animation for an organic body.
-deathBody :: Point -> Animation
-deathBody pos = Animation $ map (mzipSingleton pos)
+deathBody :: ScreenContent -> Point -> Animation
+deathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   [ cSym Red '%'
   , cSym Red '-'
   , cSym Red '-'
@@ -158,8 +158,8 @@ deathBody pos = Animation $ map (mzipSingleton pos)
   ]
 
 -- | Death animation for an organic body, short version (e.g., for enemies).
-shortDeathBody :: Point -> Animation
-shortDeathBody pos = Animation $ map (mzipSingleton pos)
+shortDeathBody :: ScreenContent -> Point -> Animation
+shortDeathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   [ cSym Red '%'
   , cSym Red '-'
   , cSym Red '\\'
@@ -172,8 +172,8 @@ shortDeathBody pos = Animation $ map (mzipSingleton pos)
   ]
 
 -- | Mark actor location animation.
-actorX :: Point -> Animation
-actorX pos = Animation $ map (mzipSingleton pos)
+actorX :: ScreenContent -> Point -> Animation
+actorX coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   [ cSym BrRed 'X'
   , cSym BrRed 'X'
   , blank
@@ -181,8 +181,8 @@ actorX pos = Animation $ map (mzipSingleton pos)
   ]
 
 -- | Actor teleport animation.
-teleport :: (Point, Point) -> Animation
-teleport poss = Animation $ map (mzipPairs poss)
+teleport :: ScreenContent -> (Point, Point) -> Animation
+teleport coscreen poss = Animation $ map (mzipPairs coscreen poss)
   [ (cSym BrMagenta 'o', cSym Magenta   '.')
   , (cSym BrMagenta 'O', cSym Magenta   '.')
   , (cSym Magenta   'o', cSym Magenta   'o')
@@ -193,8 +193,8 @@ teleport poss = Animation $ map (mzipPairs poss)
   ]
 
 -- | Swap-places animation, both hostile and friendly.
-swapPlaces :: (Point, Point) -> Animation
-swapPlaces poss = Animation $ map (mzipPairs poss)
+swapPlaces :: ScreenContent -> (Point, Point) -> Animation
+swapPlaces coscreen poss = Animation $ map (mzipPairs coscreen poss)
   [ (cSym BrMagenta 'o', cSym Magenta   'o')
   , (cSym BrMagenta 'd', cSym Magenta   'p')
   , (cSym BrMagenta '.', cSym Magenta   'p')

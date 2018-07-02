@@ -13,7 +13,6 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
-import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -35,8 +34,8 @@ data Binding = Binding
 -- | Create binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
 stdBinding :: InputContent  -- ^ default key bindings from the content
-           -> UIOptions  -- ^ UI client options
-           -> Binding    -- ^ concrete binding
+           -> UIOptions     -- ^ UI client options
+           -> Binding       -- ^ concrete binding
 stdBinding (InputContent copsClient) UIOptions{uCommands, uVi, uLaptop} =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
@@ -81,8 +80,8 @@ stdBinding (InputContent copsClient) UIOptions{uCommands, uVi, uLaptop} =
   }
 
 -- | Produce a set of help/menu screens from the key bindings.
-keyHelp :: COps -> CCUI -> Binding -> Int -> [(Text, OKX)]
-keyHelp cops CCUI{coscreen=ScreenContent{rintroScreen}}
+keyHelp :: COps -> ScreenContent -> Binding -> Int -> [(Text, OKX)]
+keyHelp cops ScreenContent{rintroScreen}
         keyb@Binding{..} offset = assert (offset > 0) $
   let
     stdRuleset = getStdRuleset cops

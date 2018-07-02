@@ -42,6 +42,8 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
@@ -136,8 +138,10 @@ printScreen :: MonadClientUI m => m ()
 printScreen = connFrontend FrontPrintScreen
 
 -- | Initialize the frontend chosen by the player via client options.
-chanFrontend :: MonadClientUI m => ClientOptions -> m ChanFrontend
-chanFrontend = liftIO . Frontend.chanFrontendIO
+chanFrontend :: MonadClientUI m
+             => ScreenContent -> ClientOptions -> m ChanFrontend
+chanFrontend coscreen soptions =
+  liftIO $ Frontend.chanFrontendIO coscreen soptions
 
 anyKeyPressed :: MonadClientUI m => m Bool
 anyKeyPressed = connFrontend FrontPressed
@@ -252,6 +256,7 @@ clearAimMode = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fid <- getsClient sside
   scoreDict <- getsState shigh
   gameModeId <- getsState sgameModeId
@@ -280,8 +285,7 @@ scoreToSlideshow total status = do
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-      (xbound, ybound) = normalLevelBound
-      sli = highSlideshow (xbound + 1) (ybound + 3) ntable pos gameModeName tz
+      sli = highSlideshow rwidth (rheight - 1) ntable pos gameModeName tz
   return $! if worthMentioning
             then sli
             else emptySlideshow

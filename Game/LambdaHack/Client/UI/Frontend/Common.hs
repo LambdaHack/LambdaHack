@@ -12,6 +12,7 @@ import Game.LambdaHack.Common.Prelude
 import           Control.Concurrent
 import qualified Control.Concurrent.STM as STM
 
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -26,6 +27,7 @@ data RawFrontend = RawFrontend
   , fshowNow     :: MVar ()
   , fchanKey     :: STM.TQueue KMP
   , fprintScreen :: IO ()
+  , fcoscreen    :: ScreenContent
   }
 
 -- | Start up a frontend on a bound thread.
@@ -50,8 +52,9 @@ startupBound k = do
   -- link a
   takeMVar rfMVar
 
-createRawFrontend :: (SingleFrame -> IO ()) -> IO () -> IO RawFrontend
-createRawFrontend fdisplay fshutdown = do
+createRawFrontend :: ScreenContent -> (SingleFrame -> IO ()) -> IO ()
+                  -> IO RawFrontend
+createRawFrontend fcoscreen fdisplay fshutdown = do
   -- Set up the channel for keyboard input.
   fchanKey <- STM.atomically STM.newTQueue
   -- Create the session record.
@@ -62,6 +65,7 @@ createRawFrontend fdisplay fshutdown = do
     , fshowNow
     , fchanKey
     , fprintScreen = return ()  -- dummy, except fro SDL2
+    , fcoscreen
     }
 
 -- | Empty the keyboard channel.

@@ -53,7 +53,6 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.HandleHelperM
@@ -117,8 +116,10 @@ byAreaHuman cmdAction l = do
 
 -- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
 areaToRectangles :: MonadClientUI m => CmdArea -> m [(X, Y, X, Y)]
-areaToRectangles ca = case ca of
-  CaMessage -> return [(0, 0, fst normalLevelBound, 0)]
+areaToRectangles ca = do
+ CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+ case ca of
+  CaMessage -> return [(0, 0, rwidth - 1, 0)]
   CaMapLeader -> do  -- takes preference over @CaMapParty@ and @CaMap@
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
@@ -132,30 +133,30 @@ areaToRectangles ca = case ca of
     let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
     return $! map (rectFromB . bpos) ours
   CaMap -> return
-    [( 0, mapStartY, fst normalLevelBound, mapStartY + snd normalLevelBound )]
-  CaLevelNumber -> let y = snd normalLevelBound + 2
+    [( 0, mapStartY, rwidth - 1, mapStartY + rheight - 4 )]
+  CaLevelNumber -> let y = rheight - 2
                    in return [(0, y, 1, y)]
-  CaArenaName -> let y = snd normalLevelBound + 2
-                     x = fst normalLevelBound `div` 2 - 11
+  CaArenaName -> let y = rheight - 2
+                     x = (rwidth - 1) `div` 2 - 11
                  in return [(3, y, x, y)]
-  CaPercentSeen -> let y = snd normalLevelBound + 2
-                       x = fst normalLevelBound `div` 2
+  CaPercentSeen -> let y = rheight - 2
+                       x = (rwidth - 1) `div` 2
                    in return [(x - 9, y, x, y)]
-  CaXhairDesc -> let y = snd normalLevelBound + 2
-                     x = fst normalLevelBound `div` 2 + 2
-                 in return [(x, y, fst normalLevelBound, y)]
-  CaSelected -> let y = snd normalLevelBound + 3
-                    x = fst normalLevelBound `div` 2
+  CaXhairDesc -> let y = rheight - 2
+                     x = (rwidth - 1) `div` 2 + 2
+                 in return [(x, y, rwidth - 1, y)]
+  CaSelected -> let y = rheight - 1
+                    x = (rwidth - 1) `div` 2
                 in return [(0, y, x - 24, y)]
-  CaCalmGauge -> let y = snd normalLevelBound + 3
-                     x = fst normalLevelBound `div` 2
+  CaCalmGauge -> let y = rheight - 1
+                     x = (rwidth - 1) `div` 2
                  in return [(x - 22, y, x - 11, y)]
-  CaHPGauge -> let y = snd normalLevelBound + 3
-                   x = fst normalLevelBound `div` 2
+  CaHPGauge -> let y = rheight - 1
+                   x = (rwidth - 1) `div` 2
                in return [(x - 9, y, x, y)]
-  CaTargetDesc -> let y = snd normalLevelBound + 3
-                      x = fst normalLevelBound `div` 2 + 2
-                  in return [(x, y, fst normalLevelBound, y)]
+  CaTargetDesc -> let y = rheight - 1
+                      x = (rwidth - 1) `div` 2 + 2
+                  in return [(x, y, rwidth - 1, y)]
 
 -- * ByAimMode
 
@@ -1017,11 +1018,11 @@ helpHuman :: MonadClientUI m
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   cops <- getsState scops
-  ccui <- getsSession sccui
+  CCUI{coscreen} <- getsSession sccui
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
   keyb <- getsSession sbinding
-  let keyH = keyHelp cops ccui keyb 1
+  let keyH = keyHelp cops coscreen keyb 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
@@ -1208,14 +1209,13 @@ chooseItemMenuHuman cmdAction c = do
 
 artAtSize :: MonadClientUI m => m [Text]
 artAtSize = do
-  CCUI{coscreen=ScreenContent{rmainMenuArt}} <- getsSession sccui
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 4
-      xoffset = (80 - lxsize) `div` 2
-      yoffset = (45 - lysize) `div` 2
+  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
+    getsSession sccui
+  let xoffset = (80 - rwidth) `div` 2
+      yoffset = (45 - rheight) `div` 2
       tlines = T.lines rmainMenuArt
-      f = T.take lxsize . T.drop xoffset
-  return $! map f $ take lysize $ drop yoffset tlines
+      f = T.take rwidth . T.drop xoffset
+  return $! map f $ take rheight $ drop yoffset tlines
 
 -- We detect the place for the version string by searching for 'Version'
 -- in the last line of the picture. If it doesn't fit, we shift, if everything

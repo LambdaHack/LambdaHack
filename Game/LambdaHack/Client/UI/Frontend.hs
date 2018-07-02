@@ -28,6 +28,7 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend.Chosen as Chosen
 import           Game.LambdaHack.Client.UI.Frontend.Common
@@ -74,12 +75,12 @@ data FrontSetup = FrontSetup
   }
 
 -- | Initialize the frontend chosen by the player via client options.
-chanFrontendIO :: ClientOptions -> IO ChanFrontend
-chanFrontendIO soptions = do
-  let startup | sfrontendNull soptions = nullStartup
-              | sfrontendLazy soptions = lazyStartup
-              | sfrontendTeletype soptions = Teletype.startup soptions
-              | otherwise = Chosen.startup soptions
+chanFrontendIO :: ScreenContent -> ClientOptions -> IO ChanFrontend
+chanFrontendIO coscreen soptions = do
+  let startup | sfrontendNull soptions = nullStartup coscreen
+              | sfrontendLazy soptions = lazyStartup coscreen
+              | sfrontendTeletype soptions = Teletype.startup coscreen soptions
+              | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
       delta = max 1 $ microInSec `div` maxFps
   rf <- startup
@@ -88,13 +89,12 @@ chanFrontendIO soptions = do
   fasyncTimeout <- async $ frameTimeoutThread delta fdelay rf
   -- Warning: not linking @fasyncTimeout@, so it'd better not crash.
   let fs = FrontSetup{..}
-  return $ fchanFrontend soptions fs rf
+  return $ fchanFrontend fs rf
 
 -- Display a frame, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-getKey :: ClientOptions -> FrontSetup -> RawFrontend -> [K.KM] -> FrameForall
-       -> IO KMP
-getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
+getKey :: FrontSetup -> RawFrontend -> [K.KM] -> FrameForall -> IO KMP
+getKey fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
   if autoYes && (null keys || K.spaceKM `elem` keys) then do
     display rf frame
@@ -105,15 +105,15 @@ getKey soptions fs rf@RawFrontend{fchanKey} keys frame = do
     kmp <- STM.atomically $ STM.readTQueue fchanKey
     if null keys || kmpKeyMod kmp `elem` keys
     then return kmp
-    else getKey soptions fs rf keys frame
+    else getKey fs rf keys frame
 
 -- Read UI requests from the client and send them to the frontend,
-fchanFrontend :: ClientOptions -> FrontSetup -> RawFrontend -> ChanFrontend
-fchanFrontend soptions fs@FrontSetup{..} rf =
+fchanFrontend :: FrontSetup -> RawFrontend -> ChanFrontend
+fchanFrontend fs@FrontSetup{..} rf =
   ChanFrontend $ \case
     FrontFrame{..} -> display rf frontFrame
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
-    FrontKey{..} -> getKey soptions fs rf frontKeyKeys frontKeyFrame
+    FrontKey{..} -> getKey fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
@@ -129,17 +129,15 @@ fchanFrontend soptions fs@FrontSetup{..} rf =
     FrontPrintScreen -> fprintScreen rf
 
 display :: RawFrontend -> FrameForall -> IO ()
-display rf@RawFrontend{fshowNow} frontFrame = do
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 1
-      canvasLength = lysize + 3
-      new :: forall s. ST s (G.Mutable U.Vector s Word32)
+display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
+        frontFrame = do
+  let new :: forall s. ST s (G.Mutable U.Vector s Word32)
       new = do
-        v <- VM.replicate (lxsize * canvasLength)
+        v <- VM.replicate (rwidth * rheight)
                           (Color.attrCharW32 Color.spaceAttrW32)
         unFrameForall frontFrame v
         return v
-      singleFrame = PointArray.Array lxsize canvasLength (U.create new)
+      singleFrame = PointArray.Array rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
   fdisplay rf $ SingleFrame singleFrame
 
@@ -181,11 +179,11 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
 frontendName :: String
 frontendName = Chosen.frontendName
 
-lazyStartup :: IO RawFrontend
-lazyStartup = createRawFrontend (\_ -> return ()) (return ())
+lazyStartup :: ScreenContent -> IO RawFrontend
+lazyStartup coscreen = createRawFrontend coscreen (\_ -> return ()) (return ())
 
-nullStartup :: IO RawFrontend
-nullStartup = createRawFrontend seqFrame (return ())
+nullStartup :: ScreenContent -> IO RawFrontend
+nullStartup coscreen = createRawFrontend coscreen seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
 seqFrame SingleFrame{singleFrame} =

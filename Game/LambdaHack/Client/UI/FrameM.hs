@@ -17,6 +17,7 @@ import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -38,10 +39,11 @@ import           Game.LambdaHack.Common.State
 drawOverlay :: MonadClientUI m
             => ColorMode -> Bool -> Overlay -> LevelId -> m FrameForall
 drawOverlay dm onBlank topTrunc lid = do
+  CCUI{coscreen} <- getsSession sccui
   mbaseFrame <- if onBlank
                 then return $ FrameForall $ \_v -> return ()
                 else drawBaseFrame dm lid
-  return $! overlayFrameWithLines onBlank topTrunc mbaseFrame
+  return $! overlayFrameWithLines coscreen onBlank topTrunc mbaseFrame
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,

@@ -29,6 +29,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
@@ -144,6 +145,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   -- Change actor attributes.
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid n -> do
+    CCUI{coscreen} <- getsSession sccui
     when verbose $
       aidVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                                 <+> tshow (abs n `divUp` oneM) <> "HP"
@@ -166,10 +168,11 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
          msgAdd msgDie
          -- We show death anims only if not dead already before this refill.
-         let deathAct | alreadyDeadBefore =
-                        twirlSplash (bpos b, bpos b) Color.Red Color.Red
-                      | bfid b == side = deathBody (bpos b)
-                      | otherwise = shortDeathBody (bpos b)
+         let deathAct
+               | alreadyDeadBefore =
+                 twirlSplash coscreen (bpos b, bpos b) Color.Red Color.Red
+               | bfid b == side = deathBody coscreen (bpos b)
+               | otherwise = shortDeathBody coscreen (bpos b)
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
          when (n >= bhp b && bhp b > 0) $
@@ -476,6 +479,7 @@ itemAidVerbMU aid verb iid ek cstore = do
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
+  CCUI{coscreen} <- getsSession sccui
   side <- getsClient sside
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid body
@@ -562,7 +566,7 @@ createActorUI born aid body = do
     markDisplayNeeded (blid body)
   else do
     actorVerbMU aid bUI verb
-    animate (blid body) $ actorX (bpos body)
+    animate (blid body) $ actorX coscreen (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
@@ -649,16 +653,18 @@ moveActor aid source target = do
   -- not seen, the (half of the) animation would be boring, just a delay,
   -- not really showing a transition, so we skip it (via 'breakUpdAtomic').
   -- The message about teleportation is sometimes shown anyway, just as the X.
+  CCUI{coscreen} <- getsSession sccui
   body <- getsState $ getActorBody aid
   if adjacent source target
   then markDisplayNeeded (blid body)
   else do
     let ps = (source, target)
-    animate (blid body) $ teleport ps
+    animate (blid body) $ teleport coscreen ps
   lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
+  CCUI{coscreen} <- getsSession sccui
   sb <- getsState $ getActorBody source
   sbUI <- getsSession $ getActorUI source
   tb <- getsState $ getActorBody target
@@ -675,7 +681,7 @@ displaceActorUI source target = do
   -- Ours involved, but definitely not requested by player via UI.
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
   let ps = (bpos tb, bpos sb)
-  animate (blid sb) $ swapPlaces ps
+  animate (blid sb) $ swapPlaces coscreen ps
 
 moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
@@ -929,6 +935,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxShun aid _p ->
     when verbose $ aidVerbMU aid "shun"
   SfxEffect fidSource aid effect hpDelta -> do
+    CCUI{coscreen} <- getsSession sccui
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside
@@ -944,7 +951,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           then actorVerbMU aid bUI "feel burned"
           else actorVerbMU aid bUI "look burned"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
+          animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP{} | bproj b -> return ()
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
@@ -955,14 +962,14 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else
             actorVerbMU aid bUI "look healthier"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
+          animate (blid b) $ twirlSplash coscreen ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
           if isOurAlive then
             actorVerbMU aid bUI "feel wounded"
           else
             actorVerbMU aid bUI "look wounded"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
+          animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Red
         IK.RefillCalm{} | bproj b -> return ()
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 ->
@@ -1206,6 +1213,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
 strike :: MonadClientUI m
        => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
 strike catch source target iid cstore = assert (source /= target) $ do
+  CCUI{coscreen} <- getsSession sccui
   tb <- getsState $ getActorBody target
   tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
@@ -1273,8 +1281,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
     msgAdd msg
     return ((bpos tb, bpos sb), hurtMult, IK.idamage itemKind)
    else return ((bpos tb, bpos tb), 100, 1)
-  let anim | dmg == 0 = subtleHit $ snd ps
-           | hurtMult > 90 = twirlSplash ps Color.BrRed Color.Red
-           | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
-           | otherwise = blockMiss ps
+  let anim | dmg == 0 = subtleHit coscreen $ snd ps
+           | hurtMult > 90 = twirlSplash coscreen ps Color.BrRed Color.Red
+           | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
+           | otherwise = blockMiss coscreen ps
   animate (blid tb) anim

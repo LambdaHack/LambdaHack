@@ -35,12 +35,12 @@ initAI = do
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
 initUI :: MonadClientUI m => CCUI -> UIOptions -> m ()
-initUI sccui@CCUI{coinput} sUIOptions = do
+initUI sccui@CCUI{coinput, coscreen} sUIOptions = do
   side <- getsClient sside
   soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
-  schanF <- chanFrontend soptions
+  schanF <- chanFrontend coscreen soptions
   let !sbinding = stdBinding coinput sUIOptions
         -- evaluate to check for errors
   modifySession $ \sess ->

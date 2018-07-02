@@ -40,6 +40,7 @@ import qualified SDL.Raw.Video
 import qualified SDL.Vect as Vect
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -63,6 +64,7 @@ data FrontendSession = FrontendSession
   , scontinueSdlLoop :: IORef Bool
   , sframeQueue      :: MVar SingleFrame
   , sframeDrawn      :: MVar ()
+  , scoscreen        :: ScreenContent
   }
 
 -- | The name of the frontend.
@@ -73,11 +75,11 @@ frontendName = "sdl"
 --
 -- Because of Windows and OS X, SDL2 needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: ClientOptions -> IO RawFrontend
-startup soptions = startupBound $ startupFun soptions
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup scoscreen soptions = startupBound $ startupFun scoscreen soptions
 
-startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
-startupFun soptions@ClientOptions{..} rfMVar = do
+startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
+startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
   -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
@@ -95,10 +97,8 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
-  let xsize = fst normalLevelBound + 1
-      ysize = snd normalLevelBound + 4
-      screenV2 = SDL.V2 (toEnum $ xsize * boxSize)
-                        (toEnum $ ysize * boxSize)
+  let screenV2 = SDL.V2 (toEnum $ rwidth scoscreen * boxSize)
+                        (toEnum $ rheight scoscreen * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
@@ -121,13 +121,14 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   texture <- initTexture
   satlas <- newIORef EM.empty
   stexture <- newIORef texture
-  spreviousFrame <- newIORef blankSingleFrame
+  spreviousFrame <- newIORef $ blankSingleFrame scoscreen
   sforcedShutdown <- newIORef False
   scontinueSdlLoop <- newIORef True
   sframeQueue <- newEmptyMVar
   sframeDrawn <- newEmptyMVar
   let sess = FrontendSession{..}
-  rfWithoutPrintScreen <- createRawFrontend (display sess) (shutdown sess)
+  rfWithoutPrintScreen <-
+    createRawFrontend scoscreen (display sess) (shutdown sess)
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen sess}
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
@@ -143,7 +144,8 @@ startupFun soptions@ClientOptions{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
-        writeIORef spreviousFrame blankSingleFrame  -- to overwrite each char
+        writeIORef spreviousFrame (blankSingleFrame scoscreen)
+          -- to overwrite each char
         drawFrame soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
@@ -264,8 +266,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
-  let xsize = fst normalLevelBound + 1
-      vp :: Int -> Int -> Vect.Point Vect.V2 CInt
+  let vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight x y color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
@@ -277,7 +278,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
-        let (y, x) = i `divMod` xsize
+        let (y, x) = i `divMod` rwidth scoscreen
             acRaw = Color.AttrCharW32 w
             Color.AttrChar{acAttr=Color.Attr{..}, acChar=acCharRaw} =
               Color.attrCharFromW32 acRaw
