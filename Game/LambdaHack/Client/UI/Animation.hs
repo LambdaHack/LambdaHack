@@ -205,10 +205,10 @@ swapPlaces coscreen poss = Animation $ map (mzipPairs coscreen poss)
   , (blank             , blank)
   ]
 
-fadeout :: Bool -> Int -> X -> Y -> Rnd Animation
-fadeout out step lxsize lysize = do
-  let xbound = lxsize - 1
-      ybound = lysize + 2
+fadeout :: ScreenContent -> Bool -> Int -> Rnd Animation
+fadeout ScreenContent{rwidth, rheight} out step = do
+  let xbound = rwidth - 1
+      ybound = rheight - 1
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
       fadeChar !r !n !x !y =
         let d = x - 2 * y
@@ -234,10 +234,10 @@ fadeout out step lxsize lysize = do
                   x2 :: Int
                   {-# INLINE x2 #-}
                   x2 = max 0 (xbound - (n - 2 * y))
-              in [ (y * lxsize, map (fadeAttr y) [0..x1])
-                 , (y * lxsize + x2, map (fadeAttr y) [x2..xbound]) ]
+              in [ (y * rwidth, map (fadeAttr y) [0..x1])
+                 , (y * rwidth + x2, map (fadeAttr y) [x2..xbound]) ]
         return $! concatMap fadeLine [0..ybound]
-      fs | out = [3, 3 + step .. lxsize - 14]
-         | otherwise = [lxsize - 14, lxsize - 14 - step .. 1]
+      fs | out = [3, 3 + step .. rwidth - 14]
+         | otherwise = [rwidth - 14, rwidth - 14 - step .. 1]
                        ++ [0]  -- no remnants of fadein onscreen, in case of lag
   Animation <$> mapM rollFrame fs
