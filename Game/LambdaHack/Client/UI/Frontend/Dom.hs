@@ -43,11 +43,11 @@ import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
@@ -66,14 +66,14 @@ frontendName :: String
 frontendName = "browser"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: ClientOptions -> IO RawFrontend
-startup soptions = do
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup coscreen soptions = do
   rfMVar <- newEmptyMVar
-  flip runDOM undefined $ runWeb soptions rfMVar
+  flip runDOM undefined $ runWeb coscreen soptions rfMVar
   takeMVar rfMVar
 
-runWeb :: ClientOptions -> MVar RawFrontend -> DOM ()
-runWeb soptions@ClientOptions{..} rfMVar = do
+runWeb :: ScreenContent -> ClientOptions -> MVar RawFrontend -> DOM ()
+runWeb coscreen soptions@ClientOptions{..} rfMVar = do
   -- Init the document.
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
@@ -85,11 +85,10 @@ runWeb soptions@ClientOptions{..} rfMVar = do
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
   divStyle <- getStyle divBlock
   setProp divStyle "text-align" "center"
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 4
-      cell = "<td>" ++ [Char.chr 160]
-      row = "<tr>" ++ concat (replicate (lxsize + extraBlankMargin * 2) cell)
-      rows = concat (replicate (lysize + extraBlankMargin * 2) row)
+  let cell = "<td>" ++ [Char.chr 160]
+      row = "<tr>"
+            ++ concat (replicate (rwidth coscreen + extraBlankMargin * 2) cell)
+      rows = concat (replicate (rheight coscreen + extraBlankMargin * 2) row)
   tableElemRaw <- createElement doc ("table" :: Text)
   tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
   appendChild_ divBlock tableElem
@@ -111,10 +110,10 @@ runWeb soptions@ClientOptions{..} rfMVar = do
   setProp scharStyle "border" "none"
   -- Create the session record.
   setInnerHTML tableElem rows
-  scharCells <- flattenTable tableElem
-  spreviousFrame <- newIORef blankSingleFrame
+  scharCells <- flattenTable coscreen tableElem
+  spreviousFrame <- newIORef $ blankSingleFrame coscreen
   let sess = FrontendSession{..}
-  rf <- IO.liftIO $ createRawFrontend (display soptions sess) shutdown
+  rf <- IO.liftIO $ createRawFrontend coscreen (display soptions sess) shutdown
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -148,7 +147,7 @@ runWeb soptions@ClientOptions{..} rfMVar = do
       stopPropagation
   -- Handle mouseclicks, per-cell.
   let setupMouse i a =
-        let Point x y = PointArray.punindex lxsize i
+        let Point x y = PointArray.punindex (rwidth coscreen) i
         in handleMouse rf a x y
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
@@ -212,17 +211,16 @@ handleMouse rf (cell, _) cx cy = do
     stopPropagation
 
 -- | Get the list of all cells of an HTML table.
-flattenTable :: HTMLTableElement
+flattenTable :: ScreenContent
+             -> HTMLTableElement
              -> DOM (V.Vector (HTMLTableCellElement, CSSStyleDeclaration))
-flattenTable table = do
-  let lxsize = fst normalLevelBound + 1
-      lysize = snd normalLevelBound + 4
+flattenTable coscreen table = do
   rows <- getRows table
   let f y = do
         rowsItem <- itemUnsafe rows y
         unsafeCastTo HTMLTableRowElement rowsItem
   lrow <- mapM f [toEnum extraBlankMargin
-                  .. toEnum (lysize - 1 + extraBlankMargin)]
+                  .. toEnum (rheight coscreen - 1 + extraBlankMargin)]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
@@ -233,9 +231,9 @@ flattenTable table = do
               style <- getStyle cell
               return (cell, style)
         mapM g [toEnum extraBlankMargin
-                .. toEnum (lxsize - 1 + extraBlankMargin)]
+                .. toEnum (rwidth coscreen - 1 + extraBlankMargin)]
   lrc <- mapM getC lrow
-  return $! V.fromListN (lxsize * lysize) $ concat lrc
+  return $! V.fromListN (rwidth coscreen * rheight coscreen) $ concat lrc
 
 -- | Output to the screen via the frontend.
 display :: ClientOptions

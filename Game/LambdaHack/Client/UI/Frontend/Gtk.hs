@@ -18,11 +18,11 @@ import           Graphics.UI.Gtk hiding (Point)
 import           System.Exit (exitFailure)
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 
 -- | Session data maintained by the frontend.
@@ -39,11 +39,11 @@ frontendName = "gtk"
 --
 -- Because of Windows, GTK needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
-startup :: ClientOptions -> IO RawFrontend
-startup soptions = startupBound $ startupFun soptions
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
-startupFun :: ClientOptions -> MVar RawFrontend -> IO ()
-startupFun soptions@ClientOptions{..} rfMVar = do
+startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
+startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -84,7 +84,7 @@ startupFun soptions@ClientOptions{..} rfMVar = do
   widgetDelEvents sview [SmoothScrollMask, TouchMask]
   widgetAddEvents sview [ScrollMask]
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sess) shutdown
+  rf <- createRawFrontend coscreen (display coscreen sess) shutdown
   putMVar rfMVar rf
   let modTranslate mods = modifierTranslate
         (Control `elem` mods)
@@ -218,15 +218,16 @@ extraAttr ClientOptions{scolorIsBold} =
 --     , textTagStretch := StretchUltraExpanded
 
 -- | Add a frame to be drawn.
-display :: FrontendSession  -- ^ frontend session data
-        -> SingleFrame      -- ^ the screen frame to draw
+display :: ScreenContent
+        -> FrontendSession
+        -> SingleFrame
         -> IO ()
-display FrontendSession{..} SingleFrame{singleFrame} = do
-  let lxsize1 = fst normalLevelBound + 2
-      f !w (!n, !l) = if n == -1
-                      then (lxsize1 - 3, Color.charFromW32 w : '\n' : l)
+display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
+  let f !w (!n, !l) = if n == -1
+                      then (rwidth coscreen - 2, Color.charFromW32 w : '\n' : l)
                       else (n - 1, Color.charFromW32 w : l)
-      (_, levelChar) = PointArray.foldrA' f (lxsize1 - 2, []) singleFrame
+      (_, levelChar) =
+        PointArray.foldrA' f (rwidth coscreen - 1, []) singleFrame
       !gfChar = T.pack levelChar
   postGUISync $ do
     tb <- textViewGetBuffer sview
@@ -235,17 +236,18 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
     ie <- textIterCopy ib
     let defEnum = fromEnum Color.defAttr
         setTo :: (X, Int) -> Color.AttrCharW32 -> IO (X, Int)
-        setTo (!lx, !previous) !w | (lx + 1) `mod` lxsize1 /= 0 = do
-          let current :: Int
-              current = Color.attrEnumFromW32 w
-          if current == previous
-          then return (lx + 1, previous)
-          else do
-            textIterSetOffset ie lx
-            when (previous /= defEnum) $
-              textBufferApplyTag tb (stags IM.! previous) ib ie
-            textIterSetOffset ib lx
-            return (lx + 1, current)
+        setTo (!lx, !previous) !w
+          | (lx + 1) `mod` (rwidth coscreen + 1) /= 0 = do
+            let current :: Int
+                current = Color.attrEnumFromW32 w
+            if current == previous
+            then return (lx + 1, previous)
+            else do
+              textIterSetOffset ie lx
+              when (previous /= defEnum) $
+                textBufferApplyTag tb (stags IM.! previous) ib ie
+              textIterSetOffset ib lx
+              return (lx + 1, current)
         setTo (lx, previous) w = setTo (lx + 1, previous) w
     (lx, previous) <- PointArray.foldMA' setTo (-1, defEnum) singleFrame
     textIterSetOffset ie lx

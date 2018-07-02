@@ -16,11 +16,11 @@ import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
 import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
@@ -36,8 +36,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: ClientOptions -> IO RawFrontend
-startup _soptions = do
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup coscreen _soptions = do
   C.start
   void $ C.cursSet C.CursorInvisible
   let s = [ ((fg, bg), C.Style (toFColor fg) (toBColor bg))
@@ -52,7 +52,7 @@ startup _soptions = do
   let swin = C.stdScr
       sstyles = M.fromDistinctAscList (zip ks ws)
       sess = FrontendSession{..}
-  rf <- createRawFrontend (display sess) shutdown
+  rf <- createRawFrontend coscreen (display coscreen sess) shutdown
   let storeKeys :: IO ()
       storeKeys = do
         K.KM{..} <- keyTranslate <$> C.getKey C.refresh
@@ -65,10 +65,11 @@ shutdown :: IO ()
 shutdown = C.end
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> SingleFrame  -- ^ the screen frame to draw
+display :: ScreenContent
+        -> FrontendSession
+        -> SingleFrame
         -> IO ()
-display FrontendSession{..} SingleFrame{singleFrame} = do
+display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! (Color.defFG, Color.Black)
@@ -81,9 +82,8 @@ display FrontendSession{..} SingleFrame{singleFrame} = do
                  $ PointArray.toListA singleFrame
       level = init sf ++ [init $ last sf]
       nm = zip [0..] $ map (zip [0..]) level
-      lxsize = fst normalLevelBound + 1
       chunk [] = []
-      chunk l = let (ch, r) = splitAt lxsize l
+      chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr2 sstyles)
               >> C.mvWAddStr swin y x [acChar]

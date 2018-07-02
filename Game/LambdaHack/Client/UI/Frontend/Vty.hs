@@ -7,17 +7,17 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Control.Concurrent.Async
-import Graphics.Vty
+import           Control.Concurrent.Async
+import           Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Frontend.Common
+import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
@@ -30,11 +30,11 @@ frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: ClientOptions -> IO RawFrontend
-startup _soptions = do
+startup :: ScreenContent -> ClientOptions -> IO RawFrontend
+startup coscreen _soptions = do
   svty <- mkVty mempty
   let sess = FrontendSession{..}
-  rf <- createRawFrontend (display sess) (Vty.shutdown svty)
+  rf <- createRawFrontend coscreen (display coscreen sess) (Vty.shutdown svty)
   let storeKeys :: IO ()
       storeKeys = do
         e <- nextEvent svty  -- blocks here, so no polling
@@ -47,19 +47,19 @@ startup _soptions = do
   return $! rf
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> SingleFrame  -- ^ the screen frame to draw
+display :: ScreenContent
+        -> FrontendSession
+        -> SingleFrame
         -> IO ()
-display FrontendSession{svty} SingleFrame{singleFrame} =
+display coscreen FrontendSession{svty} SingleFrame{singleFrame} =
   let img = foldr (<->) emptyImage
             . map (foldr (<|>) emptyImage
                      . map (\w -> char (setAttr $ Color.attrFromW32 w)
                                        (Color.charFromW32 w)))
             $ chunk $ PointArray.toListA singleFrame
       pic = picForImage img
-      lxsize = fst normalLevelBound + 1
       chunk [] = []
-      chunk l = let (ch, r) = splitAt lxsize l
+      chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
   in update svty pic
 
