@@ -17,7 +17,9 @@ data CCUI = CCUI
 emptyCCUI :: CCUI
 emptyCCUI = CCUI
   { coinput = InputContentData []
-  , coscreen = ScreenContentData { rmainMenuArt = ""
+  , coscreen = ScreenContentData { rwidth = 0
+                                 , rheight = 0
+                                 , rmainMenuArt = ""
                                  , rintroScreen = []
                                  }
   }

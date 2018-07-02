@@ -16,6 +16,8 @@ import Game.LambdaHack.Client.UI.Content.Screen
 -- | Description of default screen layout and features.
 standardLayoutAndFeatures :: ScreenContentData
 standardLayoutAndFeatures = ScreenContentData
+  { rwidth = 80
+  , rheight = 24
   -- ASCII art for the main menu. Only pure 7-bit ASCII characters are allowed.
   -- When displayed in the main menu screen, the picture is overwritten
   -- with game and engine version strings and keybindings.
@@ -25,7 +27,7 @@ standardLayoutAndFeatures = ScreenContentData
   -- The glyphs, or at least the character cells, are perfect squares.
   -- The picture should be exactly 45 rows by 80 columns.
   -- For larger screen sizes, the picture is centered and padded with spaces.
-  { rmainMenuArt = $(do
+  , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path
       x <- qRunIO (readFile path)

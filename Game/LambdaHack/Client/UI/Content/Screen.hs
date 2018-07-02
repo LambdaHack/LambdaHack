@@ -15,7 +15,9 @@ import qualified Data.Text as T
 
 -- | Screen layout and features definition.
 data ScreenContentData = ScreenContentData
-  { rmainMenuArt :: Text      -- ^ the ASCII art for the main menu
+  { rwidth       :: Int
+  , rheight      :: Int
+  , rmainMenuArt :: Text      -- ^ the ASCII art for the main menu
   , rintroScreen :: [String]  -- ^ the intro screen (first help screen) text
   }
 
