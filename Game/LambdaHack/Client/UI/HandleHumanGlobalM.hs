@@ -1211,9 +1211,9 @@ artAtSize :: MonadClientUI m => m [Text]
 artAtSize = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
     getsSession sccui
-  let xoffset = (80 - rwidth) `div` 2
-      yoffset = (45 - rheight) `div` 2
-      tlines = T.lines rmainMenuArt
+  let tlines = T.lines rmainMenuArt
+      xoffset = (80 - rwidth) `div` 2
+      yoffset = (length tlines - rheight) `div` 2
       f = T.take rwidth . T.drop xoffset
   return $! map f $ take rheight $ drop yoffset tlines
 

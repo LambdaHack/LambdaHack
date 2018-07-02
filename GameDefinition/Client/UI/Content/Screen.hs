@@ -25,8 +25,7 @@ standardLayoutAndFeatures = ScreenContent
   -- This sign is forbidden anywhere else in the picture.
   -- The picture and the whole main menu is displayed dull white on black.
   -- The glyphs, or at least the character cells, are perfect squares.
-  -- The picture should be exactly 45 rows by 80 columns.
-  -- For larger screen sizes, the picture is centered and padded with spaces.
+  -- The picture for LambdaHack should be exactly 24 rows by 80 columns.
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path

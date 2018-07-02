@@ -27,8 +27,9 @@ validateSingle ScreenContent{rmainMenuArt} =
   let ts = T.lines rmainMenuArt
       tsNot80 = filter ((/= 80) . T.length) ts
   in case tsNot80 of
-     [] -> [ "rmainMenuArt doesn't have 45 lines, but " <> tshow (length ts)
-           | length ts /= 45]
+     [] -> [ "rmainMenuArt doesn't have at least 24 lines, but "
+             <> tshow (length ts)
+           | length ts < 24]
      tNot80 : _ ->
        ["rmainMenuArt has a line with length other than 80:" <> tNot80]
 
