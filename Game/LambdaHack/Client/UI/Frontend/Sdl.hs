@@ -64,7 +64,6 @@ data FrontendSession = FrontendSession
   , scontinueSdlLoop :: IORef Bool
   , sframeQueue      :: MVar SingleFrame
   , sframeDrawn      :: MVar ()
-  , scoscreen        :: ScreenContent
   }
 
 -- | The name of the frontend.
@@ -76,10 +75,10 @@ frontendName = "sdl"
 -- Because of Windows and OS X, SDL2 needs to be on a bound thread,
 -- so we can't avoid the communication overhead of bound threads.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup scoscreen soptions = startupBound $ startupFun scoscreen soptions
+startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
-startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
+startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   SDL.initialize [SDL.InitVideo, SDL.InitEvents]
   -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
   -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
@@ -97,8 +96,8 @@ startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
-  let screenV2 = SDL.V2 (toEnum $ rwidth scoscreen * boxSize)
-                        (toEnum $ rheight scoscreen * boxSize)
+  let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
+                        (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
       rendererConfig = SDL.RendererConfig
         { rendererType          = if sbenchmark
@@ -121,14 +120,14 @@ startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
   texture <- initTexture
   satlas <- newIORef EM.empty
   stexture <- newIORef texture
-  spreviousFrame <- newIORef $ blankSingleFrame scoscreen
+  spreviousFrame <- newIORef $ blankSingleFrame coscreen
   sforcedShutdown <- newIORef False
   scontinueSdlLoop <- newIORef True
   sframeQueue <- newEmptyMVar
   sframeDrawn <- newEmptyMVar
   let sess = FrontendSession{..}
   rfWithoutPrintScreen <-
-    createRawFrontend scoscreen (display sess) (shutdown sess)
+    createRawFrontend coscreen (display sess) (shutdown sess)
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen sess}
   putMVar rfMVar rf
   let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
@@ -144,9 +143,9 @@ startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         prevFrame <- readIORef spreviousFrame
-        writeIORef spreviousFrame (blankSingleFrame scoscreen)
+        writeIORef spreviousFrame (blankSingleFrame coscreen)
           -- to overwrite each char
-        drawFrame soptions sess prevFrame
+        drawFrame coscreen soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
@@ -163,7 +162,7 @@ startupFun scoscreen soptions@ClientOptions{..} rfMVar = do
                   -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                   -- so we need to ensure we draw on the same (bound) OS thread
                   -- that initialized SDL, hence we have to poll frames.
-                  drawFrame soptions sess fr
+                  drawFrame coscreen soptions sess fr
                   -- We can't print screen in @display@ due to thread-unsafety.
                   when sprintEachScreen $ printScreen sess
                 putMVar sframeDrawn ()  -- signal that drawing ended
@@ -258,11 +257,12 @@ display FrontendSession{..} curFrame = do
       -- to avoid exiting via "thread blocked".
       threadDelay 50000
 
-drawFrame :: ClientOptions
+drawFrame :: ScreenContent    -- ^ client screen content
+          -> ClientOptions    -- ^ client options
           -> FrontendSession  -- ^ frontend session data
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
-drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
+drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
@@ -278,7 +278,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
       setChar :: Int -> Word32 -> Word32 -> IO ()
       setChar i w wPrev = unless (w == wPrev) $ do
         atlas <- readIORef satlas
-        let (y, x) = i `divMod` rwidth scoscreen
+        let (y, x) = i `divMod` rwidth coscreen
             acRaw = Color.AttrCharW32 w
             Color.AttrChar{acAttr=Color.Attr{..}, acChar=acCharRaw} =
               Color.attrCharFromW32 acRaw

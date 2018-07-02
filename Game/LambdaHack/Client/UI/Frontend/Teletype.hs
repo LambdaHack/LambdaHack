@@ -31,7 +31,7 @@ frontendName = "teletype"
 -- | Set up the frontend input and output.
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen _soptions = do
-  rf <- createRawFrontend coscreen display shutdown
+  rf <- createRawFrontend coscreen (display coscreen) shutdown
   let storeKeys :: IO ()
       storeKeys = do
         l <- SIO.getLine  -- blocks here, so no polling
@@ -48,17 +48,17 @@ shutdown :: IO ()
 shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 
 -- | Output to the screen via the frontend.
-display :: SingleFrame  -- ^ the screen frame to draw
+display :: ScreenContent
+        -> SingleFrame
         -> IO ()
-display SingleFrame{singleFrame} =
+display coscreen SingleFrame{singleFrame} =
   let f w l =
         let acCharRaw = Color.charFromW32 w
             acChar = if Char.ord acCharRaw == 183 then '.' else acCharRaw
         in acChar : l
       levelChar = chunk $ PointArray.foldrA f [] singleFrame
-      width = 80
       chunk [] = []
-      chunk l = let (ch, r) = splitAt width l
+      chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
   in SIO.hPutStrLn SIO.stderr $ unlines levelChar
 
