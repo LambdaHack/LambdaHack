@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 -- | Verifying, aggregating and displaying binding of keys to commands.
 module Game.LambdaHack.Client.UI.KeyBindings
-  ( Binding(..), stdBinding, keyHelp, okxsN
+  ( keyHelp, okxsN
   ) where
 
 import Prelude ()
@@ -13,76 +13,22 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
-import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.RuleKind
 
--- | Bindings and other information about human player commands.
-data Binding = Binding
-  { bcmdMap  :: M.Map K.KM CmdTriple   -- ^ binding of keys to commands
-  , bcmdList :: [(K.KM, CmdTriple)]    -- ^ the properly ordered list
-                                       --   of commands for the help menu
-  , brevMap  :: M.Map HumanCmd [K.KM]  -- ^ and from commands to their keys
-  }
-
--- | Create binding of keys to movement and other standard commands,
--- as well as commands defined in the config file.
-stdBinding :: InputContent  -- ^ default key bindings from the content
-           -> UIOptions     -- ^ UI client options
-           -> Binding       -- ^ concrete binding
-stdBinding (InputContent copsClient) UIOptions{uCommands, uVi, uLaptop} =
-  let waitTriple = ([CmdMove], "", Wait)
-      wait10Triple = ([CmdMove], "", Wait10)
-      moveXhairOr n cmd v = ByAimMode { exploration = cmd v
-                                      , aiming = MoveXhair v n }
-      bcmdList =
-        (if uVi
-         then filter (\(k, _) ->
-           k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-         else id) copsClient
-        ++ uCommands
-        ++ [ (K.mkKM "KP_Begin", waitTriple)
-           , (K.mkKM "C-KP_Begin", wait10Triple)
-           , (K.mkKM "KP_5", waitTriple)
-           , (K.mkKM "C-KP_5", wait10Triple) ]
-        ++ (if | uVi ->
-                 [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "C-period", wait10Triple) ]
-               | uLaptop ->
-                 [ (K.mkKM "i", waitTriple)
-                 , (K.mkKM "C-i", wait10Triple)
-                 , (K.mkKM "I", waitTriple) ]
-               | otherwise ->
-                 [])
-        ++ K.moveBinding uVi uLaptop
-             (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
-             (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
-      rejectRepetitions t1 t2 = error $ "duplicate key"
-                                        `showFailure` (t1, t2)
-  in Binding
-  { bcmdMap = M.fromListWith rejectRepetitions
-      [ (k, triple)
-      | (k, triple@(cats, _, _)) <- bcmdList
-      , all (`notElem` [CmdMainMenu]) cats
-      ]
-  , bcmdList
-  , brevMap = M.fromListWith (flip (++)) $ concat
-      [ [(cmd, [k])]
-      | (k, (cats, _desc, cmd)) <- bcmdList
-      , all (`notElem` [CmdMainMenu, CmdDebug, CmdNoHelp]) cats
-      ]
-  }
-
 -- | Produce a set of help/menu screens from the key bindings.
-keyHelp :: COps -> ScreenContent -> Binding -> Int -> [(Text, OKX)]
-keyHelp cops ScreenContent{rintroScreen}
-        keyb@Binding{..} offset = assert (offset > 0) $
+keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
+keyHelp cops
+        CCUI{ coinput=coinput@InputContent{..}
+            , coscreen=ScreenContent{rintroScreen} }
+        offset = assert (offset > 0) $
   let
     stdRuleset = getStdRuleset cops
     introBlurb =
@@ -179,7 +125,7 @@ keyHelp cops ScreenContent{rintroScreen}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN keyb offset keyL (const False) True
+    okxs = okxsN coinput offset keyL (const False) True
     keyM = 13
     keyB = 31
     truncatem b = if T.length b > keyB
@@ -257,9 +203,9 @@ keyHelp cops ScreenContent{rintroScreen}
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: Binding -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
+okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
       -> [Text] -> [Text] -> OKX
-okxsN Binding{..} offset n greyedOut showManyKeys cat header footer =
+okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap

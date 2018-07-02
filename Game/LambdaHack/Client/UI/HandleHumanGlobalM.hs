@@ -51,6 +51,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.FrameM
@@ -1018,17 +1019,16 @@ helpHuman :: MonadClientUI m
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   cops <- getsState scops
-  CCUI{coscreen} <- getsSession sccui
+  ccui@CCUI{coinput} <- getsSession sccui
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
-  keyb <- getsSession sbinding
-  let keyH = keyHelp cops coscreen keyb 1
+  let keyH = keyHelp cops ccui 1
       splitHelp (t, okx) =
         splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
-    Left km -> case km `M.lookup` bcmdMap keyb of
+    Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
@@ -1056,11 +1056,11 @@ dashboardHuman :: MonadClientUI m
                => (HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
+  CCUI{coinput} <- getsSession sccui
   lidV <- viewedLevelUI
   Level{lxsize, lysize} <- getLevel lidV
-  keyb <- getsSession sbinding
   let keyL = 1
-      (ov0, kxs0) = okxsN keyb 1 keyL (const False) False
+      (ov0, kxs0) = okxsN coinput 1 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
       splitHelp (al, okx) = splitOKX lxsize (lysize + 1) al [K.escKM] okx
@@ -1068,7 +1068,7 @@ dashboardHuman cmdAction = do
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
-    Left km -> case km `M.lookup` bcmdMap keyb of
+    Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
       Just (_desc, _cats, cmd) -> cmdAction cmd
       Nothing -> weaveJust <$> failWith "never mind"
@@ -1124,7 +1124,7 @@ itemMenuHuman cmdAction = do
               (ovFoundRaw, kxsFound) = wrapOKX ystart xstart lxsize ks
               ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI
-          keyb <- getsSession sbinding
+          CCUI{coinput} <- getsSession sccui
           actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b ar
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
@@ -1149,7 +1149,7 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + length ovFound
-              (ov0, kxs0) = okxsN keyb offset keyL greyedOut True
+              (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
@@ -1162,7 +1162,7 @@ itemMenuHuman cmdAction = do
           recordHistory  -- report shown (e.g., leader switch), save to history
           ekm <- displayChoiceScreen "item menu" ColorFull False sli extraKeys
           case ekm of
-            Left km -> case km `M.lookup` bcmdMap keyb of
+            Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
               _ | km == K.spaceKM -> return $ Left Nothing
               _ | km `elem` foundKeys -> case km of
@@ -1294,7 +1294,7 @@ mainMenuHuman :: MonadClientUI m
               -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
   cops <- getsState scops
-  Binding{bcmdList} <- getsSession sbinding
+  CCUI{coinput=InputContent{bcmdList}} <- getsSession sccui
   gameMode <- getGameMode
   snxtScenario <- getsClient snxtScenario
   let nxtGameName = mname $ nxtGameMode cops snxtScenario

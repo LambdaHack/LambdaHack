@@ -34,18 +34,15 @@ initAI = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => CCUI -> UIOptions -> m ()
-initUI sccui@CCUI{coinput, coscreen} sUIOptions = do
+initUI :: MonadClientUI m => CCUI -> m ()
+initUI sccui@CCUI{coscreen} = do
   side <- getsClient sside
   soptions <- getsClient soptions
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend coscreen soptions
-  let !sbinding = stdBinding coinput sUIOptions
-        -- evaluate to check for errors
   modifySession $ \sess ->
     sess { schanF
-         , sbinding
          , sccui
          , sxhair = TVector $ Vector 1 1 }
              -- a step south-east, less alarming
@@ -67,7 +64,7 @@ loopCli :: ( MonadClientSetup m
 loopCli ccui sUIOptions soptions = do
   modifyClient $ \cli -> cli {soptions}
   hasUI <- clientHasUI
-  if not hasUI then initAI else initUI ccui sUIOptions
+  if not hasUI then initAI else initUI ccui
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   restoredG <- tryRestore
@@ -75,10 +72,9 @@ loopCli ccui sUIOptions soptions = do
     Just (cli, msess) | not $ snewGameCli soptions -> do
       -- Restore game.
       schanF <- getsSession schanF
-      sbinding <- getsSession sbinding
       sccui <- getsSession sccui
       maybe (return ()) (\sess -> modifySession $ \_ ->
-        sess {schanF, sbinding, sccui, sUIOptions}) msess
+        sess {schanF, sccui, sUIOptions}) msess
       putClient cli {soptions}
       return True
     Just (_, msessR) -> do

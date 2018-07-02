@@ -1,7 +1,7 @@
 -- | The type of definitions of key-command mappings to be used for the UI
 -- and shorthands for specifying command triples in the content files.
 module Game.LambdaHack.Client.UI.Content.Input
-  ( InputContent(..), makeData
+  ( InputContentRaw(..), InputContent(..), makeData
   , evalKeyDef
   , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
   , mouseLMB, mouseMMB, mouseRMB
@@ -19,18 +19,73 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
+import qualified Data.Map.Strict as M
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.UI.ActorUI (verbCStore)
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.
-newtype InputContent = InputContent [(K.KM, CmdTriple)]
+newtype InputContentRaw = InputContentRaw [(K.KM, CmdTriple)]
 
-makeData :: InputContent -> InputContent
-makeData = id  -- always correct, not transformed
+-- | Bindings and other information about human player commands.
+data InputContent = InputContent
+  { bcmdMap  :: M.Map K.KM CmdTriple   -- ^ binding of keys to commands
+  , bcmdList :: [(K.KM, CmdTriple)]    -- ^ the properly ordered list
+                                       --   of commands for the help menu
+  , brevMap  :: M.Map HumanCmd [K.KM]  -- ^ and from commands to their keys
+  }
+
+-- | Create binding of keys to movement and other standard commands,
+-- as well as commands defined in the config file.
+makeData :: UIOptions        -- ^ UI client options
+         -> InputContentRaw  -- ^ default key bindings from the content
+         -> InputContent     -- ^ concrete binding
+makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
+  let waitTriple = ([CmdMove], "", Wait)
+      wait10Triple = ([CmdMove], "", Wait10)
+      moveXhairOr n cmd v = ByAimMode { exploration = cmd v
+                                      , aiming = MoveXhair v n }
+      bcmdList =
+        (if uVi
+         then filter (\(k, _) ->
+           k `notElem` [K.mkKM "period", K.mkKM "C-period"])
+         else id) copsClient
+        ++ uCommands
+        ++ [ (K.mkKM "KP_Begin", waitTriple)
+           , (K.mkKM "C-KP_Begin", wait10Triple)
+           , (K.mkKM "KP_5", waitTriple)
+           , (K.mkKM "C-KP_5", wait10Triple) ]
+        ++ (if | uVi ->
+                 [ (K.mkKM "period", waitTriple)
+                 , (K.mkKM "C-period", wait10Triple) ]
+               | uLaptop ->
+                 [ (K.mkKM "i", waitTriple)
+                 , (K.mkKM "C-i", wait10Triple)
+                 , (K.mkKM "I", waitTriple) ]
+               | otherwise ->
+                 [])
+        ++ K.moveBinding uVi uLaptop
+             (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
+             (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+      rejectRepetitions t1 t2 = error $ "duplicate key"
+                                        `showFailure` (t1, t2)
+  in InputContent
+  { bcmdMap = M.fromListWith rejectRepetitions
+      [ (k, triple)
+      | (k, triple@(cats, _, _)) <- bcmdList
+      , all (`notElem` [CmdMainMenu]) cats
+      ]
+  , bcmdList
+  , brevMap = M.fromListWith (flip (++)) $ concat
+      [ [(cmd, [k])]
+      | (k, (cats, _desc, cmd)) <- bcmdList
+      , all (`notElem` [CmdMainMenu, CmdDebug, CmdNoHelp]) cats
+      ]
+  }
 
 evalKeyDef :: (String, CmdTriple) -> (K.KM, CmdTriple)
 evalKeyDef (t, triple@(cats, _, _)) =

@@ -83,7 +83,7 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI
-        { coinput = IC.makeData Content.Input.standardKeysAndMouse
+        { coinput = IC.makeData sUIOptions Content.Input.standardKeysAndMouse
         , coscreen = SC.makeData Content.Screen.standardLayoutAndFeatures
         }
   -- Wire together game content, the main loops of game clients

@@ -42,6 +42,7 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
@@ -49,7 +50,6 @@ import           Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
@@ -158,7 +158,7 @@ addPressedEsc = addPressedKey K.KMP { K.kmpKeyMod = K.escKM
 
 revCmdMap :: MonadClientUI m => m (K.KM -> HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do
-  Binding{brevMap} <- getsSession sbinding
+  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
   let revCmd dflt cmd = case M.lookup cmd brevMap of
         Nothing -> dflt
         Just (k : _) -> k

@@ -20,7 +20,6 @@ import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.KeyBindings
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
@@ -43,7 +42,6 @@ data SessionUI = SessionUI
   , slastItemMove  :: Maybe (CStore, CStore)
                                          -- ^ last item move stores
   , schanF         :: ChanFrontend       -- ^ connection with the frontend
-  , sbinding       :: Binding            -- ^ binding of keys to commands
   , sccui          :: CCUI               -- ^ UI client content
   , sUIOptions     :: UIOptions          -- ^ UI options as set by the player
   , saimMode       :: Maybe AimMode      -- ^ aiming mode
@@ -116,7 +114,6 @@ emptySessionUI sUIOptions =
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $
         error $ "emptySessionUI: ChanFrontend" `showFailure` ()
-    , sbinding = Binding M.empty [] M.empty
     , sccui = emptyCCUI
     , sUIOptions
     , saimMode = Nothing
@@ -184,7 +181,6 @@ instance Binary SessionUI where
     let slastItemMove = Nothing
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
-        sbinding = Binding M.empty [] M.empty
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = originPoint

@@ -18,11 +18,11 @@ import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
 import qualified Data.Map.Strict as M
-import           Game.LambdaHack.Client.ClientOptions
 import           GHC.Generics (Generic)
 import           System.FilePath
 import           Text.Read
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.File

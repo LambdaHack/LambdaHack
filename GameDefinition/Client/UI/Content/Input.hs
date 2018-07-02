@@ -18,8 +18,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 --
 -- In addition to these commands, mouse and keys have a standard meaning
 -- when navigating various menus.
-standardKeysAndMouse :: InputContent
-standardKeysAndMouse = InputContent $ map evalKeyDef $
+standardKeysAndMouse :: InputContentRaw
+standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- All commands are defined here, except some movement and leader picking
   -- commands. All commands are shown on help screens except debug commands
   -- and macros with empty descriptions.

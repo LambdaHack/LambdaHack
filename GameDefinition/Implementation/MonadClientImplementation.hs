@@ -77,7 +77,7 @@ instance MonadClientSetup CliImplementation where
       Just sess ->
         let !newSess = (emptySessionUI (sUIOptions sess))
                          { schanF = schanF sess
-                         , sbinding = sbinding sess
+                         , sccui = sccui sess
                          , shistory = shistory sess
                          , sstart = sstart sess
                          , sgstart = sgstart sess
