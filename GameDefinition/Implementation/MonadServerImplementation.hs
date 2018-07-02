@@ -133,14 +133,8 @@ instance MonadServerAtomic SerImplementation where
 -- for easy access of code analysis tools.
 -- | Run the main server loop, with the given arguments and empty
 -- initial states, in the @IO@ monad.
-executorSer :: COps -> CCUI -> ServerOptions -> IO ()
-executorSer cops ccui soptionsNxtCmdline = do
-  -- Parse UI client configuration file.
-  -- It is reparsed at each start of the game executable.
-  let benchmark = sbenchmark $ sclientOptions soptionsNxtCmdline
-  -- Fail here, not inside client code, so that savefiles are not removed,
-  -- because they are not the source of the failure.
-  sUIOptions <- mkUIOptions cops benchmark
+executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO ()
+executorSer cops ccui soptionsNxtCmdline sUIOptions = do
   soptionsNxt <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
@@ -171,7 +165,7 @@ executorSer cops ccui soptionsNxtCmdline = do
         let path bkp = dataDir </> "saves" </> bkp <> name
         b <- doesFileExist (path "")
         when b $ renameFile (path "") (path "bkp.")
-      bkpAllSaves = if benchmark then return () else do
+      bkpAllSaves = unless (sbenchmark $ sclientOptions soptionsNxt) $ do
         T.hPutStrLn stdout "The game crashed, so savefiles are moved aside."
         bkpOneSave $ defPrefix <> Save.saveNameSer cops
         forM_ [-99..99] $ \n ->
