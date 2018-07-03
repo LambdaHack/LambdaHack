@@ -306,12 +306,12 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
   UpdRestart fid _ _ _ _ -> do
-    cops@COps{cocave} <- getsState scops
+    COps{cocave, corule} <- getsState scops
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
     if lengthHistory history == 0 then do
-      let title = rtitle $ getStdRuleset cops
+      let title = rtitle corule
       msgAdd $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       sUIOptions <- getsSession sUIOptions

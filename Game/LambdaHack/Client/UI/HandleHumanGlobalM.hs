@@ -1219,11 +1219,10 @@ artAtSize = do
 -- else fails, only then we crop. We don't assume any line length.
 artWithVersion :: MonadClientUI m => m [String]
 artWithVersion = do
-  cops <- getsState scops
-  let stdRuleset = getStdRuleset cops
-      pasteVersion :: [Text] -> [String]
+  COps{corule} <- getsState scops
+  let pasteVersion :: [Text] -> [String]
       pasteVersion art =
-        let exeVersion = rexeVersion stdRuleset
+        let exeVersion = rexeVersion corule
             libVersion = Self.version
             version = "Version " ++ showVersion exeVersion
                       ++ " (frontend: " ++ frontendName

@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- | Game rules and assorted game setup data.
 module Content.RuleKind
-  ( content
+  ( standardRules
   ) where
 
 import Prelude ()
@@ -17,15 +17,9 @@ import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Content.RuleKind
 
-content :: [RuleKind]
-content = [standard]
-
-standard :: RuleKind
-standard = RuleKind
-  { rsymbol = 's'
-  , rname = "standard LambdaHack ruleset"
-  , rfreq = [("standard", 100)]
-  , rtitle = "LambdaHack"
+standardRules :: RuleContent
+standardRules = RuleContent
+  { rtitle = "LambdaHack"
   , rfontDir = $(do
       x <- qRunIO (Self.getDataFileName "GameDefinition/fonts")
       lift x)

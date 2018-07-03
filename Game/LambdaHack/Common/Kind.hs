@@ -1,8 +1,7 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( ContentId, ContentData, COps(..)
-  , emptyCOps, getStdRuleset
-  , okind, ouniqGroup, opick
+  , emptyCOps, okind, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength
   ) where
@@ -25,7 +24,7 @@ data COps = COps
   , coitem        :: ContentData ItemKind
   , comode        :: ContentData ModeKind   -- server only
   , coplace       :: ContentData PlaceKind  -- server only, so far
-  , corule        :: ContentData RuleKind
+  , corule        :: RuleContent
   , cotile        :: ContentData TileKind
   , coItemSpeedup :: ItemSpeedup
   , coTileSpeedup :: TileSpeedup
@@ -43,12 +42,8 @@ emptyCOps = COps
   , coitem  = emptyContentData
   , comode  = emptyContentData
   , coplace = emptyContentData
-  , corule  = emptyContentData
+  , corule  = emptyRuleContent
   , cotile  = emptyContentData
   , coItemSpeedup = emptyItemSpeedup
   , coTileSpeedup = emptyTileSpeedup
   }
-
--- | The standard ruleset used for level operations.
-getStdRuleset :: COps -> RuleKind
-getStdRuleset COps{corule} = okind corule $ ouniqGroup corule "standard"

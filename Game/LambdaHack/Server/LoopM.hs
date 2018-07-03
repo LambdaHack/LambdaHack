@@ -220,8 +220,7 @@ loopUpd updConn = do
 endClip :: forall m. MonadServerAtomic m => (FactionId -> m ()) -> m ()
 {-# INLINE endClip #-}
 endClip updatePerFid = do
-  cops <- getsState scops
-  let rules = getStdRuleset cops
+  COps{corule} <- getsState scops
   time <- getsState stime
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
@@ -244,7 +243,7 @@ endClip updatePerFid = do
     arenas <- getsServer sarenas
     execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
-    when (clipN `mod` rleadLevelClips rules == 0) leadLevelSwitch
+    when (clipN `mod` rleadLevelClips corule == 0) leadLevelSwitch
     let clipMod = clipN `mod` clipInTurn
     if | clipMod == clipInTurn - 1 ->
          -- Periodic activation only once per turn, for speed,
@@ -281,7 +280,7 @@ endClip updatePerFid = do
   unless breakLoop2 $  -- if by chance requested and periodic saves coincide
     -- Periodic save needs to be at the end, so that restore can start
     -- at the beginning.
-    when (clipN `mod` rwriteSaveClips rules == 0) $ writeSaveAll False
+    when (clipN `mod` rwriteSaveClips corule == 0) $ writeSaveAll False
 #endif
 
 -- | Check if the given actor is dominated and update his calm.

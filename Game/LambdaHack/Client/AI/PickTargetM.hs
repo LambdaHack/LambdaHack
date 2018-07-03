@@ -83,7 +83,7 @@ refreshTarget (aid, body) = do
 computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
 {-# INLINE computeTarget #-}
 computeTarget aid = do
-  cops@COps{coTileSpeedup} <- getsState scops
+  COps{corule, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
   scondInMelee <- getsClient scondInMelee
@@ -93,8 +93,7 @@ computeTarget aid = do
   actorAspect <- getsState sactorAspect
   let lalter = salter EM.! blid b
       condInMelee = scondInMelee LEM.! blid b
-      stdRuleset = getStdRuleset cops
-      nearby = rnearby stdRuleset
+      nearby = rnearby corule
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = IA.aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk

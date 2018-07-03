@@ -122,8 +122,8 @@ restoreGame cops fileName = do
   either handler return res
 
 vExevLib :: COps -> (Version, Version)
-vExevLib cops =
-  let exeVersion = rexeVersion $ getStdRuleset cops
+vExevLib COps{corule} =
+  let exeVersion = rexeVersion corule
       libVersion = Self.version
   in (exeVersion, libVersion)
 
@@ -139,9 +139,9 @@ delayPrint t = do
   hFlush stdout
 
 saveNameCli :: COps -> FactionId -> String
-saveNameCli cops side =
+saveNameCli COps{corule} side =
   let gameShortName =
-        case T.words $ rtitle $ getStdRuleset cops of
+        case T.words $ rtitle corule of
           w : _ -> T.unpack w
           _ -> "Game"
       n = fromEnum side  -- we depend on the numbering hack to number saves
@@ -152,9 +152,9 @@ saveNameCli cops side =
      ++ ".sav"
 
 saveNameSer :: COps -> String
-saveNameSer cops =
+saveNameSer COps{corule} =
   let gameShortName =
-        case T.words $ rtitle $ getStdRuleset cops of
+        case T.words $ rtitle corule of
           w : _ -> T.unpack w
           _ -> "Game"
   in gameShortName ++ ".server.sav"

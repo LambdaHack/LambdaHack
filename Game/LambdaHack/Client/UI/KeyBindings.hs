@@ -25,12 +25,11 @@ import           Game.LambdaHack.Content.RuleKind
 
 -- | Produce a set of help/menu screens from the key bindings.
 keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
-keyHelp cops
+keyHelp COps{corule}
         CCUI{ coinput=coinput@InputContent{..}
             , coscreen=ScreenContent{rintroScreen} }
         offset = assert (offset > 0) $
   let
-    stdRuleset = getStdRuleset cops
     introBlurb =
       ""
       : map T.pack rintroScreen
@@ -174,7 +173,7 @@ keyHelp cops
           menu = zipWith render kst1 kst2
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
   in
-    [ ( rtitle stdRuleset <+> "- backstory"
+    [ ( rtitle corule <+> "- backstory"
       , (map textToAL introText, []) )
     , ( casualDescription <+> "(1/2)."
       , (map textToAL movText, []) )

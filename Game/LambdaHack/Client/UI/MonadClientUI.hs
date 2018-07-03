@@ -399,7 +399,7 @@ partAidLeader aid = do
 -- | Try to read saved client game state from the file system.
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))
 tryRestore = do
-  cops <- getsState scops
+  cops@COps{corule} <- getsState scops
   bench <- getsClient $ sbenchmark . soptions
   if bench then return Nothing
   else do
@@ -407,9 +407,8 @@ tryRestore = do
     prefix <- getsClient $ ssavePrefixCli . soptions
     let fileName = prefix <> Save.saveNameCli cops side
     res <- liftIO $ Save.restoreGame cops fileName
-    let stdRuleset = getStdRuleset cops
-        cfgUIName = rcfgUIName stdRuleset
-        content = rcfgUIDefault stdRuleset
+    let cfgUIName = rcfgUIName corule
+        content = rcfgUIDefault corule
     dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return res

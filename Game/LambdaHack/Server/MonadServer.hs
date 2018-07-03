@@ -119,11 +119,10 @@ dumpRngs rngs = liftIO $ do
 
 -- | Read the high scores dictionary. Return the empty table if no file.
 restoreScore :: forall m. MonadServer m => COps -> m HighScore.ScoreDict
-restoreScore cops = do
+restoreScore COps{corule} = do
   bench <- getsServer $ sbenchmark . sclientOptions . soptions
   mscore <- if bench then return Nothing else do
-    let stdRuleset = getStdRuleset cops
-        scoresFile = rscoresFile stdRuleset
+    let scoresFile = rscoresFile corule
     dataDir <- liftIO appDataDir
     let path bkp = dataDir </> bkp <> scoresFile
     configExists <- liftIO $ doesFileExist (path "")
@@ -149,10 +148,9 @@ restoreScore cops = do
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> FactionId -> m ()
 registerScore status fid = do
-  cops <- getsState scops
+  cops@COps{corule} <- getsState scops
   total <- getsState $ snd . calculateTotal fid
-  let stdRuleset = getStdRuleset cops
-      scoresFile = rscoresFile stdRuleset
+  let scoresFile = rscoresFile corule
   dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.
   scoreDict <- restoreScore cops

@@ -214,7 +214,7 @@ updateConn executorClient = do
 
 tryRestore :: MonadServerComm m => m (Maybe (State, StateServer))
 tryRestore = do
-  cops <- getsState scops
+  cops@COps{corule} <- getsState scops
   soptions <- getsServer soptions
   let bench = sbenchmark $ sclientOptions soptions
   if bench then return Nothing
@@ -222,9 +222,8 @@ tryRestore = do
     let prefix = ssavePrefixSer soptions
         fileName = prefix <> Save.saveNameSer cops
     res <- liftIO $ Save.restoreGame cops fileName
-    let stdRuleset = getStdRuleset cops
-        cfgUIName = rcfgUIName stdRuleset
-        content = rcfgUIDefault stdRuleset
+    let cfgUIName = rcfgUIName corule
+        content = rcfgUIDefault corule
     dataDir <- liftIO appDataDir
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return $! res

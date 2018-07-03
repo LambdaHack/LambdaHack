@@ -69,7 +69,7 @@ tieKnot options@ServerOptions{sallClear, sboostRandomItem, sdungeonRng} = do
         , coitem
         , comode  = MK.makeData cocave coitem Content.ModeKind.content
         , coplace
-        , corule  = RK.makeData Content.RuleKind.content
+        , corule  = RK.makeData Content.RuleKind.standardRules
         , cotile
         , coItemSpeedup
         , coTileSpeedup

@@ -106,10 +106,9 @@ parseConfig cfg =
 
 -- | Read and parse UI config file.
 mkUIOptions :: COps -> Bool -> IO UIOptions
-mkUIOptions cops benchmark = do
-  let stdRuleset = getStdRuleset cops
-      cfgUIName = rcfgUIName stdRuleset
-      sUIDefault = rcfgUIDefault stdRuleset
+mkUIOptions COps{corule} benchmark = do
+  let cfgUIName = rcfgUIName corule
+      sUIDefault = rcfgUIDefault corule
       cfgUIDefault = either (error . ("" `showFailure`)) id
                      $ Ini.parse sUIDefault
   dataDir <- appDataDir
@@ -128,9 +127,8 @@ mkUIOptions cops benchmark = do
 
 -- | Modify client options with UI options.
 applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
-applyUIOptions cops uioptions soptions =
-  let stdRuleset = getStdRuleset cops
-  in (\opts -> opts {sgtkFontFamily =
+applyUIOptions COps{corule} uioptions soptions =
+     (\opts -> opts {sgtkFontFamily =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlFontFile =
         sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
@@ -147,7 +145,7 @@ applyUIOptions cops uioptions soptions =
      (\opts -> opts {snoAnim =
         snoAnim opts `mplus` Just (uNoAnim uioptions)}) .
      (\opts -> opts {stitle =
-        stitle opts `mplus` Just (rtitle stdRuleset)}) .
+        stitle opts `mplus` Just (rtitle corule)}) .
      (\opts -> opts {sfontDir =
-        sfontDir opts `mplus` Just (rfontDir stdRuleset)})
+        sfontDir opts `mplus` Just (rfontDir corule)})
      $ soptions
