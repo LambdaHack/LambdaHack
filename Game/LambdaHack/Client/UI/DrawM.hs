@@ -135,6 +135,7 @@ drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameTerrain drawnLevelId = do
   COps{coTileSpeedup, cotile} <- getsState scops
   StateClient{smarkSuspect} <- getClient
+  -- Not @ScreenContent@, because indexing in level's data.
   Level{lxsize, ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
@@ -172,6 +173,7 @@ drawFrameTerrain drawnLevelId = do
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
   SessionUI{smarkSmell} <- getSession
+  -- Not @ScreenContent@, because indexing in level's data.
   Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
   itemToF <- getsState $ flip itemToFull
   let {-# INLINE viewItemBag #-}
@@ -207,6 +209,7 @@ drawFramePath drawnLevelId = do
  if isNothing saimMode then return $! FrameForall $ \_ -> return () else do
   COps{coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
+  -- Not @ScreenContent@, because pathing in level's map.
   Level{lxsize, lysize, ltile=PointArray.Array{avector}}
     <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
@@ -273,6 +276,7 @@ drawFramePath drawnLevelId = do
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
+  -- Not @ScreenContent@, because indexing in level's data.
   Level{lxsize, lactor} <- getLevel drawnLevelId
   side <- getsClient sside
   mleader <- getsClient sleader
@@ -321,6 +325,7 @@ drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
 drawFrameExtra dm drawnLevelId = do
   SessionUI{saimMode, smarkVision} <- getSession
+  -- Not @ScreenContent@, because indexing in level's data.
   Level{lxsize, lysize} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mxhairPos <- xhairToPos
@@ -356,6 +361,8 @@ drawFrameExtra dm drawnLevelId = do
                       . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
               VM.write v (pI + lxsize) w
         mapM_ g l
+      -- Here @lxsize@ and @lysize@ are correct, because we are not
+      -- turning the whole screen into black&white, but only the level map.
       lDungeon = [0..lxsize * lysize - 1]
       upd :: FrameForall
       upd = FrameForall $ \v -> do

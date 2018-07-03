@@ -45,6 +45,8 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
@@ -109,6 +111,7 @@ chooseItemHuman c = either Just (const Nothing) <$> chooseItemDialogMode c
 chooseItemDialogMode :: MonadClientUI m
                      => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
 chooseItemDialogMode c = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let subject = partActor
       verbSha body ar = if calmEnough body ar
                         then "notice"
@@ -152,7 +155,6 @@ chooseItemDialogMode c = do
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
-  lidV <- viewedLevelUI
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   bUI <- getsSession $ getActorUI leader
@@ -160,7 +162,6 @@ chooseItemDialogMode c = do
   localTime <- getsState $ getLocalTime (blid b)
   factionD <- getsState sfactionD
   ar <- getsState $ getActorAspect leader
-  Level{lxsize, lysize} <- getLevel lidV
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
       let lSlotsElems = EM.elems lSlots
@@ -171,12 +172,12 @@ chooseItemDialogMode c = do
                 kit2 = itemBag EM.! iid2
                 attrLine = itemDesc True (bfid b) factionD (IA.aHurtMelee ar)
                                     CGround localTime itemFull2 kit2
-                ov = splitAttrLine lxsize attrLine
+                ov = splitAttrLine rwidth attrLine
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
                        ++ [K.downKM | slotIndex /= lSlotsBound]
             promptAdd0 $ promptFun $ itemKind itemFull2
-            slides <- overlayToSlideshow (lysize + 1) keys (ov, [])
+            slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
               K.Space -> chooseItemDialogMode c2
@@ -232,13 +233,13 @@ chooseItemDialogMode c = do
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
                     , "is", MU.Text valueText ]
-                  ov0 = indentSplitAttrLine lxsize $ textToAL
+                  ov0 = indentSplitAttrLine rwidth $ textToAL
                         $ slotToDesc eqpSlot
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= statListBound]
               promptAdd0 prompt2
-              slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
+              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MStats
@@ -320,6 +321,7 @@ projectCheck tpos = do
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
+  -- Not @ScreenContent@, because not drawing here.
   Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
@@ -375,6 +377,7 @@ xhairLegalEps = do
       then findNewEps False pos
       else error $ "" `showFailure` (xhair, lidV)
     TVector v -> do
+      -- Not @ScreenContent@, because not drawing here.
       Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
@@ -574,6 +577,7 @@ selectNoneHuman = do
 selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
   lidV <- viewedLevelUI
+  -- Not @ScreenContent@, because not drawing here.
   Level{lysize} <- getLevel lidV
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
@@ -636,9 +640,9 @@ recordHuman = do
 
 historyHuman :: forall m. MonadClientUI m => m ()
 historyHuman = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   history <- getsSession shistory
   arena <- getArenaUI
-  Level{lxsize, lysize} <- getLevel arena
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
   let rh = renderHistory history
@@ -649,10 +653,10 @@ historyHuman = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Text (tshow turnsLocal) <> ")" ]
-      kxs = [ (Right sn, (slotPrefix sn, 0, lxsize))
+      kxs = [ (Right sn, (slotPrefix sn, 0, rwidth))
             | sn <- take (length rh) intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow (lysize + 3) [K.escKM] (rh, kxs)
+  okxs <- overlayToSlideshow rheight [K.escKM] (rh, kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull True okxs
                                    [K.spaceKM, K.escKM]
@@ -670,14 +674,14 @@ historyHuman = do
         let timeReport = case drop histSlot rh of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 = indentSplitAttrLine lxsize timeReport
+            ov0 = indentSplitAttrLine rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
             keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
                                         ++ [K.downKM | histSlot /= histBound]
         promptAdd0 prompt
-        slides <- overlayToSlideshow (lysize + 1) keys (ov0, [])
+        slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
         case K.key km of
           K.Space -> displayAllHistory
@@ -791,6 +795,7 @@ moveXhairHuman dir n = do
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
+  -- Not @ScreenContent@, because not drawing here.
   Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsSession sxhair
@@ -1030,6 +1035,7 @@ xhairPointerFloorHuman = do
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
 xhairPointerFloor verbose = do
   lidV <- viewedLevelUI
+  -- Not @ScreenContent@, because not drawing here.
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0
@@ -1056,6 +1062,7 @@ xhairPointerEnemyHuman = do
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
 xhairPointerEnemy verbose = do
   lidV <- viewedLevelUI
+  -- Not @ScreenContent@, because not drawing here.
   Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0

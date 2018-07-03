@@ -999,6 +999,7 @@ alterWithPointerHuman :: MonadClientUI m
 alterWithPointerHuman ts = do
   COps{cotile} <- getsState scops
   lidV <- viewedLevelUI
+  -- Not @ScreenContent@, because not drawing here.
   lvl@Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   let tpos = Point px (py - mapStartY)
@@ -1019,12 +1020,11 @@ helpHuman :: MonadClientUI m
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   cops <- getsState scops
-  ccui@CCUI{coinput} <- getsSession sccui
-  lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV
+  ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
+    <- getsSession sccui
   let keyH = keyHelp cops ccui 1
       splitHelp (t, okx) =
-        splitOKX lxsize (lysize + 3) (textToAL t) [K.spaceKM, K.escKM] okx
+        splitOKX rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
@@ -1056,14 +1056,12 @@ dashboardHuman :: MonadClientUI m
                => (HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
-  CCUI{coinput} <- getsSession sccui
-  lidV <- viewedLevelUI
-  Level{lxsize, lysize} <- getLevel lidV
+  CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let keyL = 1
       (ov0, kxs0) = okxsN coinput 1 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
-      splitHelp (al, okx) = splitOKX lxsize (lysize + 1) al [K.escKM] okx
+      splitHelp (al, okx) = splitOKX rwidth (rheight - 2) al [K.escKM] okx
       sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
@@ -1090,10 +1088,9 @@ itemMenuHuman cmdAction = do
       case iid `EM.lookup` bag of
         Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
+          CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
           ar <- getsState $ getActorAspect leader
           itemFull <- getsState $ itemToFull iid
-          lidV <- viewedLevelUI
-          Level{lxsize, lysize} <- getLevel lidV
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid
           factionD <- getsState sfactionD
@@ -1116,12 +1113,12 @@ itemMenuHuman cmdAction = do
                 if null foundTexts then "" else "The item is also in:"
               desc = itemDesc False (bfid b) factionD (IA.aHurtMelee ar)
                               fromCStore localTime itemFull kit
-              alPrefix = splitAttrLine lxsize $ desc <+:> foundPrefix
+              alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1
               ks = zip foundKeys $ map (\(_, (_, store), bUI2) ->
                                           ppLoc bUI2 store) foundUI
-              (ovFoundRaw, kxsFound) = wrapOKX ystart xstart lxsize ks
+              (ovFoundRaw, kxsFound) = wrapOKX ystart xstart rwidth ks
               ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
@@ -1155,7 +1152,7 @@ itemMenuHuman cmdAction = do
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
-                splitOKX lxsize (lysize + 1) al [K.spaceKM, K.escKM] okx
+                splitOKX rwidth (rheight - 2) al [K.spaceKM, K.escKM] okx
               sli = toSlideshow
                     $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
