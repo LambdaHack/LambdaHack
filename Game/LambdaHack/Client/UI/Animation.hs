@@ -209,6 +209,7 @@ fadeout :: ScreenContent -> Bool -> Int -> Rnd Animation
 fadeout ScreenContent{rwidth, rheight} out step = do
   let xbound = rwidth - 1
       ybound = rheight - 1
+      margin = (rwidth - 2 * rheight) `div` 2 - 2
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
       fadeChar !r !n !x !y =
         let d = x - 2 * y
@@ -237,7 +238,7 @@ fadeout ScreenContent{rwidth, rheight} out step = do
               in [ (y * rwidth, map (fadeAttr y) [0..x1])
                  , (y * rwidth + x2, map (fadeAttr y) [x2..xbound]) ]
         return $! concatMap fadeLine [0..ybound]
-      fs | out = [3, 3 + step .. rwidth - 14]
-         | otherwise = [rwidth - 14, rwidth - 14 - step .. 1]
+      fs | out = [3, 3 + step .. rwidth - margin]
+         | otherwise = [rwidth - margin, rwidth - margin - step .. 1]
                        ++ [0]  -- no remnants of fadein onscreen, in case of lag
   Animation <$> mapM rollFrame fs
