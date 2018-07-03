@@ -1230,13 +1230,14 @@ artWithVersion = do
                       ++ ", engine: LambdaHack " ++ showVersion libVersion
                       ++ ") "
             versionLen = length version
-            lastOriginal = last art
-            (prefix, versionSuffix) = T.breakOn "Version" lastOriginal
-            suffix = drop versionLen $ T.unpack versionSuffix
-            overfillLen = versionLen - T.length versionSuffix
-            prefixModified = T.unpack $ T.dropEnd overfillLen prefix
-            lastModified = prefixModified ++ version ++ suffix
-        in map T.unpack (init art) ++ [lastModified]
+            f line =
+              let (prefix, versionSuffix) = T.breakOn "Version" line
+              in if T.null versionSuffix then T.unpack line else
+                let suffix = drop versionLen $ T.unpack versionSuffix
+                    overfillLen = versionLen - T.length versionSuffix
+                    prefixModified = T.unpack $ T.dropEnd overfillLen prefix
+                in prefixModified ++ version ++ suffix
+        in map f art
   mainMenuArt <- artAtSize
   return $! pasteVersion mainMenuArt
 
