@@ -41,6 +41,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | View on the basic game state.
@@ -145,17 +146,17 @@ sactorAspect = _sactorAspect
 unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> X -> Y
              -> ([Point], [Point]) -> [Point] -> Int -> Bool
              -> Level
-unknownLevel COps{cotile}
-             lkind ldepth lxsize lysize lstair lescape lexpl lnight =
+unknownLevel COps{corule, cotile}
+             lkind ldepth lXsize lYsize lstair lescape lexpl lnight =
   let outerId = ouniqGroup cotile "unknown outer fence"
   in Level { lkind
            , ldepth
            , lfloor = EM.empty
            , lembed = EM.empty
            , lactor = EM.empty
-           , ltile = unknownTileMap outerId lxsize lysize
-           , lxsize
-           , lysize
+           , ltile = unknownTileMap outerId (rXmax corule) (rYmax corule)
+           , lXsize
+           , lYsize
            , lsmell = EM.empty
            , lstair
            , lescape
@@ -165,13 +166,13 @@ unknownLevel COps{cotile}
            , lnight
            }
 
-unknownTileMap :: ContentId TileKind -> Int -> Int -> TileMap
-unknownTileMap outerId lxsize lysize =
-  let unknownMap = PointArray.replicateA lxsize lysize unknownId
+unknownTileMap :: ContentId TileKind -> X -> Y -> TileMap
+unknownTileMap outerId rXmax rYmax =
+  let unknownMap = PointArray.replicateA rXmax rYmax unknownId
       borders = [ Point x y
-                | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
+                | x <- [0, rXmax - 1], y <- [1..rYmax - 2] ]
                 ++ [ Point x y
-                   | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
+                   | x <- [0..rXmax - 1], y <- [0, rYmax - 1] ]
       outerUpdate = zip borders $ repeat outerId
   in unknownMap PointArray.// outerUpdate
 
@@ -219,7 +220,7 @@ localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel _scops lkind ldepth lxsize lysize
+              unknownLevel _scops lkind ldepth lXsize lYsize
                            lstair lescape lexpl lnight)
              _sdungeon
     , ..

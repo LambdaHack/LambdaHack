@@ -128,7 +128,7 @@ placeItemsInDungeon :: forall m. MonadServerAtomic m
 placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
-  let initialItems (lid, Level{lkind, ldepth, lxsize, lysize, ltile}) = do
+  let initialItems (lid, Level{lkind, ldepth, lXsize, lYsize, ltile}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
         let placeItems :: Int -> m ()
@@ -150,7 +150,7 @@ placeItemsInDungeon alliancePositions = do
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,
                 -- but let's try to spread at least the initial items evenly.
-                ([distAndOften | n * 100 < lxsize * lysize]
+                ([distAndOften | n * 100 < lXsize * lYsize]
                  ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t])
                 distAllianceAndNotFloor
                 [distAllianceAndNotFloor]

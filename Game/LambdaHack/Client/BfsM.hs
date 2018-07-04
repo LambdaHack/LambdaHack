@@ -43,6 +43,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
@@ -63,15 +64,14 @@ invalidateBfsAll =
 createBfs :: MonadClient m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
 createBfs canMove alterSkill aid = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   b <- getsState $ getActorBody aid
-  let lid = blid b
-  Level{lxsize, lysize} <- getLevel lid
-  let !aInitial = PointArray.replicateA lxsize lysize apartBfs
+  let !aInitial = PointArray.replicateA rXmax rYmax apartBfs
       !source = bpos b
       !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
     salter <- getsClient salter
-    let !lalter = salter EM.! lid
+    let !lalter = salter EM.! blid b
         !_a = fillBfs lalter alterSkill source aInitial
     return ()
   return aInitial

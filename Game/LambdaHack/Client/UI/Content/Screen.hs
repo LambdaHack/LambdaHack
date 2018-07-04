@@ -13,10 +13,12 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Text as T
 
+import Game.LambdaHack.Common.Point
+
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent
-  { rwidth       :: Int       -- ^ screen width
-  , rheight      :: Int       -- ^ screen height
+  { rwidth       :: X         -- ^ screen width
+  , rheight      :: Y         -- ^ screen height
   , rmainMenuArt :: Text      -- ^ the ASCII art for the main menu
   , rintroScreen :: [String]  -- ^ the intro screen (first help screen) text
   }

@@ -45,6 +45,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -119,11 +120,12 @@ posToAssocs pos lid s =
 nearbyFreePoints :: (ContentId TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
 nearbyFreePoints f start lid s =
-  let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
+  let lvl = sdungeon s EM.! lid
+      COps{corule=RuleContent{rXmax, rYmax}} = scops s
       good p = f (lvl `at` p)
                && Tile.isWalkable (coTileSpeedup $ scops s) (lvl `at` p)
                && null (posToAidsLvl p lvl)
-      ps = nub $ start : concatMap (vicinityBounded lxsize lysize) ps
+      ps = nub $ start : concatMap (vicinityBounded rXmax rYmax) ps
   in filter good ps
 
 -- | Calculate loot's worth for a given faction.

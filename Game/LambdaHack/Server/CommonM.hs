@@ -272,12 +272,12 @@ projectFail :: MonadServerAtomic m
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail source tpxy eps center iid cstore blast = do
-  COps{coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  lvl@Level{lxsize, lysize} <- getLevel lid
-  case bla lxsize lysize eps spos tpxy of
+  lvl <- getLevel lid
+  case bla rXmax rYmax eps spos tpxy of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (spos, tpxy)

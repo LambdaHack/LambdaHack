@@ -210,8 +210,8 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
        , lembed = EM.empty
        , lactor = EM.empty
        , ltile
-       , lxsize = cxsize
-       , lysize = cysize
+       , lXsize = cxsize
+       , lYsize = cysize
        , lsmell = EM.empty
        , lstair
        , lescape

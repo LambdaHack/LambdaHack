@@ -63,6 +63,7 @@ import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (cname)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.ModeKind as MK
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
@@ -133,10 +134,10 @@ targetDescXhair = do
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameTerrain drawnLevelId = do
-  COps{coTileSpeedup, cotile} <- getsState scops
+  COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{lxsize, ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
+  Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
@@ -145,7 +146,7 @@ drawFrameTerrain drawnLevelId = do
           -- Passing @p0@ as arg in place of @pI@ is much more costly.
           let p0 :: Point
               {-# INLINE p0 #-}
-              p0 = PointArray.punindex lxsize pI
+              p0 = PointArray.punindex rXmax pI
               -- @smarkSuspect@ can be turned off easily, so let's overlay it
               -- over both visible and remembered tiles.
               fg :: Color.Color
@@ -164,7 +165,7 @@ drawFrameTerrain drawnLevelId = do
         let g :: Int -> Word16 -> ST s ()
             g !pI !tile = do
               let w = Color.attrCharW32 $ f pI (ContentId tile)
-              VM.write v (pI + lxsize) w
+              VM.write v (pI + rXmax) w
         U.imapM_ g avector
       upd :: FrameForall
       upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
@@ -172,9 +173,10 @@ drawFrameTerrain drawnLevelId = do
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
+  COps{corule=RuleContent{rXmax}} <- getsState scops
   SessionUI{smarkSmell} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{lxsize, lsmell, ltime, lfloor} <- getLevel drawnLevelId
+  Level{lsmell, ltime, lfloor} <- getLevel drawnLevelId
   itemToF <- getsState $ flip itemToFull
   let {-# INLINE viewItemBag #-}
       viewItemBag _ floorBag = case EM.toDescList floorBag of
@@ -192,9 +194,9 @@ drawFrameContent drawnLevelId = do
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
-              let pI = PointArray.pindex lxsize p0
+              let pI = PointArray.pindex rXmax p0
                   w = Color.attrCharW32 $ f p0 a0
-              VM.write v (pI + lxsize) w
+              VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
@@ -207,11 +209,10 @@ drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFramePath drawnLevelId = do
  SessionUI{saimMode} <- getSession
  if isNothing saimMode then return $! FrameForall $ \_ -> return () else do
-  COps{coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   StateClient{seps} <- getClient
   -- Not @ScreenContent@, because pathing in level's map.
-  Level{lxsize, lysize, ltile=PointArray.Array{avector}}
-    <- getLevel drawnLevelId
+  Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mleader <- getsClient sleader
   xhairPosRaw <- xhairToPos
@@ -222,7 +223,7 @@ drawFramePath drawnLevelId = do
       Actor{bpos, blid} <- getsState $ getActorBody leader
       return $! if blid /= drawnLevelId
                 then []
-                else fromMaybe [] $ bla lxsize lysize seps bpos xhairPos
+                else fromMaybe [] $ bla rXmax rYmax seps bpos xhairPos
     _ -> return []
   mpath <- maybe (return Nothing) (\aid -> Just <$> do
     mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -262,10 +263,10 @@ drawFramePath drawnLevelId = do
       mapVTL f l v = do
         let g :: Point -> ST s ()
             g !p0 = do
-              let pI = PointArray.pindex lxsize p0
+              let pI = PointArray.pindex rXmax p0
                   tile = avector U.! pI
                   w = Color.attrCharW32 $ f p0 (ContentId tile)
-              VM.write v (pI + lxsize) w
+              VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
@@ -275,9 +276,10 @@ drawFramePath drawnLevelId = do
 
 drawFrameActor :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameActor drawnLevelId = do
+  COps{corule=RuleContent{rXmax}} <- getsState scops
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{lxsize, lactor} <- getLevel drawnLevelId
+  Level{lactor} <- getLevel drawnLevelId
   side <- getsClient sside
   mleader <- getsClient sleader
   s <- getState
@@ -312,9 +314,9 @@ drawFrameActor drawnLevelId = do
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
-              let pI = PointArray.pindex lxsize p0
+              let pI = PointArray.pindex rXmax p0
                   w = Color.attrCharW32 $ f p0 a0
-              VM.write v (pI + lxsize) w
+              VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v ->
@@ -324,9 +326,9 @@ drawFrameActor drawnLevelId = do
 drawFrameExtra :: forall m. MonadClientUI m
                => ColorMode -> LevelId -> m FrameForall
 drawFrameExtra dm drawnLevelId = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   SessionUI{saimMode, smarkVision} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{lxsize, lysize} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mxhairPos <- xhairToPos
   mtgtPos <- do
@@ -340,7 +342,7 @@ drawFrameExtra dm drawnLevelId = do
           Just tgt -> getsState $ aidTgtToPos leader drawnLevelId tgt
   let visionMarks =
         if smarkVision
-        then map (PointArray.pindex lxsize) $ ES.toList totVisible
+        then map (PointArray.pindex rXmax) $ ES.toList totVisible
         else []
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
@@ -356,25 +358,25 @@ drawFrameExtra dm drawnLevelId = do
       mapVL f l v = do
         let g :: Int -> ST s ()
             g !pI = do
-              w0 <- VM.read v (pI + lxsize)
+              w0 <- VM.read v (pI + rXmax)
               let w = Color.attrCharW32 . Color.attrCharToW32
                       . f . Color.attrCharFromW32 . Color.AttrCharW32 $ w0
-              VM.write v (pI + lxsize) w
+              VM.write v (pI + rXmax) w
         mapM_ g l
-      -- Here @lxsize@ and @lysize@ are correct, because we are not
+      -- Here @rXmax@ and @rYmax@ are correct, because we are not
       -- turning the whole screen into black&white, but only the level map.
-      lDungeon = [0..lxsize * lysize - 1]
+      lDungeon = [0..rXmax * rYmax - 1]
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightGrey)
-                          [PointArray.pindex lxsize p] v
+                          [PointArray.pindex rXmax p] v
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightYellow)
-                          [PointArray.pindex lxsize p] v
+                          [PointArray.pindex rXmax p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
 

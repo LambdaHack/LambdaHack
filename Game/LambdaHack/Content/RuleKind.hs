@@ -13,9 +13,15 @@ import Game.LambdaHack.Common.Prelude
 
 import Data.Version
 
+import Game.LambdaHack.Common.Point
+
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent
   { rtitle          :: Text      -- ^ title of the game (not lib)
+  , rXmax           :: X         -- ^ maximum level width; for now,
+                                 --   keep equal to ScreenContent.rwidth
+  , rYmax           :: Y         -- ^ maximum level height; for now,
+                                 --   keep equal to ScreenContent.rheight - 3
   , rfontDir        :: FilePath  -- ^ font directory for the game (not lib)
   , rexeVersion     :: Version   -- ^ version of the game
   , rcfgUIName      :: FilePath  -- ^ name of the UI config file
@@ -31,6 +37,8 @@ data RuleContent = RuleContent
 emptyRuleContent :: RuleContent
 emptyRuleContent = RuleContent
   { rtitle = ""
+  , rXmax = 0
+  , rYmax = 0
   , rfontDir = ""
   , rexeVersion = makeVersion []
   , rcfgUIName = ""

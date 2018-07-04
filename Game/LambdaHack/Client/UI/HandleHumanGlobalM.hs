@@ -997,15 +997,15 @@ guessAlter _ _ _ = "never mind"
 alterWithPointerHuman :: MonadClientUI m
                       => [TriggerTile] -> m (FailOrCmd RequestTimed)
 alterWithPointerHuman ts = do
-  COps{cotile} <- getsState scops
+  COps{corule=RuleContent{rXmax, rYmax}, cotile} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  lvl@Level{lxsize, lysize} <- getLevel lidV
+  lvl <- getLevel lidV
   Point{..} <- getsSession spointer
   let tpos = Point px (py - mapStartY)
       t = lvl `at` tpos
   if px >= 0 && py - mapStartY >= 0
-     && px < lxsize && py - mapStartY < lysize
+     && px < rXmax && py - mapStartY < rYmax
   then
     alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
   else do

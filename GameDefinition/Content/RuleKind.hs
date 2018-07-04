@@ -20,6 +20,8 @@ import Game.LambdaHack.Content.RuleKind
 standardRules :: RuleContent
 standardRules = RuleContent
   { rtitle = "LambdaHack"
+  , rXmax = 80
+  , rYmax = 21
   , rfontDir = $(do
       x <- qRunIO (Self.getDataFileName "GameDefinition/fonts")
       lift x)

@@ -110,8 +110,8 @@ data Level = Level
   , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
                           --   could be recomputed at resume, but small enough
   , ltile   :: TileMap    -- ^ remembered level map
-  , lxsize  :: X          -- ^ width of the level
-  , lysize  :: Y          -- ^ height of the level
+  , lXsize  :: X          -- ^ width of the level
+  , lYsize  :: Y          -- ^ height of the level
   , lsmell  :: SmellMap   -- ^ remembered smells on the level
   , lstair  :: ([Point], [Point])
                           -- ^ positions of (up, down) stairs
@@ -224,8 +224,8 @@ instance Binary Level where
     put (assertSparseItems lembed)
     put (assertSparseActors lactor)
     put ltile
-    put lxsize
-    put lysize
+    put lXsize
+    put lYsize
     put lsmell
     put lstair
     put lescape
@@ -240,8 +240,8 @@ instance Binary Level where
     lembed <- get
     lactor <- get
     ltile <- get
-    lxsize <- get
-    lysize <- get
+    lXsize <- get
+    lYsize <- get
     lsmell <- get
     lstair <- get
     lescape <- get

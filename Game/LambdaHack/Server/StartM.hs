@@ -296,8 +296,8 @@ populateDungeon = do
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
 findEntryPoss COps{coTileSpeedup}
-              lid Level{ltile, lxsize, lysize, lstair, lescape} k = do
-  let factionDist = max lxsize lysize - 10
+              lid Level{ltile, lXsize, lYsize, lstair, lescape} k = do
+  let factionDist = max lXsize lYsize - 10
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
@@ -318,7 +318,7 @@ findEntryPoss COps{coTileSpeedup}
       -- their starting stairs ambushing explorers that enter the level,
       -- unless the staircase has both sets of stairs.
       deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
-      middlePos = Point (lxsize `div` 2) (lysize `div` 2)
+      middlePos = Point (lXsize `div` 2) (lYsize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
       onStairs = reverse $ take k $ lescape ++ deeperStairs
       nk = k - length onStairs

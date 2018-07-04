@@ -83,7 +83,8 @@ refreshTarget (aid, body) = do
 computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
 {-# INLINE computeTarget #-}
 computeTarget aid = do
-  COps{corule, coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
+    <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
   scondInMelee <- getsClient scondInMelee
@@ -93,11 +94,10 @@ computeTarget aid = do
   actorAspect <- getsState sactorAspect
   let lalter = salter EM.! blid b
       condInMelee = scondInMelee LEM.! blid b
-      nearby = rnearby corule
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = IA.aSkills ar
       alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  lvl <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _} =
         -- Effectively, only @alterMinWalk@ is checked, because real altering
@@ -150,8 +150,8 @@ computeTarget aid = do
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
       canSmell = IA.aSmell ar > 0
-      meleeNearby | canEscape = nearby `div` 2
-                  | otherwise = nearby
+      meleeNearby | canEscape = rnearby `div` 2
+                  | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
       -- Don't melee-target nonmoving actors, unless they attack ours,
       -- because nonmoving can't be lured nor ambushed nor can't chase.
@@ -250,7 +250,7 @@ computeTarget aid = do
                             -- Items and smells, etc. considered every 7 moves.
                             let pathSource = bpos b
                                 tra = trajectoryToPathBounded
-                                        lxsize lysize pathSource (replicate 7 v)
+                                        rXmax rYmax pathSource (replicate 7 v)
                                 pathList = nub tra
                                 pathGoal = last pathList
                                 pathLen = length pathList
@@ -262,7 +262,7 @@ computeTarget aid = do
                                             else AndPath{..} }
                           oldpos = fromMaybe originPoint (boldpos b)
                           vOld = bpos b `vectorToFrom` oldpos
-                          pNew = shiftBounded lxsize lysize (bpos b) vOld
+                          pNew = shiftBounded rXmax rYmax (bpos b) vOld
                       if slackTactic && not isStuck
                          && isUnit vOld && bpos b /= pNew
                          && Tile.isWalkable coTileSpeedup (lvl `at` pNew)

@@ -55,6 +55,7 @@ import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
@@ -1221,15 +1222,15 @@ effectDetectX :: MonadServerAtomic m
               => IK.DetectKind -> (Point -> Bool) -> ([Point] -> m Bool)
               -> m () -> Int -> ActorId -> m UseResult
 effectDetectX d predicate action execSfx radius target = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   b <- getsState $ getActorBody target
-  Level{lxsize, lysize} <- getLevel $ blid b
   sperFidOld <- getsServer sperFid
   let perOld = sperFidOld EM.! bfid b EM.! blid b
       Point x0 y0 = bpos b
       perList = filter predicate
         [ Point x y
-        | y <- [max 0 (y0 - radius) .. min (lysize - 1) (y0 + radius)]
-        , x <- [max 0 (x0 - radius) .. min (lxsize - 1) (x0 + radius)]
+        | y <- [max 0 (y0 - radius) .. min (rYmax - 1) (y0 + radius)]
+        , x <- [max 0 (x0 - radius) .. min (rXmax - 1) (x0 + radius)]
         ]
       extraPer = emptyPer {psight = PerVisible $ ES.fromDistinctAscList perList}
       inPer = diffPer extraPer perOld
@@ -1265,14 +1266,15 @@ effectSendFlying :: MonadServerAtomic m
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
   tb <- getsState $ getActorBody target
-  Level{lxsize, lysize} <- getLevel (blid tb)
   let eps = 0
       fpos = bpos tb `shift` v
   if braced tb then do
     sb <- getsState $ getActorBody source
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on
-  else case bla lxsize lysize eps (bpos tb) fpos of
+  else do
+   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+   case bla rXmax rYmax eps (bpos tb) fpos of
     Nothing -> error $ "" `showFailure` (fpos, tb)
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)

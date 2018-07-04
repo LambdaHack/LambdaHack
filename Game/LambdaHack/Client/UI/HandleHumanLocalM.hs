@@ -82,6 +82,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
+import           Game.LambdaHack.Content.RuleKind
 
 -- * Macro
 
@@ -315,15 +316,14 @@ permittedProjectClient = do
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
 projectCheck tpos = do
-  COps{coTileSpeedup} <- getsState scops
+  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
   -- Not @ScreenContent@, because not drawing here.
-  Level{lxsize, lysize} <- getLevel lid
-  case bla lxsize lysize eps spos tpos of
+  case bla rXmax rYmax eps spos tpos of
     Nothing -> return $ Just ProjectAimOnself
     Just [] -> error $ "project from the edge of level"
                        `showFailure` (spos, tpos, sb)
@@ -378,8 +378,8 @@ xhairLegalEps = do
       else error $ "" `showFailure` (xhair, lidV)
     TVector v -> do
       -- Not @ScreenContent@, because not drawing here.
-      Level{lxsize, lysize} <- getLevel lidV
-      let shifted = shiftBounded lxsize lysize (bpos b) v
+      COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+      let shifted = shiftBounded rXmax rYmax (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
       else findNewEps True shifted  -- True, because the goal is vague anyway
@@ -576,9 +576,9 @@ selectNoneHuman = do
 
 selectWithPointerHuman :: MonadClientUI m => m MError
 selectWithPointerHuman = do
+  COps{corule=RuleContent{rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  Level{lysize} <- getLevel lidV
   side <- getsClient sside
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
@@ -587,8 +587,8 @@ selectWithPointerHuman = do
       viewed = sortBy (comparing keySelected) oursUI
   Point{..} <- getsSession spointer
   -- Select even if no space in status line for the actor's symbol.
-  if | py == lysize + 2 && px == 0 -> selectNoneHuman >> return Nothing
-     | py == lysize + 2 ->
+  if | py == rYmax + 2 && px == 0 -> selectNoneHuman >> return Nothing
+     | py == rYmax + 2 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
            (aid, _, _) : _ -> selectAid aid >> return Nothing
@@ -792,16 +792,16 @@ doLook = do
 -- | Move the xhair. Assumes aiming mode.
 moveXhairHuman :: MonadClientUI m => Vector -> Int -> m MError
 moveXhairHuman dir n = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   leader <- getLeaderUI
   saimMode <- getsSession saimMode
   let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
   -- Not @ScreenContent@, because not drawing here.
-  Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   sxhair <- getsSession sxhair
   xhairPos <- xhairToPos
   let cpos = fromMaybe lpos xhairPos
-      shiftB pos = shiftBounded lxsize lysize pos dir
+      shiftB pos = shiftBounded rXmax rYmax pos dir
       newPos = iterate shiftB cpos !! n
   if newPos == cpos then failMsg "never mind"
   else do
@@ -1034,12 +1034,12 @@ xhairPointerFloorHuman = do
 
 xhairPointerFloor :: MonadClientUI m => Bool -> m ()
 xhairPointerFloor verbose = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0
-     && px < lxsize && py - mapStartY < lysize
+     && px < rXmax && py - mapStartY < rYmax
   then do
     oldXhair <- getsSession sxhair
     let sxhair = TPoint TAny lidV $ Point px (py - mapStartY)
@@ -1061,12 +1061,12 @@ xhairPointerEnemyHuman = do
 
 xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
 xhairPointerEnemy verbose = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  Level{lxsize, lysize} <- getLevel lidV
   Point{..} <- getsSession spointer
   if px >= 0 && py - mapStartY >= 0
-     && px < lxsize && py - mapStartY < lysize
+     && px < rXmax && py - mapStartY < rYmax
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair

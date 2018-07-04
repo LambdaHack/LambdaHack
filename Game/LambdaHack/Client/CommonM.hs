@@ -32,6 +32,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
@@ -51,9 +52,9 @@ aidTgtToPos aid lidV tgt s = case tgt of
   TPoint _ lid p ->
     if lid == lidV then Just p else Nothing
   TVector v ->
-    let b = getActorBody aid s
-        Level{lxsize, lysize} = sdungeon s EM.! lidV
-        shifted = shiftBounded lxsize lysize (bpos b) v
+    let COps{corule=RuleContent{rXmax, rYmax}} = scops s
+        b = getActorBody aid s
+        shifted = shiftBounded rXmax rYmax (bpos b) v
     in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
 -- | Counts the number of steps until the projectile would hit
@@ -62,11 +63,11 @@ aidTgtToPos aid lidV tgt s = case tgt of
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
-  COps{coTileSpeedup} <- getsState scops
-  lvl@Level{lxsize, lysize} <- getLevel (blid body)
+  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
+  lvl <- getLevel (blid body)
   posA <- getsState $ \s p -> posToAssocs p (blid body) s
   let dist = chessDist (bpos body) fpos
-      calcScore eps = case bla lxsize lysize eps (bpos body) fpos of
+      calcScore eps = case bla rXmax rYmax eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
               noActor p = all (bproj . snd) (posA p) || p == fpos
