@@ -44,7 +44,7 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 bootFixedCenters :: CaveKind -> [Point]
 bootFixedCenters CaveKind{..} =
-  [Point 4 3, Point (cxsize - 5) (cysize - anchorDown)]
+  [Point 4 3, Point (cXsize - 5) (cYsize - anchorDown)]
 
 {- |
 Generate a cave using an algorithm inspired by the original Rogue,
@@ -83,9 +83,9 @@ buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
   let fullArea = fromMaybe (error $ "" `showFailure` kc)
-                 $ toArea (0, 0, cxsize - 1, cysize - 1)
+                 $ toArea (0, 0, cXsize - 1, cYsize - 1)
       subFullArea = fromMaybe (error $ "" `showFailure` kc)
-                    $ toArea (1, 1, cxsize - 2, cysize - 2)
+                    $ toArea (1, 1, cXsize - 2, cYsize - 2)
   darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
                  <$> opick cotile cdarkCorTile (const True)
   litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
@@ -273,8 +273,8 @@ buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
   let obscure p t = if isChancePos chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
-      likelySecret Point{..} = px > 2 && px < cxsize - 3
-                               && py > 2 && py < cysize - 3
+      likelySecret Point{..} = px > 2 && px < cXsize - 3
+                               && py > 2 && py < cYsize - 3
       umap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   dmap <- mapWithKeyM obscure umap
   return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
@@ -283,7 +283,7 @@ pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
             -> Int -> Point -> (ContentId TileKind, ContentId TileKind)
             -> Rnd (ContentId TileKind)
 pickOpening COps{cotile, coTileSpeedup}
-            CaveKind{cxsize, cysize, cdoorChance, copenChance, chidden}
+            CaveKind{cXsize, cYsize, cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
             pos (hidden, cor) = do
   let nicerCorridor =
@@ -293,7 +293,7 @@ pickOpening COps{cotile, coTileSpeedup}
                    case EM.lookup p lplaces of
                      Nothing -> False
                      Just tile -> Tile.isLit coTileSpeedup tile
-                 vic = vicinityCardinal cxsize cysize pos
+                 vic = vicinityCardinal cXsize cYsize pos
              in if any roomTileLit vic then litCorTile else cor
   -- Openings have a certain chance to be doors and doors have a certain
   -- chance to be open.

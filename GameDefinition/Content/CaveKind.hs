@@ -23,8 +23,8 @@ rogue = CaveKind
   , cname         = "A maze of twisty passages"
   , cfreq         = [ ("default random", 100), ("deep random", 100)
                     , ("caveRogue", 1) ]
-  , cxsize        = 80
-  , cysize        = 21
+  , cXsize        = 80
+  , cYsize        = 21
   , cgrid         = DiceXY (3 `d` 2) 4
   , cminPlaceSize = DiceXY (2 `d` 2 + 4) 5
   , cmaxPlaceSize = DiceXY 16 20

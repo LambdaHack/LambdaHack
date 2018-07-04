@@ -31,8 +31,8 @@ data CaveKind = CaveKind
   { csymbol         :: Char             -- ^ a symbol
   , cname           :: Text             -- ^ short description
   , cfreq           :: Freqs CaveKind   -- ^ frequency within groups
-  , cxsize          :: X                -- ^ X size of the whole cave
-  , cysize          :: Y                -- ^ Y size of the whole cave
+  , cXsize          :: X                -- ^ X size of the whole cave
+  , cYsize          :: Y                -- ^ Y size of the whole cave
   , cgrid           :: Dice.DiceXY
       -- ^ the dimensions of the grid of places
   , cminPlaceSize   :: Dice.DiceXY      -- ^ minimal size of places; for merging
@@ -83,18 +83,18 @@ validateSingle CaveKind{..} =
       xborder = if couterFenceTile /= "basic outer fence" then 2 else 0
       yborder = if couterFenceTile /= "basic outer fence" then 2 else 0
   in [ "cname longer than 25" | T.length cname > 25 ]
-     ++ [ "cxsize < 7" | cxsize < 7 ]
-     ++ [ "cysize < 7" | cysize < 7 ]
+     ++ [ "cXsize < 7" | cXsize < 7 ]
+     ++ [ "cYsize < 7" | cYsize < 7 ]
      ++ [ "minGridX < 1" | minGridX < 1 ]
      ++ [ "minGridY < 1" | minGridY < 1 ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cxsize too small"
-        | maxGridX * (maxMinSizeX - 4) + xborder >= cxsize ]
-     ++ [ "cysize too small"
-        | maxGridY * maxMinSizeY + yborder >= cysize ]
+     ++ [ "cXsize too small"
+        | maxGridX * (maxMinSizeX - 4) + xborder >= cXsize ]
+     ++ [ "cYsize too small"
+        | maxGridY * maxMinSizeY + yborder >= cYsize ]
      ++ [ "cextraStairs < 0" | Dice.minDice cextraStairs < 0 ]
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]

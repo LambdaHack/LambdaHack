@@ -32,21 +32,22 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
-                -> Maybe (Rnd (ContentId TileKind)) -> Int -> Int -> TileMapEM
+                -> Maybe (Rnd (ContentId TileKind)) -> X -> Y -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps COps{coTileSpeedup} areAllWalkable
-                cdefTile mpickPassable cxsize cysize ltile = do
+convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup}
+                areAllWalkable cdefTile mpickPassable cXsize cYsize ltile = do
   let runCdefTile :: R.StdGen -> (ContentId TileKind, R.StdGen)
       runCdefTile = St.runState cdefTile
       runUnfold gen =
         let (gen1, gen2) = R.split gen
-        in (PointArray.unfoldrNA cxsize cysize runCdefTile gen1, gen2)
+        in (PointArray.unfoldrNA rXmax rYmax runCdefTile gen1, gen2)
   converted0 <- St.state runUnfold
   let converted1 = converted0 PointArray.// EM.assocs ltile
   case mpickPassable of
@@ -54,8 +55,8 @@ convertTileMaps COps{coTileSpeedup} areAllWalkable
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just pickPassable -> do  -- some tiles walkable, so ensure connectivity
       let passes p@Point{..} array =
-            px >= 0 && px <= cxsize - 1
-            && py >= 0 && py <= cysize - 1
+            px >= 0 && px <= cXsize - 1
+            && py >= 0 && py <= cYsize - 1
             && Tile.isWalkable coTileSpeedup (array PointArray.! p)
           -- If no point blocks on both ends, then I can eventually go
           -- from bottom to top of the map and from left to right
@@ -90,7 +91,7 @@ convertTileMaps COps{coTileSpeedup} areAllWalkable
 
 buildTileMap :: COps -> Cave -> Rnd TileMap
 buildTileMap cops@COps{cotile, cocave} Cave{dkind, dmap, dnight} = do
-  let CaveKind{cxsize, cysize, cpassable, cdefTile} = okind cocave dkind
+  let CaveKind{cXsize, cYsize, cpassable, cdefTile} = okind cocave dkind
       nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
                      || (if dnight then id else not)
                            (Tile.kindHasFeature TK.Dark kt)
@@ -105,7 +106,7 @@ buildTileMap cops@COps{cotile, cocave} Cave{dkind, dmap, dnight} = do
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
   areAllWalkable <- isNothing <$> opick cotile cdefTile nwcond
   convertTileMaps cops areAllWalkable
-                  pickDefTile mpickPassable cxsize cysize dmap
+                  pickDefTile mpickPassable cXsize cYsize dmap
 
 -- Create a level from a cave.
 buildLevel :: COps -> Int -> GroupName CaveKind
@@ -181,17 +182,17 @@ placeDownStairs kc@CaveKind{..} ps = do
                    $ ps ++ bootFixedCenters kc
       minDist = if length ps >= 3 then 0 else cminStairDist
       f p@Point{..} =
-        if p `inside` (9, 8, cxsize - 10, cysize - anchorDown - 5)
+        if p `inside` (9, 8, cXsize - 10, cYsize - anchorDown - 5)
         then if dist minDist p && distProj p then Just p else Nothing
         else let nx = if | px < 9 -> 4
-                         | px > cxsize - 10 -> cxsize - 5
+                         | px > cXsize - 10 -> cXsize - 5
                          | otherwise -> px
                  ny = if | py < 8 -> 3
-                         | py > cysize - anchorDown - 5 -> cysize - anchorDown
+                         | py > cYsize - anchorDown - 5 -> cYsize - anchorDown
                          | otherwise -> py
                  np = Point nx ny
              in if dist 0 np && distProj np then Just np else Nothing
-  findPoint cxsize cysize f
+  findPoint cXsize cYsize f
 
 -- Build rudimentary level from a cave kind.
 levelFromCaveKind :: COps -> ContentId CaveKind -> Dice.AbsDepth
@@ -202,7 +203,7 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lexpl = PointArray.foldlA' f 0 ltile
-      CaveKind{cxsize, cysize} = okind cocave lkind
+      CaveKind{cXsize, cYsize} = okind cocave lkind
   in Level
        { lkind
        , ldepth
@@ -210,8 +211,8 @@ levelFromCaveKind COps{cocave, coTileSpeedup}
        , lembed = EM.empty
        , lactor = EM.empty
        , ltile
-       , lXsize = cxsize
-       , lYsize = cysize
+       , lXsize = cXsize
+       , lYsize = cYsize
        , lsmell = EM.empty
        , lstair
        , lescape
