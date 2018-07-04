@@ -123,7 +123,7 @@ nearbyFreePoints f start lid s =
       good p = f (lvl `at` p)
                && Tile.isWalkable (coTileSpeedup $ scops s) (lvl `at` p)
                && null (posToAidsLvl p lvl)
-      ps = nub $ start : concatMap (vicinity lxsize lysize) ps
+      ps = nub $ start : concatMap (vicinityBounded lxsize lysize) ps
   in filter good ps
 
 -- | Calculate loot's worth for a given faction.

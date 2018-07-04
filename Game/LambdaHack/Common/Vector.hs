@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesDiagonal, compassText
-  , vicinity, vicinityUnsafe, vicinityCardinal, vicinityCardinalUnsafe
+  , vicinityBounded, vicinityUnsafe, vicinityCardinal, vicinityCardinalUnsafe
   , squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, computeTrajectory
@@ -119,10 +119,10 @@ compassText v = let m = EM.fromList $ zip moves longMoveTexts
                 in EM.findWithDefault assFail v m
 
 -- | All (8 at most) closest neighbours of a point within an area.
-vicinity :: X -> Y   -- ^ limit the search to this area
-         -> Point    -- ^ position to find neighbours of
-         -> [Point]
-vicinity lxsize lysize p =
+vicinityBounded :: X -> Y   -- ^ limit the search to this area
+                -> Point    -- ^ position to find neighbours of
+                -> [Point]
+vicinityBounded lxsize lysize p =
   if inside p (1, 1, lxsize - 2, lysize - 2)
   then vicinityUnsafe p
   else [ res | dxy <- moves

@@ -301,10 +301,10 @@ fleeList aid = do
           _ -> Right pathList
         _ -> Right []
   b <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  lvl <- getLevel $ blid b
   s <- getState
   let posFoes = map bpos $ foeRegularList (bfid b) (blid b) s
-      myVic = vicinity lxsize lysize $ bpos b
+      myVic = vicinityUnsafe $ bpos b
       dist p | null posFoes = 100
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
