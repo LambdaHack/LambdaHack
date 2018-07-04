@@ -41,13 +41,19 @@ import           Game.LambdaHack.Server.DungeonGen.Place
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Maybe (Rnd (ContentId TileKind)) -> X -> Y -> TileMapEM
                 -> Rnd TileMap
-convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup}
+convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable cXsize cYsize ltile = do
-  let runCdefTile :: R.StdGen -> (ContentId TileKind, R.StdGen)
-      runCdefTile = St.runState cdefTile
+  let activeArea = (1, 1, cXsize - 2, cYsize - 2)
+      outerId = ouniqGroup cotile "unknown outer fence"
+      runCdefTile :: (R.StdGen, Int) -> (ContentId TileKind, (R.StdGen, Int))
+      runCdefTile (gen1, pI) =
+        if PointArray.punindex rXmax pI `inside` activeArea
+        then let (tile, gen2) = St.runState cdefTile gen1
+             in (tile, (gen2, pI + 1))
+        else (outerId, (gen1, pI + 1))
       runUnfold gen =
         let (gen1, gen2) = R.split gen
-        in (PointArray.unfoldrNA rXmax rYmax runCdefTile gen1, gen2)
+        in (PointArray.unfoldrNA rXmax rYmax runCdefTile (gen1, 0), gen2)
   converted0 <- St.state runUnfold
   let converted1 = converted0 PointArray.// EM.assocs ltile
   case mpickPassable of
@@ -67,9 +73,8 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup}
                  || passes (Point x (y - 1)) array)
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
-          innerArea = (1, 1, cXsize - 2, cYsize - 2)
           connect included blocks walkableTile array =
-            let g p c = if p `inside` innerArea
+            let g p c = if p `inside` activeArea
                            && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && p `EM.notMember` ltile
