@@ -55,9 +55,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup}
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just pickPassable -> do  -- some tiles walkable, so ensure connectivity
       let passes p@Point{..} array =
-            px >= 0 && px <= cXsize - 1
-            && py >= 0 && py <= cYsize - 1
-            && Tile.isWalkable coTileSpeedup (array PointArray.! p)
+            Tile.isWalkable coTileSpeedup (array PointArray.! p)
           -- If no point blocks on both ends, then I can eventually go
           -- from bottom to top of the map and from left to right
           -- unless there are disconnected areas inside rooms).
@@ -69,11 +67,13 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup}
                  || passes (Point x (y - 1)) array)
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
+          innerArea = (1, 1, cXsize - 2, cYsize - 2)
           connect included blocks walkableTile array =
-            let g n c = if included n
+            let g p c = if p `inside` innerArea
+                           && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
-                           && n `EM.notMember` ltile
-                           && blocks n array
+                           && p `EM.notMember` ltile
+                           && blocks p array
                         then walkableTile
                         else c
             in PointArray.imapA g array
