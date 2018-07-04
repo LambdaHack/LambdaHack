@@ -452,6 +452,7 @@ test-suite test
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
     cpp-options:      -DGHCJS_BUSY_YIELD=50
+    cpp-options:      -DUSE_JSFILE
   } else {
     build-depends:    zlib >= 0.5.3.1
   }

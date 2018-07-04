@@ -245,7 +245,7 @@ maxFpsP = optional $ max 1 <$>
               <> help "Display at most N frames per second" )
 
 logPriorityP :: Parser (Maybe Int)
-logPriorityP = optional $ max 1 <$>
+logPriorityP = optional $ max 0 <$>
   option auto (  long "logPriority"
               <> metavar "N"
               <> help "Log only messages of priority at least N, where 1 (all) is the lowest and 5 (errors only) is the default." )

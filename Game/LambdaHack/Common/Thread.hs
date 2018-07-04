@@ -24,7 +24,9 @@ waitForChildren :: MVar [Async ()] -> IO ()
 waitForChildren children = do
   cs <- takeMVar children
   case cs of
-    [] -> return ()
+    [] -> do
+      putMVar children []
+      return ()
     m : ms -> do
       putMVar children ms
       wait m

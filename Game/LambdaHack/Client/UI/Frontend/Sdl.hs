@@ -79,23 +79,34 @@ startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
 startupFun coscreen soptions@ClientOptions{..} rfMVar = do
-  SDL.initialize [SDL.InitVideo, SDL.InitEvents]
-  -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
-  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
-  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
-  let title = fromJust stitle
-      fontFileName = T.unpack (fromJust sdlFontFile)
-      fontFile | isRelative fontFileName = fromJust sfontDir </> fontFileName
-               | otherwise = fontFileName
-  fontFileExists <- doesFileExist fontFile
-  unless fontFileExists $
-    fail $ "Font file does not exist: " ++ fontFile
-  let fontSize = fromJust sfontSize
-  TTF.initialize
-  sfont <- TTF.load fontFile fontSize
-  let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
-  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
+ SDL.initialize [SDL.InitEvents]
+ -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
+ -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
+ SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
+ let title = fromJust stitle
+     fontFileName = T.unpack (fromJust sdlFontFile)
+     fontFile | isRelative fontFileName = fromJust sfontDir </> fontFileName
+              | otherwise = fontFileName
+ fontFileExists <- doesFileExist fontFile
+ unless fontFileExists $
+   fail $ "Font file does not exist: " ++ fontFile
+ let fontSize = fromJust sfontSize
+ TTF.initialize
+ sfont <- TTF.load fontFile fontSize
+ let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+     sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+ boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
+ -- The hacky log priority 0 tells SDL frontend to init and quit at once,
+ -- for testing on CIs without graphics access.
+ if slogPriority == Just 0 then do
+  rf <- createRawFrontend coscreen (\_ -> return ()) (return ())
+  putMVar rfMVar rf
+  TTF.free sfont
+  TTF.quit
+  SDL.quit
+ else do
+  -- The code below fails without access to a graphics system.
+  SDL.initialize [SDL.InitVideo]
   let screenV2 = SDL.V2 (toEnum $ rwidth coscreen * boxSize)
                         (toEnum $ rheight coscreen * boxSize)
       windowConfig = SDL.defaultWindow {SDL.windowInitialSize = screenV2}
