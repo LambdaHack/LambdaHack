@@ -90,9 +90,12 @@ benchCrawl:
 benchFrontendCrawl:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
 
-benchNull: benchBattle benchAnimBattle benchCrawl
+benchDig:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1 --automateAll --keepAutomated --gameMode dig --setDungeonRng 0 --setMainRng 0
 
-bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl
+benchNull: benchBattle benchAnimBattle benchCrawl benchDig
+
+bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl benchDig
 
 nativeBenchCrawl:
 	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --logPriority 4 --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0

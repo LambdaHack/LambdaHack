@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
 content =
-  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
 
-raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -121,6 +121,15 @@ safari = ModeKind  -- easter egg available only via screensaver
   }
 
 -- * Testing modes
+
+dig = ModeKind
+  { msymbol = 'd'
+  , mname   = "dig"
+  , mfreq   = [("dig", 1)]
+  , mroster = rosterCrawl
+  , mcaves  = cavesDig
+  , mdesc   = "Delve deeper!"
+  }
 
 crawlEmpty = ModeKind
   { msymbol = 'c'
@@ -442,7 +451,7 @@ rosterDefenseEmpty = rosterCrawl
   , rosterEnemy = []
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = IM.fromList [(-2, "caveRaid")]
 
@@ -463,6 +472,15 @@ cavesCrawl = IM.fromList $
   ++ zip [-4, -5] (repeat "default random")
   ++ zip [-6, -7, -8, -9] (repeat "deep random")
   ++ [(-10, "caveNoise2")]
+
+cavesDig = IM.fromList $
+  [ (-1, "outermost")
+  , (-2, "shallow random 2")
+  , (-3, "caveEmpty") ]
+  ++ zip [-4, -5] (repeat "default random")
+  ++ zip [-6, -7, -8, -9] (repeat "deep random")
+  ++ [(-10, "caveNoise2")]
+  ++ zip [-11, -12 .. -2000] (repeat "deep random")
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")
