@@ -220,7 +220,7 @@ script:
  - travis_retry travis_wait 40 cabal build lib:LambdaHack
  - cabal build exe:LambdaHack
 
- - cabal test || exit 7
+ - cabal test --show-details=direct || exit 7
 
  - touch /tmp/teletypetest.log;
  - (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
