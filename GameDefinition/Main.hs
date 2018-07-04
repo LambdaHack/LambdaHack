@@ -8,7 +8,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Options.Applicative as OA
@@ -47,27 +46,11 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
-  let fillWorkaround =
-        -- Set up void workaround if nothing specific required.
-        void $ tryPutMVar workaroundOnMainThreadMVar $ return ()
 #endif
   -- Fail here, not inside server code, so that savefiles are not removed,
   -- because they are not the source of the failure.
   !serverOptions <- OA.execParser serverOptionsPI
-  let run = do
-        -- Avoid the bound thread that would slow down the communication.
-        a <- async $ tieKnot serverOptions
-#ifndef USE_JSFILE
-                     `Ex.finally` fillWorkaround
-        link a
-        -- Run a (possibly void) workaround. It's needed for OSes/frontends
-        -- that need to perform some actions on the main thread
-        -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
-        workaround <- takeMVar workaroundOnMainThreadMVar
-        workaround
-#endif
-        wait a
-  resOrEx :: Either Ex.SomeException () <- Ex.try run
+  resOrEx :: Either Ex.SomeException () <- Ex.try $ tieKnot serverOptions
   let unwrapEx e =
 #if MIN_VERSION_async(2,2,1)
         case Ex.fromException e of
