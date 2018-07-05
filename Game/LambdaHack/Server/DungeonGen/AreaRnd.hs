@@ -1,11 +1,12 @@
 -- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ( -- * Picking points inside areas
-    xyInArea, mkVoidRoom, mkRoom
+    mkFixed, xyInArea, mkVoidRoom, mkRoom
     -- * Choosing connections
   , connectGrid, randomConnection
     -- * Plotting corridors
   , HV(..), Corridor, connectPlaces
+  , SpecialArea(..), grid
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connectGrid', sortPoint, mkCorridor, borderPlace
@@ -16,15 +17,33 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntSet as IS
 
+import Game.LambdaHack.Common.Misc hiding (xM)
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.PlaceKind
+import Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import Game.LambdaHack.Server.DungeonGen.Area
 
--- Picking random points inside areas
+-- Doesn't respect minimum sizes, because staircases are specified verbatim,
+-- so can't be arbitrarily scaled up.
+-- The size may be one more than what maximal size hint requests,
+-- but this is safe (limited by area size) and makes up for the rigidity
+-- of the fixed room sizes (e.g., that the size is always odd).
+mkFixed :: (X, Y)    -- ^ maximum size
+        -> Area      -- ^ the containing area, not the room itself
+        -> Point     -- ^ the center point
+        -> Area
+mkFixed (xMax, yMax) area p@Point{..} =
+  let (x0, y0, x1, y1) = fromArea area
+      xradius = min ((xMax + 1) `div` 2) $ min (px - x0) (x1 - px)
+      yradius = min ((yMax + 1) `div` 2) $ min (py - y0) (y1 - py)
+      a = (px - xradius, py - yradius, px + xradius, py + yradius)
+  in fromMaybe (error $ "" `showFailure` (a, xMax, yMax, area, p)) $ toArea a
 
 -- | Pick a random point within an area.
 xyInArea :: Area -> Rnd Point
@@ -232,3 +251,55 @@ borderPlace qarea pfence = case pfence of
   FNone -> case shrink qarea of
     Nothing -> (qarea, qarea)
     Just sr -> (sr, qarea)
+
+data SpecialArea =
+    SpecialArea Area
+  | SpecialFixed Point (GroupName PlaceKind) Area
+  | SpecialMerged SpecialArea Point
+  deriving Show
+
+-- | Divide uniformly a larger area into the given number of smaller areas
+-- overlapping at the edges.
+--
+-- When a list of fixed centers (some important points inside)
+-- of (non-overlapping) areas is given, incorporate those,
+-- with as little disruption, as possible.
+grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> (X, Y) -> Area
+     -> ((X, Y), EM.EnumMap Point SpecialArea)
+grid fixedCenters boot (nx, ny) area =
+  let (x0, y0, x1, y1) = fromArea area
+      f z0 z1 n prev (c1 : c2 : rest) =
+        let len = c2 - c1 + 1
+            cn = len * n `div` (z1 - z0 - 1)
+        in if cn < 2
+           then let mid1 = (c1 + c2) `div` 2
+                    mid2 = (c1 + c2) `divUp` 2
+                    mid = if mid1 - prev > 4 then mid1 else mid2
+                in (prev, mid, Just c1) : f z0 z1 n mid (c2 : rest)
+           else (prev, c1 + len `div` (2 * cn), Just c1)
+                : [ ( c1 + len * (2 * z - 1) `div` (2 * cn)
+                    , c1 + len * (2 * z + 1) `div` (2 * cn)
+                    , Nothing )
+                  | z <- [1 .. cn - 1] ]
+                ++ f z0 z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
+                     (c2 : rest)
+      f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
+      f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
+      xcs = IS.toList $ IS.fromList $ map px $ EM.keys fixedCenters ++ boot
+      xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
+      ycs = IS.toList $ IS.fromList $ map py $ EM.keys fixedCenters ++ boot
+      yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
+  in ( (length xallCenters, length yallCenters)
+     , EM.fromDistinctAscList
+         [ ( Point x y
+           , case (mcx, mcy) of
+               (Just cx, Just cy) ->
+                 case EM.lookup (Point cx cy) fixedCenters of
+                   Nothing -> SpecialArea sarea
+                   Just placeGroup ->
+                     SpecialFixed (Point cx cy) placeGroup sarea
+               _ -> SpecialArea sarea )
+         | (y, (cy0, cy1, mcy)) <- yallCenters
+         , (x, (cx0, cx1, mcx)) <- xallCenters
+         , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
+                      $ toArea (cx0, cy0, cx1, cy1) ] )
