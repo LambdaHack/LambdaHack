@@ -18,6 +18,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
@@ -29,7 +30,6 @@ import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Server.DungeonGen.Area
 
 -- | The parameters of a place. All are immutable and rolled and fixed
 -- at the time when a place is generated.

@@ -21,13 +21,12 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntSet as IS
 
+import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.Misc hiding (xM)
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.PlaceKind (PlaceKind)
-import Game.LambdaHack.Server.DungeonGen.Area
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
 -- so can't be arbitrarily scaled up.

@@ -1,5 +1,5 @@
 -- | Rectangular areas of levels and their basic operations.
-module Game.LambdaHack.Server.DungeonGen.Area
+module Game.LambdaHack.Common.Area
   ( Area, toArea, fromArea, spanArea, trivialArea, isTrivialArea
   , insideArea, shrink, expand, sumAreas
   ) where
@@ -8,13 +8,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Data.Binary
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntSet as IS
+import Data.Binary
 
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Content.PlaceKind (PlaceKind)
 
 -- | The type of areas. The bottom left and the top right points.
 data Area = Area X Y X Y

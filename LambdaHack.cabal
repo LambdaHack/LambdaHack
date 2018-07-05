@@ -167,6 +167,7 @@ library
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Common.Ability
+                      Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
                       Game.LambdaHack.Common.Color
@@ -208,7 +209,6 @@ library
                       Game.LambdaHack.Server.CommonM
                       Game.LambdaHack.Server.DebugM
                       Game.LambdaHack.Server.DungeonGen
-                      Game.LambdaHack.Server.DungeonGen.Area
                       Game.LambdaHack.Server.DungeonGen.AreaRnd
                       Game.LambdaHack.Server.DungeonGen.Cave
                       Game.LambdaHack.Server.DungeonGen.Place

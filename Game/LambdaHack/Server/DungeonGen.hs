@@ -18,6 +18,7 @@ import qualified Data.IntMap.Strict as IM
 import           Data.Tuple
 import qualified System.Random as R
 
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
@@ -34,7 +35,6 @@ import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Server.DungeonGen.Area
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 

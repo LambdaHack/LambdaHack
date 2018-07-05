@@ -15,6 +15,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
@@ -25,7 +26,6 @@ import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
-import           Game.LambdaHack.Server.DungeonGen.Area
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Place
 
