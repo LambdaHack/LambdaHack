@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Level
     -- * Component updates
   , updateFloor, updateEmbed, updateActorMap, updateTile, updateSmell
     -- * Level query
-  , at, findPoint, findPos, findPosTry, findPosTry2
+  , at, findPos, findPosTry, findPosTry2
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , assertSparseItems, assertSparseActors
@@ -152,17 +152,6 @@ updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 at :: Level -> Point -> ContentId TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
-
--- | Find a random position on the map satisfying a predicate.
-findPoint :: X -> Y -> (Point -> Maybe Point) -> Rnd Point
-findPoint x y f =
-  let search = do
-        pxy <- randomR (0, (x - 1) * (y - 1))
-        let pos = PointArray.punindex x pxy
-        case f pos of
-          Just p -> return p
-          Nothing -> search
-  in search
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> ContentId TileKind -> Bool) -> Rnd Point

@@ -1,7 +1,7 @@
 -- | Operations on the 'Area' type that involve random numbers.
 module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ( -- * Picking points inside areas
-    mkFixed, xyInArea, mkVoidRoom, mkRoom
+    mkFixed, pointInArea, findPointInArea, mkVoidRoom, mkRoom
     -- * Choosing connections
   , connectGrid, randomConnection
     -- * Plotting corridors
@@ -21,12 +21,13 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntSet as IS
 
-import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Common.Misc hiding (xM)
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Misc hiding (xM)
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.PlaceKind
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
 -- so can't be arbitrarily scaled up.
@@ -45,19 +46,33 @@ mkFixed (xMax, yMax) area p@Point{..} =
   in fromMaybe (error $ "" `showFailure` (a, xMax, yMax, area, p)) $ toArea a
 
 -- | Pick a random point within an area.
-xyInArea :: Area -> Rnd Point
-xyInArea area = do
-  let (x0, y0, x1, y1) = fromArea area
-  rx <- randomR (x0, x1)
-  ry <- randomR (y0, y1)
-  return $! Point rx ry
+pointInArea :: Area -> Rnd Point
+pointInArea area = do
+  let (Point x0 y0, xspan, yspan) = spanArea area
+  pxy <- randomR (0, (xspan - 1) * (yspan - 1))
+  let Point{..} = PointArray.punindex xspan pxy
+  return $! Point (x0 + px) (y0 + py)
+
+-- | Find a suitable position in the area, based on random points
+-- and a predicate.
+findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd Point
+findPointInArea area f =
+  let (Point x0 y0, xspan, yspan) = spanArea area
+      search = do
+        pxy <- randomR (0, (xspan - 1) * (yspan - 1))
+        let Point{..} = PointArray.punindex xspan pxy
+            pos = Point (x0 + px) (y0 + py)
+        case f pos of
+          Just p -> return p
+          Nothing -> search
+  in search
 
 -- | Create a void room, i.e., a single point area within the designated area.
 mkVoidRoom :: Area -> Rnd Area
 mkVoidRoom area = do
   -- Pass corridors closer to the middle of the grid area, if possible.
   let core = fromMaybe area $ shrink area
-  pxy <- xyInArea core
+  pxy <- pointInArea core
   return $! trivialArea pxy
 
 -- | Create a random room according to given parameters.
@@ -71,10 +86,10 @@ mkRoom (xm, ym) (xM, yM) area = do
       yspan = y1 - y0 + 1
       aW = (min xm xspan, min ym yspan, min xM xspan, min yM yspan)
       areaW = fromMaybe (error $ "" `showFailure` aW) $ toArea aW
-  Point xW yW <- xyInArea areaW  -- roll size
+  Point xW yW <- pointInArea areaW  -- roll size
   let a1 = (x0, y0, max x0 (x1 - xW + 1), max y0 (y1 - yW + 1))
       area1 = fromMaybe (error $ "" `showFailure` a1) $ toArea a1
-  Point rx1 ry1 <- xyInArea area1  -- roll top-left corner
+  Point rx1 ry1 <- pointInArea area1  -- roll top-left corner
   let a3 = (rx1, ry1, rx1 + xW - 1, ry1 + yW - 1)
       area3 = fromMaybe (error $ "" `showFailure` a3) $ toArea a3
   return $! area3
@@ -159,7 +174,7 @@ mkCorridor :: HV            -- ^ orientation of the starting section
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
 mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
-  Point rxRaw ryRaw <- xyInArea area
+  Point rxRaw ryRaw <- pointInArea area
   let (sx0, sy0, sx1, sy1) = fromArea area
       -- Avoid corridors that run along @FGround@ or @FFloor@ fence.
       rx = if | rxRaw == sx0 + 1 && p0floor -> sx0
@@ -202,8 +217,8 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
               _ -> 3
         in fromMaybe (error $ "" `showFailure` (area, s3, t3))
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
-  Point sx sy <- xyInArea $ trim sa
-  Point tx ty <- xyInArea $ trim ta
+  Point sx sy <- pointInArea $ trim sa
+  Point tx ty <- pointInArea $ trim ta
   -- If the place (e.g., void place) is trivial (1-tile wide, no fence),
   -- overwrite it with corridor. The place may not even be built (e.g., void)
   -- and the overwrite ensures connections through it are not broken.

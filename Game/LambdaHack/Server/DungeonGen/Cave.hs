@@ -176,7 +176,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
               isOrdinaryArea p = case p `EM.lookup` gs2 of
                 Just SpecialArea{} -> True
                 _ -> False
-          reps <- replicateM voidNum (xyInArea gridArea)
+          reps <- replicateM voidNum (pointInArea gridArea)
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool

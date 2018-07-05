@@ -35,6 +35,7 @@ import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
@@ -119,7 +120,7 @@ buildTileMap cops@COps{cotile, cocave}
 buildLevel :: COps -> Int -> GroupName CaveKind
            -> Int -> Dice.AbsDepth -> [Point]
            -> Rnd (Level, [Point])
-buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
+buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
@@ -203,7 +204,8 @@ placeDownStairs CaveKind{cminStairDist} dXsize dYsize ps = do
                          | otherwise -> py
                  np = Point nx ny
              in if dist 0 np && distProj np then Just np else Nothing
-  findPoint dXsize dYsize f
+      ar = fromJust $ toArea (0, 0, dXsize - 1, dYsize - 1)
+  findPointInArea ar f
 
 -- Build rudimentary level from a cave kind.
 levelFromCave :: COps -> Cave -> Dice.AbsDepth
