@@ -2,7 +2,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( X, Y, Point(..), maxLevelDimExponent
-  , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
+  , chessDist, euclidDistSq, adjacent, bla, fromTo
   , originPoint
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -86,11 +86,6 @@ euclidDistSq (Point x0 y0) (Point x1 y1) =
 adjacent :: Point -> Point -> Bool
 {-# INLINE adjacent #-}
 adjacent s t = chessDist s t == 1
-
--- | Checks that a point belongs to an area.
-inside :: Point -> (X, Y, X, Y) -> Bool
-{-# INLINE inside #-}
-inside (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).

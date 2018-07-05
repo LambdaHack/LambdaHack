@@ -212,7 +212,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
-                      !_A2 = assert (p `insideArea` fromJust _A0
+                      !_A2 = assert (p `inside` fromJust _A0
                                      `blame` (p, innerArea, fixedCenters)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)

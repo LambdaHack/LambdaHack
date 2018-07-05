@@ -48,7 +48,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
       outerId = ouniqGroup cotile "unknown outer fence"
       runCdefTile :: (R.StdGen, Int) -> (ContentId TileKind, (R.StdGen, Int))
       runCdefTile (gen1, pI) =
-        if PointArray.punindex rXmax pI `insideArea` activeArea
+        if PointArray.punindex rXmax pI `inside` activeArea
         then let (tile, gen2) = St.runState cdefTile gen1
              in (tile, (gen2, pI + 1))
         else (outerId, (gen1, pI + 1))
@@ -75,7 +75,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
           connect included blocks walkableTile array =
-            let g p c = if p `insideArea` activeArea
+            let g p c = if p `inside` activeArea
                            && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && p `EM.notMember` ltile
@@ -193,7 +193,7 @@ placeDownStairs CaveKind{cminStairDist} dXsize dYsize ps = do
       interior = fromMaybe (error $ "" `showFailure` (dXsize, dYsize))
                  $ toArea (9, 8, dXsize - 10, dYsize - anchorDown - 5)
       f p@Point{..} =
-        if p `insideArea` interior
+        if p `inside` interior
         then if dist minDist p && distProj p then Just p else Nothing
         else let nx = if | px < 9 -> 4
                          | px > dXsize - 10 -> dXsize - 5

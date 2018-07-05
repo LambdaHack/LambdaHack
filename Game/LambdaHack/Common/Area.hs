@@ -1,7 +1,7 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Common.Area
   ( Area, toArea, fromArea, spanArea, trivialArea, isTrivialArea
-  , insideArea, shrink, expand, sumAreas
+  , inside, shrink, expand, sumAreas
   ) where
 
 import Prelude ()
@@ -36,9 +36,9 @@ isTrivialArea :: Area -> Bool
 isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
 
 -- | Checks that a point belongs to an area.
-insideArea :: Point -> Area -> Bool
-{-# INLINE insideArea #-}
-insideArea (Point x y) (Area x0 y0 x1 y1) =
+inside :: Point -> Area -> Bool
+{-# INLINE inside #-}
+inside (Point x y) (Area x0 y0 x1 y1) =
   x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Shrink the given area on all fours sides by the amount.

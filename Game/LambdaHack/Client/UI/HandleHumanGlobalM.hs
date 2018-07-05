@@ -75,6 +75,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -106,7 +107,7 @@ byAreaHuman cmdAction l = do
   pointer <- getsSession spointer
   let pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (inside pointer) rs
+        return $! any (inside pointer) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
@@ -116,8 +117,8 @@ byAreaHuman cmdAction l = do
       cmdAction cmd
 
 -- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
-areaToRectangles :: MonadClientUI m => CmdArea -> m [(X, Y, X, Y)]
-areaToRectangles ca = do
+areaToRectangles :: MonadClientUI m => CmdArea -> m [Maybe Area]
+areaToRectangles ca = map toArea <$> do
  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
  case ca of
   CaMessage -> return [(0, 0, rwidth - 1, 0)]

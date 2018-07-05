@@ -118,16 +118,21 @@ compassText v = let m = EM.fromList $ zip moves longMoveTexts
                     assFail = error $ "not a unit vector" `showFailure` v
                 in EM.findWithDefault assFail v m
 
+-- | Checks that a point belongs to an area.
+insideP :: Point -> (X, Y, X, Y) -> Bool
+{-# INLINE insideP #-}
+insideP (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
+
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinityBounded :: X -> Y   -- ^ limit the search to this area
                 -> Point    -- ^ position to find neighbours of
                 -> [Point]
 vicinityBounded lxsize lysize p =
-  if inside p (1, 1, lxsize - 2, lysize - 2)
+  if insideP p (1, 1, lxsize - 2, lysize - 2)
   then vicinityUnsafe p
   else [ res | dxy <- moves
              , let res = shift p dxy
-             , inside res (0, 0, lxsize - 1, lysize - 1) ]
+             , insideP res (0, 0, lxsize - 1, lysize - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
 vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
@@ -139,7 +144,7 @@ vicinityCardinal :: X -> Y   -- ^ limit the search to this area
 vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
-        , inside res (0, 0, lxsize - 1, lysize - 1) ]
+        , insideP res (0, 0, lxsize - 1, lysize - 1) ]
 
 vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
@@ -165,7 +170,7 @@ shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Y -> Point -> Vector -> Point
 shiftBounded lxsize lysize pos v@(Vector xv yv) =
-  if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
+  if insideP pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
   then shift pos v
   else pos
 
