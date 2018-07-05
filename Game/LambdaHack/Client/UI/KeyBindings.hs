@@ -27,7 +27,7 @@ import           Game.LambdaHack.Content.RuleKind
 keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
 keyHelp COps{corule}
         CCUI{ coinput=coinput@InputContent{..}
-            , coscreen=ScreenContent{rintroScreen} }
+            , coscreen=ScreenContent{rheight, rintroScreen} }
         offset = assert (offset > 0) $
   let
     introBlurb =
@@ -59,7 +59,9 @@ keyHelp COps{corule}
       , "The best item to attack with is automatically chosen from among weapons"
       , "in your personal equipment and your body parts."
       , ""
-      , "Press SPACE or scroll the mouse wheel to see the minimal command set."
+      ]
+    movBlurbEnd =
+      [ "Press SPACE or scroll the mouse wheel to see the minimal command set."
       ]
     minimalBlurb =
       [ "The following commands, joined with the basic set above, let you accomplish"
@@ -114,6 +116,7 @@ keyHelp COps{corule}
     fmts s = " " <> s
     introText = map fmts introBlurb
     movText = map fmts movBlurb
+    movTextEnd = map fmts movBlurbEnd
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
     categoryEnd = map fmts categoryEnding
@@ -125,6 +128,8 @@ keyHelp COps{corule}
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN coinput offset keyL (const False) True
+    catLength cat = length $ filter (\(_, (cats, desc, _)) ->
+      cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
     keyB = 31
     truncatem b = if T.length b > keyB
@@ -174,32 +179,40 @@ keyHelp COps{corule}
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
   in
     [ ( rtitle corule <+> "- backstory"
-      , (map textToAL introText, []) )
-    , ( casualDescription <+> "(1/2)."
-      , (map textToAL movText, []) )
-    , ( casualDescription <+> "(2/2)."
-      , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd )
-    , ( "All terrain exploration and alteration commands."
-      , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
-    , ( categoryDescription CmdItemMenu <> "."
-      , okxs CmdItemMenu [keyCaption] categoryEnd )
-    , ( categoryDescription CmdItem <> "."
-      , okxs CmdItem [keyCaption] categoryEnd )
-    , ( categoryDescription CmdAim <> "."
-      , okxs CmdAim [keyCaption] categoryEnd )
-    , ( categoryDescription CmdMeta <> "."
-      , okxs CmdMeta [keyCaption] lastCategoryEnd )
-    , ( "Mouse overview."
-      , let (ls, _) =
-              okxs CmdMouse (mouseBasicsText ++ [keyCaption]) mouseBasicsEnd
-        in (ls, []) )  -- don't capture mouse wheel, etc.
-    , ( "Mouse in aiming mode."
-      , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-            [areaCaption] mouseAimingModeEnd )
-    , ( "Mouse in exploration mode."
-      , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-            [areaCaption] lastHelpEnd )
-    ]
+      , (map textToAL introText, []) ) ]
+    ++ if catLength CmdMinimal
+          + length movText + length minimalText + length casualEnd
+          + 5 > rheight then
+         [ ( casualDescription <+> "(1/2)."
+           , (map textToAL (movText ++ movTextEnd), []) )
+         , ( casualDescription <+> "(2/2)."
+           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
+       else
+         [ ( casualDescription <> "."
+           , okxs CmdMinimal
+                  (movText ++ [""] ++ minimalText ++ [keyCaption])
+                  casualEnd ) ]
+    ++ [ ( categoryDescription CmdItemMenu <> "."
+         , okxs CmdItemMenu [keyCaption] categoryEnd )
+       , ( categoryDescription CmdItem <> "."
+         , okxs CmdItem [keyCaption] categoryEnd )
+       , ( "All terrain exploration and alteration commands."
+         , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
+       , ( categoryDescription CmdAim <> "."
+         , okxs CmdAim [keyCaption] categoryEnd )
+       , ( categoryDescription CmdMeta <> "."
+         , okxs CmdMeta [keyCaption] lastCategoryEnd )
+       , ( "Mouse overview."
+         , let (ls, _) =
+                 okxs CmdMouse (mouseBasicsText ++ [keyCaption]) mouseBasicsEnd
+           in (ls, []) )  -- don't capture mouse wheel, etc.
+       , ( "Mouse in aiming mode."
+         , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+               [areaCaption] mouseAimingModeEnd )
+       , ( "Mouse in exploration mode."
+         , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+               [areaCaption] lastHelpEnd )
+       ]
 
 -- | Turn the specified portion of bindings into a menu.
 okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
