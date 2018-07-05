@@ -38,8 +38,7 @@ keyHelp COps{corule}
       , "Press SPACE for help or ESC to see the map again."
       ]
     movBlurb =
-      [ ""
-      , "Walk throughout a level with mouse or numeric keypad (left diagram below)"
+      [ "Walk throughout a level with mouse or numeric keypad (left diagram below)"
       , "or its compact laptop replacement (middle) or the Vi text editor keys (right,"
       , "enabled in config.ui.ini). Run, until disturbed, by adding Shift or Control."
       , "Go-to with LMB (left mouse button). Run collectively with RMB."
@@ -80,17 +79,13 @@ keyHelp COps{corule}
       [ ""
       , "Press SPACE to see the next page of command descriptions."
       ]
-    lastCategoryEnding =
-      [ ""
-      , "Press SPACE to see mouse command descriptions."
-      ]
     mouseBasicsBlurb =
       [ "Screen area and UI mode (aiming/exploration) determine mouse click effects."
-      , "Here is an overview of effects of each button over most of the game map area."
+      , "First, we give an overview of effects of each button over the game map area."
       , "The list includes not only left and right buttons, but also the optional"
-      , "middle mouse button (MMB) and even the mouse wheel, which is normally used"
-      , "over menus, to page-scroll them."
-      , "For mice without RMB, one can use C-LMB (Control key and left mouse button)."
+      , "middle mouse button (MMB) and the mouse wheel, which is also used over menus,"
+      , "to page-scroll them. (For mice without RMB, one can use Control key with LMB.)"
+      , "Next we show button effects in aiming and exploration modes, per screen area."
       , ""
       ]
     mouseBasicsEnding =
@@ -120,7 +115,6 @@ keyHelp COps{corule}
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
     categoryEnd = map fmts categoryEnding
-    lastCategoryEnd = map fmts lastCategoryEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
     mouseBasicsEnd = map fmts mouseBasicsEnding
     mouseAimingModeEnd = map fmts mouseAimingModeEnding
@@ -128,6 +122,10 @@ keyHelp COps{corule}
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN coinput offset keyL (const False) True
+    renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+    mergeOKX :: OKX -> OKX -> OKX
+    mergeOKX (ov1, ks1) (ov2, ks2) =
+      (ov1 ++ ov2, ks1 ++ map (renumber $ length ov1) ks2)
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -136,8 +134,7 @@ keyHelp COps{corule}
                   then T.take (keyB - 1) b <> "$"
                   else b
     fmm a b c = fmt keyM a $ fmt keyB (truncatem b) (" " <> truncatem c)
-    areaCaption = fmm "area" "LMB (left mouse button)"
-                             "RMB (right mouse button)"
+    areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: ((HumanCmd, HumanCmd) -> HumanCmd) -> K.KM
            -> [(CmdArea, Either K.KM SlotChar, Text)]
     keySel sel key =
@@ -177,42 +174,76 @@ keyHelp COps{corule}
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
       in (map textToAL $ "" : header ++ menu ++ footer, kxs)
-  in
-    [ ( rtitle corule <+> "- backstory"
-      , (map textToAL introText, []) ) ]
-    ++ if catLength CmdMinimal
-          + length movText + length minimalText + length casualEnd
-          + 5 > rheight then
-         [ ( casualDescription <+> "(1/2)."
-           , (map textToAL (movText ++ movTextEnd), []) )
-         , ( casualDescription <+> "(2/2)."
-           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
-       else
-         [ ( casualDescription <> "."
-           , okxs CmdMinimal
-                  (movText ++ [""] ++ minimalText ++ [keyCaption])
-                  casualEnd ) ]
-    ++ [ ( categoryDescription CmdItemMenu <> "."
-         , okxs CmdItemMenu [keyCaption] categoryEnd )
-       , ( categoryDescription CmdItem <> "."
-         , okxs CmdItem [keyCaption] categoryEnd )
-       , ( "All terrain exploration and alteration commands."
-         , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
-       , ( categoryDescription CmdAim <> "."
-         , okxs CmdAim [keyCaption] categoryEnd )
-       , ( categoryDescription CmdMeta <> "."
-         , okxs CmdMeta [keyCaption] lastCategoryEnd )
-       , ( "Mouse overview."
-         , let (ls, _) =
-                 okxs CmdMouse (mouseBasicsText ++ [keyCaption]) mouseBasicsEnd
-           in (ls, []) )  -- don't capture mouse wheel, etc.
-       , ( "Mouse in aiming mode."
-         , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-               [areaCaption] mouseAimingModeEnd )
-       , ( "Mouse in exploration mode."
-         , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-               [areaCaption] lastHelpEnd )
-       ]
+  in concat
+    [ [ ( rtitle corule <+> "- backstory"
+        , (map textToAL introText, []) ) ]
+    , if catLength CmdMinimal
+         + length movText + length minimalText + length casualEnd
+         + 5 > rheight then
+        [ ( casualDescription <+> "(1/2)."
+          , (map textToAL ([""] ++ movText ++ movTextEnd), []) )
+        , ( casualDescription <+> "(2/2)."
+          , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
+      else
+        [ ( casualDescription <> "."
+          , okxs CmdMinimal
+                 (movText ++ [""] ++ minimalText ++ [keyCaption])
+                 casualEnd ) ]
+    , if catLength CmdItemMenu + catLength CmdItem
+         + 5 > rheight then
+        [ ( categoryDescription CmdItemMenu <> "."
+          , okxs CmdItemMenu [keyCaption] categoryEnd )
+        , ( categoryDescription CmdItem <> "."
+          , okxs CmdItem [keyCaption] categoryEnd ) ]
+      else
+        [ ( categoryDescription CmdItemMenu <> "."
+          , mergeOKX
+              (okxs CmdItemMenu [keyCaption] [""])
+              (okxs CmdItem
+                    [categoryDescription CmdItem <> ".", "", keyCaption]
+                    categoryEnd) ) ]
+    , if catLength CmdMove + catLength CmdAim
+         + 5 > rheight then
+        [ ( "All terrain exploration and alteration commands."
+          , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
+        , ( categoryDescription CmdAim <> "."
+          , okxs CmdAim [keyCaption] categoryEnd ) ]
+      else
+        [ ( "All terrain exploration and alteration commands."
+          , mergeOKX
+              (okxs CmdMove [keyCaption] (pickLeaderDescription ++ [""]))
+              (okxs CmdAim
+                    [categoryDescription CmdAim <> ".", "", keyCaption]
+                    categoryEnd) ) ]
+    , if 44 > rheight then
+        [ ( "Mouse overview."
+          , let (ls, _) = okxs CmdMouse
+                               (mouseBasicsText ++ [keyCaption])
+                               mouseBasicsEnd
+            in (ls, []) )  -- don't capture mouse wheel, etc.
+        , ( "Mouse in aiming mode."
+          , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                [areaCaption "area"] mouseAimingModeEnd )
+        , ( "Mouse in exploration mode."
+          , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+               [areaCaption "area"] categoryEnd ) ]
+      else
+        [ ( "Mouse commands."
+          , let (ls, _) = okxs CmdMouse
+                               (mouseBasicsText ++ [keyCaption])
+                               []
+                okx0 = (ls, [])  -- don't capture mouse wheel, etc.
+            in mergeOKX
+                 (mergeOKX
+                    okx0
+                    (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                         [areaCaption "aiming mode"] []))
+                 (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                      [areaCaption "exploration"]
+                      categoryEnd) ) ]
+    , [ ( categoryDescription CmdMeta <> "."
+        , okxs CmdMeta [keyCaption] lastHelpEnd ) ]
+    ]
 
 -- | Turn the specified portion of bindings into a menu.
 okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
