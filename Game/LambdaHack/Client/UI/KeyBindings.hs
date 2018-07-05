@@ -203,7 +203,7 @@ keyHelp COps{corule}
                     [categoryDescription CmdItem <> ".", "", keyCaption]
                     categoryEnd) ) ]
     , if catLength CmdMove + catLength CmdAim
-         + 5 > rheight then
+         + 6 > rheight then
         [ ( "All terrain exploration and alteration commands."
           , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
         , ( categoryDescription CmdAim <> "."
@@ -215,7 +215,7 @@ keyHelp COps{corule}
               (okxs CmdAim
                     [categoryDescription CmdAim <> ".", "", keyCaption]
                     categoryEnd) ) ]
-    , if 44 > rheight then
+    , if 45 > rheight then
         [ ( "Mouse overview."
           , let (ls, _) = okxs CmdMouse
                                (mouseBasicsText ++ [keyCaption])
