@@ -216,7 +216,7 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
           in case toArea (min sx tx, y0, max sx tx, y1) of
             Just a -> (Vert, a, Point sx (say1 + 1), Point tx (tay0 - 1))
             Nothing -> error $ "" `showFailure` (sx, sy, tx, ty, s3, t3)
-      nin p = not $ p `inside` fromArea sa || p `inside` fromArea ta
+      nin p = not $ p `insideArea` sa || p `insideArea` ta
       !_A = assert (strivial || ttrivial
                     || allB nin [p0, p1]`blame` (sx, sy, tx, ty, s3, t3)) ()
   cor <- mkCorridor hv p0 (sa == so) p1 (ta == to) area

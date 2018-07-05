@@ -116,7 +116,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   mergable :: X -> Y -> Maybe HV
                   mergable x y = case EM.lookup (Point x y) gs0 of
                     Just (SpecialArea ar) ->
-                      let (x0, y0, x1, y1) = fromArea ar
+                      let (_, xspan1, yspan1) = spanArea ar
                           isFixed p = case gs EM.! p of
                             SpecialFixed{} -> True
                             _ -> False
@@ -125,9 +125,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                             | any isFixed
                               $ vicinityCardinal gx gy (Point x y) -> Nothing
                             -- Bias: prefer extending vertically.
-                            -- Not @-1@, but @-3@, to merge aggressively.
-                            | y1 - y0 - 3 < snd minPlaceSize -> Just Vert
-                            | x1 - x0 - 3 < fst minPlaceSize -> Just Horiz
+                            -- Not @-2@, but @-4@, to merge aggressively.
+                            | yspan1 - 4 < snd minPlaceSize -> Just Vert
+                            | xspan1 - 4 < fst minPlaceSize -> Just Horiz
                             | otherwise -> Nothing
                     _ -> Nothing
               in case special of
@@ -212,7 +212,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                   $ shrink ar
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
-                      !_A2 = assert (p `inside` fromArea (fromJust _A0)
+                      !_A2 = assert (p `insideArea` fromJust _A0
                                      `blame` (p, innerArea, fixedCenters)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)

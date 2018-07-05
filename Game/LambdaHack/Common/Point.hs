@@ -89,6 +89,7 @@ adjacent s t = chessDist s t == 1
 
 -- | Checks that a point belongs to an area.
 inside :: Point -> (X, Y, X, Y) -> Bool
+{-# INLINE inside #-}
 inside (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@

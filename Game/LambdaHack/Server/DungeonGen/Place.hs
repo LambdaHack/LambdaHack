@@ -61,17 +61,15 @@ placeCheck r pk@PlaceKind{..} =
   case interiorArea pk r of
     Nothing -> False
     Just area ->
-      let (x0, y0, x1, y1) = fromArea area
-          dx = x1 - x0 + 1
-          dy = y1 - y0 + 1
+      let (_, xspan, yspan) = spanArea area
           dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
           dycorner = length ptopLeft
           wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
                                       (d - 1) `mod` (2 * (dcorner - 1)) == 0
-          largeEnough = dx >= 2 * dxcorner - 1 && dy >= 2 * dycorner - 1
+          largeEnough = xspan >= 2 * dxcorner - 1 && yspan >= 2 * dycorner - 1
       in case pcover of
-        CAlternate -> wholeOverlapped dx dxcorner &&
-                      wholeOverlapped dy dycorner
+        CAlternate -> wholeOverlapped xspan dxcorner &&
+                      wholeOverlapped yspan dycorner
         CStretch   -> largeEnough
         CReflect   -> largeEnough
         CVerbatim  -> True
@@ -90,13 +88,13 @@ interiorArea kr r =
         FGround -> 1
         FNone   -> 0
   in if pcover kr `elem` [CVerbatim, CMirror]
-     then let (x0, y0, x1, y1) = fromArea r
+     then let (Point x0 y0, xspan, yspan) = spanArea r
               dx = case ptopLeft kr of
                 [] -> error $ "" `showFailure` kr
                 l : _ -> T.length l
               dy = length $ ptopLeft kr
-              mx = (x1 - x0 + 1 - dx) `div` 2
-              my = (y1 - y0 + 1 - dy) `div` 2
+              mx = (xspan - dx) `div` 2
+              my = (yspan - dy) `div` 2
           in if mx < requiredForFence || my < requiredForFence
              then Nothing
              else toArea (x0 + mx, y0 + my, x0 + mx + dx - 1, y0 + my + dy - 1)
@@ -268,15 +266,13 @@ tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
           -> Rnd (EM.EnumMap Point Char)
 tilePlace area pl@PlaceKind{..} = do
-  let (x0, y0, x1, y1) = fromArea area
-      xwidth = x1 - x0 + 1
-      ywidth = y1 - y0 + 1
+  let (Point x0 y0, xspan, yspan) = spanArea area
       dxcorner = case ptopLeft of
         [] -> error $ "" `showFailure` (area, pl)
         l : _ -> T.length l
-      (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
+      (dx, dy) = assert (xspan >= dxcorner && yspan >= length ptopLeft
                          `blame` (area, pl))
-                        (xwidth, ywidth)
+                        (xspan, yspan)
       fromX (x2, y2) = map (`Point` y2) [x2..]
       fillInterior :: (Int -> String -> String)
                    -> (Int -> [String] -> [String])
@@ -284,11 +280,11 @@ tilePlace area pl@PlaceKind{..} = do
       fillInterior f g =
         let tileInterior (y, row) =
               let fx = f dx row
-                  xStart = x0 + ((xwidth - length fx) `div` 2)
+                  xStart = x0 + ((xspan - length fx) `div` 2)
               in filter ((/= 'X') . snd) $ zip (fromX (xStart, y)) fx
             reflected =
               let gy = g dy $ map T.unpack ptopLeft
-                  yStart = y0 + ((ywidth - length gy) `div` 2)
+                  yStart = y0 + ((yspan - length gy) `div` 2)
               in zip [yStart..] gy
         in concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]

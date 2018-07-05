@@ -1,6 +1,7 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Server.DungeonGen.Area
-  ( Area, toArea, fromArea, trivialArea, isTrivialArea, mkFixed
+  ( Area, toArea, fromArea, spanArea, trivialArea, isTrivialArea
+  , insideArea, mkFixed
   , SpecialArea(..), grid, shrink, expand, sumAreas
   ) where
 
@@ -29,11 +30,21 @@ toArea (x0, y0, x1, y1) = if x0 <= x1 && y0 <= y1
 fromArea :: Area -> (X, Y, X, Y)
 fromArea (Area x0 y0 x1 y1) = (x0, y0, x1, y1)
 
+-- Funny thing, Trivial area, a point, has span 1 in each dimension.
+spanArea :: Area -> (Point, X, Y)
+spanArea (Area x0 y0 x1 y1) = (Point x0 y0, x1 - x0 + 1, y1 - y0 + 1)
+
 trivialArea :: Point -> Area
 trivialArea (Point x y) = Area x y x y
 
 isTrivialArea :: Area -> Bool
 isTrivialArea (Area x0 y0 x1 y1) = x0 == x1 && y0 == y1
+
+-- | Checks that a point belongs to an area.
+insideArea :: Point -> Area -> Bool
+{-# INLINE insideArea #-}
+insideArea (Point x y) (Area x0 y0 x1 y1) =
+  x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
 -- so can't be arbitrarily scaled up.

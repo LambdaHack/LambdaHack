@@ -34,6 +34,7 @@ import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Server.DungeonGen.Area
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
@@ -42,11 +43,12 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Rnd TileMap
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable dXsize dYsize ltile = do
-  let activeArea = (1, 1, dXsize - 2, dYsize - 2)
+  let activeArea = fromMaybe (error $ "" `showFailure` (dXsize, dYsize))
+                   $ toArea (1, 1, dXsize - 2, dYsize - 2)
       outerId = ouniqGroup cotile "unknown outer fence"
       runCdefTile :: (R.StdGen, Int) -> (ContentId TileKind, (R.StdGen, Int))
       runCdefTile (gen1, pI) =
-        if PointArray.punindex rXmax pI `inside` activeArea
+        if PointArray.punindex rXmax pI `insideArea` activeArea
         then let (tile, gen2) = St.runState cdefTile gen1
              in (tile, (gen2, pI + 1))
         else (outerId, (gen1, pI + 1))
@@ -73,7 +75,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
           connect included blocks walkableTile array =
-            let g p c = if p `inside` activeArea
+            let g p c = if p `insideArea` activeArea
                            && included p
                            && not (Tile.isEasyOpen coTileSpeedup c)
                            && p `EM.notMember` ltile
@@ -188,8 +190,10 @@ placeDownStairs CaveKind{cminStairDist} dXsize dYsize ps = do
                                     || py pos < py p - 3))
                    $ ps ++ bootFixedCenters dXsize dYsize
       minDist = if length ps >= 3 then 0 else cminStairDist
+      interior = fromMaybe (error $ "" `showFailure` (dXsize, dYsize))
+                 $ toArea (9, 8, dXsize - 10, dYsize - anchorDown - 5)
       f p@Point{..} =
-        if p `inside` (9, 8, dXsize - 10, dYsize - anchorDown - 5)
+        if p `insideArea` interior
         then if dist minDist p && distProj p then Just p else Nothing
         else let nx = if | px < 9 -> 4
                          | px > dXsize - 10 -> dXsize - 5
