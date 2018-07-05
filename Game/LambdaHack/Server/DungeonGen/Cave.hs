@@ -32,19 +32,21 @@ import           Game.LambdaHack.Server.DungeonGen.Place
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: ContentId CaveKind  -- ^ the kind of the cave
-  , dsecret :: Int               -- ^ secret tile seed
-  , dmap    :: TileMapEM         -- ^ tile kinds in the cave
-  , dplaces :: [Place]           -- ^ places generated in the cave
-  , dnight  :: Bool              -- ^ whether the cave is dark
+  , dXsize  :: X                   -- ^ X size of the cave
+  , dYsize  :: Y                   -- ^ Y size of the cave
+  , dsecret :: Int                 -- ^ secret tile seed
+  , dmap    :: TileMapEM           -- ^ tile kinds in the cave
+  , dplaces :: [Place]             -- ^ places generated in the cave
+  , dnight  :: Bool                -- ^ whether the cave is dark
   }
   deriving Show
 
 anchorDown :: Y
 anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
-bootFixedCenters :: CaveKind -> [Point]
-bootFixedCenters CaveKind{..} =
-  [Point 4 3, Point (cXsize - 5) (cYsize - anchorDown)]
+bootFixedCenters :: X -> Y -> [Point]
+bootFixedCenters xsize ysize =
+  [Point 4 3, Point (xsize - 5) (ysize - anchorDown)]
 
 {- |
 Generate a cave using an algorithm inspired by the original Rogue,
@@ -68,24 +70,26 @@ as follows (in gross simplification):
   on the grid is connected, and a few more might be. It is not sufficient
   to always connect all adjacent rooms, because not each cell holds a room.
 -}
-buildCave :: COps              -- ^ content definitions
-          -> Dice.AbsDepth     -- ^ depth of the level to generate
-          -> Dice.AbsDepth     -- ^ absolute depth
-          -> Int               -- ^ secret tile seed
+buildCave :: COps                -- ^ content definitions
+          -> Dice.AbsDepth       -- ^ depth of the level to generate
+          -> Dice.AbsDepth       -- ^ absolute depth
+          -> X                   -- ^ X size of the cave
+          -> Y                   -- ^ Y size of the cave
+          -> Int                 -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> Rnd Cave
-buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
-          ldepth totalDepth dsecret dkind fixedCenters = do
+buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
+          ldepth totalDepth dXsize dYsize dsecret dkind fixedCenters = do
   let kc@CaveKind{..} = okind cocave dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
   let fullArea = fromMaybe (error $ "" `showFailure` kc)
-                 $ toArea (0, 0, cXsize - 1, cYsize - 1)
+                 $ toArea (0, 0, dXsize - 1, dYsize - 1)
       subFullArea = fromMaybe (error $ "" `showFailure` kc)
-                    $ toArea (1, 1, cXsize - 2, cYsize - 2)
+                    $ toArea (1, 1, dXsize - 2, dYsize - 2)
   darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
                  <$> opick cotile cdarkCorTile (const True)
   litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
@@ -95,7 +99,7 @@ buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
         let area | couterFenceTile /= "basic outer fence" = subFullArea
                  | otherwise = fullArea
             (lgr@(gx, gy), gs) =
-              grid fixedCenters (bootFixedCenters kc) lgr' area
+              grid fixedCenters (bootFixedCenters dXsize dYsize) lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         let mergeFixed :: EM.EnumMap Point SpecialArea
@@ -264,8 +268,9 @@ buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
-        mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
-                    interCor  -- very small
+        mapWithKeyM
+          (pickOpening cops kc lplaces litCorTile dXsize dYsize dsecret)
+          interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
   fence <- buildFenceRnd cops couterFenceTile subFullArea
   -- The obscured tile, e.g., scratched wall, stays on the server forever,
@@ -273,18 +278,18 @@ buildCave cops@COps{cotile, cocave, coplace, coTileSpeedup}
   let obscure p t = if isChancePos chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
-      likelySecret Point{..} = px > 2 && px < cXsize - 3
-                               && py > 2 && py < cYsize - 3
+      likelySecret Point{..} = px > 2 && px < dXsize - 3
+                               && py > 2 && py < dYsize - 3
       umap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
   dmap <- mapWithKeyM obscure umap
-  return $! Cave {dkind, dsecret, dmap, dplaces, dnight}
+  return $! Cave {..}
 
-pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
+pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind -> X -> Y
             -> Int -> Point -> (ContentId TileKind, ContentId TileKind)
             -> Rnd (ContentId TileKind)
 pickOpening COps{cotile, coTileSpeedup}
-            CaveKind{cXsize, cYsize, cdoorChance, copenChance, chidden}
-            lplaces litCorTile dsecret
+            CaveKind{cdoorChance, copenChance, chidden}
+            lplaces litCorTile dXsize dYsize dsecret
             pos (hidden, cor) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
@@ -293,7 +298,7 @@ pickOpening COps{cotile, coTileSpeedup}
                    case EM.lookup p lplaces of
                      Nothing -> False
                      Just tile -> Tile.isLit coTileSpeedup tile
-                 vic = vicinityCardinal cXsize cYsize pos
+                 vic = vicinityCardinal dXsize dYsize pos
              in if any roomTileLit vic then litCorTile else cor
   -- Openings have a certain chance to be doors and doors have a certain
   -- chance to be open.
