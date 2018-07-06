@@ -127,12 +127,12 @@ insideP (Point x y) (x0, y0, x1, y1) = x1 >= x && x >= x0 && y1 >= y && y >= y0
 vicinityBounded :: X -> Y   -- ^ limit the search to this area
                 -> Point    -- ^ position to find neighbours of
                 -> [Point]
-vicinityBounded lxsize lysize p =
-  if insideP p (1, 1, lxsize - 2, lysize - 2)
+vicinityBounded rXmax rYmax p =
+  if insideP p (1, 1, rXmax - 2, rYmax - 2)
   then vicinityUnsafe p
   else [ res | dxy <- moves
              , let res = shift p dxy
-             , insideP res (0, 0, lxsize - 1, lysize - 1) ]
+             , insideP res (0, 0, rXmax - 1, rYmax - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
 vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
@@ -141,10 +141,10 @@ vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
 vicinityCardinal :: X -> Y   -- ^ limit the search to this area
                  -> Point    -- ^ position to find neighbours of
                  -> [Point]
-vicinityCardinal lxsize lysize p =
+vicinityCardinal rXmax rYmax p =
   [ res | dxy <- movesCardinal
         , let res = shift p dxy
-        , insideP res (0, 0, lxsize - 1, lysize - 1) ]
+        , insideP res (0, 0, rXmax - 1, rYmax - 1) ]
 
 vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
@@ -169,8 +169,8 @@ shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Y -> Point -> Vector -> Point
-shiftBounded lxsize lysize pos v@(Vector xv yv) =
-  if insideP pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
+shiftBounded rXmax rYmax pos v@(Vector xv yv) =
+  if insideP pos (-xv, -yv, rXmax - xv - 1, rYmax - yv - 1)
   then shift pos v
   else pos
 
@@ -183,9 +183,9 @@ trajectoryToPath start (v : vs) = let next = shift start v
 -- | A list of points that a list of vectors leads to, bounded by level size.
 trajectoryToPathBounded :: X -> Y -> Point -> [Vector] -> [Point]
 trajectoryToPathBounded _ _ _ [] = []
-trajectoryToPathBounded lxsize lysize start (v : vs) =
-  let next = shiftBounded lxsize lysize start v
-  in next : trajectoryToPathBounded lxsize lysize next vs
+trajectoryToPathBounded rXmax rYmax start (v : vs) =
+  let next = shiftBounded rXmax rYmax start v
+  in next : trajectoryToPathBounded rXmax rYmax next vs
 
 -- | The vector between the second point and the first. We have
 --
