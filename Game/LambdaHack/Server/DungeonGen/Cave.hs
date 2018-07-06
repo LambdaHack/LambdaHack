@@ -289,11 +289,13 @@ pickOpening COps{cotile, coTileSpeedup}
             pos (hidden, cor) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
-        else -- If any cardinally adjacent room tile lit, make the opening lit.
+        else -- If any cardinally adjacent walkable room tile is lit,
+             -- make the opening lit, as well.
              let roomTileLit p =
                    case EM.lookup p lplaces of
                      Nothing -> False
-                     Just tile -> Tile.isLit coTileSpeedup tile
+                     Just tile -> Tile.isWalkable coTileSpeedup tile
+                                  && Tile.isLit coTileSpeedup tile
                  vic = vicinityCardinalUnsafe pos
              in if any roomTileLit vic then litCorTile else cor
   -- Openings have a certain chance to be doors and doors have a certain
