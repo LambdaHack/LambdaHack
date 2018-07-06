@@ -128,10 +128,11 @@ buildLevel cops@COps{cocave, corule}
       darea =
         let (lxPrev, lyPrev) = unzip $ map (\(Point x y) -> (x, y)) lstairPrev
             -- Stairs take some space, hence the first additions.
-            lxMin = max 0 $ -5 + minimum (rXmax corule - 1 : lxPrev)
-            lxMax = min (rXmax corule - 1) $ 5 + maximum (0 : lxPrev)
-            lyMin = max 0 $ -4 + minimum (rYmax corule - 1 : lyPrev)
-            lyMax = min (rYmax corule - 1) $ 4 + maximum (0 : lyPrev)
+            -- We reserve space for caves that leave a corridor along boundary.
+            lxMin = -4 + minimum (rXmax corule - 1 : lxPrev)
+            lxMax = 4 + maximum (0 : lxPrev)
+            lyMin = -3 + minimum (rYmax corule - 1 : lyPrev)
+            lyMax = 3 + maximum (0 : lyPrev)
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
@@ -141,7 +142,9 @@ buildLevel cops@COps{cocave, corule}
             y0 = min lyMin
                  $ max (lyMax - yspan + 1)
                  $ (rYmax corule - yspan) `div` 2
-        in fromMaybe (error $ "" `showFailure` kc)
+        in assert (lxMin >= 0 && lxMax <= rXmax corule - 1
+                   && lyMin >= 0 && lyMax <= rYmax corule - 1)
+           $ fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
