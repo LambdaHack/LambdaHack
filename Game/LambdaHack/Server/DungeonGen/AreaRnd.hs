@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   , connectGrid, randomConnection
     -- * Plotting corridors
   , HV(..), Corridor, connectPlaces
-  , SpecialArea(..), grid
+  , SpecialArea(..), grid, anchorDown
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connectGrid', sortPoint, mkCorridor, borderPlace
@@ -142,15 +142,15 @@ randomConnection :: (X, Y) -> Rnd (Point, Point)
 randomConnection (nx, ny) =
   assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` (nx, ny)) $ do
   rb <- oneOf [False, True]
-  if rb || ny <= 1
-    then do
-      rx  <- randomR (0, nx-2)
-      ry  <- randomR (0, ny-1)
-      return (Point rx ry, Point (rx+1) ry)
-    else do
-      rx  <- randomR (0, nx-1)
-      ry  <- randomR (0, ny-2)
-      return (Point rx ry, Point rx (ry+1))
+  if rb && nx > 1
+  then do
+    rx <- randomR (0, nx-2)
+    ry <- randomR (0, ny-1)
+    return (Point rx ry, Point (rx+1) ry)
+  else do
+    rx <- randomR (0, nx-1)
+    ry <- randomR (0, ny-2)
+    return (Point rx ry, Point rx (ry+1))
 
 -- Plotting individual corridors between two areas
 
@@ -299,9 +299,14 @@ grid fixedCenters boot (nx, ny) area =
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
-      xcs = IS.toList $ IS.fromList $ map px $ EM.keys fixedCenters ++ boot
+      xcs = IS.toList $ IS.fromList
+            $ map px (EM.keys fixedCenters)
+              ++ filter (\x -> x >= x0 + 4 && x <= x1 - 4) (map px boot)
       xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
-      ycs = IS.toList $ IS.fromList $ map py $ EM.keys fixedCenters ++ boot
+      ycs = IS.toList $ IS.fromList
+            $ map py (EM.keys fixedCenters)
+              ++ filter (\y -> y >= y0 + 3 && y <= y1 - anchorDown + 1)
+                        (map py boot)
       yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
   in ( (length xallCenters, length yallCenters)
      , EM.fromDistinctAscList
@@ -317,3 +322,6 @@ grid fixedCenters boot (nx, ny) area =
          , (x, (cx0, cx1, mcx)) <- xallCenters
          , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
                        $ toArea (cx0, cy0, cx1, cy1) ] )
+
+anchorDown :: Y
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety

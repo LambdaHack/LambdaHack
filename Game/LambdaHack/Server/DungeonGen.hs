@@ -115,10 +115,11 @@ buildTileMap cops@COps{cotile, cocave}
   convertTileMaps cops areAllWalkable pickDefTile mpickPassable darea dmap
 
 -- Create a level from a cave.
-buildLevel :: COps -> Int -> GroupName CaveKind
+buildLevel :: COps -> [Point] -> Int -> GroupName CaveKind
            -> Int -> Dice.AbsDepth -> [Point]
            -> Rnd (Level, [Point])
-buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
+buildLevel cops@COps{cocave, corule}
+           boot ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
@@ -159,7 +160,7 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        pos <- placeDownStairs kc darea $ lallUpStairs ++ map fst acc
+        pos <- placeDownStairs kc darea (lallUpStairs ++ map fst acc) boot
         stairGroup <- frequency freq
         addSingleDown ((pos, stairGroup) : acc) (k - 1)
   stairsSingleDown <- addSingleDown [] remainingStairsDown
@@ -176,7 +177,7 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
   fixedEscape <- case cescapeGroup kc of
                    Nothing -> return []
                    Just escapeGroup -> do
-                     epos <- placeDownStairs kc darea lallStairs
+                     epos <- placeDownStairs kc darea lallStairs boot
                      return [(epos, escapeGroup)]
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
@@ -187,23 +188,27 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
   dsecret <- randomR (1, maxBound)
   cave <-
-    buildCave cops ldepth totalDepth darea dsecret dkind fixedCenters
+    buildCave cops ldepth totalDepth darea dsecret dkind fixedCenters boot
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
-placeDownStairs :: CaveKind -> Area -> [Point] -> Rnd Point
-placeDownStairs CaveKind{cminStairDist} darea ps = do
+placeDownStairs :: CaveKind -> Area -> [Point] -> [Point] -> Rnd Point
+placeDownStairs CaveKind{cminStairDist} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+      -- This is more restrictive than correctness minimums, because we want
+      -- to leave some room for fancy staircases, especially horizontally.
+      -- The check is important even for @boot@ points outside @darena@,
+      -- because on other levels they will be stair candidates.
       distProj p = all (\pos -> (px pos == px p
                                  || px pos > px p + 5
                                  || px pos < px p - 5)
                                 && (py pos == py p
                                     || py pos > py p + 3
                                     || py pos < py p - 3))
-                   $ ps ++ bootFixedCenters darea
+                   $ ps ++ boot
       minDist = if length ps >= 3 then 0 else cminStairDist
       (x0, y0, x1, y1) = fromArea darea
       interior = fromMaybe (error $ "" `showFailure` darea)
@@ -246,6 +251,10 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , lnight = dnight
        }
 
+bootFixedCenters :: RuleContent -> [Point]
+bootFixedCenters RuleContent{rXmax, rYmax} =
+  [Point 4 3, Point (rXmax - 5) (rYmax - anchorDown)]
+
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
   { freshDungeon    :: Dungeon        -- ^ maps for all levels
@@ -263,12 +272,14 @@ dungeonGen cops caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
+      boot = bootFixedCenters $ corule cops
       buildLvl :: ([(LevelId, Level)], [Point])
                -> (Int, GroupName CaveKind)
                -> Rnd ([(LevelId, Level)], [Point])
       buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
-        (lvl, ldown2) <- buildLevel cops n genName minD freshTotalDepth ldown
+        (lvl, ldown2) <-
+          buildLevel cops boot n genName minD freshTotalDepth ldown
         return ((toEnum n, lvl) : l, ldown2)
   (levels, _) <- foldlM' buildLvl ([], []) $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels

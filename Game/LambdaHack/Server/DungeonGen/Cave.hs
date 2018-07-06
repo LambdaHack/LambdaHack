@@ -1,6 +1,6 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( Cave(..), anchorDown, bootFixedCenters, buildCave
+  ( Cave(..), buildCave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , pickOpening, digCorridors
@@ -40,14 +40,6 @@ data Cave = Cave
   }
   deriving Show
 
-anchorDown :: Y
-anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
-
-bootFixedCenters :: Area -> [Point]
-bootFixedCenters area =
-  let (x0, y0, x1, y1) = fromArea area
-  in [Point (x0 + 4) (y0 + 3), Point (x1 - 4) (y1 + 1 - anchorDown)]
-
 {- |
 Generate a cave using an algorithm inspired by the original Rogue,
 as follows (in gross simplification):
@@ -77,9 +69,10 @@ buildCave :: COps                -- ^ content definitions
           -> Int                 -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
+          -> [Point]             -- ^ initial candidate points for stairs, etc.
           -> Rnd Cave
 buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
-          ldepth totalDepth darea dsecret dkind fixedCenters = do
+          ldepth totalDepth darea dsecret dkind fixedCenters boot = do
   let kc@CaveKind{..} = okind cocave dkind
   lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
@@ -94,8 +87,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
   let createPlaces lgr' = do
         let area | couterFenceTile /= "basic outer fence" = subArea
                  | otherwise = darea
-            (lgr@(gx, gy), gs) =
-              grid fixedCenters (bootFixedCenters darea) lgr' area
+            (lgr@(gx, gy), gs) = grid fixedCenters boot lgr' area
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         let mergeFixed :: EM.EnumMap Point SpecialArea
