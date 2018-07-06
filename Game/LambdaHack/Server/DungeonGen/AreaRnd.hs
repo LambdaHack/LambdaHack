@@ -316,4 +316,4 @@ grid fixedCenters boot (nx, ny) area =
          | (y, (cy0, cy1, mcy)) <- yallCenters
          , (x, (cx0, cx1, mcx)) <- xallCenters
          , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
-                      $ toArea (cx0, cy0, cx1, cy1) ] )
+                       $ toArea (cx0, cy0, cx1, cy1) ] )

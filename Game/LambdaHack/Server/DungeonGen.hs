@@ -124,6 +124,24 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
   let kc = okind cocave dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
+      darea =
+        let (lxPrev, lyPrev) = unzip $ map (\(Point x y) -> (x, y)) lstairPrev
+            -- Stairs take some space, hence the first additions.
+            lxMin = max 0 $ -5 + minimum (rXmax corule - 1 : lxPrev)
+            lxMax = min (rXmax corule - 1) $ 5 + maximum (0 : lxPrev)
+            lyMin = max 0 $ -4 + minimum (rYmax corule - 1 : lyPrev)
+            lyMax = min (rYmax corule - 1) $ 4 + maximum (0 : lyPrev)
+            -- Pick minimal cave size that fits all previous stairs.
+            xspan = max (lxMax - lxMin + 1) $ cXminSize kc
+            yspan = max (lyMax - lyMin + 1) $ cYminSize kc
+            x0 = min lxMin
+                 $ max (lxMax - xspan + 1)
+                 $ (rXmax corule - xspan) `div` 2
+            y0 = min lyMin
+                 $ max (lyMax - yspan + 1)
+                 $ (rYmax corule - yspan) `div` 2
+        in fromMaybe (error $ "" `showFailure` kc)
+           $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
@@ -136,16 +154,6 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       lallUpStairs = lstairsDouble ++ lstairsSingleUp
-      xspan = if cXminSize kc == rXmax corule
-              then rXmax corule
-              else cXminSize kc
-      yspan = if cYminSize kc == rYmax corule
-              then rYmax corule
-              else cYminSize kc
-      x0 = (rXmax corule - xspan) `div` 2
-      y0 = (rYmax corule - yspan) `div` 2
-      darea = fromMaybe (error $ "" `showFailure` kc)
-              $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
       freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
