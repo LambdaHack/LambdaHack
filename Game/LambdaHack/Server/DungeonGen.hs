@@ -142,8 +142,10 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
       yspan = if cYminSize kc == rYmax corule
               then rYmax corule
               else cYminSize kc
+      x0 = (rXmax corule - xspan) `div` 2
+      y0 = (rYmax corule - yspan) `div` 2
       darea = fromMaybe (error $ "" `showFailure` kc)
-              $ toArea (0, 0, xspan - 1, yspan - 1)
+              $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
       freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
