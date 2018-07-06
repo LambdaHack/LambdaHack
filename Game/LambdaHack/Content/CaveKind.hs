@@ -83,8 +83,8 @@ validateSingle CaveKind{..} =
       xborder = if couterFenceTile /= "basic outer fence" then 2 else 0
       yborder = if couterFenceTile /= "basic outer fence" then 2 else 0
   in [ "cname longer than 25" | T.length cname > 25 ]
-     ++ [ "cXminSize < 7" | cXminSize < 7 ]
-     ++ [ "cYminSize < 7" | cYminSize < 7 ]
+     ++ [ "cXminSize < 10" | cXminSize < 10 ]
+     ++ [ "cYminSize < 10" | cYminSize < 10 ]
      ++ [ "minGridX < 1" | minGridX < 1 ]
      ++ [ "minGridY < 1" | minGridY < 1 ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]

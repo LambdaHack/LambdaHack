@@ -40,12 +40,11 @@ import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
 
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
-                -> Maybe (Rnd (ContentId TileKind)) -> X -> Y -> TileMapEM
+                -> Maybe (Rnd (ContentId TileKind)) -> Area -> TileMapEM
                 -> Rnd TileMap
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
-                areAllWalkable cdefTile mpickPassable dXsize dYsize ltile = do
-  let activeArea = fromMaybe (error $ "" `showFailure` (dXsize, dYsize))
-                   $ toArea (1, 1, dXsize - 2, dYsize - 2)
+                areAllWalkable cdefTile mpickPassable darea ltile = do
+  let activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
       outerId = ouniqGroup cotile "unknown outer fence"
       runCdefTile :: (R.StdGen, Int) -> (ContentId TileKind, (R.StdGen, Int))
       runCdefTile (gen1, pI) =
@@ -98,7 +97,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
 
 buildTileMap :: COps -> Cave -> Rnd TileMap
 buildTileMap cops@COps{cotile, cocave}
-             Cave{dkind, dXsize, dYsize, dmap, dnight} = do
+             Cave{dkind, darea, dmap, dnight} = do
   let CaveKind{cpassable, cdefTile} = okind cocave dkind
       nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
                      || (if dnight then id else not)
@@ -113,19 +112,16 @@ buildTileMap cops@COps{cotile, cocave}
         else Nothing
       nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
   areAllWalkable <- isNothing <$> opick cotile cdefTile nwcond
-  convertTileMaps cops areAllWalkable
-                  pickDefTile mpickPassable dXsize dYsize dmap
+  convertTileMaps cops areAllWalkable pickDefTile mpickPassable darea dmap
 
 -- Create a level from a cave.
 buildLevel :: COps -> Int -> GroupName CaveKind
            -> Int -> Dice.AbsDepth -> [Point]
            -> Rnd (Level, [Point])
-buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
+buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
-      dXsize = cXminSize kc
-      dYsize = cYminSize kc
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
   -- Any stairs coming from above are considered extra stairs
@@ -140,12 +136,20 @@ buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       lallUpStairs = lstairsDouble ++ lstairsSingleUp
+      xspan = if cXminSize kc == rXmax corule
+              then rXmax corule
+              else cXminSize kc
+      yspan = if cYminSize kc == rYmax corule
+              then rYmax corule
+              else cYminSize kc
+      darea = fromMaybe (error $ "" `showFailure` kc)
+              $ toArea (0, 0, xspan - 1, yspan - 1)
       freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        pos <- placeDownStairs kc dXsize dYsize $ lallUpStairs ++ map fst acc
+        pos <- placeDownStairs kc darea $ lallUpStairs ++ map fst acc
         stairGroup <- frequency freq
         addSingleDown ((pos, stairGroup) : acc) (k - 1)
   stairsSingleDown <- addSingleDown [] remainingStairsDown
@@ -162,7 +166,7 @@ buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
   fixedEscape <- case cescapeGroup kc of
                    Nothing -> return []
                    Just escapeGroup -> do
-                     epos <- placeDownStairs kc dXsize dYsize lallStairs
+                     epos <- placeDownStairs kc darea lallStairs
                      return [(epos, escapeGroup)]
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
@@ -173,15 +177,15 @@ buildLevel cops@COps{cocave} ln genName minD totalDepth lstairPrev = do
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
   dsecret <- randomR (1, maxBound)
   cave <-
-    buildCave cops ldepth totalDepth dXsize dYsize dsecret dkind fixedCenters
+    buildCave cops ldepth totalDepth darea dsecret dkind fixedCenters
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
-placeDownStairs :: CaveKind -> X -> Y -> [Point] -> Rnd Point
-placeDownStairs CaveKind{cminStairDist} dXsize dYsize ps = do
+placeDownStairs :: CaveKind -> Area -> [Point] -> Rnd Point
+placeDownStairs CaveKind{cminStairDist} darea ps = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       distProj p = all (\pos -> (px pos == px p
                                  || px pos > px p + 5
@@ -189,23 +193,23 @@ placeDownStairs CaveKind{cminStairDist} dXsize dYsize ps = do
                                 && (py pos == py p
                                     || py pos > py p + 3
                                     || py pos < py p - 3))
-                   $ ps ++ bootFixedCenters dXsize dYsize
+                   $ ps ++ bootFixedCenters darea
       minDist = if length ps >= 3 then 0 else cminStairDist
-      interior = fromMaybe (error $ "" `showFailure` (dXsize, dYsize))
-                 $ toArea (9, 8, dXsize - 10, dYsize - anchorDown - 5)
+      (x0, y0, x1, y1) = fromArea darea
+      interior = fromMaybe (error $ "" `showFailure` darea)
+                 $ toArea (x0 + 9, y0 + 8, x1 - 9, y1 - anchorDown - 4)
       f p@Point{..} =
         if p `inside` interior
         then if dist minDist p && distProj p then Just p else Nothing
-        else let nx = if | px < 9 -> 4
-                         | px > dXsize - 10 -> dXsize - 5
+        else let nx = if | px < x0 + 9 -> x0 + 4
+                         | px > x1 - 9 -> x1 - 4
                          | otherwise -> px
-                 ny = if | py < 8 -> 3
-                         | py > dYsize - anchorDown - 5 -> dYsize - anchorDown
+                 ny = if | py < y0 + 8 -> y0 + 3
+                         | py > y1 - anchorDown - 4 -> y1 - anchorDown + 1
                          | otherwise -> py
                  np = Point nx ny
              in if dist 0 np && distProj np then Just np else Nothing
-      ar = fromJust $ toArea (0, 0, dXsize - 1, dYsize - 1)
-  findPointInArea ar f
+  findPointInArea darea f
 
 -- Build rudimentary level from a cave kind.
 levelFromCave :: COps -> Cave -> Dice.AbsDepth
@@ -215,6 +219,7 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lexpl = PointArray.foldlA' f 0 ltile
+      (_, xspan, yspan) = spanArea darea
   in Level
        { lkind = dkind
        , ldepth
@@ -222,8 +227,8 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , lembed = EM.empty
        , lactor = EM.empty
        , ltile
-       , lXsize = dXsize
-       , lYsize = dYsize
+       , lXsize = xspan
+       , lYsize = yspan
        , lsmell = EM.empty
        , lstair
        , lescape
