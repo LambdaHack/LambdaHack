@@ -219,7 +219,6 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
   let f n t | Tile.isExplorable coTileSpeedup t = n + 1
             | otherwise = n
       lexpl = PointArray.foldlA' f 0 ltile
-      (_, xspan, yspan) = spanArea darea
   in Level
        { lkind = dkind
        , ldepth
@@ -227,8 +226,7 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , lembed = EM.empty
        , lactor = EM.empty
        , ltile
-       , lXsize = xspan
-       , lYsize = yspan
+       , larea = darea
        , lsmell = EM.empty
        , lstair
        , lescape

@@ -25,6 +25,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
@@ -110,8 +111,7 @@ data Level = Level
   , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
                           --   could be recomputed at resume, but small enough
   , ltile   :: TileMap    -- ^ remembered level map
-  , lXsize  :: X          -- ^ width of the level
-  , lYsize  :: Y          -- ^ height of the level
+  , larea   :: Area       -- ^ area of the level
   , lsmell  :: SmellMap   -- ^ remembered smells on the level
   , lstair  :: ([Point], [Point])
                           -- ^ positions of (up, down) stairs
@@ -213,8 +213,7 @@ instance Binary Level where
     put (assertSparseItems lembed)
     put (assertSparseActors lactor)
     put ltile
-    put lXsize
-    put lYsize
+    put larea
     put lsmell
     put lstair
     put lescape
@@ -229,8 +228,7 @@ instance Binary Level where
     lembed <- get
     lactor <- get
     ltile <- get
-    lXsize <- get
-    lYsize <- get
+    larea <- get
     lsmell <- get
     lstair <- get
     lescape <- get

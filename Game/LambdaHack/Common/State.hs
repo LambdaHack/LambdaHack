@@ -28,6 +28,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
@@ -143,11 +144,11 @@ sdiscoAspect = _sdiscoAspect
 sactorAspect :: State -> ActorAspect
 sactorAspect = _sactorAspect
 
-unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> X -> Y
+unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> Area
              -> ([Point], [Point]) -> [Point] -> Int -> Bool
              -> Level
 unknownLevel COps{corule, cotile}
-             lkind ldepth lXsize lYsize lstair lescape lexpl lnight =
+             lkind ldepth larea lstair lescape lexpl lnight =
   let outerId = ouniqGroup cotile "unknown outer fence"
   in Level { lkind
            , ldepth
@@ -155,8 +156,7 @@ unknownLevel COps{corule, cotile}
            , lembed = EM.empty
            , lactor = EM.empty
            , ltile = unknownTileMap outerId (rXmax corule) (rYmax corule)
-           , lXsize
-           , lYsize
+           , larea
            , lsmell = EM.empty
            , lstair
            , lescape
@@ -220,7 +220,7 @@ localFromGlobal State{..} =
   State
     { _sdungeon =
       EM.map (\Level{..} ->
-              unknownLevel _scops lkind ldepth lXsize lYsize
+              unknownLevel _scops lkind ldepth larea
                            lstair lescape lexpl lnight)
              _sdungeon
     , ..

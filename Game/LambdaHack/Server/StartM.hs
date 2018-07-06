@@ -25,6 +25,7 @@ import qualified System.Random as R
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
@@ -296,8 +297,9 @@ populateDungeon = do
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
 findEntryPoss COps{coTileSpeedup}
-              lid Level{ltile, lXsize, lYsize, lstair, lescape} k = do
-  let factionDist = max lXsize lYsize - 10
+              lid Level{ltile, larea, lstair, lescape} k = do
+  let (_, xspan, yspan) = spanArea larea
+      factionDist = max xspan yspan - 10
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
@@ -318,12 +320,11 @@ findEntryPoss COps{coTileSpeedup}
       -- their starting stairs ambushing explorers that enter the level,
       -- unless the staircase has both sets of stairs.
       deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
-      middlePos = Point (lXsize `div` 2) (lYsize `div` 2)
   let !_A = assert (k > 0 && factionDist > 0) ()
       onStairs = reverse $ take k $ lescape ++ deeperStairs
       nk = k - length onStairs
   -- Starting in the middle is too easy.
-  found <- tryFind (middlePos : onStairs) nk
+  found <- tryFind (middlePoint larea : onStairs) nk
   return $! found ++ onStairs
 
 -- | Apply options that don't need a new game.

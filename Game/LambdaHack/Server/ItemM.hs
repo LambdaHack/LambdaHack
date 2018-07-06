@@ -21,6 +21,7 @@ import           Data.Ord
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -128,10 +129,11 @@ placeItemsInDungeon :: forall m. MonadServerAtomic m
 placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
-  let initialItems (lid, Level{lkind, ldepth, lXsize, lYsize, ltile}) = do
+  let initialItems (lid, Level{lkind, ldepth, larea, ltile}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
-        let placeItems :: Int -> m ()
+        let (_, xspan, yspan) = spanArea larea
+            placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
               Level{lfloor} <- getLevel lid
@@ -150,7 +152,7 @@ placeItemsInDungeon alliancePositions = do
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,
                 -- but let's try to spread at least the initial items evenly.
-                ([distAndOften | n * 100 < lXsize * lYsize]
+                ([distAndOften | n * 100 < xspan * yspan]
                  ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t])
                 distAllianceAndNotFloor
                 [distAllianceAndNotFloor]
