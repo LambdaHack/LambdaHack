@@ -49,7 +49,7 @@ mkFixed (xMax, yMax) area p@Point{..} =
 pointInArea :: Area -> Rnd Point
 pointInArea area = do
   let (Point x0 y0, xspan, yspan) = spanArea area
-  pxy <- randomR (0, (xspan - 1) * (yspan - 1))
+  pxy <- randomR (0, xspan * yspan - 1)
   let Point{..} = PointArray.punindex xspan pxy
   return $! Point (x0 + px) (y0 + py)
 
@@ -59,7 +59,7 @@ findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd Point
 findPointInArea area f =
   let (Point x0 y0, xspan, yspan) = spanArea area
       search = do
-        pxy <- randomR (0, (xspan - 1) * (yspan - 1))
+        pxy <- randomR (0, xspan * yspan - 1)
         let Point{..} = PointArray.punindex xspan pxy
             pos = Point (x0 + px) (y0 + py)
         case f pos of
