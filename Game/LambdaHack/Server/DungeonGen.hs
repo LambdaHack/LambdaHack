@@ -126,7 +126,7 @@ buildLevel cops@COps{cocave, corule}
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
       darea =
-        let (lxPrev, lyPrev) = unzip $ map (\(Point x y) -> (x, y)) lstairPrev
+        let (lxPrev, lyPrev) = unzip $ map (px &&& py) lstairPrev
             -- Stairs take some space, hence the first additions.
             -- We reserve space for caves that leave a corridor along boundary.
             lxMin = -4 + minimum (rXmax corule - 1 : lxPrev)
@@ -201,8 +201,6 @@ buildLevel cops@COps{cocave, corule}
 placeDownStairs :: CaveKind -> Area -> [Point] -> [Point] -> Rnd Point
 placeDownStairs CaveKind{cminStairDist} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
-      -- This is more restrictive than correctness minimums, because we want
-      -- to leave some room for fancy staircases, especially horizontally.
       -- The check is important even for @boot@ points outside @darena@,
       -- because on other levels they will be stair candidates.
       distProj p = all (\pos -> (px pos == px p
@@ -253,6 +251,9 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , ltime = timeZero
        , lnight = dnight
        }
+
+anchorDown :: Y
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 bootFixedCenters :: RuleContent -> [Point]
 bootFixedCenters RuleContent{rXmax, rYmax} =
