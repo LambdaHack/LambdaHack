@@ -129,7 +129,7 @@ placeItemsInDungeon :: forall m. MonadServerAtomic m
 placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
-  let initialItems (lid, Level{lkind, ldepth, larea, ltile}) = do
+  let initialItems (lid, lvl@Level{lkind, ldepth, larea}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
         let (_, xspan, yspan) = spanArea larea
@@ -147,7 +147,7 @@ placeItemsInDungeon alliancePositions = do
                   distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
-              pos <- rndToAction $ findPosTry2 200 ltile
+              pos <- rndToAction $ findPosTry2 200 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 -- If there are very many items, some regions may be very rich,

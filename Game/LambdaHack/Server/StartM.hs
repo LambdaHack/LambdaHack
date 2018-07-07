@@ -297,7 +297,7 @@ populateDungeon = do
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
 findEntryPoss COps{coTileSpeedup}
-              lid Level{ltile, larea, lstair, lescape} k = do
+              lid lvl@Level{larea, lstair, lescape} k = do
   let (_, xspan, yspan) = spanArea larea
       factionDist = max xspan yspan - 10
       dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
@@ -308,7 +308,7 @@ findEntryPoss COps{coTileSpeedup}
                  , dist ps $ factionDist `div` 4
                  , dist ps $ factionDist `div` 6
                  ]
-        np <- findPosTry2 1000 ltile  -- try really hard, for skirmish fairness
+        np <- findPosTry2 1000 lvl  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable coTileSpeedup t
                          && not (Tile.isNoActor coTileSpeedup t))
                 ds

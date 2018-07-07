@@ -916,14 +916,14 @@ effectTeleport execSfx nDm source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
-  lvl@Level{ldepth, ltile} <- getLevel (blid tb)
+  lvl@Level{ldepth} <- getLevel (blid tb)
   range <- rndToAction $ castDice ldepth totalDepth nDm
   let spos = bpos tb
       dMinMax delta pos =
         let d = chessDist spos pos
         in d >= range - delta && d <= range + delta
       dist delta pos _ = dMinMax delta pos
-  tpos <- rndToAction $ findPosTry 200 ltile
+  tpos <- rndToAction $ findPosTry 200 lvl
     (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
                  || not (Tile.isNoActor coTileSpeedup t)

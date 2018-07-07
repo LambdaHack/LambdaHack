@@ -154,13 +154,14 @@ at :: Level -> Point -> ContentId TileKind
 at Level{ltile} p = ltile PointArray.! p
 
 -- | Find a random position on the map satisfying a predicate.
-findPos :: TileMap -> (Point -> ContentId TileKind -> Bool) -> Rnd Point
-findPos ltile p =
-  let (x, y) = PointArray.sizeA ltile
+findPos :: Level -> (Point -> ContentId TileKind -> Bool) -> Rnd Point
+findPos Level{ltile, larea} p =
+  let (Point x0 y0, xspan, yspan) = spanArea larea
       search = do
-        pxy <- randomR (0, (x - 1) * (y - 1))
-        let tile = ContentId $ ltile `PointArray.accessI` pxy
-            pos = PointArray.punindex x pxy
+        pxyRelative <- randomR (0, xspan * yspan - 1)
+        let Point{..} = PointArray.punindex xspan pxyRelative
+            pos = Point (x0 + px) (y0 + py)
+            tile = ltile PointArray.! pos
         if p pos tile
         then return $! pos
         else search
@@ -173,34 +174,35 @@ findPos ltile p =
 -- and fall back to trying as many times, as needed, with only the mandatory
 -- predicate.
 findPosTry :: Int                                  -- ^ the number of tries
-           -> TileMap                              -- ^ look up in this map
+           -> Level                                -- ^ look up in this level
            -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
            -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
 {-# INLINE findPosTry #-}
-findPosTry numTries ltile m = findPosTry2 numTries ltile m [] undefined
+findPosTry numTries lvl m = findPosTry2 numTries lvl m [] undefined
 
 findPosTry2 :: Int                                  -- ^ the number of tries
-            -> TileMap                              -- ^ look up in this map
+            -> Level                                -- ^ look up in this level
             -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
             -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
             -> (Point -> ContentId TileKind -> Bool)  -- ^ good to have pred.
             -> [Point -> ContentId TileKind -> Bool]  -- ^ worst case predicates
             -> Rnd Point
-findPosTry2 numTries ltile m0 l g r = assert (numTries > 0) $
-  let (x, y) = PointArray.sizeA ltile
+findPosTry2 numTries lvl@Level{ltile, larea} m0 l g r = assert (numTries > 0) $
+  let (Point x0 y0, xspan, yspan) = spanArea larea
       accomodate fallback _ [] = fallback  -- fallback needs to be non-strict
       accomodate fallback m (hd : tl) =
         let search 0 = accomodate fallback m tl
             search !k = do
-              pxy <- randomR (0, (x - 1) * (y - 1))
-              let tile = ContentId $ ltile `PointArray.accessI` pxy
-                  pos = PointArray.punindex x pxy
+              pxyRelative <- randomR (0, xspan * yspan - 1)
+              let Point{..} = PointArray.punindex xspan pxyRelative
+                  pos = Point (x0 + px) (y0 + py)
+                  tile = ltile PointArray.! pos
               if m pos tile && hd pos tile
               then return $! pos
               else search (k - 1)
         in search numTries
-  in accomodate (accomodate (findPos ltile m0) m0 r)
+  in accomodate (accomodate (findPos lvl m0) m0 r)
                 -- @pos@ or @tile@ not always needed, so not strict
                 (\pos tile -> m0 pos tile && g pos tile)
                 l

@@ -117,7 +117,7 @@ rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd Point
 rollSpawnPos COps{coTileSpeedup} visible
-             mobile lid lvl@Level{ltile, larea, lstair} fid s = do
+             mobile lid lvl@Level{larea, lstair} fid s = do
   let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
       inhabitants = foeRegularList fid lid s
       nearInh df p = all (\b -> df $ chessDist (bpos b) p) inhabitants
@@ -142,7 +142,7 @@ rollSpawnPos COps{coTileSpeedup} visible
         ]
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
-  findPosTry2 (if mobile then 500 else 100) ltile
+  findPosTry2 (if mobile then 500 else 100) lvl
     ( \p t -> Tile.isWalkable coTileSpeedup t
               && not (Tile.isNoActor coTileSpeedup t)
               && null (posToAidsLvl p lvl))
