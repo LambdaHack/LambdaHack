@@ -79,8 +79,8 @@ validateSingle CaveKind{..} =
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
-     ++ [ "cXminSize < 10" | cXminSize < 10 ]
-     ++ [ "cYminSize < 10" | cYminSize < 10 ]
+     ++ [ "cXminSize < 20" | cXminSize < 20 ]
+     ++ [ "cYminSize < 20" | cYminSize < 20 ]
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
