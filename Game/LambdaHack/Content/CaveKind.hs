@@ -33,8 +33,7 @@ data CaveKind = CaveKind
   , cfreq           :: Freqs CaveKind   -- ^ frequency within groups
   , cXminSize       :: X                -- ^ minimal X size of the whole cave
   , cYminSize       :: Y                -- ^ minimal Y size of the whole cave
-  , cgrid           :: Dice.DiceXY
-      -- ^ the dimensions of the grid of places
+  , ccellSize       :: Dice.DiceXY      -- ^ size of a map cell holding a place
   , cminPlaceSize   :: Dice.DiceXY      -- ^ minimal size of places; for merging
   , cmaxPlaceSize   :: Dice.DiceXY      -- ^ maximal size of places
   , cdarkChance     :: Dice.Dice        -- ^ the chance a place is dark
@@ -75,26 +74,19 @@ instance NFData CaveKind
 -- of the cave descriptions to make sure they fit on screen. Etc.
 validateSingle :: CaveKind -> [Text]
 validateSingle CaveKind{..} =
-  let (minGridX, minGridY) = Dice.minDiceXY cgrid
-      (maxGridX, maxGridY) = Dice.maxDiceXY cgrid
+  let (minCellSizeX, minCellSizeY) = Dice.minDiceXY cminPlaceSize
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
-      xborder = if couterFenceTile /= "basic outer fence" then 2 else 0
-      yborder = if couterFenceTile /= "basic outer fence" then 2 else 0
   in [ "cname longer than 25" | T.length cname > 25 ]
      ++ [ "cXminSize < 10" | cXminSize < 10 ]
      ++ [ "cYminSize < 10" | cYminSize < 10 ]
-     ++ [ "minGridX < 1" | minGridX < 1 ]
-     ++ [ "minGridY < 1" | minGridY < 1 ]
+     ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
+     ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cXminSize too small"
-        | maxGridX * (maxMinSizeX - 4) + xborder >= cXminSize ]
-     ++ [ "cYminSize too small"
-        | maxGridY * maxMinSizeY + yborder >= cYminSize ]
      ++ [ "cextraStairs < 0" | Dice.minDice cextraStairs < 0 ]
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]

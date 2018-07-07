@@ -125,7 +125,7 @@ buildLevel cops@COps{cocave, corule}
   let kc = okind cocave dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
-      darea =
+      (darea, dxspan, dyspan) =
         let (lxPrev, lyPrev) = unzip $ map (px &&& py) lstairPrev
             -- Stairs take some space, hence the first additions.
             -- We reserve space for caves that leave a corridor along boundary.
@@ -142,10 +142,12 @@ buildLevel cops@COps{cocave, corule}
             y0 = min lyMin
                  $ max (lyMax - yspan + 1)
                  $ (rYmax corule - yspan) `div` 2
-        in assert (lxMin >= 0 && lxMax <= rXmax corule - 1
-                   && lyMin >= 0 && lyMax <= rYmax corule - 1)
-           $ fromMaybe (error $ "" `showFailure` kc)
-           $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
+        in ( assert (lxMin >= 0 && lxMax <= rXmax corule - 1
+                     && lyMin >= 0 && lyMax <= rYmax corule - 1)
+             $ fromMaybe (error $ "" `showFailure` kc)
+             $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
+           , xspan
+           , yspan )
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
@@ -189,9 +191,26 @@ buildLevel cops@COps{cocave, corule}
       posDn Point{..} = Point (px + 1) py
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
+  cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
+  -- This is precisely how the cave will be divided among places,
+  -- if there are no fixed centres except at boot coordinates.
+  -- In any case, places, except for at boot points and fixed centres,
+  -- are guaranteed at least the rolled minimal size of their
+  -- enclosing cell (with one shared fence). Fixed centres are guaranteed
+  -- a size between the cave cell size and the one implied by their
+  -- placement wrt to cave boundary and other fixed centers.
+  let (xspan, yspan) | couterFenceTile kc /= "basic outer fence" =
+                         (dxspan - 2, dyspan - 2)
+                     | otherwise = (dxspan, dyspan)
+      lgrid =
+        -- Size, minus boot points, including boundary tiles.
+        let remainingSpan = ( xspan - 1 - 4 - 4
+                            , yspan - 1 - 3 - anchorDown + 1 )
+        in ( fst remainingSpan `div` fst cellSize
+           , snd remainingSpan `div` snd cellSize )
   dsecret <- randomR (1, maxBound)
-  cave <-
-    buildCave cops ldepth totalDepth darea dsecret dkind fixedCenters boot
+  cave <- buildCave cops ldepth totalDepth darea dsecret dkind
+                    lgrid fixedCenters boot
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
@@ -251,9 +270,6 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , ltime = timeZero
        , lnight = dnight
        }
-
-anchorDown :: Y
-anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 bootFixedCenters :: RuleContent -> [Point]
 bootFixedCenters RuleContent{rXmax, rYmax} =

@@ -90,7 +90,7 @@ adjacent s t = chessDist s t == 1
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).
 -- Skips the source point and goes through the second point
--- to the edge of the level. GIves @Nothing@ if the points are equal.
+-- to the edge of the level. Gives @Nothing@ if the points are equal.
 -- The target is given as @Point@ to permit aiming out of the level,
 -- e.g., to get uniform distributions of directions for explosions
 -- close to the edge of the level.

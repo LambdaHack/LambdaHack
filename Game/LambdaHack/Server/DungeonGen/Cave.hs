@@ -68,13 +68,13 @@ buildCave :: COps                -- ^ content definitions
           -> Area                -- ^ map area of the cave
           -> Int                 -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
+          -> (X, Y)              -- ^ the dimensions of the grid of places
           -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
           -> [Point]             -- ^ initial candidate points for stairs, etc.
           -> Rnd Cave
 buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
-          ldepth totalDepth darea dsecret dkind fixedCenters boot = do
+          ldepth totalDepth darea dsecret dkind lgrid' fixedCenters boot = do
   let kc@CaveKind{..} = okind cocave dkind
-  lgrid' <- castDiceXY ldepth totalDepth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.

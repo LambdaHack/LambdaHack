@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   , connectGrid, randomConnection
     -- * Plotting corridors
   , HV(..), Corridor, connectPlaces
-  , SpecialArea(..), grid
+  , SpecialArea(..), grid, anchorDown
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connectGrid', sortPoint, mkCorridor, borderPlace
@@ -283,30 +283,31 @@ grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> (X, Y) -> Area
      -> ((X, Y), EM.EnumMap Point SpecialArea)
 grid fixedCenters boot (nx, ny) area =
   let (x0, y0, x1, y1) = fromArea area
-      f z0 z1 n prev (c1 : c2 : rest) =
-        let len = c2 - c1 + 1
-            cn = len * n `div` (z1 - z0 - 1)
-        in if cn < 2
+      f zsize z1 n prev (c1 : c2 : rest) =
+        let len = c2 - c1
+            cn = len * n `div` zsize
+        in -- traceShow (zsize, z1, n, prev, len, cn, n, len `div` (2 * cn)) $
+           if cn < 2
            then let mid1 = (c1 + c2) `div` 2
                     mid2 = (c1 + c2) `divUp` 2
                     mid = if mid1 - prev > 4 then mid1 else mid2
-                in (prev, mid, Just c1) : f z0 z1 n mid (c2 : rest)
+                in (prev, mid, Just c1) : f zsize z1 n mid (c2 : rest)
            else (prev, c1 + len `div` (2 * cn), Just c1)
                 : [ ( c1 + len * (2 * z - 1) `div` (2 * cn)
                     , c1 + len * (2 * z + 1) `div` (2 * cn)
                     , Nothing )
                   | z <- [1 .. cn - 1] ]
-                ++ f z0 z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
+                ++ f zsize z1 n (c1 + len * (2 * cn - 1) `div` (2 * cn))
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
       (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
       xcs = IS.toList $ IS.fromList
             $ xCenters ++ mapMaybe (moveBoot xCenters 3 (x0, x1) . px) boot
-      xallCenters = zip [0..] $ f x0 x1 nx x0 xcs
+      xallCenters = zip [0..] $ f (x1 - x0 - 4 - 4) x1 nx x0 xcs
       ycs = IS.toList $ IS.fromList
             $ yCenters ++ mapMaybe (moveBoot yCenters 2 (y0, y1) . py) boot
-      yallCenters = zip [0..] $ f y0 y1 ny y0 ycs
+      yallCenters = zip [0..] $ f (y1 - y0 - 3 - anchorDown + 1) y1 ny y0 ycs
   in ( (length xallCenters, length yallCenters)
      , EM.fromDistinctAscList
          [ ( Point x y
@@ -321,6 +322,9 @@ grid fixedCenters boot (nx, ny) area =
          , (x, (cx0, cx1, mcx)) <- xallCenters
          , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
                        $ toArea (cx0, cy0, cx1, cy1) ] )
+
+anchorDown :: Y
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 -- @d@ is half stairs size. We move boot to @d@ steps away from cave edge,
 -- so that a stair-sized room (so, rather small) will fit and we require
