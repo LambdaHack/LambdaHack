@@ -44,19 +44,23 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Rnd TileMap
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable darea ltile = do
-  let activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
-      outerId = ouniqGroup cotile "unknown outer fence"
-      runCdefTile :: (R.StdGen, Int) -> (ContentId TileKind, (R.StdGen, Int))
-      runCdefTile (gen1, pI) =
-        if PointArray.punindex rXmax pI `inside` activeArea
-        then let (tile, gen2) = St.runState cdefTile gen1
-             in (tile, (gen2, pI + 1))
-        else (outerId, (gen1, pI + 1))
+  let outerId = ouniqGroup cotile "unknown outer fence"
+      runCdefTile :: (R.StdGen, (Int, [(Point, ContentId TileKind)]))
+                  -> ( ContentId TileKind
+                     , (R.StdGen, (Int, [(Point, ContentId TileKind)])) )
+      runCdefTile (gen1, (pI, assocs)) =
+        let p = PointArray.punindex rXmax pI
+        in if p `inside` darea
+           then case assocs of
+             (p2, t2) : rest | p2 == p -> (t2, (gen1, (pI + 1, rest)))
+             _ -> let (tile, gen2) = St.runState cdefTile gen1
+                  in (tile, (gen2, (pI + 1, assocs)))
+           else (outerId, (gen1, (pI + 1, assocs)))
       runUnfold gen =
         let (gen1, gen2) = R.split gen
-        in (PointArray.unfoldrNA rXmax rYmax runCdefTile (gen1, 0), gen2)
-  converted0 <- St.state runUnfold
-  let converted1 = converted0 PointArray.// EM.assocs ltile
+        in (PointArray.unfoldrNA rXmax rYmax runCdefTile
+                                 (gen1, (0, EM.assocs ltile)), gen2)
+  converted1 <- St.state runUnfold
   case mpickPassable of
     _ | areAllWalkable -> return converted1  -- all walkable; passes OK
     Nothing -> return converted1  -- no walkable tiles for filling the map
@@ -74,6 +78,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                  || passes (Point x (y - 1)) array)
           xeven Point{..} = px `mod` 2 == 0
           yeven Point{..} = py `mod` 2 == 0
+          activeArea = fromMaybe (error $ "" `showFailure` darea) $ shrink darea
           connect included blocks walkableTile array =
             let g p c = if p `inside` activeArea
                            && included p
