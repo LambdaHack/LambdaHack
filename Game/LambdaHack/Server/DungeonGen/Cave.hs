@@ -180,7 +180,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
-                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs, kc)) ()
                   if not noVoid && i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
@@ -199,13 +199,13 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar
                       !_A0 = shrink innerArea
-                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs2)) ()
+                      !_A1 = assert (isJust _A0 `blame` (innerArea, gs2, kc)) ()
                       !_A2 = assert (p `inside` fromJust _A0
                                      `blame` (p, innerArea, fixedCenters)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)
                                      `blame` ( r, p, innerArea, ar
-                                             , gs2, qls, fixedCenters )) ()
+                                             , gs2, qls, fixedCenters, kc )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth dsecret r (Just placeGroup)

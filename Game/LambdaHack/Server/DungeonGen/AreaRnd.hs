@@ -332,10 +332,10 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 -- so that their staris fit, too.
 moveBoot :: [Int] -> Int -> (Int, Int) -> Int -> Maybe Int
 moveBoot is d (imin, imax) i =
-  if | i < imin -> if all (imin + 3 * d <) is
-                   then Just $ imin + d + 1
-                   else Nothing
-     | i > imax -> if all (imax - 3 * d >) is
-                   then Just $ imax - d - 1
-                   else Nothing
+  if | i < imin + d + 1 -> if all (imin + 3 * d <) is
+                           then Just $ imin + d + 1
+                           else Nothing
+     | i > imax - d - 1 -> if all (imax - 3 * d >) is
+                           then Just $ imax - d - 1
+                           else Nothing
      | otherwise -> Just i
