@@ -248,7 +248,11 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
                          | py > y1 - anchorDown - 4 -> y1 - anchorDown + 1
                          | otherwise -> py
                  np = Point nx ny
-             in if dist 0 np && distProj np then Just np else Nothing
+                 -- Stairs in corners enlarge next caves, so usually avoid.
+                 inCorner = nx /= px && ny /= py
+             in if not inCorner && dist 0 np && distProj np
+                then Just np
+                else Nothing
   findPointInArea darea f
 
 -- Build rudimentary level from a cave kind.
