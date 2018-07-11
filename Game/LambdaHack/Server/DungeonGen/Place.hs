@@ -105,15 +105,15 @@ interiorArea kr r =
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
-buildPlace :: COps         -- ^ the game content
-           -> CaveKind          -- ^ current cave kind
-           -> Bool              -- ^ whether the cave is dark
+buildPlace :: COps                -- ^ the game content
+           -> CaveKind            -- ^ current cave kind
+           -> Bool                -- ^ whether the cave is dark
            -> ContentId TileKind  -- ^ dark fence tile, if fence hollow
            -> ContentId TileKind  -- ^ lit fence tile, if fence hollow
            -> Dice.AbsDepth       -- ^ current level depth
            -> Dice.AbsDepth       -- ^ absolute depth
-           -> Int               -- ^ secret tile seed
-           -> Area              -- ^ whole area of the place, fence included
+           -> Int                 -- ^ secret tile seed
+           -> Area                -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd (TileMapEM, Place)
 buildPlace cops@COps{cotile, coplace}

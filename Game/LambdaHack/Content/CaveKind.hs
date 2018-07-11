@@ -35,7 +35,7 @@ data CaveKind = CaveKind
   , cYminSize       :: Y                -- ^ minimal Y size of the whole cave
   , ccellSize       :: Dice.DiceXY      -- ^ size of a map cell holding a place
   , cminPlaceSize   :: Dice.DiceXY      -- ^ minimal size of places; for merging
-  , cmaxPlaceSize   :: Dice.DiceXY      -- ^ maximal size of places
+  , cmaxPlaceSize   :: Dice.DiceXY      -- ^ maximal size of places; for growing
   , cdarkChance     :: Dice.Dice        -- ^ the chance a place is dark
   , cnightChance    :: Dice.Dice        -- ^ the chance the cave is dark
   , cauxConnects    :: Rational         -- ^ a proportion of extra connections
@@ -74,7 +74,7 @@ instance NFData CaveKind
 -- of the cave descriptions to make sure they fit on screen. Etc.
 validateSingle :: CaveKind -> [Text]
 validateSingle CaveKind{..} =
-  let (minCellSizeX, minCellSizeY) = Dice.minDiceXY cminPlaceSize
+  let (minCellSizeX, minCellSizeY) = Dice.minDiceXY ccellSize
       (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
@@ -83,6 +83,14 @@ validateSingle CaveKind{..} =
      ++ [ "cYminSize < 20" | cYminSize < 20 ]
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
+     ++ [ "minCellSizeX < 6 && stairs"
+        | minCellSizeX < 6 && not (null cstairFreq && isNothing cescapeGroup) ]
+     ++ [ "minCellSizeY < 4 && stairs"
+        | minCellSizeY < 4 && not (null cstairFreq && isNothing cescapeGroup) ]
+     ++ [ "minMinSizeX < 5 && stairs"
+        | minMinSizeX < 5 && not (null cstairFreq && isNothing cescapeGroup) ]
+     ++ [ "minMinSizeY < 3 && stairs"
+        | minMinSizeY < 3 && not (null cstairFreq && isNothing cescapeGroup) ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
@@ -91,6 +99,8 @@ validateSingle CaveKind{..} =
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]
      ++ [ "citemNum < 0" | Dice.minDice citemNum < 0 ]
+     ++ [ "stairs suggested, but not defined"
+        | Dice.maxDice cextraStairs > 0 && null cstairFreq ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants
