@@ -480,7 +480,8 @@ cavesDig = IM.fromList $
   ++ zip [-4, -5] (repeat "default random")
   ++ zip [-6, -7, -8, -9] (repeat "deep random")
   ++ [(-10, "caveNoise2")]
-  ++ zip [-11, -12 .. -2000] (repeat "deep random")
+  ++ zip [-11, -12 .. -1000] (repeat "deep random")
+  ++ zip [-1001, -1002.. -2000] (repeat "default random")
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")
