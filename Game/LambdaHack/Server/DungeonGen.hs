@@ -4,7 +4,8 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , convertTileMaps, buildTileMap, buildLevel, placeDownStairs, levelFromCave
+  , convertTileMaps, buildTileMap, buildLevel, moveBoot, placeDownStairs
+  , levelFromCave, anchorDown, bootFixedCenters
 #endif
   ) where
 
@@ -15,6 +16,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 import           Data.Tuple
 import qualified System.Random as R
 
@@ -130,10 +132,10 @@ buildLevel cops@COps{cocave, corule}
   let kc = okind cocave dkind
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
-      (darea, dxspan, dyspan) =
+      darea =
         let (lxPrev, lyPrev) = unzip $ map (px &&& py) lstairPrev
             -- Stairs take some space, hence the first additions.
-            -- We reserve space for caves that leave a corridor along boundary.
+            -- We reserve space for caves that leave a corridor along its fence.
             lxMin = -4 + minimum (rXmax corule - 1 : lxPrev)
             lxMax = 4 + maximum (0 : lxPrev)
             lyMin = -3 + minimum (rYmax corule - 1 : lyPrev)
@@ -147,12 +149,10 @@ buildLevel cops@COps{cocave, corule}
             y0 = min lyMin
                  $ max (lyMax - yspan + 1)
                  $ (rYmax corule - yspan) `div` 2
-        in ( assert (lxMin >= 0 && lxMax <= rXmax corule - 1
-                     && lyMin >= 0 && lyMax <= rYmax corule - 1)
-             $ fromMaybe (error $ "" `showFailure` kc)
-             $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
-           , xspan
-           , yspan )
+        in assert (lxMin >= 0 && lxMax <= rXmax corule - 1
+                   && lyMin >= 0 && lyMax <= rYmax corule - 1)
+           $ fromMaybe (error $ "" `showFailure` kc)
+           $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
@@ -196,6 +196,15 @@ buildLevel cops@COps{cocave, corule}
       posDn Point{..} = Point (px + 1) py
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
+      (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
+      (xBoot, yBoot) =
+        let (x0, y0, x1, y1) = fromArea darea
+        in ( mapMaybe (moveBoot xCenters 3 (x0, x1) . px) boot
+           , mapMaybe (moveBoot yCenters 2 (y0, y1) . py) boot )
+      xcs = IS.toList $ IS.fromList $ xCenters ++ xBoot
+      ycs = IS.toList $ IS.fromList $ yCenters ++ yBoot
+      xsize = maximum xcs - minimum xcs
+      ysize = maximum ycs - minimum ycs
   cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
   -- This is precisely how the cave will be divided among places,
   -- if there are no fixed centres except at boot coordinates.
@@ -203,22 +212,39 @@ buildLevel cops@COps{cocave, corule}
   -- are guaranteed at least the rolled minimal size of their
   -- enclosing cell (with one shared fence). Fixed centres are guaranteed
   -- a size between the cave cell size and the one implied by their
-  -- placement wrt to cave boundary and other fixed centers.
-  let (xspan, yspan) | couterFenceTile kc /= "basic outer fence" =
-                         (dxspan - 2, dyspan - 2)
-                     | otherwise = (dxspan, dyspan)
-      lgrid =
-        -- Size, minus boot points, including boundary tiles.
-        let remainingSpan = ( xspan - 1 - 4 - 4
-                            , yspan - 1 - 3 - anchorDown + 1 )
-        in ( fst remainingSpan `div` fst cellSize
-           , snd remainingSpan `div` snd cellSize )
+  -- placement wrt to cave fence and other fixed centers.
+  let lgrid = ( xsize `div` fst cellSize
+              , ysize `div` snd cellSize )
+      -- Make sure that in caves not filled with rock, there is a passage
+      -- across the cave, even if a single room blocks most of the cave.
+      -- Also, ensure fancy outer fences are not obstructed by room walls.
+      subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
+      area | couterFenceTile kc /= "basic outer fence" = subArea
+           | otherwise = darea
+      (lgr, gs) = grid fixedCenters xcs ycs xsize ysize lgrid area
   dsecret <- randomR (1, maxBound)
-  cave <- buildCave cops ldepth totalDepth darea dsecret dkind
-                    lgrid fixedCenters boot
+  cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
+
+-- @d@ is half stairs size. We move boot to @d@ steps away from cave edge,
+-- so that a stair-sized room (so, rather small) will fit and we require
+-- that any other stairs are twice @d@ away from the moved boot point
+-- so that their stars fit, too.
+--
+-- If and only if boot point is outside area, @placeDownStairs@ may set
+-- stairs on a different (Y) line the boot would be moved to later on,
+-- but in this case the boot is removed, so nothing wrong happens.
+moveBoot :: [Int] -> Int -> (Int, Int) -> Int -> Maybe Int
+moveBoot is d (imin, imax) i =
+  if | i < imin + d + 1 -> if all (imin + 3 * d <) is
+                           then Just $ imin + d + 1
+                           else Nothing
+     | i > imax - d - 1 -> if all (imax - 3 * d >) is
+                           then Just $ imax - d - 1
+                           else Nothing
+     | otherwise -> Just i
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
@@ -240,7 +266,11 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
                  $ toArea (x0 + 9, y0 + 8, x1 - 9, y1 - anchorDown - 4)
       f p@Point{..} =
         if p `inside` interior
-        then if dist minDist p && distProj p then Just p else Nothing
+        then
+          -- Create stairs in the interior of the cave only on a completely new
+          -- both X and Y lines, not in line with already created stairs, which
+          -- would look artificial (there is no cave fence to snap to).
+          if dist minDist p && distProj p then Just p else Nothing
         else let nx = if | px < x0 + 9 -> x0 + 4
                          | px > x1 - 9 -> x1 - 4
                          | otherwise -> px
@@ -248,7 +278,15 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
                          | py > y1 - anchorDown - 4 -> y1 - anchorDown + 1
                          | otherwise -> py
                  np = Point nx ny
-                 -- Stairs in corners enlarge next caves, so usually avoid.
+                 -- Stairs in corners enlarge next caves, so usually avoid
+                 -- (not when the point happens to match the corner exactly).
+                 -- However, stairs on already taken lines along cave fence
+                 -- are fine, as long as the other coordinates do not clash
+                 -- with other stairs. Even if cave fence clashes
+                 -- with boot points, and so no stairs can be created
+                 -- outside interior, that means the interior is large enough
+                 -- (or there would be no clash), so plenty of space
+                 -- for stairs there.
                  inCorner = nx /= px && ny /= py
              in if not inCorner && dist 0 np && distProj np
                 then Just np
@@ -279,6 +317,9 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , ltime = timeZero
        , lnight = dnight
        }
+
+anchorDown :: Y
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 bootFixedCenters :: RuleContent -> [Point]
 bootFixedCenters RuleContent{rXmax, rYmax} =

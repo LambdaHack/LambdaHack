@@ -18,7 +18,6 @@ import           Data.Key (mapWithKeyM)
 import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -69,25 +68,17 @@ buildCave :: COps                -- ^ content definitions
           -> Int                 -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> (X, Y)              -- ^ the dimensions of the grid of places
-          -> EM.EnumMap Point (GroupName PlaceKind)  -- ^ pos of stairs, etc.
-          -> [Point]             -- ^ initial candidate points for stairs, etc.
+          -> EM.EnumMap Point SpecialArea  -- ^ pos of stairs, etc.
           -> Rnd Cave
 buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
-          ldepth totalDepth darea dsecret dkind lgrid' fixedCenters boot = do
+          ldepth totalDepth darea dsecret dkind lgr@(gx, gy) gs = do
   let kc@CaveKind{..} = okind cocave dkind
-  -- Make sure that in caves not filled with rock, there is a passage
-  -- across the cave, even if a single room blocks most of the cave.
-  -- Also, ensure fancy outer fences are not obstructed by room walls.
-  let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
                  <$> opick cotile cdarkCorTile (const True)
   litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
                 <$> opick cotile clitCorTile (const True)
   dnight <- chanceDice ldepth totalDepth cnightChance
-  let createPlaces lgr' = do
-        let area | couterFenceTile /= "basic outer fence" = subArea
-                 | otherwise = darea
-            (lgr@(gx, gy), gs) = grid fixedCenters boot lgr' area
+  let createPlaces = do
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
         let mergeFixed :: EM.EnumMap Point SpecialArea
@@ -201,11 +192,11 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                       !_A0 = shrink innerArea
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs2, kc)) ()
                       !_A2 = assert (p `inside` fromJust _A0
-                                     `blame` (p, innerArea, fixedCenters)) ()
+                                     `blame` (p, innerArea, gs)) ()
                       r = mkFixed maxPlaceSize innerArea p
                       !_A3 = assert (isJust (shrink r)
-                                     `blame` ( r, p, innerArea, ar
-                                             , gs2, qls, fixedCenters, kc )) ()
+                                     `blame` ( r, ar, p, innerArea, gs
+                                             , gs2, qls, kc )) ()
                   (tmap, place) <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth dsecret r (Just placeGroup)
@@ -221,13 +212,13 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         places <- foldlM' (decidePlace False) (EM.empty, [], EM.empty)
                   $ EM.assocs gs2
         return (voidPlaces, lgr, places)
-  (voidPlaces, lgrid, (lplaces, dplaces, qplaces)) <- createPlaces lgrid'
-  let lcorridorsFun lgr = do
-        connects <- connectGrid voidPlaces lgr
+  (voidPlaces, lgrid, (lplaces, dplaces, qplaces)) <- createPlaces
+  let lcorridorsFun = do
+        connects <- connectGrid voidPlaces lgrid
         addedConnects <- do
           let cauxNum =
-                round $ cauxConnects * fromIntegral (fst lgr * snd lgrid)
-          cns <- nub . sort <$> replicateM cauxNum (randomConnection lgr)
+                round $ cauxConnects * fromIntegral (fst lgrid * snd lgrid)
+          cns <- nub . sort <$> replicateM cauxNum (randomConnection lgrid)
           -- This allows connections through a single void room,
           -- if a non-void room on both ends.
           let notDeadEnd (p, q) =
@@ -247,7 +238,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         cs <- catMaybes <$> mapM connectPos allConnects
         let pickedCorTile = if dnight then darkCorTile else litCorTile
         return $! EM.unions (map (digCorridors pickedCorTile) cs)
-  lcorridors <- lcorridorsFun lgrid
+  lcorridors <- lcorridorsFun
   let doorMapFun lpl lcor = do
         -- The hacks below are instead of unionWithKeyM, which is costly.
         let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
@@ -259,6 +250,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
+  let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   fence <- buildFenceRnd cops couterFenceTile subArea
   -- The obscured tile, e.g., scratched wall, stays on the server forever,
   -- only the suspect variant on client gets replaced by this upon searching.

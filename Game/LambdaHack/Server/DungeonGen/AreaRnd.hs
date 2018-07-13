@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   , connectGrid, randomConnection
     -- * Plotting corridors
   , HV(..), Corridor, connectPlaces
-  , SpecialArea(..), grid, anchorDown
+  , SpecialArea(..), grid
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connectGrid', sortPoint, mkCorridor, borderPlace
@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntSet as IS
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Misc hiding (xM)
@@ -279,14 +278,16 @@ data SpecialArea =
 -- of (non-overlapping) areas is given. Incorporate those,
 -- with as little disruption, as possible.
 -- Assume each of four boundaries of the cave are covered by a fixed centre.
-grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> (X, Y) -> Area
+grid :: EM.EnumMap Point (GroupName PlaceKind)
+     -> [X] -> [Y] -> X -> Y -> (X, Y) -> Area
      -> ((X, Y), EM.EnumMap Point SpecialArea)
-grid fixedCenters boot (nx, ny) area =
+grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
   let (x0, y0, x1, y1) = fromArea area
       f zsize z1 n prev (c1 : c2 : rest) =
         let len = c2 - c1
             cn = len * n `div` zsize
-        in -- traceShow (zsize, z1, n, prev, len, cn, n, len `div` (2 * cn)) $
+        in -- traceShow ( zsize, z1, n, prev, len, cn, n
+           --           , len `div` max 1 (2 * cn) ) $
            if cn < 2
            then let mid1 = (c1 + c2) `div` 2
                     mid2 = (c1 + c2) `divUp` 2
@@ -301,13 +302,8 @@ grid fixedCenters boot (nx, ny) area =
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
-      (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
-      xcs = IS.toList $ IS.fromList
-            $ xCenters ++ mapMaybe (moveBoot xCenters 3 (x0, x1) . px) boot
-      xallCenters = zip [0..] $ f (x1 - x0 - 4 - 4) x1 nx x0 xcs
-      ycs = IS.toList $ IS.fromList
-            $ yCenters ++ mapMaybe (moveBoot yCenters 2 (y0, y1) . py) boot
-      yallCenters = zip [0..] $ f (y1 - y0 - 3 - anchorDown + 1) y1 ny y0 ycs
+      xallCenters = zip [0..] $ f xsize x1 nx x0 xcs
+      yallCenters = zip [0..] $ f ysize y1 ny y0 ycs
   in ( (length xallCenters, length yallCenters)
      , EM.fromDistinctAscList
          [ ( Point x y
@@ -322,20 +318,3 @@ grid fixedCenters boot (nx, ny) area =
          , (x, (cx0, cx1, mcx)) <- xallCenters
          , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
                        $ toArea (cx0, cy0, cx1, cy1) ] )
-
-anchorDown :: Y
-anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
-
--- @d@ is half stairs size. We move boot to @d@ steps away from cave edge,
--- so that a stair-sized room (so, rather small) will fit and we require
--- that any other stairs are twice @d@ away from the moved boot point
--- so that their staris fit, too.
-moveBoot :: [Int] -> Int -> (Int, Int) -> Int -> Maybe Int
-moveBoot is d (imin, imax) i =
-  if | i < imin + d + 1 -> if all (imin + 3 * d <) is
-                           then Just $ imin + d + 1
-                           else Nothing
-     | i > imax - d - 1 -> if all (imax - 3 * d >) is
-                           then Just $ imax - d - 1
-                           else Nothing
-     | otherwise -> Just i
