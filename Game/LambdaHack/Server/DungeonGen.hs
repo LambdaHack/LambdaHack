@@ -192,15 +192,22 @@ buildLevel cops@COps{cocave, corule}
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
-      posUp Point{..} = Point (px - 1) py
+  -- Avoid completely uniform levels (e.g., uniformly merged places).
+  bootExtra <-
+    if EM.null fixedCenters then do
+      let lallExits = map fst fixedEscape ++ lallStairs
+      pointExtra <- placeDownStairs kc darea lallExits boot
+      return $ pointExtra : boot
+    else return boot
+  let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
                , map posDn $ lstairsDouble ++ lstairsSingleDown )
       (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
       (xBoot, yBoot) =
         let (x0, y0, x1, y1) = fromArea darea
-        in ( mapMaybe (moveBoot xCenters 3 (x0, x1) . px) boot
-           , mapMaybe (moveBoot yCenters 2 (y0, y1) . py) boot )
+        in ( mapMaybe (moveBoot xCenters 3 (x0, x1) . px) bootExtra
+           , mapMaybe (moveBoot yCenters 2 (y0, y1) . py) bootExtra )
       xcs = IS.toList $ IS.fromList $ xCenters ++ xBoot
       ycs = IS.toList $ IS.fromList $ yCenters ++ yBoot
       xsize = maximum xcs - minimum xcs
