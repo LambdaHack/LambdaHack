@@ -197,8 +197,8 @@ buildLevel cops@COps{cocave, corule}
     if EM.null fixedCenters then do
       let lallExits = map fst fixedEscape ++ lallStairs
       pointExtra <- placeDownStairs kc darea lallExits boot
-      return $ pointExtra : boot
-    else return boot
+      return [pointExtra]
+    else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
@@ -206,8 +206,8 @@ buildLevel cops@COps{cocave, corule}
       (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
       (xBoot, yBoot) =
         let (x0, y0, x1, y1) = fromArea darea
-        in ( mapMaybe (moveBoot xCenters 3 (x0, x1) . px) bootExtra
-           , mapMaybe (moveBoot yCenters 2 (y0, y1) . py) bootExtra )
+        in ( mapMaybe (moveBoot xCenters 3 (x0, x1) . px) $ boot ++ bootExtra
+           , mapMaybe (moveBoot yCenters 2 (y0, y1) . py) $ boot ++ bootExtra )
       xcs = IS.toList $ IS.fromList $ xCenters ++ xBoot
       ycs = IS.toList $ IS.fromList $ yCenters ++ yBoot
       xsize = maximum xcs - minimum xcs
@@ -229,7 +229,7 @@ buildLevel cops@COps{cocave, corule}
       area = if cfenceApart kc then subArea else darea
       (lgr, gs) = grid fixedCenters xcs ycs xsize ysize lgrid area
   dsecret <- randomR (1, maxBound)
-  cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs
+  cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs bootExtra
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)

@@ -286,7 +286,7 @@ grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
       f zsize z1 n prev (c1 : c2 : rest) =
         let len = c2 - c1
             cn = len * n `div` zsize
-        in -- traceShow ( zsize, z1, n, prev, len, cn, n
+        in -- traceShow ( zsize, z1, n, prev, len, cn
            --           , len `div` max 1 (2 * cn) ) $
            if cn < 2
            then let mid1 = (c1 + c2) `div` 2
@@ -302,9 +302,10 @@ grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
-      xallCenters = zip [0..] $ f xsize x1 nx x0 xcs
-      yallCenters = zip [0..] $ f ysize y1 ny y0 ycs
-  in ( (length xallCenters, length yallCenters)
+      xallSegments = zip [0..] $ f xsize x1 nx x0 xcs
+      yallSegments = zip [0..] $ f ysize y1 ny y0 ycs
+  in -- traceShow (xallSegments, yallSegments) $
+     ( (length xallSegments, length yallSegments)
      , EM.fromDistinctAscList
          [ ( Point x y
            , case (mcx, mcy) of
@@ -314,7 +315,7 @@ grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
                    Just placeGroup ->
                      SpecialFixed (Point cx cy) placeGroup sarea
                _ -> SpecialArea sarea )
-         | (y, (cy0, cy1, mcy)) <- yallCenters
-         , (x, (cx0, cx1, mcx)) <- xallCenters
+         | (y, (cy0, cy1, mcy)) <- yallSegments
+         , (x, (cx0, cx1, mcx)) <- xallSegments
          , let sarea = fromMaybe (error $ "" `showFailure` (x, y))
                        $ toArea (cx0, cy0, cx1, cy1) ] )

@@ -69,9 +69,10 @@ buildCave :: COps                -- ^ content definitions
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> (X, Y)              -- ^ the dimensions of the grid of places
           -> EM.EnumMap Point SpecialArea  -- ^ pos of stairs, etc.
+          -> [Point]             -- ^ boot positions to be treated as fixed
           -> Rnd Cave
 buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
-          ldepth totalDepth darea dsecret dkind lgr@(gx, gy) gs = do
+          ldepth totalDepth darea dsecret dkind lgr@(gx, gy) gs bootExtra = do
   let kc@CaveKind{..} = okind cocave dkind
   darkCorTile <- fromMaybe (error $ "" `showFailure` cdarkCorTile)
                  <$> opick cotile cdarkCorTile (const True)
@@ -96,9 +97,11 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   mergable x y = case EM.lookup (Point x y) gs0 of
                     Just (SpecialArea ar) ->
                       let (_, xspan, yspan) = spanArea ar
-                          isFixed p = case gs EM.! p of
-                            SpecialFixed{} -> True
-                            _ -> False
+                          isFixed p =
+                            p `elem` bootExtra
+                            || case gs EM.! p of
+                                 SpecialFixed{} -> True
+                                 _ -> False
                       in if -- Limit (the aggresive) merging of normal places
                             -- and leave extra place for merging stairs.
                             | any isFixed
