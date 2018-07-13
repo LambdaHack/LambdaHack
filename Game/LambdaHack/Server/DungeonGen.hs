@@ -226,8 +226,7 @@ buildLevel cops@COps{cocave, corule}
       -- across the cave, even if a single room blocks most of the cave.
       -- Also, ensure fancy outer fences are not obstructed by room walls.
       subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
-      area | couterFenceTile kc /= "basic outer fence" = subArea
-           | otherwise = darea
+      area = if cfenceApart kc then subArea else darea
       (lgr, gs) = grid fixedCenters xcs ycs xsize ysize lgrid area
   dsecret <- randomR (1, maxBound)
   cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs

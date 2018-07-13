@@ -58,6 +58,7 @@ data CaveKind = CaveKind
   , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
   , cfillerTile     :: GroupName TileKind  -- ^ the filler wall
   , couterFenceTile :: GroupName TileKind  -- ^ the outer fence wall
+  , cfenceApart     :: Bool                -- ^ are places touching fence banned
   , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
   , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
   , cescapeGroup    :: Maybe (GroupName PlaceKind)  -- ^ escape, if any
