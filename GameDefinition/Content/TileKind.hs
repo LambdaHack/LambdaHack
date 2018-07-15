@@ -178,7 +178,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 70), ("battleSet", 250), ("brawlSetLit", 50)
+               , ("noiseSet", 700), ("battleSet", 250), ("brawlSetLit", 50)
                , ("shootoutSetLit", 10), ("zooSet", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -270,7 +270,7 @@ rubble = TileKind
 rubbleSpice = TileKind
   { tsymbol  = '&'
   , tname    = "rubble pile"
-  , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 1), ("noiseSet", 5)
+  , tfreq    = [ ("smokeClumpOver_f_Lit", 1), ("emptySet", 10), ("noiseSet", 50)
                , ("zooSet", 100), ("ambushSet", 20) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
@@ -434,7 +434,7 @@ wallGlassHSpice = wallGlassH
 pillarIce = TileKind
   { tsymbol  = '^'
   , tname    = "ice"
-  , tfreq    = [("noiseSet", 30)]
+  , tfreq    = [("noiseSet", 300)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
@@ -487,8 +487,8 @@ bushBurning = bush
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("lit fog", 1), ("emptySet", 5), ("shootoutSetLit", 20)
-               , ("noiseSet", 10), ("fogClumpOver_f_Lit", 60) ]
+  , tfreq    = [ ("lit fog", 1), ("emptySet", 50), ("shootoutSetLit", 20)
+               , ("noiseSet", 100), ("fogClumpOver_f_Lit", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide
@@ -499,7 +499,7 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "thick fog"
-  , tfreq    = [("noiseSet", 10), ("escapeSetDark", 50)]
+  , tfreq    = [("noiseSet", 100), ("escapeSetDark", 50)]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
@@ -555,11 +555,11 @@ floorArena = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1), ("rubbleSpiceOrNot", 30)
-               , ("arenaSetLit", 1), ("emptySet", 97), ("zooSet", 600) ]
+               , ("arenaSetLit", 1), ("emptySet", 900), ("zooSet", 600) ]
   }
 floorNoise = floorArena
   { tname    = "damp stone floor"
-  , tfreq    = [("noiseSet", 60), ("damp stone floor", 1)]
+  , tfreq    = [("noiseSet", 600), ("damp stone floor", 1)]
   }
 floorDirt = floorArena
   { tname    = "dirt"
