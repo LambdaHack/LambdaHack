@@ -75,7 +75,7 @@ arena = rogue
   , cmaxVoid      = 1%8
   , cextraStairs  = 1
   , chidden       = 0
-  , cactorCoeff   = 50
+  , cactorCoeff   = 75  -- small open level, don't rush the player
   , cactorFreq    = [("monster", 30), ("animal", 70)]
   , citemNum      = 4 `d` 5  -- few rooms
   , citemFreq     = [("common item", 20), ("treasure", 40), ("any scroll", 40)]
@@ -176,7 +176,7 @@ noise = rogue
   , cextraStairs  = 1 + 1 `d` 2
   , cdoorChance   = 1  -- to avoid lit quasi-door tiles
   , chidden       = 0
-  , cactorCoeff   = 80  -- the maze requires time to explore
+  , cactorCoeff   = 80  -- the maze requires time to explore; also, small
   , cactorFreq    = [("monster", 80), ("animal", 20)]
   , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
@@ -213,6 +213,7 @@ shallow1rogue = shallow2rogue
   , cYminSize     = 21
   , cdarkChance   = 0  -- all rooms lit, for a gentle start
   , cextraStairs  = 1
+  , cactorCoeff   = 80  -- already animals start there; also, pity on the noob
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
   , citemNum      = 6 `d` 5  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
