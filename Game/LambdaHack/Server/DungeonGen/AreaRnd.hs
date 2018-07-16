@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntSet as IS
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Misc hiding (xM)
@@ -278,10 +279,9 @@ data SpecialArea =
 -- of (non-overlapping) areas is given. Incorporate those,
 -- with as little disruption, as possible.
 -- Assume each of four boundaries of the cave are covered by a fixed centre.
-grid :: EM.EnumMap Point (GroupName PlaceKind)
-     -> [X] -> [Y] -> X -> Y -> (X, Y) -> Area
+grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> Area -> (X, Y)
      -> ((X, Y), EM.EnumMap Point SpecialArea)
-grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
+grid fixedCenters boot area cellSize =
   let (x0, y0, x1, y1) = fromArea area
       f zsize z1 n prev (c1 : c2 : rest) =
         let len = c2 - c1
@@ -302,8 +302,22 @@ grid fixedCenters xcs ycs xsize ysize (nx, ny) area =
                      (c2 : rest)
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
-      xallSegments = zip [0..] $ f xsize x1 nx x0 xcs
-      yallSegments = zip [0..] $ f ysize y1 ny y0 ycs
+      (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
+      xcs = IS.toList $ IS.fromList $ xCenters ++ map px boot
+      ycs = IS.toList $ IS.fromList $ yCenters ++ map py boot
+      xsize = maximum xcs - minimum xcs
+      ysize = maximum ycs - minimum ycs
+      -- This is precisely how the cave will be divided among places,
+      -- if there are no fixed centres except at boot coordinates.
+      -- In any case, places, except for at boot points and fixed centres,
+      -- are guaranteed at least the rolled minimal size of their
+      -- enclosing cell (with one shared fence). Fixed centres are guaranteed
+      -- a size between the cave cell size and the one implied by their
+      -- placement wrt to cave fence and other fixed centers.
+      lgrid = ( xsize `div` fst cellSize
+              , ysize `div` snd cellSize )
+      xallSegments = zip [0..] $ f xsize x1 (fst lgrid) x0 xcs
+      yallSegments = zip [0..] $ f ysize y1 (snd lgrid) y0 ycs
   in -- traceShow (xallSegments, yallSegments) $
      ( (length xallSegments, length yallSegments)
      , EM.fromDistinctAscList
