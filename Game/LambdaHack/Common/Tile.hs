@@ -19,7 +19,7 @@ module Game.LambdaHack.Common.Tile
     -- * Sped up property lookups
   , isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
-  , isOftenItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
+  , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
   , alterMinSkill, alterMinWalk
     -- * Slow property lookups
   , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
@@ -86,7 +86,9 @@ speedupTile allClear cotile =
             getTo _ = False
         in any getTo $ TK.tfeature tk
       consideredByAITab = createTab cotile $ kindHasFeature TK.ConsideredByAI
-      isOftenItemTab = createTab cotile $ kindHasFeature TK.OftenItem
+      isVeryOftenItemTab = createTab cotile $ kindHasFeature TK.VeryOftenItem
+      isCommonItemTab = createTab cotile $ \tk ->
+        kindHasFeature TK.OftenItem tk || kindHasFeature TK.VeryOftenItem tk
       isOftenActorTab = createTab cotile $ kindHasFeature TK.OftenActor
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
       isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
@@ -186,9 +188,13 @@ isExplorable :: TileSpeedup -> ContentId TileKind -> Bool
 isExplorable coTileSpeedup t =
   isWalkable coTileSpeedup t && not (isDoor coTileSpeedup t)
 
-isOftenItem :: TileSpeedup -> ContentId TileKind -> Bool
-{-# INLINE isOftenItem #-}
-isOftenItem TileSpeedup{isOftenItemTab} = accessTab isOftenItemTab
+isVeryOftenItem :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isVeryOftenItem #-}
+isVeryOftenItem TileSpeedup{isVeryOftenItemTab} = accessTab isVeryOftenItemTab
+
+isCommonItem :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isCommonItem #-}
+isCommonItem TileSpeedup{isCommonItemTab} = accessTab isCommonItemTab
 
 isOftenActor :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isOftenActor #-}

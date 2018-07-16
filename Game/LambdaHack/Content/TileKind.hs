@@ -77,6 +77,7 @@ data Feature =
   | Clear                -- ^ actors can see through
   | Dark                 -- ^ is not lit with an ambient light
   | OftenItem            -- ^ initial items often generated there
+  | VeryOftenItem        -- ^ initial items very often generated there
   | OftenActor           -- ^ initial actors often generated there
   | NoItem               -- ^ no items ever generated there
   | NoActor              -- ^ no actors ever generated there
@@ -99,21 +100,22 @@ instance NFData Feature
 -- | A lot of tabulated maps from tile kind identifier to a property
 -- of the tile kind.
 data TileSpeedup = TileSpeedup
-  { isClearTab        :: Tab Bool
-  , isLitTab          :: Tab Bool
-  , isWalkableTab     :: Tab Bool
-  , isDoorTab         :: Tab Bool
-  , isChangableTab    :: Tab Bool
-  , isSuspectTab      :: Tab Bool
-  , isHideAsTab       :: Tab Bool
-  , consideredByAITab :: Tab Bool
-  , isOftenItemTab    :: Tab Bool
-  , isOftenActorTab   :: Tab Bool
-  , isNoItemTab       :: Tab Bool
-  , isNoActorTab      :: Tab Bool
-  , isEasyOpenTab     :: Tab Bool
-  , alterMinSkillTab  :: Tab Word8
-  , alterMinWalkTab   :: Tab Word8
+  { isClearTab         :: Tab Bool
+  , isLitTab           :: Tab Bool
+  , isWalkableTab      :: Tab Bool
+  , isDoorTab          :: Tab Bool
+  , isChangableTab     :: Tab Bool
+  , isSuspectTab       :: Tab Bool
+  , isHideAsTab        :: Tab Bool
+  , consideredByAITab  :: Tab Bool
+  , isVeryOftenItemTab :: Tab Bool
+  , isCommonItemTab    :: Tab Bool
+  , isOftenActorTab    :: Tab Bool
+  , isNoItemTab        :: Tab Bool
+  , isNoActorTab       :: Tab Bool
+  , isEasyOpenTab      :: Tab Bool
+  , alterMinSkillTab   :: Tab Word8
+  , alterMinWalkTab    :: Tab Word8
   }
   deriving Generic
 
@@ -133,6 +135,7 @@ emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty
@@ -261,6 +264,7 @@ actionFeatures markSuspect t =
         RevealAs{} -> if markSuspect then Just feat else Nothing
         ObscureAs{} -> if markSuspect then Just feat else Nothing
         Dark -> Nothing  -- not important any longer, after FOV computed
+        VeryOftenItem -> Nothing
         OftenItem -> Nothing
         OftenActor -> Nothing
         NoItem -> Nothing

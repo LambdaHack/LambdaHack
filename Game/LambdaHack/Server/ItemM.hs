@@ -21,7 +21,6 @@ import           Data.Ord
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -129,31 +128,33 @@ placeItemsInDungeon :: forall m. MonadServerAtomic m
 placeItemsInDungeon alliancePositions = do
   COps{cocave, coTileSpeedup} <- getsState scops
   totalDepth <- getsState stotalDepth
-  let initialItems (lid, lvl@Level{lkind, ldepth, larea}) = do
+  let initialItems (lid, lvl@Level{lkind, ldepth}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
-        let (_, xspan, yspan) = spanArea larea
-            placeItems :: Int -> m ()
+        let placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
               Level{lfloor} <- getLevel lid
               -- We ensure that there are no big regions without items at all.
-              let distAndOften !p !t =
-                    let f !k _ b = chessDist p k > 6 && b
-                    in Tile.isOftenItem coTileSpeedup t
-                       && EM.foldrWithKey f True lfloor
+              let distAndVeryOften !p !t = Tile.isVeryOftenItem coTileSpeedup t
+                                           && distant p
+                  distOrVeryOften !p !t = Tile.isVeryOftenItem coTileSpeedup t
+                                          || distant p
+                  distAndCommon !p !t = Tile.isCommonItem coTileSpeedup t
+                                        && distant p
+                  distant !p = let f !k _ b = chessDist p k > 6 && b
+                               in EM.foldrWithKey f True lfloor
                   alPos = EM.findWithDefault [] lid alliancePositions
-                  -- Don't generate items around initial actors or in tiles.
+                  -- Don't generate items around initial actors or in bunches.
                   distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
-              pos <- rndToAction $ findPosTry2 200 lvl
+              pos <- rndToAction $ findPosTry2 100 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
-                -- If there are very many items, some regions may be very rich,
-                -- but let's try to spread at least the initial items evenly.
-                ([distAndOften | n * 100 < xspan * yspan]
-                 ++ [\_ !t -> Tile.isOftenItem coTileSpeedup t])
+                [ distAndVeryOften
+                , distAndCommon
+                , distOrVeryOften]
                 distAllianceAndNotFloor
                 [distAllianceAndNotFloor]
               createLevelItem pos lid
