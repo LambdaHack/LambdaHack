@@ -240,20 +240,30 @@ buildFence fenceId area =
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
-buildFenceRnd :: COps -> GroupName TileKind -> Area -> Rnd TileMapEM
-buildFenceRnd COps{cotile} couterFenceTile area = do
+buildFenceRnd :: COps
+              -> GroupName TileKind -> GroupName TileKind
+              -> GroupName TileKind -> GroupName TileKind
+              -> Area
+              -> Rnd TileMapEM
+buildFenceRnd COps{cotile}
+              cfenceTileN cfenceTileE cfenceTileS cfenceTileW area = do
   let (x0, y0, x1, y1) = fromArea area
-      fenceIdRnd (xf, yf) = do
+      fenceIdRnd couterFenceTile (xf, yf) = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
             tileGroup | isCorner xf yf = "basic outer fence"
                       | otherwise = couterFenceTile
         fenceId <- fromMaybe (error $ "" `showFailure` tileGroup)
                    <$> opick cotile tileGroup (const True)
         return (Point xf yf, fenceId)
-      pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
-                  ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
-  fenceList <- mapM fenceIdRnd pointList
-  return $! EM.fromList fenceList
+      pointListN = [(x, y0-1) | x <- [x0-1..x1+1]]
+      pointListE = [(x1+1, y) | y <- [y0..y1]]
+      pointListS = [(x, y1+1) | x <- [x0-1..x1+1]]
+      pointListW = [(x0-1, y) | y <- [y0..y1]]
+  fenceListN <- mapM (fenceIdRnd cfenceTileN) pointListN
+  fenceListE <- mapM (fenceIdRnd cfenceTileE) pointListE
+  fenceListS <- mapM (fenceIdRnd cfenceTileS) pointListS
+  fenceListW <- mapM (fenceIdRnd cfenceTileW) pointListW
+  return $! EM.fromList $ fenceListN ++ fenceListE ++ fenceListS ++ fenceListW
 
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill

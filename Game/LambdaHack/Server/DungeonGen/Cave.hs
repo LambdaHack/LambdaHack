@@ -247,7 +247,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     interCor  -- very small
   doorMap <- doorMapFun lplaces lcorridors
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
-  fence <- buildFenceRnd cops couterFenceTile subArea
+  fence <- buildFenceRnd cops
+                         cfenceTileN cfenceTileE cfenceTileS cfenceTileW subArea
   -- The obscured tile, e.g., scratched wall, stays on the server forever,
   -- only the suspect variant on client gets replaced by this upon searching.
   let sub2Area = fromMaybe (error $ "" `showFailure` kc) $ shrink subArea
