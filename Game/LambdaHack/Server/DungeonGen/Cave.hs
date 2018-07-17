@@ -30,12 +30,10 @@ import           Game.LambdaHack.Server.DungeonGen.Place
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
-  { dkind   :: ContentId CaveKind  -- ^ the kind of the cave
-  , darea   :: Area                -- ^ map area of the cave
-  , dsecret :: Int                 -- ^ secret tile seed
-  , dmap    :: TileMapEM           -- ^ tile kinds in the cave
-  , dplaces :: [Place]             -- ^ places generated in the cave
-  , dnight  :: Bool                -- ^ whether the cave is dark
+  { dkind  :: ContentId CaveKind  -- ^ the kind of the cave
+  , darea  :: Area                -- ^ map area of the cave
+  , dmap   :: TileMapEM           -- ^ tile kinds in the cave
+  , dnight :: Bool                -- ^ whether the cave is dark
   }
   deriving Show
 
@@ -162,12 +160,11 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
-                        -> ( TileMapEM, [Place]
-                           , EM.EnumMap Point (Area, Fence, Area) )
+                        -> ( TileMapEM, EM.EnumMap Point (Area, Fence, Area) )
                         -> (Point, SpecialArea)
-                        -> Rnd ( TileMapEM, [Place]
+                        -> Rnd ( TileMapEM
                                , EM.EnumMap Point (Area, Fence, Area) )
-            decidePlace noVoid (!m, !pls, !qls) (!i, !special) =
+            decidePlace noVoid (!m, !qls) (!i, !special) =
               case special of
                 SpecialArea ar -> do
                   -- Reserved for corridors and the global fence.
@@ -178,16 +175,15 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   if not noVoid && i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
-                    return (m, pls, EM.insert i (r, FNone, ar) qls)
+                    return (m, EM.insert i (r, FNone, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
-                    (tmap, place) <-
+                    Place{..} <-
                       buildPlace cops kc dnight darkCorTile litCorTile
                                  ldepth totalDepth dsecret r Nothing
-                    let fence = pfence $ okind coplace $ qkind place
-                    return ( EM.union tmap m
-                           , place : pls
-                           , EM.insert i (qarea place, fence, ar) qls )
+                    let fence = pfence $ okind coplace qkind
+                    return ( EM.union qmap m
+                           , EM.insert i (qarea, fence, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
@@ -200,22 +196,19 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                       !_A3 = assert (isJust (shrink r)
                                      `blame` ( r, ar, p, innerArea, gs
                                              , gs2, qls, kc )) ()
-                  (tmap, place) <-
+                  Place{..} <-
                     buildPlace cops kc dnight darkCorTile litCorTile
                                ldepth totalDepth dsecret r (Just placeGroup)
-                  let fence = pfence $ okind coplace $ qkind place
-                  return ( EM.union tmap m
-                         , place : pls
-                         , EM.insert i (qarea place, fence, ar) qls )
+                  let fence = pfence $ okind coplace qkind
+                  return ( EM.union qmap m
+                         , EM.insert i (qarea, fence, ar) qls )
                 SpecialMerged sp p2 -> do
-                  (lplaces, dplaces, qplaces) <-
-                    decidePlace True (m, pls, qls) (i, sp)
-                  return ( lplaces, dplaces
-                         , EM.insert p2 (qplaces EM.! i) qplaces )
-        places <- foldlM' (decidePlace False) (EM.empty, [], EM.empty)
+                  (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
+                  return ( lplaces, EM.insert p2 (qplaces EM.! i) qplaces )
+        places <- foldlM' (decidePlace False) (EM.empty, EM.empty)
                   $ EM.assocs gs2
         return (voidPlaces, lgr, places)
-  (voidPlaces, lgrid, (lplaces, dplaces, qplaces)) <- createPlaces
+  (voidPlaces, lgrid, (lplaces, qplaces)) <- createPlaces
   let lcorridorsFun = do
         connects <- connectGrid voidPlaces lgrid
         addedConnects <- do

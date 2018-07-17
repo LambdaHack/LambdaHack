@@ -1,10 +1,10 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
-  ( Place(..), TileMapEM, placeCheck, buildPlace, isChancePos, buildFenceRnd
+  ( Place(..), TileMapEM, buildPlace, isChancePos, buildFenceRnd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , interiorArea, olegend, ooverride, buildFence, tilePlace
+  , placeCheck, interiorArea, olegend, ooverride, buildFence, tilePlace
 #endif
   ) where
 
@@ -12,7 +12,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import           Data.Binary
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -31,23 +30,19 @@ import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
--- | The parameters of a place. All are immutable and rolled and fixed
--- at the time when a place is generated.
-data Place = Place
-  { qkind    :: ContentId PlaceKind
-  , qarea    :: Area
-  , qseen    :: Bool
-  , qlegend  :: GroupName TileKind
-  , qFWall   :: ContentId TileKind
-  , qFFloor  :: ContentId TileKind
-  , qFGround :: ContentId TileKind
-  }
-  deriving Show
-
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
 type TileMapEM = EM.EnumMap Point (ContentId TileKind)
+
+-- | The parameters of a place. All are immutable and rolled and fixed
+-- at the time when a place is generated.
+data Place = Place
+  { qkind :: ContentId PlaceKind
+  , qarea :: Area
+  , qmap  :: TileMapEM
+  }
+  deriving Show
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
@@ -55,7 +50,7 @@ type TileMapEM = EM.EnumMap Point (ContentId TileKind)
 -- For other tiling methods, check that the area is large enough for tiling
 -- the corner twice in each direction, with a possible one row/column overlap.
 placeCheck :: Area       -- ^ the area to fill
-           -> PlaceKind  -- ^ the place kind to construct
+           -> PlaceKind  -- ^ the kind of place to construct
            -> Bool
 placeCheck r pk@PlaceKind{..} =
   case interiorArea pk r of
@@ -115,7 +110,7 @@ buildPlace :: COps                -- ^ the game content
            -> Int                 -- ^ secret tile seed
            -> Area                -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
-           -> Rnd (TileMapEM, Place)
+           -> Rnd Place
 buildPlace cops@COps{cotile, coplace}
            CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(Dice.AbsDepth ld) totalDepth@(Dice.AbsDepth depth) dsecret
@@ -153,9 +148,7 @@ buildPlace cops@COps{cotile, coplace}
   let qFFloor = if dark then darkCorTile else litCorTile
       qFGround = if dnight then darkCorTile else litCorTile
       qlegend = if dark then clegendDarkTile else clegendLitTile
-      qseen = False
       qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
-      place = Place {..}
   (overrideOneIn, override) <- ooverride cops (poverride kr)
   (legendOneIn, legend) <- olegend cops qlegend
   (legendLitOneIn, legendLit) <- olegend cops clegendLitTile
@@ -187,7 +180,8 @@ buildPlace cops@COps{cotile, coplace}
       interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
         _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
-  return (EM.union interior fence, place)
+      qmap = EM.union interior fence
+  return $! Place {..}
 
 isChancePos :: Int -> Int -> Point -> Bool
 isChancePos c dsecret (Point x y) =
@@ -313,22 +307,3 @@ tilePlace area pl@PlaceKind{..} = do
       mirror2 <- oneOf [id, reverse]
       return $! fillInterior (\_ l -> mirror1 l) (\_ l -> mirror2 l)
   return $! EM.fromList interior
-
-instance Binary Place where
-  put Place{..} = do
-    put qkind
-    put qarea
-    put qseen
-    put qlegend
-    put qFWall
-    put qFFloor
-    put qFGround
-  get = do
-    qkind <- get
-    qarea <- get
-    qseen <- get
-    qlegend <- get
-    qFWall <- get
-    qFFloor <- get
-    qFGround <- get
-    return $! Place{..}
