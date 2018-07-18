@@ -248,9 +248,10 @@ buildFenceRnd :: COps
 buildFenceRnd COps{cotile}
               cfenceTileN cfenceTileE cfenceTileS cfenceTileW area = do
   let (x0, y0, x1, y1) = fromArea area
+      allTheSame = all (== cfenceTileN) [cfenceTileE, cfenceTileS, cfenceTileW]
       fenceIdRnd couterFenceTile (xf, yf) = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
-            tileGroup | isCorner xf yf = "basic outer fence"
+            tileGroup | isCorner xf yf && not allTheSame = "basic outer fence"
                       | otherwise = couterFenceTile
         fenceId <- fromMaybe (error $ "" `showFailure` tileGroup)
                    <$> opick cotile tileGroup (const True)
