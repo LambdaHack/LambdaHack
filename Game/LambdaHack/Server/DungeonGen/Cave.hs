@@ -160,10 +160,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
-                        -> ( TileMapEM, EM.EnumMap Point (Area, Fence, Area) )
+                        -> (TileMapEM, EM.EnumMap Point (Area, Fence, Area))
                         -> (Point, SpecialArea)
-                        -> Rnd ( TileMapEM
-                               , EM.EnumMap Point (Area, Fence, Area) )
+                        -> Rnd (TileMapEM, EM.EnumMap Point (Area, Fence, Area))
             decidePlace noVoid (!m, !qls) (!i, !special) =
               case special of
                 SpecialArea ar -> do
@@ -204,7 +203,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                          , EM.insert i (qarea, fence, ar) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
-                  return ( lplaces, EM.insert p2 (qplaces EM.! i) qplaces )
+                  return (lplaces, EM.insert p2 (qplaces EM.! i) qplaces)
         places <- foldlM' (decidePlace False) (EM.empty, EM.empty)
                   $ EM.assocs gs2
         return (voidPlaces, lgr, places)
@@ -239,7 +238,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         -- The hacks below are instead of unionWithKeyM, which is costly.
         let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
                                 then Nothing  -- tile already open
-                                else Just (Tile.buildAs cotile pl, cor)
+                                else Just (pl, cor)
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
@@ -257,8 +256,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
       obscure p t = if isChancePos chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
-      umap = EM.unions [doorMap, lplaces, lcorridors, fence]  -- order matters
-  dmap <- mapWithKeyM obscure umap
+  lplacesObscured <- mapWithKeyM obscure lplaces
+  let dmap = EM.unions [doorMap, lplacesObscured, lcorridors, fence]
+        -- order matters
   return $! Cave {..}
 
 pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
@@ -267,7 +267,7 @@ pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
 pickOpening COps{cotile, coTileSpeedup}
             CaveKind{cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
-            pos (hidden, cor) = do
+            pos (pl, cor) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
         else -- If any cardinally adjacent walkable room tile is lit,
@@ -283,7 +283,9 @@ pickOpening COps{cotile, coTileSpeedup}
   -- chance to be open.
   rd <- chance cdoorChance
   if rd then do
+    let hidden = Tile.buildAs cotile pl
     doorTrappedId <- Tile.revealAs cotile hidden
+    let !_A = assert (Tile.buildAs cotile doorTrappedId == doorTrappedId) ()
     -- Not all solid tiles can hide a door, so @doorTrappedId@ may in fact
     -- not be a door at all, hence the check.
     if Tile.isDoor coTileSpeedup doorTrappedId then do  -- door created
@@ -291,7 +293,7 @@ pickOpening COps{cotile, coTileSpeedup}
       if ro
       then Tile.openTo cotile doorTrappedId
       else if isChancePos chidden dsecret pos
-           then return $! doorTrappedId  -- will become hidden
+           then return $! doorTrappedId  -- server will hide it
            else do
              doorOpenId <- Tile.openTo cotile doorTrappedId
              Tile.closeTo cotile doorOpenId
