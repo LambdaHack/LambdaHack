@@ -238,19 +238,28 @@ atomicRemember lid inPer sClient s =
         -- (or resending us the same data we already got).
         -- If the tiles are changed to other variants of the hidden tile,
         -- we can still verify by searching.
-        let f p (loses1, spots1) =
+        let f p (loses1, spots1, entries1) =
               let t = lvl `at` p
                   tHidden = fromMaybe t $ Tile.hideAs cotile t
                   tClient = lvlClient `at` p
+                  entries2 = case EM.lookup p $ lentry lvl of
+                    Nothing -> entries1
+                    Just entry2 -> case EM.lookup p $ lentry lvlClient of
+                      Nothing -> (p, entry2) : entries1
+                      Just entry3 -> assert (entry3 == entry2) entries1
+                        -- avoid resending entries if client previously saw
+                        -- another not hidden tile at that position
               in if tClient `elem` [t, tHidden]
-                 then (loses1, spots1)
+                 then (loses1, spots1, entries1)
                  else ( if isUknownSpace tClient
                         then loses1
                         else (p, tClient) : loses1
-                      , (p, tHidden) : spots1 )  -- send the hidden version
-            (loses, spots) = foldr f ([], []) inFov
+                      , (p, tHidden) : spots1  -- send the hidden version
+                      , if tHidden == t then entries2 else entries1)
+            (loses, spots, entries) = foldr f ([], [], []) inFov
         in [UpdLoseTile lid loses | not $ null loses]
            ++ [UpdSpotTile lid spots | not $ null spots]
+           ++ [UpdSpotEntry lid entries | not $ null entries]
       -- Wipe out remembered smell on tiles that now came into smell Fov.
       -- Smell radius is small, so we can just wipe and send all.
       inSmellFov = ES.elems $ totalSmelled inPer

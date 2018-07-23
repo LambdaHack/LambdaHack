@@ -1212,6 +1212,10 @@ effectDetect execSfx d radius target pos = do
                       -- This is safe searching; embedded items
                       -- are not triggered, but they are revealed.
                       revealEmbed p
+                      case EM.lookup p $ lentry lvl of
+                        Nothing -> return ()
+                        Just entry ->
+                          execUpdAtomic $ UpdSpotEntry (blid b) [(p, entry)]
                 mapM_ f l
                 return $! not $ null l
           in (predicateH, actionH)

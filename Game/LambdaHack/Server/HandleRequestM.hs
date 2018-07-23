@@ -521,6 +521,11 @@ reqAlterFail source tpos = do
       -- (e.g., due to item detection, despite tile being still hidden),
       -- the command is ignored on the client.
       revealEmbeds
+      -- If the entries are already seen by the client
+      -- the command is ignored on the client.
+      case EM.lookup tpos $ lentry lvl of
+        Nothing -> return ()
+        Just entry -> execUpdAtomic $ UpdSpotEntry lid [(tpos, entry)]
       -- Seaching triggers the embeds as well, after they are revealed.
       -- The rationale is that the items were all the time present
       -- (just invisible to the client), so they need to be triggered.
