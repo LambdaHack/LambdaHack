@@ -156,6 +156,7 @@ unknownLevel COps{corule, cotile}
            , lembed = EM.empty
            , lactor = EM.empty
            , ltile = unknownTileMap outerId (rXmax corule) (rYmax corule)
+           , lentry = EM.empty
            , larea
            , lsmell = EM.empty
            , lstair
