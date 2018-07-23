@@ -48,6 +48,7 @@ import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Message describing the cause of failure of human command.
@@ -329,7 +330,7 @@ lookAtTile :: MonadClientUI m
            -> LevelId    -- ^ level the position is at
            -> m Text
 lookAtTile canSee p aid lidV = do
-  COps{cotile} <- getsState scops
+  COps{cotile, coplace} <- getsState scops
   side <- getsClient sside
   factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
@@ -346,6 +347,12 @@ lookAtTile canSee p aid lidV = do
           | not aims = "you are aware of"
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname $ okind cotile tile
+      entrySentence pk blurb =
+        makeSentence [blurb, MU.Text $ PK.pname $ okind coplace pk]
+      elooks = case EM.lookup p $ lentry lvl of
+        Nothing -> ""
+        Just (PK.PEntry pk) -> entrySentence pk "it is an entrance to"
+        Just (PK.PAround pk) -> entrySentence pk "it surrounds"
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             (temporary, nWs) = partItemWs side factionD k localTime itemFull kit
@@ -354,7 +361,7 @@ lookAtTile canSee p aid lidV = do
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
       ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
-  return $! makeSentence [MU.Text vis, tilePart] <+> ilooks
+  return $! makeSentence [MU.Text vis, tilePart] <+> elooks <+> ilooks
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
