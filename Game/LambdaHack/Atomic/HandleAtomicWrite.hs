@@ -508,8 +508,8 @@ updLoseTile lid ts = assert (not $ null ts) $ do
 updSpotEntry :: MonadStateWrite m => LevelId -> [(Point, PK.PlaceEntry)] -> m ()
 updSpotEntry lid ts = assert (not $ null ts) $ do
   let alt en Nothing = Just en
-      alt en (Just oldEn) = error $ "entry already added"
-                                    `showFailure` (lid, ts, en, oldEn)
+      alt en (Just oldEn) = atomicFail $ "entry already added"
+                                         `showFailure` (lid, ts, en, oldEn)
       f (p, en) = EM.alter (alt en) p
       upd m = foldr f m ts
   updateLevel lid $ updateEntry upd
