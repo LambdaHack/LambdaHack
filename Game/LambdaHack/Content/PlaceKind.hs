@@ -2,7 +2,7 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
-  , Cover(..), Fence(..)
+  , Cover(..), Fence(..), deadEndId
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -58,6 +58,10 @@ data Fence =
   deriving (Show, Eq, Generic)
 
 instance NFData Fence
+
+deadEndId :: ContentId PlaceKind
+{-# INLINE deadEndId #-}
+deadEndId = ContentId 0
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
