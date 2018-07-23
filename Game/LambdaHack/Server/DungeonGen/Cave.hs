@@ -162,13 +162,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
-                        -> ( TileMapEM
-                           , EM.EnumMap Point
-                               (ContentId PlaceKind, Area, Fence, Area) )
+                        -> (TileMapEM, EM.EnumMap Point (Place, Area))
                         -> (Point, SpecialArea)
-                        -> Rnd ( TileMapEM
-                               , EM.EnumMap Point
-                                   (ContentId PlaceKind, Area, Fence, Area) )
+                        -> Rnd (TileMapEM, EM.EnumMap Point (Place, Area))
             decidePlace noVoid (!m, !qls) (!i, !special) =
               case special of
                 SpecialArea ar -> do
@@ -179,16 +175,16 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                       !_A1 = assert (isJust _A0 `blame` (innerArea, gs, kc)) ()
                   if not noVoid && i `ES.member` voidPlaces
                   then do
-                    r <- mkVoidRoom innerArea
-                    return (m, EM.insert i (deadEndId, r, FNone, ar) qls)
+                    qarea <- mkVoidRoom innerArea
+                    let qkind = deadEndId
+                        qmap = EM.empty
+                    return (m, EM.insert i (Place{..}, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
-                    Place{..} <-
-                      buildPlace cops kc dnight darkCorTile litCorTile
-                                 ldepth totalDepth dsecret r Nothing
-                    let fence = pfence $ okind coplace qkind
-                    return ( EM.union qmap m
-                           , EM.insert i (qkind, qarea, fence, ar) qls )
+                    place <- buildPlace cops kc dnight darkCorTile litCorTile
+                                        ldepth totalDepth dsecret r Nothing
+                    return ( EM.union (qmap place) m
+                           , EM.insert i (place, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
@@ -201,12 +197,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                       !_A3 = assert (isJust (shrink r)
                                      `blame` ( r, ar, p, innerArea, gs
                                              , gs2, qls, kc )) ()
-                  Place{..} <-
-                    buildPlace cops kc dnight darkCorTile litCorTile
-                               ldepth totalDepth dsecret r (Just placeGroup)
-                  let fence = pfence $ okind coplace qkind
-                  return ( EM.union qmap m
-                         , EM.insert i (qkind, qarea, fence, ar) qls )
+                  place <- buildPlace cops kc dnight darkCorTile litCorTile
+                             ldepth totalDepth dsecret r (Just placeGroup)
+                  return (EM.union (qmap place) m, EM.insert i (place, ar) qls)
                 SpecialMerged sp p2 -> do
                   (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
                   return (lplaces, EM.insert p2 (qplaces EM.! i) qplaces)
@@ -240,8 +233,14 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                        -> Rnd (Maybe ( ContentId PlaceKind
                                      , Corridor
                                      , ContentId PlaceKind ))
-            connectPos (p0, p1) =
-              connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
+            connectPos (p0, p1) = do
+              let (place0, area0) = qplaces EM.! p0
+                  (place1, area1) = qplaces EM.! p1
+                  savePlaces cor = (qkind place0, cor, qkind place1)
+              connected <- connectPlaces
+                (qarea place0, pfence $ okind coplace (qkind place0), area0)
+                (qarea place1, pfence $ okind coplace (qkind place1), area1)
+              return $! savePlaces <$> connected
         cs <- catMaybes <$> mapM connectPos allConnects
         let pickedCorTile = if dnight then darkCorTile else litCorTile
             digCorridorSection :: a -> Point -> Point -> EM.EnumMap Point a
