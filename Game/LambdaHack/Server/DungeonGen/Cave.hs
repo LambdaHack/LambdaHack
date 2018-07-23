@@ -160,9 +160,13 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
-                        -> (TileMapEM, EM.EnumMap Point (Area, Fence, Area))
+                        -> ( TileMapEM
+                           , EM.EnumMap Point
+                               (ContentId PlaceKind, Area, Fence, Area) )
                         -> (Point, SpecialArea)
-                        -> Rnd (TileMapEM, EM.EnumMap Point (Area, Fence, Area))
+                        -> Rnd ( TileMapEM
+                               , EM.EnumMap Point
+                                   (ContentId PlaceKind, Area, Fence, Area) )
             decidePlace noVoid (!m, !qls) (!i, !special) =
               case special of
                 SpecialArea ar -> do
@@ -174,7 +178,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   if not noVoid && i `ES.member` voidPlaces
                   then do
                     r <- mkVoidRoom innerArea
-                    return (m, EM.insert i (r, FNone, ar) qls)
+                    return (m, EM.insert i (deadEndId, r, FNone, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     Place{..} <-
@@ -182,7 +186,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                  ldepth totalDepth dsecret r Nothing
                     let fence = pfence $ okind coplace qkind
                     return ( EM.union qmap m
-                           , EM.insert i (qarea, fence, ar) qls )
+                           , EM.insert i (qkind, qarea, fence, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
@@ -200,7 +204,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                ldepth totalDepth dsecret r (Just placeGroup)
                   let fence = pfence $ okind coplace qkind
                   return ( EM.union qmap m
-                         , EM.insert i (qarea, fence, ar) qls )
+                         , EM.insert i (qkind, qarea, fence, ar) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
                   return (lplaces, EM.insert p2 (qplaces EM.! i) qplaces)
@@ -208,7 +212,10 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   $ EM.assocs gs2
         return (voidPlaces, lgr, places)
   (voidPlaces, lgrid, (lplaces, qplaces)) <- createPlaces
-  let lcorridorsFun = do
+  let lcorridorsFun :: Rnd ( EM.EnumMap Point ( ContentId TileKind
+                                              , ContentId PlaceKind )
+                            , TileMapEM )
+      lcorridorsFun = do
         connects <- connectGrid voidPlaces lgrid
         addedConnects <- do
           let cauxNum =
@@ -227,34 +234,35 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                 p0 == q && q0 `ES.notMember` voidPlaces) cns
           return $! filter notDeadEnd cns
         let allConnects = connects `union` addedConnects
-            connectPos :: (Point, Point) -> Rnd (Maybe Corridor)
+            connectPos :: (Point, Point)
+                       -> Rnd (Maybe ( ContentId PlaceKind
+                                     , Corridor
+                                     , ContentId PlaceKind ))
             connectPos (p0, p1) =
               connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
         cs <- catMaybes <$> mapM connectPos allConnects
         let pickedCorTile = if dnight then darkCorTile else litCorTile
-            digCorridorSection :: Point -> Point -> TileMapEM
-            digCorridorSection p1 p2 =
-              let cor  = fromTo p1 p2
-              in EM.fromList $ zip cor (repeat pickedCorTile)
-            digCorridor :: Corridor -> (TileMapEM, TileMapEM)
-            digCorridor (p1, p2, p3, p4) =
-              ( EM.union (digCorridorSection p1 p2)
-                         (digCorridorSection p3 p4)
-              , digCorridorSection p2 p3 )
-            (lOuter, lInner) = unzip $ map digCorridor cs
-        return (EM.unions lOuter, EM.unions lInner)
-  (lcorOuter, lcorInner) <- lcorridorsFun
+            digCorridorSection :: a -> Point -> Point -> EM.EnumMap Point a
+            digCorridorSection a p1 p2 =
+              EM.fromList $ zip (fromTo p1 p2) (repeat a)
+            digCorridor (sqkind, (p1, p2, p3, p4), tqkind) =
+              ( EM.union (digCorridorSection (pickedCorTile, sqkind) p1 p2)
+                         (digCorridorSection (pickedCorTile, tqkind) p3 p4)
+              , digCorridorSection pickedCorTile p2 p3 )
+            (lplOuter, lInner) = unzip $ map digCorridor cs
+        return (EM.unions lplOuter, EM.unions lInner)
+  (lplcorOuter, lcorInner) <- lcorridorsFun
   let doorMapFun lpl lcor = do
         -- The hacks below are instead of unionWithKeyM, which is costly.
-        let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
-                                then Nothing  -- tile already open
-                                else Just (pl, cor)
+        let mergeCor _ pl (cor, pk) = if Tile.isWalkable coTileSpeedup pl
+                                      then Nothing  -- tile already open
+                                      else Just (pl, cor, pk)
             intersectionWithKeyMaybe combine =
               EM.mergeWithKey combine (const EM.empty) (const EM.empty)
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
         mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
                     interCor  -- very small
-  doorMap <- doorMapFun lplaces lcorOuter
+  doorMap <- doorMapFun lplaces lplcorOuter
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   fence <- buildFenceRnd cops
                          cfenceTileN cfenceTileE cfenceTileS cfenceTileW subArea
@@ -267,17 +275,19 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
-  let dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
+  let lcorOuter = EM.map fst lplcorOuter
+      dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
 
 pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
-            -> Int -> Point -> (ContentId TileKind, ContentId TileKind)
+            -> Int -> Point
+            -> (ContentId TileKind, ContentId TileKind, ContentId PlaceKind)
             -> Rnd (ContentId TileKind)
 pickOpening COps{cotile, coTileSpeedup}
             CaveKind{cdoorChance, copenChance, chidden}
             lplaces litCorTile dsecret
-            pos (pl, cor) = do
+            pos (pl, cor, _) = do
   let nicerCorridor =
         if Tile.isLit coTileSpeedup cor then cor
         else -- If any cardinally adjacent walkable room tile is lit,

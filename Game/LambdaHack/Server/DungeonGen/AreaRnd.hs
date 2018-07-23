@@ -22,6 +22,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.IntSet as IS
 
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc hiding (xM)
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -196,10 +197,14 @@ mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
 -- The corridor connects (touches) the inner areas and the turning point
 -- of the corridor (if any) is outside of the outer areas
 -- and inside the grid areas.
-connectPlaces :: (Area, Fence, Area) -> (Area, Fence, Area)
-              -> Rnd (Maybe Corridor)
-connectPlaces (_, _, sg) (_, _, tg) | sg == tg = return Nothing
-connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
+connectPlaces :: (ContentId PlaceKind, Area, Fence, Area)
+              -> (ContentId PlaceKind, Area, Fence, Area)
+              -> Rnd (Maybe ( ContentId PlaceKind
+                            , Corridor
+                            , ContentId PlaceKind ))
+connectPlaces (_, _, _, sg) (_, _, _, tg) | sg == tg = return Nothing
+connectPlaces s3@(sqkind, sqarea, spfence, sg)
+              t3@(tqkind, tqarea, tpfence, tg) = do
   let (sa, so) = borderPlace sqarea spfence
       (ta, to) = borderPlace tqarea tpfence
       trim area =
@@ -256,7 +261,7 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
   cor@(c1, c2, c3, c4) <- mkCorridor hv p0 (sa == so) p1 (ta == to) area
   let !_A2 = assert (strivial || ttrivial || allB nin [c1, c2, c3, c4]
                      `blame` (cor, sx, sy, tx, ty, s3, t3)) ()
-  return $ Just cor
+  return $ Just (sqkind, cor, tqkind)
 
 borderPlace :: Area -> Fence -> (Area, Area)
 borderPlace qarea pfence = case pfence of
