@@ -3,7 +3,7 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ( Cave(..), buildCave
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , pickOpening, digCorridors
+  , pickOpening
 #endif
   ) where
 
@@ -232,8 +232,18 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
               connectPlaces (qplaces EM.! p0) (qplaces EM.! p1)
         cs <- catMaybes <$> mapM connectPos allConnects
         let pickedCorTile = if dnight then darkCorTile else litCorTile
-        return $! EM.unions (map (digCorridors pickedCorTile) cs)
-  lcorridors <- lcorridorsFun
+            digCorridorSection :: Point -> Point -> TileMapEM
+            digCorridorSection p1 p2 =
+              let cor  = fromTo p1 p2
+              in EM.fromList $ zip cor (repeat pickedCorTile)
+            digCorridor :: Corridor -> (TileMapEM, TileMapEM)
+            digCorridor (p1, p2, p3, p4) =
+              ( EM.union (digCorridorSection p1 p2)
+                         (digCorridorSection p3 p4)
+              , digCorridorSection p2 p3 )
+            (lOuter, lInner) = unzip $ map digCorridor cs
+        return (EM.unions lOuter, EM.unions lInner)
+  (lcorOuter, lcorInner) <- lcorridorsFun
   let doorMapFun lpl lcor = do
         -- The hacks below are instead of unionWithKeyM, which is costly.
         let mergeCor _ pl cor = if Tile.isWalkable coTileSpeedup pl
@@ -244,7 +254,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
             interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
         mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
                     interCor  -- very small
-  doorMap <- doorMapFun lplaces lcorridors
+  doorMap <- doorMapFun lplaces lcorOuter
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   fence <- buildFenceRnd cops
                          cfenceTileN cfenceTileE cfenceTileS cfenceTileW subArea
@@ -257,7 +267,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     then Tile.obscureAs cotile $ Tile.buildAs cotile t
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
-  let dmap = EM.unions [doorMap, lplacesObscured, lcorridors, fence]
+  let dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
 
@@ -299,11 +309,3 @@ pickOpening COps{cotile, coTileSpeedup}
              Tile.closeTo cotile doorOpenId
     else return $! doorTrappedId  -- assume this is what content enforces
   else return $! nicerCorridor
-
-digCorridors :: ContentId TileKind -> Corridor -> TileMapEM
-digCorridors tile (p1:p2:ps) =
-  EM.union corPos (digCorridors tile (p2:ps))
- where
-  cor  = fromTo p1 p2
-  corPos = EM.fromList $ zip cor (repeat tile)
-digCorridors _ _ = EM.empty

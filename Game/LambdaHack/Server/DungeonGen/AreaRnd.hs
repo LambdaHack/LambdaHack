@@ -159,7 +159,7 @@ data HV = Horiz | Vert
   deriving Eq
 
 -- | The coordinates of consecutive fields of a corridor.
-type Corridor = [Point]
+type Corridor = (Point, Point, Point, Point)
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
@@ -176,16 +176,17 @@ mkCorridor :: HV            -- ^ orientation of the starting section
 mkCorridor hv (Point x0 y0) p0floor (Point x1 y1) p1floor area = do
   Point rxRaw ryRaw <- pointInArea area
   let (sx0, sy0, sx1, sy1) = fromArea area
-      -- Avoid corridors that run along @FGround@ or @FFloor@ fence.
+      -- Avoid corridors that run along @FGround@ or @FFloor@ fence,
+      -- unless not possible.
       rx = if | rxRaw == sx0 + 1 && p0floor -> sx0
               | rxRaw == sx1 - 1 && p1floor -> sx1
               | otherwise -> rxRaw
       ry = if | ryRaw == sy0 + 1 && p0floor -> sy0
               | ryRaw == sy1 - 1 && p1floor -> sy1
               | otherwise -> ryRaw
-  return $! map (uncurry Point) $ case hv of
-    Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
-    Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
+  return $! case hv of
+    Horiz -> (Point x0 y0, Point rx y0, Point rx y1, Point x1 y1)
+    Vert  -> (Point x0 y0, Point x0 ry, Point x1 ry, Point x1 y1)
 
 -- | Try to connect two interiors of places with a corridor.
 -- Choose entrances some steps away from the edges, if the place
@@ -251,10 +252,10 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
             Nothing -> error $ "" `showFailure` (sx, sy, tx, ty, s3, t3)
       nin p = not $ p `inside` sa || p `inside` ta
       !_A = assert (strivial || ttrivial
-                    || allB nin [p0, p1]`blame` (sx, sy, tx, ty, s3, t3)) ()
-  cor <- mkCorridor hv p0 (sa == so) p1 (ta == to) area
-  let !_A2 = assert (strivial || ttrivial
-                     || allB nin cor `blame` (sx, sy, tx, ty, s3, t3)) ()
+                    || allB nin [p0, p1] `blame` (sx, sy, tx, ty, s3, t3)) ()
+  cor@(c1, c2, c3, c4) <- mkCorridor hv p0 (sa == so) p1 (ta == to) area
+  let !_A2 = assert (strivial || ttrivial || allB nin [c1, c2, c3, c4]
+                     `blame` (cor, sx, sy, tx, ty, s3, t3)) ()
   return $ Just cor
 
 borderPlace :: Area -> Fence -> (Area, Area)
