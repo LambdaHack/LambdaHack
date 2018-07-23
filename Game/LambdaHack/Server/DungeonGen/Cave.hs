@@ -33,6 +33,8 @@ data Cave = Cave
   { dkind  :: ContentId CaveKind  -- ^ the kind of the cave
   , darea  :: Area                -- ^ map area of the cave
   , dmap   :: TileMapEM           -- ^ tile kinds in the cave
+  , dentry :: EM.EnumMap Point (ContentId PlaceKind)
+                                  -- ^ room entrances in the cave
   , dnight :: Bool                -- ^ whether the cave is dark
   }
   deriving Show
@@ -252,17 +254,15 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
             (lplOuter, lInner) = unzip $ map digCorridor cs
         return (EM.unions lplOuter, EM.unions lInner)
   (lplcorOuter, lcorInner) <- lcorridorsFun
-  let doorMapFun lpl lcor = do
-        -- The hacks below are instead of unionWithKeyM, which is costly.
-        let mergeCor _ pl (cor, pk) = if Tile.isWalkable coTileSpeedup pl
-                                      then Nothing  -- tile already open
-                                      else Just (pl, cor, pk)
-            intersectionWithKeyMaybe combine =
-              EM.mergeWithKey combine (const EM.empty) (const EM.empty)
-            interCor = intersectionWithKeyMaybe mergeCor lpl lcor  -- fast
-        mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
-                    interCor  -- very small
-  doorMap <- doorMapFun lplaces lplcorOuter
+  -- The hacks below are instead of unionWithKeyM, which is costly.
+  let mergeCor _ pl (cor, pk) = if Tile.isWalkable coTileSpeedup pl
+                                then Nothing  -- tile already open
+                                else Just (pl, cor, pk)
+      intersectionWithKeyMaybe combine =
+        EM.mergeWithKey combine (const EM.empty) (const EM.empty)
+      interCor = intersectionWithKeyMaybe mergeCor lplaces lplcorOuter  -- fast
+  doorMap <- mapWithKeyM (pickOpening cops kc lplaces litCorTile dsecret)
+                         interCor  -- very small
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
   fence <- buildFenceRnd cops
                          cfenceTileN cfenceTileE cfenceTileS cfenceTileW subArea
@@ -276,6 +276,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
   let lcorOuter = EM.map fst lplcorOuter
+      dentry = EM.map snd lplcorOuter
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
