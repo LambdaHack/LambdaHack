@@ -277,7 +277,13 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
   let lcorOuter = EM.map fst lplcorOuter
-      dentry = EM.map (PEntry . snd) lplcorOuter
+      aroundFence Place{..} =
+        if pfence (okind coplace qkind) `elem` [FFloor, FGround]
+        then EM.map (const $ PAround qkind) qfence
+        else EM.empty
+      dentry = EM.unions $
+        EM.map (PEntry . snd) lplcorOuter
+        : map (\(place, _) -> aroundFence place) (EM.elems qplaces)
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
