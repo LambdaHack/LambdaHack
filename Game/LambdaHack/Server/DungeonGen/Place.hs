@@ -4,7 +4,8 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( Place(..), TileMapEM, buildPlace, isChancePos, buildFenceRnd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , placeCheck, interiorArea, olegend, ooverride, buildFence, tilePlace
+  , placeCheck, interiorArea, olegend, ooverride, buildFence, buildFenceMap
+  , tilePlace
 #endif
   ) where
 
@@ -38,9 +39,10 @@ type TileMapEM = EM.EnumMap Point (ContentId TileKind)
 -- | The parameters of a place. All are immutable and rolled and fixed
 -- at the time when a place is generated.
 data Place = Place
-  { qkind :: ContentId PlaceKind
-  , qarea :: Area
-  , qmap  :: TileMapEM
+  { qkind  :: ContentId PlaceKind
+  , qarea  :: Area
+  , qmap   :: TileMapEM
+  , qfence :: TileMapEM
   }
   deriving Show
 
@@ -111,12 +113,9 @@ buildPlace :: COps                -- ^ the game content
            -> Area                -- ^ whole area of the place, fence included
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd Place
-buildPlace cops@COps{cotile, coplace}
-           CaveKind{..} dnight darkCorTile litCorTile
+buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
            ldepth@(Dice.AbsDepth ld) totalDepth@(Dice.AbsDepth depth) dsecret
            r mplaceGroup = do
-  qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
-            <$> opick cotile cfillerTile (const True)
   let findInterval x1y1 [] = (x1y1, (11, 0))
       findInterval !x1y1 ((!x, !y) : rest) =
         if fromIntegral ld * 10 <= x * fromIntegral depth
@@ -145,9 +144,7 @@ buildPlace cops@COps{cotile, coplace}
   dark <- if cpassable && pfence kr `elem` [FFloor, FGround]
           then return dnight
           else chanceDice ldepth totalDepth cdarkChance
-  let qFFloor = if dark then darkCorTile else litCorTile
-      qFGround = if dnight then darkCorTile else litCorTile
-      qlegend = if dark then clegendDarkTile else clegendLitTile
+  let qlegend = if dark then clegendDarkTile else clegendLitTile
       qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
   (overrideOneIn, override) <- ooverride cops (poverride kr)
   (legendOneIn, legend) <- olegend cops qlegend
@@ -157,12 +154,7 @@ buildPlace cops@COps{cotile, coplace}
       xlegendLit = ( EM.union overrideOneIn legendLitOneIn
                    , EM.union override legendLit )
   cmap <- tilePlace qarea kr
-  let fence = case pfence kr of
-        FWall -> buildFence qFWall qarea
-        FFloor -> buildFence qFFloor qarea
-        FGround -> buildFence qFGround qarea
-        FNone -> EM.empty
-      (x0, y0, x1, y1) = fromArea qarea
+  let (x0, y0, x1, y1) = fromArea qarea
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
       digDay xy c | isEdge xy = lookupOneIn xlegendLit xy c
                   | otherwise = lookupOneIn xlegend xy c
@@ -177,10 +169,11 @@ buildPlace cops@COps{cotile, coplace}
           else EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
         Nothing -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m))
                                       c m
-      interior = case pfence kr of
+      qmap = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digDay cmap
         _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
-      qmap = EM.union interior fence
+  qfence <- buildFence cops kc dnight darkCorTile litCorTile
+                       dark (pfence kr) qarea
   return $! Place {..}
 
 isChancePos :: Int -> Int -> Point -> Bool
@@ -230,9 +223,26 @@ ooverride COps{cotile} poverride =
             in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
+-- | Construct a fence around a place.
+buildFence :: COps -> CaveKind -> Bool
+           -> ContentId TileKind -> ContentId TileKind
+           -> Bool -> Fence -> Area
+           -> Rnd TileMapEM
+buildFence COps{cotile} CaveKind{cfillerTile} dnight darkCorTile litCorTile
+           dark fence qarea = do
+  qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
+            <$> opick cotile cfillerTile (const True)
+  let qFFloor = if dark then darkCorTile else litCorTile
+      qFGround = if dnight then darkCorTile else litCorTile
+  return $! case fence of
+    FWall -> buildFenceMap qFWall qarea
+    FFloor -> buildFenceMap qFFloor qarea
+    FGround -> buildFenceMap qFGround qarea
+    FNone -> EM.empty
+
 -- | Construct a fence around an area, with the given tile kind.
-buildFence :: ContentId TileKind -> Area -> TileMapEM
-buildFence fenceId area =
+buildFenceMap :: ContentId TileKind -> Area -> TileMapEM
+buildFenceMap fenceId area =
   let (x0, y0, x1, y1) = fromArea area
   in EM.fromList $ [ (Point x y, fenceId)
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++

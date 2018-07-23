@@ -178,12 +178,13 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     qarea <- mkVoidRoom innerArea
                     let qkind = deadEndId
                         qmap = EM.empty
+                        qfence = EM.empty
                     return (m, EM.insert i (Place{..}, ar) qls)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     place <- buildPlace cops kc dnight darkCorTile litCorTile
                                         ldepth totalDepth dsecret r Nothing
-                    return ( EM.union (qmap place) m
+                    return ( EM.unions [qmap place, qfence place, m]
                            , EM.insert i (place, ar) qls )
                 SpecialFixed p@Point{..} placeGroup ar -> do
                   -- Reserved for corridors and the global fence.
@@ -199,7 +200,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                              , gs2, qls, kc )) ()
                   place <- buildPlace cops kc dnight darkCorTile litCorTile
                              ldepth totalDepth dsecret r (Just placeGroup)
-                  return (EM.union (qmap place) m, EM.insert i (place, ar) qls)
+                  return ( EM.unions [qmap place, qfence place, m]
+                         , EM.insert i (place, ar) qls )
                 SpecialMerged sp p2 -> do
                   (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
                   return (lplaces, EM.insert p2 (qplaces EM.! i) qplaces)
