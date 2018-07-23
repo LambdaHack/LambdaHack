@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Level
     -- * The @Level@ type and its components
   , ItemFloor, ActorMap, TileMap, SmellMap, Level(..)
     -- * Component updates
-  , updateFloor, updateEmbed, updateActorMap, updateTile, updateSmell
+  , updateFloor, updateEmbed, updateActorMap, updateTile, updateEntry
+  , updateSmell
     -- * Level query
   , at, findPos, findPosTry, findPosTry2
 #ifdef EXPOSE_INTERNAL
@@ -112,8 +113,7 @@ data Level = Level
   , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
                           --   could be recomputed at resume, but small enough
   , ltile   :: TileMap    -- ^ remembered level map
-  , lentry  :: EM.EnumMap Point PlaceEntry
-                          -- ^ room entrances on the level
+  , lentry  :: EntryMap   -- ^ room entrances on the level
   , larea   :: Area       -- ^ area of the level
   , lsmell  :: SmellMap   -- ^ remembered smells on the level
   , lstair  :: ([Point], [Point])
@@ -147,6 +147,9 @@ updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
 
 updateTile :: (TileMap -> TileMap) -> Level -> Level
 updateTile f lvl = lvl {ltile = f (ltile lvl)}
+
+updateEntry :: (EntryMap -> EntryMap) -> Level -> Level
+updateEntry f lvl = lvl {lentry = f (lentry lvl)}
 
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}

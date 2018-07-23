@@ -46,6 +46,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Abstract syntax of atomic commands, that is, atomic game state
@@ -97,6 +98,8 @@ data UpdAtomic =
   | UpdHideTile ActorId Point (ContentId TileKind)
   | UpdSpotTile LevelId [(Point, ContentId TileKind)]
   | UpdLoseTile LevelId [(Point, ContentId TileKind)]
+  | UpdSpotEntry LevelId [(Point, PK.PlaceEntry)]
+  | UpdLoseEntry LevelId [(Point, PK.PlaceEntry)]
   | UpdAlterSmell LevelId Point Time Time
   | UpdSpotSmell LevelId [(Point, Time)]
   | UpdLoseSmell LevelId [(Point, Time)]
@@ -209,6 +212,8 @@ undoUpdAtomic cmd = case cmd of
   UpdHideTile aid p toTile -> Just $ UpdSearchTile aid p toTile
   UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts
   UpdLoseTile lid ts -> Just $ UpdSpotTile lid ts
+  UpdSpotEntry lid ts -> Just $ UpdLoseEntry lid ts
+  UpdLoseEntry lid ts -> Just $ UpdSpotEntry lid ts
   UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm
   UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms

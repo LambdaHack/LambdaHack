@@ -51,6 +51,7 @@ import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 
 -- | The game-state semantics of atomic game commands.
@@ -101,6 +102,8 @@ handleUpdAtomic cmd = case cmd of
   UpdHideTile{} -> undefined
   UpdSpotTile lid ts -> updSpotTile lid ts
   UpdLoseTile lid ts -> updLoseTile lid ts
+  UpdSpotEntry lid ts -> updSpotEntry lid ts
+  UpdLoseEntry lid ts -> updLoseEntry lid ts
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
@@ -501,6 +504,26 @@ updLoseTile lid ts = assert (not $ null ts) $ do
   let f (_, t1) = when (Tile.isExplorable coTileSpeedup t1) $
         updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
+
+updSpotEntry :: MonadStateWrite m => LevelId -> [(Point, PK.PlaceEntry)] -> m ()
+updSpotEntry lid ts = assert (not $ null ts) $ do
+  let alt en Nothing = Just en
+      alt en (Just oldEn) = error $ "entry already added"
+                                    `showFailure` (lid, ts, en, oldEn)
+      f (p, en) = EM.alter (alt en) p
+      upd m = foldr f m ts
+  updateLevel lid $ updateEntry upd
+
+updLoseEntry :: MonadStateWrite m => LevelId -> [(Point, PK.PlaceEntry)] -> m ()
+updLoseEntry lid ts = assert (not $ null ts) $ do
+  let alt en Nothing = error $ "entry already removed"
+                               `showFailure` (lid, ts, en)
+      alt en (Just oldEn) =
+        assert (en == oldEn `blame` "unexpected lost entry"
+                            `swith` (lid, ts, en, oldEn)) Nothing
+      f (p, en) = EM.alter (alt en) p
+      upd m = foldr f m ts
+  updateLevel lid $ updateEntry upd
 
 updAlterSmell :: MonadStateWrite m => LevelId -> Point -> Time -> Time -> m ()
 updAlterSmell lid p fromSm' toSm' = do

@@ -287,6 +287,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdHideTile{} -> return ()
   UpdSpotTile{} -> return ()
   UpdLoseTile{} -> return ()
+  UpdSpotEntry{} -> return ()
+  UpdLoseEntry{} -> return ()
   UpdAlterSmell{} -> return ()
   UpdSpotSmell{} -> return ()
   UpdLoseSmell{} -> return ()

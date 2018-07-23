@@ -122,6 +122,12 @@ posUpdAtomic cmd = case cmd of
   UpdLoseTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps
+  UpdSpotEntry lid ts -> do
+    let ps = map fst ts
+    return $! PosSight lid ps
+  UpdLoseEntry lid ts -> do
+    let ps = map fst ts
+    return $! PosSight lid ps
   UpdAlterSmell lid p _ _ -> return $! PosSmell lid [p]
   UpdSpotSmell lid sms -> do
     let ps = map fst sms

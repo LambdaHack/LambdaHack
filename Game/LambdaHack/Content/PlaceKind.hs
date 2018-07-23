@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
   , Cover(..), Fence(..)
-  , PlaceEntry(..), deadEndId
+  , PlaceEntry(..), EntryMap, deadEndId
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -15,11 +15,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Control.DeepSeq
 import Game.LambdaHack.Common.ContentData
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Content.TileKind (TileKind)
 import GHC.Generics (Generic)
 
@@ -67,6 +69,9 @@ data PlaceEntry =
   deriving (Show, Eq, Generic)
 
 instance Binary PlaceEntry
+
+-- | Entries of places on the map.
+type EntryMap = EM.EnumMap Point PlaceEntry
 
 deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
