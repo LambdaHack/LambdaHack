@@ -35,7 +35,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
+import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level identifiers to levels.
@@ -112,7 +112,7 @@ data Level = Level
   , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
                           --   could be recomputed at resume, but small enough
   , ltile   :: TileMap    -- ^ remembered level map
-  , lentry  :: EM.EnumMap Point (ContentId PlaceKind)
+  , lentry  :: EM.EnumMap Point PlaceEntry
                           -- ^ room entrances on the level
   , larea   :: Area       -- ^ area of the level
   , lsmell  :: SmellMap   -- ^ remembered smells on the level

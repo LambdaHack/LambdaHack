@@ -2,7 +2,8 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
-  , Cover(..), Fence(..), deadEndId
+  , Cover(..), Fence(..)
+  , PlaceEntry(..), deadEndId
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -13,6 +14,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Data.Binary
 import qualified Data.Text as T
 
 import Control.DeepSeq
@@ -58,6 +60,13 @@ data Fence =
   deriving (Show, Eq, Generic)
 
 instance NFData Fence
+
+data PlaceEntry =
+    PEntry (ContentId PlaceKind)
+  | PAround (ContentId PlaceKind)
+  deriving (Show, Eq, Generic)
+
+instance Binary PlaceEntry
 
 deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
