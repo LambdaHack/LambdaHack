@@ -88,7 +88,7 @@ treasureCache = stairsUp
   , ifreq    = [("treasure cache", 1)]
   , iflavour = zipPlain [BrBlue]
   , ieffects = [CreateItem CGround "common item" timerNone]
-  , idesc    = "Glittering gold, just waiting to be taken."
+  , idesc    = "Glittering treasure, just waiting to be taken."
   }
 treasureCacheTrap = ItemKind
   { isymbol  = '^'
