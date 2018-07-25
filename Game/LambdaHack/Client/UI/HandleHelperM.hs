@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , ppSLore, loreFromMode, loreFromContainer, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, statsOverlay, pickNumber
+  , itemOverlay, statsOverlay, placesOverlay, pickNumber
   , lookAtTile, lookAtActors, lookAtItems
   ) where
 
@@ -285,6 +285,36 @@ statsOverlay aid = do
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots
+  return (map textToAL ts, kxs)
+
+placesOverlay :: MonadClient m => m OKX
+placesOverlay = do
+  COps{coplace} <- getsState scops
+  let addEntries (ne1, na1) (ne2, na2) = (ne1 + ne2, na1 + na2)
+      insertZeros em pk _ = EM.insert pk (0, 0) em
+      initialPlaces = ofoldlWithKey' coplace insertZeros EM.empty
+      placesFromLevel :: Level -> EM.EnumMap (ContentId PK.PlaceKind) (Int, Int)
+      placesFromLevel Level{lentry} =
+        let f (PK.PEntry pk) em = EM.insertWith addEntries pk (1, 0) em
+            f (PK.PAround pk) em = EM.insertWith addEntries pk (0, 1) em
+        in EM.foldr' f initialPlaces lentry
+      placesFromState s =
+        EM.unionsWith addEntries $ map placesFromLevel $ EM.elems $ sdungeon s
+  places <- getsState placesFromState
+  let prSlot :: (Y, SlotChar) -> (ContentId PK.PlaceKind, (Int, Int))
+             -> (Text, KYX)
+      prSlot (y, c) (pk, (ne, na)) =
+        let placeName = PK.pname $ okind coplace pk
+            markPlace t = if ne + na == 0
+                          then T.snoc (T.init t) '>'
+                          else t
+            entrances =
+              ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
+              ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
+            ft = makePhrase $ [ MU.Text $ markPlace $ slotLabel c
+                              , MU.Text placeName ] ++ entrances
+        in (ft, (Right c, (y, 0, T.length ft)))
+      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
   return (map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)

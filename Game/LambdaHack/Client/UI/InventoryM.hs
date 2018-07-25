@@ -439,7 +439,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
     MPlaces -> do
-      io <- statsOverlay leader
+      io <- placesOverlay
       let slotLabels = map fst $ snd io
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
           statsDef :: DefItemKey m
