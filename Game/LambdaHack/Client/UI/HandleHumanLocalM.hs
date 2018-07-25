@@ -280,9 +280,11 @@ chooseItemDialogMode c = do
                        , MU.WWandW $ map (MU.Text . tshow) $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
-                          onLevels ++ if srecallPlaces soptions
-                                      then "" : PK.ptopLeft pkind
-                                      else []
+                          onLevels
+                          ++ if srecallPlaces soptions
+                             then ["" , tshow (PK.pfreq pkind), ""]
+                                  ++ PK.ptopLeft pkind
+                             else []
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
