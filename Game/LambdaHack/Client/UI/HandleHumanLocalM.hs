@@ -149,6 +149,10 @@ chooseItemDialogMode c = do
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
             , MU.Text t ]
+        MPlaces ->
+          makePhrase
+            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            , MU.Text t ]
         _ ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "see"
@@ -223,6 +227,7 @@ chooseItemDialogMode c = do
         MLore slore -> displayLore ix0 $ const $
           makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                        , MU.Text (ppSLore slore), "lore" ]
+        MPlaces -> error $ "" `showFailure` ggi
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot0 -> assert (err == "stats") $ do
         let statListBound = length statSlots - 1
@@ -244,6 +249,35 @@ chooseItemDialogMode c = do
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MStats
+                K.Up -> displayOneStat $ slotIndex - 1
+                K.Down -> displayOneStat $ slotIndex + 1
+                K.Esc -> failWith "never mind"
+                _ -> error $ "" `showFailure` km
+            slotIndex0 = fromMaybe (error "displayOneStat: illegal slot")
+                         $ elemIndex slot0 allSlots
+        displayOneStat slotIndex0
+      Left _ -> failWith "never mind"
+    (Left err, (MPlaces, ekm)) -> case ekm of
+      Right slot0 -> assert (err == "places") $ do
+        let statListBound = length statSlots - 1
+            displayOneStat slotIndex = do
+              let slot = allSlots !! slotIndex
+                  eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
+                  valueText =
+                    slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
+                  prompt2 = makeSentence
+                    [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
+                    , "is", MU.Text valueText ]
+                  ov0 = indentSplitAttrLine rwidth $ textToAL
+                        $ slotToDesc eqpSlot
+                  keys = [K.spaceKM, K.escKM]
+                         ++ [K.upKM | slotIndex /= 0]
+                         ++ [K.downKM | slotIndex /= statListBound]
+              promptAdd0 prompt2
+              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
+              km <- getConfirms ColorFull keys slides
+              case K.key km of
+                K.Space -> chooseItemDialogMode MPlaces
                 K.Up -> displayOneStat $ slotIndex - 1
                 K.Down -> displayOneStat $ slotIndex + 1
                 K.Esc -> failWith "never mind"

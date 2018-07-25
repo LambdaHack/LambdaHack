@@ -50,6 +50,7 @@ ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("in", "our possession")
 ppItemDialogMode MStats = ("among", "strengths")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
+ppItemDialogMode MPlaces = ("among", "place lore")
 
 ppItemDialogModeIn :: ItemDialogMode -> Text
 ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
@@ -66,6 +67,7 @@ accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
 accessModeBag _ _ MStats = EM.empty
 accessModeBag _ s MLore{} = EM.map (const (1, [])) $ sitemD s
+accessModeBag _ _ MPlaces = EM.empty
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -103,8 +105,10 @@ getStoreItem :: MonadClientUI m
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
   let itemCs = map MStore [CInv, CGround, CEqp, CSha]
+      loreCs = map MLore [minBound..maxBound] ++ [MPlaces]
       allCs = case cInitial of
-        MLore{} -> map MLore [minBound..maxBound]
+        MLore{} -> loreCs
+        MPlaces -> loreCs
         _ -> itemCs ++ [MOwned, MOrgans, MStats]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
@@ -273,6 +277,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                                         , itemSlots EM.! STrunk
                                                         , itemSlots EM.! STmp ]
         MStats -> EM.empty
+        MPlaces -> EM.empty
         _ -> itemSlots EM.! loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
@@ -296,6 +301,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                       else suitableItemSlotsAll
       maySwitchLeader MOwned = False
       maySwitchLeader MLore{} = False
+      maySwitchLeader MPlaces = False
       maySwitchLeader _ = True
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
@@ -352,6 +358,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            { defLabel = Right km
            , defCond = cCur /= MOrgans  -- auto-sorted each time
                        && cCur /= MStats  -- artificial slots
+                       && cCur /= MPlaces  -- artificial slots
            , defAction = \_ -> do
                sortSlots (bfid body) (Just body)
                recCall numPrefix cCur cRest itemDialogState
@@ -429,6 +436,24 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                      `showFailure` K.showKey key
                       Right sl -> sl
                 in return (Left "stats", (MStats, Right slot))
+            }
+      runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
+    MPlaces -> do
+      io <- statsOverlay leader
+      let slotLabels = map fst $ snd io
+          slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
+          statsDef :: DefItemKey m
+          statsDef = DefItemKey
+            { defLabel = Left ""
+            , defCond = True
+            , defAction = \ekm ->
+                let slot = case ekm of
+                      Left K.KM{key} -> case key of
+                        K.Char l -> SlotChar numPrefix l
+                        _ -> error $ "unexpected key:"
+                                     `showFailure` K.showKey key
+                      Right sl -> sl
+                in return (Left "places", (MPlaces, Right slot))
             }
       runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
     _ -> do

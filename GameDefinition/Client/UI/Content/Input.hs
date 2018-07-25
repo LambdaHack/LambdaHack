@@ -161,7 +161,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                          , ChooseItemMenu (MLore slore) )))
       (zip [1..] [minBound..maxBound])
   ++
-  [ ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
+  [ ("safeD98", ( [CmdInternal, CmdDashboard]
+                , "display place lore"
+                , ChooseItemMenu MPlaces) )
+  , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Aiming
   , ("!", ([CmdAim], "", AimEnemy))

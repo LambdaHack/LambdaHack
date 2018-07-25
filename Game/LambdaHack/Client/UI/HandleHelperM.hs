@@ -98,6 +98,7 @@ loreFromMode c = case c of
   MOwned -> SItem
   MStats -> undefined  -- artificial slots
   MLore slore -> slore
+  MPlaces -> undefined  -- artificial slots
 
 loreFromContainer :: IK.ItemKind -> Container -> SLore
 loreFromContainer itemKind c = case c of
