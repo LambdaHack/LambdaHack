@@ -311,15 +311,11 @@ placesFromState coplace ClientOptions{srecallPlaces} =
         in EM.foldr' f initialPlaces lentry
   in EM.unionsWith addEntries . map placesFromLevel . EM.assocs . sdungeon
 
-placeParts :: ContentData PK.PlaceKind
-           -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
-           -> [MU.Part]
-placeParts coplace (pk, (_, ne, na, nd)) =
-  let placeName = PK.pname $ okind coplace pk
-      entrances = ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
-                  ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
-                  ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
-  in MU.Text placeName : entrances
+placeParts ::  (ES.EnumSet LevelId, Int, Int, Int) -> [MU.Part]
+placeParts (_, ne, na, nd) =
+  ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
+  ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
+  ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
 
 placesOverlay :: MonadClient m => m OKX
 placesOverlay = do
@@ -330,11 +326,14 @@ placesOverlay = do
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (Text, KYX)
       prSlot (y, c) (pk, (es, ne, na, nd)) =
-        let parts = placeParts coplace (pk, (es, ne, na, nd))
-            markPlace t = if ne + na == 0
+        let placeName = PK.pname $ okind coplace pk
+            parts = placeParts (es, ne, na, nd)
+            markPlace t = if ne + na + nd == 0
                           then T.snoc (T.init t) '>'
                           else t
-            ft = makePhrase $ MU.Text (markPlace $ slotLabel c) : parts
+            ft = makePhrase $ MU.Text (markPlace $ slotLabel c)
+                 : MU.Text placeName
+                 : parts
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
   return (map textToAL ts, kxs)

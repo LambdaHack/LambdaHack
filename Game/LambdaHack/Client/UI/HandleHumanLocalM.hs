@@ -267,24 +267,27 @@ chooseItemDialogMode c = do
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  pkn@(pk, (es, _, _, _)) =
+                  (pk, stats@(es, _, _, _)) =
                     places !! fromJust (elemIndex slot allSlots)
                   pkind = okind coplace pk
-                  parts = placeParts coplace pkn
+                  partsPhrase = makePhrase $ placeParts stats
                   prompt2 = makeSentence $
-                    [MU.SubjectVerbSg (partActor bUI) "remember"] ++ parts
+                    [ MU.SubjectVerbSg (partActor bUI) "remember"
+                    , MU.Text $ PK.pname pkind ]
                   onLevels | ES.null es = []
                            | otherwise =
-                    ["", makeSentence
-                       [ "Appears on level"
+                    [makeSentence
+                       [ "Appears on"
+                       , MU.CarWs (ES.size es) "level" <> ":"
                        , MU.WWandW $ map (MU.Text . tshow) $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
-                          onLevels
-                          ++ if srecallPlaces soptions
-                             then ["" , tshow (PK.pfreq pkind), ""]
-                                  ++ PK.ptopLeft pkind
-                             else []
+                          (if srecallPlaces soptions
+                           then [ "", partsPhrase
+                                , "", tshow (PK.pfreq pkind)
+                                , "" ] ++ PK.ptopLeft pkind
+                           else [])
+                          ++ [""] ++ onLevels
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
