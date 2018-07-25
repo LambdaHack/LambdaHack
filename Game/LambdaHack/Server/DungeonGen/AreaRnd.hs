@@ -200,8 +200,8 @@ connectPlaces :: (Area, Fence, Area) -> (Area, Fence, Area)
               -> Rnd (Maybe Corridor)
 connectPlaces (_, _, sg) (_, _, tg) | sg == tg = return Nothing
 connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
-  let (sa, so) = borderPlace sqarea spfence
-      (ta, to) = borderPlace tqarea tpfence
+  let (sa, so, stiny) = borderPlace sqarea spfence
+      (ta, to, ttiny) = borderPlace tqarea tpfence
       trim area =
         let (x0, y0, x1, y1) = fromArea area
             dx = case (x1 - x0) `div` 2 of
@@ -220,17 +220,17 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
            $ toArea (x0 + dx, y0 + dy, x1 - dx, y1 - dy)
   Point sx sy <- pointInArea $ trim sa
   Point tx ty <- pointInArea $ trim ta
-  -- If the place (e.g., void place) is trivial (1-tile wide, no fence),
+  -- If the place (e.g., void place) is slim (at most 2-tile wide, no fence),
   -- overwrite it with corridor. The place may not even be built (e.g., void)
   -- and the overwrite ensures connections through it are not broken.
   let (_, _, sax1Raw, say1Raw) = fromArea sa  -- inner area
-      strivial = isTrivialArea sqarea && spfence == FNone
-      (sax1, say1) = if strivial
+      sslim = stiny && spfence == FNone
+      (sax1, say1) = if sslim
                      then (sax1Raw - 1, say1Raw - 1)
                      else (sax1Raw, say1Raw)
       (tax0Raw, tay0Raw, _, _) = fromArea ta
-      ttrivial = isTrivialArea tqarea && tpfence == FNone
-      (tax0, tay0) = if ttrivial
+      tslim = ttiny && tpfence == FNone
+      (tax0, tay0) = if tslim
                      then (tax0Raw + 1, tay0Raw + 1)
                      else (tax0Raw, tay0Raw)
       (_, _, sox1, soy1) = fromArea so  -- outer area
@@ -251,21 +251,21 @@ connectPlaces s3@(sqarea, spfence, sg) t3@(tqarea, tpfence, tg) = do
             Just a -> (Vert, a, Point sx (say1 + 1), Point tx (tay0 - 1))
             Nothing -> error $ "" `showFailure` (sx, sy, tx, ty, s3, t3)
       nin p = not $ p `inside` sa || p `inside` ta
-      !_A = assert (strivial || ttrivial
+      !_A = assert (sslim || tslim
                     || allB nin [p0, p1] `blame` (sx, sy, tx, ty, s3, t3)) ()
   cor@(c1, c2, c3, c4) <- mkCorridor hv p0 (sa == so) p1 (ta == to) area
-  let !_A2 = assert (strivial || ttrivial || allB nin [c1, c2, c3, c4]
+  let !_A2 = assert (sslim || tslim || allB nin [c1, c2, c3, c4]
                      `blame` (cor, sx, sy, tx, ty, s3, t3)) ()
   return $ Just cor
 
-borderPlace :: Area -> Fence -> (Area, Area)
+borderPlace :: Area -> Fence -> (Area, Area, Bool)
 borderPlace qarea pfence = case pfence of
-  FWall -> (qarea, expand qarea)
-  FFloor  -> (qarea, qarea)
-  FGround -> (qarea, qarea)
+  FWall -> (qarea, expand qarea, False)
+  FFloor  -> (qarea, qarea, False)
+  FGround -> (qarea, qarea, False)
   FNone -> case shrink qarea of
-    Nothing -> (qarea, qarea)
-    Just sr -> (sr, qarea)
+    Nothing -> (qarea, qarea, True)
+    Just sr -> (sr, qarea, False)
 
 data SpecialArea =
     SpecialArea Area

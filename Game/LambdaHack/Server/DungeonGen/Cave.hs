@@ -280,14 +280,14 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
       aroundFence Place{..} =
         if pfence (okind coplace qkind) `elem` [FFloor, FGround]
         then EM.map (const $ PAround qkind) qfence
-        else EM.empty  -- for @FNone@ fences with walkable tiles on the edges,
-                       -- no entries and that's fine; tiles inside will describe
+        else EM.empty
       dentry = EM.unions $
         EM.map (\(_, _, pk) -> PEntry pk) interCor
         : map (\(place, _) -> aroundFence place) (EM.elems qplaces)
-        ++ [EM.map (\(_, _, pk) -> PEnd pk) $
-              let mergeCorJust _ pl (cor, pk) = Just (pl, cor, pk)
-              in intersectionWithKeyMaybe mergeCorJust lplaces lplcorOuter]
+        ++  -- for @FNone@ fences with walkable tiles on the edges
+         [EM.map (\(_, _, pk) -> PEnd pk) $
+            let mergeCorJust _ pl (cor, pk) = Just (pl, cor, pk)
+            in intersectionWithKeyMaybe mergeCorJust lplaces lplcorOuter]
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
