@@ -4,8 +4,8 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , ppSLore, loreFromMode, loreFromContainer, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, statsOverlay, placesFromState, placesOverlay, pickNumber
-  , lookAtTile, lookAtActors, lookAtItems
+  , itemOverlay, statsOverlay, placesFromState, placeParts, placesOverlay
+  , pickNumber, lookAtTile, lookAtActors, lookAtItems
   ) where
 
 import Prelude ()

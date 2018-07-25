@@ -82,6 +82,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 
 -- * Macro
@@ -230,8 +231,8 @@ chooseItemDialogMode c = do
         MPlaces -> error $ "" `showFailure` ggi
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot0 -> assert (err == "stats") $ do
-        let statListBound = length statSlots - 1
-            displayOneStat slotIndex = do
+        let slotListBound = length statSlots - 1
+            displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
                   eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
                   valueText =
@@ -243,48 +244,50 @@ chooseItemDialogMode c = do
                         $ slotToDesc eqpSlot
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= statListBound]
+                         ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MStats
-                K.Up -> displayOneStat $ slotIndex - 1
-                K.Down -> displayOneStat $ slotIndex + 1
+                K.Up -> displayOneSlot $ slotIndex - 1
+                K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = fromMaybe (error "displayOneStat: illegal slot")
+            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
                          $ elemIndex slot0 allSlots
-        displayOneStat slotIndex0
+        displayOneSlot slotIndex0
       Left _ -> failWith "never mind"
     (Left err, (MPlaces, ekm)) -> case ekm of
       Right slot0 -> assert (err == "places") $ do
-        let statListBound = length statSlots - 1
-            displayOneStat slotIndex = do
+        COps{coplace} <- getsState scops
+        soptions <- getsClient soptions
+        places <- getsState $ EM.assocs . placesFromState coplace soptions
+        let slotListBound = length places - 1
+            displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
-                  valueText =
-                    slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
-                  prompt2 = makeSentence
-                    [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
-                    , "is", MU.Text valueText ]
-                  ov0 = indentSplitAttrLine rwidth $ textToAL
-                        $ slotToDesc eqpSlot
+                  pkn = places !! fromJust (elemIndex slot allSlots)
+                  pkind = okind coplace $ fst pkn
+                  parts = placeParts coplace pkn
+                  prompt2 = makeSentence $
+                    [MU.SubjectVerbSg (partActor bUI) "remember"] ++ parts
+                  ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines
+                        $ "\n" : PK.ptopLeft pkind
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= statListBound]
+                         ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MPlaces
-                K.Up -> displayOneStat $ slotIndex - 1
-                K.Down -> displayOneStat $ slotIndex + 1
+                K.Up -> displayOneSlot $ slotIndex - 1
+                K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
                 _ -> error $ "" `showFailure` km
-            slotIndex0 = fromMaybe (error "displayOneStat: illegal slot")
+            slotIndex0 = fromMaybe (error "displayOneSlot: illegal slot")
                          $ elemIndex slot0 allSlots
-        displayOneStat slotIndex0
+        displayOneSlot slotIndex0
       Left _ -> failWith "never mind"
     (Left err, _) -> failWith err
 
