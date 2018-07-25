@@ -66,6 +66,7 @@ instance NFData Fence
 data PlaceEntry =
     PEntry (ContentId PlaceKind)
   | PAround (ContentId PlaceKind)
+  | PEnd (ContentId PlaceKind)
   deriving (Show, Eq, Generic)
 
 instance Binary PlaceEntry

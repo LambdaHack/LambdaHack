@@ -258,6 +258,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
   let mergeCor _ pl (cor, pk) = if Tile.isWalkable coTileSpeedup pl
                                 then Nothing  -- tile already open
                                 else Just (pl, cor, pk)
+      {-# INLINE intersectionWithKeyMaybe #-}
       intersectionWithKeyMaybe combine =
         EM.mergeWithKey combine (const EM.empty) (const EM.empty)
       interCor = intersectionWithKeyMaybe mergeCor lplaces lplcorOuter  -- fast
@@ -284,6 +285,9 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
       dentry = EM.unions $
         EM.map (\(_, _, pk) -> PEntry pk) interCor
         : map (\(place, _) -> aroundFence place) (EM.elems qplaces)
+        ++ [EM.map (\(_, _, pk) -> PEnd pk) $
+              let mergeCorJust _ pl (cor, pk) = Just (pl, cor, pk)
+              in intersectionWithKeyMaybe mergeCorJust lplaces lplcorOuter]
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}

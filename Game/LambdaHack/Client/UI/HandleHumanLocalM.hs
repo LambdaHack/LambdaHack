@@ -267,7 +267,7 @@ chooseItemDialogMode c = do
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  pkn@(pk, (es, _, _)) =
+                  pkn@(pk, (es, _, _, _)) =
                     places !! fromJust (elemIndex slot allSlots)
                   pkind = okind coplace pk
                   parts = placeParts coplace pkn
