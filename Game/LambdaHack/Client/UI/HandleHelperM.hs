@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -289,22 +290,29 @@ statsOverlay aid = do
   return (map textToAL ts, kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
-                -> EM.EnumMap (ContentId PK.PlaceKind) (Int, Int)
+                -> EM.EnumMap (ContentId PK.PlaceKind)
+                              (ES.EnumSet LevelId, Int, Int)
 placesFromState coplace ClientOptions{srecallPlaces} =
-  let addEntries (ne1, na1) (ne2, na2) = (ne1 + ne2, na1 + na2)
-      insertZeros em pk _ = EM.insert pk (0, 0) em
+  let addEntries (es1, ne1, na1) (es2, ne2, na2) =
+        (ES.union es1 es2, ne1 + ne2, na1 + na2)
+      insertZeros em pk _ = EM.insert pk (ES.empty, 0, 0) em
       initialPlaces | not srecallPlaces = EM.empty
                     | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
-      placesFromLevel :: Level -> EM.EnumMap (ContentId PK.PlaceKind) (Int, Int)
-      placesFromLevel Level{lentry} =
-        let f (PK.PEntry pk) em = EM.insertWith addEntries pk (1, 0) em
-            f (PK.PAround pk) em = EM.insertWith addEntries pk (0, 1) em
+      placesFromLevel :: (LevelId, Level)
+                      -> EM.EnumMap (ContentId PK.PlaceKind)
+                                    (ES.EnumSet LevelId, Int, Int)
+      placesFromLevel (lid, Level{lentry}) =
+        let f (PK.PEntry pk) em =
+              EM.insertWith addEntries pk (ES.singleton lid, 1, 0) em
+            f (PK.PAround pk) em =
+              EM.insertWith addEntries pk (ES.singleton lid, 0, 1) em
         in EM.foldr' f initialPlaces lentry
-  in EM.unionsWith addEntries . map placesFromLevel . EM.elems . sdungeon
+  in EM.unionsWith addEntries . map placesFromLevel . EM.assocs . sdungeon
 
-placeParts :: ContentData PK.PlaceKind -> (ContentId PK.PlaceKind, (Int, Int))
+placeParts :: ContentData PK.PlaceKind
+           -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int))
            -> [MU.Part]
-placeParts coplace (pk, (ne, na)) =
+placeParts coplace (pk, (_, ne, na)) =
   let placeName = PK.pname $ okind coplace pk
       entrances = ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
                   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
@@ -315,10 +323,11 @@ placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
   places <- getsState $ placesFromState coplace soptions
-  let prSlot :: (Y, SlotChar) -> (ContentId PK.PlaceKind, (Int, Int))
+  let prSlot :: (Y, SlotChar)
+             -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int))
              -> (Text, KYX)
-      prSlot (y, c) (pk, (ne, na)) =
-        let parts = placeParts coplace (pk, (ne, na))
+      prSlot (y, c) (pk, (es, ne, na)) =
+        let parts = placeParts coplace (pk, (es, ne, na))
             markPlace t = if ne + na == 0
                           then T.snoc (T.init t) '>'
                           else t

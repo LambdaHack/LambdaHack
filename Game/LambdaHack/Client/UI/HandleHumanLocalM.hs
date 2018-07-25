@@ -40,6 +40,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -266,13 +267,22 @@ chooseItemDialogMode c = do
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  pkn = places !! fromJust (elemIndex slot allSlots)
-                  pkind = okind coplace $ fst pkn
+                  pkn@(pk, (es, _, _)) =
+                    places !! fromJust (elemIndex slot allSlots)
+                  pkind = okind coplace pk
                   parts = placeParts coplace pkn
                   prompt2 = makeSentence $
                     [MU.SubjectVerbSg (partActor bUI) "remember"] ++ parts
-                  ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines
-                        $ "\n" : PK.ptopLeft pkind
+                  onLevels | ES.null es = []
+                           | otherwise =
+                    ["", makeSentence
+                       [ "Appears on level"
+                       , MU.WWandW $ map (MU.Text . tshow) $ sort
+                                   $ map (abs . fromEnum) $ ES.elems es ]]
+                  ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
+                          onLevels ++ if srecallPlaces soptions
+                                      then "" : PK.ptopLeft pkind
+                                      else []
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
