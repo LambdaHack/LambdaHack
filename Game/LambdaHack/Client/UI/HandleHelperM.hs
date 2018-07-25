@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , ppSLore, loreFromMode, loreFromContainer, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, statsOverlay, placesOverlay, pickNumber
+  , itemOverlay, statsOverlay, placesFromState, placesOverlay, pickNumber
   , lookAtTile, lookAtActors, lookAtItems
   ) where
 
@@ -288,10 +288,9 @@ statsOverlay aid = do
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots
   return (map textToAL ts, kxs)
 
-placesOverlay :: MonadClient m => m OKX
-placesOverlay = do
-  COps{coplace} <- getsState scops
-  ClientOptions{srecallPlaces} <- getsClient soptions
+placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
+                -> EM.EnumMap (ContentId PK.PlaceKind) (Int, Int)
+placesFromState coplace ClientOptions{srecallPlaces} =
   let addEntries (ne1, na1) (ne2, na2) = (ne1 + ne2, na1 + na2)
       insertZeros em pk _ = EM.insert pk (0, 0) em
       initialPlaces | not srecallPlaces = EM.empty
@@ -301,21 +300,29 @@ placesOverlay = do
         let f (PK.PEntry pk) em = EM.insertWith addEntries pk (1, 0) em
             f (PK.PAround pk) em = EM.insertWith addEntries pk (0, 1) em
         in EM.foldr' f initialPlaces lentry
-      placesFromState s =
-        EM.unionsWith addEntries $ map placesFromLevel $ EM.elems $ sdungeon s
-  places <- getsState placesFromState
+  in EM.unionsWith addEntries . map placesFromLevel . EM.elems . sdungeon
+
+placeParts :: ContentData PK.PlaceKind -> (ContentId PK.PlaceKind, (Int, Int))
+           -> [MU.Part]
+placeParts coplace (pk, (ne, na)) =
+  let placeName = PK.pname $ okind coplace pk
+      entrances = ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
+                  ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
+  in MU.Text placeName : entrances
+
+placesOverlay :: MonadClient m => m OKX
+placesOverlay = do
+  COps{coplace} <- getsState scops
+  soptions <- getsClient soptions
+  places <- getsState $ placesFromState coplace soptions
   let prSlot :: (Y, SlotChar) -> (ContentId PK.PlaceKind, (Int, Int))
              -> (Text, KYX)
       prSlot (y, c) (pk, (ne, na)) =
-        let placeName = PK.pname $ okind coplace pk
+        let parts = placeParts coplace (pk, (ne, na))
             markPlace t = if ne + na == 0
                           then T.snoc (T.init t) '>'
                           else t
-            entrances =
-              ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
-              ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
-            ft = makePhrase $ [ MU.Text $ markPlace $ slotLabel c
-                              , MU.Text placeName ] ++ entrances
+            ft = makePhrase $ MU.Text (markPlace $ slotLabel c) : parts
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
   return (map textToAL ts, kxs)
