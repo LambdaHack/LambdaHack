@@ -11,6 +11,8 @@ import qualified Data.IntMap.Strict as IM
 
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Dice
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
@@ -465,7 +467,8 @@ cavesZoo = IM.fromList [(-8, "caveZoo")]
 
 cavesAmbush = IM.fromList [(-9, "caveAmbush")]
 
-cavesCrawl = IM.fromList $
+listCrawl :: [(Int, GroupName CaveKind)]
+listCrawl =
   [ (-1, "outermost")
   , (-2, "shallow random 2")
   , (-3, "caveEmpty") ]
@@ -473,15 +476,9 @@ cavesCrawl = IM.fromList $
   ++ zip [-6, -7, -8, -9] (repeat "deep random")
   ++ [(-10, "caveNoise2")]
 
-cavesDig = IM.fromList $
-  [ (-1, "outermost")
-  , (-2, "shallow random 2")
-  , (-3, "caveEmpty") ]
-  ++ zip [-4, -5] (repeat "default random")
-  ++ zip [-6, -7, -8, -9] (repeat "deep random")
-  ++ [(-10, "caveNoise2")]
-  ++ zip [-11, -12 .. -1000] (repeat "deep random")
-  ++ zip [-1001, -1002.. -2000] (repeat "default random")
+cavesCrawl = IM.fromList listCrawl
+
+cavesDig = IM.fromList $ zip [-1, -2 .. -2000] $ map snd $ cycle listCrawl
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")
