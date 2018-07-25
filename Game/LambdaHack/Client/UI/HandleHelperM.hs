@@ -18,6 +18,7 @@ import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -290,9 +291,11 @@ statsOverlay aid = do
 placesOverlay :: MonadClient m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
+  ClientOptions{srecallPlaces} <- getsClient soptions
   let addEntries (ne1, na1) (ne2, na2) = (ne1 + ne2, na1 + na2)
       insertZeros em pk _ = EM.insert pk (0, 0) em
-      initialPlaces = ofoldlWithKey' coplace insertZeros EM.empty
+      initialPlaces | not srecallPlaces = EM.empty
+                    | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
       placesFromLevel :: Level -> EM.EnumMap (ContentId PK.PlaceKind) (Int, Int)
       placesFromLevel Level{lentry} =
         let f (PK.PEntry pk) em = EM.insertWith addEntries pk (1, 0) em
