@@ -188,7 +188,7 @@ pillar = TileKind
 pillarCache = TileKind
   { tsymbol  = 'O'
   , tname    = "smoothed rock"
-  , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal", 1)]
+  , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal", 2)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
@@ -256,8 +256,9 @@ treeBurning = tree
 rubble = TileKind
   { tsymbol  = '&'
   , tname    = "rubble pile"
-  , tfreq    = [ ("emptySet", 10), ("noiseSet", 50), ("zooSet", 100)
-               , ("ambushSet", 20) ]
+  , tfreq    = [ ("stair terminal", 4)
+               , ("emptySet", 10), ("noiseSet", 50)
+               , ("zooSet", 100), ("ambushSet", 20) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
@@ -495,7 +496,7 @@ floorFogDark = floorFog
 floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
-  , tfreq    = [ ("lit smoke", 1), ("labTrailLit", 1), ("stair terminal", 2)
+  , tfreq    = [ ("lit smoke", 1), ("labTrailLit", 1), ("stair terminal", 4)
                , ("smokeClumpOver_f_Lit", 1) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
