@@ -478,7 +478,8 @@ listCrawl =
 
 cavesCrawl = IM.fromList listCrawl
 
-cavesDig = IM.fromList $ zip [-1, -2 .. -2000] $ map snd $ cycle listCrawl
+cavesDig = IM.fromList $ zip [-1, -2 ..] $ map snd $ concat
+                       $ replicate 100 listCrawl
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")
