@@ -56,7 +56,7 @@ rogue = CaveKind
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
   , cescapeGroup    = Nothing
-  , cstairFreq      = [("staircase", 100)]
+  , cstairFreq    = [("walled staircase", 50), ("open staircase", 50)]
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridor alternative, because both lit # and . look bad here
 arena = rogue
@@ -87,6 +87,7 @@ arena = rogue
   , cdefTile      = "arenaSetLit"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
+  , cstairFreq    = [("walled staircase", 20), ("closed staircase", 80)]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
   }
 arena2 = arena
@@ -125,6 +126,7 @@ laboratory = arena2
   , cdefTile      = "fillerWall"
   , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
+  , cstairFreq    = [("walled staircase", 50), ("open staircase", 50)]
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
   }
 empty = rogue
@@ -158,6 +160,7 @@ empty = rogue
   , cdefTile      = "emptySet"
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
+  , cstairFreq    = [("walled staircase", 20), ("closed staircase", 80)]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 noise = rogue
@@ -176,7 +179,6 @@ noise = rogue
   , cnightChance  = 0  -- harder variant, but looks cheerful
   , cauxConnects  = 1%10
   , cmaxVoid      = 1%100
-  , cextraStairs  = 1 + 1 `d` 2
   , cdoorChance   = 1  -- to avoid lit quasi-door tiles
   , chidden       = 0
   , cactorCoeff   = 80  -- the maze requires time to explore; also, small
@@ -188,6 +190,7 @@ noise = rogue
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "floorArenaDark"
   , clitCorTile   = "floorArenaLit"
+  , cstairFreq    = [("closed staircase", 50), ("open staircase", 50)]
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
   }
 noise2 = noise
