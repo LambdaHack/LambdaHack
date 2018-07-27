@@ -265,7 +265,9 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
              in if not inCorner && dist 0 np && distPr np
                 then Just np
                 else Nothing
-  findPointInArea darea f
+      focusArea = fromMaybe (error $ "" `showFailure` darea)
+                  $ toArea (x0 + 5, y0 + 4, x1 - 5, y1 - anchorDown)
+  findPointInArea focusArea f
 
 -- Build rudimentary level from a cave kind.
 levelFromCave :: COps -> Cave -> Dice.AbsDepth
