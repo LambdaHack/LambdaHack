@@ -16,7 +16,10 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Text.IO as T
 import           Data.Tuple
+import           System.IO (hFlush, stdout)
+import           System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 
 import           Game.LambdaHack.Common.Area
@@ -39,6 +42,7 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
+import           Game.LambdaHack.Server.ServerOptions
 
 convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Maybe (Rnd (ContentId TileKind)) -> Area -> TileMapEM
@@ -124,10 +128,11 @@ anchorDown :: Y
 anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
 
 -- Create a level from a cave.
-buildLevel :: COps -> Int -> GroupName CaveKind
+buildLevel :: COps -> ServerOptions -> Int -> GroupName CaveKind
            -> Int -> Dice.AbsDepth -> [Point]
            -> Rnd (Level, [Point])
-buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
+buildLevel cops@COps{cocave, corule} serverOptions
+           ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
@@ -181,9 +186,13 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        pos <- placeDownStairs kc darea (lallUpStairs ++ map fst acc) boot
-        stairGroup <- frequency freq
-        addSingleDown ((pos, stairGroup) : acc) (k - 1)
+        mpos <- placeDownStairs "stairs" serverOptions ln
+                                kc darea (lallUpStairs ++ map fst acc) boot
+        case mpos of
+          Just pos -> do
+            stairGroup <- frequency freq
+            addSingleDown ((pos, stairGroup) : acc) (k - 1)
+          Nothing -> return acc  -- calling again won't change anything
   stairsSingleDown <- addSingleDown [] remainingStairsDown
   let lstairsSingleDown = map fst stairsSingleDown
   fixedStairsDouble <- mapM (\p -> do
@@ -196,20 +205,24 @@ buildLevel cops@COps{cocave, corule} ln genName minD totalDepth lstairPrev = do
         (p, toGroupName $ tshow t <+> "down")) stairsSingleDown
       lallStairs = lallUpStairs ++ lstairsSingleDown
   fixedEscape <- case cescapeGroup kc of
-                   Nothing -> return []
-                   Just escapeGroup -> do
-                     epos <- placeDownStairs kc darea lallStairs boot
-                     return [(epos, escapeGroup)]
+    Nothing -> return []
+    Just escapeGroup -> do
+      mepos <- placeDownStairs "escape" serverOptions ln
+                               kc darea lallStairs boot
+      case mepos of
+        Just epos -> return [(epos, escapeGroup)]
+        Nothing -> return []  -- with some luck, there is an escape elsewhere
   let lescape = map fst fixedEscape
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
   -- Avoid completely uniform levels (e.g., uniformly merged places).
-  bootExtra <-
-    if EM.null fixedCenters then do
-      let lallExits = map fst fixedEscape ++ lallStairs
-      pointExtra <- placeDownStairs kc darea lallExits boot
-      return [pointExtra]
-    else return []
+  bootExtra <- if EM.null fixedCenters then do
+                 let lallExits = map fst fixedEscape ++ lallStairs
+                 mpointExtra <- placeDownStairs "extra boot" serverOptions ln
+                                                kc darea lallExits boot
+                 -- With sane content, @Nothing@ should never appear.
+                 return $! maybeToList mpointExtra
+               else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
       lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
@@ -234,8 +247,11 @@ distProj ps p = all (\pos -> (px pos == px p
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
-placeDownStairs :: CaveKind -> Area -> [Point] -> [Point] -> Rnd Point
-placeDownStairs CaveKind{cminStairDist} darea ps boot = do
+placeDownStairs :: Text -> ServerOptions -> Int
+                -> CaveKind -> Area -> [Point] -> [Point]
+                -> Rnd (Maybe Point)
+placeDownStairs object serverOptions ln
+                CaveKind{cminStairDist} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       distPr = distProj $ ps ++ boot
       minDist = if length ps >= 3 then 0 else cminStairDist
@@ -244,11 +260,7 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
                  $ toArea (x0 + 9, y0 + 8, x1 - 9, y1 - anchorDown - 4)
       f p@Point{..} =
         if p `inside` interior
-        then
-          -- Create stairs in the interior of the cave only on a completely new
-          -- both X and Y lines, not in line with already created stairs, which
-          -- would look artificial (there is no cave fence to snap to).
-          if dist minDist p && distPr p then Just p else Nothing
+        then if dist minDist p && distPr p then Just p else Nothing
         else let nx = if | px < x0 + 9 -> x0 + 4
                          | px > x1 - 9 -> x1 - 4
                          | otherwise -> px
@@ -267,7 +279,16 @@ placeDownStairs CaveKind{cminStairDist} darea ps boot = do
                 else Nothing
       focusArea = fromMaybe (error $ "" `showFailure` darea)
                   $ toArea (x0 + 5, y0 + 4, x1 - 5, y1 - anchorDown)
-  findPointInArea focusArea f
+  mpos <- findPointInArea focusArea f
+  -- The message fits this debugging level:
+  let !_ = if isNothing mpos && sdumpInitRngs serverOptions
+           then unsafePerformIO $ do
+             T.hPutStrLn stdout $
+                "Failed to place" <+> object <+> "on level"
+                <+> tshow ln <> ", in" <+> tshow darea
+             hFlush stdout
+           else ()
+  return mpos
 
 -- Build rudimentary level from a cave kind.
 levelFromCave :: COps -> Cave -> Dice.AbsDepth
@@ -302,8 +323,8 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-dungeonGen :: COps -> Caves -> Rnd FreshDungeon
-dungeonGen cops caves = do
+dungeonGen :: COps -> ServerOptions -> Caves -> Rnd FreshDungeon
+dungeonGen cops serverOptions caves = do
   let (minD, maxD) | Just ((s, _), _) <- IM.minViewWithKey caves
                    , Just ((e, _), _) <- IM.maxViewWithKey caves
                    = (s, e)
@@ -317,7 +338,8 @@ dungeonGen cops caves = do
                -> Rnd ([(LevelId, Level)], [Point])
       buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
-        (lvl, ldown2) <- buildLevel cops n genName minD freshTotalDepth ldown
+        (lvl, ldown2) <-
+          buildLevel cops serverOptions n genName minD freshTotalDepth ldown
         return ((toEnum n, lvl) : l, ldown2)
   (levels, _) <- foldlM' buildLvl ([], []) $ reverse $ IM.assocs caves
   let freshDungeon = EM.fromList levels

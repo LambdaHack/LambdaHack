@@ -198,7 +198,7 @@ gameReset serverOptions mGameMode mrandom = do
                       else mroster mode
         sflavour <- dungeonFlavourMap cops
         (discoKind, sdiscoKindRev) <- serverDiscos cops
-        freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
+        freshDng <- DungeonGen.dungeonGen cops serverOptions $ mcaves mode
         factionD <- resetFactions factionDold gameModeIdOld
                                   (cdiff curChalSer)
                                   (DungeonGen.freshTotalDepth freshDng)

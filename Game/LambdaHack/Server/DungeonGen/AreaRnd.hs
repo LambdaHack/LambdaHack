@@ -55,7 +55,7 @@ pointInArea area = do
 
 -- | Find a suitable position in the area, based on random points
 -- and a predicate.
-findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd Point
+findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd (Maybe Point)
 findPointInArea area f =
   let (Point x0 y0, xspan, yspan) = spanArea area
       search 0 = return $! searchAll (xspan * yspan - 1)
@@ -64,15 +64,14 @@ findPointInArea area f =
         let Point{..} = PointArray.punindex xspan pxy
             pos = Point (x0 + px) (y0 + py)
         case f pos of
-          Just p -> return p
+          Just p -> return $ Just p
           Nothing -> search (count - 1)
-      searchAll (-1) =
-        error $ "findPointInArea: search failed" `showFailure` area
+      searchAll (-1) = Nothing
       searchAll pxyRelative =
         let Point{..} = PointArray.punindex xspan pxyRelative
             pos = Point (x0 + px) (y0 + py)
         in case f pos of
-          Just p -> p
+          Just p -> Just p
           Nothing -> searchAll (pxyRelative - 1)
   in search (xspan * yspan * 10)
 
