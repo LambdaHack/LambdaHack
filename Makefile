@@ -96,9 +96,9 @@ benchFrontendCrawl:
 benchDig:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1 --automateAll --keepAutomated --gameMode dig --setDungeonRng 0 --setMainRng 0
 
-benchNull: benchBattle benchAnimBattle benchCrawl benchDig
+benchNull: benchBattle benchAnimBattle benchCrawl
 
-bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl benchDig
+bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl
 
 nativeBenchCrawl:
 	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --logPriority 4 --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
@@ -123,7 +123,7 @@ test: test-short test-medium benchNull
 
 test-short: test-short-new test-short-load
 
-test-medium: testRaid-medium testBrawl-medium testShootout-medium testEscape-medium testZoo-medium testAmbush-medium testCrawl-medium testCrawlEmpty-medium testCrawl-medium-know testSafari-medium testSafariSurvival-medium testBattle-medium testBattleSurvival-medium testDefenseEmpty-medium
+test-medium: testRaid-medium testBrawl-medium testShootout-medium testEscape-medium testZoo-medium testAmbush-medium testCrawl-medium testCrawlEmpty-medium testCrawl-medium-know testSafari-medium testSafariSurvival-medium testBattle-medium testBattleSurvival-medium testDig-medium testDefenseEmpty-medium
 
 testRaid-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/teletypetest.log
@@ -166,6 +166,9 @@ testBattleSurvival-medium:
 
 testDefense-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 200 --dumpInitRngs --automateAll --keepAutomated --gameMode defense 2> /tmp/teletypetest.log
+
+testDig-medium:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterFrames 100 --dumpInitRngs --automateAll --keepAutomated --gameMode dig 2> /tmp/teletypetest.log
 
 testDefenseEmpty-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode "defense empty" 2> /tmp/teletypetest.log
