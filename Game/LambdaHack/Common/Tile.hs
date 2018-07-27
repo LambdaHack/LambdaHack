@@ -275,7 +275,7 @@ obscureAs :: ContentData TileKind -> ContentId TileKind
 obscureAs cotile t = do
   let getTo (TK.ObscureAs grp) acc = grp : acc
       getTo _ acc = acc
-  case foldr getTo [] $ TK.tfeature $ okind cotile t of
+  case foldr getTo [] $ TK.tfeature $ okind cotile $ buildAs cotile t of
     [] -> return t
     groups -> do
       grp <- oneOf groups

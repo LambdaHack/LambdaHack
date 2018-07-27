@@ -273,7 +273,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
       sub3Area = fromMaybe (error $ "" `showFailure` kc) $ shrink sub2Area
       likelySecret = (`inside` sub3Area)
       obscure p t = if isChancePos chidden dsecret p && likelySecret p
-                    then Tile.obscureAs cotile $ Tile.buildAs cotile t
+                    then Tile.obscureAs cotile t
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
   let lcorOuter = EM.map fst lplcorOuter

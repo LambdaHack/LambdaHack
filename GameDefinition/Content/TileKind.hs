@@ -403,7 +403,7 @@ wallGlass = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [BuildAs "suspect vertical wall Lit", Clear]
+  , tfeature = [BuildAs "closed vertical door Lit", Clear]
   }
 wallGlassSpice = wallGlass
   { tfreq    = [("rectWindowsOver_!_Lit", 20)]
@@ -416,7 +416,7 @@ wallGlassH = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
-  , tfeature = [BuildAs "suspect horizontal wall Lit", Clear]
+  , tfeature = [BuildAs "closed horizontal door Lit", Clear]
   }
 wallGlassHSpice = wallGlassH
   { tfreq    = [("rectWindowsOver_=_Lit", 20)]
@@ -424,7 +424,7 @@ wallGlassHSpice = wallGlassH
   }
 pillarIce = TileKind
   { tsymbol  = '^'
-  , tname    = "ice"
+  , tname    = "ice outcrop"
   , tfreq    = [("noiseSet", 300)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
