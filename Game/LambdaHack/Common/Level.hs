@@ -161,17 +161,22 @@ at Level{ltile} p = ltile PointArray.! p
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: Level -> (Point -> ContentId TileKind -> Bool) -> Rnd Point
-findPos Level{ltile, larea} p =
+findPos lvl@Level{ltile, larea} p =
   let (Point x0 y0, xspan, yspan) = spanArea larea
-      search = do
+      search 0 = return $! searchAll (xspan * yspan - 1)
+      search count = do
         pxyRelative <- randomR (0, xspan * yspan - 1)
         let Point{..} = PointArray.punindex xspan pxyRelative
             pos = Point (x0 + px) (y0 + py)
             tile = ltile PointArray.! pos
-        if p pos tile
-        then return $! pos
-        else search
-  in search
+        if p pos tile then return $! pos else search (count - 1)
+      searchAll (-1) = error $ "findPos: search failed" `showFailure` lvl
+      searchAll pxyRelative =
+        let Point{..} = PointArray.punindex xspan pxyRelative
+            pos = Point (x0 + px) (y0 + py)
+            tile = ltile PointArray.! pos
+        in if p pos tile then pos else searchAll (pxyRelative - 1)
+  in search (xspan * yspan * 10)
 
 -- | Try to find a random position on the map satisfying
 -- conjunction of the mandatory and an optional predicate.

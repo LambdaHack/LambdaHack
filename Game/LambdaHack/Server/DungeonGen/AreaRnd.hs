@@ -58,14 +58,23 @@ pointInArea area = do
 findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd Point
 findPointInArea area f =
   let (Point x0 y0, xspan, yspan) = spanArea area
-      search = do
+      search 0 = return $! searchAll (xspan * yspan - 1)
+      search count = do
         pxy <- randomR (0, xspan * yspan - 1)
         let Point{..} = PointArray.punindex xspan pxy
             pos = Point (x0 + px) (y0 + py)
         case f pos of
           Just p -> return p
-          Nothing -> search
-  in search
+          Nothing -> search (count - 1)
+      searchAll (-1) =
+        error $ "findPointInArea: search failed" `showFailure` area
+      searchAll pxyRelative =
+        let Point{..} = PointArray.punindex xspan pxyRelative
+            pos = Point (x0 + px) (y0 + py)
+        in case f pos of
+          Just p -> p
+          Nothing -> searchAll (pxyRelative - 1)
+  in search (xspan * yspan * 10)
 
 -- | Create a void room, i.e., a single point area within the designated area.
 mkVoidRoom :: Area -> Rnd Area
