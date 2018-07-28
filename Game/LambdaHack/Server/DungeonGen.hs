@@ -256,12 +256,10 @@ placeDownStairs object serverOptions ln
                 CaveKind{cminStairDist=_} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       distPr = distProj $ ps ++ boot
-      (x0, y0, x1, y1) = fromArea darea
-      f p@Point{..} = if dist 0 p && distPr p
-                      then Just p
-                      else Nothing
-      focusArea = fromMaybe (error $ "" `showFailure` darea)
-                  $ toArea (x0 + 5, y0 + 4, x1 - 5, y1 - anchorDown)
+      f p = if dist 0 p && distPr p then Just p else Nothing
+      focusArea = let (x0, y0, x1, y1) = fromArea darea
+                  in fromMaybe (error $ "" `showFailure` darea)
+                     $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
   mpos <- findPointInArea focusArea f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions
