@@ -275,6 +275,7 @@ placeDownStairs object cornerPermitted serverOptions ln
                 "Failed to place" <+> object <+> "on level"
                 <+> tshow ln <> ", in" <+> tshow darea
              hFlush stdout
+             error "possible, but unexpected; alarm!"
            else ()
   return mpos
 
