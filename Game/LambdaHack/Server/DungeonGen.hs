@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.DungeonGen
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , convertTileMaps, buildTileMap, anchorDown, buildLevel
-  , distProj, placeDownStairs, levelFromCave
+  , snapToStairList, placeDownStairs, levelFromCave
 #endif
   ) where
 
@@ -14,6 +14,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
+import           Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Text.IO as T
@@ -172,9 +173,9 @@ buildLevel cops@COps{cocave, corule} serverOptions
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       lallUpStairs = lstairsDouble ++ lstairsSingleUp
       boot = let (x0, y0, x1, y1) = fromArea darea
-             in mapMaybe (snapToStairList lallUpStairs)
-                         [ Point (x0 + 4) (y0 + 3)
-                         , Point (x1 - 4) (y1 - anchorDown + 1) ]
+             in rights $ map (snapToStairList lallUpStairs)
+                             [ Point (x0 + 4) (y0 + 3)
+                             , Point (x1 - 4) (y1 - anchorDown + 1) ]
       freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
@@ -231,21 +232,13 @@ buildLevel cops@COps{cocave, corule} serverOptions
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
-snapToStairList :: [Point] -> Point -> Maybe Point
-snapToStairList [] p = Just p
+snapToStairList :: [Point] -> Point -> Either Point Point
+snapToStairList [] p = Right p
 snapToStairList (pos : rest) p =
   let nx = if px pos > px p + 5 || px pos < px p - 5 then px p else px pos
       ny = if py pos > py p + 3 || py pos < py p - 3 then py p else py pos
       np = Point nx ny
-  in if np == pos then Nothing else snapToStairList rest np
-
-distProj :: [Point] -> Point -> Bool
-distProj ps p = all (\pos -> (px pos == px p
-                              || px pos > px p + 5
-                              || px pos < px p - 5)
-                             && (py pos == py p
-                                 || py pos > py p + 3
-                                 || py pos < py p - 3)) ps
+  in if np == pos then Left np else snapToStairList rest np
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
@@ -254,9 +247,10 @@ placeDownStairs :: Text -> ServerOptions -> Int
                 -> Rnd (Maybe Point)
 placeDownStairs object serverOptions ln
                 CaveKind{cminStairDist=_} darea ps boot = do
-  let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
-      distPr = distProj $ ps ++ boot
-      f p = if dist 0 p && distPr p then Just p else Nothing
+  let _dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+      f p = case snapToStairList ps p of
+        Left{} -> Nothing
+        Right np -> Just $ either id id $ snapToStairList boot np
       focusArea = let (x0, y0, x1, y1) = fromArea darea
                   in fromMaybe (error $ "" `showFailure` darea)
                      $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
