@@ -249,8 +249,8 @@ placeDownStairs :: Text -> Bool -> ServerOptions -> Int
                 -> CaveKind -> Area -> [Point] -> [Point]
                 -> Rnd (Maybe Point)
 placeDownStairs object cornerPermitted serverOptions ln
-                CaveKind{cminStairDist=_} darea ps boot = do
-  let _dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+                CaveKind{cminStairDist} darea ps boot = do
+  let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       (x0, y0, x1, y1) = fromArea darea
       -- Stairs in corners often enlarge next caves, so refrain from
       -- generating stairs, if only corner available (escapes special-cased).
@@ -262,9 +262,12 @@ placeDownStairs object cornerPermitted serverOptions ln
         Left{} -> Nothing
         Right np -> let nnp = either id id $ snapToStairList boot np
                     in if notInCorner nnp then Just nnp else Nothing
+      g p = case f p of
+        Just np | dist cminStairDist np -> Just np
+        _ -> Nothing
       focusArea = fromMaybe (error $ "" `showFailure` darea)
                   $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
-  mpos <- findPointInArea focusArea f
+  mpos <- findPointInArea focusArea g 100 f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions
            then unsafePerformIO $ do

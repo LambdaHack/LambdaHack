@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
 import           Game.LambdaHack.Common.Area
@@ -55,25 +56,33 @@ pointInArea area = do
 
 -- | Find a suitable position in the area, based on random points
 -- and a predicate.
-findPointInArea :: Area -> (Point -> Maybe Point) -> Rnd (Maybe Point)
-findPointInArea area f =
+findPointInArea :: Area -> (Point -> Maybe Point)
+                -> Int -> (Point -> Maybe Point)
+                -> Rnd (Maybe Point)
+findPointInArea area g gnumTries f =
   let (Point x0 y0, xspan, yspan) = spanArea area
-      search 0 = return $! searchAll (xspan * yspan - 1)
-      search count = do
-        pxy <- randomR (0, xspan * yspan - 1)
-        let Point{..} = PointArray.punindex xspan pxy
-            pos = Point (x0 + px) (y0 + py)
-        case f pos of
-          Just p -> return $ Just p
-          Nothing -> search (count - 1)
-      searchAll (-1) = Nothing
-      searchAll pxyRelative =
+      checkPoint :: Applicative m
+                 => (Point -> Maybe Point) -> m (Maybe Point) -> Int
+                 -> m (Maybe Point)
+      {-# INLINE checkPoint #-}
+      checkPoint check fallback pxyRelative =
         let Point{..} = PointArray.punindex xspan pxyRelative
             pos = Point (x0 + px) (y0 + py)
-        in case f pos of
-          Just p -> Just p
-          Nothing -> searchAll (pxyRelative - 1)
-  in search (xspan * yspan * 10)
+        in case check pos of
+          Just p -> pure $ Just p
+          Nothing -> fallback
+      gsearch 0 = fsearch (xspan * yspan * 10)
+      gsearch count = do
+        pxy <- randomR (0, xspan * yspan - 1)
+        checkPoint g (gsearch (count - 1)) pxy
+      fsearch 0 = return $! runIdentity $ searchAll (xspan * yspan - 1)
+      fsearch count = do
+        pxy <- randomR (0, xspan * yspan - 1)
+        checkPoint f (fsearch (count - 1)) pxy
+      searchAll (-1) = pure Nothing
+      searchAll pxyRelative =
+        checkPoint f (searchAll (pxyRelative - 1)) pxyRelative
+  in gsearch gnumTries
 
 -- | Create a void room, i.e., a single point area within the designated area.
 mkVoidRoom :: Area -> Rnd Area
