@@ -321,10 +321,10 @@ grid fixedCenters boot area cellSize =
       f _ z1 _ prev [c1] = [(prev, z1, Just c1)]
       f _ _ _ _ [] = error $ "empty list of centers" `showFailure` fixedCenters
       (xCenters, yCenters) = unzip $ map (px &&& py) $ EM.keys fixedCenters
-      xcs = IS.toList $ IS.fromList $ xCenters ++ map px boot
-      ycs = IS.toList $ IS.fromList $ yCenters ++ map py boot
-      xsize = maximum xcs - minimum xcs
-      ysize = maximum ycs - minimum ycs
+      xset = IS.fromList $ xCenters ++ map px boot
+      yset = IS.fromList $ yCenters ++ map py boot
+      xsize = IS.findMax xset - IS.findMin xset
+      ysize = IS.findMax yset - IS.findMin yset
       -- This is precisely how the cave will be divided among places,
       -- if there are no fixed centres except at boot coordinates.
       -- In any case, places, except for at boot points and fixed centres,
@@ -334,8 +334,8 @@ grid fixedCenters boot area cellSize =
       -- placement wrt to cave fence and other fixed centers.
       lgrid = ( xsize `div` fst cellSize
               , ysize `div` snd cellSize )
-      xallSegments = zip [0..] $ f xsize x1 (fst lgrid) x0 xcs
-      yallSegments = zip [0..] $ f ysize y1 (snd lgrid) y0 ycs
+      xallSegments = zip [0..] $ f xsize x1 (fst lgrid) x0 $ IS.toList xset
+      yallSegments = zip [0..] $ f ysize y1 (snd lgrid) y0 $ IS.toList yset
   in -- traceShow (xallSegments, yallSegments) $
      ( (length xallSegments, length yallSegments)
      , EM.fromDistinctAscList
