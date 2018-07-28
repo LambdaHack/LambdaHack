@@ -181,7 +181,7 @@ buildLevel cops@COps{cocave, corule} serverOptions
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        mpos <- placeDownStairs "stairs" serverOptions ln
+        mpos <- placeDownStairs "stairs" False serverOptions ln
                                 kc darea (lallUpStairs ++ map fst acc) boot
         case mpos of
           Just pos -> do
@@ -202,7 +202,9 @@ buildLevel cops@COps{cocave, corule} serverOptions
   fixedEscape <- case cescapeGroup kc of
     Nothing -> return []
     Just escapeGroup -> do
-      mepos <- placeDownStairs "escape" serverOptions ln
+      -- Escapes don't extent to other levels, so corners not harmful
+      -- and also escapes should not fail to generate, if possible.
+      mepos <- placeDownStairs "escape" True serverOptions ln
                                kc darea lallStairs boot
       case mepos of
         Just epos -> return [(epos, escapeGroup)]
@@ -213,8 +215,9 @@ buildLevel cops@COps{cocave, corule} serverOptions
   -- Avoid completely uniform levels (e.g., uniformly merged places).
   bootExtra <- if EM.null fixedCenters then do
                  let lallExits = map fst fixedEscape ++ lallStairs
-                 mpointExtra <- placeDownStairs "extra boot" serverOptions ln
-                                                kc darea lallExits boot
+                 mpointExtra <-
+                   placeDownStairs "extra boot" False serverOptions ln
+                                   kc darea lallExits boot
                  -- With sane content, @Nothing@ should never appear.
                  return $! maybeToList mpointExtra
                else return []
@@ -242,18 +245,25 @@ snapToStairList (pos : rest) p =
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
-placeDownStairs :: Text -> ServerOptions -> Int
+placeDownStairs :: Text -> Bool -> ServerOptions -> Int
                 -> CaveKind -> Area -> [Point] -> [Point]
                 -> Rnd (Maybe Point)
-placeDownStairs object serverOptions ln
+placeDownStairs object cornerPermitted serverOptions ln
                 CaveKind{cminStairDist=_} darea ps boot = do
   let _dist cmin p = all (\pos -> chessDist p pos > cmin) ps
+      (x0, y0, x1, y1) = fromArea darea
+      -- Stairs in corners often enlarge next caves, so refrain from
+      -- generating stairs, if only corner available (escapes special-cased).
+      notInCorner Point{..} =
+        cornerPermitted
+        || px > x0 + 9 && px < x1 - 9
+        || py > y0 + 6 && py < y1 - 6
       f p = case snapToStairList ps p of
         Left{} -> Nothing
-        Right np -> Just $ either id id $ snapToStairList boot np
-      focusArea = let (x0, y0, x1, y1) = fromArea darea
-                  in fromMaybe (error $ "" `showFailure` darea)
-                     $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
+        Right np -> let nnp = either id id $ snapToStairList boot np
+                    in if notInCorner nnp then Just nnp else Nothing
+      focusArea = fromMaybe (error $ "" `showFailure` darea)
+                  $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
   mpos <- findPointInArea focusArea f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions
