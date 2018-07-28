@@ -257,21 +257,9 @@ placeDownStairs object serverOptions ln
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       distPr = distProj $ ps ++ boot
       (x0, y0, x1, y1) = fromArea darea
-      interior = fromMaybe (error $ "" `showFailure` darea)
-                 $ toArea (x0 + 9, y0 + 8, x1 - 9, y1 - anchorDown - 4)
-      f p@Point{..} =
-        if p `inside` interior
-        then if distPr p then Just p else Nothing
-        else let nx = if | px < x0 + 9 -> x0 + 4
-                         | px > x1 - 9 -> x1 - 4
-                         | otherwise -> px
-                 ny = if | py < y0 + 8 -> y0 + 3
-                         | py > y1 - anchorDown - 4 -> y1 - anchorDown + 1
-                         | otherwise -> py
-                 np = Point nx ny
-             in if dist 0 np && distPr np
-                then Just np
-                else Nothing
+      f p@Point{..} = if dist 0 p && distPr p
+                      then Just p
+                      else Nothing
       focusArea = fromMaybe (error $ "" `showFailure` darea)
                   $ toArea (x0 + 5, y0 + 4, x1 - 5, y1 - anchorDown)
   mpos <- findPointInArea focusArea f
