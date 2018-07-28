@@ -176,13 +176,25 @@ buildLevel cops@COps{cocave, corule} serverOptions
              in rights $ map (snapToStairList lallUpStairs)
                              [ Point (x0 + 4) (y0 + 3)
                              , Point (x1 - 4) (y1 - anchorDown + 1) ]
+  fixedEscape <- case cescapeGroup kc of
+    Nothing -> return []
+    Just escapeGroup -> do
+      -- Escapes don't extent to other levels, so corners not harmful
+      -- and also escapes should not fail to generate, if possible.
+      mepos <- placeDownStairs "escape" True serverOptions ln
+                               kc darea lallUpStairs boot
+      case mepos of
+        Just epos -> return [(epos, escapeGroup)]
+        Nothing -> return []  -- with some luck, there is an escape elsewhere
+  let lescape = map fst fixedEscape
+      lallUpAndEscape = lescape ++ lallUpStairs
       freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
       addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
                     -> Rnd [(Point, GroupName PlaceKind)]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
         mpos <- placeDownStairs "stairs" False serverOptions ln
-                                kc darea (lallUpStairs ++ map fst acc) boot
+                                kc darea (lallUpAndEscape ++ map fst acc) boot
         case mpos of
           Just pos -> do
             stairGroup <- frequency freq
@@ -198,23 +210,11 @@ buildLevel cops@COps{cocave, corule} serverOptions
     return (p, toGroupName $ tshow stairGroup <+> "up")) lstairsSingleUp
   let fixedStairsDown = map (\(p, t) ->
         (p, toGroupName $ tshow t <+> "down")) stairsSingleDown
-      lallStairs = lallUpStairs ++ lstairsSingleDown
-  fixedEscape <- case cescapeGroup kc of
-    Nothing -> return []
-    Just escapeGroup -> do
-      -- Escapes don't extent to other levels, so corners not harmful
-      -- and also escapes should not fail to generate, if possible.
-      mepos <- placeDownStairs "escape" True serverOptions ln
-                               kc darea lallStairs boot
-      case mepos of
-        Just epos -> return [(epos, escapeGroup)]
-        Nothing -> return []  -- with some luck, there is an escape elsewhere
-  let lescape = map fst fixedEscape
+      lallExits = lallUpAndEscape ++ lstairsSingleDown
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
   -- Avoid completely uniform levels (e.g., uniformly merged places).
   bootExtra <- if EM.null fixedCenters then do
-                 let lallExits = map fst fixedEscape ++ lallStairs
                  mpointExtra <-
                    placeDownStairs "extra boot" False serverOptions ln
                                    kc darea lallExits boot
