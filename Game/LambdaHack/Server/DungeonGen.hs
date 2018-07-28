@@ -171,12 +171,6 @@ buildLevel cops@COps{cocave, corule} serverOptions
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       lallUpStairs = lstairsDouble ++ lstairsSingleUp
-      snapToStairList [] p = Just p
-      snapToStairList (pos : rest) p =
-        let nx = if px pos > px p + 5 || px pos < px p - 5 then px p else px pos
-            ny = if py pos > py p + 3 || py pos < py p - 3 then py p else py pos
-            np = Point nx ny
-        in if np == pos then Nothing else snapToStairList rest np
       boot = let (x0, y0, x1, y1) = fromArea darea
              in mapMaybe (snapToStairList lallUpStairs)
                          [ Point (x0 + 4) (y0 + 3)
@@ -236,6 +230,14 @@ buildLevel cops@COps{cocave, corule} serverOptions
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
+
+snapToStairList :: [Point] -> Point -> Maybe Point
+snapToStairList [] p = Just p
+snapToStairList (pos : rest) p =
+  let nx = if px pos > px p + 5 || px pos < px p - 5 then px p else px pos
+      ny = if py pos > py p + 3 || py pos < py p - 3 then py p else py pos
+      np = Point nx ny
+  in if np == pos then Nothing else snapToStairList rest np
 
 distProj :: [Point] -> Point -> Bool
 distProj ps p = all (\pos -> (px pos == px p
