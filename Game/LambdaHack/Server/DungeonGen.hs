@@ -253,16 +253,15 @@ placeDownStairs :: Text -> ServerOptions -> Int
                 -> CaveKind -> Area -> [Point] -> [Point]
                 -> Rnd (Maybe Point)
 placeDownStairs object serverOptions ln
-                CaveKind{cminStairDist} darea ps boot = do
+                CaveKind{cminStairDist=_} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       distPr = distProj $ ps ++ boot
-      minDist = if length ps >= 3 then 0 else cminStairDist
       (x0, y0, x1, y1) = fromArea darea
       interior = fromMaybe (error $ "" `showFailure` darea)
                  $ toArea (x0 + 9, y0 + 8, x1 - 9, y1 - anchorDown - 4)
       f p@Point{..} =
         if p `inside` interior
-        then if dist minDist p && distPr p then Just p else Nothing
+        then if distPr p then Just p else Nothing
         else let nx = if | px < x0 + 9 -> x0 + 4
                          | px > x1 - 9 -> x1 - 4
                          | otherwise -> px
@@ -270,13 +269,7 @@ placeDownStairs object serverOptions ln
                          | py > y1 - anchorDown - 4 -> y1 - anchorDown + 1
                          | otherwise -> py
                  np = Point nx ny
-                 -- Stairs in corners enlarge next caves, so usually avoid
-                 -- (not when the point happens to match the corner exactly).
-                 -- However, stairs on already taken lines along cave fence
-                 -- are fine, as long as the other coordinates do not clash
-                 -- with other stairs.
-                 inCorner = nx /= px && ny /= py
-             in if not inCorner && dist 0 np && distPr np
+             in if dist 0 np && distPr np
                 then Just np
                 else Nothing
       focusArea = fromMaybe (error $ "" `showFailure` darea)
