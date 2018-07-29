@@ -239,7 +239,7 @@ reqMove source dir = do
   -- This predicate is symmetric wrt source and target, though the effect
   -- of collision may not be (the source projectiles applies its effect
   -- on the target particles, but loses 1 HP due to the collision).
-  -- The condision implies that it's impossible to shoot down a bullet
+  -- The condition implies that it's impossible to shoot down a bullet
   -- with a bullet, but a bullet can shoot down a burstable target,
   -- as well as be swept away by it, and two burstable projectiles
   -- burst when meeting mid-air. Projectiles that are not bursting
@@ -247,7 +247,7 @@ reqMove source dir = do
   collides <- getsState $ \s tb ->
     let sitemKind = getIidKindServer (btrunk sb) s
         titemKind = getIidKindServer (btrunk tb) s
-        -- Such projectiles are prone to bursitng or are themselves
+        -- Such projectiles are prone to bursting or are themselves
         -- particles of an explosion shockwave.
         bursting itemKind = IK.Fragile `elem` IK.ifeature itemKind
                             && IK.Lobable `elem` IK.ifeature itemKind

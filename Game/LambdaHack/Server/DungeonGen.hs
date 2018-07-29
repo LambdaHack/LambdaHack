@@ -126,7 +126,8 @@ buildTileMap cops@COps{cotile, cocave}
   convertTileMaps cops areAllWalkable pickDefTile mpickPassable darea dmap
 
 anchorDown :: Y
-anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety
+anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
+                -- symmetry kept for @cfenceApart@ caves, to save real estate
 
 -- Create a level from a cave.
 buildLevel :: COps -> ServerOptions -> Int -> GroupName CaveKind
@@ -137,16 +138,20 @@ buildLevel cops@COps{cocave, corule} serverOptions
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
   let kc = okind cocave dkind
+      d = if cfenceApart kc then 1 else 0
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
       darea =
         let (lxPrev, lyPrev) = unzip $ map (px &&& py) lstairPrev
-            -- Stairs take some space, hence the first additions.
-            -- We reserve space for caves that leave a corridor along its fence.
-            lxMin = -4 + minimum (rXmax corule - 1 : lxPrev)
-            lxMax = 4 + maximum (0 : lxPrev)
-            lyMin = -3 + minimum (rYmax corule - 1 : lyPrev)
-            lyMax = 3 + maximum (0 : lyPrev)
+            -- Stairs take some space, hence the additions.
+            lxMin = max 0
+                    $ -4 - d + minimum (rXmax corule - 1 : lxPrev)
+            lxMax = min (rXmax corule - 1)
+                    $ 4 + d + maximum (0 : lxPrev)
+            lyMin = max 0
+                    $ -3 - d + minimum (rYmax corule - 1 : lyPrev)
+            lyMax = min (rYmax corule - 1)
+                    $ 3 + d + maximum (0 : lyPrev)
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
@@ -156,9 +161,7 @@ buildLevel cops@COps{cocave, corule} serverOptions
             y0 = min lyMin
                  $ max (lyMax - yspan + 1)
                  $ (rYmax corule - yspan) `div` 2
-        in assert (lxMin >= 0 && lxMax <= rXmax corule - 1
-                   && lyMin >= 0 && lyMax <= rYmax corule - 1)
-           $ fromMaybe (error $ "" `showFailure` kc)
+        in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
   -- Any stairs coming from above are considered extra stairs
   -- and if they don't exceed @extraStairs@,
@@ -173,9 +176,9 @@ buildLevel cops@COps{cocave, corule} serverOptions
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
       lallUpStairs = lstairsDouble ++ lstairsSingleUp
       boot = let (x0, y0, x1, y1) = fromArea darea
-             in rights $ map (snapToStairList lallUpStairs)
-                             [ Point (x0 + 4) (y0 + 3)
-                             , Point (x1 - 4) (y1 - anchorDown + 1) ]
+             in rights $ map (snapToStairList 0 lallUpStairs)
+                             [ Point (x0 + 4 + d) (y0 + 3 + d)
+                             , Point (x1 - 4 - d) (y1 - anchorDown + 1) ]
   fixedEscape <- case cescapeGroup kc of
     Nothing -> return []
     Just escapeGroup -> do
@@ -235,13 +238,17 @@ buildLevel cops@COps{cocave, corule} serverOptions
   let lvl = levelFromCave cops cave ldepth cmap lstair lescape
   return (lvl, lstairsDouble ++ lstairsSingleDown)
 
-snapToStairList :: [Point] -> Point -> Either Point Point
-snapToStairList [] p = Right p
-snapToStairList (pos : rest) p =
-  let nx = if px pos > px p + 5 || px pos < px p - 5 then px p else px pos
-      ny = if py pos > py p + 3 || py pos < py p - 3 then py p else py pos
+snapToStairList :: Int -> [Point] -> Point -> Either Point Point
+snapToStairList _ [] p = Right p
+snapToStairList a (pos : rest) p =
+  let nx = if px pos > px p + 5 + a || px pos < px p - 5 - a
+           then px p
+           else px pos
+      ny = if py pos > py p + 3 + a || py pos < py p - 3 - a
+           then py p
+           else py pos
       np = Point nx ny
-  in if np == pos then Left np else snapToStairList rest np
+  in if np == pos then Left np else snapToStairList a rest np
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
@@ -249,24 +256,30 @@ placeDownStairs :: Text -> Bool -> ServerOptions -> Int
                 -> CaveKind -> Area -> [Point] -> [Point]
                 -> Rnd (Maybe Point)
 placeDownStairs object cornerPermitted serverOptions ln
-                CaveKind{cminStairDist} darea ps boot = do
+                CaveKind{cminStairDist, cfenceApart} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       (x0, y0, x1, y1) = fromArea darea
       -- Stairs in corners often enlarge next caves, so refrain from
       -- generating stairs, if only corner available (escapes special-cased).
       notInCorner Point{..} =
         cornerPermitted
-        || px > x0 + 9 && px < x1 - 9
-        || py > y0 + 6 && py < y1 - 6
-      f p = case snapToStairList ps p of
+        || x1 - x0 + 1 < 40 || y1 - y0 + 1 < 20  -- everything is a corner
+        || px > x0 + 9 && px < x1 - 9  -- enough to fit smallest stairs
+        || py > y0 + 6 && py < y1 - 6  -- enough to fit smallest stairs
+      f p = case snapToStairList 0 ps p of
         Left{} -> Nothing
-        Right np -> let nnp = either id id $ snapToStairList boot np
+        Right np -> let nnp = either id id $ snapToStairList 0 boot np
                     in if notInCorner nnp then Just nnp else Nothing
-      g p = case f p of
-        Just np | dist cminStairDist np -> Just np
-        _ -> Nothing
-      focusArea = fromMaybe (error $ "" `showFailure` darea)
-                  $ toArea (x0 + 4, y0 + 3, x1 - 4, y1 - anchorDown + 1)
+      g p = case snapToStairList 2 ps p of
+        Left{} -> Nothing
+        Right np -> let nnp = either id id $ snapToStairList 2 boot np
+                    in if notInCorner nnp && dist cminStairDist nnp
+                       then Just nnp
+                       else Nothing
+      focusArea = let d = if cfenceApart then 1 else 0
+                  in fromMaybe (error $ "" `showFailure` darea)
+                     $ toArea ( x0 + 4 + d, y0 + 3 + d
+                              , x1 - 4 - d, y1 - anchorDown + 1 )
   mpos <- findPointInArea focusArea g 100 f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions

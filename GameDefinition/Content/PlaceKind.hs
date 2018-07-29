@@ -484,8 +484,8 @@ staircase = PlaceKind
   { psymbol  = '/'
   , pname    = "a staircase"
   , pfreq    = [ ("open staircase", 1), ("closed staircase", 1)
-               , ("walled staircase", 1) ]
-  , prarity  = [(1, 1)]  -- no cover when arriving, so low rarity
+               , ("walled staircase", 1) ]  -- no cover when arriving; low freq
+  , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FGround
   , ptopLeft = [ "<·>"
