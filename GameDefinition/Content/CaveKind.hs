@@ -345,7 +345,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , citemFreq     = [ ("common item", 30), ("gem", 150)
                     , ("weak arrow", 500), ("harpoon", 400)
                     , ("explosive", 100) ]
-  , cplaceFreq    = [("park", 100)]  -- the same rooms as in ambush
+  , cplaceFreq    = [("park", 100)]
   , cpassable     = True
   , cdefTile      = "escapeSetDark"  -- different tiles, not burning yet
   , cdarkCorTile  = "alarmingTrailLit"  -- let trails give off light
@@ -416,7 +416,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , citemNum      = 5 `d` 8
   , citemFreq     = [ ("common item", 30)
                     , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
-  , cplaceFreq    = [("park", 100)]
+  , cplaceFreq    = [("ambush", 100)]
   , cpassable     = True
   , cdefTile      = "ambushSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
