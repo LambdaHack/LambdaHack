@@ -275,7 +275,10 @@ placeDownStairs object cornerPermitted serverOptions ln
                 "Failed to place" <+> object <+> "on level"
                 <+> tshow ln <> ", in" <+> tshow darea
              hFlush stdout
+-- Not really expensive, but shouldn't disrupt normal testing nor play.
+#ifdef WITH_EXPENSIVE_ASSERTIONS
              error "possible, but unexpected; alarm!"
+#endif
            else ()
   return mpos
 
