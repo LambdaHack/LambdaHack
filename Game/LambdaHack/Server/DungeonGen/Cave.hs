@@ -286,8 +286,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         : map (\(place, _) -> aroundFence place) (EM.elems qplaces)
         ++  -- for @FNone@ fences with walkable tiles on the edges
          [EM.map (\(_, _, pk) -> PEnd pk) $
-            let mergeCorJust _ pl (cor, pk) = Just (pl, cor, pk)
-            in intersectionWithKeyMaybe mergeCorJust lplaces lplcorOuter]
+            let mergeCorAlways pl (cor, pk) = (pl, cor, pk)
+            in EM.intersectionWith mergeCorAlways lplaces lplcorOuter]
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}
