@@ -22,6 +22,7 @@ deadEnd,    rect, rect2, rectWindows, glasshouse, glasshouse2, glasshouse3, pulp
 lstaircase :: [PlaceKind]
 lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25]
 
+-- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
   { psymbol  = 'd'
   , pname    = "a dead end"
@@ -32,7 +33,6 @@ deadEnd = PlaceKind  -- needs to have index 0
   , ptopLeft = ["·"]
   , poverride = []
   }
--- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
@@ -47,12 +47,12 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   }
 rect2 = rect
   { pname    = "a pen"
-  , pfreq    = [("zoo", 10)]
+  , pfreq    = [("shootout", 2), ("zoo", 10)]
   }
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
-  , pfreq    = [("escape", 10), ("ambush", 10)]
+  , pfreq    = [("escape", 10), ("ambush", 7)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -66,7 +66,7 @@ rectWindows = PlaceKind
 glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "a glasshouse"
-  , pfreq    = [("shootout", 6)]
+  , pfreq    = [("shootout", 4)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -101,7 +101,7 @@ pulpit = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruins"
-  , pfreq    = [("battle", 33), ("noise", 50)]
+  , pfreq    = [("battle", 33), ("noise", 50), ("ambush", 5)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
