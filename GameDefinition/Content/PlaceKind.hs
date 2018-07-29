@@ -52,7 +52,7 @@ rect2 = rect
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
-  , pfreq    = [("park", 10), ("ambush", 10)]
+  , pfreq    = [("escape", 10), ("ambush", 10)]
   , prarity  = [(1, 10), (10, 8)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -221,8 +221,8 @@ pillar5 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
-  , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4)
-               , ("empty", 10), ("mine", 1000), ("park", 40), ("ambush", 40) ]
+  , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10)
+               , ("mine", 1000), ("escape", 40), ("ambush", 40) ]
   , prarity  = [(1, 20), (10, 20)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -266,7 +266,7 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "a lamp post"
-  , pfreq    = [("park", 20), ("ambush", 20), ("zoo", 10), ("battle", 10)]
+  , pfreq    = [("escape", 20), ("ambush", 20), ("zoo", 10), ("battle", 10)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -283,7 +283,8 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [("park", 3000), ("ambush", 3000), ("zoo", 50), ("battle", 110)]
+  { pfreq    = [ ("escape", 3000), ("ambush", 3000), ("zoo", 50)
+               , ("battle", 110) ]
   , ptopLeft = [ "XX·XX"
                , "X···X"
                , "··O··"
@@ -292,7 +293,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [("park", 3000), ("ambush", 3000), ("zoo", 50), ("battle", 60)]
+  { pfreq    = [("escape", 3000), ("ambush", 3000), ("zoo", 50), ("battle", 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··O··"

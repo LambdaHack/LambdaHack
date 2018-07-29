@@ -345,7 +345,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , citemFreq     = [ ("common item", 30), ("gem", 150)
                     , ("weak arrow", 500), ("harpoon", 400)
                     , ("explosive", 100) ]
-  , cplaceFreq    = [("park", 100)]
+  , cplaceFreq    = [("escape", 100)]
   , cpassable     = True
   , cdefTile      = "escapeSetDark"  -- different tiles, not burning yet
   , cdarkCorTile  = "alarmingTrailLit"  -- let trails give off light
