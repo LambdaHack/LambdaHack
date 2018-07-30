@@ -19,6 +19,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
@@ -114,23 +115,11 @@ buildPlace :: COps                -- ^ the game content
            -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
            -> Rnd Place
 buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
-           ldepth@(Dice.AbsDepth ld) totalDepth@(Dice.AbsDepth depth) dsecret
-           r mplaceGroup = do
-  let findInterval x1y1 [] = (x1y1, (11, 0))
-      findInterval !x1y1 ((!x, !y) : rest) =
-        if fromIntegral ld * 10 <= x * fromIntegral depth
-        then (x1y1, (x, y))
-        else findInterval (x, y) rest
-      linearInterpolation !dataset =
-        -- We assume @dataset@ is sorted and between 0 and 10.
-        let ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-        in ceiling
-           $ fromIntegral y1
-             + fromIntegral (y2 - y1)
-               * (fromIntegral ld * 10 - x1 * fromIntegral depth)
-               / ((x2 - x1) * fromIntegral depth)
-      f !placeGroup !q !acc !p !pk !kind =
-        let rarity = linearInterpolation (prarity kind)
+           levelDepth@(Dice.AbsDepth ldepth)
+           totalDepth@(Dice.AbsDepth tdepth)
+           dsecret r mplaceGroup = do
+  let f !placeGroup !q !acc !p !pk !kind =
+        let rarity = linearInterpolation ldepth tdepth (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
       g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f placeGroup q) []
       pfreq = case mplaceGroup of
@@ -143,7 +132,7 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
   ((qkind, kr), _) <- frequency freq
   dark <- if cpassable && pfence kr `elem` [FFloor, FGround]
           then return dnight
-          else chanceDice ldepth totalDepth cdarkChance
+          else chanceDice levelDepth totalDepth cdarkChance
   let qlegend = if dark then clegendDarkTile else clegendLitTile
       qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
   (overrideOneIn, override) <- ooverride cops (poverride kr)

@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ContentData
   , contentIdIndex, validateRarity, emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
-  , olength
+  , olength, linearInterpolation
   ) where
 
 import Prelude ()
@@ -202,3 +202,19 @@ oimapVector d f = V.imap (\i a -> f (ContentId $ toEnum i) a) $ contentVector d
 -- | Size of content @a@.
 olength :: ContentData a -> Int
 olength ContentData{contentVector} = V.length contentVector
+
+-- We assume @dataset@ is sorted and between 0 and 10.
+linearInterpolation :: Int -> Int -> Rarity -> Int
+linearInterpolation !levelDepth !totalDepth !dataset =
+  let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
+      findInterval x1y1 [] = (x1y1, (11, 0))
+      findInterval !x1y1 ((!x, !y) : rest) =
+        if fromIntegral levelDepth * 10 <= x * fromIntegral totalDepth
+        then (x1y1, (x, y))
+        else findInterval (x, y) rest
+      ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
+  in ceiling
+     $ fromIntegral y1
+       + fromIntegral (y2 - y1)
+         * (fromIntegral levelDepth * 10 - x1 * fromIntegral totalDepth)
+         / ((x2 - x1) * fromIntegral totalDepth)
