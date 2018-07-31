@@ -176,15 +176,15 @@ buildLevel cops@COps{cocave, corule} serverOptions
              in rights $ map (snapToStairList 0 lallUpStairs)
                              [ Point (x0 + 4 + d) (y0 + 3 + d)
                              , Point (x1 - 4 - d) (y1 - anchorDown + 1) ]
-  fixedEscape <- case cescapeGroup kc of
-    Nothing -> return []
-    Just escapeGroup -> do
+  fixedEscape <- case cescapeFreq kc of
+    [] -> return []
+    escapeFreq -> do
       -- Escapes don't extent to other levels, so corners not harmful
       -- and also escapes should not fail to generate, if possible.
       mepos <- placeDownStairs "escape" True serverOptions ln
                                kc darea lallUpStairs boot
       case mepos of
-        Just epos -> return [(epos, [(escapeGroup, 1)])]
+        Just epos -> return [(epos, escapeFreq)]
         Nothing -> return []  -- with some luck, there is an escape elsewhere
   let lescape = map fst fixedEscape
       lallUpAndEscape = lescape ++ lallUpStairs

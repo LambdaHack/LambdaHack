@@ -64,10 +64,8 @@ data CaveKind = CaveKind
   , cfenceApart     :: Bool                -- ^ are places touching fence banned
   , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
   , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
-  , cescapeGroup    :: Maybe (GroupName PlaceKind)  -- ^ escape, if any
-  , cstairFreq      :: Freqs PlaceKind
-      -- ^ place groups to consider for stairs; in this case the rarity
-      --   of items in the group does not affect group choice
+  , cescapeFreq     :: Freqs PlaceKind     -- ^ escape groups, if any
+  , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for stair choice
   , cdesc           :: Text                -- ^ full cave description
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
@@ -88,13 +86,13 @@ validateSingle CaveKind{..} =
      ++ [ "minCellSizeX < 1" | minCellSizeX < 1 ]
      ++ [ "minCellSizeY < 1" | minCellSizeY < 1 ]
      ++ [ "minCellSizeX < 6 && stairs"
-        | minCellSizeX < 6 && not (null cstairFreq && isNothing cescapeGroup) ]
+        | minCellSizeX < 6 && not (null cstairFreq && null cescapeFreq) ]
      ++ [ "minCellSizeY < 4 && stairs"
-        | minCellSizeY < 4 && not (null cstairFreq && isNothing cescapeGroup) ]
+        | minCellSizeY < 4 && not (null cstairFreq && null cescapeFreq) ]
      ++ [ "minMinSizeX < 5 && stairs"
-        | minMinSizeX < 5 && not (null cstairFreq && isNothing cescapeGroup) ]
+        | minMinSizeX < 5 && not (null cstairFreq && null cescapeFreq) ]
      ++ [ "minMinSizeY < 3 && stairs"
-        | minMinSizeY < 3 && not (null cstairFreq && isNothing cescapeGroup) ]
+        | minMinSizeY < 3 && not (null cstairFreq && null cescapeFreq) ]
      ++ [ "minMinSizeX < 1" | minMinSizeX < 1 ]
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
@@ -122,8 +120,8 @@ validateAll coitem coplace cotile content cocave =
                         $ concatMap (map fst . citemFreq) content
       missingPlaceFreq = filter (not . omemberGroup coplace)
                          $ concatMap (map fst . cplaceFreq) content
-      missingEscapeGroup = filter (not . omemberGroup coplace)
-                           $ mapMaybe cescapeGroup content
+      missingEscapeGroup = filter (not . omemberGroup coplace . fst)
+                           $ concatMap cescapeFreq content
       missingStairFreq = filter (not . omemberGroup coplace)
                          $ concatMap (map fst . cstairFreq) content
       tileGroupFuns = [ cdefTile, cdarkCorTile, clitCorTile, cfillerTile
@@ -138,7 +136,7 @@ validateAll coitem coplace cotile content cocave =
         | not $ null missingItemFreq ]
      ++ [ "cplaceFreq place groups not in content:" <+> tshow missingPlaceFreq
         | not $ null missingPlaceFreq ]
-     ++ [ "cescapeGroup place groups not in content:"
+     ++ [ "cescapeFreq place groups not in content:"
           <+> tshow missingEscapeGroup
         | not $ null missingEscapeGroup ]
      ++ [ "cstairFreq place groups not in content:" <+> tshow missingStairFreq

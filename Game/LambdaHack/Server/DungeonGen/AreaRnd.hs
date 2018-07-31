@@ -344,8 +344,7 @@ grid fixedCenters boot area cellSize =
                (Just cx, Just cy) ->
                  case EM.lookup (Point cx cy) fixedCenters of
                    Nothing -> SpecialArea sarea
-                   Just placeGroups ->
-                     SpecialFixed (Point cx cy) placeGroups sarea
+                   Just placeFreq -> SpecialFixed (Point cx cy) placeFreq sarea
                _ -> SpecialArea sarea )
          | (y, (cy0, cy1, mcy)) <- yallSegments
          , (x, (cx0, cx1, mcx)) <- xallSegments

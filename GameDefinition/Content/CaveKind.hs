@@ -54,7 +54,7 @@ rogue = CaveKind
   , cfenceApart     = False
   , clegendDarkTile = "legendDark"
   , clegendLitTile  = "legendLit"
-  , cescapeGroup    = Nothing
+  , cescapeFreq   = []
   , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
                     , ("tiny staircase", 1) ]
   , cdesc         = "Winding tunnels stretch into the dark."
@@ -226,7 +226,7 @@ shallow1rogue = shallow2rogue
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
   , citemNum      = 6 `d` 5  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
-  , cescapeGroup  = Just "escape up"
+  , cescapeFreq   = [("escape up", 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
 raid = rogue
@@ -245,7 +245,7 @@ raid = rogue
   , cactorFreq    = [("animal", 100)]
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
   , citemFreq     = [("common item", 100), ("currency", 500)]
-  , cescapeGroup  = Just "escape up"
+  , cescapeFreq   = [("escape up", 1)]
   , cstairFreq    = []
   , cdesc         = ""
   }
@@ -350,7 +350,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cfenceTileE   = "outdoor outer fence"
   , cfenceTileS   = "outdoor outer fence"
   , cfenceTileW   = "outdoor outer fence"
-  , cescapeGroup  = Just "escape outdoor down"
+  , cescapeFreq   = [("escape outdoor down", 1)]
   , cstairFreq    = []
   , cdesc         = ""
   }
@@ -472,7 +472,7 @@ safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   { cname         = "Jungle in flames"
   , cfreq         = [("caveSafari3", 1)]
   , cminPlaceSize = DiceXY 5 4
-  , cescapeGroup  = Just "escape outdoor down"
+  , cescapeFreq   = [("escape outdoor down", 1)]
   , cextraStairs  = 1
   , cstairFreq    = [("staircase outdoor", 1)]
   , cdesc         = "\"Act 3. Jealous hunams set jungle on fire and flee.\""
