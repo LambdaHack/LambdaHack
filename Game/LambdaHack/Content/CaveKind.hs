@@ -65,7 +65,8 @@ data CaveKind = CaveKind
   , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
   , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
   , cescapeFreq     :: Freqs PlaceKind     -- ^ escape groups, if any
-  , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for stair choice
+  , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for created stairs
+  , cstairAllowed   :: Freqs PlaceKind     -- ^ extra groups for inherited
   , cdesc           :: Text                -- ^ full cave description
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound

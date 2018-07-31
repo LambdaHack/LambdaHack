@@ -39,4 +39,5 @@ standardRules = RuleContent
   , rleadLevelClips = 50
   , rscoresFile = "LambdaHack.scores"
   , rnearby = 20
+  , rstairWordCarried = ["staircase"]  -- only one, so inert
   }

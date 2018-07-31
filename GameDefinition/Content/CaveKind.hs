@@ -57,6 +57,7 @@ rogue = CaveKind
   , cescapeFreq   = []
   , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
                     , ("tiny staircase", 1) ]
+  , cstairAllowed = []
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridor alternative, because both lit # and . look bad here
 arena = rogue
