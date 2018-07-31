@@ -182,10 +182,10 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     place <- buildPlace cops kc dnight darkCorTile litCorTile
-                                        ldepth totalDepth dsecret r Nothing
+                                        ldepth totalDepth dsecret r []
                     return ( EM.unions [qmap place, qfence place, m]
                            , EM.insert i (place, ar) qls )
-                SpecialFixed p@Point{..} placeGroup ar -> do
+                SpecialFixed p@Point{..} placeGroups ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar
@@ -198,7 +198,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                      `blame` ( r, ar, p, innerArea, gs
                                              , gs2, qls, kc )) ()
                   place <- buildPlace cops kc dnight darkCorTile litCorTile
-                             ldepth totalDepth dsecret r (Just placeGroup)
+                             ldepth totalDepth dsecret r placeGroups
                   return ( EM.unions [qmap place, qfence place, m]
                          , EM.insert i (place, ar) qls )
                 SpecialMerged sp p2 -> do

@@ -18,14 +18,12 @@ import           Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Text.IO as T
-import           Data.Tuple
 import           System.IO (hFlush, stdout)
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 
 import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -36,7 +34,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ModeKind
-import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -187,32 +184,25 @@ buildLevel cops@COps{cocave, corule} serverOptions
       mepos <- placeDownStairs "escape" True serverOptions ln
                                kc darea lallUpStairs boot
       case mepos of
-        Just epos -> return [(epos, escapeGroup)]
+        Just epos -> return [(epos, [(escapeGroup, 1)])]
         Nothing -> return []  -- with some luck, there is an escape elsewhere
   let lescape = map fst fixedEscape
       lallUpAndEscape = lescape ++ lallUpStairs
-      freq = toFreq ("buildLevel" <+> tshow ln) $ map swap $ cstairFreq kc
-      addSingleDown :: [(Point, GroupName PlaceKind)] -> Int
-                    -> Rnd [(Point, GroupName PlaceKind)]
+      freq = cstairFreq kc
+      addSingleDown :: [Point] -> Int -> Rnd [Point]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
         mpos <- placeDownStairs "stairs" False serverOptions ln
-                                kc darea (lallUpAndEscape ++ map fst acc) boot
+                                kc darea (lallUpAndEscape ++ acc) boot
         case mpos of
-          Just pos -> do
-            stairGroup <- frequency freq
-            addSingleDown ((pos, stairGroup) : acc) (k - 1)
+          Just pos -> addSingleDown (pos : acc) (k - 1)
           Nothing -> return acc  -- calling again won't change anything
-  stairsSingleDown <- addSingleDown [] remainingStairsDown
-  let lstairsSingleDown = map fst stairsSingleDown
-  fixedStairsDouble <- mapM (\p -> do
-    stairGroup <- frequency freq
-    return (p, stairGroup)) lstairsDouble
-  fixedStairsUp <- mapM (\p -> do
-    stairGroup <- frequency freq
-    return (p, toGroupName $ tshow stairGroup <+> "up")) lstairsSingleUp
-  let fixedStairsDown = map (\(p, t) ->
-        (p, toGroupName $ tshow t <+> "down")) stairsSingleDown
+  lstairsSingleDown <- addSingleDown [] remainingStairsDown
+  let fixedStairsDouble = map (\p -> (p, freq)) lstairsDouble
+      freqUp = map (first (\gn -> toGroupName $ tshow gn <+> "up")) freq
+      fixedStairsUp = map (\p -> (p, freqUp)) lstairsSingleUp
+      freqDown = map (first (\gn -> toGroupName $ tshow gn <+> "down")) freq
+      fixedStairsDown = map (\p -> (p, freqDown)) lstairsSingleDown
       lallExits = lallUpAndEscape ++ lstairsSingleDown
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown

@@ -112,7 +112,7 @@ buildPlace :: COps                -- ^ the game content
            -> Dice.AbsDepth       -- ^ absolute depth
            -> Int                 -- ^ secret tile seed
            -> Area                -- ^ whole area of the place, fence included
-           -> Maybe (GroupName PlaceKind)  -- ^ optional fixed place group
+           -> Freqs PlaceKind     -- ^ optional fixed place freq
            -> Rnd Place
 buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
            levelDepth@(Dice.AbsDepth ldepth)
@@ -123,11 +123,11 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
       g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f placeGroup q) []
       pfreq = case mplaceGroup of
-        Nothing -> cplaceFreq
-        Just placeGroup -> [(placeGroup, 1)]
+        [] -> cplaceFreq
+        _ -> mplaceGroup
       placeFreq = concatMap g pfreq
       checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
-      freq = toFreq ("buildPlace" <+> tshow (map fst checkedFreq)) checkedFreq
+      freq = toFreq "buildPlace" checkedFreq
   let !_A = assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) ()
   ((qkind, kr), _) <- frequency freq
   dark <- if cpassable && pfence kr `elem` [FFloor, FGround]

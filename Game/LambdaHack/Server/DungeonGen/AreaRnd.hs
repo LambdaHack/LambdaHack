@@ -23,7 +23,7 @@ import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.Misc hiding (xM)
+import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
@@ -286,7 +286,7 @@ borderPlace qarea pfence = case pfence of
 
 data SpecialArea =
     SpecialArea Area
-  | SpecialFixed Point (GroupName PlaceKind) Area
+  | SpecialFixed Point (Freqs PlaceKind) Area
   | SpecialMerged SpecialArea Point
   deriving Show
 
@@ -297,7 +297,7 @@ data SpecialArea =
 -- of (non-overlapping) areas is given. Incorporate those,
 -- with as little disruption, as possible.
 -- Assume each of four boundaries of the cave are covered by a fixed centre.
-grid :: EM.EnumMap Point (GroupName PlaceKind) -> [Point] -> Area -> (X, Y)
+grid :: EM.EnumMap Point (Freqs PlaceKind) -> [Point] -> Area -> (X, Y)
      -> ((X, Y), EM.EnumMap Point SpecialArea)
 grid fixedCenters boot area cellSize =
   let (x0, y0, x1, y1) = fromArea area
@@ -344,8 +344,8 @@ grid fixedCenters boot area cellSize =
                (Just cx, Just cy) ->
                  case EM.lookup (Point cx cy) fixedCenters of
                    Nothing -> SpecialArea sarea
-                   Just placeGroup ->
-                     SpecialFixed (Point cx cy) placeGroup sarea
+                   Just placeGroups ->
+                     SpecialFixed (Point cx cy) placeGroups sarea
                _ -> SpecialArea sarea )
          | (y, (cy0, cy1, mcy)) <- yallSegments
          , (x, (cx0, cx1, mcx)) <- xallSegments
