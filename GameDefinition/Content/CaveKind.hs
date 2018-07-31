@@ -203,7 +203,9 @@ noise2 = noise
   , citemFreq     = [ ("common item", 20), ("treasure", 60)
                     , ("explosive", 20) ]
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
-  , cstairFreq    = [("gated staircase", 100)]
+  , cstairFreq    = [ ("gated closed staircase", 50)
+                    , ("gated open staircase", 50)
+                    , ("gated tiny staircase", 1) ]
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
   }
 shallow2rogue = rogue
@@ -457,7 +459,9 @@ safari1 = brawl
   , cfreq         = [("caveSafari1", 1)]
   , cminPlaceSize = DiceXY 5 3
   , cextraStairs  = 1
-  , cstairFreq    = [("staircase outdoor", 1)]
+  , cstairFreq    = [ ("outdoor walled staircase", 20)
+                    , ("outdoor closed staircase", 80)
+                    , ("outdoor tiny staircase", 1) ]
   , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
 safari2 = ambush  -- lamps instead of trees, but ok, it's only a simulation
@@ -465,7 +469,9 @@ safari2 = ambush  -- lamps instead of trees, but ok, it's only a simulation
   , cfreq         = [("caveSafari2", 1)]
   , cminPlaceSize = DiceXY 5 3
   , cextraStairs  = 1
-  , cstairFreq    = [("staircase outdoor", 1)]
+  , cstairFreq    = [ ("outdoor walled staircase", 20)
+                    , ("outdoor closed staircase", 80)
+                    , ("outdoor tiny staircase", 1) ]
   , cdesc         = "\"Act 2. In the dark pure heart of the jungle noble animals roam freely.\""
   }
 safari3 = zoo  -- glass rooms, but ok, it's only a simulation
@@ -474,6 +480,8 @@ safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   , cminPlaceSize = DiceXY 5 4
   , cescapeFreq   = [("escape outdoor down", 1)]
   , cextraStairs  = 1
-  , cstairFreq    = [("staircase outdoor", 1)]
+  , cstairFreq    = [ ("outdoor walled staircase", 20)
+                    , ("outdoor closed staircase", 80)
+                    , ("outdoor tiny staircase", 1) ]
   , cdesc         = "\"Act 3. Jealous hunams set jungle on fire and flee.\""
   }
