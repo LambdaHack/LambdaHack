@@ -13,14 +13,16 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 
 content :: [PlaceKind]
 content =
-  [deadEnd, rect, rect2, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25, staircase15up, staircase16down, staircase21up, staircase21down, staircase25up, staircase25down]
+  [deadEnd, rect, rect2, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25, staircase15up, staircase16down, staircase21up, staircase21down, staircase25up, staircase25down]
   ++ map makeStaircaseUp lstaircase
   ++ map makeStaircaseDown lstaircase
 
-deadEnd,    rect, rect2, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25, staircase15up, staircase16down, staircase21up, staircase21down, staircase25up, staircase25down :: PlaceKind
+deadEnd,    rect, rect2, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25, staircase15up, staircase16down, staircase21up, staircase21down, staircase25up, staircase25down :: PlaceKind
+
+staircase :: PlaceKind  -- template
 
 lstaircase :: [PlaceKind]
-lstaircase = [staircase, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25]
+lstaircase = [staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37, staircaseOutdoor, staircaseOutdoor16, staircaseOutdoor25, staircaseGated, staircaseGated16, staircaseGated25]
 
 -- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
@@ -483,9 +485,8 @@ escapeOutdoorDown = escapeDown
 staircase = PlaceKind
   { psymbol  = '/'
   , pname    = "a staircase"
-  , pfreq    = [ ("open staircase", 1), ("closed staircase", 1)
-               , ("walled staircase", 1) ]  -- no cover when arriving; low freq
-  , prarity  = [(1, 1)]
+  , pfreq    = [("tiny staircase", 1)]  -- no cover when arriving; low freq
+  , prarity  = [(1, 100)]
   , pcover   = CVerbatim
   , pfence   = FGround
   , ptopLeft = [ "<·>"
@@ -493,21 +494,26 @@ staircase = PlaceKind
   , poverride = [ ('<', "staircase up"), ('>', "staircase down")
                 , ('I', "signboard") ]
   }
+staircase1 = staircase
+  { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
+  }
 staircase2 = staircase
-  { pfreq    = [ ("open staircase", 3), ("closed staircase", 3)
-               , ("walled staircase", 3) ]
+  { pfreq    = [("tiny staircase", 3)]
+  , prarity  = [(1, 1)]
   , pfence   = FGround
   , ptopLeft = [ "·<·>·"
                ]
   }
 staircase3 = staircase
-  { pfence   = FFloor
+  { prarity  = [(1, 1)]
+  , pfence   = FFloor
   }
 staircase4 = staircase2
   { pfence   = FFloor
+  , prarity  = [(1, 1)]
   }
 staircase5 = staircase
-  { pfreq    = [("open staircase", 200)]  -- no cover, open
+  { pfreq    = [("open staircase", 200)]  -- no cover, open, intentional
   , pfence   = FGround
   , ptopLeft = [ "O·O"
                , "···"
@@ -862,7 +868,7 @@ overrideOutdoor :: [(Char, GroupName TileKind)]
 overrideOutdoor =
   [ ('<', "staircase outdoor up"), ('>', "staircase outdoor down")
   , ('I', "signboard") ]
-staircaseOutdoor = staircase
+staircaseOutdoor = staircase1
   { pname     = "an outdoor area exit"
   , pfreq     = [("staircase outdoor", 1)]
   , poverride = overrideOutdoor
@@ -881,7 +887,7 @@ overrideGated :: [(Char, GroupName TileKind)]
 overrideGated =
   [ ('<', "gated staircase up"), ('>', "gated staircase down")
   , ('I', "signboard") ]
-staircaseGated = staircase
+staircaseGated = staircase1
   { pname     = "a gated staircase"
   , pfreq     = [("gated staircase", 1)]
   , poverride = overrideGated
