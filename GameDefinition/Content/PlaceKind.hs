@@ -581,7 +581,7 @@ staircase11 = staircase
                ]
   }
 staircase12 = staircase
-  { pfreq    = [("closed staircase", 5000)]
+  { pfreq    = [("closed staircase", 4000)]
   , pfence   = FFloor
   , ptopLeft = [ "·O·O·"
                , "O·O·O"
@@ -593,7 +593,7 @@ staircase12 = staircase
                ]
   }
 staircase13 = staircase
-  { pfreq    = [("closed staircase", 10000)]
+  { pfreq    = [("closed staircase", 6000)]
   , pfence   = FFloor
   , ptopLeft = [ "·O·O·O·"
                , "O·O·O·O"
@@ -605,7 +605,7 @@ staircase13 = staircase
                ]
   }
 staircase14 = staircase
-  { pfreq    = [("closed staircase", 20000)]
+  { pfreq    = [("closed staircase", 10000)]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O"
                , "·O·O·O·"
@@ -617,7 +617,7 @@ staircase14 = staircase
                ]
   }
 staircase15 = staircase
-  { pfreq    = [("closed staircase", 100000)]
+  { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "·O·O·O·O·"
                , "O·O·O·O·O"
@@ -629,7 +629,7 @@ staircase15 = staircase
                ]
   }
 staircase16 = staircase
-  { pfreq    = [("closed staircase", 100000)]
+  { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O·O"
                , "·O·O·O·O·"
@@ -641,7 +641,7 @@ staircase16 = staircase
                ]
   }
 staircase17 = staircase
-  { pfreq    = [("closed staircase", 100000)]
+  { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O·O·O"
                , "·O·O·O·O·O·"
@@ -653,7 +653,7 @@ staircase17 = staircase
                ]
   }
 staircase18 = staircase
-  { pfreq    = [("closed staircase", 500000)]
+  { pfreq    = [("closed staircase", 80000)]
   , pfence   = FFloor
   , ptopLeft = [ "··O·O·O·O··"
                , "·O·O·O·O·O·"
@@ -665,7 +665,7 @@ staircase18 = staircase
                ]
   }
 staircase19 = staircase
-  { pfreq    = [("closed staircase", 100000)]
+  { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "·O·O·O·O·O·"
                , "O·O·O·O·O·O"
@@ -904,7 +904,7 @@ staircaseGated25 = staircase25
   }
 staircase15up = staircase
   { pname    = "a staircase up"
-  , pfreq    = [("closed staircase up", 100000)]
+  , pfreq    = [("closed staircase up", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "·O·O·O·"
                , "O·O·O·O"
@@ -917,7 +917,7 @@ staircase15up = staircase
   }
 staircase16down = staircase
   { pname    = "a staircase down"
-  , pfreq    = [("closed staircase down", 100000)]
+  , pfreq    = [("closed staircase down", 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O"
                , "·O·O·O·"
@@ -930,7 +930,7 @@ staircase16down = staircase
   }
 staircase21up = staircase
   { pname    = "a staircase up"
-  , pfreq    = [("closed staircase up", 10000), ("open staircase up", 10000)]
+  , pfreq    = [("closed staircase up", 2000), ("open staircase up", 2000)]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O"
                , "·O···O·"
@@ -941,8 +941,8 @@ staircase21up = staircase
   }
 staircase21down = staircase
   { pname    = "a staircase down"
-  , pfreq    = [ ("closed staircase down", 10000)
-               , ("open staircase down", 10000) ]
+  , pfreq    = [ ("closed staircase down", 2000)
+               , ("open staircase down", 2000) ]
   , pfence   = FFloor
   , ptopLeft = [ "O·O·O·O"
                , "·O···O·"
