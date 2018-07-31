@@ -30,11 +30,12 @@ import           Game.LambdaHack.Server.DungeonGen.Place
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
-  { dkind  :: ContentId CaveKind  -- ^ the kind of the cave
-  , darea  :: Area                -- ^ map area of the cave
-  , dmap   :: TileMapEM           -- ^ tile kinds in the cave
-  , dentry :: EntryMap            -- ^ room entrances in the cave
-  , dnight :: Bool                -- ^ whether the cave is dark
+  { dkind   :: ContentId CaveKind  -- ^ the kind of the cave
+  , darea   :: Area                -- ^ map area of the cave
+  , dmap    :: TileMapEM           -- ^ tile kinds in the cave
+  , dstairs :: EM.EnumMap Point Place  -- ^ stair places indexed by their center
+  , dentry  :: EntryMap            -- ^ room entrances in the cave
+  , dnight  :: Bool                -- ^ whether the cave is dark
   }
   deriving Show
 
@@ -161,10 +162,14 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     -- repetitions are OK; variance is low anyway
           return $! ES.fromList $ filter isOrdinaryArea reps
         let decidePlace :: Bool
-                        -> (TileMapEM, EM.EnumMap Point (Place, Area))
+                        -> ( TileMapEM
+                           , EM.EnumMap Point (Place, Area)
+                           , EM.EnumMap Point Place )
                         -> (Point, SpecialArea)
-                        -> Rnd (TileMapEM, EM.EnumMap Point (Place, Area))
-            decidePlace noVoid (!m, !qls) (!i, !special) =
+                        -> Rnd ( TileMapEM
+                               , EM.EnumMap Point (Place, Area)
+                               , EM.EnumMap Point Place )
+            decidePlace noVoid (!m, !qls, !qstairs) (!i, !special) =
               case special of
                 SpecialArea ar -> do
                   -- Reserved for corridors and the global fence.
@@ -178,13 +183,14 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     let qkind = deadEndId
                         qmap = EM.empty
                         qfence = EM.empty
-                    return (m, EM.insert i (Place{..}, ar) qls)
+                    return (m, EM.insert i (Place{..}, ar) qls, qstairs)
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     place <- buildPlace cops kc dnight darkCorTile litCorTile
                                         ldepth totalDepth dsecret r []
                     return ( EM.unions [qmap place, qfence place, m]
-                           , EM.insert i (place, ar) qls )
+                           , EM.insert i (place, ar) qls
+                           , qstairs )
                 SpecialFixed p@Point{..} placeFreq ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
@@ -200,14 +206,18 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   place <- buildPlace cops kc dnight darkCorTile litCorTile
                              ldepth totalDepth dsecret r placeFreq
                   return ( EM.unions [qmap place, qfence place, m]
-                         , EM.insert i (place, ar) qls )
+                         , EM.insert i (place, ar) qls
+                         , EM.insert p place qstairs )
                 SpecialMerged sp p2 -> do
-                  (lplaces, qplaces) <- decidePlace True (m, qls) (i, sp)
-                  return (lplaces, EM.insert p2 (qplaces EM.! i) qplaces)
-        places <- foldlM' (decidePlace False) (EM.empty, EM.empty)
+                  (lplaces, dplaces, dstairs) <-
+                    decidePlace True (m, qls, qstairs) (i, sp)
+                  return ( lplaces
+                         , EM.insert p2 (dplaces EM.! i) dplaces
+                         , dstairs )
+        places <- foldlM' (decidePlace False) (EM.empty, EM.empty, EM.empty)
                   $ EM.assocs gs2
         return (voidPlaces, lgr, places)
-  (voidPlaces, lgrid, (lplaces, qplaces)) <- createPlaces
+  (voidPlaces, lgrid, (lplaces, dplaces, dstairs)) <- createPlaces
   let lcorridorsFun :: Rnd ( EM.EnumMap Point ( ContentId TileKind
                                               , ContentId PlaceKind )
                            , TileMapEM )
@@ -235,8 +245,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                      , Corridor
                                      , ContentId PlaceKind ))
             connectPos (p0, p1) = do
-              let (place0, area0) = qplaces EM.! p0
-                  (place1, area1) = qplaces EM.! p1
+              let (place0, area0) = dplaces EM.! p0
+                  (place1, area1) = dplaces EM.! p1
                   savePlaces cor = (qkind place0, cor, qkind place1)
               connected <- connectPlaces
                 (qarea place0, pfence $ okind coplace (qkind place0), area0)
@@ -283,7 +293,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         else EM.empty
       dentry = EM.unions $
         EM.map (\(_, _, pk) -> PEntry pk) interCor
-        : map (\(place, _) -> aroundFence place) (EM.elems qplaces)
+        : map (\(place, _) -> aroundFence place) (EM.elems dplaces)
         ++  -- for @FNone@ fences with walkable tiles on the edges
          [EM.map (\(_, _, pk) -> PEnd pk) $
             let mergeCorAlways pl (cor, pk) = (pl, cor, pk)

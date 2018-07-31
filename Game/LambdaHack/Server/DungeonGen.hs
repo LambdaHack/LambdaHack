@@ -17,6 +17,7 @@ import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -34,6 +35,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -128,9 +130,9 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
 
 -- Create a level from a cave.
 buildLevel :: COps -> ServerOptions -> Int -> GroupName CaveKind
-           -> Int -> Dice.AbsDepth -> [Point]
-           -> Rnd (Level, [Point])
-buildLevel cops@COps{cocave, corule} serverOptions
+           -> Int -> Dice.AbsDepth -> [(Point, Text)]
+           -> Rnd (Level, [(Point, Text)])
+buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
            ln genName minD totalDepth lstairPrev = do
   dkind <- fromMaybe (error $ "" `showFailure` genName)
            <$> opick cocave genName (const True)
@@ -139,25 +141,21 @@ buildLevel cops@COps{cocave, corule} serverOptions
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
       darea =
-        let (lxPrev, lyPrev) = unzip $ map (px &&& py) lstairPrev
+        let (lxPrev, lyPrev) = unzip $ map (px . fst &&& py . fst) lstairPrev
             -- Stairs take some space, hence the additions.
             lxMin = max 0
-                    $ -4 - d + minimum (rXmax corule - 1 : lxPrev)
-            lxMax = min (rXmax corule - 1)
+                    $ -4 - d + minimum (rXmax - 1 : lxPrev)
+            lxMax = min (rXmax - 1)
                     $ 4 + d + maximum (0 : lxPrev)
             lyMin = max 0
-                    $ -3 - d + minimum (rYmax corule - 1 : lyPrev)
-            lyMax = min (rYmax corule - 1)
+                    $ -3 - d + minimum (rYmax - 1 : lyPrev)
+            lyMax = min (rYmax - 1)
                     $ 3 + d + maximum (0 : lyPrev)
             -- Pick minimal cave size that fits all previous stairs.
             xspan = max (lxMax - lxMin + 1) $ cXminSize kc
             yspan = max (lyMax - lyMin + 1) $ cYminSize kc
-            x0 = min lxMin
-                 $ max (lxMax - xspan + 1)
-                 $ (rXmax corule - xspan) `div` 2
-            y0 = min lyMin
-                 $ max (lyMax - yspan + 1)
-                 $ (rYmax corule - yspan) `div` 2
+            x0 = min lxMin $ max (lxMax - xspan + 1) $ (rXmax - xspan) `div` 2
+            y0 = min lyMin $ max (lyMax - yspan + 1) $ (rYmax - yspan) `div` 2
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
   -- Any stairs coming from above are considered extra stairs
@@ -171,9 +169,9 @@ buildLevel cops@COps{cocave, corule} serverOptions
                  single = max 0 $ extraStairs - double
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
-      lallUpStairs = lstairsDouble ++ lstairsSingleUp
+      pallUpStairs = map fst $ lstairsDouble ++ lstairsSingleUp
       boot = let (x0, y0, x1, y1) = fromArea darea
-             in rights $ map (snapToStairList 0 lallUpStairs)
+             in rights $ map (snapToStairList 0 pallUpStairs)
                              [ Point (x0 + 4 + d) (y0 + 3 + d)
                              , Point (x1 - 4 - d) (y1 - anchorDown + 1) ]
   fixedEscape <- case cescapeFreq kc of
@@ -182,42 +180,48 @@ buildLevel cops@COps{cocave, corule} serverOptions
       -- Escapes don't extent to other levels, so corners not harmful
       -- and also escapes should not fail to generate, if possible.
       mepos <- placeDownStairs "escape" True serverOptions ln
-                               kc darea lallUpStairs boot
+                               kc darea pallUpStairs boot
       case mepos of
         Just epos -> return [(epos, escapeFreq)]
         Nothing -> return []  -- with some luck, there is an escape elsewhere
-  let lescape = map fst fixedEscape
-      lallUpAndEscape = lescape ++ lallUpStairs
-      freq = cstairFreq kc
+  let pescape = map fst fixedEscape
+      pallUpAndEscape = pescape ++ pallUpStairs
       addSingleDown :: [Point] -> Int -> Rnd [Point]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
         mpos <- placeDownStairs "stairs" False serverOptions ln
-                                kc darea (lallUpAndEscape ++ acc) boot
+                                kc darea (pallUpAndEscape ++ acc) boot
         case mpos of
           Just pos -> addSingleDown (pos : acc) (k - 1)
           Nothing -> return acc  -- calling again won't change anything
-  lstairsSingleDown <- addSingleDown [] remainingStairsDown
-  let fixedStairsDouble = map (\p -> (p, freq)) lstairsDouble
-      freqUp = map (first (\gn -> toGroupName $ tshow gn <+> "up")) freq
-      fixedStairsUp = map (\p -> (p, freqUp)) lstairsSingleUp
-      freqDown = map (first (\gn -> toGroupName $ tshow gn <+> "down")) freq
-      fixedStairsDown = map (\p -> (p, freqDown)) lstairsSingleDown
-      lallExits = lallUpAndEscape ++ lstairsSingleDown
+  pstairsSingleDown <- addSingleDown [] remainingStairsDown
+  let freqDouble carried =
+        filter (\(gn, _) -> carried `elem` T.words (tshow gn))
+        $ cstairFreq kc ++ cstairAllowed kc
+      fixedStairsDouble = map (second freqDouble) lstairsDouble
+      freqUp carried =
+        map (first (\gn -> toGroupName $ tshow gn <+> "up"))
+        $ freqDouble carried
+      fixedStairsUp = map (second freqUp) lstairsSingleUp
+      freqDown =
+        map (first (\gn -> toGroupName $ tshow gn <+> "down"))
+        $ cstairFreq kc
+      fixedStairsDown = map (\p -> (p, freqDown)) pstairsSingleDown
+      pallExits = pallUpAndEscape ++ pstairsSingleDown
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
   -- Avoid completely uniform levels (e.g., uniformly merged places).
   bootExtra <- if EM.null fixedCenters then do
                  mpointExtra <-
                    placeDownStairs "extra boot" False serverOptions ln
-                                   kc darea lallExits boot
+                                   kc darea pallExits boot
                  -- With sane content, @Nothing@ should never appear.
                  return $! maybeToList mpointExtra
                else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
-      lstair = ( map posUp $ lstairsSingleUp ++ lstairsDouble
-               , map posDn $ lstairsDouble ++ lstairsSingleDown )
+      lstair = ( map posUp $ map fst lstairsSingleUp ++ map fst lstairsDouble
+               , map posDn $ map fst lstairsDouble ++ pstairsSingleDown )
   cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
       area = if cfenceApart kc then subArea else darea
@@ -225,8 +229,18 @@ buildLevel cops@COps{cocave, corule} serverOptions
   dsecret <- randomR (1, maxBound)
   cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs bootExtra
   cmap <- buildTileMap cops cave
-  let lvl = levelFromCave cops cave ldepth cmap lstair lescape
-  return (lvl, lstairsDouble ++ lstairsSingleDown)
+  let lvl = levelFromCave cops cave ldepth cmap lstair pescape
+      stairCarried p0 =
+        let Place{qkind} = dstairs cave EM.! p0
+            freq = map (first $ T.words . tshow)
+                       (PK.pfreq $ okind coplace qkind)
+            carriedAll = filter (\t -> any (\(ws, _) -> t `elem` ws) freq)
+                                rstairWordCarried
+        in case carriedAll of
+          [t] -> (p0, t)
+          _ -> error $ "wrong carried stair word"
+                       `showFailure` (freq, carriedAll, kc)
+  return (lvl, map stairCarried $ map fst lstairsDouble ++ pstairsSingleDown)
 
 snapToStairList :: Int -> [Point] -> Point -> Either Point Point
 snapToStairList _ [] p = Right p
@@ -328,9 +342,9 @@ dungeonGen cops serverOptions caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      buildLvl :: ([(LevelId, Level)], [Point])
+      buildLvl :: ([(LevelId, Level)], [(Point, Text)])
                -> (Int, GroupName CaveKind)
-               -> Rnd ([(LevelId, Level)], [Point])
+               -> Rnd ([(LevelId, Level)], [(Point, Text)])
       buildLvl (l, ldown) (n, genName) = do
         -- lstairUp for the next level is lstairDown for the current level
         (lvl, ldown2) <-
