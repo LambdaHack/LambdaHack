@@ -169,7 +169,9 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
                  single = max 0 $ extraStairs - double
              in (length lstairPrev - double, single)
       (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
-      pallUpStairs = map fst $ lstairsDouble ++ lstairsSingleUp
+      pstairsSingleUp = map fst lstairsSingleUp
+      pstairsDouble = map fst lstairsDouble
+      pallUpStairs = pstairsDouble ++ pstairsSingleUp
       boot = let (x0, y0, x1, y1) = fromArea darea
              in rights $ map (snapToStairList 0 pallUpStairs)
                              [ Point (x0 + 4 + d) (y0 + 3 + d)
@@ -220,8 +222,8 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
                else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
-      lstair = ( map posUp $ map fst lstairsSingleUp ++ map fst lstairsDouble
-               , map posDn $ map fst lstairsDouble ++ pstairsSingleDown )
+      lstair = ( map posUp $ pstairsSingleUp ++ pstairsDouble
+               , map posDn $ pstairsDouble ++ pstairsSingleDown )
   cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
       area = if cfenceApart kc then subArea else darea
@@ -240,7 +242,7 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
           [t] -> (p0, t)
           _ -> error $ "wrong carried stair word"
                        `showFailure` (freq, carriedAll, kc)
-  return (lvl, map stairCarried $ map fst lstairsDouble ++ pstairsSingleDown)
+  return (lvl, lstairsDouble ++ map stairCarried pstairsSingleDown)
 
 snapToStairList :: Int -> [Point] -> Point -> Either Point Point
 snapToStairList _ [] p = Right p
