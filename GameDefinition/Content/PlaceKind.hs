@@ -900,7 +900,7 @@ overrideGated =
 makeGated :: PlaceKind -> PlaceKind
 makeGated s = s
  { psymbol   = 'g'
- , pname     = T.unwords $ "a gated" : init (T.words (pname s))
+ , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
  , pfreq     = map (first (\t -> toGroupName $ "gated" <+> tshow t)) $ pfreq s
  , poverride = overrideGated
  }
