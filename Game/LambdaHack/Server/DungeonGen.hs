@@ -286,7 +286,7 @@ placeDownStairs object cornerPermitted serverOptions ln
                   in fromMaybe (error $ "" `showFailure` darea)
                      $ toArea ( x0 + 4 + d, y0 + 3 + d
                               , x1 - 4 - d, y1 - anchorDown + 1 )
-  mpos <- findPointInArea focusArea g 100 f
+  mpos <- findPointInArea focusArea g 300 f
   -- The message fits this debugging level:
   let !_ = if isNothing mpos && sdumpInitRngs serverOptions
            then unsafePerformIO $ do
