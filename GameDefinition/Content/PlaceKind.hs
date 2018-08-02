@@ -49,8 +49,8 @@ deadEnd = PlaceKind  -- needs to have index 0
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
-  , pfreq    = [("rogue", 100), ("arena", 40), ("laboratory", 40)]
-  , prarity  = [(1, 10), (10, 8)]
+  , pfreq    = [("rogue", 100), ("arena", 35), ("laboratory", 30)]
+  , prarity  = [(1, 3), (10, 2)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
@@ -114,7 +114,7 @@ pulpit = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruins"
-  , pfreq    = [("battle", 33), ("noise", 50), ("ambush", 5)]
+  , pfreq    = [("battle", 33), ("noise", 120), ("ambush", 5)]
   , prarity  = [(1, 10), (10, 20)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -178,20 +178,19 @@ pillar = PlaceKind
   , pname    = "a hall"
   , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
                , ("empty", 300), ("noise", 1000) ]
-  , prarity  = [(1, 15), (10, 15)]
+  , prarity  = [(1, 2), (10, 2)]
   , pcover   = CStretch
   , pfence   = FNone
   -- Larger rooms require support pillars.
-  , ptopLeft = [ "-----"
-               , "|····"
-               , "|·O··"
-               , "|····"
-               , "|····"
+  , ptopLeft = [ "----"
+               , "|···"
+               , "|·O·"
+               , "|···"
                ]
   , poverride = [('&', "cache")]
   }
 pillar2 = pillar
-  { prarity  = [(1, 7), (10, 7)]
+  { prarity  = [(1, 15), (10, 15)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -200,7 +199,8 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { ptopLeft = [ "-----"
+  { prarity  = [(1, 30), (10, 30)]
+  , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
                , "|····"
@@ -211,7 +211,7 @@ pillar4 = pillar
   { pname    = "an exquisite hall"
   , pfreq    = [ ("rogue", 300), ("arena", 1000), ("laboratory", 1000)
                , ("empty", 200), ("noise", 1000) ]
-  , prarity  = [(1, 10), (10, 20)]
+  , prarity  = [(1, 20), (10, 40)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -223,7 +223,7 @@ pillar5 = pillar
   { pname    = "a decorated hall"
   , pfreq    = [ ("rogue", 300), ("arena", 1000), ("laboratory", 1000)
                , ("empty", 200), ("noise", 1000) ]
-  , prarity  = [(1, 10), (10, 20)]
+  , prarity  = [(1, 20), (10, 40)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -236,7 +236,7 @@ colonnade = PlaceKind
   , pname    = "a colonnade"
   , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10)
                , ("mine", 1000), ("escape", 40), ("ambush", 40) ]
-  , prarity  = [(1, 20), (10, 20)]
+  , prarity  = [(1, 15), (10, 15)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O·"
@@ -245,32 +245,33 @@ colonnade = PlaceKind
   , poverride = []
   }
 colonnade2 = colonnade
-  { prarity  = [(1, 12), (10, 12)]
+  { prarity  = [(1, 10), (10, 10)]
   , ptopLeft = [ "O·"
                , "··"
                ]
   }
 colonnade3 = colonnade
-  { prarity  = [(1, 500), (10, 500)]
+  { prarity  = [(1, 800), (10, 800)]
   , ptopLeft = [ "··O"
                , "·O·"
                , "O··"
                ]
   }
 colonnade4 = colonnade
-  { prarity  = [(1, 100), (10, 100)]
+  { prarity  = [(1, 200), (10, 200)]
   , ptopLeft = [ "O··"
                , "·O·"
                , "··O"
                ]
   }
 colonnade5 = colonnade
-  { ptopLeft = [ "O··"
+  { prarity  = [(1, 10), (10, 10)]
+  , ptopLeft = [ "O··"
                , "··O"
                ]
   }
 colonnade6 = colonnade
-  { prarity  = [(1, 80), (10, 80)]
+  { prarity  = [(1, 100), (10, 100)]
   , ptopLeft = [ "O·"
                , "··"
                , "·O"
@@ -426,7 +427,7 @@ escapeUp4 = escapeUp
   , pfence   = FFloor
   , ptopLeft = [ "O··"
                , "·<·"
-               , "O·O"
+               , "··O"
                ]
   }
 escapeUp5 = escapeUp
@@ -475,7 +476,7 @@ escapeDown4 = escapeDown
   , pfence   = FFloor
   , ptopLeft = [ "O··"
                , "·>·"
-               , "O·O"
+               , "··O"
                ]
   }
 escapeDown5 = escapeDown
@@ -732,7 +733,7 @@ staircase24 = staircase
                ]
   }
 staircase25 = staircase
-  { pfreq    = [("walled staircase", 100)]
+  { pfreq    = [("walled staircase", 10)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|·····|"
@@ -742,7 +743,7 @@ staircase25 = staircase
                ]
   }
 staircase26 = staircase
-  { pfreq    = [("walled staircase", 200)]
+  { pfreq    = [("walled staircase", 50)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|·······|"
@@ -752,7 +753,7 @@ staircase26 = staircase
                ]
   }
 staircase27 = staircase
-  { pfreq    = [("walled staircase", 500)]
+  { pfreq    = [("walled staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|O·····O|"
@@ -846,7 +847,7 @@ staircase34 = staircase
                ]
   }
 staircase35 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [("walled staircase", 200)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|·········|"
@@ -856,7 +857,7 @@ staircase35 = staircase
                ]
   }
 staircase36 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [("walled staircase", 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|·O·····O·|"
@@ -866,7 +867,7 @@ staircase36 = staircase
                ]
   }
 staircase37 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [("walled staircase", 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|O·······O|"
