@@ -241,12 +241,17 @@ itemOverlay lSlots lid bag = do
   factionD <- getsState sfactionD
   combEqp <- getsState $ combinedEqp side
   combOrgan <- getsState $ combinedOrgan side
+  combInv <- getsState $ combinedInv side
   discoBenefit <- getsClient sdiscoBenefit
+  shaBag <- getsState $ \s -> gsha $ sfactionD s EM.! side
   let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
-      markEqp iid t = if iid `EM.member` combEqp || iid `EM.member` combOrgan
-                      then T.snoc (T.init t) '>'
-                      else t
+      markEqp iid t =
+        if | iid `EM.member` combEqp
+             || iid `EM.member` combOrgan -> T.snoc (T.init t) ']'
+           | iid `EM.member` combInv
+             || iid `EM.member` shaBag -> T.snoc (T.init t) '}'
+           | otherwise -> t
       pr (l, iid) =
         case EM.lookup iid bag of
           Nothing -> Nothing
