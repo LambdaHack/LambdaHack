@@ -111,15 +111,11 @@ loreFromContainer itemKind c = case c of
                        | otherwise -> loreFromMode $ MStore store
   CTrunk{} -> if IK.isBlast itemKind then SBlast else STrunk
 
-sortSlots :: MonadClientUI m => FactionId -> Maybe Actor -> m ()
-sortSlots fid mbody = do
+sortSlots :: MonadClientUI m => m ()
+sortSlots = do
   itemToF <- getsState $ flip itemToFull
-  s <- getState
-  let sortMap :: SLore -> SingleItemSlots -> SingleItemSlots
-      sortMap slore = let partySet = partyItemSet slore fid mbody s
-                      in sortSlotMap itemToF partySet
   ItemSlots itemSlots <- getsSession sslots
-  let newSlots = ItemSlots $ EM.mapWithKey sortMap itemSlots
+  let newSlots = ItemSlots $ EM.map (sortSlotMap itemToF) itemSlots
   modifySession $ \sess -> sess {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.

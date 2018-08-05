@@ -100,23 +100,18 @@ compareItemFull itemFull1 itemFull2 =
         , jflavour, jfid, jlid )
   in comparing kindAndAppearance itemFull1 itemFull2
 
-sortSlotMap :: (ItemId -> ItemFull)-> ES.EnumSet ItemId -> SingleItemSlots
-            -> SingleItemSlots
-sortSlotMap itemToF partySet em =
-  let (nearItems, farItems) = partition (`ES.member` partySet)
-                              $ EM.elems em
-      f iid = (iid, itemToF iid)
+sortSlotMap :: (ItemId -> ItemFull)-> SingleItemSlots -> SingleItemSlots
+sortSlotMap itemToF em =
+  let f iid = (iid, itemToF iid)
       sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)
                       $ map f l
-  in EM.fromDistinctAscList $ zip allSlots
-     $ sortItemIds nearItems ++ sortItemIds farItems
+  in EM.fromDistinctAscList $ zip allSlots $ sortItemIds $ EM.elems em
 
-mergeItemSlots :: (ItemId -> ItemFull) -> ES.EnumSet ItemId -> [SingleItemSlots]
-               -> SingleItemSlots
-mergeItemSlots itemToF partySet ems =
+mergeItemSlots :: (ItemId -> ItemFull) -> [SingleItemSlots] -> SingleItemSlots
+mergeItemSlots itemToF ems =
   let renumberSlot n SlotChar{slotPrefix, slotChar} =
         SlotChar{slotPrefix = slotPrefix + n * 1000000, slotChar}
       renumberMap n em1 = EM.mapKeys (renumberSlot n) em1
       rms = zipWith renumberMap [0..] ems
       em = EM.unionsWith (\_ _ -> error "mergeItemSlots: duplicate keys") rms
-  in sortSlotMap itemToF partySet em
+  in sortSlotMap itemToF em

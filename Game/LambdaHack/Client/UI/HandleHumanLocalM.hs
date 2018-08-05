@@ -99,9 +99,7 @@ macroHuman kms = do
 
 sortSlotsHuman :: MonadClientUI m => m ()
 sortSlotsHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  sortSlots (bfid b) (Just b)
+  sortSlots
   promptAdd1 "Items sorted by kind and stats."
 
 -- * ChooseItem

@@ -841,7 +841,7 @@ quitFactionUI fid toSt = do
               case ekm of
                 Left km | km == K.spaceKM -> return True
                 Left km | km == caretKey -> do
-                  sortSlots fid Nothing
+                  sortSlots
                   viewItems
                 Left km | km == K.escKM -> return False
                 Left _ -> error $ "" `showFailure` ekm
@@ -1079,9 +1079,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         recordHistory
     msg <- ppSfxMsg sfxMsg
     msgAdd msg
-  SfxSortSlots -> do
-    side <- getsClient sside
-    sortSlots side Nothing
+  SfxSortSlots -> sortSlots
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source

@@ -259,7 +259,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
   itemToF <- getsState $ flip itemToFull
-  organPartySet <- getsState $ partyItemSet SOrgan (bfid body) (Just body)
   revCmd <- revCmdMap
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
@@ -273,9 +272,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       filterP iid = psuitFun (itemToF iid)
       bagAllSuit = EM.filterWithKey filterP bagAll
       lSlots = case cCur of
-        MOrgans -> mergeItemSlots itemToF organPartySet [ itemSlots EM.! SOrgan
-                                                        , itemSlots EM.! STrunk
-                                                        , itemSlots EM.! STmp ]
+        MOrgans -> mergeItemSlots itemToF [ itemSlots EM.! SOrgan
+                                          , itemSlots EM.! STrunk
+                                          , itemSlots EM.! STmp ]
         MStats -> EM.empty
         MPlaces -> EM.empty
         _ -> itemSlots EM.! loreFromMode cCur
@@ -360,7 +359,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                        && cCur /= MStats  -- artificial slots
                        && cCur /= MPlaces  -- artificial slots
            , defAction = \_ -> do
-               sortSlots (bfid body) (Just body)
+               sortSlots
                recCall numPrefix cCur cRest itemDialogState
            })
         , (K.escKM, DefItemKey
