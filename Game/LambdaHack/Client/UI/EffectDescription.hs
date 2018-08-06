@@ -164,18 +164,28 @@ slotToName eqpSlot =
     EqpSlotLightSource -> "shine radius"
     EqpSlotWeapon -> "weapon power"
     EqpSlotMiscAbility -> "misc abilities"
-    EqpSlotAbMove -> tshow AbMove <+> "ability"
-    EqpSlotAbMelee -> tshow AbMelee <+> "ability"
-    EqpSlotAbDisplace -> tshow AbDisplace <+> "ability"
-    EqpSlotAbAlter -> tshow AbAlter <+> "ability"
-    EqpSlotAbProject -> tshow AbProject <+> "ability"
-    EqpSlotAbApply -> tshow AbApply <+> "ability"
+    EqpSlotAbMove -> abilityDesc AbMove <+> "ability"
+    EqpSlotAbMelee -> abilityDesc AbMelee <+> "ability"
+    EqpSlotAbDisplace -> abilityDesc AbDisplace <+> "ability"
+    EqpSlotAbAlter -> abilityDesc AbAlter <+> "ability"
+    EqpSlotAbProject -> abilityDesc AbProject <+> "ability"
+    EqpSlotAbApply -> abilityDesc AbApply <+> "ability"
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
     EqpSlotAddAggression -> "aggression level"
-    EqpSlotAbWait -> tshow AbWait <+> "ability"
-    EqpSlotAbMoveItem -> tshow AbMoveItem <+> "ability"
+    EqpSlotAbWait -> abilityDesc AbWait <+> "ability"
+    EqpSlotAbMoveItem -> abilityDesc AbMoveItem <+> "ability"
+
+abilityDesc :: Ability -> Text
+abilityDesc AbMove = "move"
+abilityDesc AbMelee = "melee"
+abilityDesc AbDisplace = "displace"
+abilityDesc AbAlter = "alter tile"
+abilityDesc AbWait = "wait"
+abilityDesc AbMoveItem = "manage items"
+abilityDesc AbProject = "fling"
+abilityDesc AbApply = "apply"
 
 slotToDesc :: EqpSlot -> Text
 slotToDesc eqpSlot =
@@ -292,7 +302,7 @@ kindAspectToSuffix aspect =
     AddShine t -> wrapInParens $ affixDice t <+> "shine"
     AddNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddAggression t -> wrapInParens $ affixDice t <+> "aggression"
-    AddAbility ab t -> wrapInParens $ affixDice t <+> tshow ab
+    AddAbility ab t -> wrapInParens $ affixDice t <+> abilityDesc ab
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =

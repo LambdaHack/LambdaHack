@@ -28,7 +28,7 @@ data Ability =
   | AbMoveItem
   | AbProject
   | AbApply
-  deriving (Eq, Ord, Generic, Enum, Bounded)
+  deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
 --
@@ -73,16 +73,6 @@ meleeAdjacent = EM.delete AbMelee blockOnly
 meleeAndRanged = EM.delete AbProject meleeAdjacent
 
 ignoreItems = EM.fromList $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
-
-instance Show Ability where
-  show AbMove = "move"
-  show AbMelee = "melee"
-  show AbDisplace = "displace"
-  show AbAlter = "alter tile"
-  show AbWait = "wait"
-  show AbMoveItem = "manage items"
-  show AbProject = "fling"
-  show AbApply = "apply"
 
 instance NFData Ability
 
