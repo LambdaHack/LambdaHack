@@ -965,16 +965,14 @@ verifyEscape = do
   then failWith
         "This is the way out, but where would you go in this alien world?"
   else do
-    go <- displayYesNo ColorFull
-            "This is the way out. Really leave now?"
+    go <- displayYesNo ColorFull "This is the way out. Really leave now?"
     if not go then failWith "game resumed"
     else do
       (_, total) <- getsState $ calculateTotal side
-      if total == 0 then do
+      dungeonTotal <- getsState sgold
+      if total == 0 && dungeonTotal > 0 then do
         -- The player can back off at this step. We don't insist, because
-        -- possibly the score formula doesn't reward treasure, or possibly
-        -- the dungeon definition rules out treasure, or this particular
-        -- dungeon has none by a fluke in dungeon generation.
+        -- possibly the score formula doesn't reward treasure.
         go1 <- displaySpaceEsc ColorBW
           "Afraid of the challenge? Leaving so soon and without any treasure?"
         if not go1
