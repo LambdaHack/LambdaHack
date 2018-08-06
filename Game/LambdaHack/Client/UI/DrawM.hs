@@ -198,6 +198,11 @@ drawFrameContent drawnLevelId = do
                   w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + rXmax) w
         mapM_ g l
+      -- We don't usually show embedded items, because normally we don't
+      -- want them to clutter the display. If they are really important,
+      -- the tile they reside on has special colours and changes as soon
+      -- as the item disappears. In the remaining cases, the main menu
+      -- UI setting for suspect terrain highlights most tiles with embeds.
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         mapVAL viewItemBag (EM.assocs lfloor) v
