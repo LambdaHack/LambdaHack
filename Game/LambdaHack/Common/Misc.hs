@@ -110,7 +110,7 @@ instance Binary ItemDialogMode
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
 newtype GroupName a = GroupName Text
-  deriving (Read, Eq, Ord, Hashable, Binary, Generic)
+  deriving (Eq, Ord, Hashable, Binary, Generic)
 
 instance IsString (GroupName a) where
   fromString = GroupName . T.pack
