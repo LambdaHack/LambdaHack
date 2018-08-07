@@ -1328,8 +1328,8 @@ settingsMenuHuman cmdAction = do
         _ -> error $ "" `showFailure` n
       tsuspect = "suspect terrain:" <+> offOnAll markSuspect
       tvisible = "visible zone:" <+> offOn markVision
-      tsmell = "smell clues:" <+> offOn  markSmell
-      thenchmen = "tactic:" <+> tshow factTactic
+      tsmell = "smell clues:" <+> offOn markSmell
+      thenchmen = "tactic:" <+> nameTactic factTactic
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
@@ -1474,9 +1474,9 @@ tacticHuman = do
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
-          <+> "Current henchmen tactic is" <+> tshow fromT
+          <+> "Current henchmen tactic is" <+> nameTactic fromT
           <+> "(" <> describeTactic fromT <> ")."
-          <+> "Switching tactic to" <+> tshow toT
+          <+> "Switching tactic to" <+> nameTactic toT
           <+> "(" <> describeTactic toT <> ")."
           <+> "This clears targets of all henchmen (non-leader teammates)."
           <+> "New targets will be picked according to new tactic."

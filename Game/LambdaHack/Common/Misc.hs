@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Misc
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
   , GroupName, Tactic(..)
-  , toGroupName, describeTactic
+  , toGroupName, nameTactic, describeTactic
   , makePhrase, makeSentence, squashedWWandW
   , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
   , workaroundOnMainThreadMVar
@@ -135,17 +135,7 @@ data Tactic =
               --   to sight radius and fallback temporarily to @TRoam@
               --   when enemy is seen by the faction and is within
               --   the actor's sight radius
-  deriving (Eq, Ord, Enum, Bounded, Generic)
-
-instance Show Tactic where
-  show TExplore        = "explore"
-  show TFollow         = "follow freely"
-  show TFollowNoItems  = "follow only"
-  show TMeleeAndRanged = "fight only"
-  show TMeleeAdjacent  = "melee only"
-  show TBlock          = "block only"
-  show TRoam           = "roam freely"
-  show TPatrol         = "patrol area"
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Tactic
 
@@ -154,6 +144,16 @@ instance NFData Tactic
 toGroupName :: Text -> GroupName a
 {-# INLINE toGroupName #-}
 toGroupName = GroupName
+
+nameTactic :: Tactic -> Text
+nameTactic TExplore        = "explore"
+nameTactic TFollow         = "follow freely"
+nameTactic TFollowNoItems  = "follow only"
+nameTactic TMeleeAndRanged = "fight only"
+nameTactic TMeleeAdjacent  = "melee only"
+nameTactic TBlock          = "block only"
+nameTactic TRoam           = "roam freely"
+nameTactic TPatrol         = "patrol area"
 
 describeTactic :: Tactic -> Text
 describeTactic TExplore = "investigate unknown positions, chase targets"
