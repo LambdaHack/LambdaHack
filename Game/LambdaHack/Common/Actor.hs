@@ -32,7 +32,6 @@ import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Actor properties that are changing throughout the game.
 -- If they appear dublets of properties of actor kinds, e.g. HP,
@@ -114,7 +113,7 @@ momentarySpeed !b ar =
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: IA.AspectRecord -> Speed
 gearSpeed ar = toSpeed $
-  max minSpeed (IK.getAbility Ability.AbSpeed ar)  -- see @minimalSpeed@
+  max minSpeed (IA.getAbility Ability.AbSpeed ar)  -- see @minimalSpeed@
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
@@ -145,17 +144,17 @@ actorDying b = bhp b <= 0
 
 hpTooLow :: Actor -> IA.AspectRecord -> Bool
 hpTooLow b ar =
-  5 * bhp b < xM (IK.getAbility Ability.AbMaxHP ar)
+  5 * bhp b < xM (IA.getAbility Ability.AbMaxHP ar)
   && bhp b <= xM 40 || bhp b <= oneM
 
 calmEnough :: Actor -> IA.AspectRecord -> Bool
 calmEnough b ar =
-  let calmMax = max 1 $ IK.getAbility Ability.AbMaxCalm ar
+  let calmMax = max 1 $ IA.getAbility Ability.AbMaxCalm ar
   in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
 
 hpEnough :: Actor -> IA.AspectRecord -> Bool
 hpEnough b ar =
-  xM (IK.getAbility Ability.AbMaxHP ar) <= 2 * bhp b && bhp b > oneM
+  xM (IA.getAbility Ability.AbMaxHP ar) <= 2 * bhp b && bhp b > oneM
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

@@ -2,8 +2,7 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
-  , Effect(..), DetectKind(..), TimerDice, ThrowMod(..), Feature(..)
-  , ItemSpeedup, getAbility, emptyItemSpeedup, getKindMean, speedupItem
+  , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..), Feature(..)
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
@@ -16,7 +15,7 @@ module Game.LambdaHack.Content.ItemKind
   , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , meanAspect, boostItemKind, majorEffect
+  , boostItemKind, majorEffect
   , validateSingle, validateAll, validateDups, validateDamage
   , hardwiredItemGroups
 #endif
@@ -38,7 +37,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
@@ -56,7 +54,7 @@ data ItemKind = ItemKind
   , iverbHit :: MU.Part             -- ^ the verb for hitting
   , iweight  :: Int                 -- ^ weight in grams
   , idamage  :: Dice.Dice           -- ^ basic impact damage
-  , iaspects :: [IA.Aspect]         -- ^ affect the actor continuously
+  , iaspects :: [Aspect]         -- ^ affect the actor continuously
   , ieffects :: [Effect]            -- ^ cause the effects when triggered
   , ifeature :: [Feature]           -- ^ properties of the item
   , idesc    :: Text                -- ^ description
@@ -64,6 +62,14 @@ data ItemKind = ItemKind
                                     -- ^ accompanying organs and equipment
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
+
+-- | Aspects of items. Those that are named @Add*@ are additive
+-- (starting at 0) for all items wielded by an actor and they affect the actor.
+data Aspect =
+    Timeout Dice.Dice         -- ^ some effects disabled until item recharges;
+                              --   expressed in game turns
+  | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
+  deriving (Show, Eq, Ord, Generic)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item
@@ -176,14 +182,9 @@ data Feature =
                        --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic)
 
--- | Map from an item kind identifier to the mean aspect value for the kind.
---
--- Significant portions of this map are unused and so intentially kept
--- unevaluated.
-newtype ItemSpeedup = ItemSpeedup (V.Vector IA.KindMean)
-  deriving (Show, Eq, Generic)
-
 instance NFData ItemKind
+
+instance NFData Aspect
 
 instance NFData Effect
 
@@ -202,27 +203,6 @@ instance Binary DetectKind
 instance Binary TimerDice
 
 instance Binary ThrowMod
-
-getAbility :: Ability.Ability -> IA.AspectRecord -> Int
-{-# INLINE getAbility #-}
-getAbility ab ar = Ability.getAb ab $ IA.aSkills ar
-
-emptyItemSpeedup :: ItemSpeedup
-emptyItemSpeedup = ItemSpeedup V.empty
-
-getKindMean :: ContentId ItemKind -> ItemSpeedup -> IA.KindMean
-getKindMean kindId (ItemSpeedup is) = is V.! contentIdIndex kindId
-
-speedupItem :: ContentData ItemKind -> ItemSpeedup
-speedupItem coitem =
-  let f !kind =
-        let kmMean = meanAspect kind
-            kmConst = not $ IA.aspectsRandom (iaspects kind)
-        in IA.KindMean{..}
-  in ItemSpeedup $! omapVector coitem f
-
-meanAspect :: ItemKind -> IA.AspectRecord
-meanAspect kind = foldl' IA.addMeanAspect IA.emptyAspectRecord (iaspects kind)
 
 boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []
@@ -437,8 +417,8 @@ validateSingle ik@ItemKind{..} =
   ++ validateRarity irarity
   ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.
-  ++ (let timeoutAspect :: IA.Aspect -> Bool
-          timeoutAspect IA.Timeout{} = True
+  ++ (let timeoutAspect :: Aspect -> Bool
+          timeoutAspect Timeout{} = True
           timeoutAspect _ = False
           ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])

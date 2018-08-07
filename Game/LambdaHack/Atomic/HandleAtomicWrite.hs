@@ -49,7 +49,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
@@ -585,7 +584,7 @@ updDiscover :: MonadStateWrite m
 updDiscover _c iid ik aspectRecord = do
   itemD <- getsState sitemD
   COps{coItemSpeedup} <- getsState scops
-  let kmIsConst = IA.kmConst $ IK.getKindMean ik coItemSpeedup
+  let kmIsConst = IA.kmConst $ IA.getKindMean ik coItemSpeedup
   discoKind <- getsState sdiscoKind
   let discoverAtMostAspect = do
         discoAspect <- getsState sdiscoAspect
@@ -637,7 +636,7 @@ updDiscoverAspect _c iid aspectRecord = do
       -- Here the kind information is exact, hence @getItemKindIdServer@.
       kindId <- getsState $ getItemKindIdServer item
       discoAspect <- getsState sdiscoAspect
-      let kmIsConst = IA.kmConst $ IK.getKindMean kindId coItemSpeedup
+      let kmIsConst = IA.kmConst $ IA.getKindMean kindId coItemSpeedup
       if kmIsConst || iid `EM.member` discoAspect
       then atomicFail "item aspectRecord already discovered"
       else do

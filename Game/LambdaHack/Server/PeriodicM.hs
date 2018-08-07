@@ -27,6 +27,7 @@ import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -236,7 +237,7 @@ udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
-  let calmMax64 = xM $ IK.getAbility Ability.AbMaxCalm ar
+  let calmMax64 = xM $ IA.getAbility Ability.AbMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64) $

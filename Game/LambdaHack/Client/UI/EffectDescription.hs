@@ -20,7 +20,6 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.ItemAspect (Aspect (..))
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind

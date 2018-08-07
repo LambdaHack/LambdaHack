@@ -166,7 +166,7 @@ itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
         IdentityCovered ix ik ->
           maybe (ik, True) (\ki -> (ki, False)) $ ix `EM.lookup` discoKind
       itemKind = okind coitem itemKindId
-      km = IK.getKindMean itemKindId coItemSpeedup
+      km = IA.getKindMean itemKindId coItemSpeedup
       -- If the kind is not identified, we know nothing about the real
       -- aspect record, so we at least assume they are variable.
       itemAspectMean | itemSuspect = km {IA.kmConst = False}
@@ -238,7 +238,7 @@ strongestMelee mdiscoBenefit localTime kitAss =
   -- e.g., geysers, bees. This is intended and fun.
   in sortBy (flip $ Ord.comparing fst) $ map f kitAss
 
-unknownAspect :: (IA.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
+unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
   case itemDisco of
     ItemDiscoMean IA.KindMean{kmConst} ->
@@ -249,7 +249,7 @@ unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
 
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =
-  let p (IA.AddAbility Ability.AbHurtMelee k) = [k]
+  let p (IK.AddAbility Ability.AbHurtMelee k) = [k]
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
@@ -257,6 +257,6 @@ unknownMeleeBonus =
 tmpMeleeBonus :: [ItemFullKit] -> Int
 tmpMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
-        itemK * IK.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
+        itemK * IA.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
         + k
   in foldr f 0 $ filter (IK.isTmpCondition . itemKind . fst) kitAss

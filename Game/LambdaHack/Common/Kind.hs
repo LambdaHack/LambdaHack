@@ -10,13 +10,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
+import           Game.LambdaHack.Common.ContentData
+import qualified Game.LambdaHack.Common.ItemAspect as IA
+import           Game.LambdaHack.Content.CaveKind
+import           Game.LambdaHack.Content.ItemKind
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Content.TileKind
 
 -- | Operations for all content types, gathered together.
 data COps = COps
@@ -26,7 +27,7 @@ data COps = COps
   , coplace       :: ContentData PlaceKind  -- server only, so far
   , corule        :: RuleContent
   , cotile        :: ContentData TileKind
-  , coItemSpeedup :: ItemSpeedup
+  , coItemSpeedup :: IA.ItemSpeedup
   , coTileSpeedup :: TileSpeedup
   }
 
@@ -44,6 +45,6 @@ emptyCOps = COps
   , coplace = emptyContentData
   , corule  = emptyRuleContent
   , cotile  = emptyContentData
-  , coItemSpeedup = emptyItemSpeedup
+  , coItemSpeedup = IA.emptyItemSpeedup
   , coTileSpeedup = emptyTileSpeedup
   }

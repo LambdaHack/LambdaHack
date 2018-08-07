@@ -25,6 +25,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -403,10 +404,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let ar = itemAspect itemDisco
-  let hp = xM (max 2 $ IK.getAbility Ability.AbMaxHP ar) `div` 2
+  let hp = xM (max 2 $ IA.getAbility Ability.AbMaxHP ar) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
-      calm = xM (max 0 $ IK.getAbility Ability.AbMaxCalm ar)
+      calm = xM (max 0 $ IA.getAbility Ability.AbMaxCalm ar)
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions

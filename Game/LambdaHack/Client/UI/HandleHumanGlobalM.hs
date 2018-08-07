@@ -78,6 +78,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -1110,7 +1111,7 @@ itemMenuHuman cmdAction = do
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               desc = itemDesc False (bfid b) factionD
-                              (IK.getAbility Ability.AbHurtMelee ar)
+                              (IA.getAbility Ability.AbHurtMelee ar)
                               fromCStore localTime itemFull kit
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1

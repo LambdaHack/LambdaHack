@@ -49,6 +49,7 @@ import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -79,7 +80,7 @@ targetDesc mtarget = do
       bUI <- getsSession $ getActorUI aid
       ar <- getsState $ getActorAspect aid
       let percentage =
-            100 * bhp b `div` xM (max 5 $ IK.getAbility Ability.AbMaxHP ar)
+            100 * bhp b `div` xM (max 5 $ IA.getAbility Ability.AbMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
@@ -534,9 +535,9 @@ checkWarnings UIOptions{uhpWarningPercent} leader s =
       isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
-      maxHp = IK.getAbility Ability.AbMaxHP ar
+      maxHp = IA.getAbility Ability.AbMaxHP ar
       hpCheckWarning = bhp b <= xM (uhpWarningPercent * maxHp `div` 100)
-      maxCalm = IK.getAbility Ability.AbMaxCalm ar
+      maxCalm = IA.getAbility Ability.AbMaxCalm ar
       calmCheckWarning =
         bcalm b <= xM (uhpWarningPercent * maxCalm `div` 100)
         && isImpressed
@@ -581,7 +582,7 @@ drawLeaderStatus waitT = do
                      <> (if bdark || not (braced b)
                          then slashPick
                          else "/")
-                     <> showTrunc (max 0 $ IK.getAbility Ability.AbMaxCalm ar)
+                     <> showTrunc (max 0 $ IA.getAbility Ability.AbMaxCalm ar)
           bracePick | braced b  = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
@@ -590,7 +591,7 @@ drawLeaderStatus waitT = do
                    <> (if braced b || not bdark
                        then slashPick
                        else "/")
-                   <> showTrunc (max 0 $ IK.getAbility Ability.AbMaxHP ar)
+                   <> showTrunc (max 0 $ IA.getAbility Ability.AbMaxHP ar)
           justifyRight n t = replicate (n - length t) ' ' ++ t
           colorWarning w = if w then addColor Color.Red else stringToAL
       return $! calmHeader
@@ -615,7 +616,7 @@ drawLeaderDamage width = do
             [] -> ("0", "", Color.White)
             (_, (_, (itemFull, _))) : _ ->
               let tdice = show $ IK.idamage $ itemKind itemFull
-                  bonusRaw = IK.getAbility Ability.AbHurtMelee
+                  bonusRaw = IA.getAbility Ability.AbHurtMelee
                              $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw

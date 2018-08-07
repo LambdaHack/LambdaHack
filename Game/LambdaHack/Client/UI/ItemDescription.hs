@@ -93,17 +93,17 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         ItemDiscoMean{} -> splitTry (IK.iaspects itemKind)
                              -- faster than @aspectRecordToList@ of mean
         ItemDiscoFull iAspect -> splitTry (IA.aspectRecordToList iAspect)
-      timeoutAspect :: IA.Aspect -> Bool
-      timeoutAspect IA.Timeout{} = True
+      timeoutAspect :: IK.Aspect -> Bool
+      timeoutAspect IK.Timeout{} = True
       timeoutAspect _ = False
-      hurtMeleeAspect :: IA.Aspect -> Bool
-      hurtMeleeAspect (IA.AddAbility Ability.AbHurtMelee _) = True
+      hurtMeleeAspect :: IK.Aspect -> Bool
+      hurtMeleeAspect (IK.AddAbility Ability.AbHurtMelee _) = True
       hurtMeleeAspect _ = False
       elabel :: IK.Feature -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
       active = IK.goesIntoEqp itemKind
-      splitAE :: DetailLevel -> [IA.Aspect] -> [Text]
+      splitAE :: DetailLevel -> [IK.Aspect] -> [Text]
       splitAE detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
@@ -136,20 +136,20 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                        "(each turn:" <+> rechargingTs <> ")"
                      Nothing ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
-                     Just (IA.Timeout t) ->
+                     Just (IK.Timeout t) ->
                        "(every" <+> reduce_a t <> ":"
                        <+> rechargingTs <> ")"
                      _ -> error $ "" `showFailure` mtimeout
                  | otherwise -> case mtimeout of
                      Nothing -> ""
-                     Just (IA.Timeout t) ->
+                     Just (IK.Timeout t) ->
                        "(timeout" <+> reduce_a t <> ":"
                        <+> rechargingTs <> ")"
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
             damage = case find hurtMeleeAspect restAs of
-              Just (IA.AddAbility Ability.AbHurtMelee hurtMelee) ->
+              Just (IK.AddAbility Ability.AbHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
                  else tshow (IK.idamage itemKind))
@@ -173,7 +173,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IK.getAbility Ability.AbHurtMelee
+      aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee
                          $ aspectRecordFull itemFull
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
@@ -285,7 +285,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect
                         ++ mapMaybe featureToSentence (IK.ifeature itemKind)
-            aHurtMeleeOfItem = IK.getAbility Ability.AbHurtMelee
+            aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee
                                $ aspectRecordFull itemFull
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else

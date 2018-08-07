@@ -259,7 +259,7 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
 recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
 recBenefit grp cops@COps{coitem, coItemSpeedup} fact =
   let f (!sacc, !pacc) !p !kindId !kind =
-        let km = IK.getKindMean kindId coItemSpeedup
+        let km = IA.getKindMean kindId coItemSpeedup
             recPickup =
               benPickup $ totalUsefulness cops fact (fakeItem kindId kind km)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
@@ -296,26 +296,26 @@ fakeItem kindId kind km =
 -- Valuation of effects, and more precisely, more the signs than absolute
 -- values, ensures that both shield and torch get picked up so that
 -- the (human) actor can nevertheless equip them in very special cases.
-aspectToBenefit :: IA.Aspect -> Double
+aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
-    IA.Timeout{} -> 0
-    IA.AddAbility Ability.AbHurtMelee p -> Dice.meanDice p  -- offence favoured
-    IA.AddAbility Ability.AbArmorMelee p -> Dice.meanDice p / 4
+    IK.Timeout{} -> 0
+    IK.AddAbility Ability.AbHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IK.AddAbility Ability.AbArmorMelee p -> Dice.meanDice p / 4
                                               -- only partial protection
-    IA.AddAbility Ability.AbArmorRanged p -> Dice.meanDice p / 8
-    IA.AddAbility Ability.AbMaxHP p -> Dice.meanDice p
-    IA.AddAbility Ability.AbMaxCalm p -> Dice.meanDice p / 5
-    IA.AddAbility Ability.AbSpeed p -> Dice.meanDice p * 25
+    IK.AddAbility Ability.AbArmorRanged p -> Dice.meanDice p / 8
+    IK.AddAbility Ability.AbMaxHP p -> Dice.meanDice p
+    IK.AddAbility Ability.AbMaxCalm p -> Dice.meanDice p / 5
+    IK.AddAbility Ability.AbSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
       -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
-    IA.AddAbility Ability.AbSight p -> Dice.meanDice p * 5
-    IA.AddAbility Ability.AbSmell p -> Dice.meanDice p
-    IA.AddAbility Ability.AbShine p -> Dice.meanDice p * 2
-    IA.AddAbility Ability.AbNocto p -> Dice.meanDice p * 10
+    IK.AddAbility Ability.AbSight p -> Dice.meanDice p * 5
+    IK.AddAbility Ability.AbSmell p -> Dice.meanDice p
+    IK.AddAbility Ability.AbShine p -> Dice.meanDice p * 2
+    IK.AddAbility Ability.AbNocto p -> Dice.meanDice p * 10
                                          -- > sight + light; stealth, slots
-    IA.AddAbility Ability.AbAggression _ -> 0  -- dunno
-    IA.AddAbility _ p -> Dice.meanDice p * 5
+    IK.AddAbility Ability.AbAggression _ -> 0  -- dunno
+    IK.AddAbility _ p -> Dice.meanDice p * 5
 
 recordToBenefit :: IA.AspectRecord -> [Double]
 recordToBenefit aspects =
@@ -406,7 +406,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                    | otherwise = assert (v <= 0) v
        where
         hurtMult =
-          100 + min 99 (max (-99) (IK.getAbility Ability.AbHurtMelee aspects))
+          100 + min 99 (max (-99) (IA.getAbility Ability.AbHurtMelee aspects))
             -- assumes no enemy armor and no block
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100

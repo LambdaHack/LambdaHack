@@ -40,7 +40,6 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
@@ -285,7 +284,7 @@ aspectRecordFromItem iid item s =
         IdentityObvious ik -> ik
         IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
       COps{coItemSpeedup} = scops s
-      mean = IA.kmMean $ IK.getKindMean kindId coItemSpeedup
+      mean = IA.kmMean $ IA.getKindMean kindId coItemSpeedup
   in fromMaybe mean $ EM.lookup iid $ sdiscoAspect s
 
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord

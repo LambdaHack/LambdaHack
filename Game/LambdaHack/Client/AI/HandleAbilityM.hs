@@ -123,7 +123,7 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = IK.getAbility AbShine ar > 0
+      actorShines = IA.getAbility AbShine ar > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL

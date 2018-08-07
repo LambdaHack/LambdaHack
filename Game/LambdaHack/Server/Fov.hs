@@ -46,7 +46,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Server.FovDigital
 
 -- * Perception cache types
@@ -158,11 +157,11 @@ boundSightByCalm sight calm =
 cacheBeforeLucidFromActor :: FovClear -> Actor -> IA.AspectRecord
                           -> CacheBeforeLucid
 cacheBeforeLucidFromActor clearPs body ar =
-  let radius = boundSightByCalm (IK.getAbility Ability.AbSight ar) (bcalm body)
+  let radius = boundSightByCalm (IA.getAbility Ability.AbSight ar) (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
-      cnocto = PerVisible $ fullscan clearPs (IK.getAbility Ability.AbNocto ar)
+      cnocto = PerVisible $ fullscan clearPs (IA.getAbility Ability.AbNocto ar)
                                      (bpos body)
-      smellRadius = if IK.getAbility Ability.AbSmell ar >= 2 then 2 else 0
+      smellRadius = if IA.getAbility Ability.AbSmell ar >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
 
@@ -203,7 +202,7 @@ shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = IK.getAbility Ability.AbShine $ sactorAspect s EM.! aid
+        , let radius = IA.getAbility Ability.AbShine $ sactorAspect s EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
@@ -216,7 +215,7 @@ floorLightSources discoAspect lvl =
   -- Not enough oxygen to have more than one light lit on a given tile.
   -- Items obscuring or dousing off fire are not cumulative as well.
   let processIid (accLight, accDouse) (iid, _) =
-        let shine = IK.getAbility Ability.AbShine $ discoAspect EM.! iid
+        let shine = IA.getAbility Ability.AbShine $ discoAspect EM.! iid
         in case compare shine 0 of
           EQ -> (accLight, accDouse)
           GT -> (max shine accLight, accDouse)
@@ -298,9 +297,9 @@ perceptionCacheFromLevel fovClearLid fid lid s =
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
         let ar = sactorAspect s EM.! aid
-        in if IK.getAbility Ability.AbSight ar <= 0
-              && IK.getAbility Ability.AbNocto ar <= 0
-              && IK.getAbility Ability.AbSmell ar <= 0  -- dumb missiles
+        in if IA.getAbility Ability.AbSight ar <= 0
+              && IA.getAbility Ability.AbNocto ar <= 0
+              && IA.getAbility Ability.AbSmell ar <= 0  -- dumb missiles
            then Nothing
            else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)
       lvlCaches = mapMaybe f lvlBodies
