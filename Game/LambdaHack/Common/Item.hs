@@ -25,6 +25,7 @@ import qualified Data.Ix as Ix
 import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -248,7 +249,7 @@ unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
 
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =
-  let p (IA.AddHurtMelee k) = [k]
+  let p (IA.AddAbility Ability.AbHurtMelee k) = [k]
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False

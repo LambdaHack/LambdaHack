@@ -13,6 +13,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
@@ -299,19 +300,21 @@ aspectToBenefit :: IA.Aspect -> Double
 aspectToBenefit asp =
   case asp of
     IA.Timeout{} -> 0
-    IA.AddHurtMelee p -> Dice.meanDice p  -- offence favoured
-    IA.AddArmorMelee p -> Dice.meanDice p / 4  -- only partial protection
-    IA.AddArmorRanged p -> Dice.meanDice p / 8
-    IA.AddMaxHP p -> Dice.meanDice p
-    IA.AddMaxCalm p -> Dice.meanDice p / 5
-    IA.AddSpeed p -> Dice.meanDice p * 25
+    IA.AddAbility Ability.AbHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IA.AddAbility Ability.AbArmorMelee p -> Dice.meanDice p / 4
+                                              -- only partial protection
+    IA.AddAbility Ability.AbArmorRanged p -> Dice.meanDice p / 8
+    IA.AddAbility Ability.AbMaxHP p -> Dice.meanDice p
+    IA.AddAbility Ability.AbMaxCalm p -> Dice.meanDice p / 5
+    IA.AddAbility Ability.AbSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
       -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
-    IA.AddSight p -> Dice.meanDice p * 5
-    IA.AddSmell p -> Dice.meanDice p
-    IA.AddShine p -> Dice.meanDice p * 2
-    IA.AddNocto p -> Dice.meanDice p * 10  -- > sight + light; stealth, slots
-    IA.AddAggression{} -> 0
+    IA.AddAbility Ability.AbSight p -> Dice.meanDice p * 5
+    IA.AddAbility Ability.AbSmell p -> Dice.meanDice p
+    IA.AddAbility Ability.AbShine p -> Dice.meanDice p * 2
+    IA.AddAbility Ability.AbNocto p -> Dice.meanDice p * 10
+                                         -- > sight + light; stealth, slots
+    IA.AddAbility Ability.AbAggression _ -> 0  -- dunno
     IA.AddAbility _ p -> Dice.meanDice p * 5
 
 recordToBenefit :: IA.AspectRecord -> [Double]

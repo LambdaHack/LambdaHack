@@ -302,17 +302,6 @@ kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
     Timeout{} -> ""  -- printed specially
-    AddHurtMelee{} -> ""  -- printed together with dice, even if dice is zero
-    AddArmorMelee t -> "[" <> affixDice t <> "%]"
-    AddArmorRanged t -> "{" <> affixDice t <> "%}"
-    AddMaxHP t -> wrapInParens $ affixDice t <+> "HP"
-    AddMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
-    AddSpeed t -> wrapInParens $ affixDice t <+> "speed"
-    AddSight t -> wrapInParens $ affixDice t <+> "sight"
-    AddSmell t -> wrapInParens $ affixDice t <+> "smell"
-    AddShine t -> wrapInParens $ affixDice t <+> "shine"
-    AddNocto t -> wrapInParens $ affixDice t <+> "night vision"
-    AddAggression t -> wrapInParens $ affixDice t <+> "aggression"
     AddAbility AbMove t -> wrapInParens $ affixDice t <+> "move"
     AddAbility AbMelee t -> wrapInParens $ affixDice t <+> "melee"
     AddAbility AbDisplace t -> wrapInParens $ affixDice t <+> "displace"

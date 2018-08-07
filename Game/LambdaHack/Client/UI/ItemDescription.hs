@@ -20,6 +20,7 @@ import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Overlay
+import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
@@ -96,7 +97,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       timeoutAspect IA.Timeout{} = True
       timeoutAspect _ = False
       hurtMeleeAspect :: IA.Aspect -> Bool
-      hurtMeleeAspect IA.AddHurtMelee{} = True
+      hurtMeleeAspect (IA.AddAbility Ability.AbHurtMelee _) = True
       hurtMeleeAspect _ = False
       elabel :: IK.Feature -> Bool
       elabel IK.ELabel{} = True
@@ -148,7 +149,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
             damage = case find hurtMeleeAspect restAs of
-              Just (IA.AddHurtMelee hurtMelee) ->
+              Just (IA.AddAbility Ability.AbHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
                  else tshow (IK.idamage itemKind))

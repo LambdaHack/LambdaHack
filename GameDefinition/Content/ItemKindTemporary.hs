@@ -7,6 +7,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
@@ -52,23 +53,26 @@ tmpEffects name icount effects =
                          , OnSmash $ tmpNoLonger name ]
          }
 
-tmpStrengthened = tmpAspects "strengthened" [AddHurtMelee 20]
-tmpWeakened = tmpAspects "weakened" [AddHurtMelee (-30)]  -- don't cancel out ^
-tmpProtectedMelee = tmpAspects "protected from melee" [AddArmorMelee 50]
-tmpProtectedRanged = tmpAspects "protected from ranged" [AddArmorRanged 25]
-tmpVulnerable = tmpAspects "defenseless" [ AddArmorMelee (-50)
-                                         , AddArmorRanged (-25) ]
-tmpResolute = tmpAspects "resolute" [AddMaxCalm 60]
-tmpFast20 = tmpAspects "hasted" [AddSpeed 20]
-tmpSlow10 = tmpAspects "slowed" [AddSpeed (-10)]
-tmpFarSighted = tmpAspects "far-sighted" [AddSight 5]
-tmpBlind = tmpAspects "blind" [AddSight (-99)]
-tmpKeenSmelling = tmpAspects "keen-smelling" [AddSmell 2]
-tmpNoctovision = tmpAspects "shiny-eyed" [AddNocto 2]
-tmpDrunk = tmpAspects "drunk" [ AddHurtMelee 30  -- fury
-                              , AddArmorMelee (-20)
-                              , AddArmorRanged (-20)
-                              , AddSight (-8)
+tmpStrengthened = tmpAspects "strengthened" [AddAbility AbHurtMelee 20]
+tmpWeakened = tmpAspects "weakened"
+                         [AddAbility AbHurtMelee (-30)]  -- don't cancel out ^
+tmpProtectedMelee = tmpAspects "protected from melee"
+                               [AddAbility AbArmorMelee 50]
+tmpProtectedRanged = tmpAspects "protected from ranged"
+                                [AddAbility AbArmorRanged 25]
+tmpVulnerable = tmpAspects "defenseless" [ AddAbility AbArmorMelee (-50)
+                                         , AddAbility AbArmorRanged (-25) ]
+tmpResolute = tmpAspects "resolute" [AddAbility AbMaxCalm 60]
+tmpFast20 = tmpAspects "hasted" [AddAbility AbSpeed 20]
+tmpSlow10 = tmpAspects "slowed" [AddAbility AbSpeed (-10)]
+tmpFarSighted = tmpAspects "far-sighted" [AddAbility AbSight 5]
+tmpBlind = tmpAspects "blind" [AddAbility AbSight (-99)]
+tmpKeenSmelling = tmpAspects "keen-smelling" [AddAbility AbSmell 2]
+tmpNoctovision = tmpAspects "shiny-eyed" [AddAbility AbNocto 2]
+tmpDrunk = tmpAspects "drunk" [ AddAbility AbHurtMelee 30  -- fury
+                              , AddAbility AbArmorMelee (-20)
+                              , AddAbility AbArmorRanged (-20)
+                              , AddAbility AbSight (-8)
                               ]
 
 tmpRegenerating =

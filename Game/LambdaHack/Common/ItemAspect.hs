@@ -31,17 +31,6 @@ import           Game.LambdaHack.Common.Random
 data Aspect =
     Timeout Dice.Dice         -- ^ some effects disabled until item recharges;
                               --   expressed in game turns
-  | AddHurtMelee Dice.Dice    -- ^ percentage damage bonus in melee
-  | AddArmorMelee Dice.Dice   -- ^ percentage armor bonus against melee
-  | AddArmorRanged Dice.Dice  -- ^ percentage armor bonus against ranged
-  | AddMaxHP Dice.Dice        -- ^ maximal hp
-  | AddMaxCalm Dice.Dice      -- ^ maximal calm
-  | AddSpeed Dice.Dice        -- ^ speed in m/10s (not when pushed or pulled)
-  | AddSight Dice.Dice        -- ^ FOV radius, where 1 means a single tile FOV
-  | AddSmell Dice.Dice        -- ^ smell radius
-  | AddShine Dice.Dice        -- ^ shine radius
-  | AddNocto Dice.Dice        -- ^ noctovision radius
-  | AddAggression Dice.Dice   -- ^ aggression, e.g., when closing in for melee
   | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
   deriving (Show, Eq, Ord, Generic)
 
@@ -132,39 +121,6 @@ castAspect !ldepth !totalDepth !ar !asp =
     Timeout d -> do
       n <- castDice ldepth totalDepth d
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    AddHurtMelee d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aHurtMelee = n + aHurtMelee ar}
-    AddArmorMelee d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aArmorMelee = n + aArmorMelee ar}
-    AddArmorRanged d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aArmorRanged = n + aArmorRanged ar}
-    AddMaxHP d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aMaxHP = n + aMaxHP ar}
-    AddMaxCalm d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aMaxCalm = n + aMaxCalm ar}
-    AddSpeed d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSpeed = n + aSpeed ar}
-    AddSight d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSight = n + aSight ar}
-    AddSmell d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aSmell = n + aSmell ar}
-    AddShine d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aShine = n + aShine ar}
-    AddNocto d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aNocto = n + aNocto ar}
-    AddAggression d -> do
-      n <- castDice ldepth totalDepth d
-      return $! ar {aAggression = n + aAggression ar}
     AddAbility ab d -> do
       n <- castDice ldepth totalDepth d
       return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
@@ -188,39 +144,6 @@ addMeanAspect !ar !asp =
     Timeout d ->
       let n = ceilingMeanDice d
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    AddHurtMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aHurtMelee = n + aHurtMelee ar}
-    AddArmorMelee d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorMelee = n + aArmorMelee ar}
-    AddArmorRanged d ->
-      let n = ceilingMeanDice d
-      in ar {aArmorRanged = n + aArmorRanged ar}
-    AddMaxHP d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxHP = n + aMaxHP ar}
-    AddMaxCalm d ->
-      let n = ceilingMeanDice d
-      in ar {aMaxCalm = n + aMaxCalm ar}
-    AddSpeed d ->
-      let n = ceilingMeanDice d
-      in ar {aSpeed = n + aSpeed ar}
-    AddSight d ->
-      let n = ceilingMeanDice d
-      in ar {aSight = n + aSight ar}
-    AddSmell d ->
-      let n = ceilingMeanDice d
-      in ar {aSmell = n + aSmell ar}
-    AddShine d ->
-      let n = ceilingMeanDice d
-      in ar {aShine = n + aShine ar}
-    AddNocto d ->
-      let n = ceilingMeanDice d
-      in ar {aNocto = n + aNocto ar}
-    AddAggression d ->
-      let n = ceilingMeanDice d
-      in ar {aAggression = n + aAggression ar}
     AddAbility ab d ->
       let n = ceilingMeanDice d
       in ar {aSkills = Ability.addSkills (EM.singleton ab n)
@@ -253,17 +176,6 @@ sumAspectRecord l = AspectRecord
 aspectRecordToList :: AspectRecord -> [Aspect]
 aspectRecordToList AspectRecord{..} =
   [Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
-  ++ [AddHurtMelee $ Dice.intToDice aHurtMelee | aHurtMelee /= 0]
-  ++ [AddArmorMelee $ Dice.intToDice aArmorMelee | aArmorMelee /= 0]
-  ++ [AddArmorRanged $ Dice.intToDice aArmorRanged | aArmorRanged /= 0]
-  ++ [AddMaxHP $ Dice.intToDice aMaxHP | aMaxHP /= 0]
-  ++ [AddMaxCalm $ Dice.intToDice aMaxCalm | aMaxCalm /= 0]
-  ++ [AddSpeed $ Dice.intToDice aSpeed | aSpeed /= 0]
-  ++ [AddSight $ Dice.intToDice aSight | aSight /= 0]
-  ++ [AddSmell $ Dice.intToDice aSmell | aSmell /= 0]
-  ++ [AddShine $ Dice.intToDice aShine | aShine /= 0]
-  ++ [AddNocto $ Dice.intToDice aNocto | aNocto /= 0]
-  ++ [AddAggression $ Dice.intToDice aAggression | aAggression /= 0]
   ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
 
 rollAspectRecord :: [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
@@ -276,15 +188,17 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
   case eqpSlot of
     EqpSlotMiscBonus ->
       aTimeout  -- usually better items have longer timeout
-      + aMaxCalm + aSmell
-      + aNocto  -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> aHurtMelee
-    EqpSlotAddArmorMelee -> aArmorMelee
-    EqpSlotAddArmorRanged -> aArmorRanged
-    EqpSlotAddMaxHP -> aMaxHP
-    EqpSlotAddSpeed -> aSpeed
-    EqpSlotAddSight -> aSight
-    EqpSlotLightSource -> aShine
+      + EM.findWithDefault 0 Ability.AbMaxCalm aSkills
+      + EM.findWithDefault 0 Ability.AbSmell aSkills
+      + EM.findWithDefault 0 Ability.AbNocto aSkills
+          -- powerful, but hard to boost over aSight
+    EqpSlotAddHurtMelee -> EM.findWithDefault 0 Ability.AbHurtMelee aSkills
+    EqpSlotAddArmorMelee -> EM.findWithDefault 0 Ability.AbArmorMelee aSkills
+    EqpSlotAddArmorRanged -> EM.findWithDefault 0 Ability.AbArmorRanged aSkills
+    EqpSlotAddMaxHP -> EM.findWithDefault 0 Ability.AbMaxHP aSkills
+    EqpSlotAddSpeed -> EM.findWithDefault 0 Ability.AbSpeed aSkills
+    EqpSlotAddSight -> EM.findWithDefault 0 Ability.AbSight aSkills
+    EqpSlotLightSource -> EM.findWithDefault 0 Ability.AbShine aSkills
     EqpSlotWeapon -> error $ "" `showFailure` ar
     EqpSlotMiscAbility ->
       EM.findWithDefault 0 Ability.AbWait aSkills
@@ -295,9 +209,9 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAbAlter -> EM.findWithDefault 0 Ability.AbAlter aSkills
     EqpSlotAbProject -> EM.findWithDefault 0 Ability.AbProject aSkills
     EqpSlotAbApply -> EM.findWithDefault 0 Ability.AbApply aSkills
-    EqpSlotAddMaxCalm -> aMaxCalm
-    EqpSlotAddSmell -> aSmell
-    EqpSlotAddNocto -> aNocto
-    EqpSlotAddAggression -> aAggression
+    EqpSlotAddMaxCalm -> EM.findWithDefault 0 Ability.AbMaxCalm aSkills
+    EqpSlotAddSmell -> EM.findWithDefault 0 Ability.AbSmell aSkills
+    EqpSlotAddNocto -> EM.findWithDefault 0 Ability.AbNocto aSkills
+    EqpSlotAddAggression ->EM.findWithDefault 0 Ability.AbAggression aSkills
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills
