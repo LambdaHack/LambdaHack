@@ -164,28 +164,39 @@ slotToName eqpSlot =
     EqpSlotLightSource -> "shine radius"
     EqpSlotWeapon -> "weapon power"
     EqpSlotMiscAbility -> "misc abilities"
-    EqpSlotAbMove -> abilityDesc AbMove <+> "ability"
-    EqpSlotAbMelee -> abilityDesc AbMelee <+> "ability"
-    EqpSlotAbDisplace -> abilityDesc AbDisplace <+> "ability"
-    EqpSlotAbAlter -> abilityDesc AbAlter <+> "ability"
-    EqpSlotAbProject -> abilityDesc AbProject <+> "ability"
-    EqpSlotAbApply -> abilityDesc AbApply <+> "ability"
+    EqpSlotAbMove -> abilityDesc AbMove
+    EqpSlotAbMelee -> abilityDesc AbMelee
+    EqpSlotAbDisplace -> abilityDesc AbDisplace
+    EqpSlotAbAlter -> abilityDesc AbAlter
+    EqpSlotAbProject -> abilityDesc AbProject
+    EqpSlotAbApply -> abilityDesc AbApply
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
     EqpSlotAddAggression -> "aggression level"
-    EqpSlotAbWait -> abilityDesc AbWait <+> "ability"
-    EqpSlotAbMoveItem -> abilityDesc AbMoveItem <+> "ability"
+    EqpSlotAbWait -> abilityDesc AbWait
+    EqpSlotAbMoveItem -> abilityDesc AbMoveItem
 
 abilityDesc :: Ability -> Text
-abilityDesc AbMove = "move"
-abilityDesc AbMelee = "melee"
-abilityDesc AbDisplace = "displace"
-abilityDesc AbAlter = "alter tile"
-abilityDesc AbWait = "wait"
-abilityDesc AbMoveItem = "manage items"
-abilityDesc AbProject = "fling"
-abilityDesc AbApply = "apply"
+abilityDesc AbMove = "move ability"
+abilityDesc AbMelee = "melee ability"
+abilityDesc AbDisplace = "displace ability"
+abilityDesc AbAlter = "alter tile ability"
+abilityDesc AbWait = "wait ability"
+abilityDesc AbMoveItem = "manage items ability"
+abilityDesc AbProject = "fling ability"
+abilityDesc AbApply = "apply ability"
+abilityDesc AbHurtMelee = "to melee damage"
+abilityDesc AbArmorMelee = "melee armor"
+abilityDesc AbArmorRanged = "ranged armor"
+abilityDesc AbMaxHP = "max HP"
+abilityDesc AbMaxCalm = "max Calm"
+abilityDesc AbSpeed = "speed"
+abilityDesc AbSight = "sight radius"
+abilityDesc AbSmell = "smell radius"
+abilityDesc AbShine = "shine radius"
+abilityDesc AbNocto = "night vision radius"
+abilityDesc AbAggression = "aggression level"
 
 slotToDesc :: EqpSlot -> Text
 slotToDesc eqpSlot =
@@ -302,7 +313,26 @@ kindAspectToSuffix aspect =
     AddShine t -> wrapInParens $ affixDice t <+> "shine"
     AddNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddAggression t -> wrapInParens $ affixDice t <+> "aggression"
-    AddAbility ab t -> wrapInParens $ affixDice t <+> abilityDesc ab
+    AddAbility AbMove t -> wrapInParens $ affixDice t <+> "move"
+    AddAbility AbMelee t -> wrapInParens $ affixDice t <+> "melee"
+    AddAbility AbDisplace t -> wrapInParens $ affixDice t <+> "displace"
+    AddAbility AbAlter t -> wrapInParens $ affixDice t <+> "alter"
+    AddAbility AbWait t -> wrapInParens $ affixDice t <+> "wait"
+    AddAbility AbMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
+    AddAbility AbProject t -> wrapInParens $ affixDice t <+> "fling"
+    AddAbility AbApply t -> wrapInParens $ affixDice t <+> "apply"
+    AddAbility AbHurtMelee _ ->
+      ""  -- printed together with dice, even if dice is zero
+    AddAbility AbArmorMelee t -> "[" <> affixDice t <> "%]"
+    AddAbility AbArmorRanged t -> "{" <> affixDice t <> "%}"
+    AddAbility AbMaxHP t -> wrapInParens $ affixDice t <+> "HP"
+    AddAbility AbMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
+    AddAbility AbSpeed t -> wrapInParens $ affixDice t <+> "speed"
+    AddAbility AbSight t -> wrapInParens $ affixDice t <+> "sight"
+    AddAbility AbSmell t -> wrapInParens $ affixDice t <+> "smell"
+    AddAbility AbShine t -> wrapInParens $ affixDice t <+> "shine"
+    AddAbility AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddAbility AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
 
 featureToSuff :: Feature -> Text
 featureToSuff feat =
