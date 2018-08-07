@@ -257,5 +257,6 @@ unknownMeleeBonus =
 tmpMeleeBonus :: [ItemFullKit] -> Int
 tmpMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
-        itemK * IA.aHurtMelee (aspectRecordFull itemFull) + k
+        itemK * IK.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
+        + k
   in foldr f 0 $ filter (IK.isTmpCondition . itemKind . fst) kitAss

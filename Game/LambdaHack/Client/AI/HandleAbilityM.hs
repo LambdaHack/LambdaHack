@@ -33,6 +33,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -123,7 +124,7 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = IA.aShine ar > 0
+      actorShines = IK.getAbility Ability.AbShine ar > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL

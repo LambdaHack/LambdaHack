@@ -20,10 +20,10 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -32,6 +32,7 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Server.Fov
 import           Game.LambdaHack.Server.MonadServer
@@ -161,11 +162,12 @@ cmdAtomicSemSer oldState cmd = case cmd of
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillCalm aid _ -> do
-    IA.AspectRecord{aSight} <- getsState $ getActorAspect aid
+    ar <- getsState $ getActorAspect aid
     body <- getsState $ getActorBody aid
-    let oldBody = getActorBody aid oldState
-        radiusOld = boundSightByCalm aSight (bcalm oldBody)
-        radiusNew = boundSightByCalm aSight (bcalm body)
+    let sight = IK.getAbility Ability.AbSight ar
+        oldBody = getActorBody aid oldState
+        radiusOld = boundSightByCalm sight (bcalm oldBody)
+        radiusNew = boundSightByCalm sight (bcalm body)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdLeadFaction{} -> invalidateArenas
   UpdRecordKill{} -> invalidateArenas
@@ -219,27 +221,31 @@ invalidateLucidAid aid = do
 
 actorHasShine :: ActorAspect -> ActorId -> Bool
 actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
-  Just IA.AspectRecord{aShine} -> aShine > 0
+  Just ar -> IK.getAbility Ability.AbShine ar > 0
   Nothing -> error $ "" `showFailure` aid
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
 itemAffectsShineRadius discoAspect iid stores =
   (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
-    Just IA.AspectRecord{aShine} -> aShine /= 0
+    Just ar -> IK.getAbility Ability.AbShine ar /= 0
     Nothing -> error $ "" `showFailure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
 itemAffectsPerRadius discoAspect iid =
   case EM.lookup iid discoAspect of
-    Just IA.AspectRecord{aSight, aSmell, aNocto} ->
-      aSight /= 0 || aSmell /= 0 || aNocto /= 0
+    Just ar -> IK.getAbility Ability.AbSight ar /= 0
+               || IK.getAbility Ability.AbSmell ar /= 0
+               || IK.getAbility Ability.AbNocto ar /= 0
     Nothing -> error $ "" `showFailure` iid
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
-  IA.AspectRecord{..} <- getsState $ getActorAspect aid
-  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ addPerActorAny aid b
+  ar <- getsState $ getActorAspect aid
+  unless (IK.getAbility Ability.AbSight ar <= 0
+          && IK.getAbility Ability.AbNocto ar <= 0
+          && IK.getAbility Ability.AbSmell ar <= 0) $
+    addPerActorAny aid b
 
 addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
 addPerActorAny aid b = do
@@ -255,8 +261,11 @@ addPerActorAny aid b = do
 
 deletePerActor :: MonadServer m => ActorAspect -> ActorId -> Actor -> m ()
 deletePerActor actorAspectOld aid b = do
-  let IA.AspectRecord{..} = actorAspectOld EM.! aid
-  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ deletePerActorAny aid b
+  let ar = actorAspectOld EM.! aid
+  unless (IK.getAbility Ability.AbSight ar <= 0
+          && IK.getAbility Ability.AbNocto ar <= 0
+          && IK.getAbility Ability.AbSmell ar <= 0) $
+    deletePerActorAny aid b
 
 deletePerActorAny :: MonadServer m => ActorId -> Actor -> m ()
 deletePerActorAny aid b = do
@@ -272,16 +281,20 @@ deletePerActorAny aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
-  IA.AspectRecord{..} <- getsState $ getActorAspect aid
-  unless (aSight <= 0 && aNocto <= 0 && aSmell <= 0) $ do
+  ar <- getsState $ getActorAspect aid
+  unless (IK.getAbility Ability.AbSight ar <= 0
+          && IK.getAbility Ability.AbNocto ar <= 0
+          && IK.getAbility Ability.AbSmell ar <= 0) $ do
     b <- getsState $ getActorBody aid
     addPerActorAny aid b
 
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  IA.AspectRecord{..} <- getsState $ getActorAspect aid
-  if aSight <= 0 && aNocto <= 0 && aSmell <= 0
+  ar <- getsState $ getActorAspect aid
+  if IK.getAbility Ability.AbSight ar <= 0
+     && IK.getAbility Ability.AbNocto ar <= 0
+     && IK.getAbility Ability.AbSmell ar <= 0
   then do
     perCacheFid <- getsServer sperCacheFid
     when (EM.member aid $ perActor ((perCacheFid EM.! bfid b) EM.! blid b)) $

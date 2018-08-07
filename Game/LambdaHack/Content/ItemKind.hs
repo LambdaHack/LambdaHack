@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Effect(..), DetectKind(..), TimerDice, ThrowMod(..), Feature(..)
-  , ItemSpeedup, emptyItemSpeedup, getKindMean, speedupItem
+  , ItemSpeedup, getAbility, emptyItemSpeedup, getKindMean, speedupItem
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
@@ -28,12 +28,14 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
@@ -200,6 +202,10 @@ instance Binary DetectKind
 instance Binary TimerDice
 
 instance Binary ThrowMod
+
+getAbility :: Ability.Ability -> IA.AspectRecord -> Int
+{-# INLINE getAbility #-}
+getAbility ab ar = EM.findWithDefault 0 ab $ IA.aSkills ar
 
 emptyItemSpeedup :: ItemSpeedup
 emptyItemSpeedup = ItemSpeedup V.empty

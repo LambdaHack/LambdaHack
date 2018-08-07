@@ -23,6 +23,7 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -40,6 +41,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
@@ -149,7 +151,7 @@ computeTarget aid = do
       condHpTooLow = hpTooLow b ar
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
-      canSmell = IA.aSmell ar > 0
+      canSmell = IK.getAbility Ability.AbSmell ar > 0
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
@@ -165,7 +167,8 @@ computeTarget aid = do
             -- + 2 from foe being 2 away from friend before he closed in
             -- + 1 for as a margin for ambush, given than actors exploring
             -- can't physically keep adjacent all the time
-            n | IA.aAggression ar >= 2 = rangedNearby  -- boss never waits
+            n | IK.getAbility Ability.AbAggression ar >= 2 = rangedNearby
+                  -- boss never waits
               | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
             nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
@@ -177,7 +180,8 @@ computeTarget aid = do
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
       targetableRanged body =
-        (not condInMelee || IA.aAggression ar >= 2)  -- boss fires at will
+        (not condInMelee || IK.getAbility Ability.AbAggression ar >= 2)
+          -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
       targetableEnemy (aidE, body) = do

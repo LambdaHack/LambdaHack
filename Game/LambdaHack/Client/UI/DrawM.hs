@@ -41,6 +41,7 @@ import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -48,7 +49,6 @@ import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -78,7 +78,8 @@ targetDesc mtarget = do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
       ar <- getsState $ getActorAspect aid
-      let percentage = 100 * bhp b `div` xM (max 5 $ IA.aMaxHP ar)
+      let percentage =
+            100 * bhp b `div` xM (max 5 $ IK.getAbility Ability.AbMaxHP ar)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
@@ -533,9 +534,11 @@ checkWarnings UIOptions{uhpWarningPercent} leader s =
       isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
-      hpCheckWarning = bhp b <= xM (uhpWarningPercent * IA.aMaxHP ar `div` 100)
+      maxHp = IK.getAbility Ability.AbMaxHP ar
+      hpCheckWarning = bhp b <= xM (uhpWarningPercent * maxHp `div` 100)
+      maxCalm = IK.getAbility Ability.AbMaxCalm ar
       calmCheckWarning =
-        bcalm b <= xM (uhpWarningPercent * IA.aMaxCalm ar `div` 100)
+        bcalm b <= xM (uhpWarningPercent * maxCalm `div` 100)
         && isImpressed
   in (hpCheckWarning, calmCheckWarning)
 
@@ -578,7 +581,7 @@ drawLeaderStatus waitT = do
                      <> (if bdark || not (braced b)
                          then slashPick
                          else "/")
-                     <> showTrunc (max 0 $ IA.aMaxCalm ar)
+                     <> showTrunc (max 0 $ IK.getAbility Ability.AbMaxCalm ar)
           bracePick | braced b  = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
@@ -587,7 +590,7 @@ drawLeaderStatus waitT = do
                    <> (if braced b || not bdark
                        then slashPick
                        else "/")
-                   <> showTrunc (max 0 $ IA.aMaxHP ar)
+                   <> showTrunc (max 0 $ IK.getAbility Ability.AbMaxHP ar)
           justifyRight n t = replicate (n - length t) ' ' ++ t
           colorWarning w = if w then addColor Color.Red else stringToAL
       return $! calmHeader
@@ -612,7 +615,8 @@ drawLeaderDamage width = do
             [] -> ("0", "", Color.White)
             (_, (_, (itemFull, _))) : _ ->
               let tdice = show $ IK.idamage $ itemKind itemFull
-                  bonusRaw = IA.aHurtMelee $ actorAspect EM.! leader
+                  bonusRaw = IK.getAbility Ability.AbHurtMelee
+                             $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
                   tbonus = if bonus == 0

@@ -19,6 +19,7 @@ import           Data.Int (Int64)
 import           Data.Ord
 
 import           Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
@@ -26,7 +27,6 @@ import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -236,7 +236,7 @@ udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
-  let calmMax64 = xM $ IA.aMaxCalm ar
+  let calmMax64 = xM $ IK.getAbility Ability.AbMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64) $

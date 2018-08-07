@@ -207,7 +207,7 @@ affectSmell aid = do
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
     ar <- getsState $ getActorAspect aid
-    let smellRadius = IA.aSmell ar
+    let smellRadius = IK.getAbility Ability.AbSmell ar
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b

@@ -173,7 +173,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
+      aHurtMeleeOfItem = IK.getAbility Ability.AbHurtMelee
+                         $ aspectRecordFull itemFull
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
       pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -284,7 +285,8 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect
                         ++ mapMaybe featureToSentence (IK.ifeature itemKind)
-            aHurtMeleeOfItem = IA.aHurtMelee $ aspectRecordFull itemFull
+            aHurtMeleeOfItem = IK.getAbility Ability.AbHurtMelee
+                               $ aspectRecordFull itemFull
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner

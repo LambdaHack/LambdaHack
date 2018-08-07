@@ -36,19 +36,8 @@ data Aspect =
 
 -- | Record of sums of aspect values of an item, container, actor, etc.
 data AspectRecord = AspectRecord
-  { aTimeout     :: Int
-  , aHurtMelee   :: Int
-  , aArmorMelee  :: Int
-  , aArmorRanged :: Int
-  , aMaxHP       :: Int
-  , aMaxCalm     :: Int
-  , aSpeed       :: Int
-  , aSight       :: Int
-  , aSmell       :: Int
-  , aShine       :: Int
-  , aNocto       :: Int
-  , aAggression  :: Int
-  , aSkills      :: Ability.Skills
+  { aTimeout :: Int
+  , aSkills  :: Ability.Skills
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -100,17 +89,6 @@ instance Binary AspectRecord
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
   { aTimeout     = 0
-  , aHurtMelee   = 0
-  , aArmorMelee  = 0
-  , aArmorRanged = 0
-  , aMaxHP       = 0
-  , aMaxCalm     = 0
-  , aSpeed       = 0
-  , aSight       = 0
-  , aSmell       = 0
-  , aShine       = 0
-  , aNocto       = 0
-  , aAggression  = 0
   , aSkills      = Ability.zeroSkills
   }
 
@@ -155,21 +133,9 @@ ceilingMeanDice d = ceiling $ Dice.meanDice d
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
   { aTimeout     = 0
-  , aHurtMelee   = sumScaled aHurtMelee
-  , aArmorMelee  = sumScaled aArmorMelee
-  , aArmorRanged = sumScaled aArmorRanged
-  , aMaxHP       = sumScaled aMaxHP
-  , aMaxCalm     = sumScaled aMaxCalm
-  , aSpeed       = sumScaled aSpeed
-  , aSight       = sumScaled aSight
-  , aSmell       = sumScaled aSmell
-  , aShine       = sumScaled aShine
-  , aNocto       = sumScaled aNocto
-  , aAggression  = sumScaled aAggression
   , aSkills      = sumScaledAbility
   }
  where
-  sumScaled f = sum $ map (\(ar, k) -> f ar * k) l
   sumScaledAbility =
     EM.unionsWith (+) $ map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar) l
 

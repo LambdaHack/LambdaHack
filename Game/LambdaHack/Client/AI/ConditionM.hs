@@ -198,7 +198,7 @@ hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         ar itemFull =
-  let itemShine = 0 < IA.aShine (aspectRecordFull itemFull)
+  let itemShine = 0 < IK.getAbility Ability.AbShine (aspectRecordFull itemFull)
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
       itemShineBad = condShineWouldBetray && itemShine
@@ -210,7 +210,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- than receive hits.
      || gearSpeed ar > speedWalk
         && not (IK.isMelee $ itemKind itemFull)  -- in case it's the only weapon
-        && 0 > IA.aHurtMelee (aspectRecordFull itemFull)
+        && 0 > IK.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -251,7 +251,7 @@ condSupport param aid = do
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
 strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
-  let n = min 2 param - IA.aAggression ar
+  let n = min 2 param - IK.getAbility Ability.AbAggression ar
       actorAspect = sactorAspect s
       ar = actorAspect EM.! aid
       b = getActorBody aid s

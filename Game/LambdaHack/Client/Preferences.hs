@@ -318,7 +318,8 @@ aspectToBenefit asp =
     IA.AddAbility _ p -> Dice.meanDice p * 5
 
 recordToBenefit :: IA.AspectRecord -> [Double]
-recordToBenefit aspects = map aspectToBenefit $ IA.aspectRecordToList aspects
+recordToBenefit aspects =
+  map aspectToBenefit $ IA.aspectRecordToList aspects
 
 -- | Compute the whole 'Benefit' structure, containing various facets
 -- of AI item preference, for an item with the given effects and aspects.
@@ -404,8 +405,9 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
-        hurtMult = 100 + min 99 (max (-99) (IA.aHurtMelee aspects))
-          -- assumes no enemy armor and no block
+        hurtMult =
+          100 + min 99 (max (-99) (IK.getAbility Ability.AbHurtMelee aspects))
+            -- assumes no enemy armor and no block
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.

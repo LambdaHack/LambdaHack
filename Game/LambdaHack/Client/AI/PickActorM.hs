@@ -17,17 +17,18 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick a new leader from among the actors on the current level.
@@ -126,7 +127,7 @@ pickActorToMove maidToAvoid = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-                actorShines = IA.aShine ar > 0
+                actorShines = IK.getAbility Ability.AbShine ar > 0
                 aCanDeLightL | actorShines = []
                              | otherwise = canDeAmbientL
                 canFleeFromLight =

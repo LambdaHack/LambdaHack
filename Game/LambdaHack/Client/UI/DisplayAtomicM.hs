@@ -46,6 +46,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -53,7 +54,6 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -183,8 +183,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
            ar <- getsState $ getActorAspect aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
-           when (bhp b >= xM (IA.aMaxHP ar)
-                 && bhp b - n < xM (IA.aMaxHP ar)) $ do
+           when (bhp b >= xM (IK.getAbility Ability.AbMaxHP ar)
+                 && bhp b - n < xM (IK.getAbility Ability.AbMaxHP ar)) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
   UpdRefillCalm aid calmDelta ->

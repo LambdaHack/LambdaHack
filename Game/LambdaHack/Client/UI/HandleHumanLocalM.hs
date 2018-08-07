@@ -65,6 +65,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -175,7 +176,8 @@ chooseItemDialogMode c = do
             let iid2 = lSlotsElems !! slotIndex
                 itemFull2 = itemToF iid2
                 kit2 = itemBag EM.! iid2
-                attrLine = itemDesc True (bfid b) factionD (IA.aHurtMelee ar)
+                attrLine = itemDesc True (bfid b) factionD
+                                    (IK.getAbility Ability.AbHurtMelee ar)
                                     CGround localTime itemFull2 kit2
                 ov = splitAttrLine rwidth attrLine
                 keys = [K.spaceKM, K.escKM]
