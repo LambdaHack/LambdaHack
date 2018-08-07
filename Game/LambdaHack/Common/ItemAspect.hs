@@ -88,8 +88,8 @@ instance Binary AspectRecord
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
-  { aTimeout     = 0
-  , aSkills      = Ability.zeroSkills
+  { aTimeout = 0
+  , aSkills  = Ability.zeroSkills
   }
 
 castAspect :: Dice.AbsDepth -> Dice.AbsDepth -> AspectRecord -> Aspect
@@ -101,8 +101,10 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
     AddAbility ab d -> do
       n <- castDice ldepth totalDepth d
-      return $! ar {aSkills = Ability.addSkills (EM.singleton ab n)
-                                                (aSkills ar)}
+      return $! if n /= 0
+                then ar {aSkills = Ability.addSkills (EM.singleton ab n)
+                                                     (aSkills ar)}
+                else ar
 
 -- If @False@, aspects of this kind are most probably fixed, not random
 -- nor dependent on dungeon level where the item is created.
@@ -124,25 +126,23 @@ addMeanAspect !ar !asp =
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}
     AddAbility ab d ->
       let n = ceilingMeanDice d
-      in ar {aSkills = Ability.addSkills (EM.singleton ab n)
-                                         (aSkills ar)}
+      in if n /= 0
+         then ar {aSkills = Ability.addSkills (EM.singleton ab n) (aSkills ar)}
+         else ar
 
 ceilingMeanDice :: Dice.Dice -> Int
 ceilingMeanDice d = ceiling $ Dice.meanDice d
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
-  { aTimeout     = 0
-  , aSkills      = sumScaledAbility
+  { aTimeout = 0
+  , aSkills  = Ability.sumScaledAbility $ map (first aSkills) l
   }
- where
-  sumScaledAbility =
-    EM.unionsWith (+) $ map (\(ar, k) -> Ability.scaleSkills k $ aSkills ar) l
 
 aspectRecordToList :: AspectRecord -> [Aspect]
 aspectRecordToList AspectRecord{..} =
   [Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
-  ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills, n /= 0]
+  ++ [AddAbility ab $ Dice.intToDice n | (ab, n) <- EM.assocs aSkills]
 
 rollAspectRecord :: [Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
                  -> Rnd AspectRecord
@@ -178,6 +178,6 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAddMaxCalm -> EM.findWithDefault 0 Ability.AbMaxCalm aSkills
     EqpSlotAddSmell -> EM.findWithDefault 0 Ability.AbSmell aSkills
     EqpSlotAddNocto -> EM.findWithDefault 0 Ability.AbNocto aSkills
-    EqpSlotAddAggression ->EM.findWithDefault 0 Ability.AbAggression aSkills
+    EqpSlotAddAggression -> EM.findWithDefault 0 Ability.AbAggression aSkills
     EqpSlotAbWait -> EM.findWithDefault 0 Ability.AbWait aSkills
     EqpSlotAbMoveItem -> EM.findWithDefault 0 Ability.AbMoveItem aSkills

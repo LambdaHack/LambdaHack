@@ -2,8 +2,8 @@
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills
-  , zeroSkills, unitSkills, addSkills, scaleSkills, tacticSkills
-  , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
+  , zeroSkills, unitSkills, addSkills, scaleSkills, sumScaledAbility
+  , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
   ) where
 
 import Prelude ()
@@ -57,11 +57,18 @@ zeroSkills = EM.empty
 unitSkills :: Skills
 unitSkills = EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat 1)
 
+weedSkills :: Skills -> Skills
+weedSkills = EM.filter (/= 0)
+
 addSkills :: Skills -> Skills -> Skills
-addSkills = EM.unionWith (+)
+addSkills sk1 sk2 = weedSkills $ EM.unionWith (+) sk1 sk2
 
 scaleSkills :: Int -> Skills -> Skills
-scaleSkills n = EM.map (n *)
+scaleSkills n sk = weedSkills $ EM.map (n *) sk
+
+sumScaledAbility :: [(Skills, Int)] -> Skills
+sumScaledAbility l =
+  weedSkills $ EM.unionsWith (+) $ map (\(sk, k) -> scaleSkills k sk) l
 
 tacticSkills :: Tactic -> Skills
 tacticSkills TExplore = zeroSkills
