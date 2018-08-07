@@ -64,7 +64,6 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Common.Ability
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -362,7 +361,7 @@ permittedProjectClient = do
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
-  let skill = EM.findWithDefault 0 AbProject actorSk
+  let skill = Ability.getAb Ability.AbProject actorSk
       calmE = calmEnough b ar
   return $ permittedProject False skill calmE
 
@@ -535,7 +534,7 @@ permittedApplyClient = do
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
-  let skill = EM.findWithDefault 0 AbApply actorSk
+  let skill = Ability.getAb Ability.AbApply actorSk
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE

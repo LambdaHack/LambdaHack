@@ -288,7 +288,7 @@ projectFail source tpxy eps center iid cstore blast = do
           itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
-          let skill = EM.findWithDefault 0 Ability.AbProject actorSk
+          let skill = Ability.getAb Ability.AbProject actorSk
               forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE itemFull

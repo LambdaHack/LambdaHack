@@ -350,7 +350,7 @@ dispEnemy source target actorMaxSk s =
      || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
              || braced tb
-             || EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
+             || Ability.getAb Ability.AbMove actorMaxSk <= 0
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull

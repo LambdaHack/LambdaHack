@@ -79,7 +79,7 @@ condTgtNonmovingM aid = do
   case btarget of
     Just (TEnemy enemy _) -> do
       actorMaxSk <- maxActorSkillsClient enemy
-      return $ EM.findWithDefault 0 Ability.AbMove actorMaxSk <= 0
+      return $ Ability.getAb Ability.AbMove actorMaxSk <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent, except projectiles
@@ -111,7 +111,7 @@ meleeThreatDistList aid s =
       strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
             actorMaxSkE = IA.aSkills ar
-            nonmoving = EM.findWithDefault 0 Ability.AbMove actorMaxSkE <= 0
+            nonmoving = Ability.getAb Ability.AbMove actorMaxSkE <= 0
         in not (hpTooLow b2 ar || nonmoving)
            && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar

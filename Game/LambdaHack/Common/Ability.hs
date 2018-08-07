@@ -1,9 +1,14 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills
-  , zeroSkills, unitSkills, addSkills, scaleSkills, sumScaledAbility
+  , getAb, addAb, skillsToList
+  , zeroSkills, unitSkills, addSkills, sumScaledAbility
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , compactSkills, scaleSkills
+#endif
   ) where
 
 import Prelude ()
@@ -49,26 +54,41 @@ data Ability =
 -- item kinds (with few abilities) than actors (with many abilities),
 -- especially if the number of abilities grows as the engine is developed.
 -- It's also easier to code and maintain.
-type Skills = EM.EnumMap Ability Int
+--
+-- The tree is by construction sparse, so equality is semantical.
+newtype Skills = Skills {skills :: EM.EnumMap Ability Int}
+  deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
+
+getAb :: Ability -> Skills -> Int
+{-# INLINE getAb #-}
+getAb ab (Skills sk) = EM.findWithDefault 0 ab sk
+
+addAb :: Ability -> Int -> Skills -> Skills
+addAb ab n sk = addSkills (Skills $ EM.singleton ab n) sk
+
+skillsToList :: Skills -> [(Ability, Int)]
+skillsToList (Skills sk) = EM.assocs sk
 
 zeroSkills :: Skills
-zeroSkills = EM.empty
+zeroSkills = Skills EM.empty
 
 unitSkills :: Skills
-unitSkills = EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat 1)
+unitSkills =
+  Skills $ EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat 1)
 
-weedSkills :: Skills -> Skills
-weedSkills = EM.filter (/= 0)
+compactSkills :: EM.EnumMap Ability Int -> EM.EnumMap Ability Int
+compactSkills = EM.filter (/= 0)
 
 addSkills :: Skills -> Skills -> Skills
-addSkills sk1 sk2 = weedSkills $ EM.unionWith (+) sk1 sk2
+addSkills (Skills sk1) (Skills sk2) =
+  Skills $ compactSkills $ EM.unionWith (+) sk1 sk2
 
-scaleSkills :: Int -> Skills -> Skills
-scaleSkills n sk = weedSkills $ EM.map (n *) sk
+scaleSkills :: Int -> EM.EnumMap Ability Int -> EM.EnumMap Ability Int
+scaleSkills n sk = EM.map (n *) sk
 
 sumScaledAbility :: [(Skills, Int)] -> Skills
-sumScaledAbility l =
-  weedSkills $ EM.unionsWith (+) $ map (\(sk, k) -> scaleSkills k sk) l
+sumScaledAbility l = Skills $ compactSkills $ EM.unionsWith (+)
+                            $ map (\(Skills sk, k) -> scaleSkills k sk) l
 
 tacticSkills :: Tactic -> Skills
 tacticSkills TExplore = zeroSkills
@@ -83,16 +103,18 @@ tacticSkills TPatrol = zeroSkills
 minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 
 -- To make sure only a lot of weak items can override move-only-leader, etc.
-minusTen = EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat (-10))
+minusTen = Skills $ EM.fromDistinctAscList
+                  $ zip [AbMove .. AbApply] (repeat (-10))
 
-blockOnly = EM.delete AbWait minusTen
+blockOnly = Skills $ EM.delete AbWait $ skills minusTen
 
-meleeAdjacent = EM.delete AbMelee blockOnly
+meleeAdjacent = Skills $ EM.delete AbMelee $ skills blockOnly
 
 -- Melee and reaction fire.
-meleeAndRanged = EM.delete AbProject meleeAdjacent
+meleeAndRanged = Skills $ EM.delete AbProject $ skills meleeAdjacent
 
-ignoreItems = EM.fromList $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
+ignoreItems = Skills $ EM.fromList
+                     $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
 
 instance NFData Ability
 

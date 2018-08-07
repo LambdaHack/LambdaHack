@@ -101,7 +101,7 @@ actorCanMelee actorAspect aid b =
   let ar = actorAspect EM.! aid
       actorMaxSk = IA.aSkills ar
       condUsableWeapon = bweapon b > 0
-      canMelee = EM.findWithDefault 0 Ability.AbMelee actorMaxSk > 0
+      canMelee = Ability.getAb Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
 -- | Current physical speed, whether from being pushed or from organs and gear.

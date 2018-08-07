@@ -22,7 +22,6 @@ import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Common.Ability
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -98,7 +97,7 @@ computeTarget aid = do
       condInMelee = scondInMelee LEM.! blid b
       ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
       actorMaxSk = IA.aSkills ar
-      alterSkill = EM.findWithDefault 0 AbAlter actorMaxSk
+      alterSkill = Ability.getAb Ability.AbAlter actorMaxSk
   lvl <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
       stepAccesible AndPath{pathList=q : _} =
@@ -138,14 +137,14 @@ computeTarget aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
   dungeon <- getsState sdungeon
-  let canMove = EM.findWithDefault 0 AbMove actorMaxSk > 0
-                || EM.findWithDefault 0 AbDisplace actorMaxSk > 0
+  let canMove = Ability.getAb Ability.AbMove actorMaxSk > 0
+                || Ability.getAb Ability.AbDisplace actorMaxSk > 0
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
-                || EM.findWithDefault 0 AbProject actorMaxSk > 0
+                || Ability.getAb Ability.AbProject actorMaxSk > 0
   actorMinSk <- getsState $ actorSkills Nothing aid
   condCanProject <-
-    condCanProjectM (EM.findWithDefault 0 AbProject actorMaxSk) aid
+    condCanProjectM (Ability.getAb Ability.AbProject actorMaxSk) aid
   condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorAspect aid b
       condHpTooLow = hpTooLow b ar
@@ -171,7 +170,7 @@ computeTarget aid = do
                   -- boss never waits
               | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
-            nonmoving = EM.findWithDefault 0 AbMove actorMaxSkE <= 0
+            nonmoving = Ability.getAb Ability.AbMove actorMaxSkE <= 0
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
@@ -200,7 +199,7 @@ computeTarget aid = do
       focused = gearSpeed ar < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
-        in EM.findWithDefault 0 AbMove actorSk > 0
+        in Ability.getAb Ability.AbMove actorSk > 0
       isStuck = waitedLastTurn b && couldMoveLastTurn
       slackTactic =
         ftactic (gplayer fact)

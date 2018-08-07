@@ -19,12 +19,11 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
@@ -96,7 +95,8 @@ data Player = Player
                                 -- ^ names of actor groups that may naturally
                                 --   fall under player's control, e.g., upon
                                 --   spawning or summoning
-  , fskillsOther :: Skills      -- ^ fixed skill modifiers to the non-leader
+  , fskillsOther :: Ability.Skills
+                                -- ^ fixed skill modifiers to the non-leader
                                 --   actors; also summed with skills implied
                                 --   by ftactic (which is not fixed)
   , fcanEscape   :: Bool        -- ^ the player can escape the dungeon
@@ -191,7 +191,7 @@ validateSinglePlayer Player{..} =
                        LeaderUI _ -> True
                        _ -> False ]
   ++ [ "fskillsOther not negative:" <+> fname
-     | any (>= 0) $ EM.elems fskillsOther ]
+     | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 
 -- | Validate game mode kinds together.
 validateAll :: ContentData CaveKind
