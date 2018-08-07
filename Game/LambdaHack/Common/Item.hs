@@ -184,7 +184,7 @@ aspectRecordFull itemFull =
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
-strongestSlot :: DiscoveryBenefit -> IA.EqpSlot -> [(ItemId, ItemFullKit)]
+strongestSlot :: DiscoveryBenefit -> Ability.EqpSlot -> [(ItemId, ItemFullKit)]
               -> [(Int, (ItemId, ItemFullKit))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, (itemFull, kit)) =
@@ -192,7 +192,7 @@ strongestSlot discoBenefit eqpSlot is =
         in if not benInEqp
            then Nothing
            else Just $
-             let ben = if eqpSlot == IA.EqpSlotWeapon
+             let ben = if eqpSlot == Ability.EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
                        then ceiling benPickup

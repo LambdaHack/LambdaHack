@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Ability(..), Skills
+  ( Ability(..), Skills, EqpSlot(..)
   , getAb, addAb, skillsToList
   , zeroSkills, unitSkills, addSkills, sumScaledAbility
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
@@ -59,6 +59,43 @@ data Ability =
 newtype Skills = Skills {skills :: EM.EnumMap Ability Int}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
+-- | AI and UI hints about the role of the item.
+data EqpSlot =
+    EqpSlotMiscBonus
+  | EqpSlotAddHurtMelee
+  | EqpSlotAddArmorMelee
+  | EqpSlotAddArmorRanged
+  | EqpSlotAddMaxHP
+  | EqpSlotAddSpeed
+  | EqpSlotAddSight
+  | EqpSlotLightSource
+  | EqpSlotWeapon
+  | EqpSlotMiscAbility
+  | EqpSlotAbMove
+  | EqpSlotAbMelee
+  | EqpSlotAbDisplace
+  | EqpSlotAbAlter
+  | EqpSlotAbProject
+  | EqpSlotAbApply
+  -- Do not use in content:
+  | EqpSlotAddMaxCalm
+  | EqpSlotAddSmell
+  | EqpSlotAddNocto
+  | EqpSlotAddAggression
+  | EqpSlotAbWait
+  | EqpSlotAbMoveItem
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance NFData Ability
+
+instance NFData EqpSlot
+
+instance Binary Ability where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
+instance Hashable Ability
+
 getAb :: Ability -> Skills -> Int
 {-# INLINE getAb #-}
 getAb ab (Skills sk) = EM.findWithDefault 0 ab sk
@@ -115,11 +152,3 @@ meleeAndRanged = Skills $ EM.delete AbProject $ skills meleeAdjacent
 
 ignoreItems = Skills $ EM.fromList
                      $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
-
-instance NFData Ability
-
-instance Binary Ability where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
-instance Hashable Ability

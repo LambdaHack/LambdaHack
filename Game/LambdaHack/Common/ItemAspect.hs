@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.ItemAspect
-  ( Aspect(..), AspectRecord(..), KindMean(..), EqpSlot(..)
+  ( Aspect(..), AspectRecord(..), KindMean(..)
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord, prEqpSlot
 #ifdef EXPOSE_INTERNAL
@@ -21,6 +21,7 @@ import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
+import           Game.LambdaHack.Common.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Random
@@ -50,36 +51,7 @@ data KindMean = KindMean
   }
   deriving (Show, Eq, Ord, Generic)
 
--- | AI and UI hints about the role of the item.
-data EqpSlot =
-    EqpSlotMiscBonus
-  | EqpSlotAddHurtMelee
-  | EqpSlotAddArmorMelee
-  | EqpSlotAddArmorRanged
-  | EqpSlotAddMaxHP
-  | EqpSlotAddSpeed
-  | EqpSlotAddSight
-  | EqpSlotLightSource
-  | EqpSlotWeapon
-  | EqpSlotMiscAbility
-  | EqpSlotAbMove
-  | EqpSlotAbMelee
-  | EqpSlotAbDisplace
-  | EqpSlotAbAlter
-  | EqpSlotAbProject
-  | EqpSlotAbApply
-  -- Do not use in content:
-  | EqpSlotAddMaxCalm
-  | EqpSlotAddSmell
-  | EqpSlotAddNocto
-  | EqpSlotAddAggression
-  | EqpSlotAbWait
-  | EqpSlotAbMoveItem
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
 instance NFData Aspect
-
-instance NFData EqpSlot
 
 instance Hashable AspectRecord
 

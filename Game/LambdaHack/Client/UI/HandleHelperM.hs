@@ -36,6 +36,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -277,7 +278,7 @@ statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
-  let prSlot :: (Y, SlotChar) -> IA.EqpSlot -> (Text, KYX)
+  let prSlot :: (Y, SlotChar) -> Ability.EqpSlot -> (Text, KYX)
       prSlot (y, c) eqpSlot =
         let statName = slotToName eqpSlot
             fullText t =

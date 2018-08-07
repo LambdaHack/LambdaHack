@@ -362,7 +362,7 @@ equipItems aid = do
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
-              -> ( IA.EqpSlot
+              -> ( EqpSlot
                  , ( [(Int, (ItemId, ItemFullKit))]
                    , [(Int, (ItemId, ItemFullKit))] ) )
               -> (Int, [(ItemId, Int, CStore, CStore)])
@@ -408,9 +408,9 @@ equipItems aid = do
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
 
-toShare :: IA.EqpSlot -> Bool
-toShare IA.EqpSlotMiscBonus = False
-toShare IA.EqpSlotMiscAbility = False
+toShare :: EqpSlot -> Bool
+toShare EqpSlotMiscBonus = False
+toShare EqpSlotMiscAbility = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
@@ -459,7 +459,7 @@ unEquipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-  let improve :: CStore -> ( IA.EqpSlot
+  let improve :: CStore -> ( EqpSlot
                            , ( [(Int, (ItemId, ItemFullKit))]
                              , [(Int, (ItemId, ItemFullKit))] ) )
               -> [(ItemId, Int, CStore, CStore)]
@@ -515,7 +515,7 @@ unEquipItems aid = do
             else returN "unEquipItems" $ ReqMoveItems prepared
 
 groupByEqpSlot :: [(ItemId, ItemFullKit)]
-               -> EM.EnumMap IA.EqpSlot [(ItemId, ItemFullKit)]
+               -> EM.EnumMap EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
   let f (iid, itemFullKit) = case IK.getEqpSlot $ itemKind $ fst itemFullKit of
         Nothing -> Nothing
@@ -527,7 +527,7 @@ bestByEqpSlot :: DiscoveryBenefit
               -> [(ItemId, ItemFullKit)]
               -> [(ItemId, ItemFullKit)]
               -> [(ItemId, ItemFullKit)]
-              -> [(IA.EqpSlot
+              -> [(EqpSlot
                   , ( [(Int, (ItemId, ItemFullKit))]
                     , [(Int, (ItemId, ItemFullKit))]
                     , [(Int, (ItemId, ItemFullKit))] ) )]

@@ -167,7 +167,8 @@ data Feature =
                        --   also, can't throw or apply if not calm enough
   | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
   | Blast              -- ^ the item is an explosion blast particle
-  | EqpSlot IA.EqpSlot -- ^ AI and UI flag that leaks item intended use
+  | EqpSlot Ability.EqpSlot
+                       -- ^ AI and UI flag that leaks item intended use
   | Unique             -- ^ at most one copy can ever be generated
   | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
   | MinorEffects       -- ^ override: the effects on this item are considered
@@ -339,7 +340,7 @@ getHideAs itemKind =
     [] -> Nothing
     x : _ -> Just x
 
-getEqpSlot :: ItemKind -> Maybe IA.EqpSlot
+getEqpSlot :: ItemKind -> Maybe Ability.EqpSlot
 getEqpSlot itemKind =
   let f (EqpSlot eqpSlot) = [eqpSlot]
       f _ = []

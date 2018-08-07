@@ -16,8 +16,8 @@ import Game.LambdaHack.Common.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
@@ -181,7 +181,7 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
       && skill < 3 -> Left ProjectLobable
     | otherwise ->
         let badSlot = case IK.getEqpSlot itemKind of
-              Just IA.EqpSlotLightSource -> False
+              Just Ability.EqpSlotLightSource -> False
               Just _ -> True
               Nothing ->  IK.goesIntoEqp itemKind
         in if badSlot
