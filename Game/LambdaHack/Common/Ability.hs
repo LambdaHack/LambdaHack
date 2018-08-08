@@ -62,20 +62,20 @@ newtype Skills = Skills {skills :: EM.EnumMap Ability Int}
 
 -- | Item features.
 data Feature =
-    Fragile            -- ^ drop and break at target tile, even if no hit
-  | Lobable            -- ^ drop at target tile, even if no hit
-  | Durable            -- ^ don't break even when hitting or applying
-  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
-                       --   'EqpSlot', e.g., in case of mixed blessings)
-  | Meleeable          -- ^ AI and UI flag: consider meleeing with
-  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
-                       --   also, can't throw or apply if not calm enough
-  | Blast              -- ^ the item is an explosion blast particle
-  | Unique             -- ^ at most one copy can ever be generated
-  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
-  | MinorEffects       -- ^ override: the effects on this item are considered
-                       --   minor and so not causing identification on use,
-                       --   and so this item will identify on pick-up
+    Fragile       -- ^ drop and break at target tile, even if no hit
+  | Lobable       -- ^ drop at target tile, even if no hit
+  | Durable       -- ^ don't break even when hitting or applying
+  | Equipable     -- ^ AI and UI flag: consider equipping (independent of
+                  --   'EqpSlot', e.g., in case of mixed blessings)
+  | Meleeable     -- ^ AI and UI flag: consider meleeing with
+  | Precious      -- ^ AI and UI flag: don't risk identifying by use;
+                  --   also, can't throw or apply if not calm enough
+  | Blast         -- ^ the item is an explosion blast particle
+  | Unique        -- ^ at most one copy can ever be generated
+  | Periodic      -- ^ in eqp, triggered as often as @Timeout@ permits
+  | MinorEffects  -- ^ override: the effects on this item are considered
+                  --   minor and so not causing identification on use,
+                  --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic, Enum)
 
 newtype Flags = Flags {flags :: ES.EnumSet Feature}

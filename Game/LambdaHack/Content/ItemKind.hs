@@ -45,20 +45,20 @@ import           Game.LambdaHack.Common.Vector
 -- | Item properties that are fixed for a given kind of items.
 -- Note that this type is mutually recursive with 'Effect' and `Aspect`.
 data ItemKind = ItemKind
-  { isymbol  :: Char                -- ^ map symbol
-  , iname    :: Text                -- ^ generic name; is pluralized if needed
-  , ifreq    :: Freqs ItemKind      -- ^ frequency within groups
-  , iflavour :: [Flavour]           -- ^ possible flavours
-  , icount   :: Dice.Dice           -- ^ created in that quantity
-  , irarity  :: Rarity              -- ^ rarity on given depths
-  , iverbHit :: MU.Part             -- ^ the verb for hitting
-  , iweight  :: Int                 -- ^ weight in grams
-  , idamage  :: Dice.Dice           -- ^ basic impact damage
-  , iaspects :: [Aspect]         -- ^ affect the actor continuously
-  , ieffects :: [Effect]            -- ^ cause the effects when triggered
-  , idesc    :: Text                -- ^ description
+  { isymbol  :: Char            -- ^ map symbol
+  , iname    :: Text            -- ^ generic name; is pluralized if needed
+  , ifreq    :: Freqs ItemKind  -- ^ frequency within groups
+  , iflavour :: [Flavour]       -- ^ possible flavours
+  , icount   :: Dice.Dice       -- ^ created in that quantity
+  , irarity  :: Rarity          -- ^ rarity on given depths
+  , iverbHit :: MU.Part         -- ^ the verb for hitting
+  , iweight  :: Int             -- ^ weight in grams
+  , idamage  :: Dice.Dice       -- ^ basic impact damage
+  , iaspects :: [Aspect]        -- ^ affect the actor continuously
+  , ieffects :: [Effect]        -- ^ cause the effects when triggered
+  , idesc    :: Text            -- ^ description
   , ikit     :: [(GroupName ItemKind, CStore)]
-                                    -- ^ accompanying organs and equipment
+                                -- ^ accompanying organs and equipment
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
