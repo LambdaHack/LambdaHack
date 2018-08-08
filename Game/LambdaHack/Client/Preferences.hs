@@ -319,7 +319,7 @@ aspectToBenefit asp =
     IK.SetFeature{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
-    IK.HideAs{} ->  0
+    IK.HideAs{} -> 0
     IK.Tactic{} -> 0
     IK.EqpSlot{} -> 0
 

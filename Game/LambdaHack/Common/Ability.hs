@@ -122,9 +122,15 @@ instance Binary Feature where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
+instance Binary EqpSlot where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
 instance Hashable Ability
 
 instance Hashable Feature
+
+instance Hashable EqpSlot
 
 getAb :: Ability -> Skills -> Int
 {-# INLINE getAb #-}

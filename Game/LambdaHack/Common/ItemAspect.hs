@@ -20,6 +20,7 @@ import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
 import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified System.Random as R
@@ -28,14 +29,21 @@ import           Game.LambdaHack.Common.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
--- | Record of sums of aspect values of an item, container, actor, etc.
+-- | Record of sums of abilities conferred by an item, container, actor, etc.,
+-- as well as of item features and other item stats.
 data AspectRecord = AspectRecord
   { aTimeout :: Int
   , aSkills  :: Ability.Skills
   , aFlags   :: Ability.Flags
+  , aELabel  :: Text
+  , aToThrow :: IK.ThrowMod
+  , aHideAs  :: Maybe (GroupName IK.ItemKind)
+  , aTactic  :: Maybe Tactic
+  , aEqpSlot :: Maybe Ability.EqpSlot
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -65,6 +73,11 @@ emptyAspectRecord = AspectRecord
   { aTimeout = 0
   , aSkills  = Ability.zeroSkills
   , aFlags   = Ability.Flags ES.empty
+  , aELabel  = ""
+  , aToThrow = IK.ThrowMod 100 100
+  , aHideAs  = Nothing
+  , aTactic  = Nothing
+  , aEqpSlot = Nothing
   }
 
 castAspect :: Dice.AbsDepth -> Dice.AbsDepth -> AspectRecord -> IK.Aspect
@@ -82,7 +95,11 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.SetFeature feat ->
       return $! ar {aFlags = Ability.Flags
                              $ ES.insert feat (Ability.flags $ aFlags ar)}
-    _ -> return ar
+    IK.ELabel t -> return $! ar {aELabel = t}
+    IK.ToThrow tt -> return $! ar {aToThrow = tt}
+    IK.HideAs ha -> return $! ar {aHideAs = Just ha}
+    IK.Tactic ta -> return $! ar {aTactic = Just ta}
+    IK.EqpSlot slot -> return $! ar {aEqpSlot = Just slot}
 
 -- If @False@, aspects of this kind are most probably fixed, not random
 -- nor dependent on dungeon level where the item is created.
@@ -109,16 +126,18 @@ addMeanAspect !ar !asp =
          else ar
     IK.SetFeature feat ->
       ar {aFlags = Ability.Flags $ ES.insert feat (Ability.flags $ aFlags ar)}
-    _ -> ar
+    IK.ELabel t -> ar {aELabel = t}
+    IK.ToThrow tt -> ar {aToThrow = tt}
+    IK.HideAs ha -> ar {aHideAs = Just ha}
+    IK.Tactic ta -> ar {aTactic = Just ta}
+    IK.EqpSlot slot -> ar {aEqpSlot = Just slot}
 
 ceilingMeanDice :: Dice.Dice -> Int
 ceilingMeanDice d = ceiling $ Dice.meanDice d
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
-sumAspectRecord l = AspectRecord
-  { aTimeout = 0
-  , aSkills  = Ability.sumScaledAbility $ map (first aSkills) l
-  , aFlags   = Ability.Flags ES.empty
+sumAspectRecord l = emptyAspectRecord
+  { aSkills  = Ability.sumScaledAbility $ map (first aSkills) l
   }
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
@@ -128,6 +147,11 @@ aspectRecordToList AspectRecord{..} =
      | (ab, n) <- Ability.skillsToList aSkills ]
   ++ [ IK.SetFeature feat
      | feat <- ES.elems $ Ability.flags aFlags ]
+  ++ [IK.ELabel aELabel | not $ T.null aELabel]
+  ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100]
+  ++ maybe [] (\ha -> [IK.HideAs ha]) aHideAs
+  ++ maybe [] (\ta -> [IK.Tactic ta]) aTactic
+  ++ maybe [] (\slot -> [IK.EqpSlot slot]) aEqpSlot
 
 rollAspectRecord :: [IK.Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
                  -> Rnd AspectRecord

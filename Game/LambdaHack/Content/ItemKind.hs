@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
+import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
@@ -185,6 +186,8 @@ instance Binary DetectKind
 instance Binary TimerDice
 
 instance Binary ThrowMod
+
+instance Hashable ThrowMod
 
 boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []

@@ -141,6 +141,8 @@ instance Binary Tactic
 
 instance NFData Tactic
 
+instance Hashable Tactic
+
 toGroupName :: Text -> GroupName a
 {-# INLINE toGroupName #-}
 toGroupName = GroupName
