@@ -321,43 +321,45 @@ kindAspectToSuffix aspect =
     AddAbility AbShine t -> wrapInParens $ affixDice t <+> "shine"
     AddAbility AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddAbility AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
-    ELabel{} -> ""  -- too late
     SetFeature Fragile -> wrapInChevrons "fragile"
     SetFeature Lobable -> wrapInChevrons "can be lobbed"
     SetFeature Durable -> wrapInChevrons "durable"
-    ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
-    HideAs{} -> ""
     SetFeature Equipable -> ""
     SetFeature Meleeable -> ""
     SetFeature Precious -> ""
-    Tactic tactics -> "overrides tactics to" <+> tshow tactics
     SetFeature Blast -> ""
-    EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     SetFeature Unique -> ""  -- marked by capital letters in name
     SetFeature Periodic -> ""  -- printed specially
     SetFeature MinorEffects -> ""  -- cryptic override
+    ELabel{} -> ""  -- too late
+    ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
+    HideAs{} -> ""
+    Tactic tactics -> "overrides tactics to" <+> tshow tactics
+    EqpSlot{} -> ""  -- used in @slotToSentence@ instead
+    Odds{} -> ""
 
 aspectToSentence :: Aspect -> Maybe Text
 aspectToSentence feat =
   case feat of
     Timeout{} -> Nothing
     AddAbility{} -> Nothing
-    ELabel{} -> Nothing
     SetFeature Fragile -> Nothing
     SetFeature Lobable -> Nothing
     SetFeature Durable -> Nothing
-    ToThrow{} -> Nothing
-    HideAs{} -> Nothing
     SetFeature Equipable -> Nothing
     SetFeature Meleeable ->
       Just "It is considered for melee strikes by default."
     SetFeature Precious -> Just "It seems precious."
-    Tactic{}  -> Nothing
     SetFeature Blast -> Nothing
-    EqpSlot es -> Just $ slotToSentence es
     SetFeature Unique -> Nothing
     SetFeature Periodic -> Nothing
     SetFeature MinorEffects -> Nothing
+    ELabel{} -> Nothing
+    ToThrow{} -> Nothing
+    HideAs{} -> Nothing
+    Tactic{}  -> Nothing
+    EqpSlot es -> Just $ slotToSentence es
+    Odds{} -> Just "Individual specimens sometimes have yet other properties."
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

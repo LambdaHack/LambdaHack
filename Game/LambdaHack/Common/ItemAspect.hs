@@ -100,6 +100,10 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.HideAs ha -> return $! ar {aHideAs = Just ha}
     IK.Tactic ta -> return $! ar {aTactic = Just ta}
     IK.EqpSlot slot -> return $! ar {aEqpSlot = Just slot}
+    IK.Odds d aspects1 aspects2 -> do
+      pick1 <- oddsDice ldepth totalDepth d
+      foldlM' (castAspect ldepth totalDepth) ar $
+        if pick1 then aspects1 else aspects2
 
 -- If @False@, aspects of this kind are most probably fixed, not random
 -- nor dependent on dungeon level where the item is created.
@@ -131,6 +135,7 @@ addMeanAspect !ar !asp =
     IK.HideAs ha -> ar {aHideAs = Just ha}
     IK.Tactic ta -> ar {aTactic = Just ta}
     IK.EqpSlot slot -> ar {aEqpSlot = Just slot}
+    IK.Odds{} -> ar  -- can't tell, especially since we don't know the level
 
 ceilingMeanDice :: Dice.Dice -> Int
 ceilingMeanDice d = ceiling $ Dice.meanDice d

@@ -322,6 +322,7 @@ aspectToBenefit asp =
     IK.HideAs{} -> 0
     IK.Tactic{} -> 0
     IK.EqpSlot{} -> 0
+    IK.Odds{} -> 0  -- should be already rolled; if not, can't tell
 
 recordToBenefit :: IA.AspectRecord -> [Double]
 recordToBenefit aspects =

@@ -128,6 +128,10 @@ spike2 = spike
   { ifreq    = [("common item", 2), ("any arrow", 1), ("weak arrow", 1)]
   , iweight  = 200
   , idamage  = 4 `d` 1
+  , iaspects = [ SetFeature MinorEffects
+               , Odds (10 * 1 `dL` 10) [] [toVelocity 70]
+                   -- at deep levels sometimes even don't limit velocity
+               , AddAbility AbHurtMelee $ (-10 + 1 `d` 2 + 1 `dL` 3) * 5 ]
   -- , idesc    = ""
   }
 slingStone = ItemKind

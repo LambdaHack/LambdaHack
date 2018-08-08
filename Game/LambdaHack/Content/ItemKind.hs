@@ -80,6 +80,9 @@ data Aspect =
   | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
   | EqpSlot Ability.EqpSlot
                        -- ^ AI and UI flag that leaks item intended use
+  | Odds Dice.Dice [Aspect] [Aspect]
+                       -- ^ if level-scaled dice roll > 50,
+                       --   pick the former aspects, otherwise the latter
   deriving (Show, Eq, Ord, Generic)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
