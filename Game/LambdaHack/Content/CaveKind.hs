@@ -36,8 +36,10 @@ data CaveKind = CaveKind
   , ccellSize       :: Dice.DiceXY      -- ^ size of a map cell holding a place
   , cminPlaceSize   :: Dice.DiceXY      -- ^ minimal size of places; for merging
   , cmaxPlaceSize   :: Dice.DiceXY      -- ^ maximal size of places; for growing
-  , cdarkChance     :: Dice.Dice        -- ^ the chance a place is dark
-  , cnightChance    :: Dice.Dice        -- ^ the chance the cave is dark
+  , cdarkOdds       :: Dice.Dice        -- ^ the odds a place is dark
+                                        --   (level-scaled dice roll > 50)
+  , cnightOdds      :: Dice.Dice        -- ^ the odds the cave is dark
+                                        --   (level-scaled dice roll > 50)
   , cauxConnects    :: Rational         -- ^ a proportion of extra connections
   , cmaxVoid        :: Rational
       -- ^ at most this proportion of rooms may be void

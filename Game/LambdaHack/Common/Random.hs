@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Random
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
-  , castDice, chanceDice, castDiceXY
+  , castDice, oddsDice, castDiceXY
     -- * Specialized monadic folds
   , foldrM, foldlM'
 #ifdef EXPOSE_INTERNAL
@@ -90,8 +90,8 @@ castDice = Dice.castDice randomR
 
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results is greater than 50.
-chanceDice :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.Dice -> Rnd Bool
-chanceDice ldepth totalDepth dice = do
+oddsDice :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.Dice -> Rnd Bool
+oddsDice ldepth totalDepth dice = do
   c <- castDice ldepth totalDepth dice
   return $! c > 50
 

@@ -132,7 +132,7 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
   ((qkind, kr), _) <- frequency freq
   dark <- if cpassable && pfence kr `elem` [FFloor, FGround]
           then return dnight
-          else chanceDice levelDepth totalDepth cdarkChance
+          else oddsDice levelDepth totalDepth cdarkOdds
   let qlegend = if dark then clegendDarkTile else clegendLitTile
       qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
   (overrideOneIn, override) <- ooverride cops (poverride kr)

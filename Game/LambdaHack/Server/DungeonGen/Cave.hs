@@ -78,7 +78,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                  <$> opick cotile cdarkCorTile (const True)
   litCorTile <- fromMaybe (error $ "" `showFailure` clitCorTile)
                 <$> opick cotile clitCorTile (const True)
-  dnight <- chanceDice ldepth totalDepth cnightChance
+  dnight <- oddsDice ldepth totalDepth cnightOdds
   let createPlaces = do
         minPlaceSize <- castDiceXY ldepth totalDepth cminPlaceSize
         maxPlaceSize <- castDiceXY ldepth totalDepth cmaxPlaceSize
