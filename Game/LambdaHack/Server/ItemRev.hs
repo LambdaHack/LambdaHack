@@ -87,7 +87,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
       f _ _ acc _ ik _ | ik `ES.member` uniqueSet = acc
       f !itemGroup !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques.
-        let ld = if IK.Unique `elem` IK.ifeature kind then ldepth else ldSpawned
+        let ld = if IK.Unique `elem` IK.iaspects kind then ldepth else ldSpawned
             rarity = linearInterpolation ld tdepth (IK.irarity kind)
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
       g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f itemGroup q) []
@@ -101,7 +101,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     let itemBase = buildItem cops flavourMap discoRev itemKindId itemKind lid
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
-        itemTimer = [timeZero | IK.Periodic `elem` IK.ifeature itemKind]
+        itemTimer = [timeZero | IK.Periodic `elem` IK.iaspects itemKind]
                       -- delay first discharge of single organs
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.

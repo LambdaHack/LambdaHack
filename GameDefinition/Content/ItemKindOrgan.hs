@@ -38,9 +38,8 @@ fist = ItemKind
   , iverbHit = "punch"
   , iweight  = 2000
   , idamage  = 4 `d` 1
-  , iaspects = []
+  , iaspects = [Durable, Meleeable]
   , ieffects = []
-  , ifeature = [Durable, Meleeable]
   , idesc    = "Simple but effective."
   , ikit     = []
   }
@@ -60,7 +59,7 @@ hookedClaw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = 2 `d` 1
-  , iaspects = [Timeout $ 12 - 1 `dL` 3]
+  , iaspects = [Timeout $ 12 - 1 `dL` 3] ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" 2)]
   , idesc    = "A curved talon."
   }
@@ -111,6 +110,7 @@ antler = fist
   , idamage  = 4 `d` 1
   , iaspects = [ Timeout $ 3 + (1 `d` 3) * 3
                , AddAbility AbArmorMelee 10 ]  -- bonus doubled
+               ++ iaspects fist
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
   , idesc    = ""
   }
@@ -122,6 +122,7 @@ horn = fist
   , idamage  = 5 `d` 1
   , iaspects = [ AddAbility AbHurtMelee 10
                , AddAbility AbArmorMelee 10 ]  -- bonus doubled
+               ++ iaspects fist
   , idesc    = "Sharp and long, for defence or attack."
   }
 rhinoHorn = fist
@@ -131,6 +132,7 @@ rhinoHorn = fist
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
   , iaspects = [Timeout 7, AddAbility AbHurtMelee 20]
+               ++ iaspects fist
   , ieffects = [Recharging Impress]  -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
   }
@@ -148,7 +150,7 @@ thorn = fist
   , icount   = 2 + 1 `d` 3
   , iverbHit = "impale"
   , idamage  = 2 `d` 1
-  , ifeature = [Meleeable]  -- not Durable
+  , iaspects = [Meleeable]  -- not Durable
   , idesc    = "Sharp yet brittle."
   }
 boilingFissure = fist
@@ -157,9 +159,9 @@ boilingFissure = fist
   , icount   = 5 + 1 `d` 5
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
-  , iaspects = [AddAbility AbHurtMelee 20]  -- decreasing as count decreases
+  , iaspects = [ AddAbility AbHurtMelee 20  -- decreasing as count decreases
+               , Meleeable ]  -- not Durable
   , ieffects = [DropItem 1 1 COrgan "condition"]  -- useful; limited
-  , ifeature = [Meleeable]  -- not Durable
   , idesc    = "A deep crack to the underworld."
   }
 arsenicFissure = boilingFissure
@@ -184,9 +186,9 @@ beeSting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = 0
-  , iaspects = [AddAbility AbArmorMelee 200, AddAbility AbArmorRanged 45]
+  , iaspects = [ AddAbility AbArmorMelee 200, AddAbility AbArmorRanged 45
+               , Meleeable ]  -- not Durable
   , ieffects = [Paralyze 6, RefillHP 4]
-  , ifeature = [Meleeable]  -- not Durable
   , idesc    = "Painful, but beneficial."
   }
 sting = fist
@@ -196,6 +198,7 @@ sting = fist
   , iverbHit = "sting"
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddAbility AbHurtMelee 40]
+               ++ iaspects fist
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
   }
@@ -206,6 +209,7 @@ venomTooth = fist
   , iverbHit = "bite"
   , idamage  = 2 `d` 1
   , iaspects = [Timeout $ 7 - 1 `dL` 3]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
   , idesc    = "A chilling numbness spreads from its bite."
   }
@@ -216,6 +220,7 @@ venomFang = fist
   , iverbHit = "bite"
   , idamage  = 2 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganNoTimer "poisoned")]
   , idesc    = "Dripping with deadly venom."
   }
@@ -226,6 +231,7 @@ screechingBeak = fist
   , iverbHit = "peck"
   , idamage  = 2 `d` 1
   , iaspects = [Timeout $ 7 - 1 `dL` 3]
+               ++ iaspects fist
   , ieffects = [Recharging $ Summon "scavenger" $ 1 `dL` 3]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
@@ -236,6 +242,7 @@ largeTail = fist
   , iverbHit = "knock"
   , idamage  = 7 `d` 1
   , iaspects = [Timeout $ 1 + 1 `d` 3, AddAbility AbHurtMelee 20]
+               ++ iaspects fist
   , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps
   , idesc    = "Slow but heavy."
   }
@@ -254,9 +261,9 @@ armoredSkin = ItemKind
   , iverbHit = "bash"
   , iweight  = 2000
   , idamage  = 0
-  , iaspects = [AddAbility AbArmorMelee 30, AddAbility AbArmorRanged 15]
+  , iaspects = [ AddAbility AbArmorMelee 30, AddAbility AbArmorRanged 15
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Homemade armour is just as good."
   , ikit     = []
   }
@@ -269,7 +276,8 @@ eye n = armoredSkin
   , ifreq    = [(toGroupName $ "eye" <+> tshow n, 100)]
   , icount   = 2
   , iverbHit = "glare at"
-  , iaspects = [AddAbility AbSight (intToDice n)]
+  , iaspects = [ AddAbility AbSight (intToDice n)
+               , Durable ]
   , idesc    = "A piercing stare."
   }
 eye2 = eye 2
@@ -284,7 +292,8 @@ vision n = armoredSkin
   { iname    = "vision"
   , ifreq    = [(toGroupName $ "vision" <+> tshow n, 100)]
   , iverbHit = "visualize"
-  , iaspects = [AddAbility AbSight (intToDice n)]
+  , iaspects = [ AddAbility AbSight (intToDice n)
+               , Durable ]
   , idesc    = ""
   }
 vision4 = vision 4
@@ -301,7 +310,8 @@ nostril = armoredSkin
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbHit = "snuff"
-  , iaspects = [AddAbility AbSmell 1]  -- times 2, from icount
+  , iaspects = [ AddAbility AbSmell 1  -- times 2, from icount
+               , Durable ]
   , idesc    = ""
   }
 
@@ -311,9 +321,9 @@ insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
-  , iaspects = [Timeout $ 30 + (1 `d` 2) * 10]
+  , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10
+               , Durable, Periodic ]
   , ieffects = [Recharging (RefillHP (-1))]
-  , ifeature = [Periodic] ++ ifeature armoredSkin
   , idesc    = ""
   }
 sapientBrain = armoredSkin
@@ -322,6 +332,7 @@ sapientBrain = armoredSkin
   , iverbHit = "outbrain"
   , iaspects = [AddAbility ab 1 | ab <- [AbMove .. AbApply]]
                ++ [AddAbility AbAlter 2]  -- can use stairs
+               ++ [Durable]
   , idesc    = ""
   }
 animalBrain = armoredSkin
@@ -332,6 +343,7 @@ animalBrain = armoredSkin
                ++ [AddAbility AbAlter 2]  -- can use stairs
                ++ [ AddAbility ab (-1)
                   | ab <- [AbDisplace, AbMoveItem, AbProject, AbApply] ]
+               ++ [Durable]
   , idesc    = ""
   }
 speedGland :: Int -> ItemKind
@@ -340,9 +352,9 @@ speedGland n = armoredSkin
   , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
   , iverbHit = "spit at"
   , iaspects = [ AddAbility AbSpeed $ intToDice n
-               , Timeout $ intToDice $ 100 `div` n ]
+               , Timeout $ intToDice $ 100 `div` n
+               , Durable, Periodic ]
   , ieffects = [Recharging (RefillHP 1)]
-  , ifeature = [Periodic] ++ ifeature armoredSkin
   , idesc    = ""
   }
 speedGland2 = speedGland 2
@@ -355,11 +367,11 @@ scentGland = armoredSkin
   , ifreq    = [("scent gland", 100)]
   , icount   = 2 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
-  , iaspects = [Timeout $ (1 `d` 3) * 10]
+  , iaspects = [ Timeout $ (1 `d` 3) * 10
+               , Periodic ]  -- not Durable
   , ieffects = [ Recharging (Temporary "look spent")
                , Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
-  , ifeature = [Periodic]  -- not Durable
   , idesc    = ""
   }
 boilingVent = armoredSkin
@@ -367,10 +379,10 @@ boilingVent = armoredSkin
   , ifreq    = [("boiling vent", 100)]
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
-  , iaspects = [Timeout $ (2 + 1 `d` 2) * 5]
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+               , Durable, Periodic ]
   , ieffects = [ Recharging (Explode "boiling water")
                , Recharging (RefillHP 2) ]
-  , ifeature = [Periodic] ++ ifeature armoredSkin
   , idesc    = ""
   }
 arsenicVent = armoredSkin
@@ -378,10 +390,10 @@ arsenicVent = armoredSkin
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
-  , iaspects = [Timeout $ (2 + 1 `d` 2) * 5]
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+               , Durable, Periodic ]
   , ieffects = [ Recharging (Explode "sparse shower")
                , Recharging (RefillHP 2) ]
-  , ifeature = [Periodic] ++ ifeature armoredSkin
   , idesc    = ""
   }
 sulfurVent = armoredSkin
@@ -389,10 +401,10 @@ sulfurVent = armoredSkin
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
-  , iaspects = [Timeout $ (2 + 1 `d` 2) * 5]
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+               , Durable, Periodic ]
   , ieffects = [ Recharging (Explode "dense shower")
                , Recharging (RefillHP 2) ]
-  , ifeature = [Periodic] ++ ifeature armoredSkin
   , idesc    = ""
   }
 
@@ -405,7 +417,8 @@ bonusHP = armoredSkin
   , ifreq    = [("bonus HP", 1)]
   , iverbHit = "intimidate"
   , iweight  = 0
-  , iaspects = [AddAbility AbMaxHP 1]
+  , iaspects = [ AddAbility AbMaxHP 1
+               , Durable ]
   , idesc    = ""
   }
 impressed = armoredSkin
@@ -415,11 +428,11 @@ impressed = armoredSkin
   , ifreq    = [("impressed", 1), ("condition", 1)]
   , iverbHit = "confuse"
   , iweight  = 0
-  , iaspects = [AddAbility AbMaxCalm (-1)]
+  , iaspects = [ AddAbility AbMaxCalm (-1)
                  -- to help player notice on main screen
-                                  -- and to count as bad condition
+                 -- and to count as bad condition
+               , Fragile, Durable ]  -- hack: destroy on drop
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not @Periodic@
-  , ifeature = [Fragile, Durable]  -- hack: destroy on drop
   , idesc    = ""
   }
 
@@ -455,7 +468,7 @@ lip = fist
   , icount   = 1
   , iverbHit = "lap"
   , idamage  = 1 `d` 1
-  , iaspects = [Timeout $ 3 + 1 `d` 2]
+  , iaspects = [Timeout $ 3 + 1 `d` 2] ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "weakened" (2 + 1 `dL` 3))]
   , idesc    = ""
   }
@@ -466,6 +479,7 @@ torsionRight = fist
   , iverbHit = "twist"
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddAbility AbHurtMelee 20]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
   , idesc    = ""
   }
@@ -476,6 +490,7 @@ torsionLeft = fist
   , iverbHit = "twist"
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddAbility AbHurtMelee 20]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "weakened" (3 + 1 `d` 3))]
   , idesc    = ""
   }
@@ -485,7 +500,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1
-  , iaspects = [AddAbility AbSight 12, Timeout 12]
+  , iaspects = [AddAbility AbSight 12, Timeout 12] ++ iaspects fist
   , ieffects = [ Recharging (DropItem 1 maxBound COrgan "condition")
                , Recharging $ RefillCalm (-10)
                ]

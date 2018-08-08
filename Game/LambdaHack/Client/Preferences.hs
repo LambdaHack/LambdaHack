@@ -316,6 +316,21 @@ aspectToBenefit asp =
                                          -- > sight + light; stealth, slots
     IK.AddAbility Ability.AbAggression _ -> 0  -- dunno
     IK.AddAbility _ p -> Dice.meanDice p * 5
+    IK.ELabel{} -> 0
+    IK.Fragile -> 0
+    IK.Lobable -> 0
+    IK.Durable -> 0  -- counted elsewhere
+    IK.ToThrow{} -> 0  -- counted elsewhere
+    IK.HideAs{} ->  0
+    IK.Equipable -> 0
+    IK.Meleeable -> 0
+    IK.Precious -> 0
+    IK.Tactic{} -> 0
+    IK.Blast -> 0
+    IK.EqpSlot{} -> 0
+    IK.Unique -> 0
+    IK.Periodic -> 0
+    IK.MinorEffects -> 0
 
 recordToBenefit :: IA.AspectRecord -> [Double]
 recordToBenefit aspects =
@@ -363,7 +378,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- or nearby detection is better, but infrequent periodic teleportation
       -- or harmful explosion is worse. But the rule is not strict and also
       -- dependent on gameplay context of the moment, hence no numerical value.
-      periodic = IK.Periodic `elem` IK.ifeature itemKind
+      periodic = IK.Periodic `elem` IK.iaspects itemKind
       -- Durability doesn't have any numerical impact to @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again
@@ -377,7 +392,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- and save the option for using non-durable item for the future, e.g.,
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
-      durable = IK.Durable `elem` IK.ifeature itemKind
+      durable = IK.Durable `elem` IK.iaspects itemKind
       -- If recharging effects not periodic, we add the self part,
       -- because they are applied to self. If they are periodic we can't
       -- effectively apply them, because they are never recharged,

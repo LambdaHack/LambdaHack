@@ -2,7 +2,7 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
-  , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..), Feature(..)
+  , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect, onlyMinorEffects
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Text as T
-import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
@@ -43,7 +42,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 
 -- | Item properties that are fixed for a given kind of items.
--- Note that this type is mutually recursive with 'Effect' and `Feature`.
+-- Note that this type is mutually recursive with 'Effect' and `Aspect`.
 data ItemKind = ItemKind
   { isymbol  :: Char                -- ^ map symbol
   , iname    :: Text                -- ^ generic name; is pluralized if needed
@@ -56,19 +55,41 @@ data ItemKind = ItemKind
   , idamage  :: Dice.Dice           -- ^ basic impact damage
   , iaspects :: [Aspect]         -- ^ affect the actor continuously
   , ieffects :: [Effect]            -- ^ cause the effects when triggered
-  , ifeature :: [Feature]           -- ^ properties of the item
   , idesc    :: Text                -- ^ description
   , ikit     :: [(GroupName ItemKind, CStore)]
                                     -- ^ accompanying organs and equipment
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
--- | Aspects of items. Those that are named @Add*@ are additive
--- (starting at 0) for all items wielded by an actor and they affect the actor.
+-- | Aspects of items. Aspect @AddAbility@ is additive (starting at 0)
+-- for all items wielded by an actor and it affects the actor.
+-- The others affect only the item in question, not the actor carrying it,
+-- and so are not additive in any sense.
 data Aspect =
     Timeout Dice.Dice         -- ^ some effects disabled until item recharges;
                               --   expressed in game turns
   | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
+  | ELabel Text        -- ^ extra label of the item; it's not pluralized
+  | Fragile            -- ^ drop and break at target tile, even if no hit
+  | Lobable            -- ^ drop at target tile, even if no hit
+  | Durable            -- ^ don't break even when hitting or applying
+  | ToThrow ThrowMod   -- ^ parameters modifying a throw
+  | HideAs (GroupName ItemKind)
+                       -- ^ until identified, presents as this unique kind
+  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
+                       --   'EqpSlot', e.g., in case of mixed blessings)
+  | Meleeable          -- ^ AI and UI flag: consider meleeing with
+  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
+                       --   also, can't throw or apply if not calm enough
+  | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
+  | Blast              -- ^ the item is an explosion blast particle
+  | EqpSlot Ability.EqpSlot
+                       -- ^ AI and UI flag that leaks item intended use
+  | Unique             -- ^ at most one copy can ever be generated
+  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
+  | MinorEffects       -- ^ override: the effects on this item are considered
+                       --   minor and so not causing identification on use,
+                       --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
@@ -156,32 +177,6 @@ data ThrowMod = ThrowMod
   }
   deriving (Show, Eq, Ord, Generic)
 
--- | Features of item. Affect only the item in question,
--- not the actor carrying it, and so not additive in any sense.
-data Feature =
-    ELabel Text        -- ^ extra label of the item; it's not pluralized
-  | Fragile            -- ^ drop and break at target tile, even if no hit
-  | Lobable            -- ^ drop at target tile, even if no hit
-  | Durable            -- ^ don't break even when hitting or applying
-  | ToThrow ThrowMod   -- ^ parameters modifying a throw
-  | HideAs (GroupName ItemKind)
-                       -- ^ until identified, presents as this unique kind
-  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
-                       --   'EqpSlot', e.g., in case of mixed blessings)
-  | Meleeable          -- ^ AI and UI flag: consider meleeing with
-  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
-                       --   also, can't throw or apply if not calm enough
-  | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
-  | Blast              -- ^ the item is an explosion blast particle
-  | EqpSlot Ability.EqpSlot
-                       -- ^ AI and UI flag that leaks item intended use
-  | Unique             -- ^ at most one copy can ever be generated
-  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
-  | MinorEffects       -- ^ override: the effects on this item are considered
-                       --   minor and so not causing identification on use,
-                       --   and so this item will identify on pick-up
-  deriving (Show, Eq, Ord, Generic)
-
 instance NFData ItemKind
 
 instance NFData Aspect
@@ -193,8 +188,6 @@ instance NFData DetectKind
 instance NFData TimerDice
 
 instance NFData ThrowMod
-
-instance NFData Feature
 
 instance Binary Effect
 
@@ -218,7 +211,7 @@ boostItemKind i =
         label `elem` ["common item", "curious item", "treasure"]
   in if any mainlineLabel (ifreq i)
      then i { ifreq = ("common item", 10000) : filter (not . mainlineLabel) (ifreq i)
-            , ifeature = delete Unique $ ifeature i
+            , iaspects = delete Unique $ iaspects i
             }
      else i
 
@@ -242,7 +235,7 @@ majorEffect eff = case eff of
 
 onlyMinorEffects :: ItemKind -> Bool
 onlyMinorEffects kind =
-  MinorEffects `elem` ifeature kind  -- override
+  MinorEffects `elem` iaspects kind  -- override
   || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
 
 isEffEscape :: Effect -> Bool
@@ -308,7 +301,7 @@ getToThrow :: ItemKind -> ThrowMod
 getToThrow itemKind =
   let f (ToThrow tmod) = [tmod]
       f _ = []
-  in case concatMap f (ifeature itemKind) of
+  in case concatMap f (iaspects itemKind) of
     [] -> ThrowMod 100 100
     x : _ -> x
 
@@ -316,7 +309,7 @@ getHideAs :: ItemKind -> Maybe (GroupName ItemKind)
 getHideAs itemKind =
   let f (HideAs grp) = [grp]
       f _ = []
-  in case concatMap f (ifeature itemKind) of
+  in case concatMap f (iaspects itemKind) of
     [] -> Nothing
     x : _ -> Just x
 
@@ -324,35 +317,35 @@ getEqpSlot :: ItemKind -> Maybe Ability.EqpSlot
 getEqpSlot itemKind =
   let f (EqpSlot eqpSlot) = [eqpSlot]
       f _ = []
-  in case concatMap f (ifeature itemKind) of
+  in case concatMap f (iaspects itemKind) of
     [] -> Nothing
     x : _ -> Just x
 
 isMelee :: ItemKind -> Bool
-isMelee itemKind = Meleeable `elem` ifeature itemKind
+isMelee itemKind = Meleeable `elem` iaspects itemKind
 
 isTmpCondition :: ItemKind -> Bool
-isTmpCondition itemKind = Fragile `elem` ifeature itemKind
-                          && Durable `elem` ifeature itemKind
+isTmpCondition itemKind = Fragile `elem` iaspects itemKind
+                          && Durable `elem` iaspects itemKind
 
 isBlast :: ItemKind -> Bool
-isBlast itemKind = Blast `elem` ifeature itemKind
+isBlast itemKind = Blast `elem` iaspects itemKind
 
 isHumanTrinket :: ItemKind -> Bool
 isHumanTrinket itemKind =
-  Precious `elem` ifeature itemKind  -- risk from treasure hunters
-  && Equipable `notElem` ifeature itemKind  -- can't wear
+  Precious `elem` iaspects itemKind  -- risk from treasure hunters
+  && Equipable `notElem` iaspects itemKind  -- can't wear
 
 goesIntoEqp :: ItemKind -> Bool
-goesIntoEqp itemKind = Equipable `elem` ifeature itemKind
-                       || Meleeable `elem` ifeature itemKind
+goesIntoEqp itemKind = Equipable `elem` iaspects itemKind
+                       || Meleeable `elem` iaspects itemKind
 
 goesIntoInv :: ItemKind -> Bool
-goesIntoInv itemKind = Precious `notElem` ifeature itemKind
+goesIntoInv itemKind = Precious `notElem` iaspects itemKind
                        && not (goesIntoEqp itemKind)
 
 goesIntoSha :: ItemKind -> Bool
-goesIntoSha itemKind = Precious `elem` ifeature itemKind
+goesIntoSha itemKind = Precious `elem` iaspects itemKind
                        && not (goesIntoEqp itemKind)
 
 itemTrajectory :: ItemKind -> [Point] -> ([Vector], (Speed, Int))
@@ -374,10 +367,10 @@ tmpNoLonger name = Temporary $ "be no longer" <+> name
 tmpLess :: Text -> Effect
 tmpLess name = Temporary $ "become less" <+> name
 
-toVelocity :: Int -> Feature
+toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100
 
-toLinger :: Int -> Feature
+toLinger :: Int -> Aspect
 toLinger n = ToThrow $ ThrowMod 100 n
 
 timerNone :: TimerDice
@@ -422,15 +415,15 @@ validateSingle ik@ItemKind{..} =
           timeoutAspect _ = False
           ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])
-  ++ (let f :: Feature -> Bool
+  ++ (let f :: Aspect -> Bool
           f EqpSlot{} = True
           f _ = False
-          ts = filter f ifeature
+          ts = filter f iaspects
       in [ "EqpSlot specified but not Equipable nor Meleeable"
-         | length ts > 0 && Equipable `notElem` ifeature
-                         && Meleeable `notElem` ifeature ])
-  ++ ["Redundant Equipable or Meleeable" | Equipable `elem` ifeature
-                                           && Meleeable `elem` ifeature]
+         | length ts > 0 && Equipable `notElem` iaspects
+                         && Meleeable `notElem` iaspects ])
+  ++ ["Redundant Equipable or Meleeable" | Equipable `elem` iaspects
+                                           && Meleeable `elem` iaspects]
   ++ (let f :: Effect -> Bool
           f OnSmash{} = True
           f _ = False
@@ -443,25 +436,25 @@ validateSingle ik@ItemKind{..} =
           f Temporary{} = True
           f _ = False
       in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
-  ++ (let f :: Feature -> Bool
+  ++ (let f :: Aspect -> Bool
           f ELabel{} = True
           f _ = False
-          ts = filter f ifeature
+          ts = filter f iaspects
       in ["more than one ELabel specification" | length ts > 1])
-  ++ (let f :: Feature -> Bool
+  ++ (let f :: Aspect -> Bool
           f ToThrow{} = True
           f _ = False
-          ts = filter f ifeature
+          ts = filter f iaspects
       in ["more than one ToThrow specification" | length ts > 1])
-  ++ (let f :: Feature -> Bool
+  ++ (let f :: Aspect -> Bool
           f HideAs{} = True
           f _ = False
-          ts = filter f ifeature
+          ts = filter f iaspects
       in ["more than one HideAs specification" | length ts > 1])
-  ++ (let f :: Feature -> Bool
+  ++ (let f :: Aspect -> Bool
           f Tactic{} = True
           f _ = False
-          ts = filter f ifeature
+          ts = filter f iaspects
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
        [ Fragile, Lobable, Durable, Equipable, Meleeable, Precious, Blast
@@ -486,9 +479,9 @@ validateNotNested effs t f =
   in [ "effect" <+> t <+> "should be specified at top level, not nested"
      | length ts > 0 ]
 
-validateDups :: ItemKind -> Feature -> [Text]
+validateDups :: ItemKind -> Aspect -> [Text]
 validateDups ItemKind{..} feat =
-  let ts = filter (== feat) ifeature
+  let ts = filter (== feat) iaspects
   in ["more than one" <+> tshow feat <+> "specification" | length ts > 1]
 
 validateDamage :: Dice.Dice -> [Text]
@@ -502,13 +495,13 @@ validateAll content coitem =
                       | k <- content
                       , (cgroup, _) <- ikit k
                       , not $ omemberGroup coitem cgroup ]
-      f :: Feature -> Bool
+      f :: Aspect -> Bool
       f HideAs{} = True
       f _ = False
       wrongHideAsGroups =
         [ cgroup
         | k <- content
-        , let (cgroup, notSingleton) = case find f (ifeature k) of
+        , let (cgroup, notSingleton) = case find f (iaspects k) of
                 Just (HideAs grp) | not $ oisSingletonGroup coitem grp ->
                   (grp, True)
                 _ -> (undefined, False)

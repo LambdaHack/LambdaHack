@@ -35,10 +35,9 @@ scratchOnWall = ItemKind
   , iverbHit = "scratch"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [ Temporary "start making sense of the scratches"
                , Detect DetectHidden 3 ]
-  , ifeature = [Durable]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
   }
@@ -52,13 +51,12 @@ obscenePictogram = ItemKind
   , iverbHit = "infuriate"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [Timeout 7]
+  , iaspects = [Timeout 7, Durable]
   , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
                    [ toOrganGood "strengthened" (3 + 1 `d` 2)
                    , CreateItem CInv "sandstone rock" timerNone ] ]
-  , ifeature = [Durable]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -72,12 +70,11 @@ subtleFresco = ItemKind
   , iverbHit = "sooth"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [Timeout 7]
+  , iaspects = [Timeout 7, Durable]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
                , RefillCalm 2
                , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
                , Recharging $ toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
-  , ifeature = [Durable]
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
   }
@@ -99,14 +96,13 @@ treasureCacheTrap = ItemKind
   , iverbHit = "taint"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = []  -- not Durable, springs at most once
   , ieffects = [OneOf [ toOrganBad "blind" (40 + 1 `d` 10)
                       , RefillCalm (-99)
                       , Explode "focused concussion"
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1) ]]
-  , ifeature = []  -- not Durable, springs at most once
   , idesc    = "It's a trap!"
   , ikit     = []
   }
@@ -120,9 +116,8 @@ signboardExit = ItemKind
   , iverbHit = "whack"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [Detect DetectExit 100]
-  , ifeature = [Durable]
   , idesc    = "Crude big arrows hastily carved by unknown hands."
   , ikit     = []
   }
@@ -142,9 +137,8 @@ fireSmall = ItemKind
   , iverbHit = "burn"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [Burn 1, Explode "single spark"]
-  , ifeature = [Durable]
   , idesc    = "A few small logs, burning brightly."
   , ikit     = []
   }
@@ -154,7 +148,6 @@ fireBig = fireSmall
   , ifreq    = [("big fire", 1)]
   , ieffects = [ Burn 2, Explode "spark"
                , CreateItem CInv "wooden torch" timerNone ]
-  , ifeature = [Durable]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
   }
@@ -168,11 +161,10 @@ frost = ItemKind
   , iverbHit = "burn"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [ Burn 1  -- sensory ambiguity between hot and cold
                , RefillCalm 20  -- cold reason
                , PushActor (ThrowMod 100 50) ]  -- slippery ice, 1 step, slow
-  , ifeature = [Durable]
   , idesc    = "Intricate patterns of shining ice."
   , ikit     = []
   }
@@ -186,14 +178,13 @@ rubble = ItemKind
   , iverbHit = "bury"
   , iweight  = 100000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [OneOf [ Explode "focused glass hail"
                       , Summon "animal" $ 1 `dL` 2
                       , toOrganNoTimer "poisoned"
                       , CreateItem CGround "common item" timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
-  , ifeature = [Durable]
   , idesc    = "Broken chunks of rock and glass."
   , ikit     = []
   }
@@ -207,10 +198,9 @@ doorwayTrapTemplate = ItemKind
   , iverbHit = "cripple"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
-  , ieffects = []
-  , ifeature = [HideAs "doorway trap unknown"]
+  , iaspects = [HideAs "doorway trap unknown"]
       -- not Durable, springs at most once
+  , ieffects = []
   , idesc    = "Just turn the handle..."
   , ikit     = []
   }
@@ -240,9 +230,8 @@ stairsUp = ItemKind
                         -- not when it's applied otherwise, e.g., from tile
   , iweight  = 100000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = [Durable]
   , ieffects = [Ascend True]
-  , ifeature = [Durable]
   , idesc    = "Stairs that rise towards escape."
   , ikit     = []
   }
@@ -271,10 +260,9 @@ staircaseTrapUp = ItemKind
   , iverbHit = "buffet"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = []  -- not Durable, springs at most once
   , ieffects = [ Temporary "be caught in an updraft"
                , Teleport $ 3 + 1 `dL` 10 ]
-  , ifeature = []  -- not Durable, springs at most once
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
   }
@@ -298,13 +286,12 @@ pulpit = ItemKind
   , iverbHit = "ask"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []
+  , iaspects = []  -- not Durable, springs at most once
   , ieffects = [ OneOf [ CreateItem CGround "any scroll" timerNone
                        , Detect DetectAll 20
                        , toOrganBad "defenseless" $ (1 `dL` 6) * 10
                        , toOrganGood "drunk" (20 + 1 `d` 5) ]
                , Explode "PhD defense question" ]
-  , ifeature = []  -- not Durable, springs at most once
   , idesc    = "A dark wood stand, where strange priests once preached."
   , ikit     = []
   }

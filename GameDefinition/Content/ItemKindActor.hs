@@ -39,9 +39,9 @@ warrior = ItemKind
                , AddAbility AbMaxCalm 70, AddAbility AbSpeed 20
                , AddAbility AbNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2 ]
+               , AddAbility AbAlter 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = ""
   -- , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan), ("eye 6", COrgan)
@@ -156,9 +156,9 @@ eye = ItemKind
                , AddAbility AbSpeed 20, AddAbility AbNocto 2
                , AddAbility AbAggression 1
                , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2 ]
+               , AddAbility AbAlter 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
   , ikit     = [ ("lash", COrgan), ("pupil", COrgan)
                , ("sapient brain", COrgan) ]
@@ -176,9 +176,9 @@ fastEye = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 5, AddAbility AbMaxCalm 70, AddAbility AbSpeed 30, AddAbility AbNocto 2
                , AddAbility AbAggression 1
-               , AddAbility AbAlter 2 ]
+               , AddAbility AbAlter 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
                , ("lip", COrgan), ("vision 6", COrgan)
@@ -197,9 +197,9 @@ nose = ItemKind  -- depends solely on smell
   , iaspects = [ AddAbility AbMaxHP 30, AddAbility AbMaxCalm 30
                , AddAbility AbSpeed 18, AddAbility AbNocto 2
                , AddAbility AbAggression 1
-               , AddAbility AbProject (-1), AddAbility AbAlter 2 ]
+               , AddAbility AbProject (-1), AddAbility AbAlter 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
   , ikit     = [ ("nose tip", COrgan), ("lip", COrgan), ("nostril", COrgan)
                , ("sapient brain", COrgan) ]
@@ -218,9 +218,9 @@ elbow = ItemKind
   , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 80
                , AddAbility AbSpeed 21, AddAbility AbNocto 2
                , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2, AddAbility AbMelee (-1) ]
+               , AddAbility AbAlter 2, AddAbility AbMelee (-1)
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("vision 16", COrgan)
@@ -242,9 +242,9 @@ torsor = ItemKind
                , AddAbility AbSpeed 10, AddAbility AbNocto 2
                , AddAbility AbAggression 3, AddAbility AbProject 2
                , AddAbility AbApply 1
-               , AddAbility AbAlter 1]  -- can't exit the gated level, the boss
+               , AddAbility AbAlter 1  -- can't exit the gated level, the boss
+               , Unique, Durable ]
   , ieffects = []
-  , ifeature = [Unique, Durable]
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
                , ("pupil", COrgan)
@@ -274,9 +274,9 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , iweight  = 13000
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 24, AddAbility AbNocto 2 ]
+               , AddAbility AbSpeed 24, AddAbility AbNocto 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "An opportunistic predator, feeding on carrion and the weak."
   , ikit     = [ ("small jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
@@ -294,13 +294,13 @@ griffonVulture = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 80
                , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
       -- Animals don't have leader, usually, so even if only one of level,
       -- it pays the communication overhead, so the speed is higher to get
       -- them on par with human leaders moving solo. Random double moves,
       -- on either side, are just too frustrating.
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "It soars high above, searching for vulnerable prey."
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
                , ("small claw", COrgan), ("eye 7", COrgan)
@@ -318,9 +318,9 @@ skunk = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 30
                , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Its only defence is the terrible stench."
   , ikit     = [ ("scent gland", COrgan)
                , ("small claw", COrgan), ("snout", COrgan)
@@ -339,9 +339,9 @@ armadillo = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 30
                , AddAbility AbSpeed 20, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "When threatened, it rolls into a ball."
   , ikit     = [ ("hooked claw", COrgan), ("snout", COrgan)
                , ("armored skin", COrgan), ("armored skin", COrgan)
@@ -360,9 +360,9 @@ gilaMonster = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 50
                , AddAbility AbSpeed 18, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
                , ("eye 3", COrgan), ("nostril", COrgan)
@@ -380,9 +380,9 @@ rattlesnake = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 25, AddAbility AbMaxCalm 60
                , AddAbility AbSpeed 16, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
   , ikit     = [ ("venom fang", COrgan)
                , ("eye 4", COrgan), ("nostril", COrgan)
@@ -399,9 +399,9 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 41, AddAbility AbMaxCalm 60
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2 ]
+               , AddAbility AbSpeed 18, AddAbility AbNocto 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Larger and more aggressive than any other lizard."
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
                , ("hooked claw", COrgan), ("speed gland 4", COrgan)
@@ -420,9 +420,9 @@ hyena = ItemKind
   , iweight  = 60000
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 32, AddAbility AbNocto 2 ]
+               , AddAbility AbSpeed 32, AddAbility AbNocto 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Skulking in the shadows, waiting for easy prey."
   , ikit     = [ ("jaw", COrgan), ("eye 6", COrgan), ("nostril", COrgan)
                , ("animal brain", COrgan) ]
@@ -438,9 +438,9 @@ alligator = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 41, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2 ]
+               , AddAbility AbSpeed 18, AddAbility AbNocto 2
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "An armored predator from the dawn of time."
   , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan)
                , ("small claw", COrgan)
@@ -460,9 +460,9 @@ rhinoceros = ItemKind
   , iaspects = [ AddAbility AbMaxHP 90, AddAbility AbMaxCalm 60
                , AddAbility AbSpeed 27, AddAbility AbNocto 2
                , AddAbility AbAggression 2
-               , AddAbility AbAlter (-1) ]  -- can't switch levels, a miniboss
+               , AddAbility AbAlter (-1)  -- can't switch levels, a miniboss
+               , Unique, Durable ]
   , ieffects = []
-  , ifeature = [Unique, Durable]
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
                , ("rhino horn", COrgan), ("snout", COrgan)
@@ -483,9 +483,9 @@ beeSwarm = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 60
                , AddAbility AbSpeed 30, AddAbility AbNocto 2  -- armor in sting
-               , AddAbility AbAlter (-2) ]  -- can't use stairs nor doors
+               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Every bee would die for the queen."
   , ikit     = [ ("bee sting", COrgan), ("vision 6", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
@@ -503,9 +503,9 @@ hornetSwarm = ItemKind
   , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 70
                , AddAbility AbSpeed 30, AddAbility AbNocto 2
                , AddAbility AbAlter (-2)  -- can't use stairs nor doors
-               , AddAbility AbArmorMelee 80, AddAbility AbArmorRanged 40 ]
+               , AddAbility AbArmorMelee 80, AddAbility AbArmorRanged 40
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "A vicious cloud of stings and hate."
   , ikit     = [ ("sting", COrgan), ("vision 8", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
@@ -522,9 +522,9 @@ thornbush = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
                , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "Each branch bears long, curved thorns."
   , ikit     = [("thorn", COrgan), ("armored skin", COrgan)]
   }
@@ -540,9 +540,9 @@ geyserBoiling = ItemKind
   , idamage  = 0
   , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 999
                , AddAbility AbSpeed 11, AddAbility AbNocto 2
-               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "A jet of acidic water, hot enough to melt flesh."
   , ikit     = [("boiling vent", COrgan), ("boiling fissure", COrgan)]
   }
@@ -559,9 +559,9 @@ geyserArsenic = ItemKind
   , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
                , AddAbility AbSpeed 22
                , AddAbility AbNocto 2, AddAbility AbShine 3
-               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "The sharp scent betrays the poison within the spray."
   , ikit     = [("arsenic vent", COrgan), ("arsenic fissure", COrgan)]
   }
@@ -578,9 +578,9 @@ geyserSulfur = ItemKind
   , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
                , AddAbility AbSpeed 22
                , AddAbility AbNocto 2, AddAbility AbShine 3
-               , AddAbility AbWait 1, AddAbility AbMelee 1 ]
+               , AddAbility AbWait 1, AddAbility AbMelee 1
+               , Durable ]
   , ieffects = []
-  , ifeature = [Durable]
   , idesc    = "The pool boils and bubbles, stinking of rotten eggs. Despite the smell, these waters purify and strengthen."
   , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
   }

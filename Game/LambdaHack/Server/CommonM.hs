@@ -296,7 +296,7 @@ projectFail source tpxy eps center iid cstore blast = do
           case legal of
             Left reqFail -> return $ Just reqFail
             Right _ -> do
-              let lobable = IK.Lobable `elem` IK.ifeature itemKind
+              let lobable = IK.Lobable `elem` IK.iaspects itemKind
                   rest = if lobable
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited

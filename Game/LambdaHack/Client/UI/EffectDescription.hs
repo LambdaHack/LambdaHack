@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , slotToSentence, slotToName, slotToDesc, slotToDecorator, statSlots
-  , kindAspectToSuffix, featureToSuff, featureToSentence, affixDice
+  , kindAspectToSuffix, aspectToSentence, affixDice
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
@@ -321,10 +321,6 @@ kindAspectToSuffix aspect =
     AddAbility AbShine t -> wrapInParens $ affixDice t <+> "shine"
     AddAbility AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddAbility AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
-
-featureToSuff :: Feature -> Text
-featureToSuff feat =
-  case feat of
     ELabel{} -> ""  -- too late
     Fragile -> wrapInChevrons "fragile"
     Lobable -> wrapInChevrons "can be lobbed"
@@ -341,9 +337,11 @@ featureToSuff feat =
     Periodic -> ""  -- printed specially
     MinorEffects -> ""  -- cryptic override
 
-featureToSentence :: Feature -> Maybe Text
-featureToSentence feat =
+aspectToSentence :: Aspect -> Maybe Text
+aspectToSentence feat =
   case feat of
+    Timeout{} -> Nothing
+    AddAbility{} -> Nothing
     ELabel{} -> Nothing
     Fragile -> Nothing
     Lobable -> Nothing

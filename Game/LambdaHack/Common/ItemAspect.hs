@@ -76,6 +76,7 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! if n /= 0
                 then ar {aSkills = Ability.addAb ab n (aSkills ar)}
                 else ar
+    _ -> return ar
 
 -- If @False@, aspects of this kind are most probably fixed, not random
 -- nor dependent on dungeon level where the item is created.
@@ -100,6 +101,7 @@ addMeanAspect !ar !asp =
       in if n /= 0
          then ar {aSkills = Ability.addAb ab n (aSkills ar)}
          else ar
+    _ -> ar
 
 ceilingMeanDice :: Dice.Dice -> Int
 ceilingMeanDice d = ceiling $ Dice.meanDice d

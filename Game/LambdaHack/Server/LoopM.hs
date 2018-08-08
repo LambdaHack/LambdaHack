@@ -314,7 +314,7 @@ applyPeriodicLevel = do
           Nothing -> return ()  -- item dropped
           Just kit -> do
             itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
-            when (IK.Periodic `elem` IK.ifeature itemKind) $
+            when (IK.Periodic `elem` IK.iaspects itemKind) $
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.
               effectAndDestroy False aid aid iid (CActor aid cstore) True

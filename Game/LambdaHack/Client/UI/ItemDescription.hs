@@ -74,7 +74,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
            ++ take maxWordsToShow effTs
            ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
            ++ [timer | maxWordsToShow > 1]
-      unique = IK.Unique `elem` IK.ifeature itemKind
+      unique = IK.Unique `elem` IK.iaspects itemKind
       name | temporary = "temporarily" <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
@@ -86,10 +86,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
-  let features | detailLevel >= DetailAll =
-                   map featureToSuff $ sort $ IK.ifeature itemKind
-               | otherwise = []
-      aets = case itemDisco of
+  let aets = case itemDisco of
         ItemDiscoMean{} -> splitTry (IK.iaspects itemKind)
                              -- faster than @aspectRecordToList@ of mean
         ItemDiscoFull iAspect -> splitTry (IA.aspectRecordToList iAspect)
@@ -99,7 +96,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       hurtMeleeAspect :: IK.Aspect -> Bool
       hurtMeleeAspect (IK.AddAbility Ability.AbHurtMelee _) = True
       hurtMeleeAspect _ = False
-      elabel :: IK.Feature -> Bool
+      elabel :: IK.Aspect -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
       active = IK.goesIntoEqp itemKind
@@ -108,16 +105,16 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IK.Periodic `elem` IK.ifeature itemKind
+            periodic = IK.Periodic `elem` IK.iaspects itemKind
             mtimeout = find timeoutAspect aspects
-            elab = case find elabel $ IK.ifeature itemKind of
+            elab = case find elabel $ IK.iaspects itemKind of
               Just (IK.ELabel t) -> [t]
               _ -> []
             -- Effects are not being sorted here, because they should fire
             -- in the order specified in content.
             restAs = sort aspects
             restEs | detLev >= DetailHigh
-                     || IK.MinorEffects `notElem` IK.ifeature itemKind =
+                     || IK.MinorEffects `notElem` IK.iaspects itemKind =
                      IK.ieffects itemKind
                      | otherwise = []
             aes = if active
@@ -127,8 +124,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                            $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map ppE $ IK.stripOnSmash restEs
-            durable = IK.Durable `elem` IK.ifeature itemKind
-            fragile = IK.Fragile `elem` IK.ifeature itemKind
+            durable = IK.Durable `elem` IK.iaspects itemKind
+            fragile = IK.Fragile `elem` IK.iaspects itemKind
             periodicOrTimeout =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
@@ -184,7 +181,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       -- Note that avg melee damage would be too complex to display here,
       -- because in case of @MOwned@ the owner is different than leader,
       -- so the value would be different than when viewing the item.
-  in (aets ++ features, rangedDamage)
+  in (aets, rangedDamage)
 
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
@@ -284,7 +281,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect
-                        ++ mapMaybe featureToSentence (IK.ifeature itemKind)
+                        ++ mapMaybe aspectToSentence (IK.iaspects itemKind)
             aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee
                                $ aspectRecordFull itemFull
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
