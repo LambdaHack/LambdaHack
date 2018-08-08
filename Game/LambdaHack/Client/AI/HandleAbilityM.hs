@@ -716,7 +716,7 @@ applyItem aid applyGroup = do
       getTweak (IK.Composite l) = any getTweak l
       getTweak _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
-        let durable = IK.Durable `elem` IK.iaspects itemKind
+        let durable = IK.SetFeature Durable `elem` IK.iaspects itemKind
         in (not benInEqp  -- can't wear, so OK to break
             || durable  -- can wear, but can't break, even better
             || not (IK.isMelee itemKind)  -- anything else expendable
@@ -762,7 +762,7 @@ applyItem aid applyGroup = do
               && toGroupName "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myGoodGrps))
             wastesDrop = null myBadGrps && not (null dropsGrps)
-            durable = IK.Durable `elem` IK.iaspects itemKind
+            durable = IK.SetFeature Durable `elem` IK.iaspects itemKind
             situationalBenApply | dropsBadOrgans = benApply + 20
                                 | wastesDrop = benApply - 10
                                 | otherwise = benApply

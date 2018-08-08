@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
+import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
@@ -34,8 +35,13 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 data AspectRecord = AspectRecord
   { aTimeout :: Int
   , aSkills  :: Ability.Skills
+  , aFlags   :: Ability.Flags
   }
   deriving (Show, Eq, Ord, Generic)
+
+instance Hashable AspectRecord
+
+instance Binary AspectRecord
 
 -- | Partial information about an item, deduced from its item kind.
 -- These are assigned to each 'ItemKind'. The @kmConst@ flag says whether
@@ -46,10 +52,6 @@ data KindMean = KindMean
   , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspect records
   }
   deriving (Show, Eq, Ord, Generic)
-
-instance Hashable AspectRecord
-
-instance Binary AspectRecord
 
 -- | Map from an item kind identifier to the mean aspect value for the kind.
 --
@@ -62,6 +64,7 @@ emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
   { aTimeout = 0
   , aSkills  = Ability.zeroSkills
+  , aFlags   = Ability.Flags ES.empty
   }
 
 castAspect :: Dice.AbsDepth -> Dice.AbsDepth -> AspectRecord -> IK.Aspect
@@ -76,6 +79,9 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! if n /= 0
                 then ar {aSkills = Ability.addAb ab n (aSkills ar)}
                 else ar
+    IK.SetFeature feat ->
+      return $! ar {aFlags = Ability.Flags
+                             $ ES.insert feat (Ability.flags $ aFlags ar)}
     _ -> return ar
 
 -- If @False@, aspects of this kind are most probably fixed, not random
@@ -101,6 +107,8 @@ addMeanAspect !ar !asp =
       in if n /= 0
          then ar {aSkills = Ability.addAb ab n (aSkills ar)}
          else ar
+    IK.SetFeature feat ->
+      ar {aFlags = Ability.Flags $ ES.insert feat (Ability.flags $ aFlags ar)}
     _ -> ar
 
 ceilingMeanDice :: Dice.Dice -> Int
@@ -110,6 +118,7 @@ sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = AspectRecord
   { aTimeout = 0
   , aSkills  = Ability.sumScaledAbility $ map (first aSkills) l
+  , aFlags   = Ability.Flags ES.empty
   }
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
@@ -117,6 +126,8 @@ aspectRecordToList AspectRecord{..} =
   [IK.Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
   ++ [ IK.AddAbility ab $ Dice.intToDice n
      | (ab, n) <- Ability.skillsToList aSkills ]
+  ++ [ IK.SetFeature feat
+     | feat <- ES.elems $ Ability.flags aFlags ]
 
 rollAspectRecord :: [IK.Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
                  -> Rnd AspectRecord

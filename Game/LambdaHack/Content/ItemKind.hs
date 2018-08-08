@@ -66,30 +66,19 @@ data ItemKind = ItemKind
 -- The others affect only the item in question, not the actor carrying it,
 -- and so are not additive in any sense.
 data Aspect =
-    Timeout Dice.Dice         -- ^ some effects disabled until item recharges;
-                              --   expressed in game turns
-  | AddAbility Ability.Ability Dice.Dice  -- ^ bonus to an ability
+    Timeout Dice.Dice  -- ^ some effects disabled until item recharges;
+                       --   expressed in game turns
+  | AddAbility Ability.Ability Dice.Dice
+                       -- ^ bonus to an ability
+  | SetFeature Ability.Feature
+                       -- ^ item feature
   | ELabel Text        -- ^ extra label of the item; it's not pluralized
-  | Fragile            -- ^ drop and break at target tile, even if no hit
-  | Lobable            -- ^ drop at target tile, even if no hit
-  | Durable            -- ^ don't break even when hitting or applying
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
   | HideAs (GroupName ItemKind)
                        -- ^ until identified, presents as this unique kind
-  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
-                       --   'EqpSlot', e.g., in case of mixed blessings)
-  | Meleeable          -- ^ AI and UI flag: consider meleeing with
-  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
-                       --   also, can't throw or apply if not calm enough
   | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
-  | Blast              -- ^ the item is an explosion blast particle
   | EqpSlot Ability.EqpSlot
                        -- ^ AI and UI flag that leaks item intended use
-  | Unique             -- ^ at most one copy can ever be generated
-  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
-  | MinorEffects       -- ^ override: the effects on this item are considered
-                       --   minor and so not causing identification on use,
-                       --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
@@ -211,7 +200,7 @@ boostItemKind i =
         label `elem` ["common item", "curious item", "treasure"]
   in if any mainlineLabel (ifreq i)
      then i { ifreq = ("common item", 10000) : filter (not . mainlineLabel) (ifreq i)
-            , iaspects = delete Unique $ iaspects i
+            , iaspects = delete (SetFeature Ability.Unique) $ iaspects i
             }
      else i
 
@@ -235,7 +224,7 @@ majorEffect eff = case eff of
 
 onlyMinorEffects :: ItemKind -> Bool
 onlyMinorEffects kind =
-  MinorEffects `elem` iaspects kind  -- override
+  SetFeature Ability.MinorEffects `elem` iaspects kind  -- override
   || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
 
 isEffEscape :: Effect -> Bool
@@ -322,30 +311,31 @@ getEqpSlot itemKind =
     x : _ -> Just x
 
 isMelee :: ItemKind -> Bool
-isMelee itemKind = Meleeable `elem` iaspects itemKind
+isMelee itemKind = SetFeature Ability.Meleeable `elem` iaspects itemKind
 
 isTmpCondition :: ItemKind -> Bool
-isTmpCondition itemKind = Fragile `elem` iaspects itemKind
-                          && Durable `elem` iaspects itemKind
+isTmpCondition itemKind = SetFeature Ability.Fragile `elem` iaspects itemKind
+                          && SetFeature Ability.Durable `elem` iaspects itemKind
 
 isBlast :: ItemKind -> Bool
-isBlast itemKind = Blast `elem` iaspects itemKind
+isBlast itemKind = SetFeature Ability.Blast `elem` iaspects itemKind
 
 isHumanTrinket :: ItemKind -> Bool
 isHumanTrinket itemKind =
-  Precious `elem` iaspects itemKind  -- risk from treasure hunters
-  && Equipable `notElem` iaspects itemKind  -- can't wear
+  SetFeature Ability.Precious `elem` iaspects itemKind
+    -- risk from treasure hunters
+  && SetFeature Ability.Equipable `notElem` iaspects itemKind  -- can't wear
 
 goesIntoEqp :: ItemKind -> Bool
-goesIntoEqp itemKind = Equipable `elem` iaspects itemKind
-                       || Meleeable `elem` iaspects itemKind
+goesIntoEqp itemKind = SetFeature Ability.Equipable `elem` iaspects itemKind
+                       || SetFeature Ability.Meleeable `elem` iaspects itemKind
 
 goesIntoInv :: ItemKind -> Bool
-goesIntoInv itemKind = Precious `notElem` iaspects itemKind
+goesIntoInv itemKind = SetFeature Ability.Precious `notElem` iaspects itemKind
                        && not (goesIntoEqp itemKind)
 
 goesIntoSha :: ItemKind -> Bool
-goesIntoSha itemKind = Precious `elem` iaspects itemKind
+goesIntoSha itemKind = SetFeature Ability.Precious `elem` iaspects itemKind
                        && not (goesIntoEqp itemKind)
 
 itemTrajectory :: ItemKind -> [Point] -> ([Vector], (Speed, Int))
@@ -420,10 +410,11 @@ validateSingle ik@ItemKind{..} =
           f _ = False
           ts = filter f iaspects
       in [ "EqpSlot specified but not Equipable nor Meleeable"
-         | length ts > 0 && Equipable `notElem` iaspects
-                         && Meleeable `notElem` iaspects ])
-  ++ ["Redundant Equipable or Meleeable" | Equipable `elem` iaspects
-                                           && Meleeable `elem` iaspects]
+         | length ts > 0 && SetFeature Ability.Equipable `notElem` iaspects
+                         && SetFeature Ability.Meleeable `notElem` iaspects ])
+  ++ ["Redundant Equipable or Meleeable"
+     | SetFeature Ability.Equipable `elem` iaspects
+       && SetFeature Ability.Meleeable `elem` iaspects]
   ++ (let f :: Effect -> Bool
           f OnSmash{} = True
           f _ = False
@@ -457,8 +448,10 @@ validateSingle ik@ItemKind{..} =
           ts = filter f iaspects
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
-       [ Fragile, Lobable, Durable, Equipable, Meleeable, Precious, Blast
-       , Unique, Periodic]
+       (map SetFeature
+          [ Ability.Fragile, Ability.Lobable, Ability.Durable
+          , Ability.Equipable, Ability.Meleeable, Ability.Precious
+          , Ability.Blast, Ability.Unique, Ability.Periodic ])
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.

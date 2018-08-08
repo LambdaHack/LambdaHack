@@ -19,6 +19,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Ord
 
 import           Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ContentData
@@ -103,7 +104,7 @@ rollItem lvlSpawned lid itemFreq = do
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m3 of
     Just (_, (ItemFull{itemKindId, itemKind}, _), _) ->
-      when (IK.Unique `elem` IK.iaspects itemKind) $
+      when (IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()

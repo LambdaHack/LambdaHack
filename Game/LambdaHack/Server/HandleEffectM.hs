@@ -233,8 +233,8 @@ effectAndDestroy meleePerformed source target iid container periodic effs
 imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull -> ItemQuant
                 -> (Bool, ItemQuant)
 imperishableKit permanent periodic it2 ItemFull{itemKind} (itemK, _) =
-  let fragile = IK.Fragile `elem` IK.iaspects itemKind
-      durable = IK.Durable `elem` IK.iaspects itemKind
+  let fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
+      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
       imperishable = durable && not fragile || periodic && permanent
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
@@ -635,7 +635,7 @@ effectSummon grp nDm iid source target periodic = do
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-      durable = IK.Durable `elem` IK.iaspects itemKind
+      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
@@ -1079,8 +1079,8 @@ dropCStoreItem :: MonadServerAtomic m
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
   let c = CActor aid store
-      fragile = IK.Fragile `elem` IK.iaspects itemKind
-      durable = IK.Durable `elem` IK.iaspects itemKind
+      fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
+      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
@@ -1120,7 +1120,7 @@ effectPolyItem execSfx source target = do
     (iid, ( ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
       let maxCount = Dice.maxDice $ IK.icount itemKind
-      if | IK.Unique `elem` IK.iaspects itemKind -> do
+      if | IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId
          | maybe True (<= 0) $ lookup "common item" $ IK.ifreq itemKind -> do

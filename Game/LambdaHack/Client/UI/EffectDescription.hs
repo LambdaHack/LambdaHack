@@ -322,20 +322,20 @@ kindAspectToSuffix aspect =
     AddAbility AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddAbility AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
     ELabel{} -> ""  -- too late
-    Fragile -> wrapInChevrons "fragile"
-    Lobable -> wrapInChevrons "can be lobbed"
-    Durable -> wrapInChevrons "durable"
+    SetFeature Fragile -> wrapInChevrons "fragile"
+    SetFeature Lobable -> wrapInChevrons "can be lobbed"
+    SetFeature Durable -> wrapInChevrons "durable"
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     HideAs{} -> ""
-    Equipable -> ""
-    Meleeable -> ""
-    Precious -> ""
+    SetFeature Equipable -> ""
+    SetFeature Meleeable -> ""
+    SetFeature Precious -> ""
     Tactic tactics -> "overrides tactics to" <+> tshow tactics
-    Blast -> ""
+    SetFeature Blast -> ""
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
-    Unique -> ""  -- marked by capital letters in name
-    Periodic -> ""  -- printed specially
-    MinorEffects -> ""  -- cryptic override
+    SetFeature Unique -> ""  -- marked by capital letters in name
+    SetFeature Periodic -> ""  -- printed specially
+    SetFeature MinorEffects -> ""  -- cryptic override
 
 aspectToSentence :: Aspect -> Maybe Text
 aspectToSentence feat =
@@ -343,20 +343,21 @@ aspectToSentence feat =
     Timeout{} -> Nothing
     AddAbility{} -> Nothing
     ELabel{} -> Nothing
-    Fragile -> Nothing
-    Lobable -> Nothing
-    Durable -> Nothing
+    SetFeature Fragile -> Nothing
+    SetFeature Lobable -> Nothing
+    SetFeature Durable -> Nothing
     ToThrow{} -> Nothing
     HideAs{} -> Nothing
-    Equipable -> Nothing
-    Meleeable -> Just "It is considered for melee strikes by default."
-    Precious -> Just "It seems precious."
+    SetFeature Equipable -> Nothing
+    SetFeature Meleeable ->
+      Just "It is considered for melee strikes by default."
+    SetFeature Precious -> Just "It seems precious."
     Tactic{}  -> Nothing
-    Blast -> Nothing
+    SetFeature Blast -> Nothing
     EqpSlot es -> Just $ slotToSentence es
-    Unique -> Nothing
-    Periodic -> Nothing
-    MinorEffects -> Nothing
+    SetFeature Unique -> Nothing
+    SetFeature Periodic -> Nothing
+    SetFeature MinorEffects -> Nothing
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of

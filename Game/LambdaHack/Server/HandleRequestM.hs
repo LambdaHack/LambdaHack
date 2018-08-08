@@ -249,8 +249,9 @@ reqMove source dir = do
         titemKind = getIidKindServer (btrunk tb) s
         -- Such projectiles are prone to bursting or are themselves
         -- particles of an explosion shockwave.
-        bursting itemKind = IK.Fragile `elem` IK.iaspects itemKind
-                            && IK.Lobable `elem` IK.iaspects itemKind
+        bursting itemKind =
+          IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
+          && IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
         sbursting = bursting sitemKind
         tbursting = bursting titemKind
         -- Such projectiles, even if not bursting themselves, can cause
@@ -701,7 +702,8 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime ItemFull{itemKind, itemDisco} =
   case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0 && IK.Periodic `elem` IK.iaspects itemKind -> do
+    t | t /= 0
+        && IK.SetFeature Ability.Periodic `elem` IK.iaspects itemKind -> do
       rndT <- randomR (0, t)
       let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
       return $ Just $ timeShift localTime rndTurns

@@ -275,6 +275,9 @@ instance Enum k => Adjustable (EM.EnumMap k) where
 instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
   hashWithSalt s x = hashWithSalt s (EM.toAscList x)
 
+instance (Enum k, Hashable k) => Hashable (ES.EnumSet k) where
+  hashWithSalt s x = hashWithSalt s (ES.toAscList x)
+
 -- Control.DeepSeq orphan instances
 
 instance NFData MU.Part

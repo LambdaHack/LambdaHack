@@ -154,10 +154,10 @@ showReqFailure reqFailure = case reqFailure of
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious forced calmE ItemFull{itemKind, itemDisco} =
-  let isPrecious = IK.Precious `elem` IK.iaspects itemKind
+  let isPrecious = IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
   in if not forced && not calmE && isPrecious
      then Left NotCalmPrecious
-     else Right $ IK.Durable `elem` IK.iaspects itemKind
+     else Right $ IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
                   || case itemDisco of
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
@@ -165,10 +165,10 @@ permittedPrecious forced calmE ItemFull{itemKind, itemDisco} =
 -- Simplified, faster version, for inner AI loop.
 permittedPreciousAI :: Bool -> ItemFull -> Bool
 permittedPreciousAI calmE ItemFull{itemKind, itemDisco} =
-  let isPrecious = IK.Precious `elem` IK.iaspects itemKind
+  let isPrecious = IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
   in if not calmE && isPrecious
      then False
-     else IK.Durable `elem` IK.iaspects itemKind
+     else IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
           || case itemDisco of
                ItemDiscoFull{} -> True
                _ -> not isPrecious
@@ -177,7 +177,7 @@ permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
  if | not forced && skill < 1 -> Left ProjectUnskilled
     | not forced
-      && IK.Lobable `elem` IK.iaspects itemKind
+      && IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
       && skill < 3 -> Left ProjectLobable
     | otherwise ->
         let badSlot = case IK.getEqpSlot itemKind of
@@ -192,7 +192,7 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
 permittedProjectAI skill calmE itemFull@ItemFull{itemKind} =
  if | skill < 1 -> False
-    | IK.Lobable `elem` IK.iaspects itemKind
+    | IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
       && skill < 3 -> False
     | otherwise -> permittedPreciousAI calmE itemFull
 

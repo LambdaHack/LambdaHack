@@ -21,6 +21,7 @@ import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ReqUI (..))
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -314,7 +315,7 @@ applyPeriodicLevel = do
           Nothing -> return ()  -- item dropped
           Just kit -> do
             itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
-            when (IK.Periodic `elem` IK.iaspects itemKind) $
+            when (IK.SetFeature Ability.Periodic `elem` IK.iaspects itemKind) $
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.
               effectAndDestroy False aid aid iid (CActor aid cstore) True

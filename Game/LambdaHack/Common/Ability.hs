@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Ability(..), Skills, EqpSlot(..)
+  ( Ability(..), Skills, Feature(..), Flags(..), EqpSlot(..)
   , getAb, addAb, skillsToList
   , zeroSkills, unitSkills, addSkills, sumScaledAbility
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
@@ -18,12 +18,13 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
 
--- | Actor and faction abilities corresponding to client-server requests.
+-- | Actor and faction abilities.
 data Ability =
   -- Basic abilities affecting permitted actions.
     AbMove
@@ -59,6 +60,27 @@ data Ability =
 newtype Skills = Skills {skills :: EM.EnumMap Ability Int}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
+-- | Item features.
+data Feature =
+    Fragile            -- ^ drop and break at target tile, even if no hit
+  | Lobable            -- ^ drop at target tile, even if no hit
+  | Durable            -- ^ don't break even when hitting or applying
+  | Equipable          -- ^ AI and UI flag: consider equipping (independent of
+                       --   'EqpSlot', e.g., in case of mixed blessings)
+  | Meleeable          -- ^ AI and UI flag: consider meleeing with
+  | Precious           -- ^ AI and UI flag: don't risk identifying by use;
+                       --   also, can't throw or apply if not calm enough
+  | Blast              -- ^ the item is an explosion blast particle
+  | Unique             -- ^ at most one copy can ever be generated
+  | Periodic           -- ^ in eqp, triggered as often as @Timeout@ permits
+  | MinorEffects       -- ^ override: the effects on this item are considered
+                       --   minor and so not causing identification on use,
+                       --   and so this item will identify on pick-up
+  deriving (Show, Eq, Ord, Generic, Enum)
+
+newtype Flags = Flags {flags :: ES.EnumSet Feature}
+  deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
+
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
     EqpSlotMiscBonus
@@ -88,13 +110,21 @@ data EqpSlot =
 
 instance NFData Ability
 
+instance NFData Feature
+
 instance NFData EqpSlot
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
+instance Binary Feature where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
 instance Hashable Ability
+
+instance Hashable Feature
 
 getAb :: Ability -> Skills -> Int
 {-# INLINE getAb #-}

@@ -234,7 +234,8 @@ benGroundItems aid = do
 desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
 desirableItem canEsc benPickup itemKind =
   if canEsc
-  then benPickup > 0 || IK.Precious `elem` IK.iaspects itemKind
+  then benPickup > 0
+       || IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
   else -- A hack to prevent monsters from picking up treasure meant for heroes.
        let preciousNotUseful = IK.isHumanTrinket itemKind
        in benPickup > 0 && not preciousNotUseful

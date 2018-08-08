@@ -74,7 +74,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
            ++ take maxWordsToShow effTs
            ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
            ++ [timer | maxWordsToShow > 1]
-      unique = IK.Unique `elem` IK.iaspects itemKind
+      unique = IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind
       name | temporary = "temporarily" <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
@@ -105,7 +105,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IK.Periodic `elem` IK.iaspects itemKind
+            periodic = IK.SetFeature Ability.Periodic
+                       `elem` IK.iaspects itemKind
             mtimeout = find timeoutAspect aspects
             elab = case find elabel $ IK.iaspects itemKind of
               Just (IK.ELabel t) -> [t]
@@ -114,7 +115,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             -- in the order specified in content.
             restAs = sort aspects
             restEs | detLev >= DetailHigh
-                     || IK.MinorEffects `notElem` IK.iaspects itemKind =
+                     || IK.SetFeature Ability.MinorEffects
+                        `notElem` IK.iaspects itemKind =
                      IK.ieffects itemKind
                      | otherwise = []
             aes = if active
@@ -124,8 +126,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                            $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map ppE $ IK.stripOnSmash restEs
-            durable = IK.Durable `elem` IK.iaspects itemKind
-            fragile = IK.Fragile `elem` IK.iaspects itemKind
+            durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+            fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
             periodicOrTimeout =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
