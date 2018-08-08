@@ -460,11 +460,12 @@ discoverIfMinorEffects :: MonadServerAtomic m
                        => Container -> ItemId -> ContentId ItemKind -> m ()
 discoverIfMinorEffects c iid itemKindId = do
   COps{coitem} <- getsState scops
-  let itemKind = okind coitem itemKindId
-  if IK.onlyMinorEffects itemKind
+  discoAspect <- getsState sdiscoAspect
+  let ar = discoAspect EM.! iid
+      itemKind = okind coitem itemKindId
+  if IA.onlyMinorEffects ar itemKind
   then do
-    discoAspect <- getsState sdiscoAspect
-    execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
+    execUpdAtomic $ UpdDiscover c iid itemKindId ar
   else return ()  -- discover by use when item's effects get activated later on
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))

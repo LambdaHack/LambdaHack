@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
-  , boostItemKindList, forApplyEffect, onlyMinorEffects
+  , boostItemKindList, forApplyEffect
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
   , isEffEscape, isEffAscend, isEffEscapeOrAscend
@@ -15,8 +15,7 @@ module Game.LambdaHack.Content.ItemKind
   , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , boostItemKind, majorEffect
-  , validateSingle, validateAll, validateDups, validateDamage
+  , boostItemKind, validateSingle, validateAll, validateDups, validateDamage
   , hardwiredItemGroups
 #endif
   ) where
@@ -220,18 +219,6 @@ forApplyEffect eff = case eff of
   Composite effs -> any forApplyEffect effs
   Temporary{} -> False
   _ -> True
-
-majorEffect :: Effect -> Bool
-majorEffect eff = case eff of
-  OnSmash{} -> False
-  Recharging eff2 -> majorEffect eff2
-  Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
-  _ -> True
-
-onlyMinorEffects :: ItemKind -> Bool
-onlyMinorEffects kind =
-  SetFeature Ability.MinorEffects `elem` iaspects kind  -- override
-  || not (any majorEffect $ ieffects kind)  -- exhibits no major effects
 
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True

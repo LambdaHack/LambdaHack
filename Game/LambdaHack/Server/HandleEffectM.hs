@@ -263,14 +263,15 @@ itemEffectDisco :: MonadServerAtomic m
                 -> m UseResult
 itemEffectDisco source target iid itemKind c recharged periodic effs = do
   urs <- mapM (effectSem source target iid c recharged periodic) effs
-  let ur = case urs of
+  discoAspect <- getsState sdiscoAspect
+  let ar = discoAspect EM.! iid
+      ur = case urs of
         [] -> UseDud
         _ -> maximum urs
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
-  when (ur >= UseId && not (IK.onlyMinorEffects itemKind)) $ do
+  when (ur >= UseId && not (IA.onlyMinorEffects ar itemKind)) $ do
     kindId <- getsState $ getIidKindIdServer iid
-    discoAspect <- getsState sdiscoAspect
-    execUpdAtomic $ UpdDiscover c iid kindId $ discoAspect EM.! iid
+    execUpdAtomic $ UpdDiscover c iid kindId ar
   return ur
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -1146,18 +1147,20 @@ effectIdentify :: MonadServerAtomic m
                => m () -> ItemId -> ActorId -> ActorId -> m UseResult
 effectIdentify execSfx iidId source target = do
   COps{coItemSpeedup} <- getsState scops
+  discoAspect <- getsState sdiscoAspect
   sb <- getsState $ getActorBody source
   s <- getsServer $ (EM.! bfid sb) . sclientStates
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemBase, itemKindId, itemKind}) : rest -> do
-          let kindIsKnown = case jkind itemBase of
+          let ar = discoAspect EM.! iid
+              kindIsKnown = case jkind itemBase of
                 IdentityObvious _ -> True
                 IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
           if iid `EM.member` sdiscoAspect s  -- already fully identified
              || IK.isHumanTrinket itemKind  -- hack; keep them non-identified
-             || store == CGround && IK.onlyMinorEffects itemKind
+             || store == CGround && IA.onlyMinorEffects ar itemKind
                -- will be identified when picked up, so don't bother
              || IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
                 && kindIsKnown

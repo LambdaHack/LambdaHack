@@ -4,11 +4,11 @@ module Game.LambdaHack.Common.ItemAspect
   ( AspectRecord(..), KindMean(..), ItemSpeedup
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
-  , getAbility, emptyItemSpeedup, getKindMean, speedupItem
-  , prEqpSlot
+  , getAbility, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
+  , prEqpSlot, onlyMinorEffects
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ceilingMeanDice, meanAspect
+  , ceilingMeanDice, meanAspect, majorEffect
 #endif
   ) where
 
@@ -167,6 +167,10 @@ getAbility :: Ability.Ability -> AspectRecord -> Int
 {-# INLINE getAbility #-}
 getAbility ab ar = Ability.getAb ab $ aSkills ar
 
+checkFlag :: Ability.Feature -> AspectRecord -> Bool
+{-# INLINE checkFlag #-}
+checkFlag flag ar = Ability.checkFl flag (aFlags ar)
+
 emptyItemSpeedup :: ItemSpeedup
 emptyItemSpeedup = ItemSpeedup V.empty
 
@@ -216,3 +220,15 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
     EqpSlotAddAggression -> Ability.getAb Ability.AbAggression aSkills
     EqpSlotAbWait -> Ability.getAb Ability.AbWait aSkills
     EqpSlotAbMoveItem -> Ability.getAb Ability.AbMoveItem aSkills
+
+onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
+onlyMinorEffects ar kind =
+  checkFlag Ability.MinorEffects ar  -- override
+  || not (any majorEffect $ IK.ieffects kind)  -- exhibits no major effects
+
+majorEffect :: IK.Effect -> Bool
+majorEffect eff = case eff of
+  IK.OnSmash{} -> False
+  IK.Recharging eff2 -> majorEffect eff2
+  IK.Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
+  _ -> True

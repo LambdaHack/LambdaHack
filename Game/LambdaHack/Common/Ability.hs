@@ -2,7 +2,7 @@
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
   ( Ability(..), Skills, Feature(..), Flags(..), EqpSlot(..)
-  , getAb, addAb, skillsToList
+  , getAb, addAb, checkFl, skillsToList
   , zeroSkills, unitSkills, addSkills, sumScaledAbility
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
@@ -138,6 +138,10 @@ getAb ab (Skills sk) = EM.findWithDefault 0 ab sk
 
 addAb :: Ability -> Int -> Skills -> Skills
 addAb ab n sk = addSkills (Skills $ EM.singleton ab n) sk
+
+checkFl :: Feature -> Flags -> Bool
+{-# INLINE checkFl #-}
+checkFl flag (Flags flags) = flag `ES.member` flags
 
 skillsToList :: Skills -> [(Ability, Int)]
 skillsToList (Skills sk) = EM.assocs sk
