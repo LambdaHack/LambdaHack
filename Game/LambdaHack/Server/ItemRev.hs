@@ -55,12 +55,12 @@ type ItemRev = HM.HashMap ItemKnown ItemId
 type UniqueSet = ES.EnumSet (ContentId ItemKind)
 
 -- | Build an item with the given stats.
-buildItem :: COps -> FlavourMap -> DiscoveryKindRev
-          -> ContentId ItemKind -> ItemKind -> LevelId
+buildItem :: COps -> IA.AspectRecord -> FlavourMap
+          -> DiscoveryKindRev -> ContentId ItemKind -> LevelId
           -> Item
-buildItem COps{coitem} (FlavourMap flavourMap) (DiscoveryKindRev discoRev)
-          ikChosen kind jlid =
-  let jkind = case IK.getHideAs kind of
+buildItem COps{coitem} itemAspect (FlavourMap flavourMap)
+          (DiscoveryKindRev discoRev) ikChosen jlid =
+  let jkind = case IA.aHideAs itemAspect of
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
           in IdentityCovered
@@ -101,7 +101,9 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     ((itemKindId, itemKind), itemGroup) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice levelDepth totalDepth (IK.icount itemKind)
-    let itemBase = buildItem cops flavourMap discoRev itemKindId itemKind lid
+    itemAspect <-
+      IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
+    let itemBase = buildItem cops itemAspect flavourMap discoRev itemKindId lid
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
         itemTimer =
@@ -110,8 +112,6 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
                       -- delay first discharge of single organs
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
-    itemAspect <-
-      IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
     let itemDisco = ItemDiscoFull {..}
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, itemAspect, jfid itemBase)

@@ -517,9 +517,11 @@ unEquipItems aid = do
 groupByEqpSlot :: [(ItemId, ItemFullKit)]
                -> EM.EnumMap EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
-  let f (iid, itemFullKit) = case IK.getEqpSlot $ itemKind $ fst itemFullKit of
-        Nothing -> Nothing
-        Just es -> Just (es, [(iid, itemFullKit)])
+  let f (iid, itemFullKit) =
+        let ar = aspectRecordFull $ fst itemFullKit
+        in case IA.aEqpSlot ar of
+          Nothing -> Nothing
+          Just es -> Just (es, [(iid, itemFullKit)])
       withES = mapMaybe f is
   in EM.fromListWith (++) withES
 

@@ -72,7 +72,8 @@ reinitGame = do
   -- Thanks to the following, for any item with not hidden identity,
   -- the client has its kind from the start.
   let discoKindFiltered =
-        let f kindId = isNothing $ IK.getHideAs $ okind coitem kindId
+        let f kindId = isNothing $ IK.getMandatoryHideAsFromKind
+                                 $ okind coitem kindId
         in EM.filter f discoS
       defL | sknowMap = s
            | otherwise = localFromGlobal s

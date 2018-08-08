@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
   , filterRecharging, stripRecharging, stripOnSmash
-  , strengthOnSmash, getDropOrgans, getHideAs, getEqpSlot
+  , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind
   , isEffEscape, isEffAscend, isEffEscapeOrAscend
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha, damageUsefulness
@@ -275,17 +275,10 @@ getDropOrgans =
       f _ = []
   in concatMap f . ieffects
 
-getHideAs :: ItemKind -> Maybe (GroupName ItemKind)
-getHideAs itemKind =
+-- Anything under @Odds@ is ignored, because it's not mandatory.
+getMandatoryHideAsFromKind :: ItemKind -> Maybe (GroupName ItemKind)
+getMandatoryHideAsFromKind itemKind =
   let f (HideAs grp) = [grp]
-      f _ = []
-  in case concatMap f (iaspects itemKind) of
-    [] -> Nothing
-    x : _ -> Just x
-
-getEqpSlot :: ItemKind -> Maybe Ability.EqpSlot
-getEqpSlot itemKind =
-  let f (EqpSlot eqpSlot) = [eqpSlot]
       f _ = []
   in case concatMap f (iaspects itemKind) of
     [] -> Nothing
