@@ -473,8 +473,9 @@ psuitReq = do
           Left err -> Left err
           Right False -> Right (pos, False)
           Right True ->
-            Right (pos, IK.totalRange (itemKind itemFull)
-                        >= chessDist (bpos b) pos)
+            let ar = aspectRecordFull itemFull
+            in Right (pos, IA.totalRange ar (itemKind itemFull)
+                           >= chessDist (bpos b) pos)
 
 triggerSymbols :: [TriggerItem] -> [Char]
 triggerSymbols [] = []

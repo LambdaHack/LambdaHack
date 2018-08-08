@@ -168,12 +168,12 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      IK.ThrowMod{IK.throwVelocity} = IK.getToThrow itemKind
+      ar = aspectRecordFull itemFull
+      IK.ThrowMod{IK.throwVelocity} = IA.aToThrow ar
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee
-                         $ aspectRecordFull itemFull
+      aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee ar
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
       pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -266,9 +266,9 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase, itemKind, itemSuspect} kit =
   let (_, unique, name, stats) =
         partItemHigh side factionD localTime itemFull kit
+      ar = aspectRecordFull itemFull
       nstats = makePhrase [name, stats]
-      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} =
-        IK.getToThrow itemKind
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow ar
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
       tspeed | IK.isTmpCondition itemKind = ""
@@ -284,8 +284,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect
                         ++ mapMaybe aspectToSentence (IK.iaspects itemKind)
-            aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee
-                               $ aspectRecordFull itemFull
+            aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee ar
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner

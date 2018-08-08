@@ -376,8 +376,9 @@ addProjectile :: MonadServerAtomic m
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime = do
   itemFull <- getsState $ itemToFull iid
-  let (trajectory, (speed, _)) =
-        IK.itemTrajectory (itemKind itemFull) (bpos : rest)
+  let ar = aspectRecordFull itemFull
+      (trajectory, (speed, _)) =
+        IA.itemTrajectory ar (itemKind itemFull) (bpos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM

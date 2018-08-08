@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
   , getAbility, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
-  , prEqpSlot, onlyMinorEffects
+  , prEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice, meanAspect, majorEffect
@@ -30,7 +30,10 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Record of sums of abilities conferred by an item, container, actor, etc.,
@@ -232,3 +235,12 @@ majorEffect eff = case eff of
   IK.Recharging eff2 -> majorEffect eff2
   IK.Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
   _ -> True
+
+itemTrajectory :: AspectRecord -> IK.ItemKind -> [Point]
+               -> ([Vector], (Speed, Int))
+itemTrajectory ar itemKind path =
+  let IK.ThrowMod{..} = aToThrow ar
+  in computeTrajectory (IK.iweight itemKind) throwVelocity throwLinger path
+
+totalRange :: AspectRecord -> IK.ItemKind -> Int
+totalRange ar itemKind = snd $ snd $ itemTrajectory ar itemKind []

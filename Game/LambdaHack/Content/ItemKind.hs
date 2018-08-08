@@ -5,11 +5,10 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
   , filterRecharging, stripRecharging, stripOnSmash
-  , strengthOnSmash, getDropOrgans, getToThrow, getHideAs, getEqpSlot
+  , strengthOnSmash, getDropOrgans, getHideAs, getEqpSlot
   , isEffEscape, isEffAscend, isEffEscapeOrAscend
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
-  , goesIntoEqp, goesIntoInv, goesIntoSha
-  , itemTrajectory, totalRange, damageUsefulness
+  , goesIntoEqp, goesIntoInv, goesIntoSha, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
@@ -37,9 +36,6 @@ import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Vector
 
 -- | Item properties that are fixed for a given kind of items.
 -- Note that this type is mutually recursive with 'Effect' and `Aspect`.
@@ -279,14 +275,6 @@ getDropOrgans =
       f _ = []
   in concatMap f . ieffects
 
-getToThrow :: ItemKind -> ThrowMod
-getToThrow itemKind =
-  let f (ToThrow tmod) = [tmod]
-      f _ = []
-  in case concatMap f (iaspects itemKind) of
-    [] -> ThrowMod 100 100
-    x : _ -> x
-
 getHideAs :: ItemKind -> Maybe (GroupName ItemKind)
 getHideAs itemKind =
   let f (HideAs grp) = [grp]
@@ -330,14 +318,6 @@ goesIntoInv itemKind = SetFeature Ability.Precious `notElem` iaspects itemKind
 goesIntoSha :: ItemKind -> Bool
 goesIntoSha itemKind = SetFeature Ability.Precious `elem` iaspects itemKind
                        && not (goesIntoEqp itemKind)
-
-itemTrajectory :: ItemKind -> [Point] -> ([Vector], (Speed, Int))
-itemTrajectory itemKind path =
-  let ThrowMod{..} = getToThrow itemKind
-  in computeTrajectory (iweight itemKind) throwVelocity throwLinger path
-
-totalRange :: ItemKind -> Int
-totalRange itemKind = snd $ snd $ itemTrajectory itemKind []
 
 damageUsefulness :: ItemKind -> Double
 damageUsefulness itemKind =

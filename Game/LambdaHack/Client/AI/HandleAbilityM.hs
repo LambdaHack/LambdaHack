@@ -669,7 +669,8 @@ projectItem aid = do
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull kit
-                    trange = IK.totalRange $ itemKind itemFull
+                    ar = aspectRecordFull itemFull
+                    trange = IA.totalRange ar $ itemKind itemFull
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
