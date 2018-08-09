@@ -76,5 +76,5 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
       strongest = strongestMelee mdiscoBenefit localTime permAssocs
   return $! if | forced -> map (1,) kitAss
-               | Ability.getSk Ability.AbMelee actorSk <= 0 -> []
+               | Ability.getSk Ability.SkMelee actorSk <= 0 -> []
                | otherwise -> strongest

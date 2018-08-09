@@ -95,7 +95,7 @@ actionStrategy aid retry = do
   condSolo <- condSoloM aid  -- solo fighters aggresive
   canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
-  condCanProject <- condCanProjectM (getSk AbProject actorSk) aid
+  condCanProject <- condCanProjectM (getSk SkProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
@@ -123,14 +123,14 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = IA.getSkill AbShine ar > 0
+      actorShines = IA.getSkill SkShine ar > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
       abInMaxSkill ab = getSk ab actorMaxSk > 0
-      runSkills = [AbMove, AbDisplace, AbAlter]
+      runSkills = [SkMove, SkDisplace, SkAlter]
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
                   -> m (Frequency RequestTimed)
@@ -144,10 +144,10 @@ actionStrategy aid retry = do
       -- are summed with .| at the end.
       prefix, suffix :: [([Skill], m (Strategy RequestTimed), Bool)]
       prefix =
-        [ ( [AbApply]
+        [ ( [SkApply]
           , applyItem aid ApplyFirstAid
           , not condAnyFoeAdj && condHpTooLow)
-        , ( [AbAlter]
+        , ( [SkAlter]
           , trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
@@ -156,15 +156,15 @@ actionStrategy aid retry = do
                 && condMeleeBad && condThreat 1
                 || (lidExplored || condEnoughGear)  -- explore
                    && not condDesirableFloorItem) )
-        , ( [AbDisplace]
+        , ( [SkDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condAnyFoeAdj && condBlocksFriends)  -- later checks foe eligible
-        , ( [AbMoveItem]
+        , ( [SkMoveItem]
           , pickup aid True
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
             && condFloorWeapon && not condHpTooLow
-            && abInMaxSkill AbMelee )
-        , ( [AbAlter]
+            && abInMaxSkill SkMelee )
+        , ( [SkAlter]
           , trigger aid ViaEscape
           , condAdjTriggerable && not condAimEnemyPresent
             && not condDesirableFloorItem )  -- collect the last loot
@@ -196,21 +196,21 @@ actionStrategy aid retry = do
                     not condInMelee
                     && heavilyDistressed
                     && (not condCanProject || canFleeFromLight) )
-        , ( [AbMelee]
+        , ( [SkMelee]
           , meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
-            || not (abInMaxSkill AbDisplace)  -- displace friends, if possible
+            || not (abInMaxSkill SkDisplace)  -- displace friends, if possible
                && condAimEnemyPresent )  -- excited
                     -- So animals block each other until hero comes and then
                     -- the stronger makes a show for him and kills the weaker.
-        , ( [AbAlter]
+        , ( [SkAlter]
           , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
             && condAdjTriggerable && not condAimEnemyPresent )
-        , ( [AbDisplace]  -- prevents some looping movement
+        , ( [SkDisplace]  -- prevents some looping movement
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
-        , ( [AbMelee]
+        , ( [SkMelee]
           , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
@@ -224,23 +224,23 @@ actionStrategy aid retry = do
       -- good, and if not, the @chase@ in @suffix@ may fix that.
       distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
-        [ ( [AbMoveItem]
+        [ ( [SkMoveItem]
           , stratToFreq (if condInMelee then 2 else 20000)
             $ yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
-        , ( [AbMoveItem]
+        , ( [SkMoveItem]
           , stratToFreq 1
             $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed) )
-        , ( [AbProject]
+        , ( [SkProject]
           , stratToFreq (if condTgtNonmoving then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
-        , ( [AbApply]
+        , ( [SkApply]
           , stratToFreq 1
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
@@ -269,10 +269,10 @@ actionStrategy aid retry = do
         ]
       -- Order matters again.
       suffix =
-        [ ( [AbMoveItem]
+        [ ( [SkMoveItem]
           , pickup aid False  -- e.g., to give to other party members
           , not condInMelee )
-        , ( [AbMoveItem]
+        , ( [SkMoveItem]
           , unEquipItems aid  -- late, because these items not bad
           , not condInMelee )
         , ( runSkills
@@ -283,7 +283,7 @@ actionStrategy aid retry = do
             else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =
-        [ ( [AbWait]
+        [ ( [SkWait]
           , waitBlockNow
             -- Wait until friends sidestep; ensures strategy is never empty.
           , True )
@@ -582,14 +582,14 @@ meleeBlocker aid = do
           -- attack the first one.
           if | actorDying body2
                || bproj body2  -- displacing saves a move, so don't melee
-                  && getSk AbDisplace actorSk > 0 ->
+                  && getSk SkDisplace actorSk > 0 ->
                return reject
              | isFoe (bfid b) fact (bfid body2)
                  -- at war with us, so hit, not displace
                || isFriend (bfid b) fact (bfid body2) -- don't start a war
-                  && getSk AbDisplace actorSk <= 0
+                  && getSk SkDisplace actorSk <= 0
                        -- can't displace
-                  && getSk AbMove actorSk > 0  -- blocked move
+                  && getSk SkMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
                   && gearSpeed ar2 <= gearSpeed ar -> do
                mel <- maybeToList <$> pickWeaponClient aid aid2
@@ -656,7 +656,7 @@ projectItem aid = do
       case mnewEps of
         Just newEps -> do
           actorSk <- currentSkillsClient aid
-          let skill = getSk AbProject actorSk
+          let skill = getSk SkProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstacles along the path.
           benList <- condProjectListM skill aid
@@ -704,7 +704,7 @@ applyItem aid applyGroup = do
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
-      skill = getSk AbApply actorSk
+      skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough ar
@@ -923,7 +923,7 @@ moveTowards aid target goal relaxed = do
   b <- getsState $ getActorBody aid
   actorSk <- currentSkillsClient aid
   let source = bpos b
-      alterSkill = getSk AbAlter actorSk
+      alterSkill = getSk SkAlter actorSk
       !_A = assert (source == bpos b
                     `blame` (source, bpos b, aid, b, goal)) ()
       !_B = assert (adjacent source target
@@ -933,7 +933,7 @@ moveTowards aid target goal relaxed = do
   noFriends <- getsState $ \s p -> all (isFoe (bfid b) fact . bfid . snd)
                                        (posToAssocs p (blid b) s)
   let lalter = salter EM.! blid b
-      -- Only actors with AbAlter can search for hidden doors, etc.
+      -- Only actors with SkAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
   if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
@@ -977,7 +977,7 @@ moveOrRunAid source dir = do
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
     [(target, b2)] | walkable
-                     && getSk AbDisplace actorSk > 0
+                     && getSk SkDisplace actorSk > 0
                      && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
@@ -987,11 +987,11 @@ moveOrRunAid source dir = do
       if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
       then return Nothing
       else return $ Just $ ReqDisplace target
-    [] | walkable && getSk AbMove actorSk > 0 ->
+    [] | walkable && getSk SkMove actorSk > 0 ->
       -- Movement requires full access. The potential invisible actor is hit.
       return $ Just $ ReqMove dir
     [] | not walkable
-         && getSk AbAlter actorSk
+         && getSk SkAlter actorSk
               >= Tile.alterMinWalk coTileSpeedup t  -- AlterUnwalked
          -- Only possible if items allowed inside unwalkable tiles:
          && EM.notMember tpos (lfloor lvl) ->  -- AlterBlockItem

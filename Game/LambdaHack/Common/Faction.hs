@@ -148,7 +148,7 @@ isHorrorFact fact = nameOfHorrorFact `elem` fgroups (gplayer fact)
 noRunWithMulti :: Faction -> Bool
 noRunWithMulti fact =
   let skillsOther = fskillsOther $ gplayer fact
-  in Ability.getSk Ability.AbMove skillsOther >= 0
+  in Ability.getSk Ability.SkMove skillsOther >= 0
      || case fleaderMode (gplayer fact) of
           LeaderNull -> True
           LeaderAI AutoLeader{} -> True

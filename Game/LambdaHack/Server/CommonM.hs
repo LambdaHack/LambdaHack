@@ -288,7 +288,7 @@ projectFail source tpxy eps center iid cstore blast = do
           itemFull <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
-          let skill = Ability.getSk Ability.AbProject actorSk
+          let skill = Ability.getSk Ability.SkProject actorSk
               forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE itemFull
@@ -405,10 +405,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let arItem = itemAspect itemDisco
-      hp = xM (max 2 $ IA.getSkill Ability.AbMaxHP arItem) `div` 2
+      hp = xM (max 2 $ IA.getSkill Ability.SkMaxHP arItem) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
-      calm = xM (max 0 $ IA.getSkill Ability.AbMaxCalm arItem)
+      calm = xM (max 0 $ IA.getSkill Ability.SkMaxCalm arItem)
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions

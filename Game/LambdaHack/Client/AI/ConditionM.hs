@@ -78,7 +78,7 @@ condTgtNonmovingM aid = do
   case btarget of
     Just (TEnemy enemy _) -> do
       actorMaxSk <- maxActorSkillsClient enemy
-      return $ Ability.getSk Ability.AbMove actorMaxSk <= 0
+      return $ Ability.getSk Ability.SkMove actorMaxSk <= 0
     _ -> return False
 
 -- | Require that any non-dying foe is adjacent, except projectiles
@@ -110,7 +110,7 @@ meleeThreatDistList aid s =
       strongActor (aid2, b2) =
         let ar = actorAspect EM.! aid2
             actorMaxSkE = IA.aSkills ar
-            nonmoving = Ability.getSk Ability.AbMove actorMaxSkE <= 0
+            nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
         in not (hpTooLow b2 ar || nonmoving)
            && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar
@@ -201,7 +201,7 @@ hinders condShineWouldBetray condAimEnemyPresent
           -- guess that enemies have projectiles and used them now or recently
         ar itemFull =
   let arItem = aspectRecordFull itemFull
-      itemShine = 0 < IA.getSkill Ability.AbShine arItem
+      itemShine = 0 < IA.getSkill Ability.SkShine arItem
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
       itemShineBad = condShineWouldBetray && itemShine
@@ -213,7 +213,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- than receive hits.
      || gearSpeed ar > speedWalk
         && not (IA.isMelee arItem)  -- in case it's the only weapon
-        && 0 > IA.getSkill Ability.AbHurtMelee arItem
+        && 0 > IA.getSkill Ability.SkHurtMelee arItem
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -255,7 +255,7 @@ condSupport param aid = do
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
 strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
-  let n = min 2 param - IA.getSkill Ability.AbAggression ar
+  let n = min 2 param - IA.getSkill Ability.SkAggression ar
       actorAspect = sactorAspect s
       ar = actorAspect EM.! aid
       b = getActorBody aid s

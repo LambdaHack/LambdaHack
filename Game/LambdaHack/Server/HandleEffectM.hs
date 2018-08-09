@@ -100,7 +100,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   ar <- getsState $ getActorAspect target
   -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
   let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
-      hpMax = IA.getSkill Ability.AbMaxHP ar
+      hpMax = IA.getSkill Ability.SkMaxHP ar
       deltaHP0 | serious = -- if overfull, at least cut back to max
                            min speedDeltaHP (xM hpMax - bhp tbOld)
                | otherwise = speedDeltaHP
@@ -132,7 +132,7 @@ cutCalm target = do
   ar <- getsState $ getActorAspect target
   let upperBound = if hpTooLow tb ar
                    then 2  -- to trigger domination on next attack, etc.
-                   else xM $ IA.getSkill Ability.AbMaxCalm ar
+                   else xM $ IA.getSkill Ability.SkMaxCalm ar
       deltaCalm = min minusM1 (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
   -- which is emitted when decreasing Calm by @minusM@.
@@ -463,7 +463,7 @@ effectRefillCalm execSfx power0 source target = do
   ar <- getsState $ getActorAspect target
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       rawDeltaCalm = xM power
-      calmMax = IA.getSkill Ability.AbMaxCalm ar
+      calmMax = IA.getSkill Ability.SkMaxCalm ar
       serious = rawDeltaCalm < minusM && source /= target && not (bproj tb)
       deltaCalm0 | serious =  -- if overfull, at least cut back to max
                      min rawDeltaCalm (xM calmMax - bcalm tb)
@@ -554,8 +554,8 @@ dominateFid fid target = do
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
-  let maxCalm = IA.getSkill Ability.AbMaxCalm ar
-      maxHp = IA.getSkill Ability.AbMaxHP ar
+  let maxCalm = IA.getSkill Ability.SkMaxCalm ar
+      maxHp = IA.getSkill Ability.SkMaxHP ar
       bNew = tb { bfid = fid
                 , bcalm = max (xM 10) $ xM maxCalm `div` 2
                 , bhp = min (xM maxHp) $ bhp tb + xM 10

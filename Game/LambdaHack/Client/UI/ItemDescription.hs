@@ -99,7 +99,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       timeoutAspect IK.Timeout{} = True
       timeoutAspect _ = False
       hurtMeleeAspect :: IK.Aspect -> Bool
-      hurtMeleeAspect (IK.AddSkill Ability.AbHurtMelee _) = True
+      hurtMeleeAspect (IK.AddSkill Ability.SkHurtMelee _) = True
       hurtMeleeAspect _ = False
       active = IA.goesIntoEqp arItem
       splitAE :: DetailLevel -> [IK.Aspect] -> [Text]
@@ -151,7 +151,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             -- If item not known fully and @AbHurtMelee@ under @Odds@,
             -- it's ignored.
             damage = case find hurtMeleeAspect restAs of
-              Just (IK.AddSkill Ability.AbHurtMelee hurtMelee) ->
+              Just (IK.AddSkill Ability.SkHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
                  else tshow (IK.idamage itemKind))
@@ -175,7 +175,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IA.getSkill Ability.AbHurtMelee arItem
+      aHurtMeleeOfItem = IA.getSkill Ability.SkHurtMelee arItem
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
       pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -290,7 +290,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                 -- and doesn't completely lose the @Odds@ case
               ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
             sentences = tsuspect ++ mapMaybe aspectToSentence aspects
-            aHurtMeleeOfItem = IA.getSkill Ability.AbHurtMelee arItem
+            aHurtMeleeOfItem = IA.getSkill Ability.SkHurtMelee arItem
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner

@@ -184,8 +184,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
            ar <- getsState $ getActorAspect aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
-           when (bhp b >= xM (IA.getSkill Ability.AbMaxHP ar)
-                 && bhp b - n < xM (IA.getSkill Ability.AbMaxHP ar)) $ do
+           when (bhp b >= xM (IA.getSkill Ability.SkMaxHP ar)
+                 && bhp b - n < xM (IA.getSkill Ability.SkMaxHP ar)) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
   UpdRefillCalm aid calmDelta ->

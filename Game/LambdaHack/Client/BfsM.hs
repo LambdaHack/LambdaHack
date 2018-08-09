@@ -183,10 +183,10 @@ condBFS aid = do
   actorMaxSk <- maxActorSkillsClient aid
   let alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
-            (toEnum $ Ability.getSk Ability.AbAlter actorMaxSk)
-      canMove = Ability.getSk Ability.AbMove actorMaxSk > 0
-                || Ability.getSk Ability.AbDisplace actorMaxSk > 0
-                || Ability.getSk Ability.AbProject actorMaxSk > 0
+            (toEnum $ Ability.getSk Ability.SkAlter actorMaxSk)
+      canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
+                || Ability.getSk Ability.SkDisplace actorMaxSk > 0
+                || Ability.getSk Ability.SkProject actorMaxSk > 0
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
@@ -284,7 +284,7 @@ embedBenefit fleeVia aid pbags = do
   actorSk <- if fleeVia == ViaAnything  -- targeting, e.g., when not a leader
              then maxActorSkillsClient aid
              else currentSkillsClient aid
-  let alterSkill = Ability.getSk Ability.AbAlter actorSk
+  let alterSkill = Ability.getSk Ability.SkAlter actorSk
   fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel (blid b)
   unexploredTrue <- unexploredDepth True (blid b)
@@ -414,7 +414,7 @@ unexploredDepth !up !lidCurrent = do
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
   actorMaxSk <- maxActorSkillsClient aid
-  if Ability.getSk Ability.AbMoveItem actorMaxSk <= 0 then return []
+  if Ability.getSk Ability.SkMoveItem actorMaxSk <= 0 then return []
   else do
     body <- getsState $ getActorBody aid
     Level{lfloor} <- getLevel $ blid body

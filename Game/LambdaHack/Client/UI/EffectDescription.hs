@@ -163,39 +163,39 @@ slotToName eqpSlot =
     EqpSlotLightSource -> "shine radius"
     EqpSlotWeapon -> "weapon power"
     EqpSlotMiscAbility -> "misc abilities"
-    EqpSlotAbMove -> abilityDesc AbMove
-    EqpSlotAbMelee -> abilityDesc AbMelee
-    EqpSlotAbDisplace -> abilityDesc AbDisplace
-    EqpSlotAbAlter -> abilityDesc AbAlter
-    EqpSlotAbProject -> abilityDesc AbProject
-    EqpSlotAbApply -> abilityDesc AbApply
+    EqpSlotAbMove -> abilityDesc SkMove
+    EqpSlotAbMelee -> abilityDesc SkMelee
+    EqpSlotAbDisplace -> abilityDesc SkDisplace
+    EqpSlotAbAlter -> abilityDesc SkAlter
+    EqpSlotAbProject -> abilityDesc SkProject
+    EqpSlotAbApply -> abilityDesc SkApply
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
     EqpSlotAddAggression -> "aggression level"
-    EqpSlotAbWait -> abilityDesc AbWait
-    EqpSlotAbMoveItem -> abilityDesc AbMoveItem
+    EqpSlotAbWait -> abilityDesc SkWait
+    EqpSlotAbMoveItem -> abilityDesc SkMoveItem
 
 abilityDesc :: Skill -> Text
-abilityDesc AbMove = "move ability"
-abilityDesc AbMelee = "melee ability"
-abilityDesc AbDisplace = "displace ability"
-abilityDesc AbAlter = "alter tile ability"
-abilityDesc AbWait = "wait ability"
-abilityDesc AbMoveItem = "manage items ability"
-abilityDesc AbProject = "fling ability"
-abilityDesc AbApply = "apply ability"
-abilityDesc AbHurtMelee = "to melee damage"
-abilityDesc AbArmorMelee = "melee armor"
-abilityDesc AbArmorRanged = "ranged armor"
-abilityDesc AbMaxHP = "max HP"
-abilityDesc AbMaxCalm = "max Calm"
-abilityDesc AbSpeed = "speed"
-abilityDesc AbSight = "sight radius"
-abilityDesc AbSmell = "smell radius"
-abilityDesc AbShine = "shine radius"
-abilityDesc AbNocto = "night vision radius"
-abilityDesc AbAggression = "aggression level"
+abilityDesc SkMove = "move ability"
+abilityDesc SkMelee = "melee ability"
+abilityDesc SkDisplace = "displace ability"
+abilityDesc SkAlter = "alter tile ability"
+abilityDesc SkWait = "wait ability"
+abilityDesc SkMoveItem = "manage items ability"
+abilityDesc SkProject = "fling ability"
+abilityDesc SkApply = "apply ability"
+abilityDesc SkHurtMelee = "to melee damage"
+abilityDesc SkArmorMelee = "melee armor"
+abilityDesc SkArmorRanged = "ranged armor"
+abilityDesc SkMaxHP = "max HP"
+abilityDesc SkMaxCalm = "max Calm"
+abilityDesc SkSpeed = "speed"
+abilityDesc SkSight = "sight radius"
+abilityDesc SkSmell = "smell radius"
+abilityDesc SkShine = "shine radius"
+abilityDesc SkNocto = "night vision radius"
+abilityDesc SkAggression = "aggression level"
 
 slotToDesc :: EqpSlot -> Text
 slotToDesc eqpSlot =
@@ -301,26 +301,26 @@ kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
     Timeout{} -> ""  -- printed specially
-    AddSkill AbMove t -> wrapInParens $ affixDice t <+> "move"
-    AddSkill AbMelee t -> wrapInParens $ affixDice t <+> "melee"
-    AddSkill AbDisplace t -> wrapInParens $ affixDice t <+> "displace"
-    AddSkill AbAlter t -> wrapInParens $ affixDice t <+> "alter"
-    AddSkill AbWait t -> wrapInParens $ affixDice t <+> "wait"
-    AddSkill AbMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
-    AddSkill AbProject t -> wrapInParens $ affixDice t <+> "fling"
-    AddSkill AbApply t -> wrapInParens $ affixDice t <+> "apply"
-    AddSkill AbHurtMelee _ ->
+    AddSkill SkMove t -> wrapInParens $ affixDice t <+> "move"
+    AddSkill SkMelee t -> wrapInParens $ affixDice t <+> "melee"
+    AddSkill SkDisplace t -> wrapInParens $ affixDice t <+> "displace"
+    AddSkill SkAlter t -> wrapInParens $ affixDice t <+> "alter"
+    AddSkill SkWait t -> wrapInParens $ affixDice t <+> "wait"
+    AddSkill SkMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
+    AddSkill SkProject t -> wrapInParens $ affixDice t <+> "fling"
+    AddSkill SkApply t -> wrapInParens $ affixDice t <+> "apply"
+    AddSkill SkHurtMelee _ ->
       ""  -- printed together with dice, even if dice is zero
-    AddSkill AbArmorMelee t -> "[" <> affixDice t <> "%]"
-    AddSkill AbArmorRanged t -> "{" <> affixDice t <> "%}"
-    AddSkill AbMaxHP t -> wrapInParens $ affixDice t <+> "HP"
-    AddSkill AbMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
-    AddSkill AbSpeed t -> wrapInParens $ affixDice t <+> "speed"
-    AddSkill AbSight t -> wrapInParens $ affixDice t <+> "sight"
-    AddSkill AbSmell t -> wrapInParens $ affixDice t <+> "smell"
-    AddSkill AbShine t -> wrapInParens $ affixDice t <+> "shine"
-    AddSkill AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
-    AddSkill AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
+    AddSkill SkArmorMelee t -> "[" <> affixDice t <> "%]"
+    AddSkill SkArmorRanged t -> "{" <> affixDice t <> "%}"
+    AddSkill SkMaxHP t -> wrapInParens $ affixDice t <+> "HP"
+    AddSkill SkMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
+    AddSkill SkSpeed t -> wrapInParens $ affixDice t <+> "speed"
+    AddSkill SkSight t -> wrapInParens $ affixDice t <+> "sight"
+    AddSkill SkSmell t -> wrapInParens $ affixDice t <+> "smell"
+    AddSkill SkShine t -> wrapInParens $ affixDice t <+> "shine"
+    AddSkill SkNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"

@@ -27,26 +27,26 @@ import Game.LambdaHack.Common.Misc
 -- | Actor and faction abilities.
 data Skill =
   -- Basic abilities affecting permitted actions.
-    AbMove
-  | AbMelee
-  | AbDisplace
-  | AbAlter
-  | AbWait
-  | AbMoveItem
-  | AbProject
-  | AbApply
+    SkMove
+  | SkMelee
+  | SkDisplace
+  | SkAlter
+  | SkWait
+  | SkMoveItem
+  | SkProject
+  | SkApply
   -- Assorted abilities.
-  | AbHurtMelee    -- ^ percentage damage bonus in melee
-  | AbArmorMelee   -- ^ percentage armor bonus against melee
-  | AbArmorRanged  -- ^ percentage armor bonus against ranged
-  | AbMaxHP        -- ^ maximal hp
-  | AbMaxCalm      -- ^ maximal calm
-  | AbSpeed        -- ^ speed in m/10s (not when pushed or pulled)
-  | AbSight        -- ^ FOV radius, where 1 means a single tile FOV
-  | AbSmell        -- ^ smell radius
-  | AbShine        -- ^ shine radius
-  | AbNocto        -- ^ noctovision radius
-  | AbAggression   -- ^ aggression, e.g., when closing in for melee
+  | SkHurtMelee    -- ^ percentage damage bonus in melee
+  | SkArmorMelee   -- ^ percentage armor bonus against melee
+  | SkArmorRanged  -- ^ percentage armor bonus against ranged
+  | SkMaxHP        -- ^ maximal hp
+  | SkMaxCalm      -- ^ maximal calm
+  | SkSpeed        -- ^ speed in m/10s (not when pushed or pulled)
+  | SkSight        -- ^ FOV radius, where 1 means a single tile FOV
+  | SkSmell        -- ^ smell radius
+  | SkShine        -- ^ shine radius
+  | SkNocto        -- ^ noctovision radius
+  | SkAggression   -- ^ aggression, e.g., when closing in for melee
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
@@ -151,7 +151,7 @@ zeroSkills = Skills EM.empty
 
 unitSkills :: Skills
 unitSkills =
-  Skills $ EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat 1)
+  Skills $ EM.fromDistinctAscList $ zip [SkMove .. SkApply] (repeat 1)
 
 compactSkills :: EM.EnumMap Skill Int -> EM.EnumMap Skill Int
 compactSkills = EM.filter (/= 0)
@@ -181,14 +181,14 @@ minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 
 -- To make sure only a lot of weak items can override move-only-leader, etc.
 minusTen = Skills $ EM.fromDistinctAscList
-                  $ zip [AbMove .. AbApply] (repeat (-10))
+                  $ zip [SkMove .. SkApply] (repeat (-10))
 
-blockOnly = Skills $ EM.delete AbWait $ skills minusTen
+blockOnly = Skills $ EM.delete SkWait $ skills minusTen
 
-meleeAdjacent = Skills $ EM.delete AbMelee $ skills blockOnly
+meleeAdjacent = Skills $ EM.delete SkMelee $ skills blockOnly
 
 -- Melee and reaction fire.
-meleeAndRanged = Skills $ EM.delete AbProject $ skills meleeAdjacent
+meleeAndRanged = Skills $ EM.delete SkProject $ skills meleeAdjacent
 
 ignoreItems = Skills $ EM.fromList
-                     $ zip [AbMoveItem, AbProject, AbApply] (repeat (-10))
+                     $ zip [SkMoveItem, SkProject, SkApply] (repeat (-10))

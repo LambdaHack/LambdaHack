@@ -127,7 +127,7 @@ pickActorToMove maidToAvoid = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-                actorShines = IA.getSkill Ability.AbShine ar > 0
+                actorShines = IA.getSkill Ability.SkShine ar > 0
                 aCanDeLightL | actorShines = []
                              | otherwise = canDeAmbientL
                 canFleeFromLight =
