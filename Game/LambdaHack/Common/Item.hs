@@ -227,12 +227,6 @@ valueAtEqpSlot eqpSlot ar@IA.AspectRecord{..} =
     EqpSlotAbAlter -> Ability.getSk Ability.SkAlter aSkills
     EqpSlotAbProject -> Ability.getSk Ability.SkProject aSkills
     EqpSlotAbApply -> Ability.getSk Ability.SkApply aSkills
-    EqpSlotAddMaxCalm -> Ability.getSk Ability.SkMaxCalm aSkills
-    EqpSlotAddSmell -> Ability.getSk Ability.SkSmell aSkills
-    EqpSlotAddNocto -> Ability.getSk Ability.SkNocto aSkills
-    EqpSlotAddAggression -> Ability.getSk Ability.SkAggression aSkills
-    EqpSlotAbWait -> Ability.getSk Ability.SkWait aSkills
-    EqpSlotAbMoveItem -> Ability.getSk Ability.SkMoveItem aSkills
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =

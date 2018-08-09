@@ -99,13 +99,6 @@ data EqpSlot =
   | EqpSlotAbAlter
   | EqpSlotAbProject
   | EqpSlotAbApply
-  -- Do not use in content:
-  | EqpSlotAddMaxCalm
-  | EqpSlotAddSmell
-  | EqpSlotAddNocto
-  | EqpSlotAddAggression
-  | EqpSlotAbWait
-  | EqpSlotAbMoveItem
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData Skill

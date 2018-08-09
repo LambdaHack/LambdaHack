@@ -148,7 +148,6 @@ slotToSentence es = case es of
   EqpSlotAbAlter -> "Those unskilled in alteration equip it."
   EqpSlotAbProject -> "Those unskilled in flinging equip it."
   EqpSlotAbApply -> "Those unskilled in applying items equip it."
-  _ -> error $ "should not be used in content" `showFailure` es
 
 skillName :: Skill -> Text
 skillName SkMove = "move skill"
