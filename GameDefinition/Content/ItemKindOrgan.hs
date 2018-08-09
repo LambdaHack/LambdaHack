@@ -109,7 +109,7 @@ antler = fist
   , iverbHit = "ram"
   , idamage  = 4 `d` 1
   , iaspects = [ Timeout $ 3 + (1 `d` 3) * 3
-               , AddSkill AbArmorMelee 10 ]  -- bonus doubled
+               , AddSkill SkArmorMelee 10 ]  -- bonus doubled
                ++ iaspects fist
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
   , idesc    = ""
@@ -120,8 +120,8 @@ horn = fist
   , icount   = 2
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
-  , iaspects = [ AddSkill AbHurtMelee 10
-               , AddSkill AbArmorMelee 10 ]  -- bonus doubled
+  , iaspects = [ AddSkill SkHurtMelee 10
+               , AddSkill SkArmorMelee 10 ]  -- bonus doubled
                ++ iaspects fist
   , idesc    = "Sharp and long, for defence or attack."
   }
@@ -131,7 +131,7 @@ rhinoHorn = fist
   , icount   = 1  -- single, unlike real horns
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
-  , iaspects = [Timeout 7, AddSkill AbHurtMelee 20]
+  , iaspects = [Timeout 7, AddSkill SkHurtMelee 20]
                ++ iaspects fist
   , ieffects = [Recharging Impress]  -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
@@ -159,7 +159,7 @@ boilingFissure = fist
   , icount   = 5 + 1 `d` 5
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
-  , iaspects = [ AddSkill AbHurtMelee 20  -- decreasing as count decreases
+  , iaspects = [ AddSkill SkHurtMelee 20  -- decreasing as count decreases
                , SetFlag Meleeable ]  -- not Durable
   , ieffects = [DropItem 1 1 COrgan "condition"]  -- useful; limited
   , idesc    = "A deep crack to the underworld."
@@ -186,7 +186,7 @@ beeSting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = 0
-  , iaspects = [ AddSkill AbArmorMelee 200, AddSkill AbArmorRanged 45
+  , iaspects = [ AddSkill SkArmorMelee 200, AddSkill SkArmorRanged 45
                , SetFlag Meleeable ]  -- not Durable
   , ieffects = [Paralyze 6, RefillHP 4]
   , idesc    = "Painful, but beneficial."
@@ -197,7 +197,7 @@ sting = fist
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = 1 `d` 1
-  , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill AbHurtMelee 40]
+  , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
   , ieffects = [Recharging (Paralyze 4)]
   , idesc    = "Painful, debilitating and harmful."
@@ -241,7 +241,7 @@ largeTail = fist
   , icount   = 1
   , iverbHit = "knock"
   , idamage  = 7 `d` 1
-  , iaspects = [Timeout $ 1 + 1 `d` 3, AddSkill AbHurtMelee 20]
+  , iaspects = [Timeout $ 1 + 1 `d` 3, AddSkill SkHurtMelee 20]
                ++ iaspects fist
   , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps
   , idesc    = "Slow but heavy."
@@ -261,7 +261,7 @@ armoredSkin = ItemKind
   , iverbHit = "bash"
   , iweight  = 2000
   , idamage  = 0
-  , iaspects = [ AddSkill AbArmorMelee 30, AddSkill AbArmorRanged 15
+  , iaspects = [ AddSkill SkArmorMelee 30, AddSkill SkArmorRanged 15
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Homemade armour is just as good."
@@ -276,7 +276,7 @@ eye n = armoredSkin
   , ifreq    = [(toGroupName $ "eye" <+> tshow n, 100)]
   , icount   = 2
   , iverbHit = "glare at"
-  , iaspects = [ AddSkill AbSight (intToDice n)
+  , iaspects = [ AddSkill SkSight (intToDice n)
                , SetFlag Durable ]
   , idesc    = "A piercing stare."
   }
@@ -292,7 +292,7 @@ vision n = armoredSkin
   { iname    = "vision"
   , ifreq    = [(toGroupName $ "vision" <+> tshow n, 100)]
   , iverbHit = "visualize"
-  , iaspects = [ AddSkill AbSight (intToDice n)
+  , iaspects = [ AddSkill SkSight (intToDice n)
                , SetFlag Durable ]
   , idesc    = ""
   }
@@ -310,7 +310,7 @@ nostril = armoredSkin
   , ifreq    = [("nostril", 100)]
   , icount   = 2
   , iverbHit = "snuff"
-  , iaspects = [ AddSkill AbSmell 1  -- times 2, from icount
+  , iaspects = [ AddSkill SkSmell 1  -- times 2, from icount
                , SetFlag Durable ]
   , idesc    = ""
   }
@@ -330,8 +330,8 @@ sapientBrain = armoredSkin
   { iname    = "sapient brain"
   , ifreq    = [("sapient brain", 100)]
   , iverbHit = "outbrain"
-  , iaspects = [AddSkill ab 1 | ab <- [AbMove .. AbApply]]
-               ++ [AddSkill AbAlter 2]  -- can use stairs
+  , iaspects = [AddSkill ab 1 | ab <- [SkMove .. SkApply]]
+               ++ [AddSkill SkAlter 2]  -- can use stairs
                ++ [SetFlag Durable]
   , idesc    = ""
   }
@@ -339,10 +339,10 @@ animalBrain = armoredSkin
   { iname    = "animal brain"
   , ifreq    = [("animal brain", 100)]
   , iverbHit = "blank"
-  , iaspects = [AddSkill ab 1 | ab <- [AbMove .. AbApply]]
-               ++ [AddSkill AbAlter 2]  -- can use stairs
+  , iaspects = [AddSkill ab 1 | ab <- [SkMove .. SkApply]]
+               ++ [AddSkill SkAlter 2]  -- can use stairs
                ++ [ AddSkill ab (-1)
-                  | ab <- [AbDisplace, AbMoveItem, AbProject, AbApply] ]
+                  | ab <- [SkDisplace, SkMoveItem, SkProject, SkApply] ]
                ++ [SetFlag Durable]
   , idesc    = ""
   }
@@ -351,7 +351,7 @@ speedGland n = armoredSkin
   { iname    = "speed gland"
   , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
   , iverbHit = "spit at"
-  , iaspects = [ AddSkill AbSpeed $ intToDice n
+  , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice $ 100 `div` n
                , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [Recharging (RefillHP 1)]
@@ -417,7 +417,7 @@ bonusHP = armoredSkin
   , ifreq    = [("bonus HP", 1)]
   , iverbHit = "intimidate"
   , iweight  = 0
-  , iaspects = [ AddSkill AbMaxHP 1
+  , iaspects = [ AddSkill SkMaxHP 1
                , SetFlag Durable ]
   , idesc    = ""
   }
@@ -428,7 +428,7 @@ impressed = armoredSkin
   , ifreq    = [("impressed", 1), ("condition", 1)]
   , iverbHit = "confuse"
   , iweight  = 0
-  , iaspects = [ AddSkill AbMaxCalm (-1)
+  , iaspects = [ AddSkill SkMaxCalm (-1)
                  -- to help player notice on main screen
                  -- and to count as bad condition
                , SetFlag Fragile, SetFlag Durable ]
@@ -479,7 +479,7 @@ torsionRight = fist
   , icount   = 1
   , iverbHit = "twist"
   , idamage  = 13 `d` 1
-  , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill AbHurtMelee 20]
+  , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
   , idesc    = ""
@@ -490,7 +490,7 @@ torsionLeft = fist
   , icount   = 1
   , iverbHit = "twist"
   , idamage  = 13 `d` 1
-  , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill AbHurtMelee 20]
+  , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "weakened" (3 + 1 `d` 3))]
   , idesc    = ""
@@ -501,7 +501,7 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1
-  , iaspects = [AddSkill AbSight 12, Timeout 12] ++ iaspects fist
+  , iaspects = [AddSkill SkSight 12, Timeout 12] ++ iaspects fist
   , ieffects = [ Recharging (DropItem 1 maxBound COrgan "condition")
                , Recharging $ RefillCalm (-10)
                ]

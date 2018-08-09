@@ -39,7 +39,7 @@ burningOil n = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity (min 100 $ n `div` 2 * 10)
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 2 ]
+               , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
                , toOrganBad "slowed" (2 + 1 `d` 2) ]  -- tripping on oil
   , idesc    = "Sticky oil, burning brightly."
@@ -62,7 +62,7 @@ firecracker n = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5, SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine $ intToDice $ 1 + n `div` 2 ]
+               , AddSkill SkShine $ intToDice $ 1 + n `div` 2 ]
   , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
                ++ [DropBestWeapon | n >= 4]
                ++ [ OnSmash $ Explode
@@ -92,7 +92,7 @@ spreadFragmentation = ItemKind
                         -- however, moderate armour blocks completely
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 3, AddSkill AbHurtMelee $ -12 * 5 ]
+               , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
   , ieffects = [DropItem 1 maxBound COrgan "condition"]
   , idesc    = ""
   , ikit     = []
@@ -103,7 +103,7 @@ spreadFragmentation8 = spreadFragmentation
   , icount   = 8
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 3, AddSkill AbHurtMelee $ -12 * 5 ]
+               , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
       -- smaller radius, so worse for area effect, but twice the direct damage
   }
 focusedFragmentation = ItemKind
@@ -137,7 +137,7 @@ spreadConcussion = ItemKind
                         -- but armour can't block completely that easily
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 3, AddSkill AbHurtMelee $ -8 * 5 ]
+               , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond
       -- human-noticeable speed differences on short distances anyway
@@ -154,7 +154,7 @@ spreadConcussion8 = spreadConcussion
   , icount   = 8
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 3, AddSkill AbHurtMelee $ -8 * 5 ]
+               , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
   }
 focusedConcussion = ItemKind
   { isymbol  = '`'
@@ -184,7 +184,7 @@ spreadFlash = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 5 ]
+               , AddSkill SkShine 5 ]
   , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 30]
                  -- Wikipedia says: blind for five seconds and afterimage
                  -- for much longer, harming aim
@@ -198,7 +198,7 @@ spreadFlash8 = spreadFlash
   , iverbHit = "blind"
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 5 ]
+               , AddSkill SkShine 5 ]
   }
 focusedFlash = ItemKind
   { isymbol  = '`'
@@ -223,7 +223,7 @@ singleSpark = spreadFlash
   , iverbHit = "spark"
   , iaspects = [ toLinger 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 3 ]
+               , AddSkill SkShine 3 ]
   , ieffects = []
   , idesc    = "A glowing ember."
   , ikit     = []
@@ -240,7 +240,7 @@ glassPiece = ItemKind
   , idamage  = 1 `d` 1
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbHurtMelee $ -15 * 5 ]
+               , AddSkill SkHurtMelee $ -15 * 5 ]
                  -- brittle, not too dense; armor blocks
   , ieffects = [RefillHP (-1)]
   , idesc    = "Swift, sharp edges."
@@ -251,7 +251,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   , icount   = 4
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbHurtMelee $ -15 * 5 ]
+               , AddSkill SkHurtMelee $ -15 * 5 ]
   , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
   }
 
@@ -335,7 +335,7 @@ mistHealing = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 1 ]
+               , AddSkill SkShine 1 ]
   , ieffects = [RefillHP 2]
   , idesc    = "It fills the air with light and life."
   , ikit     = []
@@ -352,7 +352,7 @@ mistHealing2 = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast
-               , AddSkill AbShine 2 ]
+               , AddSkill SkShine 2 ]
   , ieffects = [RefillHP 4]
   , idesc    = "At its touch, wounds close and bruises fade."
   , ikit     = []
