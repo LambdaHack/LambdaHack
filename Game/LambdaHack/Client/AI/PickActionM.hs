@@ -129,7 +129,7 @@ actionStrategy aid retry = do
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
-      abInMaxSkill ab = getSk ab actorMaxSk > 0
+      abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace, SkAlter]
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
@@ -290,7 +290,7 @@ actionStrategy aid retry = do
         ]
   -- Check current, not maximal skills, since this can be a leader as well
   -- as non-leader action.
-  let abInSkill ab = getSk ab actorSk > 0
+  let abInSkill sk = getSk sk actorSk > 0
       checkAction :: ([Skill], m a, Bool) -> Bool
       checkAction (abts, _, cond) = any abInSkill abts && cond
       sumS abAction = do

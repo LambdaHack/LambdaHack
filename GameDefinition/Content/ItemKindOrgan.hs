@@ -330,7 +330,7 @@ sapientBrain = armoredSkin
   { iname    = "sapient brain"
   , ifreq    = [("sapient brain", 100)]
   , iverbHit = "outbrain"
-  , iaspects = [AddSkill ab 1 | ab <- [SkMove .. SkApply]]
+  , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkAlter 2]  -- can use stairs
                ++ [SetFlag Durable]
   , idesc    = ""
@@ -339,10 +339,10 @@ animalBrain = armoredSkin
   { iname    = "animal brain"
   , ifreq    = [("animal brain", 100)]
   , iverbHit = "blank"
-  , iaspects = [AddSkill ab 1 | ab <- [SkMove .. SkApply]]
+  , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkAlter 2]  -- can use stairs
-               ++ [ AddSkill ab (-1)
-                  | ab <- [SkDisplace, SkMoveItem, SkProject, SkApply] ]
+               ++ [ AddSkill sk (-1)
+                  | sk <- [SkDisplace, SkMoveItem, SkProject, SkApply] ]
                ++ [SetFlag Durable]
   , idesc    = ""
   }

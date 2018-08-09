@@ -230,8 +230,8 @@ reqMove source dir = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
-  let abInSkill ab = isJust (btrajectory sb)
-                     || Ability.getSk ab actorSk > 0
+  let abInSkill sk = isJust (btrajectory sb)
+                     || Ability.getSk sk actorSk > 0
       lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
@@ -280,7 +280,7 @@ reqMove source dir = do
       case mweapon of
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
           reqMeleeChecked source target wp cstore
-        _ -> return ()  -- waiting, even if no @AbWait@ ability
+        _ -> return ()  -- waiting, even if no @AbWait@ skill
     _ -> do
       -- Either the position is empty, or all involved actors are proj.
       -- Movement requires full access and skill.
@@ -415,8 +415,8 @@ reqDisplace source target = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
-  let abInSkill ab = isJust (btrajectory sb)
-                     || Ability.getSk ab actorSk > 0
+  let abInSkill sk = isJust (btrajectory sb)
+                     || Ability.getSk sk actorSk > 0
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
@@ -438,7 +438,7 @@ reqDisplace source target = do
        case mweapon of
          Just (wp, cstore) | abInSkill Ability.SkMelee ->
            reqMeleeChecked source target wp cstore
-         _ -> return ()  -- waiting, even if no @AbWait@ ability
+         _ -> return ()  -- waiting, even if no @AbWait@ skill
      | otherwise -> do
        let lid = blid sb
        lvl <- getLevel lid

@@ -38,8 +38,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
--- | Record of sums of abilities conferred by an item, container, actor, etc.,
--- as well as of item features and other item stats.
+-- | Record of sums of skills conferred by an item, container, actor, etc.,
+-- as well as of item flags and other item stats.
 data AspectRecord = AspectRecord
   { aTimeout :: Int
   , aSkills  :: Ability.Skills
@@ -153,8 +153,8 @@ sumAspectRecord l = emptyAspectRecord
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =
   [IK.Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
-  ++ [ IK.AddSkill ab $ Dice.intToDice n
-     | (ab, n) <- Ability.skillsToList aSkills ]
+  ++ [ IK.AddSkill sk $ Dice.intToDice n
+     | (sk, n) <- Ability.skillsToList aSkills ]
   ++ [IK.SetFlag feat | feat <- ES.elems $ Ability.flags aFlags]
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
   ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100]

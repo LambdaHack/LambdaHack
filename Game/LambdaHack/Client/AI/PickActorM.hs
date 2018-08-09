@@ -260,8 +260,8 @@ pickActorToMove maidToAvoid = do
                     1 -> -200 -- prevent others from occupying the tile
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
-          positiveOverhead ab =
-            let ov = 200 - overheadOurs ab
+          positiveOverhead sk =
+            let ov = 200 - overheadOurs sk
             in if ov <= 0 then 1 else ov
           candidates = [ oursVulnerable
                        , oursSupport

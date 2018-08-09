@@ -163,39 +163,39 @@ slotToName eqpSlot =
     EqpSlotLightSource -> "shine radius"
     EqpSlotWeapon -> "weapon power"
     EqpSlotMiscAbility -> "misc abilities"
-    EqpSlotAbMove -> abilityDesc SkMove
-    EqpSlotAbMelee -> abilityDesc SkMelee
-    EqpSlotAbDisplace -> abilityDesc SkDisplace
-    EqpSlotAbAlter -> abilityDesc SkAlter
-    EqpSlotAbProject -> abilityDesc SkProject
-    EqpSlotAbApply -> abilityDesc SkApply
+    EqpSlotAbMove -> skillDesc SkMove
+    EqpSlotAbMelee -> skillDesc SkMelee
+    EqpSlotAbDisplace -> skillDesc SkDisplace
+    EqpSlotAbAlter -> skillDesc SkAlter
+    EqpSlotAbProject -> skillDesc SkProject
+    EqpSlotAbApply -> skillDesc SkApply
     EqpSlotAddMaxCalm -> "max Calm"
     EqpSlotAddSmell -> "smell radius"
     EqpSlotAddNocto -> "night vision radius"
     EqpSlotAddAggression -> "aggression level"
-    EqpSlotAbWait -> abilityDesc SkWait
-    EqpSlotAbMoveItem -> abilityDesc SkMoveItem
+    EqpSlotAbWait -> skillDesc SkWait
+    EqpSlotAbMoveItem -> skillDesc SkMoveItem
 
-abilityDesc :: Skill -> Text
-abilityDesc SkMove = "move ability"
-abilityDesc SkMelee = "melee ability"
-abilityDesc SkDisplace = "displace ability"
-abilityDesc SkAlter = "alter tile ability"
-abilityDesc SkWait = "wait ability"
-abilityDesc SkMoveItem = "manage items ability"
-abilityDesc SkProject = "fling ability"
-abilityDesc SkApply = "apply ability"
-abilityDesc SkHurtMelee = "to melee damage"
-abilityDesc SkArmorMelee = "melee armor"
-abilityDesc SkArmorRanged = "ranged armor"
-abilityDesc SkMaxHP = "max HP"
-abilityDesc SkMaxCalm = "max Calm"
-abilityDesc SkSpeed = "speed"
-abilityDesc SkSight = "sight radius"
-abilityDesc SkSmell = "smell radius"
-abilityDesc SkShine = "shine radius"
-abilityDesc SkNocto = "night vision radius"
-abilityDesc SkAggression = "aggression level"
+skillDesc :: Skill -> Text
+skillDesc SkMove = "move skill"
+skillDesc SkMelee = "melee skill"
+skillDesc SkDisplace = "displace skill"
+skillDesc SkAlter = "alter tile skill"
+skillDesc SkWait = "wait skill"
+skillDesc SkMoveItem = "manage items skill"
+skillDesc SkProject = "fling skill"
+skillDesc SkApply = "apply skill"
+skillDesc SkHurtMelee = "to melee damage"
+skillDesc SkArmorMelee = "melee armor"
+skillDesc SkArmorRanged = "ranged armor"
+skillDesc SkMaxHP = "max HP"
+skillDesc SkMaxCalm = "max Calm"
+skillDesc SkSpeed = "speed"
+skillDesc SkSight = "sight radius"
+skillDesc SkSmell = "smell radius"
+skillDesc SkShine = "shine radius"
+skillDesc SkNocto = "night vision radius"
+skillDesc SkAggression = "aggression level"
 
 slotToDesc :: EqpSlot -> Text
 slotToDesc eqpSlot =
@@ -211,13 +211,13 @@ slotToDesc eqpSlot =
     EqpSlotAddSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     EqpSlotLightSource -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     EqpSlotWeapon -> "represents the total power of weapons equipped by the character."
-    EqpSlotMiscAbility -> "represent the total power of assorted ability bonuses for the character."
+    EqpSlotMiscAbility -> "represent the total power of assorted skill bonuses for the character."
     EqpSlotAbMove -> "determines whether the character can move. Actors not capable of movement can't be dominated."
     EqpSlotAbMelee -> "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
-    EqpSlotAbDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of ability: when the target is braced, dying, has no move ability or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
-    EqpSlotAbAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require ability 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
-    EqpSlotAbProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require ability 3. Other items travel until they meet an obstacle and ability 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the ability value."
-    EqpSlotAbApply -> "determines which kinds of items the character can activate. Items that assume literacy require ability 2, others can be used already at ability 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+    EqpSlotAbDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
+    EqpSlotAbAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
+    EqpSlotAbProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
+    EqpSlotAbApply -> "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
     EqpSlotAddMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
     EqpSlotAddSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     EqpSlotAddNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."

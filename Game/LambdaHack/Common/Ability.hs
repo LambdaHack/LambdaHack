@@ -134,10 +134,10 @@ instance Hashable EqpSlot
 
 getSk :: Skill -> Skills -> Int
 {-# INLINE getSk #-}
-getSk ab (Skills sk) = EM.findWithDefault 0 ab sk
+getSk sk (Skills skills) = EM.findWithDefault 0 sk skills
 
 addSk :: Skill -> Int -> Skills -> Skills
-addSk ab n sk = addSkills (Skills $ EM.singleton ab n) sk
+addSk sk n skills = addSkills (Skills $ EM.singleton sk n) skills
 
 checkFl :: Flag -> Flags -> Bool
 {-# INLINE checkFl #-}
@@ -161,7 +161,7 @@ addSkills (Skills sk1) (Skills sk2) =
   Skills $ compactSkills $ EM.unionWith (+) sk1 sk2
 
 scaleSkills :: Int -> EM.EnumMap Skill Int -> EM.EnumMap Skill Int
-scaleSkills n sk = EM.map (n *) sk
+scaleSkills n skills = EM.map (n *) skills
 
 sumScaledSkills :: [(Skills, Int)] -> Skills
 sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)

@@ -283,7 +283,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   then " m/s and range" <+> tshow range <+> "m."
                   else " m/s."
       tsuspect = ["You are unsure what it does." | itemSuspect]
-      (desc, featureSentences, damageAnalysis) =
+      (desc, aspectSentences, damageAnalysis) =
         let aspects = case itemDisco of
               ItemDiscoMean{} -> IK.iaspects itemKind
                 -- faster than @aspectRecordToList@ of mean
@@ -352,7 +352,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
               then makeSentence
                      ["Weighs around", MU.Text scaledWeight <> unitWeight]
               else ""))
-        <+> featureSentences
+        <+> aspectSentences
         <+> sourceDesc
         <+> damageAnalysis
   in colorSymbol : textToAL blurb

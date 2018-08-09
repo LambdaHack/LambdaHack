@@ -49,7 +49,7 @@ data StateClient = StateClient
       -- ^ remembered AI benefits of items; could be recomputed at resume,
       --   but they are costly to generate and not too large
   , sfper         :: PerLid         -- ^ faction perception indexed by level
-  , salter        :: AlterLid       -- ^ cached alter ability data for positions
+  , salter        :: AlterLid       -- ^ cached alter skill data for positions
   , srandom       :: R.StdGen       -- ^ current random generator
   , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
                                     --   Faction.gleader is the old leader

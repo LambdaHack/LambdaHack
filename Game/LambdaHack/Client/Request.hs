@@ -44,8 +44,7 @@ data ReqUI =
   | ReqUIAutomate
   deriving Show
 
--- | Requests that take game time, indexed by actor ability
--- that is needed for performing the corresponding actions.
+-- | Requests that take game time.
 data RequestTimed =
     ReqMove Vector
   | ReqMelee ActorId ItemId CStore

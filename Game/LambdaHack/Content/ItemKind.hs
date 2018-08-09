@@ -63,7 +63,7 @@ data Aspect =
     Timeout Dice.Dice  -- ^ some effects disabled until item recharges;
                        --   expressed in game turns
   | AddSkill Ability.Skill Dice.Dice
-                       -- ^ bonus to an ability
+                       -- ^ bonus to a skill
   | SetFlag Ability.Flag
                        -- ^ item feature
   | ELabel Text        -- ^ extra label of the item; it's not pluralized
