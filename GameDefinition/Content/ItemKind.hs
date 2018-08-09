@@ -809,7 +809,7 @@ sharpeningTool = ItemKind
   , iweight  = 400
   , idamage  = 0
   , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 5) * 5
-               , SetFlag Equipable, EqpSlot EqpSlotAddHurtMelee ]
+               , SetFlag Equipable, EqpSlot EqpSlotHurtMelee ]
   , ieffects = []
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
@@ -944,7 +944,7 @@ necklace7 = necklaceTemplate
   , iaspects = [ AddSkill SkMaxHP 15, AddSkill SkArmorMelee 20
                , AddSkill SkArmorRanged 10, Timeout 4
                , SetFlag Unique, ELabel "of Overdrive", SetFlag Durable
-               , EqpSlot EqpSlotAddSpeed ]
+               , EqpSlot EqpSlotSpeed ]
                ++ iaspects necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
@@ -995,7 +995,7 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
   , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [ AddSkill SkSight $ 1 + 1 `d` 2
                , AddSkill SkHurtMelee $ (1 `d` 2) * 3
-               , EqpSlot EqpSlotAddSight ] ++ iaspects ringTemplate
+               , EqpSlot EqpSlotSight ] ++ iaspects ringTemplate
   , idesc    = "Lets you better focus your weaker eye."
   }
 -- Don't add standard effects to rings, because they go in and out
@@ -1026,7 +1026,7 @@ ring1 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(10, 4)]
   , iaspects = [ AddSkill SkSpeed $ 1 `d` 3, AddSkill SkMaxHP (-15)
-               , EqpSlot EqpSlotAddSpeed ] ++ iaspects ringTemplate
+               , EqpSlot EqpSlotSpeed ] ++ iaspects ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 ring2 = ringTemplate
@@ -1035,7 +1035,7 @@ ring2 = ringTemplate
   , iaspects = [ AddSkill SkSpeed $ (1 `d` 2) * 3
                , AddSkill SkMaxCalm (-40), AddSkill SkMaxHP (-20)
                , SetFlag Unique, ELabel "of Rush", SetFlag Durable
-               , EqpSlot EqpSlotAddSpeed ]
+               , EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   -- , idesc    = ""
@@ -1045,7 +1045,7 @@ ring3 = ringTemplate
   , irarity  = [(10, 11)]
   , iaspects = [ AddSkill SkMaxHP $ 10 + (1 `dL` 5) * 2
                , AddSkill SkMaxCalm $ -20 + (1 `dL` 5) * 2
-               , EqpSlot EqpSlotAddMaxHP ] ++ iaspects ringTemplate
+               , EqpSlot EqpSlotMaxHP ] ++ iaspects ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1060,7 +1060,7 @@ ring5 = ringTemplate
   , iaspects = [ AddSkill SkHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddSkill SkMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3
                    -- !!!
-               , EqpSlot EqpSlotAddHurtMelee ] ++ iaspects ringTemplate
+               , EqpSlot EqpSlotHurtMelee ] ++ iaspects ringTemplate
   }
 ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1073,7 +1073,7 @@ ring7 = ringTemplate
   { ifreq    = [("common item", 10), ("ring of opportunity sniper", 1) ]
   , irarity  = [(10, 5)]  -- low @ifreq@
   , iaspects = [AddSkill SkProject 8
-               , ELabel "of opportunity sniper", EqpSlot EqpSlotAbProject ]
+               , ELabel "of opportunity sniper", EqpSlot EqpSlotProject ]
                ++ iaspects ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
@@ -1081,7 +1081,7 @@ ring8 = ringTemplate
   { ifreq    = [("common item", 1), ("ring of opportunity grenadier", 1) ]
   , irarity  = [(1, 1)]
   , iaspects = [ AddSkill SkProject 11
-               , ELabel "of opportunity grenadier", EqpSlot EqpSlotAbProject ]
+               , ELabel "of opportunity grenadier", EqpSlot EqpSlotProject ]
                ++ iaspects ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
@@ -1102,7 +1102,7 @@ armorLeather = ItemKind
                , AddSkill SkArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddSkill SkArmorRanged $ (1 + 1 `dL` 2) * 3
                , SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotAddArmorMelee ]
+               , EqpSlot EqpSlotArmorMelee ]
   , ieffects = []
   , idesc    = "A stiff jacket formed from leather boiled in bee wax, padded linen and horse hair. Protects from anything that is not too sharp. Smells much better than the rest of your garment."
   , ikit     = []
@@ -1118,7 +1118,7 @@ armorMail = armorLeather
                , AddSkill SkArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddSkill SkArmorRanged $ (4 + 1 `dL` 2) * 3
                , SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotAddArmorRanged ]
+               , EqpSlot EqpSlotArmorRanged ]
   , ieffects = []
   , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
   }
@@ -1136,7 +1136,7 @@ gloveFencing = ItemKind
                , AddSkill SkArmorRanged $ (1 `dL` 2) * 3
                , toVelocity 50  -- flaps and flutters
                , SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotAddHurtMelee ]
+               , EqpSlot EqpSlotHurtMelee ]
   , ieffects = []
   , idesc    = "A fencing glove from rough leather ensuring a good grip. Also quite effective in deflecting or even catching slow projectiles."
   , ikit     = []
@@ -1151,7 +1151,7 @@ gloveGauntlet = gloveFencing
   , iaspects = [ AddSkill SkArmorMelee $ (1 + 1 `dL` 4) * 5
                , toVelocity 50  -- flaps and flutters
                , SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotAddArmorMelee ]
+               , EqpSlot EqpSlotArmorMelee ]
   , idesc    = "Long leather gauntlet covered in overlapping steel plates."
   }
 gloveJousting = gloveFencing
@@ -1167,7 +1167,7 @@ gloveJousting = gloveFencing
                  -- very random on purpose and can even be good on occasion
                , toVelocity 50  -- flaps and flutters
                , SetFlag Unique, SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotAddArmorMelee ]
+               , EqpSlot EqpSlotArmorMelee ]
   , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse to carry it all."
   }
 
@@ -1189,12 +1189,14 @@ buckler = ItemKind
   , iverbHit = "bash"
   , iweight  = 2000
   , idamage  = 2 `d` 1
-  , iaspects = [ AddSkill SkArmorMelee 40  -- not enough to compensate; won't be in eqp
-               , AddSkill SkHurtMelee (-30)  -- too harmful; won't be wielded as weapon
+  , iaspects = [ AddSkill SkArmorMelee 40
+                   -- not enough to compensate; won't be in eqp
+               , AddSkill SkHurtMelee (-30)
+                   -- too harmful; won't be wielded as weapon
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2
                , toVelocity 50  -- unwieldy to throw
                , SetFlag MinorEffects, SetFlag Durable
-               , SetFlag Meleeable, EqpSlot EqpSlotAddArmorMelee ]
+               , SetFlag Meleeable, EqpSlot EqpSlotArmorMelee ]
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
@@ -1205,12 +1207,14 @@ shield = buckler
   , iflavour = zipPlain [Green]
   , iweight  = 4000
   , idamage  = 4 `d` 1
-  , iaspects = [ AddSkill SkArmorMelee 80  -- not enough to compensate; won't be in eqp
-               , AddSkill SkHurtMelee (-70)  -- too harmful; won't be wielded as weapon
+  , iaspects = [ AddSkill SkArmorMelee 80
+                   -- not enough to compensate; won't be in eqp
+               , AddSkill SkHurtMelee (-70)
+                   -- too harmful; won't be wielded as weapon
                , Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 4
                , toVelocity 50  -- unwieldy to throw
                , SetFlag MinorEffects, SetFlag Durable
-               , SetFlag Meleeable, EqpSlot EqpSlotAddArmorMelee ]
+               , SetFlag Meleeable, EqpSlot EqpSlotArmorMelee ]
   , ieffects = [Recharging (PushActor (ThrowMod 400 25))]  -- 1 step, fast
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
@@ -1372,7 +1376,8 @@ halberd = ItemKind
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = 12 `d` 1
-  , iaspects = [ AddSkill SkHurtMelee (-20)  -- useless against armor at game start
+  , iaspects = [ AddSkill SkHurtMelee (-20)
+                   -- useless against armor at game start
                , AddSkill SkArmorMelee $ (1 `dL` 4) * 5
                , toVelocity 20  -- not balanced
                , SetFlag Durable, SetFlag Meleeable

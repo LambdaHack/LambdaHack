@@ -210,23 +210,23 @@ valueAtEqpSlot eqpSlot ar@IA.AspectRecord{..} =
       + Ability.getSk Ability.SkSmell aSkills
       + Ability.getSk Ability.SkNocto aSkills
           -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
-    EqpSlotAddArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
-    EqpSlotAddArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
-    EqpSlotAddMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
-    EqpSlotAddSpeed -> Ability.getSk Ability.SkSpeed aSkills
-    EqpSlotAddSight -> Ability.getSk Ability.SkSight aSkills
+    EqpSlotHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
+    EqpSlotArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
+    EqpSlotArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
+    EqpSlotMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
+    EqpSlotSpeed -> Ability.getSk Ability.SkSpeed aSkills
+    EqpSlotSight -> Ability.getSk Ability.SkSight aSkills
     EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
     EqpSlotWeapon -> error $ "" `showFailure` ar
     EqpSlotMiscAbility ->
       Ability.getSk Ability.SkWait aSkills
       + Ability.getSk Ability.SkMoveItem aSkills
-    EqpSlotAbMove -> Ability.getSk Ability.SkMove aSkills
-    EqpSlotAbMelee -> Ability.getSk Ability.SkMelee aSkills
-    EqpSlotAbDisplace -> Ability.getSk Ability.SkDisplace aSkills
-    EqpSlotAbAlter -> Ability.getSk Ability.SkAlter aSkills
-    EqpSlotAbProject -> Ability.getSk Ability.SkProject aSkills
-    EqpSlotAbApply -> Ability.getSk Ability.SkApply aSkills
+    EqpSlotMove -> Ability.getSk Ability.SkMove aSkills
+    EqpSlotMelee -> Ability.getSk Ability.SkMelee aSkills
+    EqpSlotDisplace -> Ability.getSk Ability.SkDisplace aSkills
+    EqpSlotAlter -> Ability.getSk Ability.SkAlter aSkills
+    EqpSlotProject -> Ability.getSk Ability.SkProject aSkills
+    EqpSlotApply -> Ability.getSk Ability.SkApply aSkills
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =

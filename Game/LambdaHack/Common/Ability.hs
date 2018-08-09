@@ -84,21 +84,21 @@ newtype Flags = Flags {flags :: ES.EnumSet Flag}
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
     EqpSlotMiscBonus
-  | EqpSlotAddHurtMelee
-  | EqpSlotAddArmorMelee
-  | EqpSlotAddArmorRanged
-  | EqpSlotAddMaxHP
-  | EqpSlotAddSpeed
-  | EqpSlotAddSight
+  | EqpSlotHurtMelee
+  | EqpSlotArmorMelee
+  | EqpSlotArmorRanged
+  | EqpSlotMaxHP
+  | EqpSlotSpeed
+  | EqpSlotSight
   | EqpSlotLightSource
   | EqpSlotWeapon
   | EqpSlotMiscAbility
-  | EqpSlotAbMove
-  | EqpSlotAbMelee
-  | EqpSlotAbDisplace
-  | EqpSlotAbAlter
-  | EqpSlotAbProject
-  | EqpSlotAbApply
+  | EqpSlotMove
+  | EqpSlotMelee
+  | EqpSlotDisplace
+  | EqpSlotAlter
+  | EqpSlotProject
+  | EqpSlotApply
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData Skill
