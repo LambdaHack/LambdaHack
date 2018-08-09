@@ -209,8 +209,8 @@ getActorAspect aid s = sactorAspect s EM.! aid
 canTraverse :: ActorId -> State -> Bool
 canTraverse aid s =
   let actorMaxSk = getActorAspect aid s
-  in IA.getAbility Ability.AbMove actorMaxSk > 0
-     && IA.getAbility Ability.AbAlter actorMaxSk
+  in IA.getSkill Ability.AbMove actorMaxSk > 0
+     && IA.getSkill Ability.AbAlter actorMaxSk
           >= fromEnum TK.talterForStairs
 
 getCarriedAssocsAndTrunk :: Actor -> State -> [(ItemId, Item)]
@@ -287,7 +287,7 @@ regenCalmDelta :: ActorId -> Actor -> State -> Int64
 regenCalmDelta aid body s =
   let calmIncr = oneM  -- normal rate of calm regen
       ar = getActorAspect aid s
-      maxDeltaCalm = xM (IA.getAbility Ability.AbMaxCalm ar) - bcalm body
+      maxDeltaCalm = xM (IA.getSkill Ability.AbMaxCalm ar) - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
@@ -350,7 +350,7 @@ dispEnemy source target actorMaxSk s =
      || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
              || braced tb
-             || Ability.getAb Ability.AbMove actorMaxSk <= 0
+             || Ability.getSk Ability.AbMove actorMaxSk <= 0
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull
@@ -468,10 +468,10 @@ armorHurtBonus source target s =
       block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
       sar = sactorAspect s EM.! source
       tar = sactorAspect s EM.! target
-      itemBonus = trim200 (IA.getAbility Ability.AbHurtMelee sar)
+      itemBonus = trim200 (IA.getSkill Ability.AbHurtMelee sar)
                   - if bproj sb
-                    then block200 25 (IA.getAbility Ability.AbArmorRanged tar)
-                    else block200 50 (IA.getAbility Ability.AbArmorMelee tar)
+                    then block200 25 (IA.getSkill Ability.AbArmorRanged tar)
+                    else block200 50 (IA.getSkill Ability.AbArmorMelee tar)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
 -- | Check if any non-dying foe (projectile or not) is adjacent

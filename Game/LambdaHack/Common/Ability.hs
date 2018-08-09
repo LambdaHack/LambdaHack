@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Ability(..), Skills, Feature(..), Flags(..), EqpSlot(..)
-  , getAb, addAb, checkFl, skillsToList
-  , zeroSkills, unitSkills, addSkills, sumScaledAbility
+  ( Skill(..), Skills, Feature(..), Flags(..), EqpSlot(..)
+  , getSk, addSk, checkFl, skillsToList
+  , zeroSkills, unitSkills, addSkills, sumScaledSkills
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -25,7 +25,7 @@ import           GHC.Generics (Generic)
 import Game.LambdaHack.Common.Misc
 
 -- | Actor and faction abilities.
-data Ability =
+data Skill =
   -- Basic abilities affecting permitted actions.
     AbMove
   | AbMelee
@@ -57,7 +57,7 @@ data Ability =
 -- It's also easier to code and maintain.
 --
 -- The tree is by construction sparse, so equality is semantical.
-newtype Skills = Skills {skills :: EM.EnumMap Ability Int}
+newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
 -- | Item features.
@@ -108,13 +108,13 @@ data EqpSlot =
   | EqpSlotAbMoveItem
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
-instance NFData Ability
+instance NFData Skill
 
 instance NFData Feature
 
 instance NFData EqpSlot
 
-instance Binary Ability where
+instance Binary Skill where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
@@ -126,24 +126,24 @@ instance Binary EqpSlot where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
-instance Hashable Ability
+instance Hashable Skill
 
 instance Hashable Feature
 
 instance Hashable EqpSlot
 
-getAb :: Ability -> Skills -> Int
-{-# INLINE getAb #-}
-getAb ab (Skills sk) = EM.findWithDefault 0 ab sk
+getSk :: Skill -> Skills -> Int
+{-# INLINE getSk #-}
+getSk ab (Skills sk) = EM.findWithDefault 0 ab sk
 
-addAb :: Ability -> Int -> Skills -> Skills
-addAb ab n sk = addSkills (Skills $ EM.singleton ab n) sk
+addSk :: Skill -> Int -> Skills -> Skills
+addSk ab n sk = addSkills (Skills $ EM.singleton ab n) sk
 
 checkFl :: Feature -> Flags -> Bool
 {-# INLINE checkFl #-}
 checkFl flag (Flags flags) = flag `ES.member` flags
 
-skillsToList :: Skills -> [(Ability, Int)]
+skillsToList :: Skills -> [(Skill, Int)]
 skillsToList (Skills sk) = EM.assocs sk
 
 zeroSkills :: Skills
@@ -153,19 +153,19 @@ unitSkills :: Skills
 unitSkills =
   Skills $ EM.fromDistinctAscList $ zip [AbMove .. AbApply] (repeat 1)
 
-compactSkills :: EM.EnumMap Ability Int -> EM.EnumMap Ability Int
+compactSkills :: EM.EnumMap Skill Int -> EM.EnumMap Skill Int
 compactSkills = EM.filter (/= 0)
 
 addSkills :: Skills -> Skills -> Skills
 addSkills (Skills sk1) (Skills sk2) =
   Skills $ compactSkills $ EM.unionWith (+) sk1 sk2
 
-scaleSkills :: Int -> EM.EnumMap Ability Int -> EM.EnumMap Ability Int
+scaleSkills :: Int -> EM.EnumMap Skill Int -> EM.EnumMap Skill Int
 scaleSkills n sk = EM.map (n *) sk
 
-sumScaledAbility :: [(Skills, Int)] -> Skills
-sumScaledAbility l = Skills $ compactSkills $ EM.unionsWith (+)
-                            $ map (\(Skills sk, k) -> scaleSkills k sk) l
+sumScaledSkills :: [(Skills, Int)] -> Skills
+sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)
+                           $ map (\(Skills sk, k) -> scaleSkills k sk) l
 
 tacticSkills :: Tactic -> Skills
 tacticSkills TExplore = zeroSkills

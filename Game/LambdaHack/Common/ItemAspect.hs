@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.ItemAspect
   ( AspectRecord(..), KindMean(..), ItemSpeedup
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
-  , getAbility, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
+  , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
   , prEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha
@@ -92,10 +92,10 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.Timeout d -> do
       n <- castDice ldepth totalDepth d
       return $! assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddAbility ab d -> do
+    IK.AddSkill sk d -> do
       n <- castDice ldepth totalDepth d
       return $! if n /= 0
-                then ar {aSkills = Ability.addAb ab n (aSkills ar)}
+                then ar {aSkills = Ability.addSk sk n (aSkills ar)}
                 else ar
     IK.SetFeature feat ->
       return $! ar {aFlags = Ability.Flags
@@ -128,10 +128,10 @@ addMeanAspect !ar !asp =
     IK.Timeout d ->
       let n = ceilingMeanDice d
       in assert (aTimeout ar == 0) $ ar {aTimeout = n}
-    IK.AddAbility ab d ->
+    IK.AddSkill sk d ->
       let n = ceilingMeanDice d
       in if n /= 0
-         then ar {aSkills = Ability.addAb ab n (aSkills ar)}
+         then ar {aSkills = Ability.addSk sk n (aSkills ar)}
          else ar
     IK.SetFeature feat ->
       ar {aFlags = Ability.Flags $ ES.insert feat (Ability.flags $ aFlags ar)}
@@ -147,13 +147,13 @@ ceilingMeanDice d = ceiling $ Dice.meanDice d
 
 sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
 sumAspectRecord l = emptyAspectRecord
-  { aSkills  = Ability.sumScaledAbility $ map (first aSkills) l
+  { aSkills  = Ability.sumScaledSkills $ map (first aSkills) l
   }
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =
   [IK.Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
-  ++ [ IK.AddAbility ab $ Dice.intToDice n
+  ++ [ IK.AddSkill ab $ Dice.intToDice n
      | (ab, n) <- Ability.skillsToList aSkills ]
   ++ [ IK.SetFeature feat
      | feat <- ES.elems $ Ability.flags aFlags ]
@@ -168,9 +168,9 @@ rollAspectRecord :: [IK.Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
 rollAspectRecord ass ldepth totalDepth =
   foldlM' (castAspect ldepth totalDepth) emptyAspectRecord ass
 
-getAbility :: Ability.Ability -> AspectRecord -> Int
-{-# INLINE getAbility #-}
-getAbility ab ar = Ability.getAb ab $ aSkills ar
+getSkill :: Ability.Skill -> AspectRecord -> Int
+{-# INLINE getSkill #-}
+getSkill sk ar = Ability.getSk sk $ aSkills ar
 
 checkFlag :: Ability.Feature -> AspectRecord -> Bool
 {-# INLINE checkFlag #-}
@@ -198,33 +198,33 @@ prEqpSlot eqpSlot ar@AspectRecord{..} =
   case eqpSlot of
     EqpSlotMiscBonus ->
       aTimeout  -- usually better items have longer timeout
-      + Ability.getAb Ability.AbMaxCalm aSkills
-      + Ability.getAb Ability.AbSmell aSkills
-      + Ability.getAb Ability.AbNocto aSkills
+      + Ability.getSk Ability.AbMaxCalm aSkills
+      + Ability.getSk Ability.AbSmell aSkills
+      + Ability.getSk Ability.AbNocto aSkills
           -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> Ability.getAb Ability.AbHurtMelee aSkills
-    EqpSlotAddArmorMelee -> Ability.getAb Ability.AbArmorMelee aSkills
-    EqpSlotAddArmorRanged -> Ability.getAb Ability.AbArmorRanged aSkills
-    EqpSlotAddMaxHP -> Ability.getAb Ability.AbMaxHP aSkills
-    EqpSlotAddSpeed -> Ability.getAb Ability.AbSpeed aSkills
-    EqpSlotAddSight -> Ability.getAb Ability.AbSight aSkills
-    EqpSlotLightSource -> Ability.getAb Ability.AbShine aSkills
+    EqpSlotAddHurtMelee -> Ability.getSk Ability.AbHurtMelee aSkills
+    EqpSlotAddArmorMelee -> Ability.getSk Ability.AbArmorMelee aSkills
+    EqpSlotAddArmorRanged -> Ability.getSk Ability.AbArmorRanged aSkills
+    EqpSlotAddMaxHP -> Ability.getSk Ability.AbMaxHP aSkills
+    EqpSlotAddSpeed -> Ability.getSk Ability.AbSpeed aSkills
+    EqpSlotAddSight -> Ability.getSk Ability.AbSight aSkills
+    EqpSlotLightSource -> Ability.getSk Ability.AbShine aSkills
     EqpSlotWeapon -> error $ "" `showFailure` ar
     EqpSlotMiscAbility ->
-      Ability.getAb Ability.AbWait aSkills
-      + Ability.getAb Ability.AbMoveItem aSkills
-    EqpSlotAbMove -> Ability.getAb Ability.AbMove aSkills
-    EqpSlotAbMelee -> Ability.getAb Ability.AbMelee aSkills
-    EqpSlotAbDisplace -> Ability.getAb Ability.AbDisplace aSkills
-    EqpSlotAbAlter -> Ability.getAb Ability.AbAlter aSkills
-    EqpSlotAbProject -> Ability.getAb Ability.AbProject aSkills
-    EqpSlotAbApply -> Ability.getAb Ability.AbApply aSkills
-    EqpSlotAddMaxCalm -> Ability.getAb Ability.AbMaxCalm aSkills
-    EqpSlotAddSmell -> Ability.getAb Ability.AbSmell aSkills
-    EqpSlotAddNocto -> Ability.getAb Ability.AbNocto aSkills
-    EqpSlotAddAggression -> Ability.getAb Ability.AbAggression aSkills
-    EqpSlotAbWait -> Ability.getAb Ability.AbWait aSkills
-    EqpSlotAbMoveItem -> Ability.getAb Ability.AbMoveItem aSkills
+      Ability.getSk Ability.AbWait aSkills
+      + Ability.getSk Ability.AbMoveItem aSkills
+    EqpSlotAbMove -> Ability.getSk Ability.AbMove aSkills
+    EqpSlotAbMelee -> Ability.getSk Ability.AbMelee aSkills
+    EqpSlotAbDisplace -> Ability.getSk Ability.AbDisplace aSkills
+    EqpSlotAbAlter -> Ability.getSk Ability.AbAlter aSkills
+    EqpSlotAbProject -> Ability.getSk Ability.AbProject aSkills
+    EqpSlotAbApply -> Ability.getSk Ability.AbApply aSkills
+    EqpSlotAddMaxCalm -> Ability.getSk Ability.AbMaxCalm aSkills
+    EqpSlotAddSmell -> Ability.getSk Ability.AbSmell aSkills
+    EqpSlotAddNocto -> Ability.getSk Ability.AbNocto aSkills
+    EqpSlotAddAggression -> Ability.getSk Ability.AbAggression aSkills
+    EqpSlotAbWait -> Ability.getSk Ability.AbWait aSkills
+    EqpSlotAbMoveItem -> Ability.getSk Ability.AbMoveItem aSkills
 
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =

@@ -157,11 +157,11 @@ boundSightByCalm sight calm =
 cacheBeforeLucidFromActor :: FovClear -> Actor -> IA.AspectRecord
                           -> CacheBeforeLucid
 cacheBeforeLucidFromActor clearPs body ar =
-  let radius = boundSightByCalm (IA.getAbility Ability.AbSight ar) (bcalm body)
+  let radius = boundSightByCalm (IA.getSkill Ability.AbSight ar) (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
-      cnocto = PerVisible $ fullscan clearPs (IA.getAbility Ability.AbNocto ar)
+      cnocto = PerVisible $ fullscan clearPs (IA.getSkill Ability.AbNocto ar)
                                      (bpos body)
-      smellRadius = if IA.getAbility Ability.AbSmell ar >= 2 then 2 else 0
+      smellRadius = if IA.getSkill Ability.AbSmell ar >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
 
@@ -202,7 +202,7 @@ shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = IA.getAbility Ability.AbShine $ sactorAspect s EM.! aid
+        , let radius = IA.getSkill Ability.AbShine $ sactorAspect s EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
@@ -215,7 +215,7 @@ floorLightSources discoAspect lvl =
   -- Not enough oxygen to have more than one light lit on a given tile.
   -- Items obscuring or dousing off fire are not cumulative as well.
   let processIid (accLight, accDouse) (iid, _) =
-        let shine = IA.getAbility Ability.AbShine $ discoAspect EM.! iid
+        let shine = IA.getSkill Ability.AbShine $ discoAspect EM.! iid
         in case compare shine 0 of
           EQ -> (accLight, accDouse)
           GT -> (max shine accLight, accDouse)
@@ -297,9 +297,9 @@ perceptionCacheFromLevel fovClearLid fid lid s =
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
         let ar = sactorAspect s EM.! aid
-        in if IA.getAbility Ability.AbSight ar <= 0
-              && IA.getAbility Ability.AbNocto ar <= 0
-              && IA.getAbility Ability.AbSmell ar <= 0  -- dumb missiles
+        in if IA.getSkill Ability.AbSight ar <= 0
+              && IA.getSkill Ability.AbNocto ar <= 0
+              && IA.getSkill Ability.AbSmell ar <= 0  -- dumb missiles
            then Nothing
            else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)
       lvlCaches = mapMaybe f lvlBodies

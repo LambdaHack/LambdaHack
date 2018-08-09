@@ -238,7 +238,7 @@ executeIfClearHuman c1 = do
 waitHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getAb Ability.AbWait actorSk > 0 then do
+  if Ability.getSk Ability.AbWait actorSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait
   else failSer WaitUnskilled
@@ -249,7 +249,7 @@ waitHuman = do
 waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman10 = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getAb Ability.AbWait actorSk > 0 then do
+  if Ability.getSk Ability.AbWait actorSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait10
   else failSer WaitUnskilled
@@ -306,13 +306,13 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
           return $ Right runCmd
     [(target, _)] | run
                     && initialStep
-                    && Ability.getAb Ability.AbDisplace actorSk > 0 ->
+                    && Ability.getSk Ability.AbDisplace actorSk > 0 ->
       -- No @stopPlayBack@: initial displace is benign enough.
       -- Displacing requires accessibility, but it's checked later on.
       displaceAid target
     _ : _ : _ | run
                 && initialStep
-                && Ability.getAb Ability.AbDisplace actorSk > 0 -> do
+                && Ability.getSk Ability.AbDisplace actorSk > 0 -> do
       let !_A = assert (all (bproj . snd) tgts) ()
       failSer DisplaceProjectiles
     (target, tb) : _ | not run
@@ -328,7 +328,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     (target, tb) : _ | not run
                        && initialStep && finalGoal
                        && (bfid tb /= bfid sb || bproj tb)
-                       && Ability.getAb Ability.AbMelee actorSk > 0 -> do
+                       && Ability.getSk Ability.AbMelee actorSk > 0 -> do
       stopPlayBack  -- don't ever auto-repeat melee
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
@@ -381,7 +381,7 @@ displaceAid target = do
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   actorMaxSk <- maxActorSkillsClient target
   disp <- getsState $ dispEnemy leader target actorMaxSk
-  let immobile = Ability.getAb Ability.AbMove actorMaxSk <= 0
+  let immobile = Ability.getSk Ability.AbMove actorMaxSk <= 0
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isFoe (bfid tb) tfact (bfid sb)
@@ -417,9 +417,9 @@ moveSearchAlter dir = do
   sb <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   let calmE = calmEnough sb ar
-      moveSkill = Ability.getAb Ability.AbMove actorSk
-      alterSkill = Ability.getAb Ability.AbAlter actorSk
-      applySkill = Ability.getAb Ability.AbApply actorSk
+      moveSkill = Ability.getSk Ability.AbMove actorSk
+      alterSkill = Ability.getSk Ability.AbAlter actorSk
+      applySkill = Ability.getSk Ability.AbApply actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   itemToF <- getsState $ flip itemToFull
@@ -525,7 +525,7 @@ goToXhair initialStep run = do
       Nothing -> failWith "crosshair position invalid"
       Just c | c == bpos b -> do
         actorSk <- leaderSkillsClientUI
-        if initialStep && Ability.getAb Ability.AbWait actorSk > 0
+        if initialStep && Ability.getSk Ability.AbWait actorSk > 0
         then return $ Right $ ReqWait
         else failWith "position reached"
       Just c -> do
@@ -612,7 +612,7 @@ moveItemHuman :: forall m. MonadClientUI m
               -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getAb Ability.AbMoveItem actorSk > 0 then
+  if Ability.getSk Ability.AbMoveItem actorSk > 0 then
     moveOrSelectItem cLegalRaw destCStore mverb auto
   else failSer MoveItemUnskilled
 
@@ -771,7 +771,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 projectHuman = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getAb Ability.AbProject actorSk <= 0 then  -- detailed check later
+  if Ability.getSk Ability.AbProject actorSk <= 0 then  -- detailed check later
     failSer ProjectUnskilled
   else do
     itemSel <- getsSession sitemSel
@@ -819,7 +819,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
 applyHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
 applyHuman = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getAb Ability.AbApply actorSk <= 0 then  -- detailed check later
+  if Ability.getSk Ability.AbApply actorSk <= 0 then  -- detailed check later
     failSer ApplyUnskilled
   else do
     itemSel <- getsSession sitemSel
@@ -908,7 +908,7 @@ alterTileAtPos ts tpos pText = do
   actorSk <- leaderSkillsClientUI
   lvl <- getLevel $ blid b
   embeds <- getsState $ getEmbedBag (blid b) tpos
-  let alterSkill = Ability.getAb Ability.AbAlter actorSk
+  let alterSkill = Ability.getSk Ability.AbAlter actorSk
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       hasFeat TriggerTile{ttfeature} = Tile.hasFeature cotile ttfeature t
@@ -1111,7 +1111,7 @@ itemMenuHuman cmdAction = do
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               desc = itemDesc False (bfid b) factionD
-                              (IA.getAbility Ability.AbHurtMelee ar)
+                              (IA.getSkill Ability.AbHurtMelee ar)
                               fromCStore localTime itemFull kit
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
@@ -1134,11 +1134,11 @@ itemMenuHuman cmdAction = do
                   || not calmE && CSha == destCStore
                   || destCStore == CEqp && eqpOverfull b 1
                 Apply{} ->
-                  let skill = Ability.getAb Ability.AbApply actorSk
+                  let skill = Ability.getSk Ability.AbApply actorSk
                   in not $ either (const False) id
                      $ permittedApply localTime skill calmE itemFull kit
                 Project{} ->
-                  let skill = Ability.getAb Ability.AbProject actorSk
+                  let skill = Ability.getSk Ability.AbProject actorSk
                   in not $ either (const False) id
                      $ permittedProject False skill calmE itemFull
                 _ -> False

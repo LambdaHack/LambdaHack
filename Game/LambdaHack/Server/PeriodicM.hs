@@ -237,7 +237,7 @@ udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   ar <- getsState $ getActorAspect target
-  let calmMax64 = xM $ IA.getAbility Ability.AbMaxCalm ar
+  let calmMax64 = xM $ IA.getSkill Ability.AbMaxCalm ar
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64
         && bcalm tb + deltaCalm >= calmMax64) $

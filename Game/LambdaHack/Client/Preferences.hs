@@ -300,22 +300,22 @@ aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
-    IK.AddAbility Ability.AbHurtMelee p -> Dice.meanDice p  -- offence favoured
-    IK.AddAbility Ability.AbArmorMelee p -> Dice.meanDice p / 4
+    IK.AddSkill Ability.AbHurtMelee p -> Dice.meanDice p  -- offence favoured
+    IK.AddSkill Ability.AbArmorMelee p -> Dice.meanDice p / 4
                                               -- only partial protection
-    IK.AddAbility Ability.AbArmorRanged p -> Dice.meanDice p / 8
-    IK.AddAbility Ability.AbMaxHP p -> Dice.meanDice p
-    IK.AddAbility Ability.AbMaxCalm p -> Dice.meanDice p / 5
-    IK.AddAbility Ability.AbSpeed p -> Dice.meanDice p * 25
+    IK.AddSkill Ability.AbArmorRanged p -> Dice.meanDice p / 8
+    IK.AddSkill Ability.AbMaxHP p -> Dice.meanDice p
+    IK.AddSkill Ability.AbMaxCalm p -> Dice.meanDice p / 5
+    IK.AddSkill Ability.AbSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
       -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
-    IK.AddAbility Ability.AbSight p -> Dice.meanDice p * 5
-    IK.AddAbility Ability.AbSmell p -> Dice.meanDice p
-    IK.AddAbility Ability.AbShine p -> Dice.meanDice p * 2
-    IK.AddAbility Ability.AbNocto p -> Dice.meanDice p * 10
+    IK.AddSkill Ability.AbSight p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.AbSmell p -> Dice.meanDice p
+    IK.AddSkill Ability.AbShine p -> Dice.meanDice p * 2
+    IK.AddSkill Ability.AbNocto p -> Dice.meanDice p * 10
                                          -- > sight + light; stealth, slots
-    IK.AddAbility Ability.AbAggression _ -> 0  -- dunno
-    IK.AddAbility _ p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.AbAggression _ -> 0  -- dunno
+    IK.AddSkill _ p -> Dice.meanDice p * 5
     IK.SetFeature{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
@@ -413,7 +413,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                    | otherwise = assert (v <= 0) v
        where
         hurtMult =
-          100 + min 99 (max (-99) (IA.getAbility Ability.AbHurtMelee arItem))
+          100 + min 99 (max (-99) (IA.getSkill Ability.AbHurtMelee arItem))
             -- assumes no enemy armor and no block
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100

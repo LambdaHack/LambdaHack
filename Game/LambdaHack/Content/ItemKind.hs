@@ -55,14 +55,14 @@ data ItemKind = ItemKind
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
--- | Aspects of items. Aspect @AddAbility@ is additive (starting at 0)
+-- | Aspects of items. Aspect @AddSkill@ is additive (starting at 0)
 -- for all items wielded by an actor and it affects the actor.
 -- The others affect only the item in question, not the actor carrying it,
 -- and so are not additive in any sense.
 data Aspect =
     Timeout Dice.Dice  -- ^ some effects disabled until item recharges;
                        --   expressed in game turns
-  | AddAbility Ability.Ability Dice.Dice
+  | AddSkill Ability.Skill Dice.Dice
                        -- ^ bonus to an ability
   | SetFeature Ability.Feature
                        -- ^ item feature

@@ -251,7 +251,7 @@ unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
 -- not much harm.
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =
-  let p (IK.AddAbility Ability.AbHurtMelee k) = [k]
+  let p (IK.AddSkill Ability.AbHurtMelee k) = [k]
       p _ = []
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
@@ -261,6 +261,6 @@ tmpMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
         let arItem = aspectRecordFull itemFull
         in if IA.isTmpCondition arItem
-           then k + itemK * IA.getAbility Ability.AbHurtMelee arItem
+           then k + itemK * IA.getSkill Ability.AbHurtMelee arItem
            else k
   in foldr f 0 kitAss

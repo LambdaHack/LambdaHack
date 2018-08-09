@@ -176,7 +176,7 @@ chooseItemDialogMode c = do
                 itemFull2 = itemToF iid2
                 kit2 = itemBag EM.! iid2
                 attrLine = itemDesc True (bfid b) factionD
-                                    (IA.getAbility Ability.AbHurtMelee ar)
+                                    (IA.getSkill Ability.AbHurtMelee ar)
                                     CGround localTime itemFull2 kit2
                 ov = splitAttrLine rwidth attrLine
                 keys = [K.spaceKM, K.escKM]
@@ -361,7 +361,7 @@ permittedProjectClient = do
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
-  let skill = Ability.getAb Ability.AbProject actorSk
+  let skill = Ability.getSk Ability.AbProject actorSk
       calmE = calmEnough b ar
   return $ permittedProject False skill calmE
 
@@ -535,7 +535,7 @@ permittedApplyClient = do
   b <- getsState $ getActorBody leader
   ar <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
-  let skill = Ability.getAb Ability.AbApply actorSk
+  let skill = Ability.getSk Ability.AbApply actorSk
       calmE = calmEnough b ar
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE

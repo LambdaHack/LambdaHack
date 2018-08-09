@@ -95,7 +95,7 @@ actionStrategy aid retry = do
   condSolo <- condSoloM aid  -- solo fighters aggresive
   canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
-  condCanProject <- condCanProjectM (getAb AbProject actorSk) aid
+  condCanProject <- condCanProjectM (getSk AbProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
@@ -123,13 +123,13 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = IA.getAbility AbShine ar > 0
+      actorShines = IA.getSkill AbShine ar > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       actorMaxSk = IA.aSkills ar
-      abInMaxSkill ab = getAb ab actorMaxSk > 0
+      abInMaxSkill ab = getSk ab actorMaxSk > 0
       runSkills = [AbMove, AbDisplace, AbAlter]
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
@@ -142,7 +142,7 @@ actionStrategy aid retry = do
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
-      prefix, suffix :: [([Ability], m (Strategy RequestTimed), Bool)]
+      prefix, suffix :: [([Skill], m (Strategy RequestTimed), Bool)]
       prefix =
         [ ( [AbApply]
           , applyItem aid ApplyFirstAid
@@ -222,7 +222,7 @@ actionStrategy aid retry = do
       -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
       -- Only the best variant of @chase@ is taken, but it's almost always
       -- good, and if not, the @chase@ in @suffix@ may fix that.
-      distant :: [([Ability], m (Frequency RequestTimed), Bool)]
+      distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [AbMoveItem]
           , stratToFreq (if condInMelee then 2 else 20000)
@@ -290,8 +290,8 @@ actionStrategy aid retry = do
         ]
   -- Check current, not maximal skills, since this can be a leader as well
   -- as non-leader action.
-  let abInSkill ab = getAb ab actorSk > 0
-      checkAction :: ([Ability], m a, Bool) -> Bool
+  let abInSkill ab = getSk ab actorSk > 0
+      checkAction :: ([Skill], m a, Bool) -> Bool
       checkAction (abts, _, cond) = any abInSkill abts && cond
       sumS abAction = do
         let as = filter checkAction abAction
@@ -582,14 +582,14 @@ meleeBlocker aid = do
           -- attack the first one.
           if | actorDying body2
                || bproj body2  -- displacing saves a move, so don't melee
-                  && getAb AbDisplace actorSk > 0 ->
+                  && getSk AbDisplace actorSk > 0 ->
                return reject
              | isFoe (bfid b) fact (bfid body2)
                  -- at war with us, so hit, not displace
                || isFriend (bfid b) fact (bfid body2) -- don't start a war
-                  && getAb AbDisplace actorSk <= 0
+                  && getSk AbDisplace actorSk <= 0
                        -- can't displace
-                  && getAb AbMove actorSk > 0  -- blocked move
+                  && getSk AbMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
                   && gearSpeed ar2 <= gearSpeed ar -> do
                mel <- maybeToList <$> pickWeaponClient aid aid2
@@ -656,7 +656,7 @@ projectItem aid = do
       case mnewEps of
         Just newEps -> do
           actorSk <- currentSkillsClient aid
-          let skill = getAb AbProject actorSk
+          let skill = getSk AbProject actorSk
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstacles along the path.
           benList <- condProjectListM skill aid
@@ -704,7 +704,7 @@ applyItem aid applyGroup = do
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
-      skill = getAb AbApply actorSk
+      skill = getSk AbApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough ar
@@ -923,7 +923,7 @@ moveTowards aid target goal relaxed = do
   b <- getsState $ getActorBody aid
   actorSk <- currentSkillsClient aid
   let source = bpos b
-      alterSkill = getAb AbAlter actorSk
+      alterSkill = getSk AbAlter actorSk
       !_A = assert (source == bpos b
                     `blame` (source, bpos b, aid, b, goal)) ()
       !_B = assert (adjacent source target
@@ -977,7 +977,7 @@ moveOrRunAid source dir = do
   tgts <- getsState $ posToAssocs tpos lid
   case tgts of
     [(target, b2)] | walkable
-                     && getAb AbDisplace actorSk > 0
+                     && getSk AbDisplace actorSk > 0
                      && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
@@ -987,11 +987,11 @@ moveOrRunAid source dir = do
       if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
       then return Nothing
       else return $ Just $ ReqDisplace target
-    [] | walkable && getAb AbMove actorSk > 0 ->
+    [] | walkable && getSk AbMove actorSk > 0 ->
       -- Movement requires full access. The potential invisible actor is hit.
       return $ Just $ ReqMove dir
     [] | not walkable
-         && getAb AbAlter actorSk
+         && getSk AbAlter actorSk
               >= Tile.alterMinWalk coTileSpeedup t  -- AlterUnwalked
          -- Only possible if items allowed inside unwalkable tiles:
          && EM.notMember tpos (lfloor lvl) ->  -- AlterBlockItem

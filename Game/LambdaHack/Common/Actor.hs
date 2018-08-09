@@ -100,7 +100,7 @@ actorCanMelee actorAspect aid b =
   let ar = actorAspect EM.! aid
       actorMaxSk = IA.aSkills ar
       condUsableWeapon = bweapon b > 0
-      canMelee = Ability.getAb Ability.AbMelee actorMaxSk > 0
+      canMelee = Ability.getSk Ability.AbMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
 -- | Current physical speed, whether from being pushed or from organs and gear.
@@ -113,7 +113,7 @@ momentarySpeed !b ar =
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: IA.AspectRecord -> Speed
 gearSpeed ar = toSpeed $
-  max minSpeed (IA.getAbility Ability.AbSpeed ar)  -- see @minimalSpeed@
+  max minSpeed (IA.getSkill Ability.AbSpeed ar)  -- see @minimalSpeed@
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
@@ -144,17 +144,17 @@ actorDying b = bhp b <= 0
 
 hpTooLow :: Actor -> IA.AspectRecord -> Bool
 hpTooLow b ar =
-  5 * bhp b < xM (IA.getAbility Ability.AbMaxHP ar)
+  5 * bhp b < xM (IA.getSkill Ability.AbMaxHP ar)
   && bhp b <= xM 40 || bhp b <= oneM
 
 calmEnough :: Actor -> IA.AspectRecord -> Bool
 calmEnough b ar =
-  let calmMax = max 1 $ IA.getAbility Ability.AbMaxCalm ar
+  let calmMax = max 1 $ IA.getSkill Ability.AbMaxCalm ar
   in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
 
 hpEnough :: Actor -> IA.AspectRecord -> Bool
 hpEnough b ar =
-  xM (IA.getAbility Ability.AbMaxHP ar) <= 2 * bhp b && bhp b > oneM
+  xM (IA.getSkill Ability.AbMaxHP ar) <= 2 * bhp b && bhp b > oneM
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

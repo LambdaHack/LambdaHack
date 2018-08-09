@@ -207,7 +207,7 @@ affectSmell aid = do
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
     ar <- getsState $ getActorAspect aid
-    let smellRadius = IA.getAbility Ability.AbSmell ar
+    let smellRadius = IA.getSkill Ability.AbSmell ar
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b
@@ -231,7 +231,7 @@ reqMove source dir = do
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
   let abInSkill ab = isJust (btrajectory sb)
-                     || Ability.getAb ab actorSk > 0
+                     || Ability.getSk ab actorSk > 0
       lid = blid sb
   lvl <- getLevel lid
   let spos = bpos sb           -- source position
@@ -306,7 +306,7 @@ reqMelee :: MonadServerAtomic m
          => ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMelee source target iid cstore = do
   actorSk <- currentSkillsServer source
-  if Ability.getAb Ability.AbMelee actorSk > 0 then
+  if Ability.getSk Ability.AbMelee actorSk > 0 then
     reqMeleeChecked source target iid cstore
   else execFailure source (ReqMelee target iid cstore) MeleeUnskilled
 
@@ -416,7 +416,7 @@ reqDisplace source target = do
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
   let abInSkill ab = isJust (btrajectory sb)
-                     || Ability.getAb ab actorSk > 0
+                     || Ability.getSk ab actorSk > 0
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let tpos = bpos tb
@@ -478,8 +478,8 @@ reqAlterFail source tpos = do
   itemToF <- getsState $ flip itemToFull
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
-  let alterSkill = Ability.getAb Ability.AbAlter actorSk
-      applySkill = Ability.getAb Ability.AbApply actorSk
+  let alterSkill = Ability.getSk Ability.AbAlter actorSk
+      applySkill = Ability.getSk Ability.AbApply actorSk
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   let serverTile = lvl `at` tpos
@@ -628,7 +628,7 @@ reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
 reqWait source = do
   actorSk <- currentSkillsServer source
-  unless (Ability.getAb Ability.AbWait actorSk > 0) $
+  unless (Ability.getSk Ability.AbWait actorSk > 0) $
     execFailure source ReqWait WaitUnskilled
 
 -- * ReqMoveItems
@@ -637,7 +637,7 @@ reqMoveItems :: MonadServerAtomic m
              => ActorId -> [(ItemId, Int, CStore, CStore)] -> m ()
 reqMoveItems source l = do
   actorSk <- currentSkillsServer source
-  if Ability.getAb Ability.AbMoveItem actorSk > 0 then do
+  if Ability.getSk Ability.AbMoveItem actorSk > 0 then do
     b <- getsState $ getActorBody source
     ar <- getsState $ getActorAspect source
     -- Server accepts item movement based on calm at the start, not end
@@ -752,7 +752,7 @@ reqApply aid iid cstore = do
         itemFull <- getsState $ itemToFull iid
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
-        let skill = Ability.getAb Ability.AbApply actorSk
+        let skill = Ability.getSk Ability.AbApply actorSk
             legal = permittedApply localTime skill calmE itemFull kit
         case legal of
           Left reqFail -> execFailure aid req reqFail

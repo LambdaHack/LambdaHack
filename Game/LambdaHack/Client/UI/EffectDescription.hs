@@ -176,7 +176,7 @@ slotToName eqpSlot =
     EqpSlotAbWait -> abilityDesc AbWait
     EqpSlotAbMoveItem -> abilityDesc AbMoveItem
 
-abilityDesc :: Ability -> Text
+abilityDesc :: Skill -> Text
 abilityDesc AbMove = "move ability"
 abilityDesc AbMelee = "melee ability"
 abilityDesc AbDisplace = "displace ability"
@@ -301,26 +301,26 @@ kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
   case aspect of
     Timeout{} -> ""  -- printed specially
-    AddAbility AbMove t -> wrapInParens $ affixDice t <+> "move"
-    AddAbility AbMelee t -> wrapInParens $ affixDice t <+> "melee"
-    AddAbility AbDisplace t -> wrapInParens $ affixDice t <+> "displace"
-    AddAbility AbAlter t -> wrapInParens $ affixDice t <+> "alter"
-    AddAbility AbWait t -> wrapInParens $ affixDice t <+> "wait"
-    AddAbility AbMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
-    AddAbility AbProject t -> wrapInParens $ affixDice t <+> "fling"
-    AddAbility AbApply t -> wrapInParens $ affixDice t <+> "apply"
-    AddAbility AbHurtMelee _ ->
+    AddSkill AbMove t -> wrapInParens $ affixDice t <+> "move"
+    AddSkill AbMelee t -> wrapInParens $ affixDice t <+> "melee"
+    AddSkill AbDisplace t -> wrapInParens $ affixDice t <+> "displace"
+    AddSkill AbAlter t -> wrapInParens $ affixDice t <+> "alter"
+    AddSkill AbWait t -> wrapInParens $ affixDice t <+> "wait"
+    AddSkill AbMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
+    AddSkill AbProject t -> wrapInParens $ affixDice t <+> "fling"
+    AddSkill AbApply t -> wrapInParens $ affixDice t <+> "apply"
+    AddSkill AbHurtMelee _ ->
       ""  -- printed together with dice, even if dice is zero
-    AddAbility AbArmorMelee t -> "[" <> affixDice t <> "%]"
-    AddAbility AbArmorRanged t -> "{" <> affixDice t <> "%}"
-    AddAbility AbMaxHP t -> wrapInParens $ affixDice t <+> "HP"
-    AddAbility AbMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
-    AddAbility AbSpeed t -> wrapInParens $ affixDice t <+> "speed"
-    AddAbility AbSight t -> wrapInParens $ affixDice t <+> "sight"
-    AddAbility AbSmell t -> wrapInParens $ affixDice t <+> "smell"
-    AddAbility AbShine t -> wrapInParens $ affixDice t <+> "shine"
-    AddAbility AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
-    AddAbility AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
+    AddSkill AbArmorMelee t -> "[" <> affixDice t <> "%]"
+    AddSkill AbArmorRanged t -> "{" <> affixDice t <> "%}"
+    AddSkill AbMaxHP t -> wrapInParens $ affixDice t <+> "HP"
+    AddSkill AbMaxCalm t -> wrapInParens $ affixDice t <+> "Calm"
+    AddSkill AbSpeed t -> wrapInParens $ affixDice t <+> "speed"
+    AddSkill AbSight t -> wrapInParens $ affixDice t <+> "sight"
+    AddSkill AbSmell t -> wrapInParens $ affixDice t <+> "smell"
+    AddSkill AbShine t -> wrapInParens $ affixDice t <+> "shine"
+    AddSkill AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddSkill AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
     SetFeature Fragile -> wrapInChevrons "fragile"
     SetFeature Lobable -> wrapInChevrons "can be lobbed"
     SetFeature Durable -> wrapInChevrons "durable"
@@ -342,7 +342,7 @@ aspectToSentence :: Aspect -> Maybe Text
 aspectToSentence feat =
   case feat of
     Timeout{} -> Nothing
-    AddAbility{} -> Nothing
+    AddSkill{} -> Nothing
     SetFeature Fragile -> Nothing
     SetFeature Lobable -> Nothing
     SetFeature Durable -> Nothing
