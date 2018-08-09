@@ -103,14 +103,14 @@ loreFromMode c = case c of
   MLore slore -> slore
   MPlaces -> undefined  -- artificial slots
 
-loreFromContainer :: IK.ItemKind -> Container -> SLore
-loreFromContainer itemKind c = case c of
+loreFromContainer :: IA.AspectRecord -> Container -> SLore
+loreFromContainer ar c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
-  CActor _ store -> if | IK.isBlast itemKind -> SBlast
-                       | IK.isTmpCondition itemKind -> STmp
+  CActor _ store -> if | IA.isBlast ar -> SBlast
+                       | IA.isTmpCondition ar -> STmp
                        | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if IK.isBlast itemKind then SBlast else STrunk
+  CTrunk{} -> if IA.isBlast ar then SBlast else STrunk
 
 sortSlots :: MonadClientUI m => m ()
 sortSlots = do
@@ -255,7 +255,7 @@ itemOverlay lSlots lid bag = do
           Just kit@(k, _) ->
             let itemFull = itemToF iid
                 colorSymbol =
-                  if IK.isTmpCondition $ itemKind itemFull
+                  if IA.isTmpCondition $ aspectRecordFull itemFull
                   then let color = if benInEqp (discoBenefit EM.! iid)
                                    then Color.BrGreen
                                    else Color.BrRed

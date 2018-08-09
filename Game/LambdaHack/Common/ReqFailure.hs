@@ -181,11 +181,11 @@ permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
       && IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
       && skill < 3 -> Left ProjectLobable
     | otherwise ->
-        let ar = aspectRecordFull itemFull
-            badSlot = case IA.aEqpSlot ar of
+        let arItem = aspectRecordFull itemFull
+            badSlot = case IA.aEqpSlot arItem of
               Just Ability.EqpSlotLightSource -> False
               Just _ -> True
-              Nothing ->  IK.goesIntoEqp itemKind
+              Nothing ->  IA.goesIntoEqp arItem
         in if badSlot
            then Right False
            else permittedPrecious forced calmE itemFull

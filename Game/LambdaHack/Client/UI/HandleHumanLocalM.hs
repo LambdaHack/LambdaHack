@@ -182,7 +182,7 @@ chooseItemDialogMode c = do
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
                        ++ [K.downKM | slotIndex /= lSlotsBound]
-            promptAdd0 $ promptFun $ itemKind itemFull2
+            promptAdd0 $ promptFun itemFull2
             slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
@@ -198,11 +198,11 @@ chooseItemDialogMode c = do
             sess {sitemSel = Just (iid, fromCStore, False)}
           return $ Right c2
         MOrgans -> do
-          let blurb itemKind
-                | IK.isTmpCondition itemKind = "condition"
+          let blurb itemFull
+                | IA.isTmpCondition $ aspectRecordFull itemFull = "condition"
                 | otherwise = "organ"
-              prompt2 itemKind = makeSentence [ partActor bUI, "can't remove"
-                                              , MU.AW $ blurb itemKind ]
+              prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
+                                              , MU.AW $ blurb itemFull ]
           displayLore ix0 prompt2
         MOwned -> do
           found <- getsState $ findIid leader (bfid b) iid
@@ -473,8 +473,8 @@ psuitReq = do
           Left err -> Left err
           Right False -> Right (pos, False)
           Right True ->
-            let ar = aspectRecordFull itemFull
-            in Right (pos, IA.totalRange ar (itemKind itemFull)
+            let arItem = aspectRecordFull itemFull
+            in Right (pos, IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
 triggerSymbols :: [TriggerItem] -> [Char]

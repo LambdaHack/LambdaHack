@@ -324,14 +324,15 @@ pickup aid onlyWeapon = do
   -- e.g., making all rings identified)
   ar <- getsState $ getActorAspect aid
   let calmE = calmEnough b ar
-      isWeapon (_, _, _, itemFull, _) = IK.isMelee $ itemKind itemFull
+      isWeapon (_, _, _, itemFull, _) = IA.isMelee $ aspectRecordFull itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4)
-                 (Benefit{benInEqp}, _, iid, ItemFull{itemKind}, (itemK, _)) =
+                 (Benefit{benInEqp}, _, iid, itemFull, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
             n = oldN + itemK
-        in if | calmE && IK.goesIntoSha itemKind && not onlyWeapon ->
+            arItem = aspectRecordFull itemFull
+        in if | calmE && IA.goesIntoSha arItem && not onlyWeapon ->
                 prep oldN CSha
               | benInEqp && eqpOverfull b n ->
                 if onlyWeapon then (oldN, l4)
@@ -518,8 +519,8 @@ groupByEqpSlot :: [(ItemId, ItemFullKit)]
                -> EM.EnumMap EqpSlot [(ItemId, ItemFullKit)]
 groupByEqpSlot is =
   let f (iid, itemFullKit) =
-        let ar = aspectRecordFull $ fst itemFullKit
-        in case IA.aEqpSlot ar of
+        let arItem = aspectRecordFull $ fst itemFullKit
+        in case IA.aEqpSlot arItem of
           Nothing -> Nothing
           Just es -> Just (es, [(iid, itemFullKit)])
       withES = mapMaybe f is
@@ -671,8 +672,8 @@ projectItem aid = do
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull kit
-                    ar = aspectRecordFull itemFull
-                    trange = IA.totalRange ar $ itemKind itemFull
+                    arItem = aspectRecordFull itemFull
+                    trange = IA.totalRange arItem $ itemKind itemFull
                     bestRange =
                       chessDist (bpos b) fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
@@ -719,14 +720,15 @@ applyItem aid applyGroup = do
       getTweak (IK.Composite l) = any getTweak l
       getTweak _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
-        let durable = IK.SetFeature Durable `elem` IK.iaspects itemKind
+        let arItem = aspectRecordFull itemFull
+            durable = IA.checkFlag Durable arItem
         in (not benInEqp  -- can't wear, so OK to break
             || durable  -- can wear, but can't break, even better
-            || not (IK.isMelee itemKind)  -- anything else expendable
+            || not (IA.isMelee arItem)  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
            && not (any getTweak $ IK.ieffects itemKind)
-           && not (IK.isHumanTrinket itemKind)  -- hack for elixir of youth
+           && not (IA.isHumanTrinket arItem)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
@@ -734,9 +736,11 @@ applyItem aid applyGroup = do
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
   getKind <- getsState $ flip getIidKind
+  getArItem <- getsState $ flip aspectRecordFromIid
   let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
-        in if IK.isTmpCondition itemKind
+            arItem = getArItem iid
+        in if IA.isTmpCondition arItem
            then Just $ if benInEqp (discoBenefit EM.! iid)
                        then Left $ toGroupName $ IK.iname itemKind
                          -- conveniently, @iname@ matches @ifreq@

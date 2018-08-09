@@ -260,7 +260,8 @@ reqMove source dir = do
         sdamaging = damaging sitemKind
         tdamaging = damaging titemKind
         -- Avoid explosion extinguishing itself via its own particles colliding.
-        sameBlast = IK.isBlast sitemKind
+        sar = sdiscoAspect s EM.! btrunk sb
+        sameBlast = IA.isBlast sar
                     && getIidKindIdServer (btrunk sb) s
                        == getIidKindIdServer (btrunk tb) s
     in not sameBlast
@@ -326,10 +327,11 @@ reqMeleeChecked source target iid cstore = do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
           _ -> return ()
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    itemKind <- getsState $ getIidKindServer $ btrunk tb
+    discoAspect <- getsState sdiscoAspect
+    let arItem = discoAspect EM.! btrunk tb
     -- Only catch with appendages, never with weapons. Never steal trunk
     -- from an already caught projectile or one with many items inside.
-    if bproj tb && EM.size (beqp tb) == 1 && not (IK.isBlast itemKind)
+    if bproj tb && EM.size (beqp tb) == 1 && not (IA.isBlast arItem)
        && cstore == COrgan then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile

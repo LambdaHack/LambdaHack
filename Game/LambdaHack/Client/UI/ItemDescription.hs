@@ -99,7 +99,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       elabel :: IK.Aspect -> Bool
       elabel IK.ELabel{} = True
       elabel _ = False
-      active = IK.goesIntoEqp itemKind
+      active = IA.goesIntoEqp arItem
       splitAE :: DetailLevel -> [IK.Aspect] -> [Text]
       splitAE detLev aspects =
         let ppA = kindAspectToSuffix
@@ -168,12 +168,12 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      ar = aspectRecordFull itemFull
-      IK.ThrowMod{IK.throwVelocity} = IA.aToThrow ar
+      arItem = aspectRecordFull itemFull
+      IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
       minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee ar
+      aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee arItem
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
       pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
@@ -207,11 +207,11 @@ partItemHigh side factionD = partItemN side factionD False DetailAll 100
 partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
             -> ItemQuant
             -> (Bool, MU.Part)
-partItemWsR side factionD ranged count localTime itemFull@ItemFull{itemKind}
-            kit =
+partItemWsR side factionD ranged count localTime itemFull kit =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
-      tmpCondition = IK.isTmpCondition itemKind
+      arItem = aspectRecordFull itemFull
+      tmpCondition = IA.isTmpCondition arItem
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
@@ -266,12 +266,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
          itemFull@ItemFull{itemBase, itemKind, itemSuspect} kit =
   let (_, unique, name, stats) =
         partItemHigh side factionD localTime itemFull kit
-      ar = aspectRecordFull itemFull
+      arItem = aspectRecordFull itemFull
       nstats = makePhrase [name, stats]
-      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow ar
+      IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | IK.isTmpCondition itemKind = ""
+      tspeed | IA.isTmpCondition arItem = ""
              | speed < speedLimp = "When thrown, it drops at once."
              | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
              | otherwise =
@@ -284,7 +284,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       (desc, featureSentences, damageAnalysis) =
         let sentences = tsuspect
                         ++ mapMaybe aspectToSentence (IK.iaspects itemKind)
-            aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee ar
+            aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee arItem
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else
               let multRaw = aHurtMeleeOfOwner
@@ -328,7 +328,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid | IK.isTmpCondition itemKind ->
+          Just fid | IA.isTmpCondition arItem ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
             <> ". First observed" <+> onLevel
           Just fid ->

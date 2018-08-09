@@ -87,8 +87,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       CActor aid store ->
         case store of
           COrgan -> do
-            itemKind <- getsState $ getIidKind iid
-            if IK.isTmpCondition itemKind then do
+            arItem <- getsState $ aspectRecordFromIid iid
+            if IA.isTmpCondition arItem then do
               bag <- getsState $ getContainerBag c
               let more = case EM.lookup iid bag of
                     Nothing -> False
@@ -364,8 +364,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
-  itemKind <- getsState $ getIidKind iid
-  let slore = loreFromContainer itemKind c
+  arItem <- getsState $ aspectRecordFromIid iid
+  let slore = loreFromContainer arItem c
       incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
         case EM.lookup l2 m of
           Nothing -> m
@@ -491,6 +491,7 @@ createActorUI born aid body = do
   localTime <- getsState $ getLocalTime $ blid body
   itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
   let symbol = IK.isymbol itemKind
+      arItem = aspectRecordFull itemFull
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -509,7 +510,7 @@ createActorUI born aid body = do
                  $ lookup k uHeroNames
       (n, bsymbol) <-
         if | bproj body ->
-               return (0, if IK.isBlast itemKind then symbol else '*')
+               return (0, if IA.isBlast arItem then symbol else '*')
            | baseColor /= Color.BrWhite -> return (0, symbol)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
@@ -533,7 +534,7 @@ createActorUI born aid body = do
                | baseColor /= Color.BrWhite -> (IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n
           bcolor | bproj body =
-                     if IK.isBlast itemKind then baseColor else Color.BrWhite
+                     if IA.isBlast arItem then baseColor else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
           bUI = ActorUI{..}
@@ -615,8 +616,8 @@ spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
   ItemSlots itemSlots <- getsSession sslots
-  itemKind <- getsState $ getIidKind iid
-  let slore = loreFromContainer itemKind c
+  arItem <- getsState $ aspectRecordFromIid iid
+  let slore = loreFromContainer arItem c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
       void $ updateItemSlot c iid
@@ -1195,7 +1196,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           (_, _, name, stats) =
             partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
-          cond = ["condition" | IK.isTmpCondition $ itemKind itemFull]
+          cond = ["condition" | IA.isTmpCondition $ aspectRecordFull itemFull]
       return $! makeSentence $
         ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
     else return ""

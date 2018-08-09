@@ -610,7 +610,7 @@ drawLeaderDamage width = do
       actorSk <- leaderSkillsClientUI
       actorAspect <- getsState sactorAspect
       let kitAssOnlyWeapons =
-            filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+            filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
       strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
       let damage = case strongest of
             [] -> ("0", "", Color.White)

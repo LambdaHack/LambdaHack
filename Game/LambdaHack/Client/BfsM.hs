@@ -30,6 +30,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -393,7 +394,7 @@ condEnoughGearM aid = do
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy
-           && (any (IK.isMelee . itemKind . snd) eqpAssocs
+           && (any (IA.isMelee . aspectRecordFull . snd) eqpAssocs
                || length eqpAssocs + length invAssocs >= 5)
 
 unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool

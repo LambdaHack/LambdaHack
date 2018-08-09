@@ -50,14 +50,13 @@ import           Game.LambdaHack.Server.State
 
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
-  COps{coitem} <- getsState scops
   let discover aid store iid _ = do
+        discoAspect <- getsState sdiscoAspect
         itemKindId <- getsState $ getIidKindIdServer iid
-        let itemKind = okind coitem itemKindId
+        let arItem = discoAspect EM.! iid
             c = CActor aid store
-        unless (IK.isHumanTrinket itemKind) $ do  -- a hack
-          discoAspect <- getsState sdiscoAspect
-          execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
+        unless (IA.isHumanTrinket arItem) $  -- a hack
+          execUpdAtomic $ UpdDiscover c iid itemKindId arItem
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -376,9 +375,9 @@ addProjectile :: MonadServerAtomic m
               -> m ()
 addProjectile bpos rest iid (_, it) blid bfid btime = do
   itemFull <- getsState $ itemToFull iid
-  let ar = aspectRecordFull itemFull
+  let arItem = aspectRecordFull itemFull
       (trajectory, (speed, _)) =
-        IA.itemTrajectory ar (itemKind itemFull) (bpos : rest)
+        IA.itemTrajectory arItem (itemKind itemFull) (bpos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM
@@ -405,11 +404,11 @@ addActorIid :: MonadServerAtomic m
 addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj bfid pos lid tweakBody time = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let ar = itemAspect itemDisco
-  let hp = xM (max 2 $ IA.getAbility Ability.AbMaxHP ar) `div` 2
+  let arItem = itemAspect itemDisco
+      hp = xM (max 2 $ IA.getAbility Ability.AbMaxHP arItem) `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
-      calm = xM (max 0 $ IA.getAbility Ability.AbMaxCalm ar)
+      calm = xM (max 0 $ IA.getAbility Ability.AbMaxCalm arItem)
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
@@ -436,7 +435,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId diffHP calm pos lid bfid bproj
       -- Insert the trunk as the actor's organ.
-      withTrunk = b {bweapon = if IK.isMelee itemKind then 1 else 0}
+      withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   modifyServer $ \ser ->
@@ -462,11 +461,11 @@ discoverIfMinorEffects :: MonadServerAtomic m
 discoverIfMinorEffects c iid itemKindId = do
   COps{coitem} <- getsState scops
   discoAspect <- getsState sdiscoAspect
-  let ar = discoAspect EM.! iid
+  let arItem = discoAspect EM.! iid
       itemKind = okind coitem itemKindId
-  if IA.onlyMinorEffects ar itemKind
+  if IA.onlyMinorEffects arItem itemKind
   then do
-    execUpdAtomic $ UpdDiscover c iid itemKindId ar
+    execUpdAtomic $ UpdDiscover c iid itemKindId arItem
   else return ()  -- discover by use when item's effects get activated later on
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))
@@ -478,7 +477,8 @@ pickWeaponServer source = do
   let kitAssRaw = eqpAssocs ++ bodyAssocs
       forced = bproj sb
       kitAss | forced = kitAssRaw  -- for projectiles, anything is weapon
-             | otherwise = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+             | otherwise =
+                 filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.

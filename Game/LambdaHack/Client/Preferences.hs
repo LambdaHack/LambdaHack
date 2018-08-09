@@ -325,8 +325,8 @@ aspectToBenefit asp =
     IK.Odds{} -> 0  -- should be already rolled; if not, can't tell
 
 recordToBenefit :: IA.AspectRecord -> [Double]
-recordToBenefit aspects =
-  map aspectToBenefit $ IA.aspectRecordToList aspects
+recordToBenefit arItem =
+  map aspectToBenefit $ IA.aspectRecordToList arItem
 
 -- | Compute the whole 'Benefit' structure, containing various facets
 -- of AI item preference, for an item with the given effects and aspects.
@@ -336,7 +336,7 @@ recordToBenefit aspects =
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
 totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
   let effects = IK.ieffects itemKind
-      aspects = aspectRecordFull itemFull
+      arItem = aspectRecordFull itemFull
       effPairs = map (effectToBenefit cops fact False) effects
       effDice = - IK.damageUsefulness itemKind
       f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
@@ -347,7 +347,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- so a single such item may be worth half of the permanet value.
       -- Hence, we multiply item value by the proportion of the average desired
       -- delay between item uses @avgItemDelay@ and the actual timeout.
-      timeout = IA.aTimeout aspects
+      timeout = IA.aTimeout arItem
       (chargeSelf, chargeFoe) =
         let scaleChargeBens bens
               | timeout <= 3 = bens
@@ -413,12 +413,12 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                    | otherwise = assert (v <= 0) v
        where
         hurtMult =
-          100 + min 99 (max (-99) (IA.getAbility Ability.AbHurtMelee aspects))
+          100 + min 99 (max (-99) (IA.getAbility Ability.AbHurtMelee arItem))
             -- assumes no enemy armor and no block
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
-        IK.ThrowMod{IK.throwVelocity} = IA.aToThrow aspects
+        IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
@@ -430,7 +430,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- timing of their activation and also occasionally needs to spend a turn
       -- unequipping them to prevent activation. Note also that periodic
       -- activations don't consume the item, whether it's durable or not.
-      eqpBens = recordToBenefit aspects
+      eqpBens = recordToBenefit arItem
                 ++ if periodic then chargeSelf else []
       sumBens = sum eqpBens
       -- Equipped items may incur crippling maluses via aspects and periodic
@@ -443,7 +443,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (benInEqp, benPickupRaw)
-        | IK.isMelee itemKind  -- probably known even if not identified
+        | IA.isMelee arItem  -- probably known even if not identified
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
@@ -451,8 +451,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
             then eqpSum
                  + max benApply (- benMelee)  -- apply or melee or not
             else - benMelee)  -- melee is predominant
-        | (IK.goesIntoEqp itemKind
-          || IK.isTmpCondition itemKind)  -- hack to record benefit
+        | (IA.goesIntoEqp arItem
+          || IA.isTmpCondition arItem)  -- hack to record benefit
           && (eqpSum > 0 || itemSuspect) =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits

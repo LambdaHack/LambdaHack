@@ -6,9 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind
-  , isEffEscape, isEffAscend, isEffEscapeOrAscend
-  , isMelee, isTmpCondition, isBlast, isHumanTrinket
-  , goesIntoEqp, goesIntoInv, goesIntoSha, damageUsefulness
+  , isEffEscape, isEffAscend, isEffEscapeOrAscend, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
@@ -283,34 +281,6 @@ getMandatoryHideAsFromKind itemKind =
   in case concatMap f (iaspects itemKind) of
     [] -> Nothing
     x : _ -> Just x
-
-isMelee :: ItemKind -> Bool
-isMelee itemKind = SetFeature Ability.Meleeable `elem` iaspects itemKind
-
-isTmpCondition :: ItemKind -> Bool
-isTmpCondition itemKind = SetFeature Ability.Fragile `elem` iaspects itemKind
-                          && SetFeature Ability.Durable `elem` iaspects itemKind
-
-isBlast :: ItemKind -> Bool
-isBlast itemKind = SetFeature Ability.Blast `elem` iaspects itemKind
-
-isHumanTrinket :: ItemKind -> Bool
-isHumanTrinket itemKind =
-  SetFeature Ability.Precious `elem` iaspects itemKind
-    -- risk from treasure hunters
-  && SetFeature Ability.Equipable `notElem` iaspects itemKind  -- can't wear
-
-goesIntoEqp :: ItemKind -> Bool
-goesIntoEqp itemKind = SetFeature Ability.Equipable `elem` iaspects itemKind
-                       || SetFeature Ability.Meleeable `elem` iaspects itemKind
-
-goesIntoInv :: ItemKind -> Bool
-goesIntoInv itemKind = SetFeature Ability.Precious `notElem` iaspects itemKind
-                       && not (goesIntoEqp itemKind)
-
-goesIntoSha :: ItemKind -> Bool
-goesIntoSha itemKind = SetFeature Ability.Precious `elem` iaspects itemKind
-                       && not (goesIntoEqp itemKind)
 
 damageUsefulness :: ItemKind -> Double
 damageUsefulness itemKind =

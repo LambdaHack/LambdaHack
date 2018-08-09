@@ -6,6 +6,8 @@ module Game.LambdaHack.Common.ItemAspect
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
   , getAbility, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
   , prEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
+  , isMelee, isTmpCondition, isBlast, isHumanTrinket
+  , goesIntoEqp, goesIntoInv, goesIntoSha
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice, meanAspect, majorEffect
@@ -244,3 +246,28 @@ itemTrajectory ar itemKind path =
 
 totalRange :: AspectRecord -> IK.ItemKind -> Int
 totalRange ar itemKind = snd $ snd $ itemTrajectory ar itemKind []
+
+isMelee :: AspectRecord -> Bool
+isMelee = checkFlag Ability.Meleeable
+
+isTmpCondition :: AspectRecord -> Bool
+isTmpCondition ar = checkFlag Ability.Fragile ar
+                    && checkFlag Ability.Durable ar
+
+isBlast :: AspectRecord -> Bool
+isBlast = checkFlag Ability.Blast
+
+isHumanTrinket :: AspectRecord -> Bool
+isHumanTrinket ar =
+  checkFlag Ability.Precious ar  -- risk from treasure hunters
+  && not (checkFlag Ability.Equipable ar)  -- can't wear
+
+goesIntoEqp :: AspectRecord -> Bool
+goesIntoEqp ar = checkFlag Ability.Equipable ar
+                 || checkFlag Ability.Meleeable ar
+
+goesIntoInv :: AspectRecord -> Bool
+goesIntoInv ar = not (checkFlag Ability.Precious ar) && not (goesIntoEqp ar)
+
+goesIntoSha :: AspectRecord -> Bool
+goesIntoSha ar = checkFlag Ability.Precious ar && not (goesIntoEqp ar)

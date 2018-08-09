@@ -264,14 +264,14 @@ itemEffectDisco :: MonadServerAtomic m
 itemEffectDisco source target iid itemKind c recharged periodic effs = do
   urs <- mapM (effectSem source target iid c recharged periodic) effs
   discoAspect <- getsState sdiscoAspect
-  let ar = discoAspect EM.! iid
+  let arItem = discoAspect EM.! iid
       ur = case urs of
         [] -> UseDud
         _ -> maximum urs
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
-  when (ur >= UseId && not (IA.onlyMinorEffects ar itemKind)) $ do
+  when (ur >= UseId && not (IA.onlyMinorEffects arItem itemKind)) $ do
     kindId <- getsState $ getIidKindIdServer iid
-    execUpdAtomic $ UpdDiscover c iid kindId ar
+    execUpdAtomic $ UpdDiscover c iid kindId arItem
   return ur
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -1154,13 +1154,13 @@ effectIdentify execSfx iidId source target = do
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemBase, itemKindId, itemKind}) : rest -> do
-          let ar = discoAspect EM.! iid
+          let arItem = discoAspect EM.! iid
               kindIsKnown = case jkind itemBase of
                 IdentityObvious _ -> True
                 IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
           if iid `EM.member` sdiscoAspect s  -- already fully identified
-             || IK.isHumanTrinket itemKind  -- hack; keep them non-identified
-             || store == CGround && IA.onlyMinorEffects ar itemKind
+             || IA.isHumanTrinket arItem  -- hack; keep them non-identified
+             || store == CGround && IA.onlyMinorEffects arItem itemKind
                -- will be identified when picked up, so don't bother
              || IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
                 && kindIsKnown
@@ -1338,7 +1338,7 @@ effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
   kitAssRaw <- getsState $ kitAssocs target [CEqp]
-  let kitAss = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+  let kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
   case strongestMelee Nothing localTime kitAss of
     (_, (iid, _)) : _ -> do
       execSfx

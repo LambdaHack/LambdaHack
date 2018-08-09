@@ -31,7 +31,6 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
@@ -142,7 +141,7 @@ pickWeaponClient source target = do
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsClient source
   let kitAssRaw = eqpAssocs ++ bodyAssocs
-      kitAss = filter (IK.isMelee . itemKind . fst . snd) kitAssRaw
+      kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM (Just discoBenefit) kitAss actorSk source
   case strongest of

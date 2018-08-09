@@ -49,7 +49,6 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- All conditions are (partially) lazy, because they are not always
@@ -132,12 +131,14 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid =
-  any (IK.isMelee . itemKind . snd) <$> getsState (fullAssocs aid [CGround])
+  any (IA.isMelee . aspectRecordFull . snd) <$>
+    getsState (fullAssocs aid [CGround])
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid =
-  all (not . IK.isMelee . itemKind . snd) <$> getsState (fullAssocs aid [CEqp])
+  all (not . IA.isMelee . aspectRecordFull . snd) <$>
+    getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
@@ -172,11 +173,12 @@ projectList discoBenefit skill aid
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough ar
       q (Benefit{benInEqp, benFling}, _, _, itemFull, _) =
-        benFling < 0
-        && (not benInEqp  -- can't wear, so OK to risk losing or breaking
-            || not (IK.isMelee $ itemKind itemFull)  -- anything else expendable
-               && hind itemFull)  -- hinders now, so possibly often, so away!
-        && permittedProjectAI skill calmE itemFull
+        let arItem = aspectRecordFull itemFull
+        in benFling < 0
+           && (not benInEqp  -- can't wear, so OK to risk losing or breaking
+               || not (IA.isMelee arItem)  -- anything else expendable
+                  && hind itemFull)  -- hinders now, so possibly often, so away!
+           && permittedProjectAI skill calmE itemFull
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   in filter q $ benAvailableItems discoBenefit aid stores s
 
@@ -198,7 +200,8 @@ hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         ar itemFull =
-  let itemShine = 0 < IA.getAbility Ability.AbShine (aspectRecordFull itemFull)
+  let arItem = aspectRecordFull itemFull
+      itemShine = 0 < IA.getAbility Ability.AbShine arItem
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
       itemShineBad = condShineWouldBetray && itemShine
@@ -209,8 +212,8 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || gearSpeed ar > speedWalk
-        && not (IK.isMelee $ itemKind itemFull)  -- in case it's the only weapon
-        && 0 > IA.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
+        && not (IA.isMelee arItem)  -- in case it's the only weapon
+        && 0 > IA.getAbility Ability.AbHurtMelee arItem
 
 -- | Require that the actor stands over a desirable item.
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
@@ -226,18 +229,18 @@ benGroundItems aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   discoBenefit <- getsClient sdiscoBenefit
   let canEsc = fcanEscape (gplayer fact)
-      isDesirable (ben, _, _, ItemFull{itemKind}, _) =
-        desirableItem canEsc (benPickup ben) itemKind
+      isDesirable (ben, _, _, itemFull, _) =
+        desirableItem canEsc (benPickup ben) (aspectRecordFull itemFull)
   filter isDesirable
     <$> getsState (benAvailableItems discoBenefit aid [CGround])
 
-desirableItem :: Bool -> Double -> IK.ItemKind -> Bool
-desirableItem canEsc benPickup itemKind =
+desirableItem :: Bool -> Double -> IA.AspectRecord -> Bool
+desirableItem canEsc benPickup arItem =
   if canEsc
   then benPickup > 0
-       || IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
+       || IA.checkFlag Ability.Precious arItem
   else -- A hack to prevent monsters from picking up treasure meant for heroes.
-       let preciousNotUseful = IK.isHumanTrinket itemKind
+       let preciousNotUseful = IA.isHumanTrinket arItem
        in benPickup > 0 && not preciousNotUseful
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool

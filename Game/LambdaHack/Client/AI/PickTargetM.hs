@@ -190,10 +190,10 @@ computeTarget aid = do
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
   s <- getState
-  getKind <- getsState $ flip getIidKind
+  getArItem <- getsState $ flip aspectRecordFromIid
   let desirableBagFloor bag = any (\iid ->
         let Benefit{benPickup} = discoBenefit EM.! iid
-        in desirableItem canEscape benPickup (getKind iid)) $ EM.keys bag
+        in desirableItem canEscape benPickup (getArItem iid)) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = gearSpeed ar < speedWalk || condHpTooLow
       couldMoveLastTurn =

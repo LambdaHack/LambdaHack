@@ -23,6 +23,7 @@ import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -125,8 +126,9 @@ loudUpdAtomic local cmd = do
     UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
       -- Non-blast projectile hits an non-walkable tile on leader's level.
       b <- getsState $ getActorBody aid
-      itemKind <- getsState $ getIidKindServer (btrunk b)
-      return $! if bproj b && IK.isBlast itemKind then Nothing else Just cmd
+      discoAspect <- getsState sdiscoAspect
+      let arItem = discoAspect EM.! btrunk b
+      return $! if bproj b && IA.isBlast arItem then Nothing else Just cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
       then if local then Just cmd else Nothing

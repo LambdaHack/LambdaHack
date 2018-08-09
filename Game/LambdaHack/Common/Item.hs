@@ -94,8 +94,8 @@ newtype ItemKindIx = ItemKindIx Word16
 -- The @itemAspect@ accessor it to be used unconditionally only on the server
 -- where it's guaranteed to be safe.
 data ItemDisco =
-    ItemDiscoMean IA.KindMean
-  | ItemDiscoFull {itemAspect :: IA.AspectRecord}
+    ItemDiscoFull {itemAspect :: IA.AspectRecord}
+  | ItemDiscoMean IA.KindMean
  deriving (Show, Eq, Ord)
 
 -- No speedup from making fields non-strict.
@@ -179,8 +179,8 @@ itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
 aspectRecordFull :: ItemFull -> IA.AspectRecord
 aspectRecordFull itemFull =
   case itemDisco itemFull of
-    ItemDiscoMean itemAspectMean -> IA.kmMean itemAspectMean
     ItemDiscoFull itemAspect -> itemAspect
+    ItemDiscoMean itemAspectMean -> IA.kmMean itemAspectMean
 
 -- This ignores items that don't go into equipment, as determined in @inEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
@@ -257,6 +257,8 @@ unknownMeleeBonus =
 tmpMeleeBonus :: [ItemFullKit] -> Int
 tmpMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
-        itemK * IA.getAbility Ability.AbHurtMelee (aspectRecordFull itemFull)
-        + k
-  in foldr f 0 $ filter (IK.isTmpCondition . itemKind . fst) kitAss
+        let arItem = aspectRecordFull itemFull
+        in if IA.isTmpCondition arItem
+           then k + itemK * IA.getAbility Ability.AbHurtMelee arItem
+           else k
+  in foldr f 0 kitAss

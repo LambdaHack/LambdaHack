@@ -34,7 +34,6 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The monad for writing to the main game state. Atomic updates ('UpdAtomic')
 -- are given semantics in this monad.
@@ -159,22 +158,22 @@ insertItemActor iid kit aid cstore = case cstore of
 insertItemOrgan :: MonadStateWrite m
                 => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemOrgan iid kit aid = do
-  itemKind <- getsState $ getIidKind iid
+  arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { borgan = upd (borgan b)
-      , bweapon = if IK.isMelee itemKind then bweapon b + 1 else bweapon b }
+      , bweapon = if IA.isMelee arItem then bweapon b + 1 else bweapon b }
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemEqp iid kit aid = do
-  itemKind <- getsState $ getIidKind iid
+  arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { beqp = upd (beqp b)
-      , bweapon = if IK.isMelee itemKind then bweapon b + 1 else bweapon b }
+      , bweapon = if IA.isMelee arItem then bweapon b + 1 else bweapon b }
 
 insertItemInv :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
@@ -251,17 +250,17 @@ deleteItemActor iid kit aid cstore = case cstore of
 
 deleteItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemOrgan iid kit aid = do
-  itemKind <- getsState $ getIidKind iid
+  arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { borgan = rmFromBag kit iid (borgan b)
-      , bweapon = if IK.isMelee itemKind then bweapon b - 1 else bweapon b }
+      , bweapon = if IA.isMelee arItem then bweapon b - 1 else bweapon b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemEqp iid kit aid = do
-  itemKind <- getsState $ getIidKind iid
+  arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { beqp = rmFromBag kit iid (beqp b)
-      , bweapon = if IK.isMelee itemKind then bweapon b - 1 else bweapon b }
+      , bweapon = if IA.isMelee arItem then bweapon b - 1 else bweapon b }
 
 deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemInv iid kit aid =
