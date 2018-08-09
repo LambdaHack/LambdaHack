@@ -97,7 +97,7 @@ castAspect !ldepth !totalDepth !ar !asp =
       return $! if n /= 0
                 then ar {aSkills = Ability.addSk sk n (aSkills ar)}
                 else ar
-    IK.SetFeature feat ->
+    IK.SetFlag feat ->
       return $! ar {aFlags = Ability.Flags
                              $ ES.insert feat (Ability.flags $ aFlags ar)}
     IK.ELabel t -> return $! ar {aELabel = t}
@@ -133,7 +133,7 @@ addMeanAspect !ar !asp =
       in if n /= 0
          then ar {aSkills = Ability.addSk sk n (aSkills ar)}
          else ar
-    IK.SetFeature feat ->
+    IK.SetFlag feat ->
       ar {aFlags = Ability.Flags $ ES.insert feat (Ability.flags $ aFlags ar)}
     IK.ELabel t -> ar {aELabel = t}
     IK.ToThrow tt -> ar {aToThrow = tt}
@@ -155,8 +155,7 @@ aspectRecordToList AspectRecord{..} =
   [IK.Timeout $ Dice.intToDice aTimeout | aTimeout /= 0]
   ++ [ IK.AddSkill ab $ Dice.intToDice n
      | (ab, n) <- Ability.skillsToList aSkills ]
-  ++ [ IK.SetFeature feat
-     | feat <- ES.elems $ Ability.flags aFlags ]
+  ++ [IK.SetFlag feat | feat <- ES.elems $ Ability.flags aFlags]
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
   ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100]
   ++ maybe [] (\ha -> [IK.HideAs ha]) aHideAs
@@ -172,7 +171,7 @@ getSkill :: Ability.Skill -> AspectRecord -> Int
 {-# INLINE getSkill #-}
 getSkill sk ar = Ability.getSk sk $ aSkills ar
 
-checkFlag :: Ability.Feature -> AspectRecord -> Bool
+checkFlag :: Ability.Flag -> AspectRecord -> Bool
 {-# INLINE checkFlag #-}
 checkFlag flag ar = Ability.checkFl flag (aFlags ar)
 

@@ -316,7 +316,7 @@ aspectToBenefit asp =
                                          -- > sight + light; stealth, slots
     IK.AddSkill Ability.AbAggression _ -> 0  -- dunno
     IK.AddSkill _ p -> Dice.meanDice p * 5
-    IK.SetFeature{} -> 0
+    IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
     IK.HideAs{} -> 0

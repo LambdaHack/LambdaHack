@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Skill(..), Skills, Feature(..), Flags(..), EqpSlot(..)
+  ( Skill(..), Skills, Flag(..), Flags(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
   , zeroSkills, unitSkills, addSkills, sumScaledSkills
   , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
@@ -61,7 +61,7 @@ newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
 -- | Item features.
-data Feature =
+data Flag =
     Fragile       -- ^ drop and break at target tile, even if no hit
   | Lobable       -- ^ drop at target tile, even if no hit
   | Durable       -- ^ don't break even when hitting or applying
@@ -78,7 +78,7 @@ data Feature =
                   --   and so this item will identify on pick-up
   deriving (Show, Eq, Ord, Generic, Enum)
 
-newtype Flags = Flags {flags :: ES.EnumSet Feature}
+newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
 -- | AI and UI hints about the role of the item.
@@ -110,7 +110,7 @@ data EqpSlot =
 
 instance NFData Skill
 
-instance NFData Feature
+instance NFData Flag
 
 instance NFData EqpSlot
 
@@ -118,7 +118,7 @@ instance Binary Skill where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
-instance Binary Feature where
+instance Binary Flag where
   put = putWord8 . toEnum . fromEnum
   get = fmap (toEnum . fromEnum) getWord8
 
@@ -128,7 +128,7 @@ instance Binary EqpSlot where
 
 instance Hashable Skill
 
-instance Hashable Feature
+instance Hashable Flag
 
 instance Hashable EqpSlot
 
@@ -139,7 +139,7 @@ getSk ab (Skills sk) = EM.findWithDefault 0 ab sk
 addSk :: Skill -> Int -> Skills -> Skills
 addSk ab n sk = addSkills (Skills $ EM.singleton ab n) sk
 
-checkFl :: Feature -> Flags -> Bool
+checkFl :: Flag -> Flags -> Bool
 {-# INLINE checkFl #-}
 checkFl flag (Flags flags) = flag `ES.member` flags
 

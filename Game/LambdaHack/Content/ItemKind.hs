@@ -64,7 +64,7 @@ data Aspect =
                        --   expressed in game turns
   | AddSkill Ability.Skill Dice.Dice
                        -- ^ bonus to an ability
-  | SetFeature Ability.Feature
+  | SetFlag Ability.Flag
                        -- ^ item feature
   | ELabel Text        -- ^ extra label of the item; it's not pluralized
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
@@ -199,7 +199,7 @@ boostItemKind i =
         label `elem` ["common item", "curious item", "treasure"]
   in if any mainlineLabel (ifreq i)
      then i { ifreq = ("common item", 10000) : filter (not . mainlineLabel) (ifreq i)
-            , iaspects = delete (SetFeature Ability.Unique) $ iaspects i
+            , iaspects = delete (SetFlag Ability.Unique) $ iaspects i
             }
      else i
 
@@ -346,11 +346,11 @@ validateSingle ik@ItemKind{..} =
           f _ = False
           ts = filter f iaspects
       in [ "EqpSlot specified but not Equipable nor Meleeable"
-         | length ts > 0 && SetFeature Ability.Equipable `notElem` iaspects
-                         && SetFeature Ability.Meleeable `notElem` iaspects ])
+         | length ts > 0 && SetFlag Ability.Equipable `notElem` iaspects
+                         && SetFlag Ability.Meleeable `notElem` iaspects ])
   ++ ["Redundant Equipable or Meleeable"
-     | SetFeature Ability.Equipable `elem` iaspects
-       && SetFeature Ability.Meleeable `elem` iaspects]
+     | SetFlag Ability.Equipable `elem` iaspects
+       && SetFlag Ability.Meleeable `elem` iaspects]
   ++ (let f :: Effect -> Bool
           f OnSmash{} = True
           f _ = False
@@ -384,7 +384,7 @@ validateSingle ik@ItemKind{..} =
           ts = filter f iaspects
       in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
-       (map SetFeature
+       (map SetFlag
           [ Ability.Fragile, Ability.Lobable, Ability.Durable
           , Ability.Equipable, Ability.Meleeable, Ability.Precious
           , Ability.Blast, Ability.Unique, Ability.Periodic ])

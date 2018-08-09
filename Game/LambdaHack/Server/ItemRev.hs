@@ -89,7 +89,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
       f !itemGroup !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
-        let ld = if IK.SetFeature Ability.Unique `elem` IK.iaspects kind
+        let ld = if IK.SetFlag Ability.Unique `elem` IK.iaspects kind
                  then ldepth
                  else ldSpawned
             rarity = linearInterpolation ld tdepth (IK.irarity kind)

@@ -321,16 +321,16 @@ kindAspectToSuffix aspect =
     AddSkill AbShine t -> wrapInParens $ affixDice t <+> "shine"
     AddSkill AbNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddSkill AbAggression t -> wrapInParens $ affixDice t <+> "aggression"
-    SetFeature Fragile -> wrapInChevrons "fragile"
-    SetFeature Lobable -> wrapInChevrons "can be lobbed"
-    SetFeature Durable -> wrapInChevrons "durable"
-    SetFeature Equipable -> ""
-    SetFeature Meleeable -> ""
-    SetFeature Precious -> ""
-    SetFeature Blast -> ""
-    SetFeature Unique -> ""  -- marked by capital letters in name
-    SetFeature Periodic -> ""  -- printed specially
-    SetFeature MinorEffects -> ""  -- cryptic override
+    SetFlag Fragile -> wrapInChevrons "fragile"
+    SetFlag Lobable -> wrapInChevrons "can be lobbed"
+    SetFlag Durable -> wrapInChevrons "durable"
+    SetFlag Equipable -> ""
+    SetFlag Meleeable -> ""
+    SetFlag Precious -> ""
+    SetFlag Blast -> ""
+    SetFlag Unique -> ""  -- marked by capital letters in name
+    SetFlag Periodic -> ""  -- printed specially
+    SetFlag MinorEffects -> ""  -- cryptic override
     ELabel{} -> ""  -- too late
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     HideAs{} -> ""
@@ -343,17 +343,17 @@ aspectToSentence feat =
   case feat of
     Timeout{} -> Nothing
     AddSkill{} -> Nothing
-    SetFeature Fragile -> Nothing
-    SetFeature Lobable -> Nothing
-    SetFeature Durable -> Nothing
-    SetFeature Equipable -> Nothing
-    SetFeature Meleeable ->
+    SetFlag Fragile -> Nothing
+    SetFlag Lobable -> Nothing
+    SetFlag Durable -> Nothing
+    SetFlag Equipable -> Nothing
+    SetFlag Meleeable ->
       Just "It is considered for melee strikes by default."
-    SetFeature Precious -> Just "It seems precious."
-    SetFeature Blast -> Nothing
-    SetFeature Unique -> Nothing
-    SetFeature Periodic -> Nothing
-    SetFeature MinorEffects -> Nothing
+    SetFlag Precious -> Just "It seems precious."
+    SetFlag Blast -> Nothing
+    SetFlag Unique -> Nothing
+    SetFlag Periodic -> Nothing
+    SetFlag MinorEffects -> Nothing
     ELabel{} -> Nothing
     ToThrow{} -> Nothing
     HideAs{} -> Nothing
