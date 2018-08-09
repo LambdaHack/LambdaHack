@@ -36,7 +36,7 @@ scratchOnWall = ItemKind
   , iverbHit = "scratch"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [ Temporary "start making sense of the scratches"
                , Detect DetectHidden 3 ]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
@@ -52,7 +52,7 @@ obscenePictogram = ItemKind
   , iverbHit = "infuriate"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [Timeout 7, SetFeature Durable]
+  , iaspects = [Timeout 7, SetFlag Durable]
   , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
                , Recharging $ RefillCalm (-20)
                , Recharging $ OneOf
@@ -71,7 +71,7 @@ subtleFresco = ItemKind
   , iverbHit = "sooth"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [Timeout 7, SetFeature Durable]
+  , iaspects = [Timeout 7, SetFlag Durable]
   , ieffects = [ Temporary "feel refreshed by the subtle fresco"
                , RefillCalm 2
                , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
@@ -117,7 +117,7 @@ signboardExit = ItemKind
   , iverbHit = "whack"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [Detect DetectExit 100]
   , idesc    = "Crude big arrows hastily carved by unknown hands."
   , ikit     = []
@@ -138,7 +138,7 @@ fireSmall = ItemKind
   , iverbHit = "burn"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [Burn 1, Explode "single spark"]
   , idesc    = "A few small logs, burning brightly."
   , ikit     = []
@@ -162,7 +162,7 @@ frost = ItemKind
   , iverbHit = "burn"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [ Burn 1  -- sensory ambiguity between hot and cold
                , RefillCalm 20  -- cold reason
                , PushActor (ThrowMod 100 50) ]  -- slippery ice, 1 step, slow
@@ -179,7 +179,7 @@ rubble = ItemKind
   , iverbHit = "bury"
   , iweight  = 100000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [OneOf [ Explode "focused glass hail"
                       , Summon "animal" $ 1 `dL` 2
                       , toOrganNoTimer "poisoned"
@@ -231,7 +231,7 @@ stairsUp = ItemKind
                         -- not when it's applied otherwise, e.g., from tile
   , iweight  = 100000
   , idamage  = 0
-  , iaspects = [SetFeature Durable]
+  , iaspects = [SetFlag Durable]
   , ieffects = [Ascend True]
   , idesc    = "Stairs that rise towards escape."
   , ikit     = []

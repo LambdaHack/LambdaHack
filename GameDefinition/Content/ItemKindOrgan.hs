@@ -38,7 +38,7 @@ fist = ItemKind
   , iverbHit = "punch"
   , iweight  = 2000
   , idamage  = 4 `d` 1
-  , iaspects = [SetFeature Durable, SetFeature Meleeable]
+  , iaspects = [SetFlag Durable, SetFlag Meleeable]
   , ieffects = []
   , idesc    = "Simple but effective."
   , ikit     = []
@@ -150,7 +150,7 @@ thorn = fist
   , icount   = 2 + 1 `d` 3
   , iverbHit = "impale"
   , idamage  = 2 `d` 1
-  , iaspects = [SetFeature Meleeable]  -- not Durable
+  , iaspects = [SetFlag Meleeable]  -- not Durable
   , idesc    = "Sharp yet brittle."
   }
 boilingFissure = fist
@@ -160,7 +160,7 @@ boilingFissure = fist
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
   , iaspects = [ AddSkill AbHurtMelee 20  -- decreasing as count decreases
-               , SetFeature Meleeable ]  -- not Durable
+               , SetFlag Meleeable ]  -- not Durable
   , ieffects = [DropItem 1 1 COrgan "condition"]  -- useful; limited
   , idesc    = "A deep crack to the underworld."
   }
@@ -187,7 +187,7 @@ beeSting = fist
   , iverbHit = "sting"
   , idamage  = 0
   , iaspects = [ AddSkill AbArmorMelee 200, AddSkill AbArmorRanged 45
-               , SetFeature Meleeable ]  -- not Durable
+               , SetFlag Meleeable ]  -- not Durable
   , ieffects = [Paralyze 6, RefillHP 4]
   , idesc    = "Painful, but beneficial."
   }
@@ -262,7 +262,7 @@ armoredSkin = ItemKind
   , iweight  = 2000
   , idamage  = 0
   , iaspects = [ AddSkill AbArmorMelee 30, AddSkill AbArmorRanged 15
-               , SetFeature Durable ]
+               , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Homemade armour is just as good."
   , ikit     = []
@@ -277,7 +277,7 @@ eye n = armoredSkin
   , icount   = 2
   , iverbHit = "glare at"
   , iaspects = [ AddSkill AbSight (intToDice n)
-               , SetFeature Durable ]
+               , SetFlag Durable ]
   , idesc    = "A piercing stare."
   }
 eye2 = eye 2
@@ -293,7 +293,7 @@ vision n = armoredSkin
   , ifreq    = [(toGroupName $ "vision" <+> tshow n, 100)]
   , iverbHit = "visualize"
   , iaspects = [ AddSkill AbSight (intToDice n)
-               , SetFeature Durable ]
+               , SetFlag Durable ]
   , idesc    = ""
   }
 vision4 = vision 4
@@ -311,7 +311,7 @@ nostril = armoredSkin
   , icount   = 2
   , iverbHit = "snuff"
   , iaspects = [ AddSkill AbSmell 1  -- times 2, from icount
-               , SetFeature Durable ]
+               , SetFlag Durable ]
   , idesc    = ""
   }
 
@@ -322,7 +322,7 @@ insectMortality = armoredSkin
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
   , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10
-               , SetFeature Durable, SetFeature Periodic ]
+               , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [Recharging (RefillHP (-1))]
   , idesc    = ""
   }
@@ -332,7 +332,7 @@ sapientBrain = armoredSkin
   , iverbHit = "outbrain"
   , iaspects = [AddSkill ab 1 | ab <- [AbMove .. AbApply]]
                ++ [AddSkill AbAlter 2]  -- can use stairs
-               ++ [SetFeature Durable]
+               ++ [SetFlag Durable]
   , idesc    = ""
   }
 animalBrain = armoredSkin
@@ -343,7 +343,7 @@ animalBrain = armoredSkin
                ++ [AddSkill AbAlter 2]  -- can use stairs
                ++ [ AddSkill ab (-1)
                   | ab <- [AbDisplace, AbMoveItem, AbProject, AbApply] ]
-               ++ [SetFeature Durable]
+               ++ [SetFlag Durable]
   , idesc    = ""
   }
 speedGland :: Int -> ItemKind
@@ -353,7 +353,7 @@ speedGland n = armoredSkin
   , iverbHit = "spit at"
   , iaspects = [ AddSkill AbSpeed $ intToDice n
                , Timeout $ intToDice $ 100 `div` n
-               , SetFeature Durable, SetFeature Periodic ]
+               , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = ""
   }
@@ -368,7 +368,7 @@ scentGland = armoredSkin
   , icount   = 2 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
-               , SetFeature Periodic ]  -- not Durable
+               , SetFlag Periodic ]  -- not Durable
   , ieffects = [ Recharging (Temporary "look spent")
                , Recharging (Explode "distressing odor")
                , Recharging ApplyPerfume ]
@@ -380,7 +380,7 @@ boilingVent = armoredSkin
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFeature Durable, SetFeature Periodic ]
+               , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [ Recharging (Explode "boiling water")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -391,7 +391,7 @@ arsenicVent = armoredSkin
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFeature Durable, SetFeature Periodic ]
+               , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [ Recharging (Explode "sparse shower")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -402,7 +402,7 @@ sulfurVent = armoredSkin
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFeature Durable, SetFeature Periodic ]
+               , SetFlag Durable, SetFlag Periodic ]
   , ieffects = [ Recharging (Explode "dense shower")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -418,7 +418,7 @@ bonusHP = armoredSkin
   , iverbHit = "intimidate"
   , iweight  = 0
   , iaspects = [ AddSkill AbMaxHP 1
-               , SetFeature Durable ]
+               , SetFlag Durable ]
   , idesc    = ""
   }
 impressed = armoredSkin
@@ -431,7 +431,7 @@ impressed = armoredSkin
   , iaspects = [ AddSkill AbMaxCalm (-1)
                  -- to help player notice on main screen
                  -- and to count as bad condition
-               , SetFeature Fragile, SetFeature Durable ]
+               , SetFlag Fragile, SetFlag Durable ]
                    -- hack: destroy on drop
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not Periodic
   , idesc    = ""

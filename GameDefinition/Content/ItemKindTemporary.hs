@@ -36,7 +36,7 @@ tmpAspects name aspects = ItemKind
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
                aspects
-               ++ [SetFeature Periodic, SetFeature Fragile, SetFeature Durable]
+               ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Durable]
                     -- hack: destroy on drop
   , ieffects = [ Recharging $ tmpLess name
                , OnSmash $ tmpLess name ]

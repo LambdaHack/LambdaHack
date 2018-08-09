@@ -38,7 +38,7 @@ burningOil n = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity (min 100 $ n `div` 2 * 10)
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 2 ]
   , ieffects = [ Burn 1
                , toOrganBad "slowed" (2 + 1 `d` 2) ]  -- tripping on oil
@@ -61,7 +61,7 @@ firecracker n = ItemKind
   , iverbHit = if n >= 4 then "singe" else "crack"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 5, SetFeature Fragile, SetFeature Blast
+  , iaspects = [ toVelocity 5, SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine $ intToDice $ 1 + n `div` 2 ]
   , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
                ++ [DropBestWeapon | n >= 4]
@@ -91,7 +91,7 @@ spreadFragmentation = ItemKind
   , idamage  = 3 `d` 1  -- deadly and adjacent actor hit by 2 on average;
                         -- however, moderate armour blocks completely
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
-               , SetFeature Lobable, SetFeature Fragile, SetFeature Blast
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 3, AddSkill AbHurtMelee $ -12 * 5 ]
   , ieffects = [DropItem 1 maxBound COrgan "condition"]
   , idesc    = ""
@@ -102,7 +102,7 @@ spreadFragmentation8 = spreadFragmentation
   , ifreq    = [("fragmentation", 1)]
   , icount   = 8
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Lobable, SetFeature Fragile, SetFeature Blast
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 3, AddSkill AbHurtMelee $ -12 * 5 ]
       -- smaller radius, so worse for area effect, but twice the direct damage
   }
@@ -117,7 +117,7 @@ focusedFragmentation = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
       -- when the target position is occupied, the explosion starts one step
       -- away, hence we set range to 0 steps, to limit dispersal
   , ieffects = [OnSmash $ Explode "fragmentation"]
@@ -136,7 +136,7 @@ spreadConcussion = ItemKind
   , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
                         -- but armour can't block completely that easily
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
-               , SetFeature Lobable, SetFeature Fragile, SetFeature Blast
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 3, AddSkill AbHurtMelee $ -8 * 5 ]
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond
@@ -153,7 +153,7 @@ spreadConcussion8 = spreadConcussion
   , ifreq    = [("concussion", 1)]
   , icount   = 8
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Lobable, SetFeature Fragile, SetFeature Blast
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 3, AddSkill AbHurtMelee $ -8 * 5 ]
   }
 focusedConcussion = ItemKind
@@ -167,7 +167,7 @@ focusedConcussion = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [OnSmash $ Explode "concussion"]
   , idesc    = ""
   , ikit     = []
@@ -183,7 +183,7 @@ spreadFlash = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 5 ]
   , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 30]
                  -- Wikipedia says: blind for five seconds and afterimage
@@ -197,7 +197,7 @@ spreadFlash8 = spreadFlash
   , icount   = 8
   , iverbHit = "blind"
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 5 ]
   }
 focusedFlash = ItemKind
@@ -211,7 +211,7 @@ focusedFlash = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [OnSmash $ Explode "spark"]
   , idesc    = ""
   , ikit     = []
@@ -222,7 +222,7 @@ singleSpark = spreadFlash
   , icount   = 1
   , iverbHit = "spark"
   , iaspects = [ toLinger 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 3 ]
   , ieffects = []
   , idesc    = "A glowing ember."
@@ -239,7 +239,7 @@ glassPiece = ItemKind
   , iweight  = 1
   , idamage  = 1 `d` 1
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbHurtMelee $ -15 * 5 ]
                  -- brittle, not too dense; armor blocks
   , ieffects = [RefillHP (-1)]
@@ -250,7 +250,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   { ifreq    = [("focused glass hail", 1)]
   , icount   = 4
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbHurtMelee $ -15 * 5 ]
   , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
   }
@@ -268,7 +268,7 @@ fragrance = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Impress]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
   -- before actor turn's end (e.g., via a necklace).
@@ -286,7 +286,7 @@ pheromone = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Impress, RefillCalm (-10)]
   , idesc    = "A sharp, strong scent."
   , ikit     = []
@@ -302,7 +302,7 @@ mistCalming = ItemKind  -- unused
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [RefillCalm 2]
   , idesc    = "A soothing, gentle cloud."
   , ikit     = []
@@ -318,7 +318,7 @@ odorDistressing = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [RefillCalm (-20)]
   , idesc    = "It turns the stomach."
   , ikit     = []
@@ -334,7 +334,7 @@ mistHealing = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 1 ]
   , ieffects = [RefillHP 2]
   , idesc    = "It fills the air with light and life."
@@ -351,7 +351,7 @@ mistHealing2 = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill AbShine 2 ]
   , ieffects = [RefillHP 4]
   , idesc    = "At its touch, wounds close and bruises fade."
@@ -368,7 +368,7 @@ mistWounding = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [RefillHP (-2)]
   , idesc    = "The air itself stings and itches."
   , ikit     = []
@@ -384,7 +384,7 @@ distortion = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
-               , SetFeature Lobable, SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Teleport $ 15 + 1 `d` 10]
   , idesc    = "The air shifts oddly, as though light is being warped."
   , ikit     = []
@@ -400,7 +400,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = []
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
@@ -416,7 +416,7 @@ boilingWater = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 30  -- 6 steps, 2 turns
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Burn 1]
   , idesc    = "It bubbles and hisses."
   , ikit     = []
@@ -432,7 +432,7 @@ glue = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Paralyze 10]
   , idesc    = "Thick and clinging."
   , ikit     = []
@@ -447,7 +447,7 @@ waste = ItemKind
   , iverbHit = "splosh"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [Burn 1]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
@@ -470,7 +470,7 @@ denseShower = ItemKind
   , iverbHit = "strengthen"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "strengthened" (3 + 1 `d` 3)]
   , idesc    = "A thick rain of droplets."
   , ikit     = []
@@ -485,7 +485,7 @@ sparseShower = ItemKind
   , iverbHit = "weaken"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganBad "weakened" (3 + 1 `d` 3)]
   , idesc    = "Light droplets that cling to clothing."
   , ikit     = []
@@ -500,7 +500,7 @@ protectingBalmMelee = ItemKind
   , iverbHit = "balm"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "protected from melee" (3 + 1 `d` 3)]
   , idesc    = "A thick ointment that hardens the skin."
   , ikit     = []
@@ -515,7 +515,7 @@ protectingBalmRanged = ItemKind
   , iverbHit = "balm"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "protected from ranged" (3 + 1 `d` 3)]
   , idesc    = "Grease that protects from flying death."
   , ikit     = []
@@ -530,7 +530,7 @@ vulnerabilityBalm = ItemKind
   , iverbHit = "nag"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganBad "defenseless" (3 + 1 `d` 3)]
   , idesc    = "Only the most learned make use of this."
   , ikit     = []
@@ -545,7 +545,7 @@ resolutionDust = ItemKind
   , iverbHit = "calm"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "resolute" (3 + 1 `d` 3)]
                  -- short enough duration that @calmEnough@ not a big problem
   , idesc    = "A handful of honest earth, to strengthen the soul."
@@ -561,7 +561,7 @@ hasteSpray = ItemKind
   , iverbHit = "haste"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "hasted" (3 + 1 `d` 3)]
   , idesc    = "A quick spurt."
   , ikit     = []
@@ -576,7 +576,7 @@ slownessMist = ItemKind
   , iverbHit = "slow"
   , iweight  = 0
   , idamage  = 0
-  , iaspects = [toVelocity 5, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toVelocity 5, SetFlag Fragile, SetFlag Blast]
                  -- 1 step, 1 turn, mist, slow
   , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
   , idesc    = "Clammy fog, making each movement an effort."
@@ -592,7 +592,7 @@ eyeDrop = ItemKind
   , iverbHit = "cleanse"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "far-sighted" (3 + 1 `d` 3)]
   , idesc    = "Not to be taken orally."
   , ikit     = []
@@ -607,7 +607,7 @@ ironFiling = ItemKind
   , iverbHit = "blind"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganBad "blind" (10 + 1 `d` 10)]
   , idesc    = "A shaving of bright metal."
   , ikit     = []
@@ -622,7 +622,7 @@ smellyDroplet = ItemKind
   , iverbHit = "sensitize"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "keen-smelling" (3 + 1 `d` 3)]
   , idesc    = "A viscous lump that stains the skin."
   , ikit     = []
@@ -637,7 +637,7 @@ eyeShine = ItemKind
   , iverbHit = "smear"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "shiny-eyed" (3 + 1 `d` 3)]
   , idesc    = "They almost glow in the dark."
   , ikit     = []
@@ -652,7 +652,7 @@ whiskeySpray = ItemKind
   , iverbHit = "inebriate"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganGood "drunk" (3 + 1 `d` 3)]
   , idesc    = "It burns in the best way."
   , ikit     = []
@@ -667,7 +667,7 @@ youthSprinkle = ItemKind
   , iverbHit = "sprinkle"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [toLinger 10, SetFeature Fragile, SetFeature Blast]
+  , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [toOrganNoTimer "regenerating"]
   , idesc    = "Bright and smelling of the Spring."
   , ikit     = []
@@ -683,7 +683,7 @@ poisonCloud = ItemKind
   , iweight  = 0
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [toOrganNoTimer "poisoned"]
   , idesc    = "Choking gas that stings the eyes."
   , ikit     = []
@@ -699,7 +699,7 @@ mistAntiSlow = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [DropItem 1 1 COrgan "slowed"]
   , idesc    = "A cleansing rain."
   , ikit     = []
@@ -715,7 +715,7 @@ mistAntidote = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFeature Fragile, SetFeature Blast ]
+               , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [DropItem 1 maxBound COrgan "poisoned"]
   , idesc    = "Washes away death's dew."
   , ikit     = []
