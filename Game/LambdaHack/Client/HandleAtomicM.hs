@@ -150,7 +150,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
-  UpdDiscover c iid ik aspectRecord -> do
+  UpdDiscover c iid ik arItem -> do
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
     case jkind item of
@@ -158,9 +158,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered ix _ik | ix `EM.notMember` discoKind ->
         discoverKind c ix ik
       IdentityCovered _ix _ik -> return ()
-    discoverAspect c iid aspectRecord
-  UpdCover c iid ik aspectRecord -> do
-    coverAspect c iid aspectRecord
+    discoverAspect c iid arItem
+  UpdCover c iid ik arItem -> do
+    coverAspect c iid arItem
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
     case jkind item of
@@ -170,8 +170,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
       IdentityCovered _ix _ik -> return ()
   UpdDiscoverKind c ix ik -> discoverKind c ix ik
   UpdCoverKind c ix ik -> coverKind c ix ik
-  UpdDiscoverAspect c iid aspectRecord -> discoverAspect c iid aspectRecord
-  UpdCoverAspect c iid aspectRecord -> coverAspect c iid aspectRecord
+  UpdDiscoverAspect c iid arItem -> discoverAspect c iid arItem
+  UpdCoverAspect c iid arItem -> coverAspect c iid arItem
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
     COps{cocave, comode} <- getsState scops
@@ -337,7 +337,7 @@ coverKind _c _ix _ik = undefined
 
 discoverAspect :: MonadClient m
                => Container -> ItemId -> IA.AspectRecord -> m ()
-discoverAspect _c iid _aspectRecord = do
+discoverAspect _c iid _arItem = do
   cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -351,7 +351,7 @@ discoverAspect _c iid _aspectRecord = do
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
 coverAspect :: Container -> ItemId -> IA.AspectRecord -> m ()
-coverAspect _c _iid _aspectRecord = undefined
+coverAspect _c _iid _arItem = undefined
 
 killExit :: MonadClient m => m ()
 killExit = do

@@ -43,14 +43,14 @@ import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 onlyRegisterItem :: MonadServerAtomic m => ItemKnown -> m ItemId
-onlyRegisterItem itemKnown@(_, aspectRecord, _) = do
+onlyRegisterItem itemKnown@(_, arItem, _) = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
     Just iid -> return iid
     Nothing -> do
       icounter <- getsServer sicounter
       executedOnServer <-
-        execUpdAtomicSer $ UpdDiscoverServer icounter aspectRecord
+        execUpdAtomicSer $ UpdDiscoverServer icounter arItem
       let !_A = assert executedOnServer ()
       modifyServer $ \ser ->
         ser { sitemRev = HM.insert itemKnown icounter (sitemRev ser)
@@ -61,7 +61,7 @@ registerItem :: MonadServerAtomic m
              => ItemFullKit -> ItemKnown -> Container -> Bool
              -> m ItemId
 registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown@(_, aspectRecord, _) container verbose = do
+             itemKnown@(_, arItem, _) container verbose = do
   iid <- onlyRegisterItem itemKnown
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
@@ -70,7 +70,7 @@ registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
   knowItems <- getsServer $ sknowItems . soptions
   when knowItems $ case container of
     CTrunk{} -> return ()
-    _ -> execUpdAtomic $ UpdDiscover container iid itemKindId aspectRecord
+    _ -> execUpdAtomic $ UpdDiscover container iid itemKindId arItem
   return iid
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()

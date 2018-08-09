@@ -109,14 +109,14 @@ handleUpdAtomic cmd = case cmd of
   UpdTimeItem iid c fromIt toIt -> updTimeItem iid c fromIt toIt
   UpdAgeGame lids -> updAgeGame lids
   UpdUnAgeGame lids -> updUnAgeGame lids
-  UpdDiscover c iid ik aspectRecord -> updDiscover c iid ik aspectRecord
-  UpdCover c iid ik aspectRecord -> updCover c iid ik aspectRecord
+  UpdDiscover c iid ik arItem -> updDiscover c iid ik arItem
+  UpdCover c iid ik arItem -> updCover c iid ik arItem
   UpdDiscoverKind c ix ik -> updDiscoverKind c ix ik
   UpdCoverKind c ix ik -> updCoverKind c ix ik
-  UpdDiscoverAspect c iid aspectRecord -> updDiscoverAspect c iid aspectRecord
-  UpdCoverAspect c iid aspectRecord -> updCoverAspect c iid aspectRecord
-  UpdDiscoverServer iid aspectRecord -> updDiscoverServer iid aspectRecord
-  UpdCoverServer iid aspectRecord -> updCoverServer iid aspectRecord
+  UpdDiscoverAspect c iid arItem -> updDiscoverAspect c iid arItem
+  UpdCoverAspect c iid arItem -> updCoverAspect c iid arItem
+  UpdDiscoverServer iid arItem -> updDiscoverServer iid arItem
+  UpdCoverServer iid arItem -> updCoverServer iid arItem
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) (return ())
   UpdRestart _ _ s _ _ -> updRestart s
@@ -581,7 +581,7 @@ ageLevel delta lid =
 updDiscover :: MonadStateWrite m
             => Container -> ItemId -> ContentId ItemKind -> IA.AspectRecord
             -> m ()
-updDiscover _c iid ik aspectRecord = do
+updDiscover _c iid ik arItem = do
   itemD <- getsState sitemD
   COps{coItemSpeedup} <- getsState scops
   let kmIsConst = IA.kmConst $ IA.getKindMean ik coItemSpeedup
@@ -590,7 +590,7 @@ updDiscover _c iid ik aspectRecord = do
         discoAspect <- getsState sdiscoAspect
         if kmIsConst || iid `EM.member` discoAspect
         then atomicFail "item already fully discovered"
-        else discoverAspect iid aspectRecord
+        else discoverAspect iid arItem
   case EM.lookup iid itemD of
     Nothing -> atomicFail "discovered item unheard of"
     Just item -> case jkind item of
@@ -599,11 +599,11 @@ updDiscover _c iid ik aspectRecord = do
         Just{} -> discoverAtMostAspect
         Nothing -> do
           discoverKind ix ik
-          unless kmIsConst $ discoverAspect iid aspectRecord
+          unless kmIsConst $ discoverAspect iid arItem
   resetActorAspect
 
 updCover :: Container -> ItemId -> ContentId ItemKind -> IA.AspectRecord -> m ()
-updCover _c _iid _ik _aspectRecord = undefined
+updCover _c _iid _ik _arItem = undefined
 
 updDiscoverKind :: MonadStateWrite m
                 => Container -> ItemKindIx -> ContentId ItemKind -> m ()
@@ -627,7 +627,7 @@ updCoverKind _c _ix _ik = undefined
 
 updDiscoverAspect :: MonadStateWrite m
                   => Container -> ItemId -> IA.AspectRecord -> m ()
-updDiscoverAspect _c iid aspectRecord = do
+updDiscoverAspect _c iid arItem = do
   COps{coItemSpeedup} <- getsState scops
   itemD <- getsState sitemD
   case EM.lookup iid itemD of
@@ -638,31 +638,31 @@ updDiscoverAspect _c iid aspectRecord = do
       discoAspect <- getsState sdiscoAspect
       let kmIsConst = IA.kmConst $ IA.getKindMean kindId coItemSpeedup
       if kmIsConst || iid `EM.member` discoAspect
-      then atomicFail "item aspectRecord already discovered"
+      then atomicFail "item arItem already discovered"
       else do
-        discoverAspect iid aspectRecord
+        discoverAspect iid arItem
         resetActorAspect
 
 discoverAspect :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
-discoverAspect iid aspectRecord = do
-  let f Nothing = Just aspectRecord
-      f Just{} = error $ "already discovered" `showFailure` (iid, aspectRecord)
+discoverAspect iid arItem = do
+  let f Nothing = Just arItem
+      f Just{} = error $ "already discovered" `showFailure` (iid, arItem)
   -- At this point we know the item is not @kmConst@.
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
     EM.alter f iid discoAspect1
 
 updCoverAspect :: Container -> ItemId -> IA.AspectRecord -> m ()
-updCoverAspect _c _iid _aspectRecord = undefined
+updCoverAspect _c _iid _arItem = undefined
 
 updDiscoverServer :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
-updDiscoverServer iid aspectRecord =
+updDiscoverServer iid arItem =
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
-    EM.insert iid aspectRecord discoAspect1
+    EM.insert iid arItem discoAspect1
 
 updCoverServer :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
-updCoverServer iid aspectRecord =
+updCoverServer iid arItem =
   modifyState $ updateDiscoAspect $ \discoAspect1 ->
-    assert (discoAspect1 EM.! iid == aspectRecord)
+    assert (discoAspect1 EM.! iid == arItem)
     $ EM.delete iid discoAspect1
 
 updRestart :: MonadStateWrite m => State -> m ()

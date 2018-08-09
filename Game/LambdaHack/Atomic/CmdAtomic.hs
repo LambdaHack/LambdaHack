@@ -220,16 +220,14 @@ undoUpdAtomic cmd = case cmd of
   UpdTimeItem iid c fromIt toIt -> Just $ UpdTimeItem iid c toIt fromIt
   UpdAgeGame lids -> Just $ UpdUnAgeGame lids
   UpdUnAgeGame lids -> Just $ UpdAgeGame lids
-  UpdDiscover c iid ik aspectRecord -> Just $ UpdCover c iid ik aspectRecord
-  UpdCover c iid ik aspectRecord -> Just $ UpdDiscover c iid ik aspectRecord
+  UpdDiscover c iid ik arItem -> Just $ UpdCover c iid ik arItem
+  UpdCover c iid ik arItem -> Just $ UpdDiscover c iid ik arItem
   UpdDiscoverKind c ix ik -> Just $ UpdCoverKind c ix ik
   UpdCoverKind c ix ik -> Just $ UpdDiscoverKind c ix ik
-  UpdDiscoverAspect c iid aspectRecord ->
-    Just $ UpdCoverAspect c iid aspectRecord
-  UpdCoverAspect c iid aspectRecord ->
-    Just $ UpdDiscoverAspect c iid aspectRecord
-  UpdDiscoverServer iid aspectRecord -> Just $ UpdCoverServer iid aspectRecord
-  UpdCoverServer iid aspectRecord -> Just $ UpdDiscoverServer iid aspectRecord
+  UpdDiscoverAspect c iid arItem -> Just $ UpdCoverAspect c iid arItem
+  UpdCoverAspect c iid arItem -> Just $ UpdDiscoverAspect c iid arItem
+  UpdDiscoverServer iid arItem -> Just $ UpdCoverServer iid arItem
+  UpdCoverServer iid arItem -> Just $ UpdDiscoverServer iid arItem
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction
