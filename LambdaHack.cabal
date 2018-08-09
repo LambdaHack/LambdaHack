@@ -116,7 +116,7 @@ library
                       Game.LambdaHack.Client
                       Game.LambdaHack.Client.AI
                       Game.LambdaHack.Client.AI.ConditionM
-                      Game.LambdaHack.Client.AI.HandleAbilityM
+                      Game.LambdaHack.Client.AI.PickActionM
                       Game.LambdaHack.Client.AI.PickActorM
                       Game.LambdaHack.Client.AI.PickTargetM
                       Game.LambdaHack.Client.AI.Strategy

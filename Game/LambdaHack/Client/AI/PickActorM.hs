@@ -133,7 +133,7 @@ pickActorToMove maidToAvoid = do
                 canFleeFromLight =
                   not $ null $ aCanDeLightL `intersect` map snd fleeL
             return $!
-              -- This is a part of the condition for @flee@ in @HandleAbilityM@.
+              -- This is a part of the condition for @flee@ in @PickActionM@.
               not condFastThreatAdj
               && if | condThreat 1 ->
                         not condCanMelee

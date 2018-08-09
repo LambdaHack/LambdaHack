@@ -1,5 +1,5 @@
 -- | AI procedure for picking the best action for an actor.
-module Game.LambdaHack.Client.AI.HandleAbilityM
+module Game.LambdaHack.Client.AI.PickActionM
   ( pickAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
