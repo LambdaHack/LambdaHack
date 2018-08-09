@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Item
   , strongestSlot, hasCharge, strongestMelee, unknownMeleeBonus, tmpMeleeBonus
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , unknownAspect
+  , valueAtEqpSlot, unknownAspect
 #endif
   ) where
 
@@ -25,6 +25,7 @@ import qualified Data.Ix as Ix
 import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
+import           Game.LambdaHack.Common.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
@@ -196,10 +197,42 @@ strongestSlot discoBenefit eqpSlot is =
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
                        then ceiling benPickup
-                       else IA.valueAtEqpSlot eqpSlot
-                            $ aspectRecordFull itemFull
+                       else valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
+
+valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
+valueAtEqpSlot eqpSlot ar@IA.AspectRecord{..} =
+  case eqpSlot of
+    EqpSlotMiscBonus ->
+      aTimeout  -- usually better items have longer timeout
+      + Ability.getSk Ability.SkMaxCalm aSkills
+      + Ability.getSk Ability.SkSmell aSkills
+      + Ability.getSk Ability.SkNocto aSkills
+          -- powerful, but hard to boost over aSight
+    EqpSlotAddHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
+    EqpSlotAddArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
+    EqpSlotAddArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
+    EqpSlotAddMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
+    EqpSlotAddSpeed -> Ability.getSk Ability.SkSpeed aSkills
+    EqpSlotAddSight -> Ability.getSk Ability.SkSight aSkills
+    EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
+    EqpSlotWeapon -> error $ "" `showFailure` ar
+    EqpSlotMiscAbility ->
+      Ability.getSk Ability.SkWait aSkills
+      + Ability.getSk Ability.SkMoveItem aSkills
+    EqpSlotAbMove -> Ability.getSk Ability.SkMove aSkills
+    EqpSlotAbMelee -> Ability.getSk Ability.SkMelee aSkills
+    EqpSlotAbDisplace -> Ability.getSk Ability.SkDisplace aSkills
+    EqpSlotAbAlter -> Ability.getSk Ability.SkAlter aSkills
+    EqpSlotAbProject -> Ability.getSk Ability.SkProject aSkills
+    EqpSlotAbApply -> Ability.getSk Ability.SkApply aSkills
+    EqpSlotAddMaxCalm -> Ability.getSk Ability.SkMaxCalm aSkills
+    EqpSlotAddSmell -> Ability.getSk Ability.SkSmell aSkills
+    EqpSlotAddNocto -> Ability.getSk Ability.SkNocto aSkills
+    EqpSlotAddAggression -> Ability.getSk Ability.SkAggression aSkills
+    EqpSlotAbWait -> Ability.getSk Ability.SkWait aSkills
+    EqpSlotAbMoveItem -> Ability.getSk Ability.SkMoveItem aSkills
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =

@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
-  , valueAtEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
+  , onlyMinorEffects, itemTrajectory, totalRange
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha
 #ifdef EXPOSE_INTERNAL
@@ -27,7 +27,6 @@ import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import           Game.LambdaHack.Common.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -191,39 +190,6 @@ speedupItem coitem =
 
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
-
-valueAtEqpSlot :: EqpSlot -> AspectRecord -> Int
-valueAtEqpSlot eqpSlot ar@AspectRecord{..} =
-  case eqpSlot of
-    EqpSlotMiscBonus ->
-      aTimeout  -- usually better items have longer timeout
-      + Ability.getSk Ability.SkMaxCalm aSkills
-      + Ability.getSk Ability.SkSmell aSkills
-      + Ability.getSk Ability.SkNocto aSkills
-          -- powerful, but hard to boost over aSight
-    EqpSlotAddHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
-    EqpSlotAddArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
-    EqpSlotAddArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
-    EqpSlotAddMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
-    EqpSlotAddSpeed -> Ability.getSk Ability.SkSpeed aSkills
-    EqpSlotAddSight -> Ability.getSk Ability.SkSight aSkills
-    EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
-    EqpSlotWeapon -> error $ "" `showFailure` ar
-    EqpSlotMiscAbility ->
-      Ability.getSk Ability.SkWait aSkills
-      + Ability.getSk Ability.SkMoveItem aSkills
-    EqpSlotAbMove -> Ability.getSk Ability.SkMove aSkills
-    EqpSlotAbMelee -> Ability.getSk Ability.SkMelee aSkills
-    EqpSlotAbDisplace -> Ability.getSk Ability.SkDisplace aSkills
-    EqpSlotAbAlter -> Ability.getSk Ability.SkAlter aSkills
-    EqpSlotAbProject -> Ability.getSk Ability.SkProject aSkills
-    EqpSlotAbApply -> Ability.getSk Ability.SkApply aSkills
-    EqpSlotAddMaxCalm -> Ability.getSk Ability.SkMaxCalm aSkills
-    EqpSlotAddSmell -> Ability.getSk Ability.SkSmell aSkills
-    EqpSlotAddNocto -> Ability.getSk Ability.SkNocto aSkills
-    EqpSlotAddAggression -> Ability.getSk Ability.SkAggression aSkills
-    EqpSlotAbWait -> Ability.getSk Ability.SkWait aSkills
-    EqpSlotAbMoveItem -> Ability.getSk Ability.SkMoveItem aSkills
 
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =
