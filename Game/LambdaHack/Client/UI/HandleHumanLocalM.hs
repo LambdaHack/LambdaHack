@@ -234,14 +234,14 @@ chooseItemDialogMode c = do
         let slotListBound = length statSlots - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  eqpSlot = statSlots !! fromJust (elemIndex slot allSlots)
+                  skill = statSlots !! fromJust (elemIndex slot allSlots)
                   valueText =
-                    slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
+                    skillToDecorator skill b $ IA.getSkill skill ar
                   prompt2 = makeSentence
-                    [ MU.WownW (partActor bUI) (MU.Text $ slotToName eqpSlot)
+                    [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
                   ov0 = indentSplitAttrLine rwidth $ textToAL
-                        $ slotToDesc eqpSlot
+                        $ skillDesc skill
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]

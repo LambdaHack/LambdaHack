@@ -196,7 +196,8 @@ strongestSlot discoBenefit eqpSlot is =
                        -- For equipping/unequipping a weapon we take into
                        -- account not only melee power, but also aspects, etc.
                        then ceiling benPickup
-                       else IA.prEqpSlot eqpSlot $ aspectRecordFull itemFull
+                       else IA.valueAtEqpSlot eqpSlot
+                            $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 

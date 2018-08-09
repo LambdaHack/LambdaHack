@@ -1,11 +1,11 @@
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
-  , slotToSentence, slotToName, slotToDesc, slotToDecorator, statSlots
+  , skillName, skillDesc, skillToDecorator, statSlots
   , kindAspectToSuffix, aspectToSentence, affixDice
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
+  , slotToSentence, tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
 #endif
   ) where
 
@@ -150,83 +150,54 @@ slotToSentence es = case es of
   EqpSlotAbApply -> "Those unskilled in applying items equip it."
   _ -> error $ "should not be used in content" `showFailure` es
 
-slotToName :: EqpSlot -> Text
-slotToName eqpSlot =
-  case eqpSlot of
-    EqpSlotMiscBonus -> "misc bonuses"
-    EqpSlotAddHurtMelee -> "to melee damage"
-    EqpSlotAddArmorMelee -> "melee armor"
-    EqpSlotAddArmorRanged -> "ranged armor"
-    EqpSlotAddMaxHP -> "max HP"
-    EqpSlotAddSpeed -> "speed"
-    EqpSlotAddSight -> "sight radius"
-    EqpSlotLightSource -> "shine radius"
-    EqpSlotWeapon -> "weapon power"
-    EqpSlotMiscAbility -> "misc abilities"
-    EqpSlotAbMove -> skillDesc SkMove
-    EqpSlotAbMelee -> skillDesc SkMelee
-    EqpSlotAbDisplace -> skillDesc SkDisplace
-    EqpSlotAbAlter -> skillDesc SkAlter
-    EqpSlotAbProject -> skillDesc SkProject
-    EqpSlotAbApply -> skillDesc SkApply
-    EqpSlotAddMaxCalm -> "max Calm"
-    EqpSlotAddSmell -> "smell radius"
-    EqpSlotAddNocto -> "night vision radius"
-    EqpSlotAddAggression -> "aggression level"
-    EqpSlotAbWait -> skillDesc SkWait
-    EqpSlotAbMoveItem -> skillDesc SkMoveItem
+skillName :: Skill -> Text
+skillName SkMove = "move skill"
+skillName SkMelee = "melee skill"
+skillName SkDisplace = "displace skill"
+skillName SkAlter = "alter tile skill"
+skillName SkWait = "wait skill"
+skillName SkMoveItem = "manage items skill"
+skillName SkProject = "fling skill"
+skillName SkApply = "apply skill"
+skillName SkHurtMelee = "to melee damage"
+skillName SkArmorMelee = "melee armor"
+skillName SkArmorRanged = "ranged armor"
+skillName SkMaxHP = "max HP"
+skillName SkMaxCalm = "max Calm"
+skillName SkSpeed = "speed"
+skillName SkSight = "sight radius"
+skillName SkSmell = "smell radius"
+skillName SkShine = "shine radius"
+skillName SkNocto = "night vision radius"
+skillName SkAggression = "aggression level"
 
 skillDesc :: Skill -> Text
-skillDesc SkMove = "move skill"
-skillDesc SkMelee = "melee skill"
-skillDesc SkDisplace = "displace skill"
-skillDesc SkAlter = "alter tile skill"
-skillDesc SkWait = "wait skill"
-skillDesc SkMoveItem = "manage items skill"
-skillDesc SkProject = "fling skill"
-skillDesc SkApply = "apply skill"
-skillDesc SkHurtMelee = "to melee damage"
-skillDesc SkArmorMelee = "melee armor"
-skillDesc SkArmorRanged = "ranged armor"
-skillDesc SkMaxHP = "max HP"
-skillDesc SkMaxCalm = "max Calm"
-skillDesc SkSpeed = "speed"
-skillDesc SkSight = "sight radius"
-skillDesc SkSmell = "smell radius"
-skillDesc SkShine = "shine radius"
-skillDesc SkNocto = "night vision radius"
-skillDesc SkAggression = "aggression level"
-
-slotToDesc :: EqpSlot -> Text
-slotToDesc eqpSlot =
-  let statName = slotToName eqpSlot
+skillDesc skill =
+  let statName = skillName skill
       capName = "The '" <> statName <> "' stat"
-  in capName <+> case eqpSlot of
-    EqpSlotMiscBonus -> "represent the total power of assorted stat bonuses for the character."
-    EqpSlotAddHurtMelee -> "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
-    EqpSlotAddArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
-    EqpSlotAddArmorRanged -> "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
-    EqpSlotAddMaxHP -> "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
-    EqpSlotAddSpeed -> "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
-    EqpSlotAddSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    EqpSlotLightSource -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    EqpSlotWeapon -> "represents the total power of weapons equipped by the character."
-    EqpSlotMiscAbility -> "represent the total power of assorted skill bonuses for the character."
-    EqpSlotAbMove -> "determines whether the character can move. Actors not capable of movement can't be dominated."
-    EqpSlotAbMelee -> "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
-    EqpSlotAbDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
-    EqpSlotAbAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
-    EqpSlotAbProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
-    EqpSlotAbApply -> "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
-    EqpSlotAddMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
-    EqpSlotAddSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    EqpSlotAddNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    EqpSlotAddAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
-    EqpSlotAbWait -> "determines whether the character can wait, bracing for comat and potentially blocking the effects of some attacks."
-    EqpSlotAbMoveItem -> "determines whether the character can pick up items and manage inventory."
+  in capName <+> case skill of
+    SkMove -> "determines whether the character can move. Actors not capable of movement can't be dominated."
+    SkMelee -> "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
+    SkDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
+    SkAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
+    SkWait -> "determines whether the character can wait, bracing for comat and potentially blocking the effects of some attacks."
+    SkMoveItem -> "determines whether the character can pick up items and manage inventory."
+    SkProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
+    SkApply -> "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+    SkHurtMelee -> "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
+    SkArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
+    SkArmorRanged -> "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
+    SkMaxHP -> "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
+    SkMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
+    SkSpeed -> "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
+    SkSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkShine -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
 
-slotToDecorator :: EqpSlot -> Actor -> Int -> Text
-slotToDecorator eqpSlot b t =
+skillToDecorator :: Skill -> Actor -> Int -> Text
+skillToDecorator skill b t =
   let tshow200 n = let n200 = min 200 $ max (-200) n
                    in tshow n200 <> if n200 /= n then "$" else ""
       -- Some values can be negative, for others 0 is equivalent but shorter.
@@ -237,56 +208,53 @@ slotToDecorator eqpSlot b t =
         let l = k `div` 10
             x = k - l * 10
         in tshow l <> if x == 0 then "" else "." <> tshow x
-  in case eqpSlot of
-    EqpSlotMiscBonus -> tshow t
-    EqpSlotAddHurtMelee -> tshow200 t <> "%"
-    EqpSlotAddArmorMelee -> "[" <> tshowBlock 50 t <> "%]"
-    EqpSlotAddArmorRanged -> "{" <> tshowBlock 25 t <> "%}"
-    EqpSlotAddMaxHP -> tshow $ max 0 t
-    EqpSlotAddSpeed -> showIntWith1 (max minSpeed t) <> "m/s"
-    EqpSlotAddSight ->
+  in case skill of
+    SkMove -> tshow t
+    SkMelee -> tshow t
+    SkDisplace -> tshow t
+    SkAlter -> tshow t
+    SkWait -> tshow t
+    SkMoveItem -> tshow t
+    SkProject -> tshow t
+    SkApply -> tshow t
+    SkHurtMelee -> tshow200 t <> "%"
+    SkArmorMelee -> "[" <> tshowBlock 50 t <> "%]"
+    SkArmorRanged -> "{" <> tshowBlock 25 t <> "%}"
+    SkMaxHP -> tshow $ max 0 t
+    SkMaxCalm -> tshow $ max 0 t
+    SkSpeed -> showIntWith1 (max minSpeed t) <> "m/s"
+    SkSight ->
       let tmax = max 0 t
           tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
       in tshowRadius tcapped
          <+> if tcapped == tmax
              then ""
              else "(max" <+> tshowRadius tmax <> ")"
-    EqpSlotLightSource -> tshowRadius (max 0 t)
-    EqpSlotWeapon -> tshow t
-    EqpSlotMiscAbility -> tshow t
-    EqpSlotAbMove -> tshow t
-    EqpSlotAbMelee -> tshow t
-    EqpSlotAbDisplace -> tshow t
-    EqpSlotAbAlter -> tshow t
-    EqpSlotAbProject -> tshow t
-    EqpSlotAbApply -> tshow t
-    EqpSlotAddMaxCalm -> tshow $ max 0 t
-    EqpSlotAddSmell -> tshowRadius (max 0 t)
-    EqpSlotAddNocto -> tshowRadius (max 0 t)
-    EqpSlotAddAggression -> tshow t
-    EqpSlotAbWait -> tshow t
-    EqpSlotAbMoveItem -> tshow t
+    SkSmell -> tshowRadius (max 0 t)
+    SkShine -> tshowRadius (max 0 t)
+    SkNocto -> tshowRadius (max 0 t)
+    SkAggression -> tshow t
 
-statSlots :: [EqpSlot]
-statSlots = [ EqpSlotAddHurtMelee
-            , EqpSlotAddArmorMelee
-            , EqpSlotAddArmorRanged
-            , EqpSlotAddMaxHP
-            , EqpSlotAddMaxCalm
-            , EqpSlotAddSpeed
-            , EqpSlotAddSight
-            , EqpSlotAddSmell
-            , EqpSlotLightSource
-            , EqpSlotAddNocto
--- WIP:           , EqpSlotAddAggression
-            , EqpSlotAbMove
-            , EqpSlotAbMelee
-            , EqpSlotAbDisplace
-            , EqpSlotAbAlter
-            , EqpSlotAbWait
-            , EqpSlotAbMoveItem
-            , EqpSlotAbProject
-            , EqpSlotAbApply ]
+statSlots :: [Skill]
+statSlots = [ SkHurtMelee
+            , SkArmorMelee
+            , SkArmorRanged
+            , SkMaxHP
+            , SkMaxCalm
+            , SkSpeed
+            , SkSight
+            , SkSmell
+            , SkShine
+            , SkNocto
+-- WIP:           , SkAggression
+            , SkMove
+            , SkMelee
+            , SkDisplace
+            , SkAlter
+            , SkWait
+            , SkMoveItem
+            , SkProject
+            , SkApply ]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =

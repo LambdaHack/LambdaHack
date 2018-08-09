@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , sumAspectRecord, aspectRecordToList, rollAspectRecord
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
-  , prEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
+  , valueAtEqpSlot, onlyMinorEffects, itemTrajectory, totalRange
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha
 #ifdef EXPOSE_INTERNAL
@@ -192,8 +192,8 @@ speedupItem coitem =
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 
-prEqpSlot :: EqpSlot -> AspectRecord -> Int
-prEqpSlot eqpSlot ar@AspectRecord{..} =
+valueAtEqpSlot :: EqpSlot -> AspectRecord -> Int
+valueAtEqpSlot eqpSlot ar@AspectRecord{..} =
   case eqpSlot of
     EqpSlotMiscBonus ->
       aTimeout  -- usually better items have longer timeout

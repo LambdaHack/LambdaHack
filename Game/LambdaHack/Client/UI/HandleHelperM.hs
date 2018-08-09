@@ -278,14 +278,14 @@ statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   ar <- getsState $ getActorAspect aid
-  let prSlot :: (Y, SlotChar) -> Ability.EqpSlot -> (Text, KYX)
-      prSlot (y, c) eqpSlot =
-        let statName = slotToName eqpSlot
+  let prSlot :: (Y, SlotChar) -> Ability.Skill -> (Text, KYX)
+      prSlot (y, c) skill =
+        let statName = skillName skill
             fullText t =
               makePhrase [ MU.Text $ slotLabel c
                          , MU.Text $ T.justifyLeft 22 ' ' statName
                          , MU.Text t ]
-            valueText = slotToDecorator eqpSlot b $ IA.prEqpSlot eqpSlot ar
+            valueText = skillToDecorator skill b $ IA.getSkill skill ar
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots
