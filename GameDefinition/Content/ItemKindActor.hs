@@ -35,11 +35,11 @@ warrior = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 80  -- partially from clothes and assumed first aid
-               , AddAbility AbMaxCalm 70, AddAbility AbSpeed 20
-               , AddAbility AbNocto 2
-               , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2
+  , iaspects = [ AddSkill AbMaxHP 80  -- partially from clothes and assumed first aid
+               , AddSkill AbMaxCalm 70, AddSkill AbSpeed 20
+               , AddSkill AbNocto 2
+               , AddSkill AbProject 2, AddSkill AbApply 1
+               , AddSkill AbAlter 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = ""
@@ -152,11 +152,11 @@ eye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 16, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 20, AddAbility AbNocto 2
-               , AddAbility AbAggression 1
-               , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2
+  , iaspects = [ AddSkill AbMaxHP 16, AddSkill AbMaxCalm 70
+               , AddSkill AbSpeed 20, AddSkill AbNocto 2
+               , AddSkill AbAggression 1
+               , AddSkill AbProject 2, AddSkill AbApply 1
+               , AddSkill AbAlter 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -174,9 +174,9 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 5, AddAbility AbMaxCalm 70, AddAbility AbSpeed 30, AddAbility AbNocto 2
-               , AddAbility AbAggression 1
-               , AddAbility AbAlter 2
+  , iaspects = [ AddSkill AbMaxHP 5, AddSkill AbMaxCalm 70, AddSkill AbSpeed 30, AddSkill AbNocto 2
+               , AddSkill AbAggression 1
+               , AddSkill AbAlter 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
@@ -194,10 +194,10 @@ nose = ItemKind  -- depends solely on smell
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 30, AddAbility AbMaxCalm 30
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2
-               , AddAbility AbAggression 1
-               , AddAbility AbProject (-1), AddAbility AbAlter 2
+  , iaspects = [ AddSkill AbMaxHP 30, AddSkill AbMaxCalm 30
+               , AddSkill AbSpeed 18, AddSkill AbNocto 2
+               , AddSkill AbAggression 1
+               , AddSkill AbProject (-1), AddSkill AbAlter 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
@@ -215,10 +215,10 @@ elbow = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 80
-               , AddAbility AbSpeed 21, AddAbility AbNocto 2
-               , AddAbility AbProject 2, AddAbility AbApply 1
-               , AddAbility AbAlter 2, AddAbility AbMelee (-1)
+  , iaspects = [ AddSkill AbMaxHP 8, AddSkill AbMaxCalm 80
+               , AddSkill AbSpeed 21, AddSkill AbNocto 2
+               , AddSkill AbProject 2, AddSkill AbApply 1
+               , AddSkill AbAlter 2, AddSkill AbMelee (-1)
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
@@ -238,11 +238,11 @@ torsor = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 300, AddAbility AbMaxCalm 100
-               , AddAbility AbSpeed 10, AddAbility AbNocto 2
-               , AddAbility AbAggression 3, AddAbility AbProject 2
-               , AddAbility AbApply 1
-               , AddAbility AbAlter 1  -- can't exit the gated level, the boss
+  , iaspects = [ AddSkill AbMaxHP 300, AddSkill AbMaxCalm 100
+               , AddSkill AbSpeed 10, AddSkill AbNocto 2
+               , AddSkill AbAggression 3, AddSkill AbProject 2
+               , AddSkill AbApply 1
+               , AddSkill AbAlter 1  -- can't exit the gated level, the boss
                , SetFeature Unique, SetFeature Durable ]
   , ieffects = []
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
@@ -273,8 +273,8 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 24, AddAbility AbNocto 2
+  , iaspects = [ AddSkill AbMaxHP 12, AddSkill AbMaxCalm 70
+               , AddSkill AbSpeed 24, AddSkill AbNocto 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "An opportunistic predator, feeding on carrion and the weak."
@@ -292,9 +292,9 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 80
-               , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 12, AddSkill AbMaxCalm 80
+               , AddSkill AbSpeed 22, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
       -- Animals don't have leader, usually, so even if only one of level,
       -- it pays the communication overhead, so the speed is higher to get
@@ -316,9 +316,9 @@ skunk = ItemKind
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 30
-               , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 10, AddSkill AbMaxCalm 30
+               , AddSkill AbSpeed 22, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Its only defence is the terrible stench."
@@ -337,9 +337,9 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 30
-               , AddAbility AbSpeed 20, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 10, AddSkill AbMaxCalm 30
+               , AddSkill AbSpeed 20, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "When threatened, it rolls into a ball."
@@ -358,9 +358,9 @@ gilaMonster = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 12, AddAbility AbMaxCalm 50
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 12, AddSkill AbMaxCalm 50
+               , AddSkill AbSpeed 18, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
@@ -378,9 +378,9 @@ rattlesnake = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 25, AddAbility AbMaxCalm 60
-               , AddAbility AbSpeed 16, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 25, AddSkill AbMaxCalm 60
+               , AddSkill AbSpeed 16, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
@@ -398,8 +398,8 @@ komodoDragon = ItemKind  -- bad hearing; regeneration makes it very powerful
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 41, AddAbility AbMaxCalm 60
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2
+  , iaspects = [ AddSkill AbMaxHP 41, AddSkill AbMaxCalm 60
+               , AddSkill AbSpeed 18, AddSkill AbNocto 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Larger and more aggressive than any other lizard."
@@ -419,8 +419,8 @@ hyena = ItemKind
   , iverbHit = "thud"
   , iweight  = 60000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 32, AddAbility AbNocto 2
+  , iaspects = [ AddSkill AbMaxHP 20, AddSkill AbMaxCalm 70
+               , AddSkill AbSpeed 32, AddSkill AbNocto 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Skulking in the shadows, waiting for easy prey."
@@ -437,8 +437,8 @@ alligator = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 41, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 18, AddAbility AbNocto 2
+  , iaspects = [ AddSkill AbMaxHP 41, AddSkill AbMaxCalm 70
+               , AddSkill AbSpeed 18, AddSkill AbNocto 2
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "An armored predator from the dawn of time."
@@ -457,10 +457,10 @@ rhinoceros = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 90, AddAbility AbMaxCalm 60
-               , AddAbility AbSpeed 27, AddAbility AbNocto 2
-               , AddAbility AbAggression 2
-               , AddAbility AbAlter (-1)  -- can't switch levels, a miniboss
+  , iaspects = [ AddSkill AbMaxHP 90, AddSkill AbMaxCalm 60
+               , AddSkill AbSpeed 27, AddSkill AbNocto 2
+               , AddSkill AbAggression 2
+               , AddSkill AbAlter (-1)  -- can't switch levels, a miniboss
                , SetFeature Unique, SetFeature Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
@@ -481,9 +481,9 @@ beeSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 60
-               , AddAbility AbSpeed 30, AddAbility AbNocto 2  -- armor in sting
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
+  , iaspects = [ AddSkill AbMaxHP 8, AddSkill AbMaxCalm 60
+               , AddSkill AbSpeed 30, AddSkill AbNocto 2  -- armor in sting
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Every bee would die for the queen."
@@ -500,10 +500,10 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 8, AddAbility AbMaxCalm 70
-               , AddAbility AbSpeed 30, AddAbility AbNocto 2
-               , AddAbility AbAlter (-2)  -- can't use stairs nor doors
-               , AddAbility AbArmorMelee 80, AddAbility AbArmorRanged 40
+  , iaspects = [ AddSkill AbMaxHP 8, AddSkill AbMaxCalm 70
+               , AddSkill AbSpeed 30, AddSkill AbNocto 2
+               , AddSkill AbAlter (-2)  -- can't use stairs nor doors
+               , AddSkill AbArmorMelee 80, AddSkill AbArmorRanged 40
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
@@ -520,9 +520,9 @@ thornbush = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
-               , AddAbility AbSpeed 22, AddAbility AbNocto 2
-               , AddAbility AbWait 1, AddAbility AbMelee 1
+  , iaspects = [ AddSkill AbMaxHP 20, AddSkill AbMaxCalm 999
+               , AddSkill AbSpeed 22, AddSkill AbNocto 2
+               , AddSkill AbWait 1, AddSkill AbMelee 1
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "Each branch bears long, curved thorns."
@@ -538,9 +538,9 @@ geyserBoiling = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 10, AddAbility AbMaxCalm 999
-               , AddAbility AbSpeed 11, AddAbility AbNocto 2
-               , AddAbility AbWait 1, AddAbility AbMelee 1
+  , iaspects = [ AddSkill AbMaxHP 10, AddSkill AbMaxCalm 999
+               , AddSkill AbSpeed 11, AddSkill AbNocto 2
+               , AddSkill AbWait 1, AddSkill AbMelee 1
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "A jet of acidic water, hot enough to melt flesh."
@@ -556,10 +556,10 @@ geyserArsenic = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
-               , AddAbility AbSpeed 22
-               , AddAbility AbNocto 2, AddAbility AbShine 3
-               , AddAbility AbWait 1, AddAbility AbMelee 1
+  , iaspects = [ AddSkill AbMaxHP 20, AddSkill AbMaxCalm 999
+               , AddSkill AbSpeed 22
+               , AddSkill AbNocto 2, AddSkill AbShine 3
+               , AddSkill AbWait 1, AddSkill AbMelee 1
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "The sharp scent betrays the poison within the spray."
@@ -575,10 +575,10 @@ geyserSulfur = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddAbility AbMaxHP 20, AddAbility AbMaxCalm 999
-               , AddAbility AbSpeed 22
-               , AddAbility AbNocto 2, AddAbility AbShine 3
-               , AddAbility AbWait 1, AddAbility AbMelee 1
+  , iaspects = [ AddSkill AbMaxHP 20, AddSkill AbMaxCalm 999
+               , AddSkill AbSpeed 22
+               , AddSkill AbNocto 2, AddSkill AbShine 3
+               , AddSkill AbWait 1, AddSkill AbMelee 1
                , SetFeature Durable ]
   , ieffects = []
   , idesc    = "The pool boils and bubbles, stinking of rotten eggs. Despite the smell, these waters purify and strengthen."
