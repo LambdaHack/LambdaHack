@@ -751,7 +751,8 @@ applyItem aid applyGroup = do
       coeff CEqp = 1
       coeff CInv = 1
       coeff CSha = 1
-      fTool benAv@(Benefit{benApply}, cstore, iid, ItemFull{itemKind}, _) =
+      fTool benAv@( Benefit{benApply}, cstore, iid
+                  , itemFull@ItemFull{itemKind}, _ ) =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             -- Don't include @OneOf@ because other effects may kill you.
             getHP (IK.RefillHP p) | p > 0 = True
@@ -769,7 +770,7 @@ applyItem aid applyGroup = do
               && toGroupName "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myGoodGrps))
             wastesDrop = null myBadGrps && not (null dropsGrps)
-            durable = IK.SetFeature Durable `elem` IK.iaspects itemKind
+            durable = IA.checkFlag Durable $ aspectRecordFull itemFull
             situationalBenApply | dropsBadOrgans = benApply + 20
                                 | wastesDrop = benApply - 10
                                 | otherwise = benApply

@@ -58,9 +58,9 @@ type UniqueSet = ES.EnumSet (ContentId ItemKind)
 buildItem :: COps -> IA.AspectRecord -> FlavourMap
           -> DiscoveryKindRev -> ContentId ItemKind -> LevelId
           -> Item
-buildItem COps{coitem} itemAspect (FlavourMap flavourMap)
+buildItem COps{coitem} arItem (FlavourMap flavourMap)
           (DiscoveryKindRev discoRev) ikChosen jlid =
-  let jkind = case IA.aHideAs itemAspect of
+  let jkind = case IA.aHideAs arItem of
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
           in IdentityCovered
@@ -87,7 +87,8 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
                   $ ldepth + numSpawnedCoeff - scaledDepth
       f _ _ acc _ ik _ | ik `ES.member` uniqueSet = acc
       f !itemGroup !q !acc !p !ik !kind =
-        -- Don't consider lvlSpawned for uniques.
+        -- Don't consider lvlSpawned for uniques, except those that have
+        -- @Unique@ under @Odds@.
         let ld = if IK.SetFeature Ability.Unique `elem` IK.iaspects kind
                  then ldepth
                  else ldSpawned
@@ -101,20 +102,18 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     ((itemKindId, itemKind), itemGroup) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice levelDepth totalDepth (IK.icount itemKind)
-    itemAspect <-
+    arItem <-
       IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
-    let itemBase = buildItem cops itemAspect flavourMap discoRev itemKindId lid
+    let itemBase = buildItem cops arItem flavourMap discoRev itemKindId lid
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
-        itemTimer =
-          [ timeZero
-          | IK.SetFeature Ability.Periodic `elem` IK.iaspects itemKind ]
-                      -- delay first discharge of single organs
+        itemTimer = [timeZero | IA.checkFlag Ability.Periodic arItem]
+          -- delay first discharge of single organs
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
-    let itemDisco = ItemDiscoFull {..}
+    let itemDisco = ItemDiscoFull {itemAspect = arItem, ..}
         itemFull = ItemFull {..}
-    return $ Just ( (itemIdentity, itemAspect, jfid itemBase)
+    return $ Just ( (itemIdentity, arItem, jfid itemBase)
                   , (itemFull, (itemK, itemTimer))
                   , itemGroup )
 

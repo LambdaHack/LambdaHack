@@ -50,7 +50,8 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
           itemFull@ItemFull{itemBase, itemKind, itemSuspect}
           (itemK, itemTimer) =
   let flav = flavourToName $ jflavour itemBase
-      timeout = IA.aTimeout $ aspectRecordFull itemFull
+      arItem = aspectRecordFull itemFull
+      timeout = IA.aTimeout arItem
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       temporary = not (null itemTimer) && timeout == 0
       charging startT = timeShift startT timeoutTurns > localTime
@@ -74,7 +75,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
            ++ take maxWordsToShow effTs
            ++ ["(...)" | length effTs > maxWordsToShow && maxWordsToShow > 1]
            ++ [timer | maxWordsToShow > 1]
-      unique = IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind
+      unique = IA.checkFlag Ability.Unique arItem
       name | temporary = "temporarily" <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
@@ -86,37 +87,36 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
-  let aets = case itemDisco of
-        ItemDiscoMean{} -> splitTry (IK.iaspects itemKind)
-                             -- faster than @aspectRecordToList@ of mean
-        ItemDiscoFull iAspect -> splitTry (IA.aspectRecordToList iAspect)
+  let aets =
+        let aspects = case itemDisco of
+              ItemDiscoMean{} -> IK.iaspects itemKind
+                -- faster than @aspectRecordToList@ of mean
+                -- and doesn't completely lose the @Odds@ case
+              ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
+        in splitTry aspects
+      arItem = aspectRecordFull itemFull
       timeoutAspect :: IK.Aspect -> Bool
       timeoutAspect IK.Timeout{} = True
       timeoutAspect _ = False
       hurtMeleeAspect :: IK.Aspect -> Bool
       hurtMeleeAspect (IK.AddAbility Ability.AbHurtMelee _) = True
       hurtMeleeAspect _ = False
-      elabel :: IK.Aspect -> Bool
-      elabel IK.ELabel{} = True
-      elabel _ = False
       active = IA.goesIntoEqp arItem
       splitAE :: DetailLevel -> [IK.Aspect] -> [Text]
       splitAE detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IK.SetFeature Ability.Periodic
-                       `elem` IK.iaspects itemKind
+            periodic = IA.checkFlag Ability.Periodic arItem
+            -- Dice needed, not @Int@, so @arItem@ not consulted directly.
+            -- If item not known fully and timeout under @Odds@, it's ignored.
             mtimeout = find timeoutAspect aspects
-            elab = case find elabel $ IK.iaspects itemKind of
-              Just (IK.ELabel t) -> [t]
-              _ -> []
+            elab = IA.aELabel arItem
             -- Effects are not being sorted here, because they should fire
             -- in the order specified in content.
             restAs = sort aspects
             restEs | detLev >= DetailHigh
-                     || IK.SetFeature Ability.MinorEffects
-                        `notElem` IK.iaspects itemKind =
+                     || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
                      | otherwise = []
             aes = if active
@@ -126,8 +126,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                            $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map ppE $ IK.stripOnSmash restEs
-            durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
-            fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
+            durable = IA.checkFlag Ability.Durable arItem
+            fragile = IA.checkFlag Ability.Fragile arItem
             periodicOrTimeout =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
@@ -147,6 +147,9 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
+            -- Dice needed, not @Int@, so @arItem@ not consulted directly.
+            -- If item not known fully and @AbHurtMelee@ under @Odds@,
+            -- it's ignored.
             damage = case find hurtMeleeAspect restAs of
               Just (IK.AddAbility Ability.AbHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
@@ -157,18 +160,17 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                    then ""
                    else tshow (IK.idamage itemKind)
         in filter (/= "")
-           $ elab ++ if detLev >= DetailHigh
-                        || detLev >= DetailMedium && null elab
-                     then [periodicOrTimeout] ++ [damage] ++ aes
-                          ++ [onSmash | detLev >= DetailAll]
-                     else [damage]
+           $ elab : if detLev >= DetailHigh
+                       || detLev >= DetailMedium && T.null elab
+                    then [periodicOrTimeout] ++ [damage] ++ aes
+                         ++ [onSmash | detLev >= DetailAll]
+                    else [damage]
       splitTry ass =
         let splits = map (`splitAE` ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
-      arItem = aspectRecordFull itemFull
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
@@ -263,7 +265,7 @@ itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> ItemFull -> ItemQuant
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         itemFull@ItemFull{itemBase, itemKind, itemSuspect} kit =
+         itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect} kit =
   let (_, unique, name, stats) =
         partItemHigh side factionD localTime itemFull kit
       arItem = aspectRecordFull itemFull
@@ -282,8 +284,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   else " m/s."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, featureSentences, damageAnalysis) =
-        let sentences = tsuspect
-                        ++ mapMaybe aspectToSentence (IK.iaspects itemKind)
+        let aspects = case itemDisco of
+              ItemDiscoMean{} -> IK.iaspects itemKind
+                -- faster than @aspectRecordToList@ of mean
+                -- and doesn't completely lose the @Odds@ case
+              ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
+            sentences = tsuspect ++ mapMaybe aspectToSentence aspects
             aHurtMeleeOfItem = IA.getAbility Ability.AbHurtMelee arItem
             meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
             dmgAn = if meanDmg <= 0 then "" else

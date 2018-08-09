@@ -154,49 +154,52 @@ showReqFailure reqFailure = case reqFailure of
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or becuse it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious forced calmE ItemFull{itemKind, itemDisco} =
-  let isPrecious = IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
+permittedPrecious forced calmE itemFull@ItemFull{itemDisco} =
+  let arItem = aspectRecordFull itemFull
+      isPrecious = IA.checkFlag Ability.Precious arItem
   in if not forced && not calmE && isPrecious
      then Left NotCalmPrecious
-     else Right $ IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+     else Right $ IA.checkFlag Ability.Durable arItem
                   || case itemDisco of
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
 
 -- Simplified, faster version, for inner AI loop.
 permittedPreciousAI :: Bool -> ItemFull -> Bool
-permittedPreciousAI calmE ItemFull{itemKind, itemDisco} =
-  let isPrecious = IK.SetFeature Ability.Precious `elem` IK.iaspects itemKind
+permittedPreciousAI calmE itemFull@ItemFull{itemDisco} =
+  let arItem = aspectRecordFull itemFull
+      isPrecious = IA.checkFlag Ability.Precious arItem
   in if not calmE && isPrecious
      then False
-     else IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+     else IA.checkFlag Ability.Durable arItem
           || case itemDisco of
                ItemDiscoFull{} -> True
                _ -> not isPrecious
 
 permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedProject forced skill calmE itemFull@ItemFull{itemKind} =
- if | not forced && skill < 1 -> Left ProjectUnskilled
-    | not forced
-      && IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
-      && skill < 3 -> Left ProjectLobable
-    | otherwise ->
-        let arItem = aspectRecordFull itemFull
-            badSlot = case IA.aEqpSlot arItem of
-              Just Ability.EqpSlotLightSource -> False
-              Just _ -> True
-              Nothing ->  IA.goesIntoEqp arItem
-        in if badSlot
-           then Right False
-           else permittedPrecious forced calmE itemFull
+permittedProject forced skill calmE itemFull =
+ let arItem = aspectRecordFull itemFull
+ in if | not forced && skill < 1 -> Left ProjectUnskilled
+       | not forced
+         && IA.checkFlag Ability.Lobable arItem
+         && skill < 3 -> Left ProjectLobable
+       | otherwise ->
+           let badSlot = case IA.aEqpSlot arItem of
+                 Just Ability.EqpSlotLightSource -> False
+                 Just _ -> True
+                 Nothing ->  IA.goesIntoEqp arItem
+           in if badSlot
+              then Right False
+              else permittedPrecious forced calmE itemFull
 
 -- Simplified, faster and more permissive version, for inner AI loop.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
-permittedProjectAI skill calmE itemFull@ItemFull{itemKind} =
- if | skill < 1 -> False
-    | IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
-      && skill < 3 -> False
-    | otherwise -> permittedPreciousAI calmE itemFull
+permittedProjectAI skill calmE itemFull =
+ let arItem = aspectRecordFull itemFull
+ in if | skill < 1 -> False
+       | IA.checkFlag Ability.Lobable arItem
+         && skill < 3 -> False
+       | otherwise -> permittedPreciousAI calmE itemFull
 
 permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
                -> Either ReqFailure Bool

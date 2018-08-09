@@ -285,18 +285,18 @@ projectFail source tpxy eps center iid cstore blast = do
       case EM.lookup iid bag of
         Nothing -> return $ Just ProjectOutOfReach
         Just _kit -> do
-          itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
+          itemFull <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
           ar <- getsState $ getActorAspect source
           let skill = Ability.getAb Ability.AbProject actorSk
               forced = blast || bproj sb
               calmE = calmEnough sb ar
               legal = permittedProject forced skill calmE itemFull
+              arItem = aspectRecordFull itemFull
           case legal of
             Left reqFail -> return $ Just reqFail
             Right _ -> do
-              let lobable = IK.SetFeature Ability.Lobable
-                            `elem` IK.iaspects itemKind
+              let lobable = IA.checkFlag Ability.Lobable arItem
                   rest = if lobable
                          then take (chessDist spos tpxy - 1) restUnlimited
                          else restUnlimited

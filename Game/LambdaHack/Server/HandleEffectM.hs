@@ -232,9 +232,10 @@ effectAndDestroy meleePerformed source target iid container periodic effs
 
 imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull -> ItemQuant
                 -> (Bool, ItemQuant)
-imperishableKit permanent periodic it2 ItemFull{itemKind} (itemK, _) =
-  let fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
-      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+imperishableKit permanent periodic it2 itemFull (itemK, _) =
+  let arItem = aspectRecordFull itemFull
+      fragile = IA.checkFlag Ability.Fragile arItem
+      durable = IA.checkFlag Ability.Durable arItem
       imperishable = durable && not fragile || periodic && permanent
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
@@ -627,16 +628,17 @@ effectSummon grp nDm iid source target periodic = do
   actorAspect <- getsState sactorAspect
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  itemKind <- getsState $ getIidKindServer iid
+  discoAspect <- getsState sdiscoAspect
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
-  let power = max power0 1  -- KISS, always at least one summon
+  let arItem = discoAspect EM.! iid
+      power = max power0 1  -- KISS, always at least one summon
       -- We put @source@ instead of @target@ and @power@ instead of dice
       -- to make the message more accurate.
       effect = IK.Summon grp $ Dice.intToDice power
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       sar = actorAspect EM.! source
       tar = actorAspect EM.! target
-      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+      durable = IA.checkFlag Ability.Durable arItem
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
@@ -1079,9 +1081,10 @@ dropCStoreItem :: MonadServerAtomic m
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
-  let c = CActor aid store
-      fragile = IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
-      durable = IK.SetFeature Ability.Durable `elem` IK.iaspects itemKind
+  let arItem = aspectRecordFull itemFull
+      c = CActor aid store
+      fragile = IA.checkFlag Ability.Fragile arItem
+      durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
@@ -1118,10 +1121,11 @@ effectPolyItem execSfx source target = do
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
       return UseId
-    (iid, ( ItemFull{itemBase, itemKindId, itemKind}
+    (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
-      let maxCount = Dice.maxDice $ IK.icount itemKind
-      if | IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind -> do
+      let arItem = aspectRecordFull itemFull
+          maxCount = Dice.maxDice $ IK.icount itemKind
+      if | IA.checkFlag Ability.Unique arItem -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId
          | maybe True (<= 0) $ lookup "common item" $ IK.ifreq itemKind -> do

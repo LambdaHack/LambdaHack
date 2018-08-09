@@ -247,20 +247,21 @@ reqMove source dir = do
   collides <- getsState $ \s tb ->
     let sitemKind = getIidKindServer (btrunk sb) s
         titemKind = getIidKindServer (btrunk tb) s
+        sar = sdiscoAspect s EM.! btrunk sb
+        tar = sdiscoAspect s EM.! btrunk tb
         -- Such projectiles are prone to bursting or are themselves
         -- particles of an explosion shockwave.
-        bursting itemKind =
-          IK.SetFeature Ability.Fragile `elem` IK.iaspects itemKind
-          && IK.SetFeature Ability.Lobable `elem` IK.iaspects itemKind
-        sbursting = bursting sitemKind
-        tbursting = bursting titemKind
+        bursting arItem =
+          IA.checkFlag Ability.Fragile arItem
+          && IA.checkFlag Ability.Lobable arItem
+        sbursting = bursting sar
+        tbursting = bursting tar
         -- Such projectiles, even if not bursting themselves, can cause
         -- another projectile to burst.
         damaging itemKind = IK.idamage itemKind /= 0
         sdamaging = damaging sitemKind
         tdamaging = damaging titemKind
         -- Avoid explosion extinguishing itself via its own particles colliding.
-        sar = sdiscoAspect s EM.! btrunk sb
         sameBlast = IA.isBlast sar
                     && getIidKindIdServer (btrunk sb) s
                        == getIidKindIdServer (btrunk tb) s
@@ -702,10 +703,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
         Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime ItemFull{itemKind, itemDisco} =
+computeRndTimeout localTime itemFull@ItemFull{itemDisco} = do
+  let arItem = aspectRecordFull itemFull
   case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0
-        && IK.SetFeature Ability.Periodic `elem` IK.iaspects itemKind -> do
+    t | t /= 0 && IA.checkFlag Ability.Periodic arItem -> do
       rndT <- randomR (0, t)
       let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
       return $ Just $ timeShift localTime rndTurns

@@ -24,6 +24,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -35,7 +36,6 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Content.CaveKind (citemFreq, citemNum)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Server.ItemRev
 import           Game.LambdaHack.Server.MonadServer
@@ -103,8 +103,9 @@ rollItem lvlSpawned lid itemFreq = do
   m3 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m3 of
-    Just (_, (ItemFull{itemKindId, itemKind}, _), _) ->
-      when (IK.SetFeature Ability.Unique `elem` IK.iaspects itemKind) $
+    Just (_, (itemFull@ItemFull{itemKindId}, _), _) -> do
+      let arItem = aspectRecordFull itemFull
+      when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
     _ -> return ()
