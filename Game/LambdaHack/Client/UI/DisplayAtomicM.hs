@@ -1029,6 +1029,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Escape{} -> return ()
         IK.Paralyze{} | bproj b -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
+        IK.ParalyzeInWater{} | bproj b -> return ()
+        IK.ParalyzeInWater{} -> actorVerbMU aid bUI "struggle with water"
         IK.InsertMove{} | bproj b -> return ()
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
         IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
@@ -1172,6 +1174,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxEscapeImpossible ->
     return "Escaping outside is unthinkable for members of this faction."
   SfxStasisProtects -> return "Paralysis and speed surge require recovery time."
+  SfxWaterParalysisResisted -> return ""  -- don't spam
   SfxTransImpossible -> return "Translocation not possible."
   SfxIdentifyNothing -> return "Nothing to identify."
   SfxPurposeNothing store -> return $!

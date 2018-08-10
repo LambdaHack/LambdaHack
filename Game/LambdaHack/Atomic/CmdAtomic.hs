@@ -165,6 +165,7 @@ data SfxMsg =
   | SfxBracedImmune ActorId
   | SfxEscapeImpossible
   | SfxStasisProtects
+  | SfxWaterParalysisResisted
   | SfxTransImpossible
   | SfxIdentifyNothing
   | SfxPurposeNothing CStore

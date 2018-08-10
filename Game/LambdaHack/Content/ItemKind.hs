@@ -94,6 +94,8 @@ data Effect =
   | Ascend Bool           -- ^ ascend to another level of the dungeon
   | Escape                -- ^ escape from the dungeon
   | Paralyze Dice.Dice    -- ^ paralyze for this many game clips
+  | ParalyzeInWater Dice.Dice
+                          -- ^ paralyze for this many game clips due to water
   | InsertMove Dice.Dice  -- ^ give free time to actor of this many actor turns
   | Teleport Dice.Dice    -- ^ teleport actor across rougly this distance
   | CreateItem CStore (GroupName ItemKind) TimerDice

@@ -302,6 +302,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
     IK.Paralyze nDm -> effectParalyze execSfx nDm source target
+    IK.ParalyzeInWater nDm -> effectParalyzeInWater execSfx nDm source target
     IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
@@ -858,19 +859,25 @@ effectParalyze :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectParalyze execSfx nDm source target = do
   tb <- getsState $ getActorBody target
+  if bproj tb then return UseDud else do  -- shortcut for speed
+    paralyze execSfx nDm source target
+
+paralyze :: MonadServerAtomic m
+         => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
+paralyze execSfx nDm source target = do
+  tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
-      t = timeDeltaScale (Delta timeClip) power
-  if | bproj tb -> return UseDud
-     | ES.member target actorStasis -> do
+  actorStasis <- getsServer sactorStasis
+  if | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
+       let t = timeDeltaScale (Delta timeClip) power
        modifyServer $ \ser ->
          ser { sactorTime = ageActor (bfid tb) (blid tb) target t
                             $ sactorTime ser
@@ -878,6 +885,25 @@ effectParalyze execSfx nDm source target = do
                  -- actor's time warped, so he is in stasis,
                  -- immune to further warps
        return UseUp
+
+-- ** ParalyzeInWater
+
+-- | Advance target actor time by this many time clips. Not by actor moves,
+-- to hurt fast actors more. Due to water, so resistable.
+effectParalyzeInWater :: MonadServerAtomic m
+                      => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
+effectParalyzeInWater execSfx nDm source target = do
+  tb <- getsState $ getActorBody target
+  if bproj tb then return UseDud else do  -- shortcut for speed
+    ar <- getsState $ getActorAspect target
+    let swimmingOrFlying = max (IA.getSkill Ability.SkSwimming ar)
+                               (IA.getSkill Ability.SkFlying ar)
+    if Dice.maxDice nDm > swimmingOrFlying
+    then paralyze execSfx nDm source target  -- no help at all
+    else do  -- fully resisted
+      sb <- getsState $ getActorBody source
+      execSfxAtomic $ SfxMsgFid (bfid sb) SfxWaterParalysisResisted
+      return UseId
 
 -- ** InsertMove
 

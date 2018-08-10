@@ -68,6 +68,15 @@ effectToSuffix detailLevel effect =
                     0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
               in tshow seconds <> "s"
       in "of paralysis for" <+> time
+    ParalyzeInWater dice ->
+      let time = case Dice.reduceDice dice of
+            Nothing -> tshow dice <+> "* 0.05s"
+            Just p ->
+              let clipInTurn = timeTurn `timeFit` timeClip
+                  seconds =
+                    0.5 * fromIntegral p / fromIntegral clipInTurn :: Double
+              in tshow seconds <> "s"
+      in "of retardation for" <+> time
     InsertMove dice ->
       let moves = case Dice.reduceDice dice of
             Nothing -> tshow dice <+> "moves"
