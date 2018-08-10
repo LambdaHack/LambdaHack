@@ -150,8 +150,8 @@ updCreateActor aid body ais = do
         (Just $ aid : l)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
   addAis ais
-  actorMaxSk <- getsState $ aspectRecordFromActor body
-  modifyState $ updateActorAspect $ EM.insert aid actorMaxSk
+  actorMaxSk <- getsState $ maxSkillsFromActor body
+  modifyState $ updateActorMaxSkills $ EM.insert aid actorMaxSk
 
 -- If a leader dies, a new leader should be elected on the server
 -- before this command is executed (not checked).
@@ -180,7 +180,7 @@ updDestroyActor aid body ais = do
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
-  modifyState $ updateActorAspect $ EM.delete aid
+  modifyState $ updateActorMaxSkills $ EM.delete aid
 
 -- Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -190,8 +190,8 @@ updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
   addAis [(iid, item)]
   insertItemContainer iid kit c
   case c of
-    CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $ addItemToActorAspect iid item k aid
+    CActor aid store -> when (store `elem` [CEqp, COrgan])
+                        $ addItemToActorMaxSkills iid item k aid
     _ -> return ()
 
 -- Destroy some copies (possibly not all) of an item.
@@ -213,7 +213,7 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
                     `swith` (iid, item, itemD)) ()
   case c of
     CActor aid store -> when (store `elem` [CEqp, COrgan])
-                        $ addItemToActorAspect iid item (-k) aid
+                        $ addItemToActorMaxSkills iid item (-k) aid
     _ -> return ()
 
 updSpotItemBag :: MonadStateWrite m
@@ -226,7 +226,7 @@ updSpotItemBag c bag ais = assert (EM.size bag > 0
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $
         forM_ ais $ \(iid, item) ->
-                      addItemToActorAspect iid item (fst $ bag EM.! iid) aid
+                      addItemToActorMaxSkills iid item (fst $ bag EM.! iid) aid
     _ -> return ()
 
 updLoseItemBag :: MonadStateWrite m
@@ -245,7 +245,7 @@ updLoseItemBag c bag ais = assert (EM.size bag > 0
     CActor aid store ->
       when (store `elem` [CEqp, COrgan]) $
         forM_ ais $ \(iid, item) ->
-                      addItemToActorAspect iid item (- (fst $ bag EM.! iid)) aid
+          addItemToActorMaxSkills iid item (- (fst $ bag EM.! iid)) aid
     _ -> return ()
 
 updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
@@ -295,16 +295,16 @@ updMoveItem iid k aid s1 s2 = assert (k > 0 && s1 /= s2) $ do
       COrgan -> return ()
       _ -> do
         itemBase <- getsState $ getItemBody iid
-        addItemToActorAspect iid itemBase (-k) aid
+        addItemToActorMaxSkills iid itemBase (-k) aid
     COrgan -> case s2 of
       CEqp -> return ()
       _ -> do
         itemBase <- getsState $ getItemBody iid
-        addItemToActorAspect iid itemBase (-k) aid
+        addItemToActorMaxSkills iid itemBase (-k) aid
     _ ->
       when (s2 `elem` [CEqp, COrgan]) $ do
         itemBase <- getsState $ getItemBody iid
-        addItemToActorAspect iid itemBase k aid
+        addItemToActorMaxSkills iid itemBase k aid
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid nRaw =
@@ -600,7 +600,7 @@ updDiscover _c iid ik arItem = do
         Nothing -> do
           discoverKind ix ik
           unless kmIsConst $ discoverAspect iid arItem
-  resetActorAspect
+  resetActorMaxSkills
 
 updCover :: Container -> ItemId -> ContentId ItemKind -> IA.AspectRecord -> m ()
 updCover _c _iid _ik _arItem = undefined
@@ -613,7 +613,7 @@ updDiscoverKind _c ix kmKind = do
   then atomicFail "item kind already discovered"
   else do
     discoverKind ix kmKind
-    resetActorAspect
+    resetActorMaxSkills
 
 discoverKind :: MonadStateWrite m => ItemKindIx -> ContentId ItemKind -> m ()
 discoverKind ix kindId = do
@@ -641,7 +641,7 @@ updDiscoverAspect _c iid arItem = do
       then atomicFail "item arItem already discovered"
       else do
         discoverAspect iid arItem
-        resetActorAspect
+        resetActorMaxSkills
 
 discoverAspect :: MonadStateWrite m => ItemId -> IA.AspectRecord -> m ()
 discoverAspect iid arItem = do

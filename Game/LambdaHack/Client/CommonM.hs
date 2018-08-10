@@ -107,7 +107,7 @@ currentSkillsClient aid = do
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD
                return $! gleader fact
-  getsState $ actorSkills mleader aid  -- keep it lazy
+  getsState $ actorCurrentSkills mleader aid  -- keep it lazy
 
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.

@@ -160,7 +160,7 @@ rollSpawnPos COps{coTileSpeedup} visible
 advanceTime :: MonadServerAtomic m => ActorId -> Int -> Bool -> m ()
 advanceTime aid percent breakStasis = do
   b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let t = timeDeltaPercent (ticksPerMeter $ momentarySpeed b actorMaxSk) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
@@ -235,7 +235,7 @@ swapTime source target = do
 udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
 udpateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   let calmMax64 = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
   execUpdAtomic $ UpdRefillCalm target deltaCalm
   when (bcalm tb < calmMax64

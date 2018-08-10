@@ -360,11 +360,11 @@ killExit = do
   modifyClient $ \cli -> cli {squit = True}
   -- Verify that the not saved caches are equal to future reconstructed.
   -- Otherwise, save/restore would change game state.
-  sactorAspect2 <- getsState sactorAspect
+  sactorMaxSkills2 <- getsState sactorMaxSkills
   salter <- getsClient salter
   sbfsD <- getsClient sbfsD
   alter <- getsState createSalter
-  actorAspect <- getsState actorAspectInDungeon
+  actorMaxSkills <- getsState maxSkillsInDungeon
   let f aid = do
         (canMove, alterSkill) <- condBFS aid
         bfsArr <- createBfs canMove alterSkill aid
@@ -382,9 +382,9 @@ killExit = do
   let !_A1 = assert (salter == alter
                      `blame` "wrong accumulated salter on side"
                      `swith` (side, salter, alter)) ()
-      !_A2 = assert (sactorAspect2 == actorAspect
-                     `blame` "wrong accumulated sactorAspect on side"
-                     `swith` (side, sactorAspect2, actorAspect)) ()
+      !_A2 = assert (sactorMaxSkills2 == actorMaxSkills
+                     `blame` "wrong accumulated sactorMaxSkills on side"
+                     `swith` (side, sactorMaxSkills2, actorMaxSkills)) ()
       !_A3 = assert (sbfsD `subBfs` bfsD
                      `blame` "wrong accumulated sbfsD on side"
                      `swith` (side, sbfsD, bfsD)) ()

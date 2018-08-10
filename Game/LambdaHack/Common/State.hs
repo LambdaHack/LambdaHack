@@ -4,16 +4,16 @@ module Game.LambdaHack.Common.State
     State
     -- * State components
   , sdungeon, stotalDepth, sactorD, sitemD, sitemIxMap, sfactionD, stime, scops
-  , sgold, shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorAspect
+  , sgold, shigh, sgameModeId, sdiscoKind, sdiscoAspect, sactorMaxSkills
     -- * State construction
   , defStateGlobal, emptyState, localFromGlobal
     -- * State update
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateItemIxMap
   , updateFactionD, updateTime, updateCOpsAndCachedData, updateGold
-  , updateDiscoKind, updateDiscoAspect, updateActorAspect
+  , updateDiscoKind, updateDiscoAspect, updateActorMaxSkills
     -- * State operations
   , getItemBody, aspectRecordFromItem, aspectRecordFromIid
-  , aspectRecordFromActor, actorAspectInDungeon
+  , maxSkillsFromActor, maxSkillsInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , unknownLevel, unknownTileMap
@@ -52,22 +52,25 @@ import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
 -- atomic actions sent by the server to do so (and/or the server applies
 -- the actions to each client state in turn).
 data State = State
-  { _sdungeon     :: Dungeon      -- ^ remembered dungeon
-  , _stotalDepth  :: Dice.AbsDepth
-                                  -- ^ absolute dungeon depth, for item creation
-  , _sactorD      :: ActorDict    -- ^ remembered actors in the dungeon
-  , _sitemD       :: ItemDict     -- ^ remembered items in the dungeon
-  , _sitemIxMap   :: ItemIxMap    -- ^ spotted items with the same kind index
-                                  --   could be recomputed at resume, but small
-  , _sfactionD    :: FactionDict  -- ^ remembered sides still in game
-  , _stime        :: Time         -- ^ global game time, for UI display only
-  , _scops        :: COps         -- ^ remembered content
-  , _sgold        :: Int          -- ^ total value of human trinkets in dungeon
-  , _shigh        :: HighScore.ScoreDict  -- ^ high score table
-  , _sgameModeId  :: ContentId ModeKind   -- ^ current game mode
-  , _sdiscoKind   :: DiscoveryKind    -- ^ item kind discoveries data
-  , _sdiscoAspect :: DiscoveryAspect  -- ^ item aspect data; could be recomputed
-  , _sactorAspect :: ActorAspect      -- ^ actor aspect records; is recomputed
+  { _sdungeon        :: Dungeon    -- ^ remembered dungeon
+  , _stotalDepth     :: Dice.AbsDepth
+                                   -- ^ absolute dungeon depth for item creation
+  , _sactorD         :: ActorDict  -- ^ remembered actors in the dungeon
+  , _sitemD          :: ItemDict   -- ^ remembered items in the dungeon
+  , _sitemIxMap      :: ItemIxMap  -- ^ spotted items with the same kind index
+                                   --   could be recomputed at resume, but small
+  , _sfactionD       :: FactionDict
+                                   -- ^ remembered sides still in game
+  , _stime           :: Time       -- ^ global game time, for UI display only
+  , _scops           :: COps       -- ^ remembered content
+  , _sgold           :: Int        -- ^ total value of human trinkets in dungeon
+  , _shigh           :: HighScore.ScoreDict  -- ^ high score table
+  , _sgameModeId     :: ContentId ModeKind   -- ^ current game mode
+  , _sdiscoKind      :: DiscoveryKind        -- ^ item kind discoveries data
+  , _sdiscoAspect    :: DiscoveryAspect
+                                   -- ^ item aspect data; could be recomputed
+  , _sactorMaxSkills :: ActorMaxSkills
+                                   -- ^ actor aspect records; is recomputed
   }
   deriving (Show, Eq)
 
@@ -99,7 +102,7 @@ instance Binary State where
     _sdiscoKind <- get
     _sdiscoAspect <- get
     let _scops = emptyCOps
-        _sactorAspect = EM.empty
+        _sactorMaxSkills = EM.empty
     return $! State{..}
 
 sdungeon :: State -> Dungeon
@@ -141,8 +144,8 @@ sdiscoKind = _sdiscoKind
 sdiscoAspect :: State -> DiscoveryAspect
 sdiscoAspect = _sdiscoAspect
 
-sactorAspect :: State -> ActorAspect
-sactorAspect = _sactorAspect
+sactorMaxSkills :: State -> ActorMaxSkills
+sactorMaxSkills = _sactorMaxSkills
 
 unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> Area
              -> ([Point], [Point]) -> [Point] -> Int -> Bool
@@ -190,7 +193,7 @@ defStateGlobal _sdungeon _stotalDepth _sfactionD _scops _shigh _sgameModeId
     , _stime = timeZero
     , _sgold = 0
     , _sdiscoAspect = EM.empty
-    , _sactorAspect = EM.empty
+    , _sactorMaxSkills = EM.empty
     , ..
     }
 
@@ -211,7 +214,7 @@ emptyState =
     , _sgameModeId = toEnum 0  -- the initial value is unused
     , _sdiscoKind = EM.empty
     , _sdiscoAspect = EM.empty
-    , _sactorAspect = EM.empty
+    , _sactorMaxSkills = EM.empty
     }
 
 -- | Local state created by removing secret information from global
@@ -259,7 +262,7 @@ updateTime f s = s {_stime = f (_stime s)}
 updateCOpsAndCachedData :: (COps -> COps) -> State -> State
 updateCOpsAndCachedData f s =
   let s2 = s {_scops = f (_scops s)}
-  in s2 {_sactorAspect = actorAspectInDungeon s2}
+  in s2 {_sactorMaxSkills = maxSkillsInDungeon s2}
 
 -- | Update total gold value in the dungeon.
 updateGold :: (Int -> Int) -> State -> State
@@ -271,8 +274,8 @@ updateDiscoKind f s = s {_sdiscoKind = f (_sdiscoKind s)}
 updateDiscoAspect :: (DiscoveryAspect -> DiscoveryAspect) -> State -> State
 updateDiscoAspect f s = s {_sdiscoAspect = f (_sdiscoAspect s)}
 
-updateActorAspect :: (ActorAspect -> ActorAspect) -> State -> State
-updateActorAspect f s = s {_sactorAspect = f (_sactorAspect s)}
+updateActorMaxSkills :: (ActorMaxSkills -> ActorMaxSkills) -> State -> State
+updateActorMaxSkills f s = s {_sactorMaxSkills = f (_sactorMaxSkills s)}
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid
@@ -291,12 +294,12 @@ aspectRecordFromItem iid item s =
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord
 aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s
 
-aspectRecordFromActor :: Actor -> State -> Ability.Skills
-aspectRecordFromActor b s =
+maxSkillsFromActor :: Actor -> State -> Ability.Skills
+maxSkillsFromActor b s =
   let processIid (iid, (k, _)) = (IA.aSkills $ aspectRecordFromIid iid s, k)
       processBag sks = Ability.sumScaledSkills $ map processIid sks
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
-actorAspectInDungeon :: State -> ActorAspect
-actorAspectInDungeon s =
-  EM.map (`aspectRecordFromActor` s) $ sactorD s
+maxSkillsInDungeon :: State -> ActorMaxSkills
+maxSkillsInDungeon s =
+  EM.map (`maxSkillsFromActor` s) $ sactorD s

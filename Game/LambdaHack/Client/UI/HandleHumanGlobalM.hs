@@ -379,7 +379,7 @@ displaceAid target = do
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   disp <- getsState $ dispEnemy leader target actorMaxSk
   let immobile = Ability.getSk Ability.SkMove actorMaxSk <= 0
       tpos = bpos tb
@@ -415,7 +415,7 @@ moveSearchAlter dir = do
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough sb actorMaxSk
       moveSkill = Ability.getSk Ability.SkMove actorSk
       alterSkill = Ability.getSk Ability.SkAlter actorSk
@@ -676,7 +676,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   lastItemMove <- getsSession slastItemMove
   let calmE = calmEnough b actorMaxSk
       cLegalE | calmE = cLegalRaw
@@ -716,7 +716,7 @@ moveItems :: forall m. MonadClientUI m
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   discoBenefit <- getsClient sdiscoBenefit
   let calmE = calmEnough b actorMaxSk
       ret4 :: [(ItemId, ItemFullKit)]
@@ -794,7 +794,7 @@ projectItem :: MonadClientUI m
 projectItem (fromCStore, (iid, itemFull)) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -841,7 +841,7 @@ applyItem :: MonadClientUI m
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
   if not calmE && fromCStore == CSha then failSer ItemNotCalm
   else do
@@ -1088,7 +1088,7 @@ itemMenuHuman cmdAction = do
         Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
           CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-          actorMaxSk <- getsState $ getActorAspect leader
+          actorMaxSk <- getsState $ getActorMaxSkills leader
           itemFull <- getsState $ itemToFull iid
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid

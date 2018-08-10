@@ -136,13 +136,14 @@ perceptionFromPTotal FovLucid{fovLucid} ptotal =
       psmell = csmell ptotal
   in Perception{..}
 
-perActorFromLevel :: PerActor -> (ActorId -> Actor) -> ActorAspect -> FovClear
+perActorFromLevel :: PerActor -> (ActorId -> Actor)
+                  -> ActorMaxSkills -> FovClear
                   -> PerActor
-perActorFromLevel perActorOld getActorB actorAspect fovClear =
+perActorFromLevel perActorOld getActorB actorMaxSkills fovClear =
   -- Dying actors included, to let them see their own demise.
   let f _ fv@FovValid{} = fv
       f aid FovInvalid =
-        let actorMaxSk = actorAspect EM.! aid
+        let actorMaxSk = actorMaxSkills EM.! aid
             b = getActorB aid
         in FovValid $ cacheBeforeLucidFromActor fovClear b actorMaxSk
   in EM.mapWithKey f perActorOld
@@ -205,7 +206,7 @@ shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = Ability.getSk Ability.SkShine $ sactorAspect s EM.! aid
+        , let radius = Ability.getSk Ability.SkShine $ getActorMaxSkills aid s
         , radius > 0 ]
       floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
@@ -299,7 +300,7 @@ perceptionCacheFromLevel fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
-        let actorMaxSk = sactorAspect s EM.! aid
+        let actorMaxSk = getActorMaxSkills aid s
         in if Ability.getSk Ability.SkSight actorMaxSk <= 0
               && Ability.getSk Ability.SkNocto actorMaxSk <= 0
               && Ability.getSk Ability.SkSmell actorMaxSk <= 0  -- dumb missiles

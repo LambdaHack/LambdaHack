@@ -90,10 +90,10 @@ computeTarget aid = do
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
-  actorAspect <- getsState sactorAspect
+  actorMaxSkills <- getsState sactorMaxSkills
   let lalter = salter EM.! blid b
       condInMelee = scondInMelee LEM.! blid b
-      actorMaxSk = actorAspect EM.! aid
+      actorMaxSk = actorMaxSkills EM.! aid
       alterSkill = Ability.getSk Ability.SkAlter actorMaxSk
   lvl <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
@@ -139,11 +139,11 @@ computeTarget aid = do
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
                 || Ability.getSk Ability.SkProject actorMaxSk > 0
-  actorMinSk <- getsState $ actorSkills Nothing aid
+  actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
   condEnoughGear <- condEnoughGearM aid
-  let condCanMelee = actorCanMelee actorAspect aid b
+  let condCanMelee = actorCanMelee actorMaxSkills aid b
       condHpTooLow = hpTooLow b actorMaxSk
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
@@ -156,7 +156,7 @@ computeTarget aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        actorMaxSkE <- getsState $ getActorAspect aidE
+        actorMaxSkE <- getsState $ getActorMaxSkills aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
             -- 1 from condSupport1

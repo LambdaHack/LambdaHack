@@ -181,7 +181,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
            actorVerbMU aid bUI "return from the brink of death"
          mleader <- getsClient sleader
          when (Just aid == mleader) $ do
-           actorMaxSk <- getsState $ getActorAspect aid
+           actorMaxSk <- getsState $ getActorMaxSkills aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)

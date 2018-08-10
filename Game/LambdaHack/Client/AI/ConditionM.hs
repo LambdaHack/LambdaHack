@@ -77,7 +77,7 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      actorMaxSk <- getsState $ getActorAspect enemy
+      actorMaxSk <- getsState $ getActorMaxSkills enemy
       return $ Ability.getSk Ability.SkMove actorMaxSk <= 0
     _ -> return False
 
@@ -104,14 +104,14 @@ condAdjTriggerableM aid = do
 -- by ignoring them and closing in to melee distance.
 meleeThreatDistList :: ActorId -> State -> [(Int, (ActorId, Actor))]
 meleeThreatDistList aid s =
-  let actorAspect = sactorAspect s
+  let actorMaxSkills = sactorMaxSkills s
       b = getActorBody aid s
       allAtWar = foeRegularAssocs (bfid b) (blid b) s
       strongActor (aid2, b2) =
-        let actorMaxSk = actorAspect EM.! aid2
+        let actorMaxSk = actorMaxSkills EM.! aid2
             nonmoving = Ability.getSk Ability.SkMove actorMaxSk <= 0
         in not (hpTooLow b2 actorMaxSk || nonmoving)
-           && actorCanMelee actorAspect aid2 b2
+           && actorCanMelee actorMaxSkills aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   in sortBy (comparing fst) $ map addDist allThreats
@@ -163,7 +163,7 @@ projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
 projectList discoBenefit skill aid
             condShineWouldBetray condAimEnemyPresent s =
   let b = getActorBody aid s
-      actorMaxSk = getActorAspect aid s
+      actorMaxSk = getActorMaxSkills aid s
       calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
@@ -254,8 +254,8 @@ condSupport param aid = do
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
 strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
-  let actorAspect = sactorAspect s
-      actorMaxSk = actorAspect EM.! aid
+  let actorMaxSkills = sactorMaxSkills s
+      actorMaxSk = actorMaxSkills EM.! aid
       n = min 2 param - Ability.getSk Ability.SkAggression actorMaxSk
       b = getActorBody aid s
       mtgtPos = case btarget of
@@ -268,7 +268,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
-                                  && actorCanMelee actorAspect aid2 b2
+                                  && actorCanMelee actorMaxSkills aid2 b2
       friends = friendRegularAssocs (bfid b) (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
   in not $ n > 0 && null (drop (n - 1) closeAndStrongFriends)

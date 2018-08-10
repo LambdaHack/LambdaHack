@@ -35,7 +35,7 @@ import           Game.LambdaHack.Content.ModeKind
 pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid = do
-  actorAspect <- getsState sactorAspect
+  actorMaxSkills <- getsState sactorMaxSkills
   mleader <- getsClient sleader
   let oldAid = fromMaybe (error $ "" `showFailure` maidToAvoid) mleader
   oldBody <- getsState $ getActorBody oldAid
@@ -104,7 +104,7 @@ pickActorToMove maidToAvoid = do
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             let condInMelee = scondInMelee LEM.! blid body
-                actorMaxSk = actorAspect EM.! aid
+                actorMaxSk = actorMaxSkills EM.! aid
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
@@ -113,13 +113,13 @@ pickActorToMove maidToAvoid = do
             canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
-                condCanMelee = actorCanMelee actorAspect aid body
+                condCanMelee = actorCanMelee actorMaxSkills aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
                   any (\(_, (aid2, _)) ->
-                    let actorMaxSk2 = actorAspect EM.! aid2
+                    let actorMaxSk2 = actorMaxSkills EM.! aid2
                     in gearSpeed actorMaxSk2 > speed1_5)
                   threatAdj
                 heavilyDistressed =
@@ -176,7 +176,7 @@ pickActorToMove maidToAvoid = do
       (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursNotFled
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
-            not $ actorCanMelee actorAspect aid body
+            not $ actorCanMelee actorMaxSkills aid body
           targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _ permit}) =
             not permit
           targetTEnemy

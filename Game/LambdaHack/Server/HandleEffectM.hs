@@ -97,7 +97,7 @@ applyMeleeDamage source target iid = do
 refillHP :: MonadServerAtomic m => ActorId -> ActorId -> Int64 -> m ()
 refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   tbOld <- getsState $ getActorBody target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
   let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
       hpMax = Ability.getSk Ability.SkMaxHP actorMaxSk
@@ -129,7 +129,7 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do
   tb <- getsState $ getActorBody target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   let upperBound = if hpTooLow tb actorMaxSk
                    then 2  -- to trigger domination on next attack, etc.
                    else xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
@@ -461,7 +461,7 @@ effectRefillCalm :: MonadServerAtomic m
                  => m () -> Int -> ActorId -> ActorId -> m UseResult
 effectRefillCalm execSfx power0 source target = do
   tb <- getsState $ getActorBody target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       rawDeltaCalm = xM power
       calmMax = Ability.getSk Ability.SkMaxCalm actorMaxSk
@@ -546,7 +546,7 @@ dominateFid fid target = do
   when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
@@ -626,7 +626,8 @@ effectSummon grp nDm iid source target periodic = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  actorAspect <- getsState sactorAspect
+  sMaxSk <- getsState $ getActorMaxSkills source
+  tMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   discoAspect <- getsState sdiscoAspect
@@ -637,8 +638,6 @@ effectSummon grp nDm iid source target periodic = do
       -- to make the message more accurate.
       effect = IK.Summon grp $ Dice.intToDice power
       execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
-      sar = actorAspect EM.! source
-      tar = actorAspect EM.! target
       durable = IA.checkFlag Ability.Durable arItem
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
@@ -647,7 +646,7 @@ effectSummon grp nDm iid source target periodic = do
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if | (periodic || durable) && not (bproj sb)
-       && (bcalm sb < - deltaCalm || not (calmEnough sb sar)) -> do
+       && (bcalm sb < - deltaCalm || not (calmEnough sb sMaxSk)) -> do
        unless (bproj sb) $
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
        return UseId
@@ -658,7 +657,7 @@ effectSummon grp nDm iid source target periodic = do
        ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
        localTime <- getsState $ getLocalTime (blid tb)
        -- Make sure summoned actors start acting after the victim.
-       let actorTurn = ticksPerMeter $ momentarySpeed tb tar
+       let actorTurn = ticksPerMeter $ momentarySpeed tb tMaxSk
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
        bs <- forM (take power ps) $ \p -> do
@@ -895,7 +894,7 @@ effectParalyzeInWater :: MonadServerAtomic m
 effectParalyzeInWater execSfx nDm source target = do
   tb <- getsState $ getActorBody target
   if bproj tb then return UseDud else do  -- shortcut for speed
-    actorMaxSk <- getsState $ getActorAspect target
+    actorMaxSk <- getsState $ getActorMaxSkills target
     let swimmingOrFlying = max (Ability.getSk Ability.SkSwimming actorMaxSk)
                                (Ability.getSk Ability.SkFlying actorMaxSk)
     if Dice.maxDice nDm > swimmingOrFlying
@@ -913,7 +912,7 @@ effectInsertMove :: MonadServerAtomic m
                  => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectInsertMove execSfx nDm source target = do
   tb <- getsState $ getActorBody target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   actorStasis <- getsServer sactorStasis
@@ -995,7 +994,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
       factor nDm = do
-        actorMaxSk <- getsState $ getActorAspect target
+        actorMaxSk <- getsState $ getActorMaxSkills target
         -- A tiny bit added to make sure length 1 effect doesn't end before
         -- the end of first turn, which would make, e.g., speed, useless.
         let actorTurn =timeDeltaPercent (ticksPerMeter

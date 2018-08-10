@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers
     ActorId
     -- * The@ Acto@r type, its components and operations on them
-  , Actor(..), ResDelta(..), ActorAspect
+  , Actor(..), ResDelta(..), ActorMaxSkills
   , deltaSerious, deltaMild, actorCanMelee
   , momentarySpeed, gearSpeed, braced, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough
@@ -80,7 +80,7 @@ data ResDelta = ResDelta
 
 instance Binary ResDelta
 
-type ActorAspect = EM.EnumMap ActorId Ability.Skills
+type ActorMaxSkills = EM.EnumMap ActorId Ability.Skills
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
@@ -94,9 +94,9 @@ deltaMild :: ResDelta -> Bool
 deltaMild ResDelta{..} = fst resCurrentTurn == minusM
                          || fst resPreviousTurn == minusM
 
-actorCanMelee :: ActorAspect -> ActorId -> Actor -> Bool
-actorCanMelee actorAspect aid b =
-  let actorMaxSk = actorAspect EM.! aid
+actorCanMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorCanMelee actorMaxSkills aid b =
+  let actorMaxSk = actorMaxSkills EM.! aid
       condUsableWeapon = bweapon b > 0
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee

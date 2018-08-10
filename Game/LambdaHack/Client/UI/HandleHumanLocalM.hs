@@ -166,7 +166,7 @@ chooseItemDialogMode c = do
   itemToF <- getsState $ flip itemToFull
   localTime <- getsState $ getLocalTime (blid b)
   factionD <- getsState sfactionD
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
       let lSlotsElems = EM.elems lSlots
@@ -312,7 +312,7 @@ chooseItemProjectHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -360,7 +360,7 @@ permittedProjectClient :: MonadClientUI m
 permittedProjectClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   actorSk <- leaderSkillsClientUI
   let skill = Ability.getSk Ability.SkProject actorSk
       calmE = calmEnough b actorMaxSk
@@ -488,7 +488,7 @@ chooseItemApplyHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
@@ -534,7 +534,7 @@ permittedApplyClient :: MonadClientUI m
 permittedApplyClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   actorSk <- leaderSkillsClientUI
   let skill = Ability.getSk Ability.SkApply actorSk
       calmE = calmEnough b actorMaxSk

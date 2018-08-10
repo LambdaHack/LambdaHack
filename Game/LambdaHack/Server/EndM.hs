@@ -84,12 +84,12 @@ verifyCaches :: MonadServer m => m ()
 verifyCaches = do
   sperCacheFid <- getsServer sperCacheFid
   sperValidFid <- getsServer sperValidFid
-  sactorAspect2 <- getsState sactorAspect
+  sactorMaxSkills2 <- getsState sactorMaxSkills
   sfovLucidLid <- getsServer sfovLucidLid
   sfovClearLid <- getsServer sfovClearLid
   sfovLitLid <- getsServer sfovLitLid
   sperFid <- getsServer sperFid
-  actorAspect <- getsState actorAspectInDungeon
+  actorMaxSkills <- getsState maxSkillsInDungeon
   ( fovLitLid, fovClearLid, fovLucidLid
    ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
   let !_A7 = assert (sfovLitLid == fovLitLid
@@ -98,9 +98,9 @@ verifyCaches = do
       !_A6 = assert (sfovClearLid == fovClearLid
                      `blame` "wrong accumulated sfovClearLid"
                      `swith` (sfovClearLid, fovClearLid)) ()
-      !_A5 = assert (sactorAspect2 == actorAspect
-                     `blame` "wrong accumulated sactorAspect"
-                     `swith` (sactorAspect2, actorAspect)) ()
+      !_A5 = assert (sactorMaxSkills2 == actorMaxSkills
+                     `blame` "wrong accumulated sactorMaxSkills"
+                     `swith` (sactorMaxSkills2, actorMaxSkills)) ()
       !_A4 = assert (sfovLucidLid == fovLucidLid
                      `blame` "wrong accumulated sfovLucidLid"
                      `swith` (sfovLucidLid, fovLucidLid)) ()

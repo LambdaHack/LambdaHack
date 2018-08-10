@@ -206,7 +206,7 @@ affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
-    actorMaxSk <- getsState $ getActorAspect aid
+    actorMaxSk <- getsState $ getActorMaxSkills aid
     let smellRadius = Ability.getSk Ability.SkSmell actorMaxSk
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
@@ -424,7 +424,7 @@ reqDisplace source target = do
       tpos = bpos tb
       atWar = isFoe (bfid tb) tfact (bfid sb)
       req = ReqDisplace target
-  actorMaxSk <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorMaxSkills target
   dEnemy <- getsState $ dispEnemy source target actorMaxSk
   if | not (abInSkill Ability.SkDisplace) ->
          execFailure source req DisplaceUnskilled
@@ -475,7 +475,7 @@ reqAlterFail :: MonadServerAtomic m => ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail source tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  actorMaxSk <- getsState $ getActorAspect source
+  actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough sb actorMaxSk
       lid = blid sb
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
@@ -645,7 +645,7 @@ reqMoveItems source l = do
   actorSk <- currentSkillsServer source
   if Ability.getSk Ability.SkMoveItem actorSk > 0 then do
     b <- getsState $ getActorBody source
-    actorMaxSk <- getsState $ getActorAspect source
+    actorMaxSk <- getsState $ getActorMaxSkills source
     -- Server accepts item movement based on calm at the start, not end
     -- or in the middle, to avoid interrupted or partially ignored commands.
     let calmE = calmEnough b actorMaxSk
@@ -730,7 +730,7 @@ reqProject :: MonadServerAtomic m
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
-  actorMaxSk <- getsState $ getActorAspect source
+  actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
@@ -747,7 +747,7 @@ reqApply :: MonadServerAtomic m
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
   else do

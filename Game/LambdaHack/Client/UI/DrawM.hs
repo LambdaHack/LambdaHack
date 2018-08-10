@@ -78,7 +78,7 @@ targetDesc mtarget = do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-      actorMaxSk <- getsState $ getActorAspect aid
+      actorMaxSk <- getsState $ getActorMaxSkills aid
       let percentage =
             100 * bhp b
             `div` xM (max 5 $ Ability.getSk Ability.SkMaxHP actorMaxSk)
@@ -532,7 +532,7 @@ drawArenaStatus COps{cocave}
 checkWarnings :: UIOptions -> ActorId -> State -> (Bool, Bool)
 checkWarnings UIOptions{uhpWarningPercent} leader s =
   let b = getActorBody leader s
-      actorMaxSk = getActorAspect leader s
+      actorMaxSk = getActorMaxSkills leader s
       isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
@@ -553,7 +553,7 @@ drawLeaderStatus waitT = do
   case mleader of
     Just leader -> do
       b <- getsState $ getActorBody leader
-      actorMaxSk <- getsState $ getActorAspect leader
+      actorMaxSk <- getsState $ getActorMaxSkills leader
       (hpCheckWarning, calmCheckWarning)
         <- getsState $ checkWarnings sUIOptions leader
       bdark <- getsState $ \s -> not (actorInAmbient b s)
@@ -611,7 +611,7 @@ drawLeaderDamage width = do
     Just leader -> do
       kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
       actorSk <- leaderSkillsClientUI
-      actorAspect <- getsState sactorAspect
+      actorMaxSkills <- getsState sactorMaxSkills
       let kitAssOnlyWeapons =
             filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
       strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
@@ -620,7 +620,7 @@ drawLeaderDamage width = do
             (_, (_, (itemFull, _))) : _ ->
               let tdice = show $ IK.idamage $ itemKind itemFull
                   bonusRaw = Ability.getSk Ability.SkHurtMelee
-                             $ actorAspect EM.! leader
+                             $ actorMaxSkills EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
                   tbonus = if bonus == 0

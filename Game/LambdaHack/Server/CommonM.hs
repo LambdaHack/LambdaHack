@@ -287,7 +287,7 @@ projectFail source tpxy eps center iid cstore blast = do
         Just _kit -> do
           itemFull <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
-          actorMaxSk <- getsState $ getActorAspect source
+          actorMaxSk <- getsState $ getActorMaxSkills source
           let skill = Ability.getSk Ability.SkProject actorSk
               forced = blast || bproj sb
               calmE = calmEnough sb actorMaxSk
@@ -497,7 +497,7 @@ currentSkillsServer aid  = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let mleader = gleader fact
-  getsState $ actorSkills mleader aid
+  getsState $ actorCurrentSkills mleader aid
 
 getCacheLucid :: MonadServer m => LevelId -> m FovLucid
 getCacheLucid lid = do
@@ -522,12 +522,12 @@ getCacheTotal fid lid = do
   case ptotal perCacheOld of
     FovValid total -> return total
     FovInvalid -> do
-      actorAspect <- getsState sactorAspect
+      actorMaxSkills <- getsState sactorMaxSkills
       fovClearLid <- getsServer sfovClearLid
       getActorB <- getsState $ flip getActorBody
       let perActorNew =
             perActorFromLevel (perActor perCacheOld) getActorB
-                              actorAspect (fovClearLid EM.! lid)
+                              actorMaxSkills (fovClearLid EM.! lid)
           -- We don't check if any actor changed, because almost surely one is.
           -- Exception: when an actor is destroyed, but then union differs, too.
           total = totalFromPerActor perActorNew

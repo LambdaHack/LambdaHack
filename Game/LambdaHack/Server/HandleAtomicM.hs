@@ -44,13 +44,13 @@ import           Game.LambdaHack.Server.State
 cmdAtomicSemSer :: MonadServer m => State -> UpdAtomic -> m ()
 cmdAtomicSemSer oldState cmd = case cmd of
   UpdCreateActor aid b _ -> do
-    actorAspect <- getsState sactorAspect
-    when (actorHasShine actorAspect aid) $ invalidateLucidLid $ blid b
+    actorMaxSkills <- getsState sactorMaxSkills
+    when (actorHasShine actorMaxSkills aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
   UpdDestroyActor aid b _ -> do
-    let actorAspectOld = sactorAspect oldState
-    when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
-    deletePerActor actorAspectOld aid b
+    let actorMaxSkillsOld = sactorMaxSkills oldState
+    when (actorHasShine actorMaxSkillsOld aid) $ invalidateLucidLid $ blid b
+    deletePerActor actorMaxSkillsOld aid b
     modifyServer $ \ser ->
       ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                    (sactorTime ser)
@@ -75,14 +75,14 @@ cmdAtomicSemSer oldState cmd = case cmd of
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdSpotActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
-    actorAspect <- getsState sactorAspect
-    when (actorHasShine actorAspect aid) $ invalidateLucidLid $ blid b
+    actorMaxSkills <- getsState sactorMaxSkills
+    when (actorHasShine actorMaxSkills aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
   UpdLoseActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
-    let actorAspectOld = sactorAspect oldState
-    when (actorHasShine actorAspectOld aid) $ invalidateLucidLid $ blid b
-    deletePerActor actorAspectOld aid b
+    let actorMaxSkillsOld = sactorMaxSkills oldState
+    when (actorHasShine actorMaxSkillsOld aid) $ invalidateLucidLid $ blid b
+    deletePerActor actorMaxSkillsOld aid b
     modifyServer $ \ser ->
       ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                    (sactorTime ser)
@@ -132,12 +132,13 @@ cmdAtomicSemSer oldState cmd = case cmd of
       when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
   UpdMoveActor aid _ _ -> do
-    actorAspect <- getsState sactorAspect
-    when (actorHasShine actorAspect aid) $ invalidateLucidAid aid
+    actorMaxSkills <- getsState sactorMaxSkills
+    when (actorHasShine actorMaxSkills aid) $ invalidateLucidAid aid
     invalidatePerActor aid
   UpdDisplaceActor aid1 aid2 -> do
-    actorAspect <- getsState sactorAspect
-    when (actorHasShine actorAspect aid1 || actorHasShine actorAspect aid2) $
+    actorMaxSkills <- getsState sactorMaxSkills
+    when (actorHasShine actorMaxSkills aid1
+          || actorHasShine actorMaxSkills aid2) $
       invalidateLucidAid aid1  -- the same lid as aid2
     invalidatePerActor aid1
     invalidatePerActor aid2
@@ -162,7 +163,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillCalm aid _ -> do
-    actorMaxSk <- getsState $ getActorAspect aid
+    actorMaxSk <- getsState $ getActorMaxSkills aid
     body <- getsState $ getActorBody aid
     let sight = Ability.getSk Ability.SkSight actorMaxSk
         oldBody = getActorBody aid oldState
@@ -219,8 +220,8 @@ invalidateLucidAid aid = do
   lid <- getsState $ blid . getActorBody aid
   invalidateLucidLid lid
 
-actorHasShine :: ActorAspect -> ActorId -> Bool
-actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
+actorHasShine :: ActorMaxSkills -> ActorId -> Bool
+actorHasShine actorMaxSkills aid = case EM.lookup aid actorMaxSkills of
   Just actorMaxSk -> Ability.getSk Ability.SkShine actorMaxSk > 0
   Nothing -> error $ "" `showFailure` aid
 
@@ -241,7 +242,7 @@ itemAffectsPerRadius discoAspect iid =
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
           && Ability.getSk Ability.SkNocto actorMaxSk <= 0
           && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $
@@ -259,9 +260,9 @@ addPerActorAny aid b = do
         , sperValidFid = EM.adjust (EM.insert lid False) fid
                          $ sperValidFid ser }
 
-deletePerActor :: MonadServer m => ActorAspect -> ActorId -> Actor -> m ()
-deletePerActor actorAspectOld aid b = do
-  let actorMaxSk = actorAspectOld EM.! aid
+deletePerActor :: MonadServer m => ActorMaxSkills -> ActorId -> Actor -> m ()
+deletePerActor actorMaxSkillsOld aid b = do
+  let actorMaxSk = actorMaxSkillsOld EM.! aid
   unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
           && Ability.getSk Ability.SkNocto actorMaxSk <= 0
           && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $
@@ -281,7 +282,7 @@ deletePerActorAny aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
           && Ability.getSk Ability.SkNocto actorMaxSk <= 0
           && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $ do
@@ -291,7 +292,7 @@ invalidatePerActor aid = do
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   if Ability.getSk Ability.SkSight actorMaxSk <= 0
      && Ability.getSk Ability.SkNocto actorMaxSk <= 0
      && Ability.getSk Ability.SkSmell actorMaxSk <= 0

@@ -4,7 +4,7 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   , putState, updateLevel, updateActor, updateFaction, moveActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
-  , addAis, itemsMatch, addItemToActorAspect, resetActorAspect
+  , addAis, itemsMatch, addItemToActorMaxSkills, resetActorMaxSkills
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , insertItemFloor, insertItemEmbed
@@ -310,21 +310,21 @@ itemsMatch item1 item2 =
   -- Note that nothing else needs to be the same, since items are merged
   -- and clients have different views on dungeon items than the server.
 
-addItemToActorAspect :: MonadStateWrite m
-                     => ItemId -> Item -> Int -> ActorId -> m ()
-addItemToActorAspect iid itemBase k aid = do
+addItemToActorMaxSkills :: MonadStateWrite m
+                        => ItemId -> Item -> Int -> ActorId -> m ()
+addItemToActorMaxSkills iid itemBase k aid = do
   arItem <- getsState $ aspectRecordFromItem iid itemBase
   let f actorMaxSk =
         Ability.sumScaledSkills [(actorMaxSk, 1), (IA.aSkills arItem, k)]
-  modifyState $ updateActorAspect $ EM.adjust f aid
+  modifyState $ updateActorMaxSkills $ EM.adjust f aid
 
-resetActorAspect :: MonadStateWrite m => m ()
-resetActorAspect = do
+resetActorMaxSkills :: MonadStateWrite m => m ()
+resetActorMaxSkills = do
   -- Each actor's equipment and organs would need to be inspected,
   -- the iid looked up, e.g., if it wasn't in old discoKind, but is in new,
   -- and then aspect record updated, so it's simpler and not much more
-  -- expensive to generate new sactorAspect. Optimize only after profiling.
+  -- expensive to generate new sactorMaxSkills. Optimize only after profiling.
   -- Also note this doesn't get invoked on the server, because it bails out
   -- earlier, upon noticing the item is already fully known.
-  actorAspect <- getsState actorAspectInDungeon
-  modifyState $ updateActorAspect $ const actorAspect
+  actorMaxSk <- getsState maxSkillsInDungeon
+  modifyState $ updateActorMaxSkills $ const actorMaxSk

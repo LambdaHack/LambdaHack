@@ -8,12 +8,12 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
-  , getActorBody, getActorAspect, canTraverse
+  , getActorBody, getActorMaxSkills, canTraverse
   , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
-  , actorSkills, dispEnemy, itemToFull, fullAssocs, kitAssocs
+  , actorCurrentSkills, dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
@@ -193,9 +193,9 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
-getActorAspect :: ActorId -> State -> Ability.Skills
-{-# INLINE getActorAspect #-}
-getActorAspect aid s = sactorAspect s EM.! aid
+getActorMaxSkills :: ActorId -> State -> Ability.Skills
+{-# INLINE getActorMaxSkills #-}
+getActorMaxSkills aid s = sactorMaxSkills s EM.! aid
 
 -- Check that the actor can move, also between levels and through doors.
 -- Otherwise, it's too awkward for human player to control, e.g.,
@@ -207,7 +207,7 @@ getActorAspect aid s = sactorAspect s EM.! aid
 -- the constant disturbing of other actor's running, etc..
 canTraverse :: ActorId -> State -> Bool
 canTraverse aid s =
-  let actorMaxSk = getActorAspect aid s
+  let actorMaxSk = getActorMaxSkills aid s
   in Ability.getSk Ability.SkMove actorMaxSk > 0
      && Ability.getSk Ability.SkAlter actorMaxSk >= fromEnum TK.talterForStairs
 
@@ -284,7 +284,7 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 regenCalmDelta :: ActorId -> Actor -> State -> Int64
 regenCalmDelta aid body s =
   let calmIncr = oneM  -- normal rate of calm regen
-      actorMaxSk = getActorAspect aid s
+      actorMaxSk = getActorMaxSkills aid s
       maxDeltaCalm = xM (Ability.getSk Ability.SkMaxCalm actorMaxSk)
                      - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
@@ -320,10 +320,10 @@ canDeAmbientList b s =
      then filter posDeAmbient (vicinityUnsafe $ bpos b)
      else []
 
-actorSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
-actorSkills mleader aid s =
+actorCurrentSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
+actorCurrentSkills mleader aid s =
   let body = getActorBody aid s
-      actorMaxSk = getActorAspect aid s
+      actorMaxSk = getActorMaxSkills aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
       skillsFromTactic = Ability.tacticSkills $ ftactic player
       factionSkills
@@ -464,8 +464,8 @@ armorHurtBonus source target s =
       tb = getActorBody target s
       trim200 n = min 200 $ max (-200) n
       block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
-      sMaxSk = sactorAspect s EM.! source
-      tMaxSk = sactorAspect s EM.! target
+      sMaxSk = getActorMaxSkills source s
+      tMaxSk = getActorMaxSkills target s
       itemBonus =
         trim200 (Ability.getSk Ability.SkHurtMelee sMaxSk)
         - if bproj sb

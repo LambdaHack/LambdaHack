@@ -105,21 +105,21 @@ actionStrategy aid retry = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
-  actorAspect <- getsState sactorAspect
-  let actorMaxSk = actorAspect EM.! aid
+  actorMaxSkills <- getsState sactorMaxSkills
+  let actorMaxSk = actorMaxSkills EM.! aid
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
       condNotCalmEnough = not (calmEnough body actorMaxSk)
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
-      condCanMelee = actorCanMelee actorAspect aid body
+      condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
       condFastThreatAdj =
         any (\(_, (aid2, _)) ->
-              let ar2 = actorAspect EM.! aid2
+              let ar2 = actorMaxSkills EM.! aid2
               in gearSpeed ar2 > speed1_5)
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
@@ -322,7 +322,7 @@ pickup aid onlyWeapon = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
       isWeapon (_, _, _, itemFull, _) = IA.isMelee $ aspectRecordFull itemFull
       filterWeapon | onlyWeapon = filter isWeapon
@@ -353,7 +353,7 @@ pickup aid onlyWeapon = do
 equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 equipItems aid = do
   body <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   invAssocs <- getsState $ kitAssocs aid [CInv]
@@ -417,7 +417,7 @@ toShare _ = True
 yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -452,7 +452,7 @@ yieldUnneeded aid = do
 unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   invAssocs <- getsState $ kitAssocs aid [CInv]
@@ -557,8 +557,7 @@ harmful discoBenefit iid =
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
-  actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -577,7 +576,7 @@ meleeBlocker aid = do
         Just aim -> getsState $ posToAssocs aim (blid b)
       case lBlocker of
         (aid2, body2) : _ -> do
-          let ar2 = actorAspect EM.! aid2
+          actorMaxSk2 <- getsState $ getActorMaxSkills aid2
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           if | actorDying body2
@@ -591,7 +590,7 @@ meleeBlocker aid = do
                        -- can't displace
                   && getSk SkMove actorSk > 0  -- blocked move
                   && 3 * bhp body2 < bhp b  -- only get rid of weak friends
-                  && gearSpeed ar2 <= gearSpeed ar -> do
+                  && gearSpeed actorMaxSk2 <= gearSpeed actorMaxSk -> do
                mel <- maybeToList <$> pickWeaponClient aid aid2
                return $! liftFrequency $ uniformFreq "melee in the way" mel
              | otherwise -> return reject
@@ -699,7 +698,7 @@ applyItem aid applyGroup = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
@@ -823,7 +822,7 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
-        actorMaxSk <- getsState $ getActorAspect aid2
+        actorMaxSk <- getsState $ getActorMaxSkills aid2
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
@@ -885,7 +884,7 @@ displaceTgt aid target retry = do
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            actorMaxSk <- getsState $ getActorAspect aid2
+            actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
               -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
               -- DisplaceSupported
@@ -981,7 +980,7 @@ moveOrRunAid source dir = do
                      && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      actorMaxSk <- getsState $ getActorAspect target
+      actorMaxSk <- getsState $ getActorMaxSkills target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
         -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
       if isFoe (bfid b2) tfact (bfid sb) && not dEnemy

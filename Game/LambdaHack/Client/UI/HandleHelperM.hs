@@ -277,7 +277,7 @@ itemOverlay lSlots lid bag = do
 statsOverlay :: MonadClient m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
-  actorMaxSk <- getsState $ getActorAspect aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let prSlot :: (Y, SlotChar) -> Ability.Skill -> (Text, KYX)
       prSlot (y, c) skill =
         let statName = skillName skill
