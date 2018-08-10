@@ -160,8 +160,8 @@ rollSpawnPos COps{coTileSpeedup} visible
 advanceTime :: MonadServerAtomic m => ActorId -> Int -> Bool -> m ()
 advanceTime aid percent breakStasis = do
   b <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  let t = timeDeltaPercent (ticksPerMeter $ momentarySpeed b ar) percent
+  actorMaxSk <- getsState $ getActorAspect aid
+  let t = timeDeltaPercent (ticksPerMeter $ momentarySpeed b actorMaxSk) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}

@@ -913,13 +913,13 @@ effectInsertMove :: MonadServerAtomic m
                  => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectInsertMove execSfx nDm source target = do
   tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorAspect target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
-      actorTurn = ticksPerMeter $ momentarySpeed tb ar
+      actorTurn = ticksPerMeter $ momentarySpeed tb actorMaxSk
       t = timeDeltaScale actorTurn (-power)
   -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
   -- but can be propelled.
@@ -995,11 +995,11 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
       factor nDm = do
-        ar <- getsState $ getActorAspect target
+        actorMaxSk <- getsState $ getActorAspect target
         -- A tiny bit added to make sure length 1 effect doesn't end before
         -- the end of first turn, which would make, e.g., speed, useless.
-        let actorTurn =
-              timeDeltaPercent (ticksPerMeter $ momentarySpeed tb ar) 101
+        let actorTurn =timeDeltaPercent (ticksPerMeter
+                                         $ momentarySpeed tb actorMaxSk) 101
         fscale actorTurn nDm
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store

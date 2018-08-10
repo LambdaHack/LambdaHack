@@ -322,8 +322,8 @@ pickup aid onlyWeapon = do
   -- The calmE is inaccurate also if an item not IDed, but that's intended
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough b actorMaxSk
       isWeapon (_, _, _, itemFull, _) = IA.isMelee $ aspectRecordFull itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
@@ -353,8 +353,8 @@ pickup aid onlyWeapon = do
 equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 equipItems aid = do
   body <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough body ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   invAssocs <- getsState $ kitAssocs aid [CInv]
   shaAssocs <- getsState $ kitAssocs aid [CSha]
@@ -391,7 +391,7 @@ equipItems aid = do
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
-                      heavilyDistressed (not calmE) ar itemFull
+                      heavilyDistressed (not calmE) actorMaxSk itemFull
       bestThree = bestByEqpSlot discoBenefit
                                 (filter filterNeeded eqpAssocs)
                                 (filter filterNeeded invAssocs)
@@ -417,8 +417,8 @@ toShare _ = True
 yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 yieldUnneeded aid = do
   body <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough body ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
@@ -437,7 +437,7 @@ yieldUnneeded aid = do
         if | harmful discoBenefit iidEqp ->
              [(iidEqp, itemK, CEqp, CInv)]  -- harmful not shared
            | hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed (not calmE) ar itemEqp ->
+                     heavilyDistressed (not calmE) actorMaxSk itemEqp ->
              [(iidEqp, itemK, CEqp, csha)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
@@ -452,8 +452,8 @@ yieldUnneeded aid = do
 unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough body ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   invAssocs <- getsState $ kitAssocs aid [CInv]
   shaAssocs <- getsState $ kitAssocs aid [CSha]
@@ -501,7 +501,7 @@ unEquipItems aid = do
       -- We filter sha to consider only eligible items in @worseThanSha@.
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
-                      heavilyDistressed (not calmE) ar itemFull
+                      heavilyDistressed (not calmE) actorMaxSk itemFull
       bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs
                                 (filter filterNeeded shaAssocs)
       bInvSha = concatMap
@@ -699,15 +699,15 @@ applyItem aid applyGroup = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   localTime <- getsState $ getLocalTime (blid b)
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed condNotCalmEnough ar
+                     heavilyDistressed condNotCalmEnough actorMaxSk
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE itemFull kit
@@ -783,7 +783,7 @@ applyItem aid applyGroup = do
               ApplyAll -> q benAv
                           && not dropsGoodOrgans
                           && (dropsBadOrgans
-                              || not (hpEnough b ar && heals))
+                              || not (hpEnough b actorMaxSk && heals))
         in if canApply
            then Just (benR, ReqApply iid cstore)
            else Nothing

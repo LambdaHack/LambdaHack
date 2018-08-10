@@ -287,10 +287,10 @@ projectFail source tpxy eps center iid cstore blast = do
         Just _kit -> do
           itemFull <- getsState $ itemToFull iid
           actorSk <- currentSkillsServer source
-          ar <- getsState $ getActorAspect source
+          actorMaxSk <- getsState $ getActorAspect source
           let skill = Ability.getSk Ability.SkProject actorSk
               forced = blast || bproj sb
-              calmE = calmEnough sb ar
+              calmE = calmEnough sb actorMaxSk
               legal = permittedProject forced skill calmE itemFull
               arItem = aspectRecordFull itemFull
           case legal of

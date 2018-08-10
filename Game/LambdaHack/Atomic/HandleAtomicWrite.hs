@@ -150,8 +150,8 @@ updCreateActor aid body ais = do
         (Just $ aid : l)
   updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
   addAis ais
-  ar <- getsState $ aspectRecordFromActor body
-  modifyState $ updateActorAspect $ EM.insert aid ar
+  actorMaxSk <- getsState $ aspectRecordFromActor body
+  modifyState $ updateActorAspect $ EM.insert aid actorMaxSk
 
 -- If a leader dies, a new leader should be elected on the server
 -- before this command is executed (not checked).

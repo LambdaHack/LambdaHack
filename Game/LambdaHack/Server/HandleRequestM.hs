@@ -475,8 +475,8 @@ reqAlterFail :: MonadServerAtomic m => ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail source tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  ar <- getsState $ getActorAspect source
-  let calmE = calmEnough sb ar
+  actorMaxSk <- getsState $ getActorAspect source
+  let calmE = calmEnough sb actorMaxSk
       lid = blid sb
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
   itemToF <- getsState $ flip itemToFull
@@ -645,10 +645,10 @@ reqMoveItems source l = do
   actorSk <- currentSkillsServer source
   if Ability.getSk Ability.SkMoveItem actorSk > 0 then do
     b <- getsState $ getActorBody source
-    ar <- getsState $ getActorAspect source
+    actorMaxSk <- getsState $ getActorAspect source
     -- Server accepts item movement based on calm at the start, not end
     -- or in the middle, to avoid interrupted or partially ignored commands.
-    let calmE = calmEnough b ar
+    let calmE = calmEnough b actorMaxSk
     mapM_ (reqMoveItem source calmE) l
   else execFailure source (ReqMoveItems l) MoveItemUnskilled
 
@@ -730,8 +730,8 @@ reqProject :: MonadServerAtomic m
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
-  ar <- getsState $ getActorAspect source
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect source
+  let calmE = calmEnough b actorMaxSk
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
     mfail <- projectFail source tpxy eps False iid cstore False
@@ -747,8 +747,8 @@ reqApply :: MonadServerAtomic m
 reqApply aid iid cstore = do
   let req = ReqApply iid cstore
   b <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect aid
+  let calmE = calmEnough b actorMaxSk
   if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
   else do
     bag <- getsState $ getBodyStoreBag b cstore
