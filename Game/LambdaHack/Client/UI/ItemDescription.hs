@@ -87,14 +87,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
 
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
-  let aets =
-        let aspects = case itemDisco of
-              ItemDiscoMean{} -> IK.iaspects itemKind
-                -- faster than @aspectRecordToList@ of mean
-                -- and doesn't completely lose the @Odds@ case
-              ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
-        in splitTry aspects
-      arItem = aspectRecordFull itemFull
+  let arItem = aspectRecordFull itemFull
       timeoutAspect :: IK.Aspect -> Bool
       timeoutAspect IK.Timeout{} = True
       timeoutAspect _ = False
@@ -102,8 +95,8 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       hurtMeleeAspect (IK.AddSkill Ability.SkHurtMelee _) = True
       hurtMeleeAspect _ = False
       active = IA.goesIntoEqp arItem
-      splitAE :: DetailLevel -> [IK.Aspect] -> [Text]
-      splitAE detLev aspects =
+      splitA :: DetailLevel -> [IK.Aspect] -> [Text]
+      splitA detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
@@ -165,12 +158,6 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                     then [periodicOrTimeout] ++ [damage] ++ aes
                          ++ [onSmash | detLev >= DetailAll]
                     else [damage]
-      splitTry ass =
-        let splits = map (`splitAE` ass) [minBound..maxBound]
-            splitsToTry = drop (fromEnum detailLevel) splits
-        in case filter (/= []) splitsToTry of
-             detNonEmpty : _ -> detNonEmpty
-             [] -> []
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
@@ -179,13 +166,32 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
       pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
       prawDeltaHP = fromIntegral pmult * minDeltaHP
       pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
-      rangedDamage = if pdeltaHP == 0
-                     then []
-                     else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
-      -- Note that avg melee damage would be too complex to display here,
-      -- because in case of @MOwned@ the owner is different than leader,
-      -- so the value would be different than when viewing the item.
-  in (aets, rangedDamage)
+      rangedDamageDesc = if pdeltaHP == 0
+                         then []
+                         else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
+        -- Note that avg melee damage would be too complex to display here,
+        -- because in case of @MOwned@ the owner is different than leader,
+        -- so the value would be different than when viewing the item.
+      splitTry ass =
+        let splits = map (`splitA` ass) [minBound..maxBound]
+            splitsToTry = drop (fromEnum detailLevel) splits
+        in case filter (/= []) splitsToTry of
+             detNonEmpty : _ -> detNonEmpty
+             [] -> []
+      aspectDescs =
+        let aspects = case itemDisco of
+              ItemDiscoMean{} -> IK.iaspects itemKind
+                -- faster than @aspectRecordToList@ of mean
+                -- and doesn't completely lose the @Odds@ case
+              ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
+            aMain IK.Timeout{} = True
+            aMain IK.AddSkill{} = True
+            aMain _ = False
+            (aspectsMain, aspectsAux) = partition aMain aspects
+        in splitTry aspectsMain ++ if detailLevel >= DetailAll
+                                   then splitTry aspectsAux
+                                   else []
+  in (aspectDescs, rangedDamageDesc)
 
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
