@@ -51,7 +51,8 @@ data Skill =
   | SkFlying
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
--- | Skill level in particular abilities.
+-- | Skill level in particular abilities. These are cumulative from actor
+-- organs and so pertain to an actor as well as to items.
 --
 -- This representation is sparse, so better than a record when there are more
 -- item kinds (with few abilities) than actors (with many abilities),

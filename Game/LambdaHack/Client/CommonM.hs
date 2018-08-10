@@ -98,9 +98,7 @@ makeLine onlyFirst body fpos epsOld = do
 
 -- @MonadStateRead@ would be enough, but the logic is sound only on client.
 maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
-maxActorSkillsClient aid = do
-  ar <- getsState $ getActorAspect aid
-  return $ IA.aSkills ar  -- keep it lazy
+maxActorSkillsClient aid = getsState $ getActorAspect aid
 
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do

@@ -28,7 +28,6 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -94,8 +93,7 @@ computeTarget aid = do
   actorAspect <- getsState sactorAspect
   let lalter = salter EM.! blid b
       condInMelee = scondInMelee LEM.! blid b
-      ar = fromMaybe (error $ "" `showFailure` aid) (EM.lookup aid actorAspect)
-      actorMaxSk = IA.aSkills ar
+      actorMaxSk = actorAspect EM.! aid
       alterSkill = Ability.getSk Ability.SkAlter actorMaxSk
   lvl <- getLevel $ blid b
   let stepAccesible :: AndPath -> Bool
@@ -146,10 +144,10 @@ computeTarget aid = do
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
   condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorAspect aid b
-      condHpTooLow = hpTooLow b ar
+      condHpTooLow = hpTooLow b actorMaxSk
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
-      canSmell = IA.getSkill Ability.SkSmell ar > 0
+      canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
@@ -165,7 +163,8 @@ computeTarget aid = do
             -- + 2 from foe being 2 away from friend before he closed in
             -- + 1 for as a margin for ambush, given than actors exploring
             -- can't physically keep adjacent all the time
-            n | IA.getSkill Ability.SkAggression ar >= 2 = rangedNearby
+            n | Ability.getSk Ability.SkAggression actorMaxSk >= 2
+              = rangedNearby
                   -- boss never waits
               | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
@@ -178,7 +177,7 @@ computeTarget aid = do
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
       targetableRanged body =
-        (not condInMelee || IA.getSkill Ability.SkAggression ar >= 2)
+        (not condInMelee || Ability.getSk Ability.SkAggression actorMaxSk >= 2)
           -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
@@ -195,7 +194,7 @@ computeTarget aid = do
         let Benefit{benPickup} = discoBenefit EM.! iid
         in desirableItem canEscape benPickup (getArItem iid)) $ EM.keys bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
-      focused = gearSpeed ar < speedWalk || condHpTooLow
+      focused = gearSpeed actorMaxSk < speedWalk || condHpTooLow
       couldMoveLastTurn =
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in Ability.getSk Ability.SkMove actorSk > 0

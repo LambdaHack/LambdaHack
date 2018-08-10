@@ -26,7 +26,6 @@ import           GHC.Generics (Generic)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
@@ -81,7 +80,7 @@ data ResDelta = ResDelta
 
 instance Binary ResDelta
 
-type ActorAspect = EM.EnumMap ActorId IA.AspectRecord
+type ActorAspect = EM.EnumMap ActorId Ability.Skills
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
@@ -97,23 +96,22 @@ deltaMild ResDelta{..} = fst resCurrentTurn == minusM
 
 actorCanMelee :: ActorAspect -> ActorId -> Actor -> Bool
 actorCanMelee actorAspect aid b =
-  let ar = actorAspect EM.! aid
-      actorMaxSk = IA.aSkills ar
+  let actorMaxSk = actorAspect EM.! aid
       condUsableWeapon = bweapon b > 0
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
 -- | Current physical speed, whether from being pushed or from organs and gear.
-momentarySpeed :: Actor -> IA.AspectRecord -> Speed
-momentarySpeed !b ar =
+momentarySpeed :: Actor -> Ability.Skills -> Speed
+momentarySpeed !b actorMaxSk =
   case btrajectory b of
-    Nothing -> gearSpeed ar
+    Nothing -> gearSpeed actorMaxSk
     Just (_, speed) -> speed
 
 -- | The speed from organs and gear; being pushed is ignored.
-gearSpeed :: IA.AspectRecord -> Speed
-gearSpeed ar = toSpeed $
-  max minSpeed (IA.getSkill Ability.SkSpeed ar)  -- see @minimalSpeed@
+gearSpeed :: Ability.Skills -> Speed
+gearSpeed actorMaxSk = toSpeed $
+  max minSpeed (Ability.getSk Ability.SkSpeed actorMaxSk)  -- see @minimalSpeed@
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
@@ -142,19 +140,19 @@ actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
                || bproj b && maybe True (null . fst) (btrajectory b)
 
-hpTooLow :: Actor -> IA.AspectRecord -> Bool
-hpTooLow b ar =
-  5 * bhp b < xM (IA.getSkill Ability.SkMaxHP ar)
+hpTooLow :: Actor -> Ability.Skills -> Bool
+hpTooLow b actorMaxSk =
+  5 * bhp b < xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
   && bhp b <= xM 40 || bhp b <= oneM
 
-calmEnough :: Actor -> IA.AspectRecord -> Bool
-calmEnough b ar =
-  let calmMax = max 1 $ IA.getSkill Ability.SkMaxCalm ar
+calmEnough :: Actor -> Ability.Skills -> Bool
+calmEnough b actorMaxSk =
+  let calmMax = max 1 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
   in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
 
-hpEnough :: Actor -> IA.AspectRecord -> Bool
-hpEnough b ar =
-  xM (IA.getSkill Ability.SkMaxHP ar) <= 2 * bhp b && bhp b > oneM
+hpEnough :: Actor -> Ability.Skills -> Bool
+hpEnough b actorMaxSk =
+  xM (Ability.getSk Ability.SkMaxHP actorMaxSk) <= 2 * bhp b && bhp b > oneM
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

@@ -33,6 +33,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Ability
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -105,12 +106,12 @@ actionStrategy aid retry = do
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
   actorAspect <- getsState sactorAspect
-  let ar = actorAspect EM.! aid
+  let actorMaxSk = actorAspect EM.! aid
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
-      condHpTooLow = hpTooLow body ar
-      condNotCalmEnough = not (calmEnough body ar)
-      speed1_5 = speedScale (3%2) (gearSpeed ar)
+      condHpTooLow = hpTooLow body actorMaxSk
+      condNotCalmEnough = not (calmEnough body actorMaxSk)
+      speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
       condCanMelee = actorCanMelee actorAspect aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
@@ -123,12 +124,11 @@ actionStrategy aid retry = do
         threatAdj
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltaSerious (bcalmDelta body)
-      actorShines = IA.getSkill SkShine ar > 0
+      actorShines = Ability.getSk SkShine actorMaxSk > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
-      actorMaxSk = IA.aSkills ar
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace, SkAlter]
       stratToFreq :: Int

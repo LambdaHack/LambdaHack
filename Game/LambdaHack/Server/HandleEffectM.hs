@@ -97,10 +97,10 @@ applyMeleeDamage source target iid = do
 refillHP :: MonadServerAtomic m => ActorId -> ActorId -> Int64 -> m ()
 refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   tbOld <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorAspect target
   -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
   let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
-      hpMax = IA.getSkill Ability.SkMaxHP ar
+      hpMax = Ability.getSk Ability.SkMaxHP actorMaxSk
       deltaHP0 | serious = -- if overfull, at least cut back to max
                            min speedDeltaHP (xM hpMax - bhp tbOld)
                | otherwise = speedDeltaHP
@@ -129,10 +129,10 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do
   tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
-  let upperBound = if hpTooLow tb ar
+  actorMaxSk <- getsState $ getActorAspect target
+  let upperBound = if hpTooLow tb actorMaxSk
                    then 2  -- to trigger domination on next attack, etc.
-                   else xM $ IA.getSkill Ability.SkMaxCalm ar
+                   else xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
       deltaCalm = min minusM1 (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
   -- which is emitted when decreasing Calm by @minusM@.
@@ -461,10 +461,10 @@ effectRefillCalm :: MonadServerAtomic m
                  => m () -> Int -> ActorId -> ActorId -> m UseResult
 effectRefillCalm execSfx power0 source target = do
   tb <- getsState $ getActorBody target
-  ar <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorAspect target
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       rawDeltaCalm = xM power
-      calmMax = IA.getSkill Ability.SkMaxCalm ar
+      calmMax = Ability.getSk Ability.SkMaxCalm actorMaxSk
       serious = rawDeltaCalm < minusM && source /= target && not (bproj tb)
       deltaCalm0 | serious =  -- if overfull, at least cut back to max
                      min rawDeltaCalm (xM calmMax - bcalm tb)
@@ -546,7 +546,7 @@ dominateFid fid target = do
   when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
-  ar <- getsState $ getActorAspect target
+  actorMaxSk <- getsState $ getActorAspect target
   getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
@@ -555,8 +555,8 @@ dominateFid fid target = do
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
-  let maxCalm = IA.getSkill Ability.SkMaxCalm ar
-      maxHp = IA.getSkill Ability.SkMaxHP ar
+  let maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
+      maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
       bNew = tb { bfid = fid
                 , bcalm = max (xM 10) $ xM maxCalm `div` 2
                 , bhp = min (xM maxHp) $ bhp tb + xM 10
@@ -895,9 +895,9 @@ effectParalyzeInWater :: MonadServerAtomic m
 effectParalyzeInWater execSfx nDm source target = do
   tb <- getsState $ getActorBody target
   if bproj tb then return UseDud else do  -- shortcut for speed
-    ar <- getsState $ getActorAspect target
-    let swimmingOrFlying = max (IA.getSkill Ability.SkSwimming ar)
-                               (IA.getSkill Ability.SkFlying ar)
+    actorMaxSk <- getsState $ getActorAspect target
+    let swimmingOrFlying = max (Ability.getSk Ability.SkSwimming actorMaxSk)
+                               (Ability.getSk Ability.SkFlying actorMaxSk)
     if Dice.maxDice nDm > swimmingOrFlying
     then paralyze execSfx nDm source target  -- no help at all
     else do  -- fully resisted

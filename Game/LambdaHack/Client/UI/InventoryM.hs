@@ -31,11 +31,11 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.ReqFailure
@@ -98,7 +98,7 @@ getGroupItem psuit prompt promptGeneric
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+             => (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
                                  -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m ( Either Text (ItemId, ItemBag, SingleItemSlots)
@@ -127,9 +127,9 @@ getStoreItem prompt cInitial = do
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
         => m Suitability    -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
@@ -193,9 +193,9 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
                             -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
                             -- ^ generic prompt
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
@@ -237,8 +237,8 @@ data Suitability =
 
 transition :: forall m. MonadClientUI m
            => m Suitability
-           -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
-           -> (Actor -> ActorUI -> IA.AspectRecord -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
            -> Bool
            -> [ItemDialogMode]
            -> Int
@@ -254,7 +254,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
-  ar <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorAspect leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -373,7 +373,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         { defLabel
         , defCond = True  -- even if single screen, just reset it
         , defAction = \_ -> do
-            let calmE = calmEnough body ar
+            let calmE = calmEnough body actorMaxSk
                 mcCur = filter (`elem` cLegal) [cCur]
                 (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
                   c1@(MStore CSha) : c2 : rest | not calmE ->
@@ -416,8 +416,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         }
       (bagFiltered, promptChosen) =
         case itemDialogState of
-          ISuitable -> (bagSuit, prompt body bodyUI ar cCur <> ":")
-          IAll      -> (bag, promptGeneric body bodyUI ar cCur <> ":")
+          ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur <> ":")
+          IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur <> ":")
   case cCur of
     MStats -> do
       io <- statsOverlay leader
@@ -475,8 +475,8 @@ legalWithUpdatedLeader cCur cRest = do
   leader <- getLeaderUI
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
-  ar <- getsState $ getActorAspect leader
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect leader
+  let calmE = calmEnough b actorMaxSk
       legalAfterCalm = case newLegal of
         c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
         [MStore CSha] | not calmE -> (MStore CGround, newLegal)

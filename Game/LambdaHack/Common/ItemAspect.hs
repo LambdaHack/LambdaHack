@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.ItemAspect
   ( AspectRecord(..), KindMean(..), ItemSpeedup
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
-  , sumAspectRecord, aspectRecordToList, rollAspectRecord
+  , aspectRecordToList, rollAspectRecord
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
   , onlyMinorEffects, itemTrajectory, totalRange
   , isMelee, isTmpCondition, isBlast, isHumanTrinket
@@ -37,8 +37,8 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
--- | Record of sums of skills conferred by an item, container, actor, etc.,
--- as well as of item flags and other item stats.
+-- | Record of skills conferred by an item as well as of item flags
+-- and other item stats.
 data AspectRecord = AspectRecord
   { aTimeout :: Int
   , aSkills  :: Ability.Skills
@@ -143,11 +143,6 @@ addMeanAspect !ar !asp =
 
 ceilingMeanDice :: Dice.Dice -> Int
 ceilingMeanDice d = ceiling $ Dice.meanDice d
-
-sumAspectRecord :: [(AspectRecord, Int)] -> AspectRecord
-sumAspectRecord l = emptyAspectRecord
-  { aSkills  = Ability.sumScaledSkills $ map (first aSkills) l
-  }
 
 aspectRecordToList :: AspectRecord -> [IK.Aspect]
 aspectRecordToList AspectRecord{..} =

@@ -142,9 +142,9 @@ perActorFromLevel perActorOld getActorB actorAspect fovClear =
   -- Dying actors included, to let them see their own demise.
   let f _ fv@FovValid{} = fv
       f aid FovInvalid =
-        let ar = actorAspect EM.! aid
+        let actorMaxSk = actorAspect EM.! aid
             b = getActorB aid
-        in FovValid $ cacheBeforeLucidFromActor fovClear b ar
+        in FovValid $ cacheBeforeLucidFromActor fovClear b actorMaxSk
   in EM.mapWithKey f perActorOld
 
 boundSightByCalm :: Int -> Int64 -> Int
@@ -154,14 +154,17 @@ boundSightByCalm sight calm =
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
 -- Also compute positions seen by noctovision and perceived by smell.
-cacheBeforeLucidFromActor :: FovClear -> Actor -> IA.AspectRecord
+cacheBeforeLucidFromActor :: FovClear -> Actor -> Ability.Skills
                           -> CacheBeforeLucid
-cacheBeforeLucidFromActor clearPs body ar =
-  let radius = boundSightByCalm (IA.getSkill Ability.SkSight ar) (bcalm body)
+cacheBeforeLucidFromActor clearPs body actorMaxSk =
+  let radius =
+        boundSightByCalm (Ability.getSk Ability.SkSight actorMaxSk) (bcalm body)
       creachable = PerReachable $ fullscan clearPs radius (bpos body)
-      cnocto = PerVisible $ fullscan clearPs (IA.getSkill Ability.SkNocto ar)
-                                     (bpos body)
-      smellRadius = if IA.getSkill Ability.SkSmell ar >= 2 then 2 else 0
+      cnocto = PerVisible
+               $ fullscan clearPs (Ability.getSk Ability.SkNocto actorMaxSk)
+                          (bpos body)
+      smellRadius =
+        if Ability.getSk Ability.SkSmell actorMaxSk >= 2 then 2 else 0
       csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
   in CacheBeforeLucid{..}
 
@@ -202,7 +205,7 @@ shineFromLevel s lid lvl =
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
-        , let radius = IA.getSkill Ability.SkShine $ sactorAspect s EM.! aid
+        , let radius = Ability.getSk Ability.SkShine $ sactorAspect s EM.! aid
         , radius > 0 ]
       floorLights = floorLightSources (sdiscoAspect s) lvl
       allLights = floorLights ++ actorLights
@@ -296,12 +299,13 @@ perceptionCacheFromLevel fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
-        let ar = sactorAspect s EM.! aid
-        in if IA.getSkill Ability.SkSight ar <= 0
-              && IA.getSkill Ability.SkNocto ar <= 0
-              && IA.getSkill Ability.SkSmell ar <= 0  -- dumb missiles
+        let actorMaxSk = sactorAspect s EM.! aid
+        in if Ability.getSk Ability.SkSight actorMaxSk <= 0
+              && Ability.getSk Ability.SkNocto actorMaxSk <= 0
+              && Ability.getSk Ability.SkSmell actorMaxSk <= 0  -- dumb missiles
            then Nothing
-           else Just (aid, FovValid $ cacheBeforeLucidFromActor fovClear b ar)
+           else Just (aid, FovValid
+                           $ cacheBeforeLucidFromActor fovClear b actorMaxSk)
       lvlCaches = mapMaybe f lvlBodies
       perActor = EM.fromDistinctAscList lvlCaches
       total = totalFromPerActor perActor

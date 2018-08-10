@@ -162,9 +162,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillCalm aid _ -> do
-    ar <- getsState $ getActorAspect aid
+    actorMaxSk <- getsState $ getActorAspect aid
     body <- getsState $ getActorBody aid
-    let sight = IA.getSkill Ability.SkSight ar
+    let sight = Ability.getSk Ability.SkSight actorMaxSk
         oldBody = getActorBody aid oldState
         radiusOld = boundSightByCalm sight (bcalm oldBody)
         radiusNew = boundSightByCalm sight (bcalm body)
@@ -221,7 +221,7 @@ invalidateLucidAid aid = do
 
 actorHasShine :: ActorAspect -> ActorId -> Bool
 actorHasShine actorAspect aid = case EM.lookup aid actorAspect of
-  Just ar -> IA.getSkill Ability.SkShine ar > 0
+  Just actorMaxSk -> Ability.getSk Ability.SkShine actorMaxSk > 0
   Nothing -> error $ "" `showFailure` aid
 
 itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
@@ -241,10 +241,10 @@ itemAffectsPerRadius discoAspect iid =
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()
 addPerActor aid b = do
-  ar <- getsState $ getActorAspect aid
-  unless (IA.getSkill Ability.SkSight ar <= 0
-          && IA.getSkill Ability.SkNocto ar <= 0
-          && IA.getSkill Ability.SkSmell ar <= 0) $
+  actorMaxSk <- getsState $ getActorAspect aid
+  unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
+          && Ability.getSk Ability.SkNocto actorMaxSk <= 0
+          && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $
     addPerActorAny aid b
 
 addPerActorAny :: MonadServer m => ActorId -> Actor -> m ()
@@ -261,10 +261,10 @@ addPerActorAny aid b = do
 
 deletePerActor :: MonadServer m => ActorAspect -> ActorId -> Actor -> m ()
 deletePerActor actorAspectOld aid b = do
-  let ar = actorAspectOld EM.! aid
-  unless (IA.getSkill Ability.SkSight ar <= 0
-          && IA.getSkill Ability.SkNocto ar <= 0
-          && IA.getSkill Ability.SkSmell ar <= 0) $
+  let actorMaxSk = actorAspectOld EM.! aid
+  unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
+          && Ability.getSk Ability.SkNocto actorMaxSk <= 0
+          && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $
     deletePerActorAny aid b
 
 deletePerActorAny :: MonadServer m => ActorId -> Actor -> m ()
@@ -281,20 +281,20 @@ deletePerActorAny aid b = do
 
 invalidatePerActor :: MonadServer m => ActorId -> m ()
 invalidatePerActor aid = do
-  ar <- getsState $ getActorAspect aid
-  unless (IA.getSkill Ability.SkSight ar <= 0
-          && IA.getSkill Ability.SkNocto ar <= 0
-          && IA.getSkill Ability.SkSmell ar <= 0) $ do
+  actorMaxSk <- getsState $ getActorAspect aid
+  unless (Ability.getSk Ability.SkSight actorMaxSk <= 0
+          && Ability.getSk Ability.SkNocto actorMaxSk <= 0
+          && Ability.getSk Ability.SkSmell actorMaxSk <= 0) $ do
     b <- getsState $ getActorBody aid
     addPerActorAny aid b
 
 reconsiderPerActor :: MonadServer m => ActorId -> m ()
 reconsiderPerActor aid = do
   b <- getsState $ getActorBody aid
-  ar <- getsState $ getActorAspect aid
-  if IA.getSkill Ability.SkSight ar <= 0
-     && IA.getSkill Ability.SkNocto ar <= 0
-     && IA.getSkill Ability.SkSmell ar <= 0
+  actorMaxSk <- getsState $ getActorAspect aid
+  if Ability.getSk Ability.SkSight actorMaxSk <= 0
+     && Ability.getSk Ability.SkNocto actorMaxSk <= 0
+     && Ability.getSk Ability.SkSmell actorMaxSk <= 0
   then do
     perCacheFid <- getsServer sperCacheFid
     when (EM.member aid $ perActor ((perCacheFid EM.! bfid b) EM.! blid b)) $

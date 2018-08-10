@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -290,10 +291,10 @@ aspectRecordFromItem iid item s =
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord
 aspectRecordFromIid iid s = aspectRecordFromItem iid (getItemBody iid s) s
 
-aspectRecordFromActor :: Actor -> State -> IA.AspectRecord
+aspectRecordFromActor :: Actor -> State -> Ability.Skills
 aspectRecordFromActor b s =
-  let processIid (iid, (k, _)) = (aspectRecordFromIid iid s, k)
-      processBag ass = IA.sumAspectRecord $ map processIid ass
+  let processIid (iid, (k, _)) = (IA.aSkills $ aspectRecordFromIid iid s, k)
+      processBag sks = Ability.sumScaledSkills $ map processIid sks
   in processBag $ EM.assocs (borgan b) ++ EM.assocs (beqp b)
 
 actorAspectInDungeon :: State -> ActorAspect

@@ -24,6 +24,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -313,7 +314,8 @@ addItemToActorAspect :: MonadStateWrite m
                      => ItemId -> Item -> Int -> ActorId -> m ()
 addItemToActorAspect iid itemBase k aid = do
   arItem <- getsState $ aspectRecordFromItem iid itemBase
-  let f arActor = IA.sumAspectRecord [(arActor, 1), (arItem, k)]
+  let f actorMaxSk =
+        Ability.sumScaledSkills [(actorMaxSk, 1), (IA.aSkills arItem, k)]
   modifyState $ updateActorAspect $ EM.adjust f aid
 
 resetActorAspect :: MonadStateWrite m => m ()

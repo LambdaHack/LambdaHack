@@ -34,7 +34,6 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -194,7 +193,7 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
-getActorAspect :: ActorId -> State -> IA.AspectRecord
+getActorAspect :: ActorId -> State -> Ability.Skills
 {-# INLINE getActorAspect #-}
 getActorAspect aid s = sactorAspect s EM.! aid
 
@@ -209,9 +208,8 @@ getActorAspect aid s = sactorAspect s EM.! aid
 canTraverse :: ActorId -> State -> Bool
 canTraverse aid s =
   let actorMaxSk = getActorAspect aid s
-  in IA.getSkill Ability.SkMove actorMaxSk > 0
-     && IA.getSkill Ability.SkAlter actorMaxSk
-          >= fromEnum TK.talterForStairs
+  in Ability.getSk Ability.SkMove actorMaxSk > 0
+     && Ability.getSk Ability.SkAlter actorMaxSk >= fromEnum TK.talterForStairs
 
 getCarriedAssocsAndTrunk :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocsAndTrunk b s =
@@ -286,8 +284,9 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 regenCalmDelta :: ActorId -> Actor -> State -> Int64
 regenCalmDelta aid body s =
   let calmIncr = oneM  -- normal rate of calm regen
-      ar = getActorAspect aid s
-      maxDeltaCalm = xM (IA.getSkill Ability.SkMaxCalm ar) - bcalm body
+      actorMaxSk = getActorAspect aid s
+      maxDeltaCalm = xM (Ability.getSk Ability.SkMaxCalm actorMaxSk)
+                     - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
@@ -324,14 +323,13 @@ canDeAmbientList b s =
 actorSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
 actorSkills mleader aid s =
   let body = getActorBody aid s
-      ar = getActorAspect aid s
+      actorMaxSk = getActorAspect aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
       skillsFromTactic = Ability.tacticSkills $ ftactic player
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
         | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
-      itemSkills = IA.aSkills ar
-  in itemSkills `Ability.addSkills` factionSkills
+  in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
 -- If the actor is not, in fact, an enemy, we let it displace.
@@ -466,12 +464,13 @@ armorHurtBonus source target s =
       tb = getActorBody target s
       trim200 n = min 200 $ max (-200) n
       block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
-      sar = sactorAspect s EM.! source
-      tar = sactorAspect s EM.! target
-      itemBonus = trim200 (IA.getSkill Ability.SkHurtMelee sar)
-                  - if bproj sb
-                    then block200 25 (IA.getSkill Ability.SkArmorRanged tar)
-                    else block200 50 (IA.getSkill Ability.SkArmorMelee tar)
+      sMaxSk = sactorAspect s EM.! source
+      tMaxSk = sactorAspect s EM.! target
+      itemBonus =
+        trim200 (Ability.getSk Ability.SkHurtMelee sMaxSk)
+        - if bproj sb
+          then block200 25 (Ability.getSk Ability.SkArmorRanged tMaxSk)
+          else block200 50 (Ability.getSk Ability.SkArmorMelee tMaxSk)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
 -- | Check if any non-dying foe (projectile or not) is adjacent

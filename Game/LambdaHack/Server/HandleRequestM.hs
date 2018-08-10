@@ -206,8 +206,8 @@ affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
     fact <- getsState $ (EM.! bfid b) . sfactionD
-    ar <- getsState $ getActorAspect aid
-    let smellRadius = IA.getSkill Ability.SkSmell ar
+    actorMaxSk <- getsState $ getActorAspect aid
+    let smellRadius = Ability.getSk Ability.SkSmell actorMaxSk
     when (fhasGender (gplayer fact) || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b
@@ -424,8 +424,8 @@ reqDisplace source target = do
       tpos = bpos tb
       atWar = isFoe (bfid tb) tfact (bfid sb)
       req = ReqDisplace target
-  ar <- getsState $ getActorAspect target
-  dEnemy <- getsState $ dispEnemy source target $ IA.aSkills ar
+  actorMaxSk <- getsState $ getActorAspect target
+  dEnemy <- getsState $ dispEnemy source target actorMaxSk
   if | not (abInSkill Ability.SkDisplace) ->
          execFailure source req DisplaceUnskilled
      | not (checkAdjacent sb tb) -> execFailure source req DisplaceDistant

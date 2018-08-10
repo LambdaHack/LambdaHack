@@ -68,8 +68,8 @@ pickWeaponM :: MonadStateRead m
 pickWeaponM mdiscoBenefit kitAss actorSk source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
-  ar <- getsState $ getActorAspect source
-  let calmE = calmEnough sb ar
+  actorMaxSk <- getsState $ getActorAspect source
+  let calmE = calmEnough sb actorMaxSk
       forced = bproj sb
       permitted = permittedPrecious forced calmE
       preferredPrecious = either (const False) id . permitted

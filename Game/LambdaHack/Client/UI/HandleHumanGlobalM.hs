@@ -1088,7 +1088,7 @@ itemMenuHuman cmdAction = do
         Nothing -> weaveJust <$> failWith "no item to open item menu for"
         Just kit -> do
           CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-          ar <- getsState $ getActorAspect leader
+          actorMaxSk <- getsState $ getActorAspect leader
           itemFull <- getsState $ itemToFull iid
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid
@@ -1111,7 +1111,7 @@ itemMenuHuman cmdAction = do
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               desc = itemDesc False (bfid b) factionD
-                              (IA.getSkill Ability.SkHurtMelee ar)
+                              (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                               fromCStore localTime itemFull kit
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
@@ -1123,7 +1123,7 @@ itemMenuHuman cmdAction = do
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
           actorSk <- leaderSkillsClientUI
-          let calmE = calmEnough b ar
+          let calmE = calmEnough b actorMaxSk
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
                 ByAimMode{..} -> greyedOut exploration || greyedOut aiming
                 ComposeIfLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2

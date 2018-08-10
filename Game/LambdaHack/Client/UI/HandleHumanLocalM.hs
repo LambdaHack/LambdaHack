@@ -166,7 +166,7 @@ chooseItemDialogMode c = do
   itemToF <- getsState $ flip itemToFull
   localTime <- getsState $ getLocalTime (blid b)
   factionD <- getsState sfactionD
-  ar <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorAspect leader
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
       let lSlotsElems = EM.elems lSlots
@@ -175,9 +175,10 @@ chooseItemDialogMode c = do
             let iid2 = lSlotsElems !! slotIndex
                 itemFull2 = itemToF iid2
                 kit2 = itemBag EM.! iid2
-                attrLine = itemDesc True (bfid b) factionD
-                                    (IA.getSkill Ability.SkHurtMelee ar)
-                                    CGround localTime itemFull2 kit2
+                attrLine =
+                  itemDesc True (bfid b) factionD
+                           (Ability.getSk Ability.SkHurtMelee actorMaxSk)
+                           CGround localTime itemFull2 kit2
                 ov = splitAttrLine rwidth attrLine
                 keys = [K.spaceKM, K.escKM]
                        ++ [K.upKM | slotIndex /= 0]
@@ -236,7 +237,7 @@ chooseItemDialogMode c = do
               let slot = allSlots !! slotIndex
                   skill = statSlots !! fromJust (elemIndex slot allSlots)
                   valueText =
-                    skillToDecorator skill b $ IA.getSkill skill ar
+                    skillToDecorator skill b $ Ability.getSk skill actorMaxSk
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
@@ -311,8 +312,8 @@ chooseItemProjectHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  ar <- getsState $ getActorAspect leader
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect leader
+  let calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -359,10 +360,10 @@ permittedProjectClient :: MonadClientUI m
 permittedProjectClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  ar <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
   let skill = Ability.getSk Ability.SkProject actorSk
-      calmE = calmEnough b ar
+      calmE = calmEnough b actorMaxSk
   return $ permittedProject False skill calmE
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
@@ -487,8 +488,8 @@ chooseItemApplyHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  ar <- getsState $ getActorAspect leader
-  let calmE = calmEnough b ar
+  actorMaxSk <- getsState $ getActorAspect leader
+  let calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CInv, CSha, CEqp]
       cLegal | calmE = cLegalRaw
              | otherwise = delete CSha cLegalRaw
@@ -533,10 +534,10 @@ permittedApplyClient :: MonadClientUI m
 permittedApplyClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  ar <- getsState $ getActorAspect leader
+  actorMaxSk <- getsState $ getActorAspect leader
   actorSk <- leaderSkillsClientUI
   let skill = Ability.getSk Ability.SkApply actorSk
-      calmE = calmEnough b ar
+      calmE = calmEnough b actorMaxSk
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE
 

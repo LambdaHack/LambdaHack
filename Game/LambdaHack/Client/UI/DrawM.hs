@@ -78,9 +78,10 @@ targetDesc mtarget = do
       side <- getsClient sside
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-      ar <- getsState $ getActorAspect aid
+      actorMaxSk <- getsState $ getActorAspect aid
       let percentage =
-            100 * bhp b `div` xM (max 5 $ IA.getSkill Ability.SkMaxHP ar)
+            100 * bhp b
+            `div` xM (max 5 $ Ability.getSk Ability.SkMaxHP actorMaxSk)
           chs n = "[" <> T.replicate n "*"
                       <> T.replicate (4 - n) "_" <> "]"
           stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
@@ -531,13 +532,13 @@ drawArenaStatus COps{cocave}
 checkWarnings :: UIOptions -> ActorId -> State -> (Bool, Bool)
 checkWarnings UIOptions{uhpWarningPercent} leader s =
   let b = getActorBody leader s
-      ar = getActorAspect leader s
+      actorMaxSk = getActorAspect leader s
       isImpression iid =
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
-      maxHp = IA.getSkill Ability.SkMaxHP ar
+      maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
       hpCheckWarning = bhp b <= xM (uhpWarningPercent * maxHp `div` 100)
-      maxCalm = IA.getSkill Ability.SkMaxCalm ar
+      maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
       calmCheckWarning =
         bcalm b <= xM (uhpWarningPercent * maxCalm `div` 100)
         && isImpressed
@@ -552,7 +553,7 @@ drawLeaderStatus waitT = do
   case mleader of
     Just leader -> do
       b <- getsState $ getActorBody leader
-      ar <- getsState $ getActorAspect leader
+      actorMaxSk <- getsState $ getActorAspect leader
       (hpCheckWarning, calmCheckWarning)
         <- getsState $ checkWarnings sUIOptions leader
       bdark <- getsState $ \s -> not (actorInAmbient b s)
@@ -582,7 +583,8 @@ drawLeaderStatus waitT = do
                      <> (if bdark || not (braced b)
                          then slashPick
                          else "/")
-                     <> showTrunc (max 0 $ IA.getSkill Ability.SkMaxCalm ar)
+                     <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxCalm
+                                                         actorMaxSk)
           bracePick | braced b  = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
@@ -591,7 +593,8 @@ drawLeaderStatus waitT = do
                    <> (if braced b || not bdark
                        then slashPick
                        else "/")
-                   <> showTrunc (max 0 $ IA.getSkill Ability.SkMaxHP ar)
+                   <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxHP
+                                                       actorMaxSk)
           justifyRight n t = replicate (n - length t) ' ' ++ t
           colorWarning w = if w then addColor Color.Red else stringToAL
       return $! calmHeader
@@ -616,7 +619,7 @@ drawLeaderDamage width = do
             [] -> ("0", "", Color.White)
             (_, (_, (itemFull, _))) : _ ->
               let tdice = show $ IK.idamage $ itemKind itemFull
-                  bonusRaw = IA.getSkill Ability.SkHurtMelee
+                  bonusRaw = Ability.getSk Ability.SkHurtMelee
                              $ actorAspect EM.! leader
                   bonus = min 200 $ max (-200) bonusRaw
                   unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw

@@ -22,7 +22,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Frequency
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
@@ -105,8 +104,7 @@ pickActorToMove maidToAvoid = do
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             let condInMelee = scondInMelee LEM.! blid body
-                ar = fromMaybe (error $ "" `showFailure` aid)
-                               (EM.lookup aid actorAspect)
+                actorMaxSk = actorAspect EM.! aid
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
@@ -114,20 +112,20 @@ pickActorToMove maidToAvoid = do
             condSolo <- condSoloM aid  -- solo fighters aggresive
             canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
-                speed1_5 = speedScale (3%2) (gearSpeed ar)
+                speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
                 condCanMelee = actorCanMelee actorAspect aid body
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
                   any (\(_, (aid2, _)) ->
-                    let ar2 = actorAspect EM.! aid2
-                    in gearSpeed ar2 > speed1_5)
+                    let actorMaxSk2 = actorAspect EM.! aid2
+                    in gearSpeed actorMaxSk2 > speed1_5)
                   threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltaSerious (bcalmDelta body)
-                actorShines = IA.getSkill Ability.SkShine ar > 0
+                actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
                 aCanDeLightL | actorShines = []
                              | otherwise = canDeAmbientL
                 canFleeFromLight =

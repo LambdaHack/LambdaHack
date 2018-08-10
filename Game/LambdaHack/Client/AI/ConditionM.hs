@@ -108,10 +108,9 @@ meleeThreatDistList aid s =
       b = getActorBody aid s
       allAtWar = foeRegularAssocs (bfid b) (blid b) s
       strongActor (aid2, b2) =
-        let ar = actorAspect EM.! aid2
-            actorMaxSkE = IA.aSkills ar
-            nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
-        in not (hpTooLow b2 ar || nonmoving)
+        let actorMaxSk = actorAspect EM.! aid2
+            nonmoving = Ability.getSk Ability.SkMove actorMaxSk <= 0
+        in not (hpTooLow b2 actorMaxSk || nonmoving)
            && actorCanMelee actorAspect aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
@@ -164,14 +163,14 @@ projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
 projectList discoBenefit skill aid
             condShineWouldBetray condAimEnemyPresent s =
   let b = getActorBody aid s
-      ar = getActorAspect aid s
-      calmE = calmEnough b ar
+      actorMaxSk = getActorAspect aid s
+      calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltaSerious (bcalmDelta b)
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed condNotCalmEnough ar
+                     heavilyDistressed condNotCalmEnough actorMaxSk
       q (Benefit{benInEqp, benFling}, _, _, itemFull, _) =
         let arItem = aspectRecordFull itemFull
         in benFling < 0
@@ -194,12 +193,12 @@ benAvailableItems discoBenefit aid cstores s =
       benCStore cs = ben cs $ getBodyStoreBag b cs s
   in concatMap benCStore cstores
 
-hinders :: Bool -> Bool -> Bool -> Bool -> IA.AspectRecord -> ItemFull
+hinders :: Bool -> Bool -> Bool -> Bool -> Ability.Skills -> ItemFull
         -> Bool
 hinders condShineWouldBetray condAimEnemyPresent
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
-        ar itemFull =
+        actorMaxSk itemFull =
   let arItem = aspectRecordFull itemFull
       itemShine = 0 < IA.getSkill Ability.SkShine arItem
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
@@ -211,7 +210,7 @@ hinders condShineWouldBetray condAimEnemyPresent
      && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
-     || gearSpeed ar > speedWalk
+     || gearSpeed actorMaxSk > speedWalk
         && not (IA.isMelee arItem)  -- in case it's the only weapon
         && 0 > IA.getSkill Ability.SkHurtMelee arItem
 
@@ -255,9 +254,9 @@ condSupport param aid = do
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
 strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
-  let n = min 2 param - IA.getSkill Ability.SkAggression ar
-      actorAspect = sactorAspect s
-      ar = actorAspect EM.! aid
+  let actorAspect = sactorAspect s
+      actorMaxSk = actorAspect EM.! aid
+      n = min 2 param - Ability.getSk Ability.SkAggression actorMaxSk
       b = getActorBody aid s
       mtgtPos = case btarget of
         Nothing -> Nothing
