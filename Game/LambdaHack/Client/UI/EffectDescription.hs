@@ -148,6 +148,8 @@ slotToSentence es = case es of
   EqpSlotAlter -> "Those unskilled in alteration equip it."
   EqpSlotProject -> "Those unskilled in flinging equip it."
   EqpSlotApply -> "Those unskilled in applying items equip it."
+  EqpSlotSwimming -> "Useful to any that wade or swim in water."
+  EqpSlotFlying -> "Those not afraid to fly, put it on."
 
 skillName :: Skill -> Text
 skillName SkMove = "move skill"
@@ -169,6 +171,8 @@ skillName SkSmell = "smell radius"
 skillName SkShine = "shine radius"
 skillName SkNocto = "night vision radius"
 skillName SkAggression = "aggression level"
+skillName SkSwimming = "swimming ability"
+skillName SkFlying = "flying ability"
 
 skillDesc :: Skill -> Text
 skillDesc skill =
@@ -194,6 +198,8 @@ skillDesc skill =
     SkShine -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
+    SkSwimming -> "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
+    SkFlying -> "is the degree of avoidance of bad effects of any hazards spread on the ground."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
@@ -233,6 +239,8 @@ skillToDecorator skill b t =
     SkShine -> tshowRadius (max 0 t)
     SkNocto -> tshowRadius (max 0 t)
     SkAggression -> tshow t
+    SkSwimming -> tshow t
+    SkFlying -> tshow t
 
 statSlots :: [Skill]
 statSlots = [ SkHurtMelee
@@ -253,7 +261,9 @@ statSlots = [ SkHurtMelee
             , SkWait
             , SkMoveItem
             , SkProject
-            , SkApply ]
+            , SkApply
+            , SkSwimming
+            , SkFlying ]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -288,6 +298,8 @@ kindAspectToSuffix aspect =
     AddSkill SkShine t -> wrapInParens $ affixDice t <+> "shine"
     AddSkill SkNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
+    AddSkill SkSwimming t -> wrapInParens $ affixDice t <+> "swimming"
+    AddSkill SkFlying t -> wrapInParens $ affixDice t <+> "flying"
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"

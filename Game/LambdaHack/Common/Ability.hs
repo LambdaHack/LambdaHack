@@ -47,6 +47,8 @@ data Skill =
   | SkShine
   | SkNocto
   | SkAggression
+  | SkSwimming
+  | SkFlying
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.
@@ -99,6 +101,8 @@ data EqpSlot =
   | EqpSlotAlter
   | EqpSlotProject
   | EqpSlotApply
+  | EqpSlotSwimming
+  | EqpSlotFlying
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData Skill
