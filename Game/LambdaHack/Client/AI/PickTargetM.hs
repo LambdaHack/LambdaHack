@@ -156,7 +156,7 @@ computeTarget aid = do
       -- This is especially important for fences, tower defense actors, etc.
       -- If content gives nonmoving actor loot, this becomes problematic.
       targetableMelee aidE body = do
-        actorMaxSkE <- maxActorSkillsClient aidE
+        actorMaxSkE <- getsState $ getActorAspect aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
             -- 1 from condSupport1

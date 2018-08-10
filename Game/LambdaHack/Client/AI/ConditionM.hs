@@ -77,7 +77,7 @@ condTgtNonmovingM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
     Just (TEnemy enemy _) -> do
-      actorMaxSk <- maxActorSkillsClient enemy
+      actorMaxSk <- getsState $ getActorAspect enemy
       return $ Ability.getSk Ability.SkMove actorMaxSk <= 0
     _ -> return False
 

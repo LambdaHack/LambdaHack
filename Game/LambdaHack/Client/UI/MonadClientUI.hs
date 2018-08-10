@@ -416,4 +416,4 @@ tryRestore = do
 leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
 leaderSkillsClientUI = do
   leader <- getLeaderUI
-  maxActorSkillsClient leader
+  getsState $ getActorAspect leader

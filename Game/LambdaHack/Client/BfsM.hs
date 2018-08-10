@@ -180,7 +180,7 @@ condBFS aid = do
   -- to reset BFS after leader changes, but it would still lead to
   -- wasted movement if, e.g., non-leaders move but only leaders open doors
   -- and leader change is very rare.
-  actorMaxSk <- maxActorSkillsClient aid
+  actorMaxSk <- getsState $ getActorAspect aid
   let alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
             (toEnum $ Ability.getSk Ability.SkAlter actorMaxSk)
@@ -282,7 +282,7 @@ embedBenefit fleeVia aid pbags = do
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
   actorSk <- if fleeVia == ViaAnything  -- targeting, e.g., when not a leader
-             then maxActorSkillsClient aid
+             then getsState $ getActorAspect aid
              else currentSkillsClient aid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -413,7 +413,7 @@ unexploredDepth !up !lidCurrent = do
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
-  actorMaxSk <- maxActorSkillsClient aid
+  actorMaxSk <- getsState $ getActorAspect aid
   if Ability.getSk Ability.SkMoveItem actorMaxSk <= 0 then return []
   else do
     body <- getsState $ getActorBody aid

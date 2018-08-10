@@ -1,7 +1,7 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonM
   ( getPerFid, aidTgtToPos, makeLine
-  , maxActorSkillsClient, currentSkillsClient, pickWeaponClient
+  , currentSkillsClient, pickWeaponClient
   , updateSalter, createSalter
   ) where
 
@@ -97,9 +97,6 @@ makeLine onlyFirst body fpos epsOld = do
                  tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
 -- @MonadStateRead@ would be enough, but the logic is sound only on client.
-maxActorSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
-maxActorSkillsClient aid = getsState $ getActorAspect aid
-
 currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
   body <- getsState $ getActorBody aid

@@ -823,7 +823,7 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
-        actorMaxSk <- maxActorSkillsClient aid2
+        actorMaxSk <- getsState $ getActorAspect aid2
         dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
           -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
         let nFrOld = nFriends body2
@@ -885,7 +885,7 @@ displaceTgt aid target retry = do
           Just _ -> return reject
           Nothing -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            actorMaxSk <- maxActorSkillsClient aid2
+            actorMaxSk <- getsState $ getActorAspect aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
               -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
               -- DisplaceSupported
@@ -981,7 +981,7 @@ moveOrRunAid source dir = do
                      && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      actorMaxSk <- maxActorSkillsClient target
+      actorMaxSk <- getsState $ getActorAspect target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
         -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
       if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
