@@ -234,8 +234,8 @@ reqMove source dir = do
                      || Ability.getSk sk actorSk > 0
       lid = blid sb
   lvl <- getLevel lid
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
+  let spos = bpos sb
+      tpos = spos `shift` dir
   -- This predicate is symmetric wrt source and target, though the effect
   -- of collision may not be (the source projectiles applies its effect
   -- on the target particles, but loses 1 HP due to the collision).
@@ -288,6 +288,7 @@ reqMove source dir = do
         if abInSkill Ability.SkMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
+          void $ reqAlterFail source tpos  -- possibly alter or activate
         else execFailure source (ReqMove dir) MoveUnskilled
       else
         -- Client foolishly tries to move into unwalkable tile.
@@ -419,7 +420,8 @@ reqDisplace source target = do
                      || Ability.getSk sk actorSk > 0
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  let tpos = bpos tb
+  let spos = bpos sb
+      tpos = bpos tb
       atWar = isFoe (bfid tb) tfact (bfid sb)
       req = ReqDisplace target
   ar <- getsState $ getActorAspect target
@@ -453,6 +455,8 @@ reqDisplace source target = do
              -- so sometimes smellers will backtrack once to wipe smell. OK.
              affectSmell source
              affectSmell target
+             void $ reqAlterFail source tpos  -- possibly alter or activate
+             void $ reqAlterFail target spos
            _ -> execFailure source req DisplaceProjectiles
        else
          -- Client foolishly tries to displace an actor without access.
@@ -507,11 +511,12 @@ reqAlterFail source tpos = do
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> IK.iname itemKind) reqFail
           _ -> itemEffectEmbedded source lid tpos iid
+      underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
     -- Only actors with AbAlter > 1 can search for hidden doors, etc.
-    if alterSkill <= 1
+    if not underFeet && alterSkill <= 1
     then return $ Just AlterUnskilled  -- don't leak about searching
     else do
       -- Blocking by items nor actors does not prevent searching.
@@ -540,7 +545,7 @@ reqAlterFail source tpos = do
         tryApplyEmbeds
       return Nothing  -- success
   else if clientTile == serverTile then  -- alters
-    if alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
+    if not underFeet && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
       let changeTo tgroup = do
@@ -594,12 +599,13 @@ reqAlterFail source tpos = do
               TK.CloseTo tgroup -> Just tgroup
               TK.ChangeTo tgroup -> Just tgroup
               _ -> Nothing
-          groupsToAlterTo = mapMaybe toAlter feats
+          groupsToAlterTo | underFeet = []  -- don't autoclose doors under actor
+                          | otherwise =  mapMaybe toAlter feats
       if null groupsToAlterTo && EM.null embeds then
         return $ Just AlterNothing  -- no altering possible; silly client
       else
-        if EM.notMember tpos $ lfloor lvl then
-          if null (posToAidsLvl tpos lvl) then do
+        if underFeet || EM.notMember tpos (lfloor lvl) then
+          if underFeet || null (posToAidsLvl tpos lvl) then do
             -- The embeds of the initial tile are activated before the tile
             -- is altered. This prevents, e.g., trying to activate items
             -- where none are present any more, or very different to what
