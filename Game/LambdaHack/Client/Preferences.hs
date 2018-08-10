@@ -300,6 +300,14 @@ aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
+    IK.AddSkill Ability.SkMove p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkMelee p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkDisplace p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkAlter p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkWait p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkMoveItem p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkProject p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkApply p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkHurtMelee p -> Dice.meanDice p  -- offence favoured
     IK.AddSkill Ability.SkArmorMelee p -> Dice.meanDice p / 4
                                               -- only partial protection
@@ -313,9 +321,8 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkSmell p -> Dice.meanDice p
     IK.AddSkill Ability.SkShine p -> Dice.meanDice p * 2
     IK.AddSkill Ability.SkNocto p -> Dice.meanDice p * 10
-                                         -- > sight + light; stealth, slots
+                                       -- > sight + light; stealth, slots
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
-    IK.AddSkill _ p -> Dice.meanDice p * 5
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere

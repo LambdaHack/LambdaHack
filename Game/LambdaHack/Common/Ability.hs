@@ -24,7 +24,7 @@ import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Misc
 
--- | Actor and faction abilities.
+-- | Actor and faction abilities. See 'skillDesc' for documentation.
 data Skill =
   -- Basic abilities affecting permitted actions.
     SkMove
@@ -36,17 +36,17 @@ data Skill =
   | SkProject
   | SkApply
   -- Assorted abilities.
-  | SkHurtMelee    -- ^ percentage damage bonus in melee
-  | SkArmorMelee   -- ^ percentage armor bonus against melee
-  | SkArmorRanged  -- ^ percentage armor bonus against ranged
-  | SkMaxHP        -- ^ maximal hp
-  | SkMaxCalm      -- ^ maximal calm
-  | SkSpeed        -- ^ speed in m/10s (not when pushed or pulled)
-  | SkSight        -- ^ FOV radius, where 1 means a single tile FOV
-  | SkSmell        -- ^ smell radius
-  | SkShine        -- ^ shine radius
-  | SkNocto        -- ^ noctovision radius
-  | SkAggression   -- ^ aggression, e.g., when closing in for melee
+  | SkHurtMelee
+  | SkArmorMelee
+  | SkArmorRanged
+  | SkMaxHP
+  | SkMaxCalm
+  | SkSpeed
+  | SkSight  -- ^ FOV radius, where 1 means a single tile FOV
+  | SkSmell
+  | SkShine
+  | SkNocto
+  | SkAggression
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities.

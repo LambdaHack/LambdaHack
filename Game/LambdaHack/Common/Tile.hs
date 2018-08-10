@@ -115,7 +115,7 @@ alterMinSkillKind _k tk =
   in if any getTo $ TK.tfeature tk then TK.talter tk else maxBound
 
 -- How high alter skill is needed to make it walkable. If already
--- walkable, put @0@, if can't, put @maxBound@. Used only be AI and Bfs
+-- walkable, put @0@, if can't, put @maxBound@. Used only by AI and Bfs
 -- We don't include @HideAs@, because it's very unlikely anybody swapped
 -- the tile while AI was not looking so AI can assume it's still uninteresting.
 -- Pathfinding in UI will also not show such tile as passable, which is OK.
