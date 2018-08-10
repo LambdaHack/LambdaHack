@@ -8,12 +8,12 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
-  , getActorBody, getActorMaxSkills, canTraverse
+  , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
-  , actorCurrentSkills, dispEnemy, itemToFull, fullAssocs, kitAssocs
+  , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
@@ -193,9 +193,26 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
+-- For now, faction and tactic skill modifiers only change
+-- the basic skills that affect permitted actions @SkMove..SkApply@,
+-- so the expensive @actorCurrentSkills@ operation doesn't need to be used
+-- when checking the other skills, e.g., for FOV calculations,
+-- and the @getActorMaxSkills@ cheap operation suffices.
+-- (@ModeKind@ content is not currently validated in this respect.)
 getActorMaxSkills :: ActorId -> State -> Ability.Skills
 {-# INLINE getActorMaxSkills #-}
 getActorMaxSkills aid s = sactorMaxSkills s EM.! aid
+
+actorCurrentSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
+actorCurrentSkills mleader aid s =
+  let body = getActorBody aid s
+      actorMaxSk = getActorMaxSkills aid s
+      player = gplayer . (EM.! bfid body) . sfactionD $ s
+      skillsFromTactic = Ability.tacticSkills $ ftactic player
+      factionSkills
+        | Just aid == mleader = Ability.zeroSkills
+        | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
+  in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check that the actor can move, also between levels and through doors.
 -- Otherwise, it's too awkward for human player to control, e.g.,
@@ -319,17 +336,6 @@ canDeAmbientList b s =
   in if Tile.isLit coTileSpeedup (lvl `at` bpos b)
      then filter posDeAmbient (vicinityUnsafe $ bpos b)
      else []
-
-actorCurrentSkills :: Maybe ActorId -> ActorId -> State -> Ability.Skills
-actorCurrentSkills mleader aid s =
-  let body = getActorBody aid s
-      actorMaxSk = getActorMaxSkills aid s
-      player = gplayer . (EM.! bfid body) . sfactionD $ s
-      skillsFromTactic = Ability.tacticSkills $ ftactic player
-      factionSkills
-        | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
-  in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check whether an actor can displace an enemy. We assume they are adjacent.
 -- If the actor is not, in fact, an enemy, we let it displace.
