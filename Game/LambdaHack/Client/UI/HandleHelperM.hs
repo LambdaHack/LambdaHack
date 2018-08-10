@@ -104,13 +104,13 @@ loreFromMode c = case c of
   MPlaces -> undefined  -- artificial slots
 
 loreFromContainer :: IA.AspectRecord -> Container -> SLore
-loreFromContainer ar c = case c of
+loreFromContainer arItem c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
-  CActor _ store -> if | IA.isBlast ar -> SBlast
-                       | IA.isTmpCondition ar -> STmp
+  CActor _ store -> if | IA.isBlast arItem -> SBlast
+                       | IA.isTmpCondition arItem -> STmp
                        | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if IA.isBlast ar then SBlast else STrunk
+  CTrunk{} -> if IA.isBlast arItem then SBlast else STrunk
 
 sortSlots :: MonadClientUI m => m ()
 sortSlots = do

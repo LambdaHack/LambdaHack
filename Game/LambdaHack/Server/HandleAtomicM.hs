@@ -229,15 +229,15 @@ itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
 itemAffectsShineRadius discoAspect iid stores =
   (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
   && case EM.lookup iid discoAspect of
-    Just ar -> IA.getSkill Ability.SkShine ar /= 0
+    Just arItem -> IA.getSkill Ability.SkShine arItem /= 0
     Nothing -> error $ "" `showFailure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
 itemAffectsPerRadius discoAspect iid =
   case EM.lookup iid discoAspect of
-    Just ar -> IA.getSkill Ability.SkSight ar /= 0
-               || IA.getSkill Ability.SkSmell ar /= 0
-               || IA.getSkill Ability.SkNocto ar /= 0
+    Just arItem -> IA.getSkill Ability.SkSight arItem /= 0
+               || IA.getSkill Ability.SkSmell arItem /= 0
+               || IA.getSkill Ability.SkNocto arItem /= 0
     Nothing -> error $ "" `showFailure` iid
 
 addPerActor :: MonadServer m => ActorId -> Actor -> m ()

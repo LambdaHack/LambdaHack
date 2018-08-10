@@ -202,7 +202,7 @@ strongestSlot discoBenefit eqpSlot is =
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
 valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
-valueAtEqpSlot eqpSlot ar@IA.AspectRecord{..} =
+valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
   case eqpSlot of
     EqpSlotMiscBonus ->
       aTimeout  -- usually better items have longer timeout
@@ -217,7 +217,7 @@ valueAtEqpSlot eqpSlot ar@IA.AspectRecord{..} =
     EqpSlotSpeed -> Ability.getSk Ability.SkSpeed aSkills
     EqpSlotSight -> Ability.getSk Ability.SkSight aSkills
     EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
-    EqpSlotWeapon -> error $ "" `showFailure` ar
+    EqpSlotWeapon -> error $ "" `showFailure` arItem
     EqpSlotMiscAbility ->
       Ability.getSk Ability.SkWait aSkills
       + Ability.getSk Ability.SkMoveItem aSkills

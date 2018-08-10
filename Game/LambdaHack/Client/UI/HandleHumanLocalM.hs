@@ -114,10 +114,10 @@ chooseItemDialogMode :: MonadClientUI m
 chooseItemDialogMode c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let subject = partActor
-      verbSha body ar = if calmEnough body ar
+      verbSha body actorMaxSk = if calmEnough body actorMaxSk
                         then "notice"
                         else "paw distractedly"
-      prompt body bodyUI ar c2 =
+      prompt body bodyUI actorMaxSk c2 =
         let (tIn, t) = ppItemDialogMode c2
         in case c2 of
         MStore CGround ->
@@ -128,7 +128,7 @@ chooseItemDialogMode c = do
         MStore CSha ->
           makePhrase
             [ MU.Capitalize
-              $ MU.SubjectVerbSg (subject bodyUI) (verbSha body ar)
+              $ MU.SubjectVerbSg (subject bodyUI) (verbSha body actorMaxSk)
             , MU.Text tIn
             , MU.Text t ]
         MOrgans ->
