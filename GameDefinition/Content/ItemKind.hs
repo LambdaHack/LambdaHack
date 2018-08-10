@@ -854,6 +854,13 @@ motionScanner = ItemKind
 
 -- * Periodic jewelry
 
+-- Morally these are the aspects, but we also need to add a fake @Timeout@,
+-- to let clients know that the not identified item is periodic jewelry.
+iaspects_necklaceTemplate :: [Aspect]
+iaspects_necklaceTemplate =
+  [ SetFlag Periodic, HideAs "necklace unknown"
+  , SetFlag Precious, SetFlag Equipable
+  , toVelocity 50 ]  -- not dense enough
 gorget = necklaceTemplate
   { iname    = "Old Gorget"
   , ifreq    = [("common item", 25), ("treasure", 25)]
@@ -865,7 +872,7 @@ gorget = necklaceTemplate
                , AddSkill SkArmorRanged 2
                , SetFlag Unique, SetFlag Durable
                , EqpSlot EqpSlotMiscBonus ]
-               ++ iaspects necklaceTemplate
+               ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (RefillCalm 1)]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   }
@@ -880,9 +887,8 @@ necklaceTemplate = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
-  , iaspects = [ SetFlag Periodic, HideAs "necklace unknown"
-               , SetFlag Precious, SetFlag Equipable
-               , toVelocity 50 ]  -- not dense enough
+  , iaspects = [Timeout 1]  -- fake, but won't be displayed
+               ++ iaspects_necklaceTemplate
   , ieffects = []
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
   , ikit     = []
@@ -892,8 +898,9 @@ necklace1 = necklaceTemplate
   , iaspects = [ Timeout $ (1 `d` 2) * 20
                , SetFlag Unique, ELabel "of Aromata", SetFlag Durable
                , EqpSlot EqpSlotMiscBonus ]
-               ++ iaspects necklaceTemplate
-  , ieffects = [Recharging (RefillHP 1)] ++ ieffects necklaceTemplate
+               ++ iaspects_necklaceTemplate
+  , ieffects = [Recharging (RefillHP 1)]
+               ++ ieffects necklaceTemplate
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
@@ -901,7 +908,7 @@ necklace2 = necklaceTemplate
       -- too nasty to call it just a "common item"
   , iaspects = [ Timeout 30
                , SetFlag Unique, ELabel "of Live Bait", SetFlag Durable ]
-               ++ iaspects necklaceTemplate
+               ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
                , Recharging (Explode "waste")
                , Recharging Impress
@@ -912,7 +919,8 @@ necklace2 = necklaceTemplate
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ Timeout $ (1 `d` 2) * 20
-               , ELabel "of fearful listening" ] ++ iaspects necklaceTemplate
+               , ELabel "of fearful listening" ]
+               ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Detect DetectActor 10)
                , Recharging (RefillCalm (-20)) ]
                ++ ieffects necklaceTemplate
@@ -920,13 +928,15 @@ necklace3 = necklaceTemplate
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2]
+               ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (Teleport $ 3 `d` 2)]
                ++ ieffects necklaceTemplate
   }
 necklace5 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ Timeout $ (7 - 1 `dL` 5) * 10
-               , ELabel "of escape" ] ++ iaspects necklaceTemplate
+               , ELabel "of escape" ]
+               ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
                , Recharging (Detect DetectExit 20)
                , Recharging (RefillHP (-2)) ]  -- prevent micromanagement
@@ -935,6 +945,7 @@ necklace5 = necklaceTemplate
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ 1 + (1 `d` 3) * 2]
+               ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
                   -- the @50@ is only for the case of very light actor, etc.
                ++ ieffects necklaceTemplate
@@ -945,7 +956,7 @@ necklace7 = necklaceTemplate
                , AddSkill SkArmorRanged 10, Timeout 4
                , SetFlag Unique, ELabel "of Overdrive", SetFlag Durable
                , EqpSlot EqpSlotSpeed ]
-               ++ iaspects necklaceTemplate
+               ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
                , Recharging (RefillHP (-1)) ]
@@ -955,12 +966,14 @@ necklace7 = necklaceTemplate
 necklace8 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
+               ++ iaspects_necklaceTemplate
   , ieffects = [Recharging $ Explode "spark"]
                ++ ieffects necklaceTemplate
   }
 necklace9 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [Timeout $ (1 + 1 `d` 3) * 5]
+               ++ iaspects_necklaceTemplate
   , ieffects = [Recharging $ Explode "fragrance"]
                ++ ieffects necklaceTemplate
   }
