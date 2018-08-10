@@ -295,6 +295,7 @@ griffonVulture = ItemKind
   , iaspects = [ AddSkill SkMaxHP 12, AddSkill SkMaxCalm 80
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
       -- Animals don't have leader, usually, so even if only one of level,
       -- it pays the communication overhead, so the speed is higher to get
@@ -439,6 +440,7 @@ alligator = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 41, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
+               , AddSkill SkSwimming 100  -- swims better than walks
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An armored predator from the dawn of time."
@@ -484,6 +486,7 @@ beeSwarm = ItemKind
   , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 30, AddSkill SkNocto 2  -- armor in sting
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Every bee would die for the queen."
@@ -504,6 +507,7 @@ hornetSwarm = ItemKind
                , AddSkill SkSpeed 30, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , AddSkill SkArmorMelee 80, AddSkill SkArmorRanged 40
+               , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
