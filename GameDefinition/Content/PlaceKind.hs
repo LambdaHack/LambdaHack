@@ -176,8 +176,8 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "a hall"
-  , pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 300), ("noise", 1000) ]
+  , pfreq    = [ ("rogue", 300), ("arena", 1000), ("laboratory", 1000)
+               , ("empty", 200), ("noise", 1000) ]
   , prarity  = [(1, 2), (10, 2)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -190,7 +190,9 @@ pillar = PlaceKind
   , poverride = [('&', "cache")]
   }
 pillar2 = pillar
-  { prarity  = [(1, 15), (10, 15)]
+  { pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
+               , ("empty", 300), ("noise", 1000) ]
+  , prarity  = [(1, 15), (10, 15)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -199,7 +201,9 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { prarity  = [(1, 30), (10, 30)]
+  { pfreq    = [ ("rogue", 500), ("arena", 1000), ("laboratory", 1000)
+               , ("empty", 300), ("noise", 1000) ]
+  , prarity  = [(1, 30), (10, 30)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -209,8 +213,6 @@ pillar3 = pillar
   }
 pillar4 = pillar
   { pname    = "an exquisite hall"
-  , pfreq    = [ ("rogue", 300), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 200), ("noise", 1000) ]
   , prarity  = [(1, 20), (10, 40)]
   , ptopLeft = [ "-----"
                , "|&·O·"
@@ -221,8 +223,6 @@ pillar4 = pillar
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
-  , pfreq    = [ ("rogue", 300), ("arena", 1000), ("laboratory", 1000)
-               , ("empty", 200), ("noise", 1000) ]
   , prarity  = [(1, 20), (10, 40)]
   , ptopLeft = [ "-----"
                , "|&·O·"
@@ -382,7 +382,7 @@ smokeClump2FGround = smokeClump
 bushClump = PlaceKind
   { psymbol  = 'b'
   , pname    = "a bushy patch"
-  , pfreq    = [("shootout", 100)]
+  , pfreq    = [("shootout", 80)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone

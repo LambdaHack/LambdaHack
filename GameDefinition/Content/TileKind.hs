@@ -177,7 +177,7 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 700), ("battleSet", 250), ("brawlSetLit", 50)
+               , ("noiseSet", 700), ("battleSet", 200), ("brawlSetLit", 50)
                , ("shootoutSetLit", 10), ("zooSet", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
@@ -237,7 +237,8 @@ tree = TileKind
   }
 treeBurnt = tree
   { tname    = "burnt tree"
-  , tfreq    = [("ambushSet", 3), ("zooSet", 7), ("tree with fire", 30)]
+  , tfreq    = [ ("ambushSet", 3), ("zooSet", 7), ("battleSet", 50)
+               , ("tree with fire", 30) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature tree
