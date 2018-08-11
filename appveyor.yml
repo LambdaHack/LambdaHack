@@ -1,16 +1,23 @@
+environment:
+  global:
+    CABOPTS:  "--store-dir=C:\\SR --http-transport=plain-http"
+
+cache:
+- "C:\\SR"
+
 install:
+  - appveyor-retry choco install ghc --version 8.4.3 | grep -v '^Extracting the last GHC that works on Windows Vista'
+  # breaks appveyor-retry: refreshenv
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.3\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw64\share
-  - pacman --version
-  - appveyor-retry choco install ghc --version 8.4.3 | grep -v '^Extracting the last GHC that works on Windows Vista'
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
-  - cabal update
-  - cabal install happy
+  - cabal %CABOPTS% update
+  - cabal %CABOPTS% install happy
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - cd sdl2
-  - cabal install -fno-linear
+  - cabal %CABOPTS% install -fno-linear
   - cd ..
 
   - pwd
@@ -37,29 +44,29 @@ install:
   - ps: $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString()
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive"
 
-  - cabal test --show-details=direct
+  - cabal %CABOPTS% test --show-details=direct
   - make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
   - make nativeBench || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
 
   - mv LambdaHackTheGame LambdaHackTheGame64
   - rm -rf LambdaHackTheGameInstall
-  - cabal clean
+  - cabal %CABOPTS% clean
   - cd sdl2
-  - cabal clean
+  - cabal %CABOPTS% clean
   - cd ..
 
+  - appveyor-retry choco install --force --forcex86 ghc --version 8.4.3 | grep -v '^Extracting '
+  # breaks appveyor-retry: refreshenv
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.3\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw32\share
-  - pacman --version
-  - appveyor-retry choco install --force --forcex86 ghc --version 8.4.3 | grep -v '^Extracting '
   - cabal --version
   - appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
   - echo "no cabal update"
   - echo "no cabal install happy"
   - echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
   - cd sdl2
-  - cabal install -fno-linear
+  - cabal %CABOPTS% install -fno-linear
   - cd ..
 
   - pwd
@@ -83,7 +90,7 @@ install:
   - 7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
   - ps: Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive"
 
-  - cabal test --show-details=direct
+  - cabal %CABOPTS% test --show-details=direct
   - make benchNull || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
 
   - mv LambdaHackTheGame LambdaHackTheGame32
