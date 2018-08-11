@@ -59,7 +59,8 @@ hookedClaw = fist
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = 2 `d` 1
-  , iaspects = [Timeout $ 12 - 1 `dL` 3] ++ iaspects fist
+  , iaspects = [Timeout $ 12 - 1 `dL` 3]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" 2)]
   , idesc    = "A curved talon."
   }
@@ -322,7 +323,7 @@ insectMortality = armoredSkin
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
   , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10
-               , SetFlag Durable, SetFlag Periodic ]
+               , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP (-1))]
   , idesc    = ""
   }
@@ -353,7 +354,7 @@ speedGland n = armoredSkin
   , iverbHit = "spit at"
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice $ 100 `div` n
-               , SetFlag Durable, SetFlag Periodic ]
+               , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = ""
   }
@@ -380,7 +381,7 @@ boilingVent = armoredSkin
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFlag Durable, SetFlag Periodic ]
+               , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "boiling water")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -391,7 +392,7 @@ arsenicVent = armoredSkin
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFlag Durable, SetFlag Periodic ]
+               , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "sparse shower")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -402,7 +403,7 @@ sulfurVent = armoredSkin
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
-               , SetFlag Durable, SetFlag Periodic ]
+               , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "dense shower")
                , Recharging (RefillHP 2) ]
   , idesc    = ""
@@ -469,7 +470,8 @@ lip = fist
   , icount   = 1
   , iverbHit = "lap"
   , idamage  = 1 `d` 1
-  , iaspects = [Timeout $ 3 + 1 `d` 2] ++ iaspects fist
+  , iaspects = [Timeout $ 3 + 1 `d` 2]
+               ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "weakened" (2 + 1 `dL` 3))]
   , idesc    = ""
   }
@@ -501,7 +503,8 @@ pupil = fist
   , icount   = 1
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1
-  , iaspects = [AddSkill SkSight 12, Timeout 12] ++ iaspects fist
+  , iaspects = [AddSkill SkSight 12, Timeout 12]
+               ++ iaspects fist
   , ieffects = [ Recharging (DropItem 1 maxBound COrgan "condition")
                , Recharging $ RefillCalm (-10)
                ]

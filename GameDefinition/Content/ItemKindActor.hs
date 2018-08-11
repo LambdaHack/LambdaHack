@@ -35,10 +35,12 @@ warrior = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 80  -- partially from clothes and assumed first aid
-               , AddSkill SkMaxCalm 70, AddSkill SkSpeed 20
+  , iaspects = [ AddSkill SkMaxHP 80  -- partially from clothes and first aid
+               , AddSkill SkMaxCalm 70
+               , AddSkill SkSpeed 20
                , AddSkill SkNocto 2
-               , AddSkill SkProject 2, AddSkill SkApply 1
+               , AddSkill SkProject 2
+               , AddSkill SkApply 1
                , AddSkill SkAlter 2
                , SetFlag Durable ]
   , ieffects = []
@@ -155,8 +157,7 @@ eye = ItemKind
   , iaspects = [ AddSkill SkMaxHP 16, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
                , AddSkill SkAggression 1
-               , AddSkill SkProject 2, AddSkill SkApply 1
-               , AddSkill SkAlter 2
+               , AddSkill SkProject 2, AddSkill SkApply 1, AddSkill SkAlter 2
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -174,7 +175,8 @@ fastEye = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 5, AddSkill SkMaxCalm 70, AddSkill SkSpeed 30, AddSkill SkNocto 2
+  , iaspects = [ AddSkill SkMaxHP 5, AddSkill SkMaxCalm 70
+               , AddSkill SkSpeed 30, AddSkill SkNocto 2
                , AddSkill SkAggression 1
                , AddSkill SkAlter 2
                , SetFlag Durable ]
@@ -238,12 +240,13 @@ torsor = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 300, AddSkill SkMaxCalm 100
+  , iaspects = [ SetFlag Unique
+               , AddSkill SkMaxHP 300, AddSkill SkMaxCalm 100
                , AddSkill SkSpeed 10, AddSkill SkNocto 2
-               , AddSkill SkAggression 3, AddSkill SkProject 2
-               , AddSkill SkApply 1
+               , AddSkill SkAggression 3
+               , AddSkill SkProject 2, AddSkill SkApply 1
                , AddSkill SkAlter 1  -- can't exit the gated level, the boss
-               , SetFlag Unique, SetFlag Durable ]
+               , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
@@ -459,11 +462,12 @@ rhinoceros = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 90, AddSkill SkMaxCalm 60
+  , iaspects = [ SetFlag Unique
+               , AddSkill SkMaxHP 90, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 27, AddSkill SkNocto 2
                , AddSkill SkAggression 2
                , AddSkill SkAlter (-1)  -- can't switch levels, a miniboss
-               , SetFlag Unique, SetFlag Durable ]
+               , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("armored skin", COrgan), ("eye 2", COrgan)
@@ -503,10 +507,10 @@ hornetSwarm = ItemKind
   , iverbHit = "thud"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 70
+  , iaspects = [ AddSkill SkArmorMelee 80, AddSkill SkArmorRanged 40
+               , AddSkill SkMaxHP 8, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 30, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
-               , AddSkill SkArmorMelee 80, AddSkill SkArmorRanged 40
                , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
   , ieffects = []
@@ -526,7 +530,7 @@ thornbush = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 20, AddSkill SkMaxCalm 999
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
-               , AddSkill SkWait 1, AddSkill SkMelee 1
+               , AddSkill SkWait 1, AddSkill SkMelee 1  -- no brain
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Each branch bears long, curved thorns."
@@ -544,7 +548,7 @@ geyserBoiling = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 10, AddSkill SkMaxCalm 999
                , AddSkill SkSpeed 11, AddSkill SkNocto 2
-               , AddSkill SkWait 1, AddSkill SkMelee 1
+               , AddSkill SkWait 1, AddSkill SkMelee 1  -- no brain
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A jet of acidic water, hot enough to melt flesh."
@@ -561,9 +565,8 @@ geyserArsenic = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 20, AddSkill SkMaxCalm 999
-               , AddSkill SkSpeed 22
-               , AddSkill SkNocto 2, AddSkill SkShine 3
-               , AddSkill SkWait 1, AddSkill SkMelee 1
+               , AddSkill SkSpeed 22, AddSkill SkNocto 2, AddSkill SkShine 3
+               , AddSkill SkWait 1, AddSkill SkMelee 1  -- no brain
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The sharp scent betrays the poison within the spray."
@@ -580,9 +583,8 @@ geyserSulfur = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 20, AddSkill SkMaxCalm 999
-               , AddSkill SkSpeed 22
-               , AddSkill SkNocto 2, AddSkill SkShine 3
-               , AddSkill SkWait 1, AddSkill SkMelee 1
+               , AddSkill SkSpeed 22, AddSkill SkNocto 2, AddSkill SkShine 3
+               , AddSkill SkWait 1, AddSkill SkMelee 1  -- no brain
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The pool boils and bubbles, stinking of rotten eggs. Despite the smell, these waters purify and strengthen."

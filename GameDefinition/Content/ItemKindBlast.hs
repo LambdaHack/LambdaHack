@@ -61,7 +61,8 @@ firecracker n = ItemKind
   , iverbHit = if n >= 4 then "singe" else "crack"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 5, SetFlag Fragile, SetFlag Blast
+  , iaspects = [ toVelocity 5
+               , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine $ intToDice $ 1 + n `div` 2 ]
   , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
                ++ [DropBestWeapon | n >= 4]

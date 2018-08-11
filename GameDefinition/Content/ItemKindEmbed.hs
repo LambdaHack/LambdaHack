@@ -79,13 +79,20 @@ subtleFresco = ItemKind
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
   }
-treasureCache = stairsUp
+treasureCache = ItemKind
   { isymbol  = 'O'
   , iname    = "treasure cache"
   , ifreq    = [("treasure cache", 1)]
   , iflavour = zipPlain [BrBlue]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "crash"
+  , iweight  = 10000
+  , idamage  = 0
+  , iaspects = [SetFlag Durable]
   , ieffects = [CreateItem CGround "common item" timerNone]
   , idesc    = "Glittering treasure, just waiting to be taken."
+  , ikit     = []
   }
 treasureCacheTrap = ItemKind
   { isymbol  = '^'
