@@ -50,9 +50,9 @@ install:
 
   - mv LambdaHackTheGame LambdaHackTheGame64
   - rm -rf LambdaHackTheGameInstall
-  - cabal %CABOPTS% clean
+  # cabal %CABOPTS% clean
   - cd sdl2
-  - cabal %CABOPTS% clean
+  # cabal %CABOPTS% clean
   - cd ..
 
   - appveyor-retry choco install --force --forcex86 ghc --version 8.4.3 | grep -v '^Extracting '
