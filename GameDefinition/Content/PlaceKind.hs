@@ -66,7 +66,7 @@ rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
   , pfreq    = [("escape", 10), ("ambush", 7)]
-  , prarity  = [(1, 10), (10, 8)]
+  , prarity  = [(1, 10), (10, 7)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "-="
@@ -80,7 +80,7 @@ glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "a glasshouse"
   , pfreq    = [("shootout", 4)]
-  , prarity  = [(1, 10), (10, 8)]
+  , prarity  = [(1, 10), (10, 7)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "=="
@@ -127,7 +127,7 @@ collapsed = PlaceKind  -- in a dark cave, they have little lights --- that's OK
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
   , pfreq    = [("noise", 1)]
-  , prarity  = [(1, 10), (10, 10)]
+  , prarity  = [(1, 11), (10, 11)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "O"
