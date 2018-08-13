@@ -424,7 +424,7 @@ wallGlassHSpice = wallGlassH
   }
 pillarIce = TileKind
   { tsymbol  = '^'
-  , tname    = "ice outcrop"
+  , tname    = "icy outcrop"
   , tfreq    = [("noiseSet", 300)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
@@ -573,7 +573,7 @@ floorActorItem = floorActor
   }
 shallowWater = TileKind
   { tsymbol  = '~'
-  , tname    = "shallow water"
+  , tname    = "puddle"
   , tfreq    = [ ("shallow water", 1), ("legendLit", 100)
                , ("emptySet", 5), ("noiseSet", 20), ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
