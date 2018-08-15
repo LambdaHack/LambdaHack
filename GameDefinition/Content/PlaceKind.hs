@@ -127,7 +127,7 @@ collapsed = PlaceKind  -- in a dark cave, they have little lights --- that's OK
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
   , pfreq    = [("noise", 1)]
-  , prarity  = [(1, 11), (10, 11)]
+  , prarity  = [(1, 1), (10, 1)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "O"
@@ -135,39 +135,39 @@ collapsed = PlaceKind  -- in a dark cave, they have little lights --- that's OK
   , poverride = []
   }
 collapsed2 = collapsed
-  { pfreq    = [("noise", 100), ("battle", 20)]
+  { pfreq    = [("noise", 1000), ("battle", 200)]
   , ptopLeft = [ "XO"
                , "OO"
                ]
   }
 collapsed3 = collapsed
-  { pfreq    = [("noise", 200), ("battle", 20)]
+  { pfreq    = [("noise", 2000), ("battle", 200)]
   , ptopLeft = [ "XXO"
                , "OOO"
                ]
   }
 collapsed4 = collapsed
-  { pfreq    = [("noise", 200), ("battle", 20)]
+  { pfreq    = [("noise", 2000), ("battle", 200)]
   , ptopLeft = [ "XXXO"
                , "OOOO"
                ]
   }
 collapsed5 = collapsed
-  { pfreq    = [("noise", 300), ("battle", 50)]
+  { pfreq    = [("noise", 3000), ("battle", 500)]
   , ptopLeft = [ "XXO"
                , "XOO"
                , "OOO"
                ]
   }
 collapsed6 = collapsed
-  { pfreq    = [("noise", 400), ("battle", 100)]
+  { pfreq    = [("noise", 4000), ("battle", 1000)]
   , ptopLeft = [ "XXXO"
                , "XOOO"
                , "OOOO"
                ]
   }
 collapsed7 = collapsed
-  { pfreq    = [("noise", 400), ("battle", 100)]
+  { pfreq    = [("noise", 4000), ("battle", 1000)]
   , ptopLeft = [ "XXXO"
                , "XXOO"
                , "OOOO"
