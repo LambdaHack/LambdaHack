@@ -9,20 +9,20 @@ module Game.LambdaHack.Common.Prelude
 
   , module Control.Exception.Assert.Sugar
 
-  , Text, (<+>), tshow, divUp, (<$$>), partitionM, length, null
+  , Text, (<+>), tshow, divUp, sum, (<$$>), partitionM, length, null
 
   , (***), (&&&), first, second
   ) where
 
 import Prelude ()
 
-import Prelude.Compat hiding (appendFile, length, null, readFile, writeFile,
-                       (<>))
+import Prelude.Compat hiding (appendFile, length, null, readFile, sum,
+                       writeFile, (<>))
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
 import           Control.Monad.Compat
-import           Data.List.Compat hiding (length, null)
+import           Data.List.Compat hiding (length, null, sum)
 import qualified Data.List.Compat as List
 import           Data.Maybe
 import           Data.Monoid.Compat
@@ -43,6 +43,9 @@ infixl 7 `divUp`
 divUp :: Integral a => a -> a -> a
 {-# INLINE divUp #-}
 divUp n k = (n + k - 1) `div` k
+
+sum :: Num a => [a] -> a
+sum = foldl' (+) 0
 
 infixl 4 <$$>
 (<$$>) :: (Functor f, Functor g) => (a -> b) -> f (g a) -> f (g b)
