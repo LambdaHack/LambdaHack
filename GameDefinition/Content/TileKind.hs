@@ -568,7 +568,7 @@ floorDirt = floorArena
   { tname    = "dirt"
   , tfreq    = [ ("battleSetLit", 1000), ("brawlSetLit", 1000)
                , ("shootoutSetLit", 1000), ("escapeSetLit", 1000)
-               , ("ambushSetLit", 1000) ]
+               , ("ambushSetLit", 1000), ("dirt Lit", 1) ]
   }
 floorDirtSpice = floorDirt
   { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 20)
