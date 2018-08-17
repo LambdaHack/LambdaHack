@@ -130,7 +130,15 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
       freq = toFreq "buildPlace" checkedFreq
   let !_A = assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) ()
   ((qkind, kr), _) <- frequency freq
-  dark <- if cpassable && pfence kr `elem` [FFloor, FGround]
+  let smallPattern = pcover kr `elem` [CVerbatim, CMirror]
+                     && (length (ptopLeft kr) < 10
+                         || T.length (head (ptopLeft kr)) < 10)
+  -- Below we apply a heuristics to estimate if there are floor tiles
+  -- in the place that are adjacent to floor tiles of the cave and so both
+  -- should have the same lit condition.
+  -- A false positive is walled staircases in LambdaHack, but it's OK.
+  dark <- if cpassable && (pfence kr `elem` [FFloor, FGround]
+                           || pfence kr == FNone && smallPattern)
           then return dnight
           else oddsDice levelDepth totalDepth cdarkOdds
   let qlegend = if dark then clegendDarkTile else clegendLitTile

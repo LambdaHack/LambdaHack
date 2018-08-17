@@ -256,7 +256,7 @@ treeBurning = tree
   , tcolor2  = Red
   , talter   = 5
   , tfeature = Embed "big fire" : ChangeTo "tree with fire" : tfeature tree
-      -- dousing off the tree will have more sense when it periodically
+      -- TODO: dousing off the tree will have more sense when it periodically
       -- explodes, hitting and lighting up the team and so betraying it
   }
 rubble = TileKind

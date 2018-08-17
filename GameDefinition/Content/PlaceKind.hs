@@ -67,7 +67,7 @@ rect2 = rect
 rect3 = rect
   { pname    = "a shed"
   , pfreq    = [("shootout", 2)]
-  , poverrideDark = [ ('|', "wall Lit")  -- seen from afar
+  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
                    , ('-', "wallH Lit") ]
@@ -101,7 +101,7 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , poverrideDark = [ ('=', "glasshouseOver_=_Lit")  -- seen from afar
+  , poverrideDark = [ ('=', "glasshouseOver_=_Lit")  -- visible from afar
                     , ('!', "glasshouseOver_!_Lit") ]
   , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
                    , ('!', "glasshouseOver_!_Lit") ]
@@ -153,12 +153,12 @@ ruin = PlaceKind
 ruin2 = ruin
   { pname    = "a "
   , pfreq    = [("blasted walls", 120)]
-  , poverrideDark = [ ('|', "wall Lit")  -- seen from afar
+  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
                    , ('-', "wallH Lit") ]
   }
-collapsed = PlaceKind  -- in a dark cave, they have little lights --- that's OK
+collapsed = PlaceKind
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
   , pfreq    = [("noise", 1)]
@@ -366,9 +366,11 @@ treeShade = PlaceKind
                , "sO·"
                , "Xs·"
                ]
-  , poverrideDark = [ ('O', "treeShadeOver_O_Lit"), ('s', "treeShadeOver_s_Lit")
+  , poverrideDark = [ ('O', "treeShadeOver_O_Dark")
+                    , ('s', "treeShadeOver_s_Dark")
                     , ('·', "shaded ground") ]
-  , poverrideLit = [ ('O', "treeShadeOver_O_Lit"), ('s', "treeShadeOver_s_Lit")
+  , poverrideLit = [ ('O', "treeShadeOver_O_Lit")
+                   , ('s', "treeShadeOver_s_Lit")
                    , ('·', "shaded ground") ]
   }
 fogClump = PlaceKind
@@ -442,8 +444,10 @@ bushClump = PlaceKind
                , ";f"
                , ";f"
                ]
-  , poverrideDark = [('f', "bushClumpOver_f_Lit"), (';', "bush Lit")]
+  , poverrideDark = [('f', "bushClumpOver_f_Dark"), (';', "bush Lit")]
   , poverrideLit = [('f', "bushClumpOver_f_Lit"), (';', "bush Lit")]
+      -- should not be used in caves with trails, because bushes can't
+      -- grow over such artificial trails
   }
 escapeUp = PlaceKind
   { psymbol  = '<'
@@ -454,7 +458,7 @@ escapeUp = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "<"
                ]
-  , poverrideDark = [ ('|', "wall Lit")  -- seen from afar
+  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
                    , ('-', "wallH Lit") ]
@@ -506,7 +510,7 @@ escapeDown = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ ">"
                ]
-  , poverrideDark = [ ('|', "wall Lit")  -- seen from afar
+  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
                    , ('-', "wallH Lit") ]
@@ -568,7 +572,7 @@ staircase = PlaceKind
                     , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
   , poverrideLit = [ ('<', "staircase up"), ('>', "staircase down")
                    , ('I', "signboard")
-                    , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
+                   , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
   }
 staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
@@ -967,7 +971,7 @@ overrideGated :: [(Char, GroupName TileKind)]
 overrideGated =
   [ ('<', "gated staircase up"), ('>', "gated staircase down")
   , ('I', "signboard")
-  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
+  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
 
 makeGated :: PlaceKind -> PlaceKind
 makeGated s = s
@@ -982,7 +986,7 @@ overrideOutdoor :: [(Char, GroupName TileKind)]
 overrideOutdoor =
   [ ('<', "staircase outdoor up"), ('>', "staircase outdoor down")
   , ('I', "signboard")
-  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
+  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
 
 makeOutdoor :: PlaceKind -> PlaceKind
 makeOutdoor s = s

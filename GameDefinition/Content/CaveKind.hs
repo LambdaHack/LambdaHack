@@ -59,7 +59,7 @@ rogue = CaveKind
                     , ("tiny staircase", 1) ]
   , cstairAllowed = []
   , cdesc         = "Winding tunnels stretch into the dark."
-  }  -- no lit corridor alternative, because both lit # and . look bad here
+  }  -- no lit corridors cave alternative, since both lit # and . look bad here
 arena = rogue
   { csymbol       = 'A'
   , cname         = "Dusty underground library"
@@ -347,7 +347,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                     , ("explosive", 100) ]
   , cplaceFreq    = [("escape", 100)]
   , cpassable     = True
-  , cdefTile      = "escapeSetDark"  -- different tiles, not burning yet
+  , cdefTile      = "escapeSetDark"  -- unlike in ambush, tiles not burning yet
   , cdarkCorTile  = "alarmingTrailLit"  -- let trails give off light
   , clitCorTile   = "alarmingTrailLit"
   , cfenceTileN   = "outdoor outer fence"
