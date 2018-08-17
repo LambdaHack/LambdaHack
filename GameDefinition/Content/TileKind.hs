@@ -561,7 +561,8 @@ floorArena = floorCorridor
   }
 floorDamp = floorArena
   { tname    = "damp stone floor"
-  , tfreq    = [("noiseSetLit", 600), ("damp stone floor Lit", 1)]
+  , tfreq    = [ ("noiseSetLit", 600), ("damp stone floor Lit", 1)
+               , ("stair terminal Lit", 20) ]
   }
 floorDirt = floorArena
   { tname    = "dirt"
@@ -585,8 +586,7 @@ floorActorItem = floorActor
 shallowWater = TileKind
   { tsymbol  = '~'
   , tname    = "puddle"
-  , tfreq    = [ ("shallow water", 1), ("legendLit", 100)
-               , ("emptySetLit", 5), ("noiseSetLit", 20)
+  , tfreq    = [ ("legendLit", 100), ("emptySetLit", 5), ("noiseSetLit", 20)
                , ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
