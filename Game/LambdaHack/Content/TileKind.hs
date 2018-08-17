@@ -238,7 +238,7 @@ validateAll coitem content cotile =
 hardwiredTileGroups :: [GroupName TileKind]
 hardwiredTileGroups =
   [ "unknown space", "legendLit", "legendDark", "unknown outer fence"
-  , "basic outer fence", "stair terminal" ]
+  , "basic outer fence" ]
 
 -- | Features of tiles that differentiate them substantially from one another.
 -- The intention is the player can easily tell such tiles apart by their

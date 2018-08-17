@@ -382,8 +382,8 @@ fogClump = PlaceKind
                , ";f"
                , ";f"
                ]
-  , poverrideDark = [('f', "fogClumpOver_f_Lit"), (';', "lit fog")]
-  , poverrideLit = [('f', "fogClumpOver_f_Lit"), (';', "lit fog")]
+  , poverrideDark = [('f', "fogClumpOver_f_Lit"), (';', "fog Lit")]
+  , poverrideLit = [('f', "fogClumpOver_f_Lit"), (';', "fog Lit")]
   }
 fogClump2 = fogClump
   { pfreq    = [("shootout", 500), ("empty", 1500)]
@@ -407,9 +407,9 @@ smokeClump = PlaceKind
                , ";f"
                , ";f"
                ]
-  , poverrideDark = [ ('f', "smokeClumpOver_f_Dark"), (';', "lit smoke")
+  , poverrideDark = [ ('f', "smokeClumpOver_f_Dark"), (';', "smoke Lit")
                     , ('·', "floorActorDark") ]
-  , poverrideLit = [ ('f', "smokeClumpOver_f_Lit"), (';', "lit smoke")
+  , poverrideLit = [ ('f', "smokeClumpOver_f_Lit"), (';', "smoke Lit")
                    , ('·', "floorActorLit") ]
   }
 smokeClump2FGround = smokeClump
@@ -939,9 +939,9 @@ makeStaircaseUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
- , poverrideDark = ('>', "stair terminal")
+ , poverrideDark = ('>', "stair terminal Dark")
                    : filter ((/= '>') . fst) (poverrideDark s)
- , poverrideLit = ('>', "stair terminal")
+ , poverrideLit = ('>', "stair terminal Lit")
                   : filter ((/= '>') . fst) (poverrideLit s)
  }
 
@@ -950,9 +950,9 @@ makeStaircaseDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
- , poverrideDark = ('<', "stair terminal")
+ , poverrideDark = ('<', "stair terminal Dark")
                    : filter ((/= '<') . fst) (poverrideDark s)
- , poverrideLit = ('<', "stair terminal")
+ , poverrideLit = ('<', "stair terminal Lit")
                   : filter ((/= '<') . fst) (poverrideLit s)
  }
 

@@ -15,17 +15,17 @@ import Game.LambdaHack.Content.TileKind
 
 content :: [TileKind]
 content =
-  [unknown, unknownOuterFence, basicOuterFence, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTrappedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTrappedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem, shallowWater, shallowWaterSpice, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade, outdoorFence ]
+  [unknown, unknownOuterFence, basicOuterFence, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTrappedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTrappedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorDamp, floorDirt, floorDirtSpice, floorActor, floorActorItem, shallowWater, shallowWaterSpice, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade, outdoorFence ]
   ++ map makeDark ldarkable
   ++ map makeDarkColor ldarkColorable
 
-unknown,    unknownOuterFence, basicOuterFence, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTrappedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTrappedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem, shallowWater, shallowWaterSpice, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade, outdoorFence :: TileKind
+unknown,    unknownOuterFence, basicOuterFence, bedrock, wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, pillar, pillarCache, lampPost, signboardUnread, signboardRead, tree, treeBurnt, treeBurning, rubble, rubbleSpice, doorTrapped, doorClosed, doorTrappedH, doorClosedH, stairsUp, stairsTrappedUp, stairsOutdoorUp, stairsGatedUp, stairsDown, stairsTrappedDown, stairsOutdoorDown, stairsGatedDown, escapeUp, escapeDown, escapeOutdoorDown, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, pillarIce, pulpit, bush, bushBurnt, bushBurning, floorFog, floorFogDark, floorSmoke, floorSmokeDark, doorOpen, doorOpenH, floorCorridor, floorArena, floorDamp, floorDirt, floorDirtSpice, floorActor, floorActorItem, shallowWater, shallowWaterSpice, floorRed, floorBlue, floorGreen, floorBrown, floorArenaShade, outdoorFence :: TileKind
 
 ldarkable :: [TileKind]
 ldarkable = [wall, wallSuspect, wallObscured, wallH, wallSuspectH, wallObscuredDefacedH, wallObscuredFrescoedH, doorTrapped, doorClosed, doorTrappedH, doorClosedH, wallGlass, wallGlassSpice, wallGlassH, wallGlassHSpice, doorOpen, doorOpenH, floorCorridor, shallowWater, shallowWaterSpice]
 
 ldarkColorable :: [TileKind]
-ldarkColorable = [tree, bush, floorArena, floorNoise, floorDirt, floorDirtSpice, floorActor, floorActorItem]
+ldarkColorable = [tree, bush, floorArena, floorDamp, floorDirt, floorDirtSpice, floorActor, floorActorItem]
 
 -- Symbols to be used (the Nethack visual tradition imposes inconsistency):
 --         LOS    noLOS
@@ -177,7 +177,8 @@ wallObscuredFrescoedH = TileKind
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "rock"
-  , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
+  , tfreq    = [ ("cachable", 70)
+               , ("stair terminal Lit", 100), ("stair terminal Dark", 100)
                , ("legendLit", 100), ("legendDark", 100)
                , ("noiseSetLit", 700), ("noiseSetDark", 700)
                , ("battleSetDark", 200), ("brawlSetLit", 50)
@@ -190,7 +191,8 @@ pillar = TileKind
 pillarCache = TileKind
   { tsymbol  = 'O'
   , tname    = "smoothed rock"
-  , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal", 2)]
+  , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal Dark", 4)]
+                 -- treasure only in dark staircases
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
@@ -260,7 +262,7 @@ treeBurning = tree
 rubble = TileKind
   { tsymbol  = '&'
   , tname    = "rubble pile"
-  , tfreq    = [ ("stair terminal", 4)
+  , tfreq    = [ ("stair terminal Lit", 4), ("stair terminal Dark", 4)
                , ("emptySetLit", 10), ("emptySetDark", 10)
                , ("noiseSetLit", 50), ("noiseSetDark", 50)
                , ("zooSetDark", 100), ("ambushSetDark", 20) ]
@@ -434,7 +436,7 @@ pillarIce = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
-  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor"]
+  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor Lit"]
       -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
       -- it doesn't generate items nor clues. This saves on the need to
       -- get each ice pillar into sight range when exploring level.
@@ -484,7 +486,7 @@ bushBurning = bush
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("lit fog", 1), ("emptySetLit", 50), ("shootoutSetLit", 20)
+  , tfreq    = [ ("fog Lit", 1), ("emptySetLit", 50), ("shootoutSetLit", 20)
                , ("noiseSetLit", 100)
                , ("fogClumpOver_f_Lit", 60), ("fogClumpOver_f_Dark", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
@@ -504,7 +506,7 @@ floorFogDark = floorFog
 floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
-  , tfreq    = [ ("lit smoke", 1), ("labTrailLit", 1), ("stair terminal", 4)
+  , tfreq    = [ ("smoke Lit", 1), ("labTrailLit", 1), ("stair terminal Lit", 4)
                , ("smokeClumpOver_f_Lit", 1), ("smokeClumpOver_f_Dark", 1) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
@@ -513,7 +515,8 @@ floorSmoke = TileKind
   }
 floorSmokeDark = floorSmoke
   { tname    = "lingering smoke"
-  , tfreq    = [("ambushSetDark", 60), ("zooSetDark", 20), ("battleSetDark", 5)]
+  , tfreq    = [ ("stair terminal Dark", 4), ("ambushSetDark", 60)
+               , ("zooSetDark", 20), ("battleSetDark", 5) ]
   , tfeature = Dark : tfeature floorSmoke
   }
 
@@ -556,9 +559,9 @@ floorArena = floorCorridor
   , tfreq    = [ ("floorArenaLit", 1), ("arenaSetLit", 1), ("emptySetLit", 900)
                , ("zooSetLit", 600) ]
   }
-floorNoise = floorArena
+floorDamp = floorArena
   { tname    = "damp stone floor"
-  , tfreq    = [("noiseSetLit", 600), ("damp stone floor", 1)]
+  , tfreq    = [("noiseSetLit", 600), ("damp stone floor Lit", 1)]
   }
 floorDirt = floorArena
   { tname    = "dirt"
