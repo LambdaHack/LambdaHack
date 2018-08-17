@@ -27,14 +27,15 @@ import GHC.Generics (Generic)
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
-  { psymbol   :: Char          -- ^ a symbol
-  , pname     :: Text          -- ^ short description, singular or plural
-  , pfreq     :: Freqs PlaceKind  -- ^ frequency within groups
-  , prarity   :: Rarity        -- ^ rarity on given depths
-  , pcover    :: Cover         -- ^ how to fill whole place based on the corner
-  , pfence    :: Fence         -- ^ whether to fence place with solid border
-  , ptopLeft  :: [Text]        -- ^ plan of the top-left corner of the place
-  , poverride :: [(Char, GroupName TileKind)]  -- ^ legend override
+  { psymbol       :: Char          -- ^ a symbol
+  , pname         :: Text          -- ^ short description, singular or plural
+  , pfreq         :: Freqs PlaceKind  -- ^ frequency within groups
+  , prarity       :: Rarity        -- ^ rarity on given depths
+  , pcover        :: Cover         -- ^ how to fill whole place using the corner
+  , pfence        :: Fence         -- ^ whether to fence place with solid border
+  , ptopLeft      :: [Text]        -- ^ plan of the top-left corner of the place
+  , poverrideDark :: [(Char, GroupName TileKind)]  -- ^ dark legend override
+  , poverrideLit  :: [(Char, GroupName TileKind)]  -- ^ lit legend override
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 
@@ -94,9 +95,10 @@ validateSingle PlaceKind{..} =
 validateAll :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
             -> [Text]
 validateAll cotile content _ =
-  let missingOverride = filter (not . omemberGroup cotile)
-                        $ concatMap (map snd . poverride) content
-  in [ "poverride tile groups not in content:" <+> tshow missingOverride
+  let overrides place = poverrideDark place ++ poverrideLit place
+      missingOverride = filter (not . omemberGroup cotile)
+                        $ concatMap (map snd . overrides) content
+  in [ "override tile groups not in content:" <+> tshow missingOverride
      | not $ null missingOverride ]
 
 makeData :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind

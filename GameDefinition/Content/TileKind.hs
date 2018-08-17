@@ -269,7 +269,7 @@ rubble = TileKind
       -- Also, AI doesn't go out of its way to clear the way for heroes.
   }
 rubbleSpice = rubble
-  { tfreq    = [("smokeClumpOver_f_Lit", 1)]
+  { tfreq    = [("smokeClumpOver_f_Lit", 1), ("smokeClumpOver_f_Dark", 1)]
   , tfeature = Spice : tfeature rubble
   }
 doorTrapped = TileKind
@@ -479,7 +479,8 @@ floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
   , tfreq    = [ ("lit fog", 1), ("emptySet", 50), ("shootoutSetLit", 20)
-               , ("noiseSet", 100), ("fogClumpOver_f_Lit", 60) ]
+               , ("noiseSet", 100)
+               , ("fogClumpOver_f_Lit", 60), ("fogClumpOver_f_Dark", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide
@@ -497,7 +498,7 @@ floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
   , tfreq    = [ ("lit smoke", 1), ("labTrailLit", 1), ("stair terminal", 4)
-               , ("smokeClumpOver_f_Lit", 1) ]
+               , ("smokeClumpOver_f_Lit", 1), ("smokeClumpOver_f_Dark", 1) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 0
@@ -564,7 +565,7 @@ floorDirtSpice = floorDirt
   , tfeature = Spice : tfeature floorDirt
   }
 floorActor = floorArena
-  { tfreq    = [("floorActorLit", 1)]  -- lit even in dark cave, so no items
+  { tfreq    = [("floorActorLit", 1)]
   , tfeature = OftenActor : tfeature floorArena
   }
 floorActorItem = floorActor

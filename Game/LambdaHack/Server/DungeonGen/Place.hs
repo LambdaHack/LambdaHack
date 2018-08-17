@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( Place(..), TileMapEM, buildPlace, isChancePos, buildFenceRnd
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , placeCheck, interiorArea, olegend, ooverride, buildFence, buildFenceMap
+  , placeCheck, interiorArea, olegend, pover, buildFence, buildFenceMap
   , tilePlace
 #endif
   ) where
@@ -135,13 +135,14 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
           else oddsDice levelDepth totalDepth cdarkOdds
   let qlegend = if dark then clegendDarkTile else clegendLitTile
       qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
-  (overrideOneIn, override) <- ooverride cops (poverride kr)
+      override = if dark then poverrideDark kr else poverrideLit kr
+  (overrideOneIn, overDefault) <- pover cops override
   (legendOneIn, legend) <- olegend cops qlegend
   (legendLitOneIn, legendLit) <- olegend cops clegendLitTile
   let xlegend = ( EM.union overrideOneIn legendOneIn
-                , EM.union override legend )
+                , EM.union overDefault legend )
       xlegendLit = ( EM.union overrideOneIn legendLitOneIn
-                   , EM.union override legendLit )
+                   , EM.union overDefault legendLit )
   cmap <- tilePlace qarea kr
   let (x0, y0, x1, y1) = fromArea qarea
       isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
@@ -194,10 +195,10 @@ olegend COps{cotile} cgroup =
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
-ooverride :: COps -> [(Char, GroupName TileKind)]
-          -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
-                 , EM.EnumMap Char (ContentId TileKind) )
-ooverride COps{cotile} poverride =
+pover :: COps -> [(Char, GroupName TileKind)]
+      -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
+             , EM.EnumMap Char (ContentId TileKind) )
+pover COps{cotile} poverride =
   let getLegend (s, cgroup) acc = do
         (mOneIn, m) <- acc
         mtkSpice <- opick cotile cgroup (Tile.kindHasFeature TK.Spice)
