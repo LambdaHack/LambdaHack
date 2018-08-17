@@ -138,30 +138,20 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
       override = if dark then poverrideDark kr else poverrideLit kr
   (overrideOneIn, overDefault) <- pover cops override
   (legendOneIn, legend) <- olegend cops qlegend
-  (legendLitOneIn, legendLit) <- olegend cops clegendLitTile
-  let xlegend = ( EM.union overrideOneIn legendOneIn
-                , EM.union overDefault legend )
-      xlegendLit = ( EM.union overrideOneIn legendLitOneIn
-                   , EM.union overDefault legendLit )
   cmap <- tilePlace qarea kr
-  let (x0, y0, x1, y1) = fromArea qarea
-      isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
-      digDay xy c | isEdge xy = lookupOneIn xlegendLit xy c
-                  | otherwise = lookupOneIn xlegend xy c
-      lookupOneIn :: ( EM.EnumMap Char (Int, ContentId TileKind)
-                     , EM.EnumMap Char (ContentId TileKind) )
-                  -> Point -> Char
-                  -> ContentId TileKind
-      lookupOneIn (mOneIn, m) xy c = case EM.lookup c mOneIn of
+  let mOneIn :: EM.EnumMap Char (Int, ContentId TileKind)
+      mOneIn = EM.union overrideOneIn legendOneIn
+      m :: EM.EnumMap Char (ContentId TileKind)
+      m = EM.union overDefault legend
+      lookupOneIn :: Point -> Char -> ContentId TileKind
+      lookupOneIn xy c = case EM.lookup c mOneIn of
         Just (oneInChance, tk) ->
           if isChancePos oneInChance dsecret xy
           then tk
           else EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
         Nothing -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m))
                                       c m
-      qmap = case pfence kr of
-        FNone | not dnight -> EM.mapWithKey digDay cmap
-        _ -> EM.mapWithKey (lookupOneIn xlegend) cmap
+      qmap = EM.mapWithKey lookupOneIn cmap
   qfence <- buildFence cops kc dnight darkCorTile litCorTile
                        dark (pfence kr) qarea
   return $! Place {..}

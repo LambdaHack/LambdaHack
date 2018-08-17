@@ -101,7 +101,8 @@ bedrock = TileKind
 wall = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_!_Lit", 80)]
+  , tfreq    = [ ("legendLit", 100), ("wall Lit", 100)
+               , ("rectWindowsOver_!_Lit", 80) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -132,7 +133,8 @@ wallObscured = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "sandstone wall"
-  , tfreq    = [("legendLit", 100), ("rectWindowsOver_=_Lit", 80)]
+  , tfreq    = [ ("legendLit", 100), ("wallH Lit", 100)
+               , ("rectWindowsOver_=_Lit", 80) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -495,7 +497,8 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "thick fog"
-  , tfreq    = [("noiseSetDark", 100), ("escapeSetDark", 50)]
+  , tfreq    = [ ("emptySetDark", 50), ("noiseSetDark", 100)
+               , ("escapeSetDark", 50) ]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
