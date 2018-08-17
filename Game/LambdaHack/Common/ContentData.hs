@@ -10,7 +10,8 @@
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
   ( ContentId(ContentId), ContentData, Freqs, Rarity
-  , contentIdIndex, validateRarity, emptyContentData, makeContentData
+  , contentIdIndex, validateRarity, validFreqs
+  , emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
@@ -84,6 +85,12 @@ validateRarity rarity =
               lowest <= 0 || highest > 10
             _ -> False ]
 
+validFreqs :: Freqs a -> Bool
+validFreqs freqs = all ((> 0) . snd) freqs
+                   && let groups = sort $ map fst freqs
+                      in all (uncurry (/=)) $ zip groups ("" : groups)
+                           -- this also catches empty group names
+
 emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty
 
@@ -113,16 +120,18 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
       cd = ContentData {..}
       -- Catch all kinds of errors in content ASAP, even in unused items.
       contentData = deepseq cd cd
-      correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
-      incorrectOffenders = filter (not . correct) content
       singleOffenders = [ (offences, a)
                         | a <- content
                         , let offences = validateSingle a
+                                         ++ if T.null (getName a)
+                                            then ["empty name"]
+                                            else []
                         , not (null offences) ]
       allOffences = validateAll content contentData
-  in assert (null incorrectOffenders
-             `blame` contentName ++ ": some content items not correct"
-             `swith` incorrectOffenders) $
+      freqsOffenders = filter (not . validFreqs . getFreq) content
+  in assert (null freqsOffenders
+             `blame` contentName ++ ": some Freqs values not valid"
+             `swith` freqsOffenders) $
      assert (null singleOffenders
              `blame` contentName ++ ": some content items not valid"
              `swith` singleOffenders) $
