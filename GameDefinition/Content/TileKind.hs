@@ -177,8 +177,9 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70), ("stair terminal", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 700), ("battleSet", 200), ("brawlSetLit", 50)
-               , ("shootoutSetLit", 10), ("zooSet", 10) ]
+               , ("noiseSetLit", 700), ("noiseSetDark", 700)
+               , ("battleSetDark", 200), ("brawlSetLit", 50)
+               , ("shootoutSetLit", 10), ("zooSetDark", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
   , tcolor2  = Cyan
   , talter   = 100
@@ -237,7 +238,7 @@ tree = TileKind
   }
 treeBurnt = tree
   { tname    = "burnt tree"
-  , tfreq    = [ ("ambushSet", 3), ("zooSet", 7), ("battleSet", 50)
+  , tfreq    = [ ("ambushSetDark", 3), ("zooSetDark", 7), ("battleSetDark", 50)
                , ("tree with fire", 30) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
@@ -245,7 +246,8 @@ treeBurnt = tree
   }
 treeBurning = tree
   { tname    = "burning tree"
-  , tfreq    = [("ambushSet", 30), ("zooSet", 70), ("tree with fire", 70)]
+  , tfreq    = [ ("ambushSetDark", 30), ("zooSetDark", 70)
+               , ("tree with fire", 70) ]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
@@ -257,8 +259,9 @@ rubble = TileKind
   { tsymbol  = '&'
   , tname    = "rubble pile"
   , tfreq    = [ ("stair terminal", 4)
-               , ("emptySet", 10), ("noiseSet", 50)
-               , ("zooSet", 100), ("ambushSet", 20) ]
+               , ("emptySetLit", 10), ("emptySetDark", 10)
+               , ("noiseSetLit", 50), ("noiseSetDark", 50)
+               , ("zooSetDark", 100), ("ambushSetDark", 20) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
@@ -425,7 +428,7 @@ wallGlassHSpice = wallGlassH
 pillarIce = TileKind
   { tsymbol  = '^'
   , tname    = "icy outcrop"
-  , tfreq    = [("noiseSet", 300)]
+  , tfreq    = [("noiseSetDark", 300)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
@@ -456,7 +459,7 @@ bush = TileKind
   }
 bushBurnt = bush
   { tname    = "burnt bush"
-  , tfreq    = [ ("battleSet", 30), ("ambushSet", 4), ("zooSet", 30)
+  , tfreq    = [ ("battleSetDark", 30), ("ambushSetDark", 4), ("zooSetDark", 30)
                , ("bush with fire", 70) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
@@ -464,7 +467,8 @@ bushBurnt = bush
   }
 bushBurning = bush
   { tname    = "burning bush"
-  , tfreq    = [("ambushSet", 40), ("zooSet", 300), ("bush with fire", 30)]
+  , tfreq    = [ ("ambushSetDark", 40), ("zooSetDark", 300)
+               , ("bush with fire", 30) ]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
@@ -478,8 +482,8 @@ bushBurning = bush
 floorFog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("lit fog", 1), ("emptySet", 50), ("shootoutSetLit", 20)
-               , ("noiseSet", 100)
+  , tfreq    = [ ("lit fog", 1), ("emptySetLit", 50), ("shootoutSetLit", 20)
+               , ("noiseSetLit", 100)
                , ("fogClumpOver_f_Lit", 60), ("fogClumpOver_f_Dark", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
@@ -491,7 +495,7 @@ floorFog = TileKind
   }
 floorFogDark = floorFog
   { tname    = "thick fog"
-  , tfreq    = [("noiseSet", 100), ("escapeSetDark", 50)]
+  , tfreq    = [("noiseSetDark", 100), ("escapeSetDark", 50)]
   , tfeature = Dark : tfeature floorFog
   }
 floorSmoke = TileKind
@@ -506,7 +510,7 @@ floorSmoke = TileKind
   }
 floorSmokeDark = floorSmoke
   { tname    = "lingering smoke"
-  , tfreq    = [("ambushSet", 60), ("zooSet", 20), ("battleSet", 5)]
+  , tfreq    = [("ambushSetDark", 60), ("zooSetDark", 20), ("battleSetDark", 5)]
   , tfeature = Dark : tfeature floorSmoke
   }
 
@@ -546,18 +550,18 @@ floorCorridor = TileKind
 floorArena = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaLit", 1), ("arenaSetLit", 1), ("emptySet", 900)
-               , ("zooSet", 600) ]
+  , tfreq    = [ ("floorArenaLit", 1), ("arenaSetLit", 1), ("emptySetLit", 900)
+               , ("zooSetLit", 600) ]
   }
 floorNoise = floorArena
   { tname    = "damp stone floor"
-  , tfreq    = [("noiseSet", 600), ("damp stone floor", 1)]
+  , tfreq    = [("noiseSetLit", 600), ("damp stone floor", 1)]
   }
 floorDirt = floorArena
   { tname    = "dirt"
-  , tfreq    = [ ("battleSet", 1000), ("brawlSetLit", 1000)
+  , tfreq    = [ ("battleSetLit", 1000), ("brawlSetLit", 1000)
                , ("shootoutSetLit", 1000), ("escapeSetLit", 1000)
-               , ("ambushSet", 1000) ]
+               , ("ambushSetLit", 1000) ]
   }
 floorDirtSpice = floorDirt
   { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 20)
@@ -576,7 +580,8 @@ shallowWater = TileKind
   { tsymbol  = '~'
   , tname    = "puddle"
   , tfreq    = [ ("shallow water", 1), ("legendLit", 100)
-               , ("emptySet", 5), ("noiseSet", 20), ("shootoutSetLit", 5) ]
+               , ("emptySetLit", 5), ("noiseSetLit", 20)
+               , ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0

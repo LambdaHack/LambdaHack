@@ -106,21 +106,17 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
       return converted5
 
 buildTileMap :: COps -> Cave -> Rnd TileMap
-buildTileMap cops@COps{cotile, cocave}
-             Cave{dkind, darea, dmap, dnight} = do
+buildTileMap cops@COps{cotile, cocave} Cave{dkind, darea, dmap} = do
   let CaveKind{cpassable, cdefTile} = okind cocave dkind
-      nightCond kt = not (Tile.kindHasFeature TK.Walkable kt)
-                     || (if dnight then id else not)
-                           (Tile.kindHasFeature TK.Dark kt)
       pickDefTile = fromMaybe (error $ "" `showFailure` cdefTile)
-                    <$> opick cotile cdefTile nightCond
-      wcond kt = Tile.isEasyOpenKind kt && nightCond kt
+                    <$> opick cotile cdefTile (const True)
+      wcond kt = Tile.isEasyOpenKind kt
       mpickPassable =
         if cpassable
         then Just $ fromMaybe (error $ "" `showFailure` cdefTile)
                     <$> opick cotile cdefTile wcond
         else Nothing
-      nwcond kt = not (Tile.kindHasFeature TK.Walkable kt) && nightCond kt
+      nwcond kt = not (Tile.kindHasFeature TK.Walkable kt)
   areAllWalkable <- isNothing <$> opick cotile cdefTile nwcond
   convertTileMaps cops areAllWalkable pickDefTile mpickPassable darea dmap
 
