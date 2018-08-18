@@ -96,6 +96,7 @@ The basic tile kinds are as follows.
     corridor                               #
     smoke or fog                           ;
     ground                                 .
+    water                                  ~
     stairs or exit up                      <
     stairs or exit down                    >
     bedrock                                blank

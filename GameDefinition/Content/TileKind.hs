@@ -262,7 +262,8 @@ treeBurning = tree
 rubble = TileKind
   { tsymbol  = '&'
   , tname    = "rubble pile"
-  , tfreq    = [ ("stair terminal Lit", 4), ("stair terminal Dark", 4)
+  , tfreq    = [ ("rubble", 1), ("legendLit", 1), ("legendDark", 1)
+               , ("stair terminal Lit", 4), ("stair terminal Dark", 4)
                , ("emptySetLit", 10), ("emptySetDark", 10)
                , ("noiseSetLit", 50), ("noiseSetDark", 50)
                , ("zooSetDark", 100), ("ambushSetDark", 20) ]
