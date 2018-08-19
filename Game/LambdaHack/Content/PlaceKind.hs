@@ -15,6 +15,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Data.Binary
+import           Data.Char (chr)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
@@ -79,6 +80,15 @@ deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
 deadEndId = ContentId 0
 
+validateOverride :: [(Char, GroupName TileKind)] -> [Text]
+validateOverride ov =
+  let symbols = sort $ map fst ov
+      duplicated = filter (uncurry (==)) $ zip symbols (chr 0 : symbols)
+  in if null duplicated
+     then []
+     else [ "duplicated override symbols:"
+            <+> T.pack (intersperse ' ' $ map fst duplicated) ]
+
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
 validateSingle :: PlaceKind -> [Text]
@@ -90,6 +100,8 @@ validateSingle PlaceKind{..} =
      ++ [ "top-left corner not rectangular"
         | any (/= dxcorner) (map T.length ptopLeft) ]
      ++ validateRarity prarity
+     ++ validateOverride poverrideDark
+     ++ validateOverride poverrideLit
 
 -- | Validate all place kinds.
 validateAll :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
