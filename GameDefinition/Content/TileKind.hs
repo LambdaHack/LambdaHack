@@ -270,7 +270,7 @@ rubble = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
-  , tfeature = [OpenTo "floorArenaLit", Embed "rubble"]
+  , tfeature = [OpenTo "floorAshesLit", Embed "rubble"]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
       -- the item is risky and, e.g., AI doesn't attempt it.
@@ -437,7 +437,7 @@ pillarIce = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
-  , tfeature = [Clear, Embed "frost", OpenTo "damp stone floor Lit"]
+  , tfeature = [Clear, Embed "frost", OpenTo "shallow water Lit"]
       -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
       -- it doesn't generate items nor clues. This saves on the need to
       -- get each ice pillar into sight range when exploring level.
@@ -508,7 +508,7 @@ floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
   , tfreq    = [ ("smoke Lit", 1), ("labTrailLit", 1), ("stair terminal Lit", 4)
-               , ("smokeClumpOver_f_Lit", 2), ("smokeClumpOver_f_Dark", 2) ]
+               , ("smokeClumpOver_f_Lit", 3), ("smokeClumpOver_f_Dark", 3) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 0
@@ -584,16 +584,18 @@ floorActorItem = floorActor
   , tfeature = VeryOftenItem : tfeature floorActor
   }
 floorAshes = floorActor
-  { tfreq    = [("smokeClumpOver_f_Lit", 1), ("smokeClumpOver_f_Dark", 1)]
-  , tname    = "ashes"
+  { tfreq    = [ ("smokeClumpOver_f_Lit", 2), ("smokeClumpOver_f_Dark", 2)
+               , ("floorAshesLit", 1), ("floorAshesDark", 1) ]
+  , tname    = "dirt and ash pile"
   , tcolor   = Brown
-  , tcolor2  = BrBlack
+  , tcolor2  = Brown
   }
 shallowWater = TileKind
   { tsymbol  = '~'
   , tname    = "puddle"
-  , tfreq    = [ ("legendLit", 100), ("emptySetLit", 5), ("noiseSetLit", 20)
-               , ("shootoutSetLit", 5) ]
+  , tfreq    = [ ("shallow water Lit", 1), ("legendLit", 100)
+               , ("emptySetLit", 5)
+               , ("noiseSetLit", 20), ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0
