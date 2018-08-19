@@ -272,7 +272,7 @@ pillar5 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
-  , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10)
+  , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10000)
                , ("mine", 1000), ("escape", 40), ("ambush", 40) ]
   , prarity  = [(1, 15), (10, 15)]
   , pcover   = CAlternate
@@ -376,7 +376,7 @@ treeShade = PlaceKind
 fogClump = PlaceKind
   { psymbol  = 'f'
   , pname    = "a foggy patch"
-  , pfreq    = [("shootout", 150), ("empty", 500)]
+  , pfreq    = [("shootout", 150), ("empty", 15)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -388,7 +388,7 @@ fogClump = PlaceKind
   , poverrideLit = [('f', "fogClumpOver_f_Lit"), (';', "fog Lit")]
   }
 fogClump2 = fogClump
-  { pfreq    = [("shootout", 500), ("empty", 1500)]
+  { pfreq    = [("shootout", 500), ("empty", 50)]
   , ptopLeft = [ "X;f"
                , "f;f"
                , ";;f"
