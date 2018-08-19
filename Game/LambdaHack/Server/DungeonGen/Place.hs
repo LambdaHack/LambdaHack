@@ -147,30 +147,29 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
   (overrideOneIn, overDefault) <- pover cops override
   (legendOneIn, legend) <- olegend cops qlegend
   cmap <- tilePlace qarea kr
-  let mOneIn :: EM.EnumMap Char (Int, ContentId TileKind)
+  let mOneIn :: EM.EnumMap Char (Int, Int, ContentId TileKind)
       mOneIn = EM.union overrideOneIn legendOneIn
       m :: EM.EnumMap Char (ContentId TileKind)
       m = EM.union overDefault legend
       lookupOneIn :: Point -> Char -> ContentId TileKind
       lookupOneIn xy c = case EM.lookup c mOneIn of
-        Just (oneInChance, tk) ->
-          if isChancePos oneInChance dsecret xy
-          then tk
-          else EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
-        Nothing -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m))
-                                      c m
+        Just (k, n, tk) | isChancePos k n dsecret xy -> tk
+        _ -> EM.findWithDefault (error $ "" `showFailure` (c, mOneIn, m)) c m
       qmap = EM.mapWithKey lookupOneIn cmap
   qfence <- buildFence cops kc dnight darkCorTile litCorTile
                        dark (pfence kr) qarea
   return $! Place {..}
 
-isChancePos :: Int -> Int -> Point -> Bool
-isChancePos c dsecret (Point x y) =
-  c > 0 && (dsecret `Bits.rotateR` x `Bits.xor` y + x) `mod` c == 0
+isChancePos :: Int -> Int -> Int -> Point -> Bool
+isChancePos k n dsecret (Point x y) = assert (k > 0 && n > 0) $
+  let z = dsecret `Bits.rotateR` x `Bits.xor` y + x
+  in if k < n
+     then z `mod` ((n + k) `divUp` k) == 0
+     else z `mod` ((k + n) `divUp` n) /= 0
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: COps -> GroupName TileKind
-        -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
+        -> Rnd ( EM.EnumMap Char (Int, Int, ContentId TileKind)
                , EM.EnumMap Char (ContentId TileKind) )
 olegend COps{cotile} cgroup =
   let getSymbols !acc _ !tk =
@@ -188,13 +187,12 @@ olegend COps{cotile} cgroup =
           Just tkSpice ->
             let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
                 k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
-                oneIn = (n + k) `divUp` k
-            in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
+            in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
 
 pover :: COps -> [(Char, GroupName TileKind)]
-      -> Rnd ( EM.EnumMap Char (Int, ContentId TileKind)
+      -> Rnd ( EM.EnumMap Char (Int, Int, ContentId TileKind)
              , EM.EnumMap Char (ContentId TileKind) )
 pover COps{cotile} poverride =
   let getLegend (s, cgroup) acc = do
@@ -207,8 +205,7 @@ pover COps{cotile} poverride =
           Just tkSpice ->
             let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
                 k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
-                oneIn = (n + k) `divUp` k
-            in (EM.insert s (oneIn, tkSpice) mOneIn, EM.insert s tk m)
+            in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
 -- | Construct a fence around a place.

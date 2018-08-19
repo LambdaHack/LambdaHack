@@ -86,9 +86,12 @@ data Feature =
   | Trail                -- ^ used for visible trails throughout the level
   | Spice                -- ^ in place normal legend and in override,
                          --   don't roll a tile kind only once per place,
-                         --   but roll for each position; one non-spicy and
-                         --   at most one spicy is rolled per place and then
-                         --   one of the two is rolled for each position
+                         --   but roll for each position; one non-spicy
+                         --   (according to frequencies of non-spicy) and
+                         --   at most one spicy (according to their frequencies)
+                         --   is rolled per place and then, once for each
+                         --   position, one of the two is semi-randomly chosen
+                         --   (according to their individual frequencies only)
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature

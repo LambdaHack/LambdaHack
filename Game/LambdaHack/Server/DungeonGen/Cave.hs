@@ -282,7 +282,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
   let sub2Area = fromMaybe (error $ "" `showFailure` kc) $ shrink subArea
       sub3Area = fromMaybe (error $ "" `showFailure` kc) $ shrink sub2Area
       likelySecret = (`inside` sub3Area)
-      obscure p t = if isChancePos chidden dsecret p && likelySecret p
+      obscure p t = if isChancePos 1 chidden dsecret p && likelySecret p
                     then Tile.obscureAs cotile t
                     else return t
   lplacesObscured <- mapWithKeyM obscure lplaces
@@ -334,7 +334,7 @@ pickOpening COps{cotile, coTileSpeedup}
       ro <- chance copenChance
       if ro
       then Tile.openTo cotile doorTrappedId
-      else if isChancePos chidden dsecret pos
+      else if isChancePos 1 chidden dsecret pos
            then return $! doorTrappedId  -- server will hide it
            else do
              doorOpenId <- Tile.openTo cotile doorTrappedId
