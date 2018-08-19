@@ -508,7 +508,7 @@ floorSmoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
   , tfreq    = [ ("smoke Lit", 1), ("labTrailLit", 1), ("stair terminal Lit", 4)
-               , ("smokeClumpOver_f_Lit", 1), ("smokeClumpOver_f_Dark", 1) ]
+               , ("smokeClumpOver_f_Lit", 2), ("smokeClumpOver_f_Dark", 2) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 0
@@ -572,8 +572,7 @@ floorDirt = floorArena
                , ("ambushSetLit", 1000), ("dirt Lit", 1) ]
   }
 floorDirtSpice = floorDirt
-  { tfreq    = [ ("treeShadeOver_s_Lit", 1), ("fogClumpOver_f_Lit", 20)
-               , ("smokeClumpOver_f_Lit", 1), ("bushClumpOver_f_Lit", 1) ]
+  { tfreq    = [("treeShadeOver_s_Lit", 1), ("bushClumpOver_f_Lit", 1)]
   , tfeature = Spice : tfeature floorDirt
   }
 floorActor = floorArena
@@ -601,7 +600,7 @@ shallowWater = TileKind
   , tfeature = Embed "shallow water" : tfeature floorActor
   }
 shallowWaterSpice = shallowWater
-  { tfreq    = [("fogClumpOver_f_Lit", 20)]
+  { tfreq    = [("fogClumpOver_f_Lit", 40)]
   , tfeature = Spice : tfeature shallowWater
   }
 floorRed = floorCorridor
