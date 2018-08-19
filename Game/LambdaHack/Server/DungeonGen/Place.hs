@@ -161,7 +161,7 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
   return $! Place {..}
 
 isChancePos :: Int -> Int -> Int -> Point -> Bool
-isChancePos k n dsecret (Point x y) = assert (k > 0 && n > 0) $
+isChancePos k n dsecret (Point x y) = k > 0 && n > 0 &&
   let z = dsecret `Bits.rotateR` x `Bits.xor` y + x
   in if k < n
      then z `mod` ((n + k) `divUp` k) == 0
