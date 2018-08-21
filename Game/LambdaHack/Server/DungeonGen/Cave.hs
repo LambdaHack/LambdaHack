@@ -187,7 +187,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   else do
                     r <- mkRoom minPlaceSize maxPlaceSize innerArea
                     place <- buildPlace cops kc dnight darkCorTile litCorTile
-                                        ldepth totalDepth dsecret r []
+                                        ldepth totalDepth dsecret
+                                        r (Just innerArea) []
                     return ( EM.unions [qmap place, qfence place, m]
                            , EM.insert i (place, ar) qls
                            , qstairs )
@@ -204,7 +205,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                                      `blame` ( r, ar, p, innerArea, gs
                                              , gs2, qls, kc )) ()
                   place <- buildPlace cops kc dnight darkCorTile litCorTile
-                             ldepth totalDepth dsecret r placeFreq
+                             ldepth totalDepth dsecret r Nothing placeFreq
                   return ( EM.unions [qmap place, qfence place, m]
                          , EM.insert i (place, ar) qls
                          , EM.insert p place qstairs )

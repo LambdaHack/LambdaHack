@@ -31,6 +31,7 @@ import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -112,12 +113,13 @@ buildPlace :: COps                -- ^ the game content
            -> Dice.AbsDepth       -- ^ absolute depth
            -> Int                 -- ^ secret tile seed
            -> Area                -- ^ whole area of the place, fence included
+           -> Maybe Area          -- ^ whole inner area of the grid cell
            -> Freqs PlaceKind     -- ^ optional fixed place freq
            -> Rnd Place
 buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
            levelDepth@(Dice.AbsDepth ldepth)
            totalDepth@(Dice.AbsDepth tdepth)
-           dsecret r mplaceGroup = do
+           dsecret r minnerArea mplaceGroup = do
   let f !placeGroup !q !acc !p !pk !kind =
         let rarity = linearInterpolation ldepth tdepth (prarity kind)
         in (q * p * rarity, ((pk, kind), placeGroup)) : acc
@@ -142,7 +144,23 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
           then return dnight
           else oddsDice levelDepth totalDepth cdarkOdds
   let qlegend = if dark then clegendDarkTile else clegendLitTile
-      qarea = fromMaybe (error $ "" `showFailure` (kr, r)) $ interiorArea kr r
+  rBetter <- case minnerArea of
+    Just innerArea | pcover kr `elem` [CVerbatim, CMirror] -> do
+      -- A hack: if a verbatim place was rolled, redo computing the area
+      -- taking into account that often much smaller portion is taken by place.
+      let requiredForFence = case pfence kr of
+            FWall   -> 1
+            FFloor  -> 1
+            FGround -> 1
+            FNone   -> 0
+          sizeBetter = ( 2 * requiredForFence
+                         + T.length (head (ptopLeft kr))
+                       , 2 * requiredForFence
+                         + length (ptopLeft kr) )
+      mkRoom sizeBetter sizeBetter innerArea
+    _ -> return r
+  let qarea = fromMaybe (error $ "" `showFailure` (kr, r))
+              $ interiorArea kr rBetter
       override = if dark then poverrideDark kr else poverrideLit kr
   (overrideOneIn, overDefault) <- pover cops override
   (legendOneIn, legend) <- olegend cops qlegend
