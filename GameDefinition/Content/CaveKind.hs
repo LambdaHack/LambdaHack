@@ -204,7 +204,7 @@ noise2 = noise
   , citemFreq     = [ ("common item", 20), ("treasure", 60)
                     , ("explosive", 20) ]
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
-  , cdefTile      = "noiseSetDark"
+  , cdefTile      = "noisePowerSetDark"
   , cstairFreq    = [ ("gated closed staircase", 50)
                     , ("gated open staircase", 50)
                     , ("gated tiny staircase", 1) ]
