@@ -274,19 +274,19 @@ colonnade = PlaceKind
   , pname    = "a colonnade"
   , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10000)
                , ("mine", 1000), ("escape", 40), ("ambush", 40) ]
-  , prarity  = [(1, 15), (10, 15)]
+  , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
   , ptopLeft = [ "O·"
-               , "·O"
+               , "··"
                ]
   , poverrideDark = []
   , poverrideLit = []
   }
 colonnade2 = colonnade
-  { prarity  = [(1, 10), (10, 10)]
+  { prarity  = [(1, 15), (10, 15)]
   , ptopLeft = [ "O·"
-               , "··"
+               , "·O"
                ]
   }
 colonnade3 = colonnade
@@ -562,7 +562,7 @@ staircase = PlaceKind
   { psymbol  = '/'
   , pname    = "a staircase"
   , pfreq    = [("tiny staircase", 1)]  -- no cover when arriving; low freq
-  , prarity  = [(1, 100)]
+  , prarity  = [(1, 100), (10, 100)]
   , pcover   = CVerbatim
   , pfence   = FGround
   , ptopLeft = [ "<·>"
