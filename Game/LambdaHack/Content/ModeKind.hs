@@ -20,6 +20,7 @@ import Game.LambdaHack.Common.Prelude
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -176,11 +177,11 @@ validateSingleRoster caves Roster{..} =
            ++ checkPl field pl2
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
-  ++ let f (_, l) = concatMap g l
+  ++ let keySet = IM.keysSet caves
+         f (_, l) = concatMap g l
          g i3@(ln, _, _) =
-           if ln `elem` IM.keys caves
-           then []
-           else ["initial actor levels not among caves:" <+> tshow i3]
+           [ "initial actor levels not among caves:" <+> tshow i3
+           | ln `IS.notMember` keySet ]
      in concatMap f rosterList
 
 validateSinglePlayer :: Player -> [Text]
