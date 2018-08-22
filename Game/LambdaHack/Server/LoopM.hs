@@ -408,7 +408,8 @@ setTrajectory aid b = do
           [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
         b2 <- getsState $ getActorBody aid
-        unless ((fst <$> btrajectory b2) == Just []) $  -- set in reqMelee
+        unless ( (fst <$> btrajectory b2) == Just []  -- set in reqMelee
+                 || btrajectory b2 == Just (lv, speed) ) $  -- could be pushed
           execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
