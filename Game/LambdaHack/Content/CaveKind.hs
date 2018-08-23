@@ -58,7 +58,7 @@ data CaveKind = CaveKind
   , cdefTile        :: GroupName TileKind  -- ^ the default cave tile
   , cdarkCorTile    :: GroupName TileKind  -- ^ the dark cave corridor tile
   , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
-  , cfillerTile     :: GroupName TileKind  -- ^ the filler wall
+  , cwallTile       :: GroupName TileKind  -- ^ the file used for @FWall@ fence
   , cfenceTileN     :: GroupName TileKind  -- ^ the outer fence N wall
   , cfenceTileE     :: GroupName TileKind  -- ^ the outer fence E wall
   , cfenceTileS     :: GroupName TileKind  -- ^ the outer fence S wall
@@ -127,10 +127,10 @@ validateAll coitem coplace cotile content cocave =
                            $ concatMap cescapeFreq content
       missingStairFreq = filter (not . omemberGroup coplace)
                          $ concatMap (map fst . cstairFreq) content
-      tileGroupFuns = [ cdefTile, cdarkCorTile, clitCorTile, cfillerTile
+      tileGroupFuns = [ cdefTile, cdarkCorTile, clitCorTile, cwallTile
                       , cfenceTileN, cfenceTileE, cfenceTileS, cfenceTileW
                       , clegendDarkTile, clegendLitTile ]
-      g kind = map (\f -> f kind) tileGroupFuns
+      g kind = map ($ kind) tileGroupFuns
       missingTileFreq = filter (not . omemberGroup cotile)
                         $ concatMap g content
   in [ "cactorFreq item groups not in content:" <+> tshow missingActorFreq

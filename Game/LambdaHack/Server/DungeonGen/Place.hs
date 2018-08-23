@@ -231,10 +231,10 @@ buildFence :: COps -> CaveKind -> Bool
            -> ContentId TileKind -> ContentId TileKind
            -> Bool -> Fence -> Area
            -> Rnd TileMapEM
-buildFence COps{cotile} CaveKind{cfillerTile} dnight darkCorTile litCorTile
+buildFence COps{cotile} CaveKind{cwallTile} dnight darkCorTile litCorTile
            dark fence qarea = do
-  qFWall <- fromMaybe (error $ "" `showFailure` cfillerTile)
-            <$> opick cotile cfillerTile (const True)
+  qFWall <- fromMaybe (error $ "" `showFailure` cwallTile)
+            <$> opick cotile cwallTile (const True)
   let qFFloor = if dark then darkCorTile else litCorTile
       qFGround = if dnight then darkCorTile else litCorTile
   return $! case fence of
