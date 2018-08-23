@@ -58,7 +58,8 @@ data CaveKind = CaveKind
   , cdefTile        :: GroupName TileKind  -- ^ the default cave tile
   , cdarkCorTile    :: GroupName TileKind  -- ^ the dark cave corridor tile
   , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
-  , cwallTile       :: GroupName TileKind  -- ^ the file used for @FWall@ fence
+  , cwallTile       :: GroupName TileKind  -- ^ the tile used for @FWall@ fence
+  , ccornerTile     :: GroupName TileKind  -- ^ tile used for the fence corners
   , cfenceTileN     :: GroupName TileKind  -- ^ the outer fence N wall
   , cfenceTileE     :: GroupName TileKind  -- ^ the outer fence E wall
   , cfenceTileS     :: GroupName TileKind  -- ^ the outer fence S wall

@@ -231,26 +231,31 @@ buildFence :: COps -> CaveKind -> Bool
            -> ContentId TileKind -> ContentId TileKind
            -> Bool -> Fence -> Area
            -> Rnd TileMapEM
-buildFence COps{cotile} CaveKind{cwallTile} dnight darkCorTile litCorTile
-           dark fence qarea = do
+buildFence COps{cotile} CaveKind{ccornerTile, cwallTile}
+           dnight darkCorTile litCorTile dark fence qarea = do
   qFWall <- fromMaybe (error $ "" `showFailure` cwallTile)
             <$> opick cotile cwallTile (const True)
+  qFCorner <- fromMaybe (error $ "" `showFailure` ccornerTile)
+              <$> opick cotile ccornerTile (const True)
   let qFFloor = if dark then darkCorTile else litCorTile
       qFGround = if dnight then darkCorTile else litCorTile
   return $! case fence of
-    FWall -> buildFenceMap qFWall qarea
-    FFloor -> buildFenceMap qFFloor qarea
-    FGround -> buildFenceMap qFGround qarea
+    FWall -> buildFenceMap qFWall qFCorner qarea
+    FFloor -> buildFenceMap qFFloor qFFloor qarea
+    FGround -> buildFenceMap qFGround qFGround qarea
     FNone -> EM.empty
 
 -- | Construct a fence around an area, with the given tile kind.
-buildFenceMap :: ContentId TileKind -> Area -> TileMapEM
-buildFenceMap fenceId area =
+-- Corners have a different kind, e.g., to avoid putting doors there.
+buildFenceMap :: ContentId TileKind -> ContentId TileKind -> Area -> TileMapEM
+buildFenceMap wallId cornerId area =
   let (x0, y0, x1, y1) = fromArea area
-  in EM.fromList $ [ (Point x y, fenceId)
+  in EM.fromList $ [ (Point x y, wallId)
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-                   [ (Point x y, fenceId)
-                   | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+                   [ (Point x y, wallId)
+                   | x <- [x0..x1], y <- [y0-1, y1+1] ] ++
+                   [ (Point x y, cornerId)
+                   | x <- [x0-1, x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
 buildFenceRnd :: COps

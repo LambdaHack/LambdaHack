@@ -48,6 +48,7 @@ rogue = CaveKind
   , cdarkCorTile  = "floorCorridorDark"
   , clitCorTile   = "floorCorridorLit"
   , cwallTile     = "fillerWall"
+  , ccornerTile   = "fillerWall"
   , cfenceTileN   = "basic outer fence"
   , cfenceTileE   = "basic outer fence"
   , cfenceTileS   = "basic outer fence"
