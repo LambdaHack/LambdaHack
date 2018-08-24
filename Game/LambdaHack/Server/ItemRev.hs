@@ -96,7 +96,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         in (q * p * rarity, ((ik, kind), itemGroup)) : acc
       g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f itemGroup q) []
       freqDepth = concatMap g itemFreq
-      freq = toFreq ("newItem ('" <> tshow ldSpawned <> ")") freqDepth
+      freq = toFreq "newItem" freqDepth
   if nullFreq freq then return Nothing
   else do
     ((itemKindId, itemKind), itemGroup) <- frequency freq

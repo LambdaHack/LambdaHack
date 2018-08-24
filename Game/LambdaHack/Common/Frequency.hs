@@ -89,7 +89,8 @@ uniformFreq name l = Frequency (map (\x -> (1, x)) l) name
 toFreq :: Text -> [(Int, a)] -> Frequency a
 toFreq name l =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (all (\(p, _) -> toInteger p <= _maxBound32) l) $
+  assert (all (\(p, _) -> toInteger p <= _maxBound32) l
+          `blame` (name, map fst l)) $
 #endif
   Frequency (filter ((> 0 ) . fst) l) name
 
