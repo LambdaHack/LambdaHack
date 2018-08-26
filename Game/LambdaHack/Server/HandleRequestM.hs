@@ -381,7 +381,7 @@ reqMeleeChecked source target iid cstore = do
         meleeEffectAndDestroy source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
-        Just (tra, _speed) | not (null tra) -> do
+        Just{} -> do
           -- Deduct a hitpoint for a pierce of a projectile
           -- or due to a hurled actor colliding with another.
           -- Don't deduct if no pierce, to prevent spam.
@@ -397,7 +397,7 @@ reqMeleeChecked source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
-             haltProjectile source sb2
+            haltProjectile source sb2
         _ -> return ()
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.

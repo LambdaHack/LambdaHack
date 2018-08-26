@@ -402,15 +402,12 @@ setTrajectory aid b = do
       if Tile.isWalkable coTileSpeedup $ lvl `at` tpos
       then do
         -- Hit clears trajectory of non-projectiles in reqMelee so no need here.
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         case posToAidsLvl tpos lvl of
           [target] | not (bproj b) -> reqDisplace aid target
           _ -> reqMove aid d
-        b2 <- getsState $ getActorBody aid
-        unless ( (fst <$> btrajectory b2) == Just []  -- set in reqMelee
-                 || btrajectory b2 == Just (lv, speed) ) $  -- could be pushed
-          execUpdAtomic $ UpdTrajectory aid (btrajectory b2) (Just (lv, speed))
       else do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
         -- The second call of @actorDying@ above will catch the dead projectile.

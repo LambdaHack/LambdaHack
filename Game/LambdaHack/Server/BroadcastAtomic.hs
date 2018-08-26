@@ -124,7 +124,7 @@ loudUpdAtomic local cmd = do
     UpdDestroyActor _ body _ | not $ bproj body -> return $ Just cmd
     UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just cmd
     UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
-      -- Non-blast projectile hits an non-walkable tile on leader's level.
+      -- Non-blast projectile hits a non-walkable tile on leader's level.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arItem = discoAspect EM.! btrunk b
