@@ -494,11 +494,7 @@ reqAlterFail source tpos = do
         s <- getState
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
-      tryApplyEmbeds = do
-        -- Can't send @SfxTrigger@ afterwards, because actor may be moved
-        -- by the embeds to another level, where @tpos@ is meaningless.
-        execSfxAtomic $ SfxTrigger source tpos
-        mapM_ tryApplyEmbed $ EM.assocs embeds
+      tryApplyEmbeds = mapM_ tryApplyEmbed $ EM.assocs embeds
       tryApplyEmbed (iid, kit) = do
         let itemFull@ItemFull{itemKind} = itemToF iid
             legal = permittedApply localTime applySkill calmE itemFull kit
@@ -541,7 +537,11 @@ reqAlterFail source tpos = do
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need subsequent altering.
       unless (Tile.isDoor coTileSpeedup serverTile
-              || Tile.isChangable coTileSpeedup serverTile)
+              || Tile.isChangable coTileSpeedup serverTile
+              || EM.null embeds) $ do
+        -- Can't send @SfxTrigger@ afterwards, because actor may be moved
+        -- by the embeds to another level, where @tpos@ is meaningless.
+        execSfxAtomic $ SfxTrigger source tpos
         tryApplyEmbeds
       return Nothing  -- success
   else if clientTile == serverTile then  -- alters
@@ -606,15 +606,24 @@ reqAlterFail source tpos = do
       else
         if underFeet || EM.notMember tpos (lfloor lvl) then
           if underFeet || null (posToAidsLvl tpos lvl) then do
-            -- The embeds of the initial tile are activated before the tile
-            -- is altered. This prevents, e.g., trying to activate items
-            -- where none are present any more, or very different to what
-            -- the client expected. Surprise only comes through searching above.
-            -- The items are first revealed for the sake of clients that
-            -- may see the tile as hidden. Note that the tile is not revealed
-            -- (unless it's altered later on, in which case the new one is).
-            revealEmbeds
-            tryApplyEmbeds
+            -- If the only thing that happens is the change of the tile,
+            -- don't display a message, because the change
+            -- is visible on the map (unless it changes into itself)
+            -- and there's nothing more to speak about.
+            unless (EM.null embeds) $ do
+              -- Can't send @SfxTrigger@ afterwards, because actor may be moved
+              -- by the embeds to another level, where @tpos@ is meaningless.
+              execSfxAtomic $ SfxTrigger source tpos
+              -- The embeds of the initial tile are activated before the tile
+              -- is altered. This prevents, e.g., trying to activate items
+              -- where none are present any more, or very different to what
+              -- the client expected. Surprise only comes through searching
+              -- as implemented above.
+              -- The items are first revealed for the sake of clients that
+              -- may see the tile as hidden. Note that the tile is not revealed
+              -- (unless it's altered later on, in which case the new one is).
+              revealEmbeds
+              tryApplyEmbeds
             case groupsToAlterTo of
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo

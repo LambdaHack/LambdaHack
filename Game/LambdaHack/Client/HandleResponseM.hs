@@ -63,7 +63,7 @@ handleResponse cmd = case cmd of
     cmdC <- queryAI aid
     sendRequestAI cmdC
   RespSfxAtomic sfx ->
-    displayRespSfxAtomicUI False sfx
+    displayRespSfxAtomicUI sfx
   RespQueryUI -> do
     cmdH <- queryUI
     sendRequestUI cmdH

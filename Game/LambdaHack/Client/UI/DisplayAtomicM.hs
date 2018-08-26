@@ -906,9 +906,9 @@ discover c iid = do
 -- * RespSfxAtomicUI
 
 -- | Display special effects (text, animation) sent to the client.
-displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
+displayRespSfxAtomicUI :: MonadClientUI m => SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
-displayRespSfxAtomicUI verbose sfx = case sfx of
+displayRespSfxAtomicUI sfx = case sfx of
   SfxStrike source target iid store ->
     strike False source target iid store
   SfxRecoil source target _ _ -> do
@@ -934,11 +934,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     itemAidVerbMU aid action iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
-  SfxTrigger aid _p ->
-    -- So far triggering is visible, e.g., doors close, so no need for messages.
-    when verbose $ aidVerbMU aid "trigger"
+  SfxTrigger aid p -> do
+    COps{cotile} <- getsState scops
+    b <- getsState $ getActorBody aid
+    lvl <- getLevel $ blid b
+    let name = TK.tname $ okind cotile $ lvl `at` p
+        verb = if p == bpos b then "struggle with" else "exploit"
+          -- TODO: "stir" when somebody else suffers the effect
+    aidVerbMU aid $ MU.Text $ verb <+> name
   SfxShun aid _p ->
-    when verbose $ aidVerbMU aid "shun"
+    aidVerbMU aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
     CCUI{coscreen} <- getsSession sccui
     b <- getsState $ getActorBody aid
@@ -1031,7 +1036,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         IK.Paralyze{} | bproj b -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.ParalyzeInWater{} | bproj b -> return ()
-        IK.ParalyzeInWater{} -> actorVerbMU aid bUI "struggle with water"
+        IK.ParalyzeInWater{} -> actorVerbMU aid bUI "move with difficulty"
         IK.InsertMove{} | bproj b -> return ()
         IK.InsertMove{} -> actorVerbMU aid bUI "act with extreme speed"
         IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
