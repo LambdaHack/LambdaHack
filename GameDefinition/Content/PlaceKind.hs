@@ -50,7 +50,7 @@ deadEnd = PlaceKind  -- needs to have index 0
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
-  , pfreq    = [("rogue", 100), ("laboratory", 30)]
+  , pfreq    = [("rogue", 100), ("laboratory", 30), ("brawl", 30)]
   , prarity  = [(1, 3), (10, 2)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -273,7 +273,7 @@ colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
   , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10000)
-               , ("mine", 1000), ("escape", 40), ("ambush", 40) ]
+               , ("mine", 1000), ("brawl", 4), ("escape", 40), ("ambush", 40) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
