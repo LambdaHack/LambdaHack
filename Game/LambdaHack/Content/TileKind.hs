@@ -117,6 +117,7 @@ data TileSpeedup = TileSpeedup
   , isNoItemTab        :: Tab Bool
   , isNoActorTab       :: Tab Bool
   , isEasyOpenTab      :: Tab Bool
+  , isEmbedTab         :: Tab Bool
   , alterMinSkillTab   :: Tab Word8
   , alterMinWalkTab    :: Tab Word8
   }
@@ -138,7 +139,7 @@ emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab
+                               emptyTab emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty
@@ -292,7 +293,7 @@ isSuspectKind t =
       getTo _ = False
   in any getTo $ tfeature t
 
-isOpenableKind ::TileKind -> Bool
+isOpenableKind :: TileKind -> Bool
 isOpenableKind t =
   let getTo OpenTo{} = True
       getTo _ = False

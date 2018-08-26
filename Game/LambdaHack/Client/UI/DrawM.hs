@@ -140,7 +140,7 @@ drawFrameTerrain drawnLevelId = do
   COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
+  Level{ltile=PointArray.Array{avector}, lembed} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
@@ -158,7 +158,10 @@ drawFrameTerrain drawnLevelId = do
                    && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
                  | smarkSuspect > 1
                    && Tile.isHideAs coTileSpeedup tile = Color.Magenta
-                 | ES.member p0 totVisible = tcolor
+                 | ES.member p0 totVisible
+                   -- If all embeds spent, mark it with darker colour.
+                   && not (Tile.isEmbed coTileSpeedup tile
+                           && p0 `EM.notMember` lembed) = tcolor
                  | otherwise = tcolor2
           in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> ContentId TileKind -> Color.AttrCharW32)

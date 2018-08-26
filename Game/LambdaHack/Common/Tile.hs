@@ -18,8 +18,8 @@ module Game.LambdaHack.Common.Tile
     -- * Sped up property lookups
   , isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
-  , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor, isEasyOpen
-  , alterMinSkill, alterMinWalk
+  , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor
+  , isEasyOpen, isEmbed, alterMinSkill, alterMinWalk
     -- * Slow property lookups
   , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
   , obscureAs, hideAs, buildAs, isEasyOpenKind, isOpenable, isClosable
@@ -92,6 +92,10 @@ speedupTile allClear cotile =
       isNoItemTab = createTab cotile $ kindHasFeature TK.NoItem
       isNoActorTab = createTab cotile $ kindHasFeature TK.NoActor
       isEasyOpenTab = createTab cotile isEasyOpenKind
+      isEmbedTab = createTab cotile $ \tk ->
+        let getTo TK.Embed{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
@@ -212,6 +216,10 @@ isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
 isEasyOpen :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isEasyOpen #-}
 isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab
+
+isEmbed :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isEmbed #-}
+isEmbed TileSpeedup{isEmbedTab} = accessTab isEmbedTab
 
 alterMinSkill :: TileSpeedup -> ContentId TileKind -> Int
 {-# INLINE alterMinSkill #-}
