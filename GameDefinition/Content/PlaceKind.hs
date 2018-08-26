@@ -50,8 +50,8 @@ deadEnd = PlaceKind  -- needs to have index 0
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
-  , pfreq    = [("rogue", 100), ("laboratory", 30), ("brawl", 30)]
-  , prarity  = [(1, 3), (10, 2)]
+  , pfreq    = [("rogue", 30), ("laboratory", 10), ("brawl", 10)]
+  , prarity  = [(1, 10), (10, 6)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
@@ -62,11 +62,11 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   }
 rect2 = rect
   { pname    = "a pen"
-  , pfreq    = [("zoo", 10)]
+  , pfreq    = [("zoo", 3)]
   }
 rect3 = rect
   { pname    = "a shed"
-  , pfreq    = [("shootout", 2)]
+  , pfreq    = [("shootout", 1)]
   , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
@@ -74,13 +74,13 @@ rect3 = rect
   }
 rect4 = rect3
   { pname    = "cabinet"
-  , pfreq    = [("arena", 35)]
+  , pfreq    = [("arena", 10)]
   }
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
   , pfreq    = [("escape", 10), ("ambush", 7)]
-  , prarity  = [(1, 10), (10, 7)]
+  , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "-="
@@ -121,8 +121,8 @@ glasshouse3 = glasshouse
 pulpit = PlaceKind
   { psymbol  = 'p'
   , pname    = "a stand"
-  , pfreq    = [("arena", 30), ("zoo", 20)]
-  , prarity  = [(1, 10), (10, 10)]
+  , pfreq    = [("arena", 300), ("zoo", 200)]
+  , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FGround
   , ptopLeft = [ "==·"
@@ -140,8 +140,8 @@ pulpit = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruins"
-  , pfreq    = [("battle", 33), ("ambush", 5)]
-  , prarity  = [(1, 10), (10, 20)]
+  , pfreq    = [("battle", 330)]
+  , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "--"
@@ -151,8 +151,8 @@ ruin = PlaceKind
   , poverrideLit = []
   }
 ruin2 = ruin
-  { pname    = "a "
-  , pfreq    = [("blasted walls", 120)]
+  { pname    = "blasted walls"
+  , pfreq    = [("ambush", 50)]
   , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
@@ -162,7 +162,7 @@ collapsed = PlaceKind
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
   , pfreq    = [("noise", 1)]
-  , prarity  = [(1, 1), (10, 1)]
+  , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "O"
@@ -212,8 +212,8 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "a hall"
-  , pfreq    = [ ("rogue", 300), ("laboratory", 1000), ("noise", 1000) ]
-  , prarity  = [(1, 2), (10, 2)]
+  , pfreq    = [ ("rogue", 600), ("laboratory", 2000), ("noise", 2000) ]
+  , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
   -- Larger rooms require support pillars.
@@ -226,8 +226,7 @@ pillar = PlaceKind
   , poverrideLit = []
   }
 pillar2 = pillar
-  { pfreq    = [ ("rogue", 500), ("laboratory", 1000), ("noise", 1000) ]
-  , prarity  = [(1, 15), (10, 15)]
+  { pfreq    = [ ("rogue", 7500), ("laboratory", 15000), ("noise", 15000) ]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -236,8 +235,7 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { pfreq    = [ ("rogue", 500), ("laboratory", 1000), ("noise", 1000) ]
-  , prarity  = [(1, 30), (10, 30)]
+  { pfreq    = [ ("rogue", 15000), ("laboratory", 30000), ("noise", 3000) ]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -247,7 +245,7 @@ pillar3 = pillar
   }
 pillar4 = pillar
   { pname    = "an exquisite hall"
-  , prarity  = [(1, 20), (10, 40)]
+  , pfreq    = [ ("rogue", 1500), ("laboratory", 50000), ("noise", 50000) ]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -259,7 +257,7 @@ pillar4 = pillar
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
-  , prarity  = [(1, 20), (10, 40)]
+  , pfreq    = [ ("rogue", 1500), ("laboratory", 50000), ("noise", 50000) ]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -319,8 +317,8 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "a lamp post"
-  , pfreq    = [("escape", 20), ("ambush", 20), ("zoo", 10), ("battle", 10)]
-  , prarity  = [(1, 10), (10, 10)]
+  , pfreq    = [("escape", 200), ("ambush", 200), ("zoo", 100), ("battle", 100)]
+  , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "X·X"
@@ -358,8 +356,8 @@ lampPost4 = lampPost
 treeShade = PlaceKind
   { psymbol  = 't'
   , pname    = "a tree shade"
-  , pfreq    = [("brawl", 100)]
-  , prarity  = [(1, 10), (10, 10)]
+  , pfreq    = [("brawl", 1000)]
+  , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "··s"
