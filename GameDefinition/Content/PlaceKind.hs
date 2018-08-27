@@ -15,11 +15,11 @@ import Game.LambdaHack.Content.TileKind (TileKind)
 
 content :: [PlaceKind]
 content =
-  [deadEnd, rect, rect2, rect3, rect4, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, ruin2, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2, smokeClump3FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37]
+  [deadEnd, rect, rect2, rect3, rect4, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, ruin2, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2, smokeClump3FGround, bushClump, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37]
   -- automatically generated
-  ++ generatedStairs
+  ++ generatedStairs ++ generatedEscapes
 
-deadEnd,    rect, rect2, rect3, rect4, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, ruin2, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2, smokeClump3FGround, bushClump, escapeUp, escapeUp2, escapeUp3, escapeUp4, escapeUp5, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, escapeOutdoorDown, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37 :: PlaceKind
+deadEnd,    rect, rect2, rect3, rect4, rectWindows, glasshouse, glasshouse2, glasshouse3, pulpit, ruin, ruin2, collapsed, collapsed2, collapsed3, collapsed4, collapsed5, collapsed6, collapsed7, pillar, pillar2, pillar3, pillar4, pillar5, colonnade, colonnade2, colonnade3, colonnade4, colonnade5, colonnade6, lampPost, lampPost2, lampPost3, lampPost4, treeShade, fogClump, fogClump2, smokeClump, smokeClump2, smokeClump3FGround, bushClump, escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5, staircase1, staircase2, staircase3, staircase4, staircase5, staircase6, staircase7, staircase8, staircase9, staircase10, staircase11, staircase12, staircase13, staircase14, staircase15, staircase16, staircase17, staircase18, staircase19, staircase20, staircase21, staircase22, staircase23, staircase24, staircase25, staircase26, staircase27, staircase28, staircase29, staircase30, staircase31, staircase32, staircase33, staircase34, staircase35, staircase36, staircase37 :: PlaceKind
 
 staircase :: PlaceKind  -- template
 
@@ -34,6 +34,16 @@ generatedStairs =
   in gatedStairs ++ outdoorStairs
      ++ map switchStaircaseToUp stairsAll
      ++ map switchStaircaseToDown stairsAll
+
+escapeDownBasic :: [PlaceKind]
+escapeDownBasic =
+  [escapeDown, escapeDown2, escapeDown3, escapeDown4, escapeDown5]
+
+generatedEscapes :: [PlaceKind]
+generatedEscapes =
+  let upEscapes = map switchEscapeToUp escapeDownBasic
+      outdoorEscapes = map switchEscapeToOutdoorDown escapeDownBasic
+  in upEscapes ++ outdoorEscapes
 
 -- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
@@ -447,58 +457,6 @@ bushClump = PlaceKind
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
-escapeUp = PlaceKind
-  { psymbol  = '<'
-  , pname    = "an escape up"
-  , pfreq    = [("escape up", 1)]
-  , prarity  = [(1, 1)]
-  , pcover   = CVerbatim
-  , pfence   = FGround
-  , ptopLeft = [ "<"
-               ]
-  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
-                    , ('-', "wallH Lit") ]
-  , poverrideLit = [ ('|', "wall Lit")
-                   , ('-', "wallH Lit") ]
-  }
-escapeUp2 = escapeUp
-  { pfreq    = [("escape up", 1000)]
-  , pfence   = FFloor
-  , ptopLeft = [ "O·O"
-               , "·<·"
-               , "O·O"
-               ]
-  }
-escapeUp3 = escapeUp
-  { pfreq    = [("escape up", 2000)]
-  , pfence   = FNone
-  , ptopLeft = [ "-----"
-               , "|O·O|"
-               , "|·<·|"
-               , "|O·O|"
-               , "-----"
-               ]
-  }
-escapeUp4 = escapeUp
-  { pfreq    = [("escape up", 1000)]
-  , pcover   = CMirror
-  , pfence   = FFloor
-  , ptopLeft = [ "O··"
-               , "·<·"
-               , "··O"
-               ]
-  }
-escapeUp5 = escapeUp
-  { pfreq    = [("escape up", 2000)]
-  , pcover   = CMirror
-  , pfence   = FNone
-  , ptopLeft = [ "-----"
-               , "|O··|"
-               , "|·<·|"
-               , "|O·O|"
-               , "-----"
-               ]
-  }
 escapeDown = PlaceKind
   { psymbol  = '>'
   , pname    = "an escape down"
@@ -550,11 +508,6 @@ escapeDown5 = escapeDown
                , "|O·O|"
                , "-----"
                ]
-  }
-escapeOutdoorDown = escapeDown
-  { pfreq     = [("escape outdoor down", 1)]
-  , poverrideDark = [('>', "escape outdoor down")]
-  , poverrideLit = [('>', "escape outdoor down")]
   }
 staircase = PlaceKind
   { psymbol  = '/'
@@ -993,4 +946,21 @@ switchStaircaseToOutdoor s = s
  , pfreq     = map (first (\t -> toGroupName $ "outdoor" <+> tshow t)) $ pfreq s
  , poverrideDark = overrideOutdoor
  , poverrideLit = overrideOutdoor
+ }
+
+switchEscapeToUp :: PlaceKind -> PlaceKind
+switchEscapeToUp s = s
+ { psymbol   = '<'
+ , pname     = "an escape up"
+ , pfreq     = map (\(_, n) -> ("escape up", n)) $ pfreq s
+ , poverrideDark = ('>', "escape up") : poverrideDark s
+ , poverrideLit = ('>', "escape up") : poverrideLit s
+ }
+
+switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
+switchEscapeToOutdoorDown s = s
+ { pname     = "outdoor escape route"
+ , pfreq     = map (\(_, n) -> ("escape outdoor down", n)) $ pfreq s
+ , poverrideDark = ('>', "escape outdoor down") : poverrideDark s
+ , poverrideLit = ('>', "escape outdoor down") : poverrideLit s
  }
