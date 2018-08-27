@@ -5,10 +5,13 @@ shot:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix play --dumpInitRngs --printEachScreen
 
 expose-lore:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix know --newGame 2 --dumpInitRngs --gameMode crawl --knowItems --recallPlaces --benchmark --noAnim --maxFps 1000
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode crawl --knowItems --recallPlaces --benchmark --noAnim --maxFps 1000
 
 dig-lore:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix know --newGame 2 --dumpInitRngs --gameMode dig --knowItems --recallPlaces --benchmark --noAnim --maxFps 1000
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode dig --knowItems --recallPlaces --benchmark --noAnim --maxFps 1000
+
+see-caves:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --savePrefix know --newGame 5 --dumpInitRngs --gameMode see --knowItems --recallPlaces --benchmark --noAnim --maxFps 1000
 
 configure-debug:
 	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization

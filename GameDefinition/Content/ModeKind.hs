@@ -17,9 +17,9 @@ import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
 content =
-  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
 
-raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -128,9 +128,18 @@ dig = ModeKind
   { msymbol = 'd'
   , mname   = "dig"
   , mfreq   = [("dig", 1)]
-  , mroster = rosterCrawl
+  , mroster = rosterCrawlEmpty
   , mcaves  = cavesDig
   , mdesc   = "Delve deeper!"
+  }
+
+see = ModeKind
+  { msymbol = 'a'
+  , mname   = "see"
+  , mfreq   = [("see", 1)]
+  , mroster = rosterCrawlEmpty
+  , mcaves  = cavesSee
+  , mdesc   = "See all!"
   }
 
 crawlEmpty = ModeKind
@@ -453,7 +462,7 @@ rosterDefenseEmpty = rosterCrawl
   , rosterEnemy = []
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = IM.fromList [(-2, "caveRaid")]
 
@@ -480,6 +489,12 @@ cavesCrawl = IM.fromList listCrawl
 
 cavesDig = IM.fromList $ zip [-1, -2 ..] $ map snd $ concat
                        $ replicate 100 listCrawl
+
+cavesSee = IM.fromList $ zip [-1, -2 ..] $ concat $ map (replicate 10)
+  [ "caveRaid", "caveBrawl", "caveShootout", "caveEscape", "caveZoo"
+  , "caveAmbush"
+  , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveArena2"
+  , "caveNoise", "caveNoise2" ]
 
 cavesSafari = IM.fromList [ (-4, "caveSafari1")
                           , (-7, "caveSafari2")

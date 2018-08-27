@@ -96,7 +96,7 @@ arena = rogue
   }
 arena2 = arena
   { cname         = "Smoking rooms"
-  , cfreq         = [("deep random", 30)]
+  , cfreq         = [("deep random", 30), ("caveArena2", 1)]
   , cdarkOdds     = 41 + 1 `d` 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
