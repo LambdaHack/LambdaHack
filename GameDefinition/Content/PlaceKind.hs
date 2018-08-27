@@ -50,7 +50,7 @@ deadEnd = PlaceKind  -- needs to have index 0
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
-  , pfreq    = [("rogue", 30), ("laboratory", 10), ("brawl", 10)]
+  , pfreq    = [("rogue", 30), ("laboratory", 10)]
   , prarity  = [(1, 10), (10, 6)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -66,7 +66,7 @@ rect2 = rect
   }
 rect3 = rect
   { pname    = "a shed"
-  , pfreq    = [("shootout", 1)]
+  , pfreq    = [("brawl", 10), ("shootout", 1)]
   , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
@@ -212,7 +212,7 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "a hall"
-  , pfreq    = [ ("rogue", 600), ("laboratory", 2000), ("noise", 2000) ]
+  , pfreq    = [("rogue", 600), ("laboratory", 2000)]
   , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -226,7 +226,7 @@ pillar = PlaceKind
   , poverrideLit = []
   }
 pillar2 = pillar
-  { pfreq    = [ ("rogue", 7500), ("laboratory", 15000), ("noise", 15000) ]
+  { pfreq    = [("rogue", 7500), ("laboratory", 15000)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -235,7 +235,7 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { pfreq    = [ ("rogue", 15000), ("laboratory", 30000), ("noise", 3000) ]
+  { pfreq    = [("rogue", 15000), ("laboratory", 30000)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -245,7 +245,7 @@ pillar3 = pillar
   }
 pillar4 = pillar
   { pname    = "an exquisite hall"
-  , pfreq    = [ ("rogue", 1500), ("laboratory", 50000), ("noise", 50000) ]
+  , pfreq    = [("rogue", 1500), ("laboratory", 50000)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -257,7 +257,7 @@ pillar4 = pillar
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
-  , pfreq    = [ ("rogue", 1500), ("laboratory", 50000), ("noise", 50000) ]
+  , pfreq    = [("rogue", 1500), ("laboratory", 50000)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
