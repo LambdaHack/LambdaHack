@@ -591,7 +591,7 @@ staircase4 = staircase2
   , prarity  = [(1, 1)]
   }
 staircase5 = staircase
-  { pfreq    = [("open staircase", 200)]  -- no cover, open, intentional
+  { pfreq    = [("open staircase", 200)]  -- no cover, open
   , pfence   = FGround
   , ptopLeft = [ "O·O"
                , "···"

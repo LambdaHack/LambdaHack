@@ -487,8 +487,8 @@ bushBurning = bush
 fog = TileKind
   { tsymbol  = ';'
   , tname    = "faint fog"
-  , tfreq    = [ ("fog Lit", 1), ("emptySetLit", 50), ("shootoutSetLit", 20)
-               , ("noiseSetLit", 100)
+  , tfreq    = [ ("fog Lit", 1), ("emptySetLit", 50), ("noiseSetLit", 100)
+               , ("shootoutSetLit", 20)
                , ("fogClumpOver_f_Lit", 60), ("fogClumpOver_f_Dark", 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
@@ -567,9 +567,9 @@ floorDamp = floorArena
   }
 floorDirt = floorArena
   { tname    = "dirt"
-  , tfreq    = [ ("battleSetLit", 1000), ("brawlSetLit", 1000)
-               , ("shootoutSetLit", 1000), ("escapeSetLit", 1000)
-               , ("ambushSetLit", 1000), ("dirt Lit", 1) ]
+  , tfreq    = [ ("shootoutSetLit", 1000), ("escapeSetLit", 1000)
+               , ("ambushSetLit", 1000), ("battleSetLit", 1000)
+               , ("brawlSetLit", 1000), ("dirt Lit", 1) ]
   }
 floorDirtSpice = floorDirt
   { tfreq    = [("treeShadeOver_s_Lit", 1), ("bushClumpOver_f_Lit", 1)]
@@ -592,11 +592,10 @@ floorAshes = floorActor
   }
 shallowWater = TileKind
   { tsymbol  = '~'
-  , tname    = "puddle"
+  , tname    = "water puddle"
   , tfreq    = [ ("shallow water Lit", 1), ("legendLit", 100)
-               , ("emptySetLit", 5)
-               , ("noiseSetLit", 20), ("noisePowerSetLit", 20)
-               , ("shootoutSetLit", 5) ]
+               , ("emptySetLit", 5), ("noiseSetLit", 20)
+               , ("noisePowerSetLit", 20), ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0
