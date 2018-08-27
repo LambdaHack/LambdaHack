@@ -14,9 +14,9 @@ import Game.LambdaHack.Content.CaveKind
 
 content :: [CaveKind]
 content =
-  [rogue, arena, arena2, laboratory, empty, noise, noise2, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3]
+  [rogue, arena, arena2, laboratory, noise, noise2, empty,shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3]
 
-rogue,    arena, arena2, laboratory, empty, noise, noise2, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,    arena, arena2, laboratory, noise, noise2, empty, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -29,7 +29,7 @@ rogue = CaveKind
   , cminPlaceSize = DiceXY (2 `d` 2 + 4) 5
   , cmaxPlaceSize = DiceXY 16 40
   , cdarkOdds     = 1 `d` 54 + 1 `dL` 20
-       -- most rooms lit, to compensate for dark corridors
+      -- most rooms lit, to compensate for dark corridors
   , cnightOdds    = 51  -- always night
   , cauxConnects  = 1%2
   , cmaxVoid      = 1%6
@@ -130,40 +130,6 @@ laboratory = rogue
                     , ("tiny staircase", 1) ]
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
   }
-empty = rogue
-  { csymbol       = 'E'
-  , cname         = "Tall cavern"
-  , cfreq         = [("caveEmpty", 1)]
-  , ccellSize     = DiceXY (2 `d` 2 + 10) (1 `d` 2 + 8)
-  , cminPlaceSize = DiceXY 20 20
-  , cmaxPlaceSize = DiceXY 48 32  -- favour large rooms
-  , cdarkOdds     = 1 `d` 100 + 1 `dL` 100
-  , cnightOdds    = 0  -- always day
-  , cauxConnects  = 3%2
-  , cmaxVoid      = 0  -- too few rooms to have void and fog common anyway
-  , cminStairDist = 30
-  , cextraStairs  = 1
-  , cdoorChance   = 0
-  , copenChance   = 0
-  , chidden       = 0
-  , cactorCoeff   = 7
-  , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
-      -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
-      -- cascading failure, if the particular starting conditions were
-      -- very hard. Items are not reset, even if they are bad, which provides
-      -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
-      -- abused, because they spawn less and less often and also HP doesn't
-      -- effectively accumulate over max.
-  , citemNum      = 4 `d` 5  -- few rooms and geysers are the boon
-  , cplaceFreq    = [("empty", 1)]
-  , cpassable     = True
-  , cdefTile      = "emptySetLit"
-  , cdarkCorTile  = "floorArenaDark"
-  , clitCorTile   = "floorArenaLit"
-  , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
-                    , ("tiny staircase", 1) ]
-  , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
-  }
 noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky burrowed sediment"
@@ -208,6 +174,40 @@ noise2 = noise
                     , ("gated open staircase", 50)
                     , ("gated tiny staircase", 1) ]
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
+  }
+empty = rogue
+  { csymbol       = 'E'
+  , cname         = "Tall cavern"
+  , cfreq         = [("caveEmpty", 1)]
+  , ccellSize     = DiceXY (2 `d` 2 + 10) (1 `d` 2 + 8)
+  , cminPlaceSize = DiceXY 20 20
+  , cmaxPlaceSize = DiceXY 48 32  -- favour large rooms
+  , cdarkOdds     = 1 `d` 100 + 1 `dL` 100
+  , cnightOdds    = 0  -- always day
+  , cauxConnects  = 3%2
+  , cmaxVoid      = 0  -- too few rooms to have void and fog common anyway
+  , cminStairDist = 30
+  , cextraStairs  = 1
+  , cdoorChance   = 0
+  , copenChance   = 0
+  , chidden       = 0
+  , cactorCoeff   = 7
+  , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
+      -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
+      -- cascading failure, if the particular starting conditions were
+      -- very hard. Items are not reset, even if they are bad, which provides
+      -- enough of a continuity. Gyesers on lvl 3 are not OP and can't be
+      -- abused, because they spawn less and less often and also HP doesn't
+      -- effectively accumulate over max.
+  , citemNum      = 4 `d` 5  -- few rooms and geysers are the boon
+  , cplaceFreq    = [("empty", 1)]
+  , cpassable     = True
+  , cdefTile      = "emptySetLit"
+  , cdarkCorTile  = "floorArenaDark"
+  , clitCorTile   = "floorArenaLit"
+  , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
+                    , ("tiny staircase", 1) ]
+  , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 shallow2rogue = rogue
   { cfreq         = [("shallow random 2", 100)]
