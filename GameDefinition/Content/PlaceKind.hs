@@ -28,12 +28,12 @@ staircaseBasic = [staircase1, staircase2, staircase3, staircase4, staircase5, st
 
 generatedStairs :: [PlaceKind]
 generatedStairs =
-  let gatedStairs = map makeGated staircaseBasic
-      outdoorStairs = map makeOutdoor staircaseBasic
+  let gatedStairs = map switchStaircaseToGated staircaseBasic
+      outdoorStairs = map switchStaircaseToOutdoor staircaseBasic
       stairsAll = staircaseBasic ++ gatedStairs ++ outdoorStairs
   in gatedStairs ++ outdoorStairs
-     ++ map makeStaircaseUp stairsAll
-     ++ map makeStaircaseDown stairsAll
+     ++ map switchStaircaseToUp stairsAll
+     ++ map switchStaircaseToDown stairsAll
 
 -- The dots below are @Char.chr 183@, as defined in @TileKind.floorSymbol@.
 deadEnd = PlaceKind  -- needs to have index 0
@@ -943,8 +943,8 @@ staircase37 = staircase
                ]
   }
 
-makeStaircaseUp :: PlaceKind -> PlaceKind
-makeStaircaseUp s = s
+switchStaircaseToUp :: PlaceKind -> PlaceKind
+switchStaircaseToUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
@@ -954,8 +954,8 @@ makeStaircaseUp s = s
                   : filter ((/= '>') . fst) (poverrideLit s)
  }
 
-makeStaircaseDown :: PlaceKind -> PlaceKind
-makeStaircaseDown s = s
+switchStaircaseToDown :: PlaceKind -> PlaceKind
+switchStaircaseToDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
  , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
@@ -971,8 +971,8 @@ overrideGated =
   , ('I', "signboard")
   , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
 
-makeGated :: PlaceKind -> PlaceKind
-makeGated s = s
+switchStaircaseToGated :: PlaceKind -> PlaceKind
+switchStaircaseToGated s = s
  { psymbol   = 'g'
  , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
  , pfreq     = map (first (\t -> toGroupName $ "gated" <+> tshow t)) $ pfreq s
@@ -986,8 +986,8 @@ overrideOutdoor =
   , ('I', "signboard")
   , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
 
-makeOutdoor :: PlaceKind -> PlaceKind
-makeOutdoor s = s
+switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
+switchStaircaseToOutdoor s = s
  { psymbol   = 'o'
  , pname     = "an outdoor area exit"
  , pfreq     = map (first (\t -> toGroupName $ "outdoor" <+> tshow t)) $ pfreq s
