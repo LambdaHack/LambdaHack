@@ -545,7 +545,8 @@ goToXhair initialStep run = do
             xhairMoused <- getsSession sxhairMoused
             case mpath of
               _ | xhairMoused && isNothing (accessBfs bfs c) ->
-                failWith "no route to crosshair"
+                failWith
+                  "no route to crosshair (press again to go there anyway)"
               _ | initialStep && adjacent (bpos b) c -> do
                 let dir = towards (bpos b) c
                 moveRunHuman initialStep True run False dir
@@ -577,7 +578,7 @@ multiActorGoTo arena c paramOld =
         xhairMoused <- getsSession sxhairMoused
         case mpath of
           _ | xhairMoused && isNothing (accessBfs bfs c) ->
-            failWith "no route to crosshair"
+            failWith "no route to crosshair (press again to go there anyway)"
           NoPath -> failWith "no route to crosshair"
           AndPath{pathList=[]} -> failWith "almost there"
           AndPath{pathList = p1 : _} -> do
