@@ -129,7 +129,7 @@ emptySessionUI sUIOptions =
     , swaitTimes = 0
     , smarkVision = False
     , smarkSmell = True
-    , smenuIxMap = M.singleton "main" 2
+    , smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
     , sdisplayNeeded = False
     , sreportNull = True
     , shintMode = HintAbsent
@@ -188,7 +188,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
-        smenuIxMap = M.singleton "main" 7
+        smenuIxMap = M.singleton "main" 999
         sreportNull = True
         shintMode = HintAbsent
         sstart = 0
