@@ -65,7 +65,7 @@ queryUI = do
     keyPressed <- anyKeyPressed
     if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
       discardPressedKey
-      addPressedEsc
+      addPressedControlEsc
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing

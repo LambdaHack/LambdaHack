@@ -358,7 +358,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                    <+> "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-      if km == K.escKM then addPressedEsc else promptAdd0 "Prove yourself!"
+      if km == K.escKM
+      then addPressedControlEsc
+      else promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd1 "Saving backup."

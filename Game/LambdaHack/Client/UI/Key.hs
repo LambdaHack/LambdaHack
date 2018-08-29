@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Key
   ( Key(..), Modifier(..), KM(..), KMP(..)
   , showKey, showKM
-  , escKM, spaceKM, safeSpaceKM, returnKM
+  , escKM, controlEscKM, spaceKM, safeSpaceKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM
@@ -141,6 +141,9 @@ showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
 escKM = KM NoModifier Esc
+
+controlEscKM :: KM
+controlEscKM = KM Control Esc
 
 spaceKM :: KM
 spaceKM = KM NoModifier Space
