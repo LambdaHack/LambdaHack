@@ -131,7 +131,7 @@ glasshouse3 = glasshouse
 pulpit = PlaceKind
   { psymbol  = 'p'
   , pname    = "a stand"
-  , pfreq    = [("arena", 300), ("zoo", 200)]
+  , pfreq    = [("arena", 200), ("zoo", 200)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FGround
@@ -280,8 +280,9 @@ pillar5 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
-  , pfreq    = [ ("rogue", 3), ("arena", 7), ("laboratory", 4), ("empty", 10000)
-               , ("mine", 1000), ("brawl", 4), ("escape", 40), ("ambush", 40) ]
+  , pfreq    = [ ("rogue", 3), ("arena", 20), ("laboratory", 4)
+               , ("empty", 10000), ("mine", 1000), ("brawl", 4)
+               , ("escape", 40), ("ambush", 40) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
