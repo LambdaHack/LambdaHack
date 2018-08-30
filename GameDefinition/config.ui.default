@@ -35,7 +35,7 @@ fontSize = 16
 sdlTtfSizeAdd = -2
 sdlFontFile = "16x16x.fon"
 sdlFonSizeAdd = 1
-;sdlFontFile = "8x8x.fon"
+;sdlFontFile = "8x8xb.fon"
 ;sdlFonSizeAdd = 2
 colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.
