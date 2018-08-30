@@ -490,7 +490,7 @@ cavesCrawl = IM.fromList listCrawl
 cavesDig = IM.fromList $ zip [-1, -2 ..] $ map snd $ concat
                        $ replicate 100 listCrawl
 
-cavesSee = IM.fromList $ zip [-1, -2 ..] $ concat $ map (replicate 10)
+cavesSee = IM.fromList $ zip [-1, -2 ..] $ concat $ map (replicate 8)
   [ "caveRaid", "caveBrawl", "caveShootout", "caveEscape", "caveZoo"
   , "caveAmbush"
   , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveArena2"
