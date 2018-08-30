@@ -396,12 +396,12 @@ lookAtTile canSee p aid lidV = do
   mnewEps <- makeLine False b p seps
   localTime <- getsState $ getLocalTime lidV
   let aims = isJust mnewEps
-      tile = lvl `at` p
-      vis | TK.isUknownSpace tile = "that is"
+      tile = okind cotile $ lvl `at` p
+      vis | TK.tname tile == "unknown space" = "that is"
           | not canSee = "you remember"
           | not aims = "you are aware of"
           | otherwise = "you see"
-      tilePart = MU.AW $ MU.Text $ TK.tname $ okind cotile tile
+      tilePart = MU.AW $ MU.Text $ TK.tname tile
       entrySentence pk blurb =
         makeSentence [blurb, MU.Text $ PK.pname $ okind coplace pk]
       elooks = case EM.lookup p $ lentry lvl of
@@ -417,7 +417,7 @@ lookAtTile canSee p aid lidV = do
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
       ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
-  return $! makeSentence [MU.Text vis, tilePart] <+> elooks <+> ilooks
+  return $! makeSentence [vis, tilePart] <+> elooks <+> ilooks
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
