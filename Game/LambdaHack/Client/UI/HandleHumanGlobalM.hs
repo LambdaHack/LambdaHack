@@ -411,7 +411,7 @@ displaceAid target = do
 -- | Leader moves or searches or alters. No visible actor at the position.
 moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestTimed)
 moveSearchAlter dir = do
-  COps{coTileSpeedup} <- getsState scops
+  COps{cotile, coTileSpeedup} <- getsState scops
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -438,34 +438,40 @@ moveSearchAlter dir = do
                    || Tile.isChangable coTileSpeedup t
                    || Tile.isSuspect coTileSpeedup t
   runStopOrCmd <-
-    -- Movement requires full access.
-    if | Tile.isWalkable coTileSpeedup t && moveSkill > 0 ->
-         -- A potential invisible actor is hit. War started without asking.
-         return $ Right $ ReqMove dir
-       -- No free access or skill, so search and/or alter the tile.
-       | not (modifiable || canApplyEmbeds) ->
-           failWith "never mind"
-             -- misclick? walkable but no move skill? related to AlterNothing
+    if -- Movement requires full access.
+       | Tile.isWalkable coTileSpeedup t ->
+           if moveSkill > 0 then
+             -- A potential invisible actor is hit. War started without asking.
+             return $ Right $ ReqMove dir
+           else failSer MoveUnskilled
+       -- Not walkable, so search and/or alter the tile.
+       | not (modifiable || canApplyEmbeds) -> do
+           let name = MU.Text $ TK.tname $ okind cotile t
+           failWith $ makePhrase ["there is no point kicking", MU.AW name]
+             -- misclick? related to AlterNothing but no searching possible;
+             -- we don't show tile description, because it only comes from
+             -- embedded items and here probably there are none (can be all
+             -- charging, but that's rare)
        | alterSkill <= 1 -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t)
          && alterSkill < alterMinSkill -> failSer AlterUnwalked
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
        | not $ null $ posToAidsLvl tpos lvl -> failSer AlterBlockActor
        | otherwise -> do  -- promising
-            verAlters <- verifyAlters (blid sb) tpos
-            case verAlters of
-              Right() -> return $ Right $ ReqAlter tpos
-              Left err -> return $ Left err
-            -- We don't use ReqMove, because we don't hit invisible actors,
-            -- e.g., hidden in a wall. If server performed an attack for free
-            -- on the invisible actor anyway, the player (or AI)
-            -- would be tempted to repeatedly hit random walls
-            -- in hopes of killing a monster lurking within.
-            -- If the action had a cost, misclicks would incur the cost, too.
-            -- Right now the player may repeatedly alter tiles trying to learn
-            -- about invisible pass-wall actors, but when an actor detected,
-            -- it costs a turn and does not harm the invisible actors,
-            -- so it's not so tempting.
+           verAlters <- verifyAlters (blid sb) tpos
+           case verAlters of
+             Right() -> return $ Right $ ReqAlter tpos
+             Left err -> return $ Left err
+           -- We don't use ReqMove, because we don't hit invisible actors,
+           -- e.g., hidden in a wall. If server performed an attack for free
+           -- on the invisible actor anyway, the player (or AI)
+           -- would be tempted to repeatedly hit random walls
+           -- in hopes of killing a monster lurking within.
+           -- If the action had a cost, misclicks would incur the cost, too.
+           -- Right now the player may repeatedly alter tiles trying to learn
+           -- about invisible pass-wall actors, but when an actor detected,
+           -- it costs a turn and does not harm the invisible actors,
+           -- so it's not so tempting.
   return $! runStopOrCmd
 
 -- * RunOnceAhead
