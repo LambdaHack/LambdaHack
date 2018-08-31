@@ -2,7 +2,7 @@
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
-  , AndPath(..), findPathBfs
+  , AndPath(..), actorsAvoidedDist, findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -17,10 +17,12 @@ import Game.LambdaHack.Common.Prelude
 import           Control.Monad.ST.Strict
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           GHC.Generics (Generic)
 
+import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 
@@ -148,16 +150,29 @@ data AndPath =
 
 instance Binary AndPath
 
+actorsAvoidedDist :: BfsDistance
+actorsAvoidedDist = BfsDistance 5
+
 -- | Find a path, without the source position, with the smallest length.
 -- The @eps@ coefficient determines which direction (of the closest
 -- directions available) that path should prefer, where 0 means north-west
--- and 1 means north.
-findPathBfs :: PointArray.Array Word8 -> (Point -> Bool)
+-- and 1 means north. The path tries hard to avoid actors and tries to avoid
+-- tiles that need altering and ambient light. Actors are avoided only close
+-- to the start of the path, because  elsewhere they are likely to move
+-- before they are reached. Even projectiles are avoided,
+-- which sometimes has the effect of choosing a safer route
+-- (regardless if the projectiles are friendly fire or not).
+--
+-- An unwelcome side effect of avoiding actors is that friends will sometimes
+-- avoid displacing and instead perform two separate moves, wasting 1 turn
+-- in total. But in corridors they will still displace and elsewhere
+-- this scenario was quite rare already.
+findPathBfs :: ActorMap -> PointArray.Array Word8 -> (Point -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
 {-# INLINE findPathBfs #-}
-findPathBfs lalter fovLit pathSource pathGoal sepsRaw
+findPathBfs lactor lalter fovLit pathSource pathGoal sepsRaw
             arr@PointArray.Array{..} =
   let !pathGoalI = PointArray.pindex axsize pathGoal
       !pathSourceI = PointArray.pindex axsize pathSource
@@ -178,6 +193,7 @@ findPathBfs lalter fovLit pathSource pathGoal sepsRaw
         in posP : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let !dist = pred oldDist
+            minChild :: PointI -> Bool -> Word8 -> [VectorI] -> PointI
             minChild !minP _ _ [] = minP
             minChild minP maxDark minAlter (mv : mvs) =
               let !p = pos + mv
@@ -185,11 +201,16 @@ findPathBfs lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let alter = lalter `PointArray.accessI` p
-                          dark = not $ fovLit $ PointArray.punindex axsize p
-                      -- Prefer paths through more easily opened tiles
-                      -- and, secondly, in the ambient dark (even if light
-                      -- carried, because it can be taken off at any moment).
+                 else let pP = PointArray.punindex axsize p
+                          free = dist < actorsAvoidedDist
+                                 || pP `EM.notMember` lactor
+                          alter | free = lalter `PointArray.accessI` p
+                                | otherwise = maxBound-1  -- occupied; disaster
+                          dark = not $ fovLit pP
+                      -- Prefer paths without actors and through
+                      -- more easily opened tiles and, secondly,
+                      -- in the ambient dark (even if light carried,
+                      -- because it can be taken off at any moment).
                       in if | alter == 0 && dark -> p  -- speedup
                             | alter < minAlter -> minChild p dark alter mvs
                             | dark > maxDark && alter == minAlter ->

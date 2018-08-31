@@ -97,7 +97,8 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
     let !lalter = salter EM.! lid
         fovLit p = Tile.isLit coTileSpeedup $ lvl `at` p
         !source = bpos b
-        !mpath = findPathBfs lalter fovLit source target seps bfsArr
+        !mpath =
+          findPathBfs (lactor lvl) lalter fovLit source target seps bfsArr
         !bfsPath = EM.insert target mpath oldBfsPath
         bap = BfsAndPath{..}
     modifyClient $ \cli -> cli {sbfsD = EM.insert aid bap $ sbfsD cli}
