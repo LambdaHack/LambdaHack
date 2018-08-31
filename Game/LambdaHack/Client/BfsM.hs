@@ -1,7 +1,9 @@
 {-# LANGUAGE TupleSections #-}
 -- | Breadth first search and related algorithms using the client monad.
 module Game.LambdaHack.Client.BfsM
-  ( invalidateBfsAid, invalidateBfsLid, invalidateBfsAll
+  ( invalidateBfsAid, invalidateBfsPathAid
+  , invalidateBfsLid, invalidateBfsPathLid
+  , invalidateBfsAll, invalidateBfsPathAll
   , createBfs, getCacheBfsAndPath, getCacheBfs
   , getCachePath, createPath, condBFS
   , furthestKnown, closestUnknown, closestSmell
@@ -51,6 +53,12 @@ invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
   modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsInvalid (sbfsD cli)}
 
+invalidateBfsPathAid :: MonadClient m => ActorId -> m ()
+invalidateBfsPathAid aid = do
+  let f BfsInvalid = BfsInvalid
+      f BfsAndPath{..} = BfsAndPath{bfsPath = EM.empty, ..}
+  modifyClient $ \cli -> cli {sbfsD = EM.adjust f aid (sbfsD cli)}
+
 invalidateBfsLid :: MonadClient m => LevelId -> m ()
 invalidateBfsLid lid = do
   side <- getsClient sside
@@ -58,9 +66,24 @@ invalidateBfsLid lid = do
   as <- getsState $ filter f . EM.assocs . sactorD
   mapM_ (invalidateBfsAid . fst) as
 
+invalidateBfsPathLid :: MonadClient m => LevelId -> Point -> m ()
+invalidateBfsPathLid lid pos = do
+  side <- getsClient sside
+  let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
+                 && chessDist pos (bpos b) < fromEnum actorsAvoidedDist
+                      -- rough approximation, but kicks in well before blockage
+  as <- getsState $ filter f . EM.assocs . sactorD
+  mapM_ (invalidateBfsPathAid . fst) as
+
 invalidateBfsAll :: MonadClient m => m ()
 invalidateBfsAll =
   modifyClient $ \cli -> cli {sbfsD = EM.map (const BfsInvalid) (sbfsD cli)}
+
+invalidateBfsPathAll :: MonadClient m => m ()
+invalidateBfsPathAll = do
+  let f BfsInvalid = BfsInvalid
+      f BfsAndPath{..} = BfsAndPath{bfsPath = EM.empty, ..}
+  modifyClient $ \cli -> cli {sbfsD = EM.map f (sbfsD cli)}
 
 createBfs :: MonadClient m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)

@@ -935,8 +935,12 @@ moveTowards aid target goal relaxed = do
       -- Only actors with SkAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
   if noFriends target && enterableHere target then
-    return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
+    return $! returN "moveTowards target" $ target `vectorToFrom` source
   else do
+    -- This lets animals mill around, even when blocked,
+    -- because they have nothing to lose (unless other animals melee).
+    -- Blocked heroes instead don't become leaders and don't move
+    -- until friends sidestep to let them reach their goal.
     let goesBack p = Just p == boldpos b
         nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible | relaxed = \p -> noFriends p

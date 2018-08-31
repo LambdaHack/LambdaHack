@@ -82,11 +82,19 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdMoveActor aid _ _ -> do
     invalidateBfsAid aid
     b <- getsState $ getActorBody aid
+    -- Too costly to take projectiles into account. If blocked by them,
+    -- instead we wait for them to move aside or we hit them.
+    -- They are still considered whenever an actor moves himself
+    -- and so his whole BFS data is invalidated.
+    unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
     recomputeInMelee (blid b)
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
     b <- getsState $ getActorBody source
+    unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
+    tb <- getsState $ getActorBody target
+    unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     recomputeInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdLeadFaction fid source target -> do
@@ -249,6 +257,7 @@ createActor aid b ais = do
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
+  unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
   recomputeInMelee (blid b)
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
@@ -271,6 +280,7 @@ destroyActor aid b destroy = do
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
+  unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
   recomputeInMelee (blid b)
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()

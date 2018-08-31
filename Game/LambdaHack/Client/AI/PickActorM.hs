@@ -206,6 +206,8 @@ pickActorToMove maidToAvoid = do
           notSwapReady _ _ = True
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
+          -- As soon as friends move, path is recalcuated and they may
+          -- become unstuck.
           targetBlocked abt@((aid, _), TgtAndPath{tapPath}) = case tapPath of
             AndPath{pathList= q : _} ->
               any (\abt2@((aid2, body2), _) ->
