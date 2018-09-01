@@ -217,9 +217,12 @@ computeTarget aid = do
             take7 tap = tap
         tgtpath <- createPath aid tgt
         return $ Just $ take7 tgtpath
-      pickNewTarget :: m (Maybe TgtAndPath)
-      pickNewTarget = do
-        cfoes <- closestFoes nearbyFoes aid
+      pickNewTarget = pickNewTargetIgnore Nothing
+      pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
+      pickNewTargetIgnore maidToIgnore = do
+        let f aidToIgnore = filter ((/= aidToIgnore) . fst) nearbyFoes
+            notIgnoredFoes = maybe nearbyFoes f maidToIgnore
+        cfoes <- closestFoes notIgnoredFoes aid
         case cfoes of
           (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
           [] | condInMelee -> return Nothing  -- don't slow down fighters
@@ -329,12 +332,6 @@ computeTarget aid = do
                || actorDying body -> -- foe already dying
                pickNewTarget
              | followingWrong permit -> pickNewTarget
-             | bpos body == pathGoal ->
-               return $ Just tap
-                 -- The enemy didn't move since the target acquired.
-                 -- If any walls were added that make the enemy
-                 -- unreachable, AI learns that the hard way,
-                 -- as soon as it bumps into them.
              | otherwise -> do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
@@ -343,9 +340,22 @@ computeTarget aid = do
                -- unwalkable tiles, for as long as they remain. Harmless quirk.
                mpath <- getCachePath aid $ bpos body
                case mpath of
-                 NoPath -> pickNewTarget  -- enemy became unreachable
-                 AndPath{pathLen=0} -> pickNewTarget  -- he is his own enemy
-                 AndPath{} -> return $ Just tap{tapPath=mpath}
+                 NoPath -> pickNewTargetIgnore (Just a)
+                   -- enemy became unreachable
+                 AndPath{pathList=[]} -> pickNewTargetIgnore (Just a)
+                   -- he is his own enemy
+                 AndPath{pathList= q : _} ->
+                   -- If in melee and path blocked by actors (even proj.)
+                   -- change target for this turn due to urgency.
+                   -- Because of @condInMelee@ new target will be enemy,
+                   -- if any other is left, or empty target.
+                   -- If not in melee, keep target and consider your options
+                   -- (wait until blocking actors move or displace or melee).
+                   -- We don't want to wander away in search of loot, only to
+                   -- turn around next turn when the enemy is again considered.
+                   if not condInMelee || null (posToAidsLvl q lvl)
+                   then return $ Just tap{tapPath=mpath}
+                   else pickNewTargetIgnore (Just a)
           -- In this case, need to retarget, to focus on foes that melee ours
           -- and not, e.g., on remembered foes or items.
         _ | condInMelee -> pickNewTarget
