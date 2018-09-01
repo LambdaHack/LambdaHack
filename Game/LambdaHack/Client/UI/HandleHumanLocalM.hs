@@ -455,7 +455,7 @@ posFromXhair = do
     Left cause -> return $ Left cause
 
 -- | On top of @permittedProjectClient@, it also checks LOS, legality
--- of aiming at the target, projection range.
+-- of aiming at the target, projection range. It also modifies @eps@.
 psuitReq :: MonadClientUI m
          => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq = do

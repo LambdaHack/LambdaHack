@@ -165,8 +165,8 @@ findPathBfs lalter fovLit pathSource pathGoal sepsRaw
       (mc1, mc2) = splitAt eps [(0, -1), (1, 0), (0, 1), (-1, 0)]
       (md1, md2) = splitAt eps [(-1, -1), (1, -1), (1, 1), (-1, 1)]
       -- Prefer cardinal directions when closer to the target, so that
-      -- the enemy can't easily disengage (open/unknown below overrides that).
-      prefMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
+      -- the enemy can't easily disengage.
+      prefMoves = mc2 ++ reverse mc1 ++ md2 ++ reverse md1  -- fuzz
       vToI (x, y) = PointArray.pindex axsize (Point x y)
       movesI :: [VectorI]
       movesI = map vToI prefMoves
