@@ -33,7 +33,7 @@ matrix:
   include:
     - env: GTKVTY=noopt
       compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
 #    - env: GTKVTY=opt2
 #      compiler: "ghc-8.0.2"
 #      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
@@ -55,7 +55,7 @@ matrix:
 
     - env: GTKVTY=noopt
       compiler: "ghc-8.2.2"
-      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
 #    - env: GTKVTY=opt2
 #      compiler: "ghc-8.2.2"
 #      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
@@ -77,7 +77,7 @@ matrix:
 
     - env: GTKVTY=noopt
       compiler: "ghc-8.4.3"
-      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
 #    - env: GTKVTY=opt2
 #      compiler: "ghc-8.4.3"
 #      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
@@ -170,8 +170,8 @@ script:
       cabal new-build --only-dependencies -fcurses -w ${HC} -j2 all;
       cabal new-build -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "noopt" ]; then
-      cabal new-build --only-dependencies -fgtk -w ${HC} -j2 all;
-      cabal new-build -fgtk --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all;
+      cabal new-build --only-dependencies -fvty -w ${HC} -j2 all;
+      cabal new-build -fvty --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "opt2" ]; then
       cabal new-build --only-dependencies -fcurses -w ${HC} -j2 all;
       cabal new-build1 -fcurses --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all;
