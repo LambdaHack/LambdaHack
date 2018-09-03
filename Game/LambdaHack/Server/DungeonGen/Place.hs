@@ -190,10 +190,8 @@ olegend :: COps -> GroupName TileKind
         -> Rnd ( EM.EnumMap Char (Int, Int, ContentId TileKind)
                , EM.EnumMap Char (ContentId TileKind) )
 olegend COps{cotile} cgroup =
-  let getSymbols !acc _ !tk =
-        maybe acc (const $ ES.insert (TK.tsymbol tk) acc)
-              (lookup cgroup $ TK.tfreq tk)
-      symbols = ofoldlWithKey' cotile getSymbols ES.empty
+  let getSymbols !acc _ _ !tk = ES.insert (TK.tsymbol tk) acc
+      symbols = ofoldlGroup' cotile cgroup getSymbols ES.empty
       getLegend s !acc = do
         (mOneIn, m) <- acc
         let p f t = TK.tsymbol t == s && f (Tile.kindHasFeature TK.Spice t)
