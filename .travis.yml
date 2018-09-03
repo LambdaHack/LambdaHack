@@ -36,7 +36,7 @@ matrix:
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
     - env: GTKVTY=opt2
       compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
       compiler: "ghc-8.0.2"
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
@@ -56,9 +56,9 @@ matrix:
     - env: GTKVTY=noopt
       compiler: "ghc-8.2.2"
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
-#    - env: GTKVTY=opt2
-#      compiler: "ghc-8.2.2"
-#      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+    - env: GTKVTY=opt2
+      compiler: "ghc-8.2.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
       compiler: "ghc-8.2.2"
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
@@ -78,9 +78,9 @@ matrix:
     - env: GTKVTY=noopt
       compiler: "ghc-8.4.3"
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
-#    - env: GTKVTY=opt2
-#      compiler: "ghc-8.4.3"
-#      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
+    - env: GTKVTY=opt2
+      compiler: "ghc-8.4.3"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
       compiler: "ghc-8.4.3"
       addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
@@ -144,7 +144,7 @@ script:
   # cabal check
   - cd LambdaHack-*
   - cabal check || true
-  
+
   - cp $ROOTDIR/cabal.project .
   - cp $ROOTDIR/Makefile .
   - cat cabal.project || true
@@ -152,26 +152,36 @@ script:
 
   - |
     if [ $GTKVTY = "gtk" ]; then
-      travis_retry travis_wait 40 cabal new-build -fgtk -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fgtk -w ${HC} -j2 all;
+      cabal new-build -fgtk -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "gtk-v2" ]; then
-      travis_retry travis_wait 40 cabal new-build -v2 -fgtk -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fgtk -w ${HC} -j2 all;
+      cabal new-build -v2 -fgtk -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "sdl" ]; then
-      travis_retry travis_wait 40 cabal new-build -fsdl -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fsdl -w ${HC} -j2 all;
+      cabal new-build -fsdl -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "sdl-v2" ]; then
-      travis_retry travis_wait 40 cabal new-build -v2 -fsdl -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fsdl -w ${HC} -j2 all;
+      cabal new-build -v2 -fsdl -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "vty" ]; then
-      travis_retry travis_wait 40 cabal new-build -fvty -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fvty -w ${HC} -j2 all;
+      cabal new-build -fvty -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "curses" ]; then
-      travis_retry travis_wait 40 cabal new-build -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fcurses -w ${HC} -j2 all;
+      cabal new-build -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "noopt" ]; then
-      travis_retry travis_wait 40 cabal new-build -fgtk --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fgtk -w ${HC} -j2 all;
+      cabal new-build -fgtk --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "opt2" ]; then
-      travis_retry travis_wait 40 cabal new-build -fgtk --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fcurses -w ${HC} -j2 all;
+      cabal new-build1 -fcurses --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "asserts" ]; then
-      travis_retry travis_wait 40 cabal new-build -fgtk -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j2 all
+      cabal new-build --only-dependencies -fgtk -w ${HC} -j2 all;
+      cabal new-build -fgtk -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j2 all;
     elif [ $GTKVTY = "asserts-osx" ]; then
-      travis_retry travis_wait 40 cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j2 all
-    else exit 7
+      cabal new-build --only-dependencies -fvty -w ${HC} -j2 all;
+      cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j2 all;
+    else exit 7;
     fi
 
   - ROOTDIR2=$(pwd)
