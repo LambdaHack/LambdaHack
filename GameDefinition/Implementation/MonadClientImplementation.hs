@@ -95,7 +95,6 @@ instance MonadClientUI CliImplementation where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ fromJust $ cliSession cliS
     in ((), cliS {cliSession = Just newCliSession})
-  liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientReadResponse CliImplementation where
   receiveResponse = CliImplementation $ do

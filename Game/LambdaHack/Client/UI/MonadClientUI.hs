@@ -3,7 +3,6 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
     MonadClientUI( getsSession
                  , modifySession
-                 , liftIO  -- exposed only to be implemented, not used,
                  )
     -- * Assorted primitives
   , clientPrintUI, mapStartY, getSession, putSession, displayFrames
@@ -39,7 +38,7 @@ import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
-import           Game.LambdaHack.Client.MonadClient hiding (liftIO)
+import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Input
@@ -86,7 +85,6 @@ mapStartY = 1
 class MonadClient m => MonadClientUI m where
   getsSession   :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
-  liftIO        :: IO a -> m a
 
 getSession :: MonadClientUI m => m SessionUI
 getSession = getsSession id
