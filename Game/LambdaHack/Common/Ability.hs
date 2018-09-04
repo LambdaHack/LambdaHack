@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | AI strategy abilities.
 module Game.LambdaHack.Common.Ability
-  ( Skill(..), Skills, Flag(..), Flags(..), EqpSlot(..)
+  ( Skill(..), Skills, Flag(..), Flags(..), Tactic(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
   , zeroSkills, unitSkills, addSkills, sumScaledSkills
-  , tacticSkills, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
+  , nameTactic, describeTactic, tacticSkills
+  , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , compactSkills, scaleSkills
@@ -22,7 +23,7 @@ import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Misc ()
 
 -- | Actor and faction abilities. See 'skillDesc' for documentation.
 data Skill =
@@ -83,6 +84,29 @@ data Flag =
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
+
+-- | Tactic of non-leader actors. Apart of determining AI operation,
+-- each tactic implies a skill modifier, that is added to the non-leader skills
+-- defined in 'fskillsOther' field of 'Player'.
+data Tactic =
+    TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
+  | TFollow   -- ^ always follow leader's target or his position if no target
+  | TFollowNoItems   -- ^ follow but don't do any item management nor use
+  | TMeleeAndRanged  -- ^ only melee and do ranged combat
+  | TMeleeAdjacent   -- ^ only melee (or wait)
+  | TBlock    -- ^ always only wait, even if enemy in melee range
+  | TRoam     -- ^ if enemy nearby, attack, if no items, etc., roam randomly
+  | TPatrol   -- ^ find an open and uncrowded area, patrol it according
+              --   to sight radius and fallback temporarily to @TRoam@
+              --   when enemy is seen by the faction and is within
+              --   the actor's sight radius
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary Tactic
+
+instance NFData Tactic
+
+instance Hashable Tactic
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
@@ -164,6 +188,28 @@ scaleSkills n skills = EM.map (n *) skills
 sumScaledSkills :: [(Skills, Int)] -> Skills
 sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)
                            $ map (\(Skills sk, k) -> scaleSkills k sk) l
+
+nameTactic :: Tactic -> Text
+nameTactic TExplore        = "explore"
+nameTactic TFollow         = "follow freely"
+nameTactic TFollowNoItems  = "follow only"
+nameTactic TMeleeAndRanged = "fight only"
+nameTactic TMeleeAdjacent  = "melee only"
+nameTactic TBlock          = "block only"
+nameTactic TRoam           = "roam freely"
+nameTactic TPatrol         = "patrol area"
+
+describeTactic :: Tactic -> Text
+describeTactic TExplore = "investigate unknown positions, chase targets"
+describeTactic TFollow = "follow leader's target or position, grab items"
+describeTactic TFollowNoItems =
+  "follow leader's target or position, ignore items"
+describeTactic TMeleeAndRanged =
+  "engage in both melee and ranged combat, don't move"
+describeTactic TMeleeAdjacent = "engage exclusively in melee, don't move"
+describeTactic TBlock = "block and wait, don't move"
+describeTactic TRoam = "move freely, chase targets"
+describeTactic TPatrol = "find and patrol an area (WIP)"
 
 tacticSkills :: Tactic -> Skills
 tacticSkills TExplore = zeroSkills

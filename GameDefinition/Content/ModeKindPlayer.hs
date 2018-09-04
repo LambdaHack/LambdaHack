@@ -12,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ModeKind
 
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player

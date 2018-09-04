@@ -30,7 +30,6 @@ import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -201,7 +200,8 @@ computeTarget aid = do
       isStuck = waitedLastTurn b && couldMoveLastTurn
       slackTactic =
         ftactic (gplayer fact)
-          `elem` [TMeleeAndRanged, TMeleeAdjacent, TBlock, TRoam, TPatrol]
+          `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
+                 , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       setPath :: Target -> m (Maybe TgtAndPath)
       setPath tgt = do
         let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =

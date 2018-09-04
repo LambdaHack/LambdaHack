@@ -284,7 +284,8 @@ pickActorToMove maidToAvoid = do
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
           let condInMelee = scondInMelee LEM.! blid b
-          when (ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
+          when (ftactic (gplayer fact)
+                `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
             void $ refreshTarget (aid, b)
           return aid
@@ -333,11 +334,11 @@ setTargetFromTactics oldAid = do
                  -- If no path even to the leader himself, explore.
                  explore
   case ftactic $ gplayer fact of
-    TExplore -> explore
-    TFollow -> follow
-    TFollowNoItems -> follow
-    TMeleeAndRanged -> explore  -- needs to find ranged targets
-    TMeleeAdjacent -> explore  -- probably not needed, but may change
-    TBlock -> return ()  -- no point refreshing target
-    TRoam -> explore  -- @TRoam@ is checked again inside @explore@
-    TPatrol -> explore  -- WIP
+    Ability.TExplore -> explore
+    Ability.TFollow -> follow
+    Ability.TFollowNoItems -> follow
+    Ability.TMeleeAndRanged -> explore  -- needs to find ranged targets
+    Ability.TMeleeAdjacent -> explore  -- probably not needed, but may change
+    Ability.TBlock -> return ()  -- no point refreshing target
+    Ability.TRoam -> explore  -- @TRoam@ is checked again inside @explore@
+    Ability.TPatrol -> explore  -- WIP

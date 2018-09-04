@@ -104,7 +104,8 @@ data Player = Player
   , fneverEmpty  :: Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly  :: HiCondPoly  -- ^ score polynomial for the player
   , fhasGender   :: Bool        -- ^ whether actors have gender
-  , ftactic      :: Tactic      -- ^ non-leaders behave according to this
+  , ftactic      :: Ability.Tactic
+                                -- ^ non-leaders behave according to this
                                 --   tactic; can be changed during the game
   , fleaderMode  :: LeaderMode  -- ^ the mode of switching the leader
   , fhasUI       :: Bool        -- ^ does the faction have a UI client

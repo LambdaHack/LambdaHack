@@ -415,7 +415,8 @@ condEnoughGearM :: MonadClient m => ActorId -> m Bool
 condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let followTactic = ftactic (gplayer fact) `elem` [TFollow, TFollowNoItems]
+  let followTactic = ftactic (gplayer fact)
+                     `elem` [Ability.TFollow, Ability.TFollowNoItems]
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy

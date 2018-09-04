@@ -30,6 +30,7 @@ import GHC.Generics (Generic)
 -- client and ui options from and singnal an error if anything was left.
 
 import           Game.LambdaHack.Client.ClientOptions
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
@@ -87,7 +88,7 @@ data UpdAtomic =
   | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
-  | UpdTacticFaction FactionId Tactic Tactic
+  | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic
   | UpdAutoFaction FactionId Bool
   | UpdRecordKill ActorId (ContentId ItemKind) Int
   -- Alter map.

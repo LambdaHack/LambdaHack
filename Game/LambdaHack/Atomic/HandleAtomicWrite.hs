@@ -32,6 +32,7 @@ import           Data.Int (Int64)
 
 import           Game.LambdaHack.Atomic.CmdAtomic
 import           Game.LambdaHack.Atomic.MonadStateWrite
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -398,7 +399,8 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
 
-updTacticFaction :: MonadStateWrite m => FactionId -> Tactic -> Tactic -> m ()
+updTacticFaction :: MonadStateWrite m
+                 => FactionId -> Ability.Tactic -> Ability.Tactic -> m ()
 updTacticFaction fid toT fromT = do
   let adj fact =
         let player = gplayer fact

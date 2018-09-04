@@ -10,13 +10,14 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Content.ModeKind
 
 -- | Requests sent by AI clients to the server. If faction leader is to be
 -- changed, it's included as the second component.
@@ -40,7 +41,7 @@ data ReqUI =
   | ReqUIGameDropAndExit
   | ReqUIGameSaveAndExit
   | ReqUIGameSave
-  | ReqUITactic Tactic
+  | ReqUITactic Ability.Tactic
   | ReqUIAutomate
   deriving Show
 
