@@ -18,7 +18,6 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import           Data.Tuple
 import           GHC.Exts (inline)
@@ -721,17 +720,6 @@ quitFactionUI fid toSt = do
       horror = isHorrorFact fact
   side <- getsClient sside
   when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
-    let won = case toSt of
-          Just Status{stOutcome=Conquer} -> True
-          Just Status{stOutcome=Escape} -> True
-          _ -> False
-    when won $ do
-      gameModeId <- getsState sgameModeId
-      scurChal <- getsClient scurChal
-      let sing = M.singleton scurChal 1
-          f = M.unionWith (+)
-          g = EM.insertWith f gameModeId sing
-      modifyClient $ \cli -> cli {svictories = g $ svictories cli}
     tellGameClipPS
     resetGameStart
   let msgIfSide _ | fid /= side = Nothing

@@ -42,7 +42,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.ModeKind (ModeKind, fhasGender)
+import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Client monad for saving and restarting games.
@@ -97,6 +97,20 @@ cmdAtomicSemCli oldState cmd = case cmd of
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     recomputeInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
+  UpdQuitFaction fid _ toSt -> do
+    side <- getsClient sside
+    when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
+      let won = case toSt of
+            Just Status{stOutcome=Conquer} -> True
+            Just Status{stOutcome=Escape} -> True
+            _ -> False
+      when won $ do
+        gameModeId <- getsState sgameModeId
+        scurChal <- getsClient scurChal
+        let sing = M.singleton scurChal 1
+            f = M.unionWith (+)
+            g = EM.insertWith f gameModeId sing
+        modifyClient $ \cli -> cli {svictories = g $ svictories cli}
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
