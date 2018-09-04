@@ -322,7 +322,6 @@ kindAspectToSuffix aspect =
     ELabel{} -> ""  -- too late
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
     HideAs{} -> ""
-    Tactic tactics -> "overrides tactics to" <+> tshow tactics
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Odds{} -> ""
 
@@ -345,7 +344,6 @@ aspectToSentence feat =
     ELabel{} -> Nothing
     ToThrow{} -> Nothing
     HideAs{} -> Nothing
-    Tactic{}  -> Nothing
     EqpSlot es -> Just $ slotToSentence es
     Odds{} -> Just "Individual specimens sometimes have yet other properties."
 

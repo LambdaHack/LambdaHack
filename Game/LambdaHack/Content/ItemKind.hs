@@ -70,7 +70,6 @@ data Aspect =
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
   | HideAs (GroupName ItemKind)
                        -- ^ until identified, presents as this unique kind
-  | Tactic Tactic      -- ^ overrides actor's tactic; WIP; move?
   | EqpSlot Ability.EqpSlot
                        -- ^ AI and UI flag that leaks item intended use
   | Odds Dice.Dice [Aspect] [Aspect]
@@ -380,11 +379,6 @@ validateSingle ik@ItemKind{..} =
           f _ = False
           ts = filter f iaspects
       in ["more than one HideAs specification" | length ts > 1])
-  ++ (let f :: Aspect -> Bool
-          f Tactic{} = True
-          f _ = False
-          ts = filter f iaspects
-      in ["more than one Tactic specification" | length ts > 1])
   ++ concatMap (validateDups ik)
        (map SetFlag
           [ Ability.Fragile, Ability.Lobable, Ability.Durable

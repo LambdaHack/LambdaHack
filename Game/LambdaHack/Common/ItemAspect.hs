@@ -46,7 +46,6 @@ data AspectRecord = AspectRecord
   , aELabel  :: Text
   , aToThrow :: IK.ThrowMod
   , aHideAs  :: Maybe (GroupName IK.ItemKind)
-  , aTactic  :: Maybe Tactic
   , aEqpSlot :: Maybe Ability.EqpSlot
   }
   deriving (Show, Eq, Ord, Generic)
@@ -80,7 +79,6 @@ emptyAspectRecord = AspectRecord
   , aELabel  = ""
   , aToThrow = IK.ThrowMod 100 100
   , aHideAs  = Nothing
-  , aTactic  = Nothing
   , aEqpSlot = Nothing
   }
 
@@ -102,7 +100,6 @@ castAspect !ldepth !totalDepth !ar !asp =
     IK.ELabel t -> return $! ar {aELabel = t}
     IK.ToThrow tt -> return $! ar {aToThrow = tt}
     IK.HideAs ha -> return $! ar {aHideAs = Just ha}
-    IK.Tactic ta -> return $! ar {aTactic = Just ta}
     IK.EqpSlot slot -> return $! ar {aEqpSlot = Just slot}
     IK.Odds d aspects1 aspects2 -> do
       pick1 <- oddsDice ldepth totalDepth d
@@ -137,7 +134,6 @@ addMeanAspect !ar !asp =
     IK.ELabel t -> ar {aELabel = t}
     IK.ToThrow tt -> ar {aToThrow = tt}
     IK.HideAs ha -> ar {aHideAs = Just ha}
-    IK.Tactic ta -> ar {aTactic = Just ta}
     IK.EqpSlot slot -> ar {aEqpSlot = Just slot}
     IK.Odds{} -> ar  -- can't tell, especially since we don't know the level
 
@@ -153,7 +149,6 @@ aspectRecordToList AspectRecord{..} =
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
   ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100]
   ++ maybe [] (\ha -> [IK.HideAs ha]) aHideAs
-  ++ maybe [] (\ta -> [IK.Tactic ta]) aTactic
   ++ maybe [] (\slot -> [IK.EqpSlot slot]) aEqpSlot
 
 rollAspectRecord :: [IK.Aspect] -> Dice.AbsDepth -> Dice.AbsDepth
