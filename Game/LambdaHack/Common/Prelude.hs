@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 -- | Custom Prelude, compatible across many GHC versions.
 module Game.LambdaHack.Common.Prelude
   ( module Prelude.Compat
@@ -21,18 +23,26 @@ import Prelude.Compat hiding (appendFile, length, null, readFile, sum,
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
+import           Control.DeepSeq
+import           Control.Exception.Assert.Sugar (allB, assert, blame,
+                                                 showFailure, swith)
 import           Control.Monad.Compat
+import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
+import qualified Data.Fixed as Fixed
+import           Data.Hashable
+import qualified Data.HashMap.Strict as HM
+import           Data.Key
 import           Data.List.Compat hiding (length, null, sum)
 import qualified Data.List.Compat as List
 import           Data.Maybe
 import           Data.Monoid.Compat
-
-import Control.Exception.Assert.Sugar (allB, assert, blame, showFailure, swith)
-
-import Data.Text (Text)
-
+import           Data.Text (Text)
 import qualified Data.Text as T (pack)
+import qualified Data.Time as Time
 import           NLP.Miniutter.English ((<+>))
+import qualified NLP.Miniutter.English as MU
 
 -- | Show and pack the result.
 tshow :: Show a => a -> Text
@@ -69,3 +79,73 @@ length = List.length
 -- is not constrained.
 null :: [a] -> Bool
 null = List.null
+
+-- Data.Binary orphan instances
+
+instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
+  put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
+  get = EM.fromDistinctAscList <$> get
+
+instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
+  put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
+  get = ES.fromDistinctAscList <$> get
+
+instance Binary Time.NominalDiffTime where
+  get = fmap realToFrac (get :: Get Fixed.Pico)
+  put = (put :: Fixed.Pico -> Put) . realToFrac
+
+instance (Hashable k, Eq k, Binary k, Binary v) => Binary (HM.HashMap k v) where
+  get = fmap HM.fromList get
+  put = put . HM.toList
+
+-- Data.Key orphan instances
+
+type instance Key (EM.EnumMap k) = k
+
+instance Zip (EM.EnumMap k) where
+  {-# INLINE zipWith #-}
+  zipWith = EM.intersectionWith
+
+instance Enum k => ZipWithKey (EM.EnumMap k) where
+  {-# INLINE zipWithKey #-}
+  zipWithKey = EM.intersectionWithKey
+
+instance Enum k => Keyed (EM.EnumMap k) where
+  {-# INLINE mapWithKey #-}
+  mapWithKey = EM.mapWithKey
+
+instance Enum k => FoldableWithKey (EM.EnumMap k) where
+  {-# INLINE foldrWithKey #-}
+  foldrWithKey = EM.foldrWithKey
+
+instance Enum k => TraversableWithKey (EM.EnumMap k) where
+  traverseWithKey f = fmap EM.fromDistinctAscList
+                      . traverse (\(k, v) -> (,) k <$> f k v) . EM.toAscList
+
+instance Enum k => Indexable (EM.EnumMap k) where
+  {-# INLINE index #-}
+  index = (EM.!)
+
+instance Enum k => Lookup (EM.EnumMap k) where
+  {-# INLINE lookup #-}
+  lookup = EM.lookup
+
+instance Enum k => Adjustable (EM.EnumMap k) where
+  {-# INLINE adjust #-}
+  adjust = EM.adjust
+
+-- Data.Hashable orphan instances
+
+instance (Enum k, Hashable k, Hashable e) => Hashable (EM.EnumMap k e) where
+  hashWithSalt s x = hashWithSalt s (EM.toAscList x)
+
+instance (Enum k, Hashable k) => Hashable (ES.EnumSet k) where
+  hashWithSalt s x = hashWithSalt s (ES.toAscList x)
+
+-- Control.DeepSeq orphan instances
+
+instance NFData MU.Part
+
+instance NFData MU.Person
+
+instance NFData MU.Polarity

@@ -23,8 +23,6 @@ import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Misc ()
-
 -- | Actor and faction abilities. See 'skillDesc' for documentation.
 data Skill =
   -- Basic abilities affecting permitted actions.

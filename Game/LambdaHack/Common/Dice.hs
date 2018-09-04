@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveGeneric, FlexibleInstances, GeneralizedNewtypeDeriving,
-             TypeSynonymInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
