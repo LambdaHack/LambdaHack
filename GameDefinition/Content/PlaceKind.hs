@@ -280,7 +280,7 @@ pillar5 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
-  , pfreq    = [ ("rogue", 3), ("arena", 20), ("laboratory", 4)
+  , pfreq    = [ ("rogue", 3), ("arena", 20), ("laboratory", 2)
                , ("empty", 10000), ("mine", 1000), ("brawl", 4)
                , ("escape", 40), ("ambush", 40) ]
   , prarity  = [(1, 10), (10, 10)]
