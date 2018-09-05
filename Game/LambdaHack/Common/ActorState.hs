@@ -2,7 +2,7 @@
 -- | Operations on the 'Actor' type, and related, that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
-  ( fidActorNotProjAssocs, actorAssocs
+  ( fidActorNotProjGlobalAssocs, actorAssocs
   , fidActorRegularAssocs, fidActorRegularIds
   , foeRegularAssocs, foeRegularList, friendRegularAssocs, friendRegularList
   , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
@@ -48,8 +48,8 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
-fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
-fidActorNotProjAssocs fid s =
+fidActorNotProjGlobalAssocs :: FactionId -> State -> [(ActorId, Actor)]
+fidActorNotProjGlobalAssocs fid s =
   let f (_, b) = not (bproj b) && bfid b == fid
   in filter f $ EM.assocs $ sactorD s
 
@@ -66,7 +66,7 @@ actorRegularAssocs p lid s =
   let f (_, b) = not (bproj b) && blid b == lid && p (bfid b) && bhp b > 0
   in filter f $ EM.assocs $ sactorD s
 
-fidActorRegularAssocs :: FactionId -> LevelId -> State ->  [(ActorId, Actor)]
+fidActorRegularAssocs :: FactionId -> LevelId -> State -> [(ActorId, Actor)]
 fidActorRegularAssocs fid lid s =
   actorRegularAssocs (== fid) lid s
 
@@ -147,7 +147,7 @@ mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 findIid :: ActorId -> FactionId -> ItemId -> State
         -> [(ActorId, (Actor, CStore))]
 findIid leader fid iid s =
-  let actors = fidActorNotProjAssocs fid s
+  let actors = fidActorNotProjGlobalAssocs fid s
       itemsOfActor (aid, b) =
         let itemsOfCStore store =
               let bag = getBodyStoreBag b store s
@@ -159,25 +159,25 @@ findIid leader fid iid s =
 
 combinedInv :: FactionId -> State -> ItemBag
 combinedInv fid s =
-  let bs = inline fidActorNotProjAssocs fid s
+  let bs = inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
 
 combinedEqp :: FactionId -> State -> ItemBag
 combinedEqp fid s =
-  let bs = inline fidActorNotProjAssocs fid s
+  let bs = inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
 
 -- Trunk not considered (if stolen).
 combinedOrgan :: FactionId -> State -> ItemBag
 combinedOrgan fid s =
-  let bs = inline fidActorNotProjAssocs fid s
+  let bs = inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map (borgan . snd) bs
 
 -- Trunk not considered (if stolen).
 combinedItems :: FactionId -> State -> ItemBag
 combinedItems fid s =
   let shaBag = gsha $ sfactionD s EM.! fid
-      bs = map snd $ inline fidActorNotProjAssocs fid s
+      bs = map snd $ inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map binv bs ++ map beqp bs ++ [shaBag]
 
 combinedFromLore :: SLore -> FactionId -> State -> ItemBag

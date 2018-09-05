@@ -204,7 +204,7 @@ deduceKilled aid = do
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
 anyActorsAlive fid aid = do
-  as <- getsState $ fidActorNotProjAssocs fid
+  as <- getsState $ fidActorNotProjGlobalAssocs fid
   -- We test HP here, in case more than one actor goes to 0 HP in the same turn.
   return $! any (\(aid2, b2) -> aid2 /= aid && bhp b2 > 0) as
 

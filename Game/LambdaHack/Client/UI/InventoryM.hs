@@ -147,7 +147,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         bag <- getsState $ getBodyStoreBag body store
         return $! not $ EM.null bag
       partyNotEmpty store = do
-        as <- getsState $ fidActorNotProjAssocs side
+        as <- getsState $ fidActorNotProjGlobalAssocs side
         bs <- mapM (aidNotEmpty store . fst) as
         return $! or bs
   mpsuit <- psuit

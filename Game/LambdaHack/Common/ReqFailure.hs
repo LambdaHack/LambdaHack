@@ -187,7 +187,7 @@ permittedProject forced skill calmE itemFull =
            let badSlot = case IA.aEqpSlot arItem of
                  Just Ability.EqpSlotLightSource -> False
                  Just _ -> True
-                 Nothing ->  IA.goesIntoEqp arItem
+                 Nothing -> IA.goesIntoEqp arItem
            in if badSlot
               then Right False
               else permittedPrecious forced calmE itemFull
