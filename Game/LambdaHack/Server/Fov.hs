@@ -203,6 +203,8 @@ lucidFromLevel fovClearLid fovLitLid s lid lvl =
 
 shineFromLevel :: State -> LevelId -> Level -> FovShine
 shineFromLevel s lid lvl =
+  -- Actors shine as if they were leaders, for speed and to prevent
+  -- micromanagement by switching leader to see more.
   let actorLights =
         [ (bpos b, radius)
         | (aid, b) <- inline actorAssocs (const True) lid s
@@ -300,11 +302,13 @@ perceptionCacheFromLevel fovClearLid fid lid s =
   let fovClear = fovClearLid EM.! lid
       lvlBodies = inline actorAssocs (== fid) lid s
       f (aid, b) =
+        -- Actors see and smell as if they were leaders, for speed
+        -- and to prevent micromanagement by switching leader to see more.
         let actorMaxSk = getActorMaxSkills aid s
         in if Ability.getSk Ability.SkSight actorMaxSk <= 0
               && Ability.getSk Ability.SkNocto actorMaxSk <= 0
-              && Ability.getSk Ability.SkSmell actorMaxSk <= 0  -- dumb missiles
-           then Nothing
+              && Ability.getSk Ability.SkSmell actorMaxSk <= 0
+           then Nothing  -- dumb missile
            else Just (aid, FovValid
                            $ cacheBeforeLucidFromActor fovClear b actorMaxSk)
       lvlCaches = mapMaybe f lvlBodies

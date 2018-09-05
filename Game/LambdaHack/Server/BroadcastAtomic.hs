@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.BroadcastAtomic
   ( handleAndBroadcast, sendPer, handleCmdAtomicServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loudUpdAtomic, loudSfxAtomic, atomicForget, atomicRemember
+  , hearUpdAtomic, hearSfxAtomic, filterHear, atomicForget, atomicRemember
 #endif
   ) where
 
@@ -17,9 +17,9 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Key (mapWithKeyM_)
 
 import           Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -29,6 +29,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -69,7 +70,7 @@ handleAndBroadcast ps atomicBroken atomic = do
   -- Send some actions to the clients, one faction at a time.
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
-      breakSend _lid fid _fact perFidLid = do
+      breakSend lid fid perFidLid = do
         let send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2
@@ -77,74 +78,112 @@ handleAndBroadcast ps atomicBroken atomic = do
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> do  -- hear only here; broken commands are never loud
-            loud <- case atomic of
-              UpdAtomic cmd -> loudUpdAtomic cmd
-              SfxAtomic cmd -> loudSfxAtomic cmd
-            case loud of
-              Nothing -> return ()
-              Just msg -> sendUpdate fid $ UpdHearFid fid msg
+            as <- getsState $ fidActorRegularAssocs fid lid
+            case atomic of
+              UpdAtomic cmd -> do
+                maids <- hearUpdAtomic as cmd
+                case maids of
+                  Nothing -> return ()
+                  Just aids -> sendUpdate fid $ UpdHearFid fid
+                                              $ HearUpd (not $ null aids) cmd
+              SfxAtomic cmd -> do
+                mhear <- hearSfxAtomic as cmd
+                case mhear of
+                  Nothing -> return ()
+                  Just (hearMsg, _aids) ->
+                    sendUpdate fid $ UpdHearFid fid hearMsg
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
       -- (e.g., new actor created).
-      anySend lid fid fact perFidLid =
+      anySend lid fid perFidLid =
         if seenAtomicCli knowEvents fid perFidLid ps
         then sendAtomic fid atomic
-        else breakSend lid fid fact perFidLid
-      posLevel lid fid fact =
-        anySend lid fid fact $ sperFidOld EM.! fid EM.! lid
-      send fid fact = case ps of
-        PosSight lid _ -> posLevel lid fid fact
-        PosFidAndSight _ lid _ -> posLevel lid fid fact
-        PosFidAndSer (Just lid) _ -> posLevel lid fid fact
-        PosSmell lid _ -> posLevel lid fid fact
+        else breakSend lid fid perFidLid
+      posLevel lid fid =
+        anySend lid fid $ sperFidOld EM.! fid EM.! lid
+      send fid = case ps of
+        PosSight lid _ -> posLevel lid fid
+        PosFidAndSight _ lid _ -> posLevel lid fid
+        PosFidAndSer (Just lid) _ -> posLevel lid fid
+        PosSmell lid _ -> posLevel lid fid
         PosFid fid2 -> when (fid == fid2) $ sendAtomic fid atomic
         PosFidAndSer Nothing fid2 ->
           when (fid == fid2) $ sendAtomic fid atomic
         PosSer -> return ()
         PosAll -> sendAtomic fid atomic
-        PosNone -> error $ "" `showFailure` (fid, fact, atomic)
+        PosNone -> error $ "" `showFailure` (fid, atomic)
   -- Factions that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
-  mapWithKeyM_ send factionD
+  mapM_ send $ EM.keys factionD
 
 -- | Messages for some unseen atomic commands.
-loudUpdAtomic :: MonadStateRead m => UpdAtomic -> m (Maybe HearMsg)
-loudUpdAtomic cmd = do
+hearUpdAtomic :: MonadStateRead m
+              => [(ActorId, Actor)] -> UpdAtomic
+              -> m (Maybe [ActorId])
+hearUpdAtomic as cmd = do
   COps{coTileSpeedup} <- getsState scops
   case cmd of
-    UpdDestroyActor _ body _ | not $ bproj body ->
-      return $ Just $ HearUpd False cmd  -- profound
-    UpdCreateItem _ _ _ (CActor _ cstore) | cstore /= COrgan ->
-      return $ Just $ HearUpd False cmd  -- profound
+    UpdDestroyActor _ body _ | not $ bproj body -> do
+      aids <- filterHear (bpos body) as
+      return $ Just aids  -- profound
+    UpdCreateItem _ _ _ (CActor aid cstore) | cstore /= COrgan -> do
+      body <- getsState $ getActorBody aid
+      aids <- filterHear (bpos body) as
+      return $ Just aids  -- profound
     UpdTrajectory aid (Just (l, _)) Nothing | not (null l) -> do
       -- Non-blast projectile hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arItem = discoAspect EM.! btrunk b
-      return $! if bproj b && IA.isBlast arItem
+      aids <- filterHear (bpos b) as
+      return $! if bproj b && IA.isBlast arItem || null aids
                 then Nothing
-                else Just $ HearUpd True cmd
-    UpdAlterTile _ _ fromTile _ -> return $!
-      if Tile.isDoor coTileSpeedup fromTile
-      then Just $ HearUpd True cmd
-      else Just $ HearUpd False cmd  -- profound
-    UpdAlterExplorable{} -> return $ Just $ HearUpd False cmd  -- profound
+                else Just aids
+    UpdAlterTile _ p fromTile _ -> do
+      aids <- filterHear p as
+      return $! if Tile.isDoor coTileSpeedup fromTile
+                then if null aids
+                     then Nothing
+                     else Just aids
+                else Just aids  -- profound
+    UpdAlterExplorable{} -> return $ Just []  -- profound
     _ -> return Nothing
 
 -- | Messages for some unseen sfx.
-loudSfxAtomic :: MonadStateRead m => SfxAtomic -> m (Maybe HearMsg)
-loudSfxAtomic cmd =
+hearSfxAtomic :: MonadStateRead m
+              => [(ActorId, Actor)] -> SfxAtomic
+              -> m (Maybe (HearMsg, [ActorId]))
+hearSfxAtomic as cmd =
   case cmd of
-    SfxStrike _ _ iid _ -> do
+    SfxStrike aid _ iid _ -> do
+      -- Only the attacker position considered, for simplicity.
+      b <- getsState $ getActorBody aid
+      aids <- filterHear (bpos b) as
       itemKindId <- getsState $ getIidKindIdServer iid
-      let distance = 20  -- TODO: distance to leader; also, add a skill
-      return $ Just $ HearStrike itemKindId distance
+      return $! if null aids
+                then Nothing
+                else Just (HearStrike itemKindId, aids)
     SfxEffect _ aid (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
-      return $ Just $ HearSummon (bproj b) grp p
+      aids <- filterHear (bpos b) as
+      return $! if null aids
+                then Nothing
+                else Just (HearSummon (bproj b) grp p, aids)
     _ -> return Nothing
+
+filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]
+filterHear pos as = do
+  let actorHear (aid, body) = do
+        -- Actors hear as if they were leaders, for speed and to prevent
+        -- micromanagement by switching leader to hear more.
+        -- This is analogous to actors seeing as if they were leaders.
+        actorMaxSk <- getsState $ getActorMaxSkills aid
+        -- For now, hearing radius is equal to sight radius.
+        return $! Ability.getSk Ability.SkSight actorMaxSk
+                  >= chessDist pos (bpos body)
+  map fst <$> filterM actorHear as
 
 sendPer :: (MonadServerAtomic m, MonadServerComm m)
         => FactionId -> LevelId -> Perception -> Perception -> Perception

@@ -926,15 +926,10 @@ ppHearMsg hearMsg = case hearMsg of
         msg = makeSentence [ "you hear"
                            , MU.AW $ MU.Phrase $ distant ++ [sound] ]
     return $! msg
-  HearStrike ik distance -> do
+  HearStrike ik -> do
     COps{coitem} <- getsState scops
     let verb = IK.iverbHit $ okind coitem ik
-        adverb = if | distance < 5 -> "loudly"
-                    | distance < 10 -> "distinctly"
-                    | distance < 40 -> ""  -- most common
-                    | distance < 45 -> "faintly"
-                    | otherwise -> "barely"  -- 50 is the hearing limit
-        msg = makeSentence $ [ "you", adverb, "hear something", verb, "someone"]
+        msg = makeSentence $ [ "you hear something", verb, "someone"]
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
