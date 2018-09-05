@@ -190,8 +190,7 @@ filterHear pos as = do
         -- micromanagement by switching leader to hear more.
         -- This is analogous to actors seeing as if they were leaders.
         actorMaxSk <- getsState $ getActorMaxSkills aid
-        -- For now, hearing radius is equal to sight radius.
-        return $! Ability.getSk Ability.SkSight actorMaxSk
+        return $! Ability.getSk Ability.SkHearing actorMaxSk
                   >= chessDist pos (bpos body)
   map fst <$> filterM actorHear as
 

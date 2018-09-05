@@ -179,6 +179,7 @@ skillName SkSight = "sight radius"
 skillName SkSmell = "smell radius"
 skillName SkShine = "shine radius"
 skillName SkNocto = "night vision radius"
+skillName SkHearing = "hearing radius"
 skillName SkAggression = "aggression level"
 skillName SkSwimming = "swimming ability"
 skillName SkFlying = "flying ability"
@@ -206,6 +207,7 @@ skillDesc skill =
     SkSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkShine -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkHearing -> "is the limit of hearing. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
     SkSwimming -> "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
     SkFlying -> "is the degree of avoidance of bad effects of any hazards spread on the ground."
@@ -247,6 +249,7 @@ skillToDecorator skill b t =
     SkSmell -> tshowRadius (max 0 t)
     SkShine -> tshowRadius (max 0 t)
     SkNocto -> tshowRadius (max 0 t)
+    SkHearing -> tshowRadius (max 0 t)
     SkAggression -> tshow t
     SkSwimming -> tshow t
     SkFlying -> tshow t
@@ -306,6 +309,7 @@ kindAspectToSuffix aspect =
     AddSkill SkSmell t -> wrapInParens $ affixDice t <+> "smell"
     AddSkill SkShine t -> wrapInParens $ affixDice t <+> "shine"
     AddSkill SkNocto t -> wrapInParens $ affixDice t <+> "night vision"
+    AddSkill SkHearing t -> wrapInParens $ affixDice t <+> "hearing"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
     AddSkill SkSwimming t -> wrapInParens $ affixDice t <+> "swimming"
     AddSkill SkFlying t -> wrapInParens $ affixDice t <+> "flying"

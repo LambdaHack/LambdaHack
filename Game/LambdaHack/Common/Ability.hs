@@ -45,6 +45,7 @@ data Skill =
   | SkSmell
   | SkShine
   | SkNocto
+  | SkHearing
   | SkAggression
   | SkSwimming
   | SkFlying

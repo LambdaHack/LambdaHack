@@ -123,7 +123,7 @@ data UpdAtomic =
   | UpdResumeServer State
   | UpdKillExit FactionId
   | UpdWriteSave
-  | UpdHearFid FactionId HearMsg
+  | UpdHearFid FactionId HearMsg  -- in @UpdAtomic@ to let AI analyze and count
   deriving (Show, Eq, Generic)
 
 instance Binary UpdAtomic
