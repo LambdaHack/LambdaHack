@@ -132,7 +132,7 @@ instance Binary UpdAtomic
 -- sent by server to clients and shown to players and used by AI.
 data HearMsg =
     HearUpd Bool UpdAtomic
-  | HearStrike Bool (ContentId ItemKind) Int
+  | HearStrike (ContentId ItemKind) Int
   | HearSummon Bool (GroupName ItemKind) Dice.Dice
   deriving (Show, Eq, Generic)
 

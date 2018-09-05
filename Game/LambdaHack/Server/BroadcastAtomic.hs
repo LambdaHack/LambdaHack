@@ -69,27 +69,20 @@ handleAndBroadcast ps atomicBroken atomic = do
   -- Send some actions to the clients, one faction at a time.
   let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
-      breakSend lid fid fact perFidLid = do
-        -- We take the new leader, from after cmd execution.
-        let hear atomic2 = do
-              local <- case gleader fact of
-                Nothing -> return True  -- give leaderless factions some love
-                Just leader -> do
-                  body <- getsState $ getActorBody leader
-                  return $! (blid body == lid)
-              loud <- case atomic2 of
-                UpdAtomic cmd -> loudUpdAtomic local cmd
-                SfxAtomic cmd -> loudSfxAtomic local cmd
-              case loud of
-                Nothing -> return ()
-                Just msg -> sendUpdate fid $ UpdHearFid fid msg
-            send2 (cmd2, ps2) =
+      breakSend _lid fid _fact perFidLid = do
+        let send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2
         psBroken <- mapM posUpdAtomic atomicBroken
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
-          [] -> hear atomic  -- broken commands are never loud
+          [] -> do  -- hear only here; broken commands are never loud
+            loud <- case atomic of
+              UpdAtomic cmd -> loudUpdAtomic cmd
+              SfxAtomic cmd -> loudSfxAtomic cmd
+            case loud of
+              Nothing -> return ()
+              Just msg -> sendUpdate fid $ UpdHearFid fid msg
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
@@ -117,35 +110,38 @@ handleAndBroadcast ps atomicBroken atomic = do
   mapWithKeyM_ send factionD
 
 -- | Messages for some unseen atomic commands.
-loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe HearMsg)
-loudUpdAtomic local cmd = do
+loudUpdAtomic :: MonadStateRead m => UpdAtomic -> m (Maybe HearMsg)
+loudUpdAtomic cmd = do
   COps{coTileSpeedup} <- getsState scops
-  mcmd <- case cmd of
-    UpdDestroyActor _ body _ | not $ bproj body -> return $ Just cmd
-    UpdCreateItem _ _ _ (CActor _ CGround) -> return $ Just cmd
-    UpdTrajectory aid (Just (l, _)) Nothing | local && not (null l) -> do
-      -- Non-blast projectile hits a non-walkable tile on leader's level.
+  case cmd of
+    UpdDestroyActor _ body _ | not $ bproj body ->
+      return $ Just $ HearUpd False cmd  -- profound
+    UpdCreateItem _ _ _ (CActor _ cstore) | cstore /= COrgan ->
+      return $ Just $ HearUpd False cmd  -- profound
+    UpdTrajectory aid (Just (l, _)) Nothing | not (null l) -> do
+      -- Non-blast projectile hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arItem = discoAspect EM.! btrunk b
-      return $! if bproj b && IA.isBlast arItem then Nothing else Just cmd
+      return $! if bproj b && IA.isBlast arItem
+                then Nothing
+                else Just $ HearUpd True cmd
     UpdAlterTile _ _ fromTile _ -> return $!
       if Tile.isDoor coTileSpeedup fromTile
-      then if local then Just cmd else Nothing
-      else Just cmd
-    UpdAlterExplorable{} -> return $ Just cmd
+      then Just $ HearUpd True cmd
+      else Just $ HearUpd False cmd  -- profound
+    UpdAlterExplorable{} -> return $ Just $ HearUpd False cmd  -- profound
     _ -> return Nothing
-  return $! HearUpd local <$> mcmd
 
 -- | Messages for some unseen sfx.
-loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe HearMsg)
-loudSfxAtomic local cmd =
+loudSfxAtomic :: MonadStateRead m => SfxAtomic -> m (Maybe HearMsg)
+loudSfxAtomic cmd =
   case cmd of
-    SfxStrike _ _ iid _ | local -> do
+    SfxStrike _ _ iid _ -> do
       itemKindId <- getsState $ getIidKindIdServer iid
       let distance = 20  -- TODO: distance to leader; also, add a skill
-      return $ Just $ HearStrike local itemKindId distance
-    SfxEffect _ aid (IK.Summon grp p) _ | local -> do
+      return $ Just $ HearStrike itemKindId distance
+    SfxEffect _ aid (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
       return $ Just $ HearSummon (bproj b) grp p
     _ -> return Nothing
