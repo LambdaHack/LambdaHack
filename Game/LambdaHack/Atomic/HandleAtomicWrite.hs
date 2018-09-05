@@ -126,6 +126,7 @@ handleUpdAtomic cmd = case cmd of
   UpdResumeServer s -> updResumeServer s
   UpdKillExit{} -> return ()
   UpdWriteSave -> return ()
+  UpdHearFid{} -> return ()
 
 -- Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).

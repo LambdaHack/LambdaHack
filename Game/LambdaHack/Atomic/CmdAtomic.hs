@@ -13,7 +13,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.CmdAtomic
-  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), SfxMsg(..)
+  ( CmdAtomic(..), UpdAtomic(..), HearMsg(..), SfxAtomic(..), SfxMsg(..)
   , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
@@ -123,9 +123,20 @@ data UpdAtomic =
   | UpdResumeServer State
   | UpdKillExit FactionId
   | UpdWriteSave
+  | UpdHearFid FactionId HearMsg
   deriving (Show, Eq, Generic)
 
 instance Binary UpdAtomic
+
+-- | Symbolic representation of text messages about heard noises,
+-- sent by server to clients and shown to players and used by AI.
+data HearMsg =
+    HearUpd Bool UpdAtomic
+  | HearStrike Bool (ContentId ItemKind) Int
+  | HearSummon Bool (GroupName ItemKind) Dice.Dice
+  deriving (Show, Eq, Generic)
+
+instance Binary HearMsg
 
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change 'State' nor client state.
@@ -153,9 +164,6 @@ instance Binary SfxAtomic
 data SfxMsg =
     SfxUnexpected ReqFailure
   | SfxExpected Text ReqFailure
-  | SfxLoudUpd Bool UpdAtomic
-  | SfxLoudStrike Bool (ContentId ItemKind) Int
-  | SfxLoudSummon Bool (GroupName ItemKind) Dice.Dice
   | SfxFizzles
   | SfxNothingHappens
   | SfxVoidDetection IK.DetectKind
@@ -237,6 +245,7 @@ undoUpdAtomic cmd = case cmd of
   UpdResumeServer{} -> Nothing
   UpdKillExit{} -> Nothing
   UpdWriteSave -> Nothing
+  UpdHearFid{} -> Nothing
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of

@@ -82,7 +82,7 @@ handleAndBroadcast ps atomicBroken atomic = do
                 SfxAtomic cmd -> loudSfxAtomic local cmd
               case loud of
                 Nothing -> return ()
-                Just msg -> sendSfx fid $ SfxMsgFid fid msg
+                Just msg -> sendUpdate fid $ UpdHearFid fid msg
             send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $
                 sendUpdate fid cmd2
@@ -117,7 +117,7 @@ handleAndBroadcast ps atomicBroken atomic = do
   mapWithKeyM_ send factionD
 
 -- | Messages for some unseen atomic commands.
-loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe SfxMsg)
+loudUpdAtomic :: MonadStateRead m => Bool -> UpdAtomic -> m (Maybe HearMsg)
 loudUpdAtomic local cmd = do
   COps{coTileSpeedup} <- getsState scops
   mcmd <- case cmd of
@@ -135,19 +135,19 @@ loudUpdAtomic local cmd = do
       else Just cmd
     UpdAlterExplorable{} -> return $ Just cmd
     _ -> return Nothing
-  return $! SfxLoudUpd local <$> mcmd
+  return $! HearUpd local <$> mcmd
 
 -- | Messages for some unseen sfx.
-loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe SfxMsg)
+loudSfxAtomic :: MonadStateRead m => Bool -> SfxAtomic -> m (Maybe HearMsg)
 loudSfxAtomic local cmd =
   case cmd of
     SfxStrike _ _ iid _ | local -> do
       itemKindId <- getsState $ getIidKindIdServer iid
       let distance = 20  -- TODO: distance to leader; also, add a skill
-      return $ Just $ SfxLoudStrike local itemKindId distance
+      return $ Just $ HearStrike local itemKindId distance
     SfxEffect _ aid (IK.Summon grp p) _ | local -> do
       b <- getsState $ getActorBody aid
-      return $ Just $ SfxLoudSummon (bproj b) grp p
+      return $ Just $ HearSummon (bproj b) grp p
     _ -> return Nothing
 
 sendPer :: (MonadServerAtomic m, MonadServerComm m)

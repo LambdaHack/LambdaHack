@@ -365,6 +365,16 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> when verbose $ promptAdd1 "Saving backup."
+  UpdHearFid _ hearMsg -> do
+    mleader <- getsClient sleader
+    case mleader of
+      Just{} -> return ()  -- will display stuff when leader moves
+      Nothing -> do
+        lidV <- viewedLevelUI
+        markDisplayNeeded lidV
+        recordHistory
+    msg <- ppHearMsg hearMsg
+    msgAdd msg
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
@@ -895,6 +905,46 @@ discover c iid = do
           || isOurOrgan) $  -- assume own faction organs known intuitively
     msgAdd msg
 
+ppHearMsg :: MonadClientUI m => HearMsg -> m Text
+ppHearMsg hearMsg = case hearMsg of
+  HearUpd local cmd -> do
+    COps{coTileSpeedup} <- getsState scops
+    let sound = case cmd of
+          UpdDestroyActor{} -> "shriek"
+          UpdCreateItem{} -> "clatter"
+          UpdTrajectory{} ->
+            -- Projectile hits an non-walkable tile on leader's level.
+            "thud"
+          UpdAlterTile _ _ fromTile _ ->
+            if Tile.isDoor coTileSpeedup fromTile
+            then "creaking sound"
+            else "rumble"
+          UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
+                                             else "fizzing noise"
+          _ -> error $ "" `showFailure` cmd
+        distant = if local then [] else ["distant"]
+        msg = makeSentence [ "you hear"
+                           , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+    return $! msg
+  HearStrike local ik distance -> do
+    COps{coitem} <- getsState scops
+    let verb = IK.iverbHit $ okind coitem ik
+        adverb = if | distance < 5 -> "loudly"
+                    | distance < 10 -> "distinctly"
+                    | distance < 40 -> ""  -- most common
+                    | distance < 45 -> "faintly"
+                    | otherwise -> "barely"  -- 50 is the hearing limit
+        distant = if local then [] else ["far away"]
+        msg = makeSentence $
+          [ "you", adverb, "hear something", verb, "someone"] ++ distant
+    return $! msg
+  HearSummon isProj grp p -> do
+    let verb = if isProj then "something lure" else "somebody summon"
+        object = if p == 1  -- works, because exact number sent, not dice
+                 then MU.Text $ tshow grp
+                 else MU.Ws $ MU.Text $ tshow grp
+    return $! makeSentence ["you hear", verb, object]
+
 -- * RespSfxAtomicUI
 
 -- | Display special effects (text, animation) sent to the client.
@@ -1101,43 +1151,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxExpected itemName reqFailure -> return $!
     "The" <+> itemName <+> "is not triggered:"
     <+> showReqFailure reqFailure <> "."
-  SfxLoudUpd local cmd -> do
-    COps{coTileSpeedup} <- getsState scops
-    let sound = case cmd of
-          UpdDestroyActor{} -> "shriek"
-          UpdCreateItem{} -> "clatter"
-          UpdTrajectory{} ->
-            -- Projectile hits an non-walkable tile on leader's level.
-            "thud"
-          UpdAlterTile _ _ fromTile _ ->
-            if Tile.isDoor coTileSpeedup fromTile
-            then "creaking sound"
-            else "rumble"
-          UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
-                                             else "fizzing noise"
-          _ -> error $ "" `showFailure` cmd
-        distant = if local then [] else ["distant"]
-        msg = makeSentence [ "you hear"
-                           , MU.AW $ MU.Phrase $ distant ++ [sound] ]
-    return $! msg
-  SfxLoudStrike local ik distance -> do
-    COps{coitem} <- getsState scops
-    let verb = IK.iverbHit $ okind coitem ik
-        adverb = if | distance < 5 -> "loudly"
-                    | distance < 10 -> "distinctly"
-                    | distance < 40 -> ""  -- most common
-                    | distance < 45 -> "faintly"
-                    | otherwise -> "barely"  -- 50 is the hearing limit
-        distant = if local then [] else ["far away"]
-        msg = makeSentence $
-          [ "you", adverb, "hear something", verb, "someone"] ++ distant
-    return $! msg
-  SfxLoudSummon isProj grp p -> do
-    let verb = if isProj then "something lure" else "somebody summon"
-        object = if p == 1  -- works, because exact number sent, not dice
-                 then MU.Text $ tshow grp
-                 else MU.Ws $ MU.Text $ tshow grp
-    return $! makeSentence ["you hear", verb, object]
   SfxFizzles -> return "It didn't work."
   SfxNothingHappens -> return "Nothing happens."
   SfxVoidDetection d -> do
