@@ -3,6 +3,9 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
     MonadClientUI( getsSession
                  , modifySession
+                 , updateClientLeader
+                 , getCacheBfs
+                 , getCachePath
                  )
     -- * Assorted primitives
   , clientPrintUI, mapStartY, getSession, putSession, displayFrames
@@ -36,6 +39,7 @@ import qualified NLP.Miniutter.English as MU
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 
+import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
@@ -64,6 +68,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
@@ -81,10 +86,14 @@ clientPrintUI t = liftIO $ do
 mapStartY :: Y
 mapStartY = 1
 
--- | The monad that gives the client access to UI operations.
-class MonadClient m => MonadClientUI m where
-  getsSession   :: (SessionUI -> a) -> m a
+-- | The monad that gives the client access to UI operations,
+-- but not to modifying client state.
+class MonadClientRead m => MonadClientUI m where
+  getsSession :: (SessionUI -> a) -> m a
   modifySession :: (SessionUI -> SessionUI) -> m ()
+  updateClientLeader :: ActorId -> m ()
+  getCacheBfs :: ActorId -> m (PointArray.Array BfsDistance)
+  getCachePath :: ActorId -> Point -> m AndPath
 
 getSession :: MonadClientUI m => m SessionUI
 getSession = getsSession id
@@ -379,7 +388,7 @@ partActorLeaderFun = do
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.
-partPronounLeader :: MonadClient m => ActorId -> ActorUI -> m MU.Part
+partPronounLeader :: MonadClientRead m => ActorId -> ActorUI -> m MU.Part
 partPronounLeader aid b = do
   mleader <- getsClient sleader
   return $! case mleader of

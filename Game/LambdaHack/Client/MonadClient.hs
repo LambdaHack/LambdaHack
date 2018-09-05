@@ -1,10 +1,10 @@
 -- | Basic client monad and related operations.
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monads
-    MonadClient( getsClient
-               , modifyClient
-               , liftIO  -- exposed only to be implemented, not used
-               )
+    MonadClientRead ( getsClient
+                    , liftIO  -- exposed only to be implemented, not used
+                    )
+  , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
   , debugPossiblyPrint, rndToAction, rndToActionForget
@@ -23,15 +23,18 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 
--- | Monad for writing to client state.
-class MonadStateRead m => MonadClient m where
-  getsClient    :: (StateClient -> a) -> m a
-  modifyClient  :: (StateClient -> StateClient) -> m ()
+-- | Monad for reading client state.
+class MonadStateRead m => MonadClientRead m where
+  getsClient :: (StateClient -> a) -> m a
   -- We do not provide a MonadIO instance, so that outside
   -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO        :: IO a -> m a
+  liftIO :: IO a -> m a
 
-getClient :: MonadClient m => m StateClient
+-- | Monad for writing to client state.
+class MonadClientRead m => MonadClient m where
+  modifyClient :: (StateClient -> StateClient) -> m ()
+
+getClient :: MonadClientRead m => m StateClient
 getClient = getsClient id
 
 putClient :: MonadClient m => StateClient -> m ()
@@ -53,7 +56,7 @@ rndToAction r = do
   return a
 
 -- | Invoke pseudo-random computation, don't change generator kept in state.
-rndToActionForget :: MonadClient m => Rnd a -> m a
+rndToActionForget :: MonadClientRead m => Rnd a -> m a
 rndToActionForget r = do
   gen <- getsClient srandom
   return $! St.evalState r gen

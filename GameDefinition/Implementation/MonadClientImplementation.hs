@@ -19,6 +19,7 @@ import           Control.Monad.Trans.State.Strict hiding (State)
 
 import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
 import           Game.LambdaHack.Client
+import qualified Game.LambdaHack.Client.BfsM as BfsM
 import           Game.LambdaHack.Client.HandleAtomicM
 import           Game.LambdaHack.Client.HandleResponseM
 import           Game.LambdaHack.Client.LoopM
@@ -57,14 +58,16 @@ instance MonadStateWrite CliImplementation where
     let !newCliState = f $ cliState cliS
     in ((), cliS {cliState = newCliState})
 
-instance MonadClient CliImplementation where
+instance MonadClientRead CliImplementation where
   {-# INLINE getsClient #-}
   getsClient   f = CliImplementation $ gets $ f . cliClient
+  liftIO = CliImplementation . IO.liftIO
+
+instance MonadClient CliImplementation where
   {-# INLINE modifyClient #-}
   modifyClient f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliClient cliS
     in ((), cliS {cliClient = newCliState})
-  liftIO = CliImplementation . IO.liftIO
 
 instance MonadClientSetup CliImplementation where
   saveClient = CliImplementation $ do
@@ -95,6 +98,11 @@ instance MonadClientUI CliImplementation where
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ fromJust $ cliSession cliS
     in ((), cliS {cliSession = Just newCliSession})
+  updateClientLeader aid = do
+    s <- getState
+    modifyClient $ updateLeader aid s
+  getCacheBfs = BfsM.getCacheBfs
+  getCachePath = BfsM.getCachePath
 
 instance MonadClientReadResponse CliImplementation where
   receiveResponse = CliImplementation $ do

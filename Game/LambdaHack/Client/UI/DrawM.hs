@@ -29,7 +29,6 @@ import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.Bfs
-import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State

@@ -35,7 +35,7 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 
 -- | Get the current perception of a client.
-getPerFid :: MonadClient m => LevelId -> m Perception
+getPerFid :: MonadClientRead m => LevelId -> m Perception
 getPerFid lid = do
   fper <- getsClient sfper
   let assFail = error $ "no perception at given level"
@@ -97,7 +97,7 @@ makeLine onlyFirst body fpos epsOld = do
                  tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
 
 -- @MonadStateRead@ would be enough, but the logic is sound only on client.
-currentSkillsClient :: MonadClient m => ActorId -> m Ability.Skills
+currentSkillsClient :: MonadClientRead m => ActorId -> m Ability.Skills
 currentSkillsClient aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside

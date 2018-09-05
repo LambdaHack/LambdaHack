@@ -85,8 +85,7 @@ continueRun arena paramOld = case paramOld of
            Left _ -> continueRun arena paramNew
                        -- run all others undisturbed; one time
            Right dir -> do
-             s <- getState
-             modifyClient $ updateLeader r s
+             updateClientLeader r
              modifySession $ \sess -> sess {srunning = Just paramNew}
              return $ Right $ ReqMove dir
          -- The potential invisible actor is hit. War is started without asking.
@@ -157,7 +156,7 @@ enterableDir :: COps -> Level -> Point -> Vector -> Bool
 enterableDir COps{coTileSpeedup} lvl spos dir =
   Tile.isWalkable coTileSpeedup $ lvl `at` (spos `shift` dir)
 
-tryTurning :: MonadClient m
+tryTurning :: MonadClientRead m
            => ActorId -> m (Either Text Vector)
 tryTurning aid = do
   cops@COps{cotile} <- getsState scops
@@ -184,7 +183,7 @@ tryTurning aid = do
 
 -- The direction is different than the original, if called from @tryTurning@
 -- and the same if from @continueRunDir@.
-checkAndRun :: MonadClient m
+checkAndRun :: MonadClientRead m
             => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
   COps{cotile} <- getsState scops

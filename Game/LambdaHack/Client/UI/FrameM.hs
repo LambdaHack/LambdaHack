@@ -116,9 +116,9 @@ stopPlayBack = do
       side <- getsClient sside
       fact <- getsState $ (EM.! side) . sfactionD
       arena <- getArenaUI
-      s <- getState
-      when (memActor runLeader arena s && not (noRunWithMulti fact)) $
-        modifyClient $ updateLeader runLeader s
+      memA <- getsState $ memActor runLeader arena
+      when (memA && not (noRunWithMulti fact)) $
+        updateClientLeader runLeader
       modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.

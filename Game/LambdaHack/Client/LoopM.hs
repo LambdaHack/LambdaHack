@@ -34,7 +34,7 @@ initAI = do
   side <- getsClient sside
   debugPossiblyPrint $ "AI client" <+> tshow side <+> "initializing."
 
-initUI :: MonadClientUI m => CCUI -> m ()
+initUI :: (MonadClient m, MonadClientUI m) => CCUI -> m ()
 initUI sccui@CCUI{coscreen} = do
   side <- getsClient sside
   soptions <- getsClient soptions

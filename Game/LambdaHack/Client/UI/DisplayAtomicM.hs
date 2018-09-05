@@ -74,6 +74,8 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- | Visualize atomic updates sent to the client. This is done
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
+-- Don't modify client state (except a few fields), but only client
+-- session (e.g., by displaying messages). This is enforced by types.
 displayRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
 displayRespUpdAtomicUI verbose cmd = case cmd of
@@ -896,6 +898,8 @@ discover c iid = do
 -- * RespSfxAtomicUI
 
 -- | Display special effects (text, animation) sent to the client.
+-- Don't modify client state (except a few fields), but only client
+-- session (e.g., by displaying messages). This is enforced by types.
 displayRespSfxAtomicUI :: MonadClientUI m => SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI sfx = case sfx of

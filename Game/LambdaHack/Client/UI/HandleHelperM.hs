@@ -186,8 +186,7 @@ pickLeader verbose aid = do
       let subject = partActor bodyUI
       when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
       -- Update client state.
-      s <- getState
-      modifyClient $ updateLeader aid s
+      updateClientLeader aid
       -- Move the xhair, if active, to the new level.
       case saimMode of
         Nothing -> return ()
@@ -274,7 +273,7 @@ itemOverlay lSlots lid bag = do
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
   return (concat ts, zipWith renumber [0..] kxs)
 
-statsOverlay :: MonadClient m => ActorId -> m OKX
+statsOverlay :: MonadClientRead m => ActorId -> m OKX
 statsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -320,7 +319,7 @@ placeParts (_, ne, na, nd) =
   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
   ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
 
-placesOverlay :: MonadClient m => m OKX
+placesOverlay :: MonadClientRead m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions

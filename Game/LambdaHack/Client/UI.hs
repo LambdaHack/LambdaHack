@@ -56,7 +56,7 @@ import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
-queryUI :: MonadClientUI m => m RequestUI
+queryUI :: (MonadClient m, MonadClientUI m) => m RequestUI
 queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -113,7 +113,7 @@ queryUI = do
                  else Nothing)
 
 -- | Let the human player issue commands until any command takes time.
-humanCommand :: forall m. MonadClientUI m => m ReqUI
+humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
   modifySession $ \sess -> sess { slastLost = ES.empty
                                 , shintMode = HintAbsent }

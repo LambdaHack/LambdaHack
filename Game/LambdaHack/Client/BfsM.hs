@@ -85,7 +85,7 @@ invalidateBfsPathAll = do
       f BfsAndPath{..} = BfsAndPath{bfsPath = EM.empty, ..}
   modifyClient $ \cli -> cli {sbfsD = EM.map f (sbfsD cli)}
 
-createBfs :: MonadClient m
+createBfs :: MonadClientRead m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
 createBfs canMove alterSkill aid = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
@@ -197,7 +197,7 @@ createPath aid tapTgt = do
       path <- getCachePath aid p
       return $! stopAtUnwalkable path
 
-condBFS :: MonadClient m => ActorId -> m (Bool, Word8)
+condBFS :: MonadClientRead m => ActorId -> m (Bool, Word8)
 condBFS aid = do
   side <- getsClient sside
   -- We assume the actor eventually becomes a leader (or has the same
@@ -297,7 +297,7 @@ data FleeViaStairsOrEscape =
   ViaStairs | ViaStairsUp | ViaStairsDown | ViaEscape | ViaNothing | ViaAnything
   deriving (Show, Eq)
 
-embedBenefit :: MonadClient m
+embedBenefit :: MonadClientRead m
              => FleeViaStairsOrEscape -> ActorId
              -> [(Point, ItemBag)]
              -> m [(Double, (Point, ItemBag))]
@@ -411,7 +411,7 @@ closestTriggers fleeVia aid = do
 -- repeatedly move towards and away form stairs at leader change,
 -- depending on current leader's gear.
 -- Number of items of a single kind is ignored, because variety is needed.
-condEnoughGearM :: MonadClient m => ActorId -> m Bool
+condEnoughGearM :: MonadClientRead m => ActorId -> m Bool
 condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -423,7 +423,7 @@ condEnoughGearM aid = do
            && (any (IA.isMelee . aspectRecordFull . snd) eqpAssocs
                || length eqpAssocs + length invAssocs >= 5)
 
-unexploredDepth :: MonadClient m => Bool -> LevelId -> m Bool
+unexploredDepth :: MonadClientRead m => Bool -> LevelId -> m Bool
 unexploredDepth !up !lidCurrent = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored

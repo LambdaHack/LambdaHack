@@ -128,7 +128,7 @@ data UpdAtomic =
 instance Binary UpdAtomic
 
 -- | Abstract syntax of atomic special effects, that is, atomic commands
--- that only display special effects and don't change 'State'.
+-- that only display special effects and don't change 'State' nor client state.
 data SfxAtomic =
     SfxStrike ActorId ActorId ItemId CStore
   | SfxRecoil ActorId ActorId ItemId CStore

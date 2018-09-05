@@ -256,7 +256,7 @@ waitHuman10 = do
 
 -- * MoveDir and RunDir
 
-moveRunHuman :: MonadClientUI m
+moveRunHuman :: (MonadClient m, MonadClientUI m)
              => Bool -> Bool -> Bool -> Bool -> Vector
              -> m (FailOrCmd RequestTimed)
 moveRunHuman initialStep finalGoal run runAhead dir = do
@@ -336,7 +336,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     _ : _ -> failWith "actor in the way"
 
 -- | Actor attacks an enemy actor or his own projectile.
-meleeAid :: MonadClientUI m
+meleeAid :: (MonadClient m, MonadClientUI m)
          => ActorId -> m (FailOrCmd RequestTimed)
 meleeAid target = do
   leader <- getLeaderUI
@@ -515,10 +515,12 @@ runOnceAheadHuman = do
 
 -- * MoveOnceToXhair
 
-moveOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
+moveOnceToXhairHuman :: (MonadClient m, MonadClientUI m)
+                     => m (FailOrCmd RequestTimed)
 moveOnceToXhairHuman = goToXhair True False
 
-goToXhair :: MonadClientUI m => Bool -> Bool -> m (FailOrCmd RequestTimed)
+goToXhair :: (MonadClient m, MonadClientUI m)
+          => Bool -> Bool -> m (FailOrCmd RequestTimed)
 goToXhair initialStep run = do
   aimMode <- getsSession saimMode
   -- Movement is legal only outside aiming mode.
@@ -563,7 +565,7 @@ goToXhair initialStep run = do
                     dir = towards (bpos b) p1
                 moveRunHuman initialStep finalGoal run False dir
 
-multiActorGoTo :: MonadClientUI m
+multiActorGoTo :: (MonadClient m, MonadClientUI m)
                => LevelId -> Point -> RunParams -> m (FailOrCmd (Bool, Vector))
 multiActorGoTo arena c paramOld =
   case paramOld of
@@ -604,12 +606,14 @@ multiActorGoTo arena c paramOld =
 
 -- * RunOnceToXhair
 
-runOnceToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
+runOnceToXhairHuman :: (MonadClient m, MonadClientUI m)
+                    => m (FailOrCmd RequestTimed)
 runOnceToXhairHuman = goToXhair True True
 
 -- * ContinueToXhair
 
-continueToXhairHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
+continueToXhairHuman :: (MonadClient m, MonadClientUI m)
+                     => m (FailOrCmd RequestTimed)
 continueToXhairHuman = goToXhair False False{-irrelevant-}
 
 -- * MoveItem
@@ -775,7 +779,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
 
 -- * Project
 
-projectHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
+projectHuman :: (MonadClient m, MonadClientUI m) => m (FailOrCmd RequestTimed)
 projectHuman = do
   actorSk <- leaderSkillsClientUI
   if Ability.getSk Ability.SkProject actorSk <= 0 then  -- detailed check later
@@ -795,7 +799,7 @@ projectHuman = do
             projectItem i
       Nothing -> failWith "no item to fling"
 
-projectItem :: MonadClientUI m
+projectItem :: (MonadClient m, MonadClientUI m)
             => (CStore, (ItemId, ItemFull))
             -> m (FailOrCmd RequestTimed)
 projectItem (fromCStore, (iid, itemFull)) = do
@@ -1390,13 +1394,13 @@ challengesMenuHuman cmdAction = do
 
 -- * GameScenarioIncr
 
-gameScenarioIncr :: MonadClientUI m => m ()
+gameScenarioIncr :: MonadClient m => m ()
 gameScenarioIncr =
   modifyClient $ \cli -> cli {snxtScenario = snxtScenario cli + 1}
 
 -- * GameDifficultyIncr
 
-gameDifficultyIncr :: MonadClientUI m => m ()
+gameDifficultyIncr :: MonadClient m => m ()
 gameDifficultyIncr = do
   nxtDiff <- getsClient $ cdiff . snxtChal
   let delta = 1
@@ -1407,16 +1411,16 @@ gameDifficultyIncr = do
 
 -- * GameWolfToggle
 
-gameWolfToggle :: MonadClientUI m => m ()
+gameWolfToggle :: MonadClient m => m ()
 gameWolfToggle =
   modifyClient $ \cli ->
     cli {snxtChal = (snxtChal cli) {cwolf = not (cwolf (snxtChal cli))} }
 
 -- * GameFishToggle
 
-gameFishToggle :: MonadClientUI m => m ()
+gameFishToggle :: MonadClient m => m ()
 gameFishToggle =
-    modifyClient $ \cli ->
+  modifyClient $ \cli ->
     cli {snxtChal = (snxtChal cli) {cfish = not (cfish (snxtChal cli))} }
 
 -- * GameRestart

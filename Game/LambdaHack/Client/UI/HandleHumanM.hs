@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.UI.HandleHelperM
 import Game.LambdaHack.Client.UI.HandleHumanGlobalM
@@ -23,7 +24,8 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 -- Some time cosuming commands are enabled even in aiming mode, but cannot be
 -- invoked in aiming mode on a remote level (level different than
 -- the level of the leader), which is caught here.
-cmdHumanSem :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
+cmdHumanSem :: (MonadClient m, MonadClientUI m)
+            => HumanCmd -> m (Either MError ReqUI)
 cmdHumanSem cmd =
   if noRemoteHumanCmd cmd then do
     -- If in aiming mode, check if the current level is the same
@@ -54,7 +56,8 @@ noRemoteHumanCmd cmd = case cmd of
   ContinueToXhair -> True
   _ -> False
 
-cmdAction :: MonadClientUI m => HumanCmd -> m (Either MError ReqUI)
+cmdAction :: (MonadClient m, MonadClientUI m)
+          => HumanCmd -> m (Either MError ReqUI)
 cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l

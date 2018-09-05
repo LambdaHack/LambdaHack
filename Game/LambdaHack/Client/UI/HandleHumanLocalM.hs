@@ -308,7 +308,8 @@ chooseItemDialogMode c = do
 
 -- * ChooseItemProject
 
-chooseItemProjectHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
+chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m)
+                       => [TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -436,7 +437,7 @@ xhairLegalEps = do
       then return $ Left "selected translation is void"
       else findNewEps True shifted  -- True, because the goal is vague anyway
 
-posFromXhair :: MonadClientUI m => m (Either Text Point)
+posFromXhair :: (MonadClient m, MonadClientUI m) => m (Either Text Point)
 posFromXhair = do
   canAim <- xhairLegalEps
   case canAim of
@@ -456,7 +457,7 @@ posFromXhair = do
 
 -- | On top of @permittedProjectClient@, it also checks LOS, legality
 -- of aiming at the target, projection range. It also modifies @eps@.
-psuitReq :: MonadClientUI m
+psuitReq :: (MonadClient m, MonadClientUI m)
          => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq = do
   leader <- getLeaderUI
@@ -756,7 +757,7 @@ markSmellHuman = modifySession toggleMarkSmell
 
 -- * MarkSuspect
 
-markSuspectHuman :: MonadClientUI m => m ()
+markSuspectHuman :: MonadClient m => m ()
 markSuspectHuman = do
   -- @condBFS@ depends on the setting we change here.
   invalidateBfsAll
@@ -780,14 +781,14 @@ cancelHuman = do
 
 -- | Accept the current x-hair position as target, ending
 -- aiming mode, if active.
-acceptHuman :: MonadClientUI m => m ()
+acceptHuman :: (MonadClient m, MonadClientUI m) => m ()
 acceptHuman = do
   endAiming
   endAimingMsg
   clearAimMode
 
 -- | End aiming mode, accepting the current position.
-endAiming :: MonadClientUI m => m ()
+endAiming :: (MonadClient m, MonadClientUI m) => m ()
 endAiming = do
   leader <- getLeaderUI
   sxhair <- getsSession sxhair
@@ -804,7 +805,7 @@ endAimingMsg = do
 
 -- * TgtClear
 
-tgtClearHuman :: MonadClientUI m => m ()
+tgtClearHuman :: (MonadClient m, MonadClientUI m) => m ()
 tgtClearHuman = do
   leader <- getLeaderUI
   tgt <- getsClient $ getTarget leader
@@ -1014,7 +1015,7 @@ aimAscendHuman k = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the aiming digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m ()
+epsIncrHuman :: (MonadClient m, MonadClientUI m) => Bool -> m ()
 epsIncrHuman b = do
   saimMode <- getsSession saimMode
   lidV <- viewedLevelUI
@@ -1032,7 +1033,7 @@ flashAiming = do
 
 -- * XhairUnknown
 
-xhairUnknownHuman :: MonadClientUI m => m MError
+xhairUnknownHuman :: (MonadClient m, MonadClientUI m) => m MError
 xhairUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1047,7 +1048,7 @@ xhairUnknownHuman = do
 
 -- * XhairItem
 
-xhairItemHuman :: MonadClientUI m => m MError
+xhairItemHuman :: (MonadClient m, MonadClientUI m) => m MError
 xhairItemHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -1063,7 +1064,7 @@ xhairItemHuman = do
 
 -- * XhairStair
 
-xhairStairHuman :: MonadClientUI m => Bool -> m MError
+xhairStairHuman :: (MonadClient m, MonadClientUI m) => Bool -> m MError
 xhairStairHuman up = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
