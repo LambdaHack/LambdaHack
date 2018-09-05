@@ -78,20 +78,30 @@ handleAndBroadcast ps atomicBroken atomic = do
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> do  -- hear only here; broken commands are never loud
+            -- Projectiles never hear, for speed and simplicity,
+            -- even though they sometimes see. There are flying cameras,
+            -- but no microphones --- drones make too much noise themselves.
             as <- getsState $ fidActorRegularAssocs fid lid
             case atomic of
               UpdAtomic cmd -> do
                 maids <- hearUpdAtomic as cmd
                 case maids of
                   Nothing -> return ()
-                  Just aids -> sendUpdate fid $ UpdHearFid fid
-                                              $ HearUpd (not $ null aids) cmd
+                  Just aids -> do
+                    sendUpdate fid $ UpdHearFid fid
+                                   $ HearUpd (not $ null aids) cmd
+                    mapM_ (\aid -> execUpdAtomic
+                                   $ UpdRefillCalm aid (xM $ -2)) aids
+                      -- -2 to avoid "you hear something"
               SfxAtomic cmd -> do
                 mhear <- hearSfxAtomic as cmd
                 case mhear of
                   Nothing -> return ()
-                  Just (hearMsg, _aids) ->
+                  Just (hearMsg, aids) -> do
                     sendUpdate fid $ UpdHearFid fid hearMsg
+                    mapM_ (\aid -> execUpdAtomic
+                                   $ UpdRefillCalm aid (xM $ -2)) aids
+                      -- -2 to avoid "you hear something"
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
