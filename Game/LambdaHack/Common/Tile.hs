@@ -22,7 +22,8 @@ module Game.LambdaHack.Common.Tile
   , isEasyOpen, isEmbed, alterMinSkill, alterMinWalk
     -- * Slow property lookups
   , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
-  , obscureAs, hideAs, buildAs, isEasyOpenKind, isOpenable, isClosable
+  , obscureAs, hideAs, buildAs
+  , isEasyOpenKind, isOpenable, isClosable, isModifiable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab, alterMinSkillKind, alterMinWalkKind
@@ -322,3 +323,8 @@ isOpenable cotile t = TK.isOpenableKind $ okind cotile t
 -- | Whether a tile kind (specified by its id) has a CloseTo feature.
 isClosable :: ContentData TileKind -> ContentId TileKind -> Bool
 isClosable cotile t = TK.isClosableKind $ okind cotile t
+
+isModifiable :: TileSpeedup -> ContentId TileKind -> Bool
+isModifiable coTileSpeedup t = isDoor coTileSpeedup t
+                               || isChangable coTileSpeedup t
+                               || isSuspect coTileSpeedup t

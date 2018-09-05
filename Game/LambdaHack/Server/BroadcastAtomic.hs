@@ -151,9 +151,9 @@ hearUpdAtomic as cmd = do
       return $! if bproj b && IA.isBlast arItem || null aids
                 then Nothing
                 else Just aids
-    UpdAlterTile _ p fromTile _ -> do
+    UpdAlterTile _ p _ toTile -> do
       aids <- filterHear p as
-      return $! if Tile.isDoor coTileSpeedup fromTile
+      return $! if Tile.isDoor coTileSpeedup toTile
                 then if null aids
                      then Nothing
                      else Just aids

@@ -915,8 +915,8 @@ ppHearMsg hearMsg = case hearMsg of
           UpdTrajectory{} ->
             -- Projectile hits an non-walkable tile on leader's level.
             "thud"
-          UpdAlterTile _ _ fromTile _ ->
-            if Tile.isDoor coTileSpeedup fromTile
+          UpdAlterTile _ _ _ toTile ->
+            if Tile.isDoor coTileSpeedup toTile
             then "creaking sound"
             else "rumble"
           UpdAlterExplorable _ k -> if k > 0 then "grinding noise"

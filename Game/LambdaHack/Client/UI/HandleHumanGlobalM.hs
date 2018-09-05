@@ -434,9 +434,6 @@ moveSearchAlter dir = do
             legal = permittedApply localTime applySkill calmE itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
-      modifiable = Tile.isDoor coTileSpeedup t
-                   || Tile.isChangable coTileSpeedup t
-                   || Tile.isSuspect coTileSpeedup t
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -445,7 +442,7 @@ moveSearchAlter dir = do
              return $ Right $ ReqMove dir
            else failSer MoveUnskilled
        -- Not walkable, so search and/or alter the tile.
-       | not (modifiable || canApplyEmbeds) -> do
+       | not (Tile.isModifiable coTileSpeedup t || canApplyEmbeds) -> do
            let name = MU.Text $ TK.tname $ okind cotile t
            failWith $ makePhrase ["there is no point kicking", MU.AW name]
              -- misclick? related to AlterNothing but no searching possible;
@@ -923,12 +920,10 @@ alterTileAtPos ts tpos pText = do
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       hasFeat TriggerTile{ttfeature} = Tile.hasFeature cotile ttfeature t
-      modifiable = Tile.isDoor coTileSpeedup t
-                   || Tile.isChangable coTileSpeedup t
-                   || Tile.isSuspect coTileSpeedup t
   case filter hasFeat ts of
     [] | not $ null ts -> failWith $ guessAlter cops ts t
-    _ | not modifiable && EM.null embeds -> failSer AlterNothing
+    _ | not (Tile.isModifiable coTileSpeedup t)
+        && EM.null embeds -> failSer AlterNothing
     _ | chessDist tpos (bpos b) > 1 -> failSer AlterDistant
     _ | alterSkill <= 1 -> failSer AlterUnskilled
     _ | not (Tile.isSuspect coTileSpeedup t)
@@ -962,9 +957,7 @@ verifyAlters lid p = do
   getKind <- getsState $ flip getIidKind
   let ks = map getKind $ EM.keys bag
   if | any (any IK.isEffEscape . IK.ieffects) ks -> verifyEscape
-     | null ks && not (Tile.isDoor coTileSpeedup t
-                       || Tile.isChangable coTileSpeedup t
-                       || Tile.isSuspect coTileSpeedup t) ->
+     | null ks && not (Tile.isModifiable coTileSpeedup t) ->
          failWith "never mind"
      | otherwise -> return $ Right ()
 
