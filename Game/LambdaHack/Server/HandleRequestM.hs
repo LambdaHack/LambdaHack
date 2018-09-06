@@ -115,11 +115,19 @@ setBWait cmd aid b = do
         ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
-  if | mwait == Just True ->
-       execUpdAtomic $ UpdWaitActor aid 1
-     | mwait /= Just True && bwait b /= 0 ->
-       execUpdAtomic $ UpdWaitActor aid (- bwait b)
-     | otherwise -> return ()
+      c = CActor aid COrgan
+  if mwait == Just True then do
+    execUpdAtomic $ UpdWaitActor aid 1
+    when (bwait b == 0) $
+      void $ rollAndRegisterItem (blid b) [("braced", 1)] c False Nothing
+  else when (bwait b /= 0) $ do
+    execUpdAtomic $ UpdWaitActor aid (- bwait b)
+    is <- allGroupItems COrgan "braced" aid
+    case is of
+      [(iid, kit)] -> do
+        itemBase <- getsState $ getItemBody iid
+        execUpdAtomic $ UpdLoseItem False iid itemBase kit c
+      _ -> error "missing or multiple 'braced' item"
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
