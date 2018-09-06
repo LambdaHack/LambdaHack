@@ -390,7 +390,7 @@ displaceAid target = do
        && actorDying tb ->
        failSer DisplaceDying
      | not (bproj tb) && atWar
-       && braced tb ->
+       && waitedLastTurn tb ->
        failSer DisplaceBraced
      | not (bproj tb) && atWar
        && immobile ->

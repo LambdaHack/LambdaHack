@@ -218,7 +218,6 @@ skillToDecorator skill b t =
                    in tshow n200 <> if n200 /= n then "$" else ""
       -- Some values can be negative, for others 0 is equivalent but shorter.
       tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
-      tshowBlock k n = tshow200 $ n + if braced b then k else 0
       showIntWith1 :: Int -> Text
       showIntWith1 k =
         let l = k `div` 10
@@ -234,8 +233,8 @@ skillToDecorator skill b t =
     SkProject -> tshow t
     SkApply -> tshow t
     SkHurtMelee -> tshow200 t <> "%"
-    SkArmorMelee -> "[" <> tshowBlock 50 t <> "%]"
-    SkArmorRanged -> "{" <> tshowBlock 25 t <> "%}"
+    SkArmorMelee -> "[" <> tshow200 t <> "%]"
+    SkArmorRanged -> "{" <> tshow200 t <> "%}"
     SkMaxHP -> tshow $ max 0 t
     SkMaxCalm -> tshow $ max 0 t
     SkSpeed -> showIntWith1 (max minSpeed t) <> "m/s"

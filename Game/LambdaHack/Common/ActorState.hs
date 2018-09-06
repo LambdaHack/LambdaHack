@@ -353,7 +353,7 @@ dispEnemy source target actorMaxSk s =
   in bproj tb
      || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
-             || braced tb
+             || waitedLastTurn tb
              || Ability.getSk Ability.SkMove actorMaxSk <= 0
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
@@ -467,16 +467,14 @@ actorAdjacentAssocs body s =
 armorHurtBonus :: ActorId -> ActorId -> State -> Int
 armorHurtBonus source target s =
   let sb = getActorBody source s
-      tb = getActorBody target s
       trim200 n = min 200 $ max (-200) n
-      block200 b n = min 200 $ max (-200) $ n + if braced tb then b else 0
       sMaxSk = getActorMaxSkills source s
       tMaxSk = getActorMaxSkills target s
       itemBonus =
         trim200 (Ability.getSk Ability.SkHurtMelee sMaxSk)
         - if bproj sb
-          then block200 25 (Ability.getSk Ability.SkArmorRanged tMaxSk)
-          else block200 50 (Ability.getSk Ability.SkArmorMelee tMaxSk)
+          then trim200 (Ability.getSk Ability.SkArmorRanged tMaxSk)
+          else trim200 (Ability.getSk Ability.SkArmorMelee tMaxSk)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
 
 -- | Check if any non-dying foe (projectile or not) is adjacent

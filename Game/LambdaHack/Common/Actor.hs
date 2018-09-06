@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills
   , deltaSerious, deltaMild, actorCanMelee
-  , momentarySpeed, gearSpeed, braced, actorTemplate, waitedLastTurn, actorDying
+  , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
@@ -112,10 +112,6 @@ momentarySpeed !b actorMaxSk =
 gearSpeed :: Ability.Skills -> Speed
 gearSpeed actorMaxSk = toSpeed $
   max minSpeed (Ability.getSk Ability.SkSpeed actorMaxSk)  -- see @minimalSpeed@
-
--- | Whether an actor is braced for combat this clip.
-braced :: Actor -> Bool
-braced = waitedLastTurn
 
 actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
               -> Bool

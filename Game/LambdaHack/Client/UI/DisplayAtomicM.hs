@@ -1272,10 +1272,10 @@ strike catch source target iid cstore = assert (source /= target) $ do
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
-                  then if braced tb
+                  then if waitedLastTurn tb
                        then "deflect it"
                        else "fend it off"  -- ward it off
-                  else if braced tb
+                  else if waitedLastTurn tb
                        then "block"  -- parry
                        else "dodge"  -- evade
               butEvenThough = if catch then ", even though" else ", but"
@@ -1285,7 +1285,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                , if | hurtMult >= 50 ->  -- braced or big bonuses
                       "partly"
                     | hurtMult > 1 ->  -- braced and/or huge bonuses
-                      if braced tb then "doggedly" else "nonchalantly"
+                      if waitedLastTurn tb then "doggedly" else "nonchalantly"
                     | otherwise ->         -- 1% got through, which can
                       "almost completely"  -- still be deadly, if fast missile
                ]

@@ -684,7 +684,7 @@ effectAscend recursiveCall execSfx up source target pos = do
   let lid1 = blid b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos (Just up) . sdungeon
   sb <- getsState $ getActorBody source
-  if | braced b1 -> do
+  if | waitedLastTurn b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return UseId
      | lid2 == lid1 && pos2 == pos -> do
@@ -967,7 +967,7 @@ effectTeleport execSfx nDm source target = do
     , dist 7
     , dist 9
     ]
-  if | braced tb -> do
+  if | waitedLastTurn tb -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return UseId
      | not (dMinMax 9 tpos) -> do  -- very rare
@@ -1307,7 +1307,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   tb <- getsState $ getActorBody target
   let eps = 0
       fpos = bpos tb `shift` v
-  if braced tb then do
+  if waitedLastTurn tb then do
     sb <- getsState $ getActorBody source
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on

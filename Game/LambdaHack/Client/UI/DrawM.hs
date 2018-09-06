@@ -582,17 +582,17 @@ drawLeaderStatus waitT = do
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
           calmText = showTrunc (bcalm b `divUp` oneM)
-                     <> (if bdark || not (braced b)
+                     <> (if bdark || not (waitedLastTurn b)
                          then slashPick
                          else "/")
                      <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxCalm
                                                          actorMaxSk)
-          bracePick | braced b  = "}"
+          bracePick | waitedLastTurn b  = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = showTrunc (bhp b `divUp` oneM)
-                   <> (if braced b || not bdark
+                   <> (if waitedLastTurn b || not bdark
                        then slashPick
                        else "/")
                    <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxHP
