@@ -16,11 +16,11 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, impressed]
+  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
   -- LH-specific
   ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
 
-fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, impressed :: ItemKind
+fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
 -- LH-specific
 tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
@@ -431,8 +431,8 @@ sulfurVent = armoredSkin
 bonusHP = armoredSkin
   { isymbol  = 'H'  -- '+' reserved for conditions
   , iname    = "bonus HP"
-  , iflavour = zipPlain [BrBlue]
   , ifreq    = [("bonus HP", 1)]
+  , iflavour = zipPlain [BrBlue]
   , iverbHit = "intimidate"
   , iweight  = 0
   , iaspects = [ AddSkill SkMaxHP 1
@@ -442,8 +442,8 @@ bonusHP = armoredSkin
 braced = armoredSkin
   { isymbol  = 'B'
   , iname    = "braced"
-  , iflavour = zipPlain [BrGreen]
   , ifreq    = [("braced", 1)]
+  , iflavour = zipPlain [BrGreen]
   , iverbHit = "brace"
   , iweight  = 0
   , iaspects = [ AddSkill SkArmorMelee 50, AddSkill SkArmorRanged 25
@@ -451,11 +451,25 @@ braced = armoredSkin
                    -- hack: display as condition
   , idesc    = ""
   }
+asleep = armoredSkin
+  { isymbol  = 'A'
+  , iname    = "asleep"
+  , ifreq    = [("asleep", 1)]
+  , iflavour = zipPlain [BrMagenta]
+  , icount   = 5
+  , iverbHit = "slay"
+  , iweight  = 0
+  , iaspects = [ AddSkill SkMove (-1), AddSkill SkProject (-1)
+               , AddSkill SkSight (-3), AddSkill SkArmorMelee (-10)
+               , SetFlag Fragile, SetFlag Durable ]
+                   -- hack: display as condition
+  , idesc    = ""
+  }
 impressed = armoredSkin
   { isymbol  = '!'
   , iname    = "impressed"
-  , iflavour = zipPlain [BrRed]
   , ifreq    = [("impressed", 1), ("condition", 1)]
+  , iflavour = zipPlain [BrRed]
   , iverbHit = "confuse"
   , iweight  = 0
   , iaspects = [ AddSkill SkMaxCalm (-1)
