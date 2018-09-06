@@ -462,7 +462,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                  + max benApply (- benMelee)  -- apply or melee or not
             else - benMelee)  -- melee is predominant
         | (IA.goesIntoEqp arItem
-          || IA.isTmpCondition arItem)  -- hack to record benefit
+          || isJust (lookup "condition" $ IK.ifreq itemKind))
+               -- hack to record benefit, to use it in calculations later on
           && (eqpSum > 0 || itemSuspect) =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply
           , eqpSum  -- possibly spent turn equipping, so reap the benefits

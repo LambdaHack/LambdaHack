@@ -199,9 +199,10 @@ chooseItemDialogMode c = do
             sess {sitemSel = Just (iid, fromCStore, False)}
           return $ Right c2
         MOrgans -> do
-          let blurb itemFull
-                | IA.isTmpCondition $ aspectRecordFull itemFull = "condition"
-                | otherwise = "organ"
+          let blurb itemFull =
+                if IA.looksLikeCondition $ aspectRecordFull itemFull
+                then "condition"
+                else "organ"
               prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
                                               , MU.AW $ blurb itemFull ]
           displayLore ix0 prompt2

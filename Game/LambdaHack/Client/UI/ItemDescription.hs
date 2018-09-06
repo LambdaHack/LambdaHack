@@ -219,7 +219,7 @@ partItemWsR side factionD ranged count localTime itemFull kit =
   let (temporary, unique, name, stats) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
-      tmpCondition = IA.isTmpCondition arItem
+      tmpCondition = IA.looksLikeCondition arItem
   in ( temporary
      , if | temporary && count == 1 -> MU.Phrase [name, stats]
           | temporary ->
@@ -279,7 +279,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       range = rangeFromSpeedAndLinger speed throwLinger
-      tspeed | IA.isTmpCondition arItem = ""
+      tspeed | IA.looksLikeCondition arItem || IK.iweight itemKind == 0 = ""
              | speed < speedLimp = "When thrown, it drops at once."
              | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
              | otherwise =
@@ -340,7 +340,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
-          Just fid | IA.isTmpCondition arItem ->
+          Just fid | IA.looksLikeCondition arItem ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
             <> ". First observed" <+> onLevel
           Just fid ->

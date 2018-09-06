@@ -108,7 +108,7 @@ loreFromContainer arItem c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
   CActor _ store -> if | IA.isBlast arItem -> SBlast
-                       | IA.isTmpCondition arItem -> STmp
+                       | IA.looksLikeCondition arItem -> STmp
                        | otherwise -> loreFromMode $ MStore store
   CTrunk{} -> if IA.isBlast arItem then SBlast else STrunk
 
@@ -254,7 +254,7 @@ itemOverlay lSlots lid bag = do
           Just kit@(k, _) ->
             let itemFull = itemToF iid
                 colorSymbol =
-                  if IA.isTmpCondition $ aspectRecordFull itemFull
+                  if isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFull
                   then let color = if benInEqp (discoBenefit EM.! iid)
                                    then Color.BrGreen
                                    else Color.BrRed

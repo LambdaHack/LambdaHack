@@ -89,7 +89,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
-            if IA.isTmpCondition arItem then do
+            if IA.looksLikeCondition arItem then do
               bag <- getsState $ getContainerBag c
               let more = case EM.lookup iid bag of
                     Nothing -> False
@@ -1205,7 +1205,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
           (_, _, name, stats) =
             partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
-          cond = ["condition" | IA.isTmpCondition $ aspectRecordFull itemFull]
+          cond = [ "condition"
+                 | IA.looksLikeCondition $ aspectRecordFull itemFull ]
       return $! makeSentence $
         ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
     else return ""

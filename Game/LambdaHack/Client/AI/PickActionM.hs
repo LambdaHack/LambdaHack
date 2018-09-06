@@ -735,11 +735,9 @@ applyItem aid applyGroup = do
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
   getKind <- getsState $ flip getIidKind
-  getArItem <- getsState $ flip aspectRecordFromIid
   let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
-            arItem = getArItem iid
-        in if IA.isTmpCondition arItem
+        in if isJust $ lookup "condition" $ IK.ifreq itemKind
            then Just $ if benInEqp (discoBenefit EM.! iid)
                        then Left $ toGroupName $ IK.iname itemKind
                          -- conveniently, @iname@ matches @ifreq@
@@ -762,11 +760,11 @@ applyItem aid applyGroup = do
             dropsGrps = IK.getDropOrgans itemKind
             dropsBadOrgans =
               not (null myBadGrps)
-              && toGroupName "condition" `elem` dropsGrps
+              && "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myBadGrps))
             dropsGoodOrgans =
               not (null myGoodGrps)
-              && toGroupName "condition" `elem` dropsGrps
+              && "condition" `elem` dropsGrps
                  || not (null (dropsGrps `intersect` myGoodGrps))
             wastesDrop = null myBadGrps && not (null dropsGrps)
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull

@@ -154,7 +154,7 @@ instance Binary AutoLeader
 instance NFData AutoLeader
 
 nameOfHorrorFact :: GroupName ItemKind
-nameOfHorrorFact = toGroupName "horror"
+nameOfHorrorFact = "horror"
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]

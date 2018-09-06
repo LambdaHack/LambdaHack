@@ -446,7 +446,9 @@ braced = armoredSkin
   , ifreq    = [("braced", 1)]
   , iverbHit = "brace"
   , iweight  = 0
-  , iaspects = [AddSkill SkArmorMelee 50, AddSkill SkArmorRanged 25]
+  , iaspects = [ AddSkill SkArmorMelee 50, AddSkill SkArmorRanged 25
+               , SetFlag Fragile, SetFlag Durable ]
+                   -- hack: display as condition
   , idesc    = ""
   }
 impressed = armoredSkin

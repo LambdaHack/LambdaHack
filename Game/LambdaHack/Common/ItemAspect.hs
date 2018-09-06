@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ItemAspect
   , aspectRecordToList, rollAspectRecord
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
   , onlyMinorEffects, itemTrajectory, totalRange
-  , isMelee, isTmpCondition, isBlast, isHumanTrinket
+  , isMelee, looksLikeCondition, isBlast, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -205,9 +205,9 @@ totalRange ar itemKind = snd $ snd $ itemTrajectory ar itemKind []
 isMelee :: AspectRecord -> Bool
 isMelee = checkFlag Ability.Meleeable
 
-isTmpCondition :: AspectRecord -> Bool
-isTmpCondition ar = checkFlag Ability.Fragile ar
-                    && checkFlag Ability.Durable ar
+looksLikeCondition :: AspectRecord -> Bool
+looksLikeCondition ar = checkFlag Ability.Fragile ar
+                        && checkFlag Ability.Durable ar
 
 isBlast :: AspectRecord -> Bool
 isBlast = checkFlag Ability.Blast
