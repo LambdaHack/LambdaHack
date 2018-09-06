@@ -63,7 +63,7 @@ data Actor = Actor
   , bweapon     :: Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
-  , bwait       :: Bool         -- ^ is the actor waiting right now?
+  , bwait       :: Int          -- ^ length of the actor's waiting streak
   , bproj       :: Bool         -- ^ is a projectile? affects being able
                                 --   to fly through other projectiles, etc.
   }
@@ -115,7 +115,7 @@ gearSpeed actorMaxSk = toSpeed $
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
-braced = bwait
+braced = waitedLastTurn
 
 actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
               -> Bool
@@ -127,14 +127,14 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       beqp    = EM.empty
       binv    = EM.empty
       bweapon = 0
-      bwait   = False
+      bwait   = 0
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
 
 waitedLastTurn :: Actor -> Bool
 {-# INLINE waitedLastTurn #-}
-waitedLastTurn = bwait
+waitedLastTurn b = bwait b /= 0
 
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0

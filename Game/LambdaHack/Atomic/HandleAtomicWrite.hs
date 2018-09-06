@@ -82,7 +82,7 @@ handleUpdAtomic cmd = case cmd of
   UpdSpotItemBag c bag ais -> updSpotItemBag c bag ais
   UpdLoseItemBag c bag ais -> updLoseItemBag c bag ais
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
-  UpdWaitActor aid toWait -> updWaitActor aid toWait
+  UpdWaitActor aid n -> updWaitActor aid n
   UpdDisplaceActor source target -> updDisplaceActor source target
   UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdRefillHP aid n -> updRefillHP aid n
@@ -260,13 +260,13 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   updateActor aid $ const newBody
   moveActorMap aid body newBody
 
-updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
-updWaitActor aid toWait = do
+updWaitActor :: MonadStateWrite m => ActorId -> Int -> m ()
+updWaitActor aid n = do
   b <- getsState $ getActorBody aid
-  let !_A = assert (toWait /= bwait b
+  let !_A = assert (n /= 0
                     `blame` "unexpected waited actor time"
-                    `swith` (aid, toWait, bwait b, b)) ()
-  updateActor aid $ \body -> body {bwait = toWait}
+                    `swith` (aid, n, bwait b, b)) ()
+  updateActor aid $ \body -> body {bwait = bwait body + n}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do

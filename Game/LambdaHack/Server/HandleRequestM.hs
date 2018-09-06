@@ -104,6 +104,9 @@ handleRequestUI fid aid cmd = case cmd of
 -- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
+-- In the result, we collect the number of server requests pertaining
+-- to the actor (the number of actor's "moves"), through which
+-- the actor was waiting.
 setBWait :: MonadServerAtomic m
          => RequestTimed -> ActorId -> Actor -> m (Maybe Bool)
 {-# INLINE setBWait #-}
@@ -112,8 +115,11 @@ setBWait cmd aid b = do
         ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
-  when ((mwait == Just True) /= bwait b) $
-    execUpdAtomic $ UpdWaitActor aid (mwait == Just True)
+  if | mwait == Just True ->
+       execUpdAtomic $ UpdWaitActor aid 1
+     | mwait /= Just True && bwait b /= 0 ->
+       execUpdAtomic $ UpdWaitActor aid (- bwait b)
+     | otherwise -> return ()
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
