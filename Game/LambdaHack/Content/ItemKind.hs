@@ -464,7 +464,7 @@ hardwiredItemGroups =
     -- "curious item", "treasure", "any scroll", "any vial",
     -- "potion", "explosive", "any jewelry"
   -- Assorted:
-  ++ ["bonus HP", "currency", "impressed", "mobile"]
+  ++ ["bonus HP", "braced", "currency", "impressed", "mobile"]
 
 makeData :: [ItemKind] -> ContentData ItemKind
 makeData = makeContentData "ItemKind" iname ifreq validateSingle validateAll
