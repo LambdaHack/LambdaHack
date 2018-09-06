@@ -112,15 +112,19 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
                      | otherwise = []
-            aes = if active
-                  then map ppA restAs ++ map ppE restEs
-                  else map ppE restEs ++ map ppA restAs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
                            $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map ppE $ IK.stripOnSmash restEs
             durable = IA.checkFlag Ability.Durable arItem
             fragile = IA.checkFlag Ability.Fragile arItem
+            noFraDur as = as `notElem` [ IK.SetFlag Ability.Durable
+                                       , IK.SetFlag Ability.Fragile ]
+            displayedAs | durable && fragile = filter noFraDur restAs
+                        | otherwise = restAs
+            aes = if active
+                  then map ppA displayedAs ++ map ppE restEs
+                  else map ppE restEs ++ map ppA displayedAs
             periodicOrTimeout =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
