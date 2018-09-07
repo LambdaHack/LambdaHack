@@ -182,8 +182,10 @@ hearSfxAtomic as cmd =
                 then Nothing
                 else Just (HearSummon (bproj b) grp p, aids)
     SfxTaunt source -> do
+      b <- getsState $ getActorBody source
+      aids <- filterHear (bpos b) as
       (subject, verb) <- displayTaunt rndToAction source
-      return $ Just (HearTaunt $ subject <+> verb, [])
+      return $ Just (HearTaunt $ subject <+> verb, aids)  -- intentional
     _ -> return Nothing
 
 filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]
