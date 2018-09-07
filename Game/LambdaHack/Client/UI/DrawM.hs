@@ -574,7 +574,10 @@ drawLeaderStatus waitT = do
             | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
-          calmAddAttr = checkDelta $ bcalmDelta b
+          checkSleep body resDelta
+            | bwait body == Sleep = addColor Color.BrMagenta
+            | otherwise = checkDelta resDelta
+          calmAddAttr = checkSleep b $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
           -- if a tile is lit, because it it's seen it may be due to ambient
           -- or dynamic light or due to infravision.
