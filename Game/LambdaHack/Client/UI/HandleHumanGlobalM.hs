@@ -152,10 +152,16 @@ areaToRectangles ca = map toArea <$> do
                 in return [(0, y, x - 24, y)]
   CaCalmGauge -> let y = rheight - 1
                      x = (rwidth - 1) `div` 2
-                 in return [(x - 22, y, x - 11, y)]
+                 in return [(x - 22, y, x - 18, y)]
+  CaCalmValue -> let y = rheight - 1
+                     x = (rwidth - 1) `div` 2
+                 in return [(x - 17, y, x - 11, y)]
   CaHPGauge -> let y = rheight - 1
                    x = (rwidth - 1) `div` 2
-               in return [(x - 9, y, x, y)]
+               in return [(x - 9, y, x - 6, y)]
+  CaHPValue -> let y = rheight - 1
+                   x = (rwidth - 1) `div` 2
+               in return [(x - 6, y, x, y)]
   CaTargetDesc -> let y = rheight - 1
                       x = (rwidth - 1) `div` 2 + 2
                   in return [(x, y, rwidth - 1, y)]

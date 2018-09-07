@@ -136,8 +136,10 @@ mouseLMB =
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
-    , (CaCalmGauge, Macro ["KP_5", "C-V"])
-    , (CaHPGauge, Wait)
+--    , (CaCalmGauge, Macro ["KP_5", "C-V"])
+--    , (CaCalmValue, Macro ["KP_5", "C-V"])
+    , (CaHPGauge, Macro ["KP_5", "C-V"])
+    , (CaHPValue, Wait)
     , (CaTargetDesc, projectICmd flingTs) ]
 
 mouseMMB :: CmdTriple
@@ -166,8 +168,10 @@ mouseRMB =
     , (CaLevelNumber, AimAscend (-1))
     , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
-    , (CaCalmGauge, Macro ["C-KP_5", "V"])
-    , (CaHPGauge, Wait10)
+--    , (CaCalmGauge, Macro ["C-KP_5", "V"])
+--    , (CaCalmValue, Macro ["C-KP_5", "V"])
+    , (CaHPGauge, Macro ["C-KP_5", "V"])
+    , (CaHPValue, Wait10)
     , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ]
 
 goToCmd :: HumanCmd
