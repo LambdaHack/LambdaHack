@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers
     ActorId
     -- * The@ Acto@r type, its components and operations on them
-  , Actor(..), ResDelta(..), ActorMaxSkills
+  , Actor(..), ResDelta(..), ActorMaxSkills, WaitState(..)
   , deltaSerious, deltaMild, actorCanMelee
   , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough
@@ -63,7 +63,7 @@ data Actor = Actor
   , bweapon     :: Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
-  , bwait       :: Int          -- ^ length of the actor's waiting streak
+  , bwait       :: WaitState    -- ^ length of the actor's waiting streak
   , bproj       :: Bool         -- ^ is a projectile? affects being able
                                 --   to fly through other projectiles, etc.
   }
@@ -84,6 +84,11 @@ type ActorMaxSkills = EM.EnumMap ActorId Ability.Skills
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
+
+data WaitState = Watch | Wait Int | Sleep
+  deriving (Show, Eq, Generic)
+
+instance Binary WaitState
 
 deltaSerious :: ResDelta -> Bool
 deltaSerious ResDelta{..} =
@@ -123,14 +128,16 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       beqp    = EM.empty
       binv    = EM.empty
       bweapon = 0
-      bwait   = 0
+      bwait   = Watch
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
 
 waitedLastTurn :: Actor -> Bool
 {-# INLINE waitedLastTurn #-}
-waitedLastTurn b = bwait b /= 0
+waitedLastTurn b = case bwait b of
+  Wait{} -> True
+  _ -> False
 
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0

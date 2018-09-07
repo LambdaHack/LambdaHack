@@ -142,7 +142,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdLoseItemBag{} -> return ()
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
-  UpdWaitActor aid _ -> when verbose $ aidVerbMU aid "wait"
+  UpdWaitActor{} -> return ()
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.

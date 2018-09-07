@@ -77,7 +77,7 @@ data UpdAtomic =
   | UpdLoseItemBag Container ItemBag [(ItemId, Item)]
   -- Move actors and items.
   | UpdMoveActor ActorId Point Point
-  | UpdWaitActor ActorId Int
+  | UpdWaitActor ActorId WaitState WaitState
   | UpdDisplaceActor ActorId ActorId
   | UpdMoveItem ItemId Int ActorId CStore CStore
   -- Change actor attributes.
@@ -201,7 +201,7 @@ undoUpdAtomic cmd = case cmd of
   UpdSpotItemBag c bag ais -> Just $ UpdLoseItemBag c bag ais
   UpdLoseItemBag c bag ais -> Just $ UpdSpotItemBag c bag ais
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
-  UpdWaitActor aid n -> Just $ UpdWaitActor aid (- n)
+  UpdWaitActor aid fromWS toWS -> Just $ UpdWaitActor aid toWS fromWS
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
   UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)

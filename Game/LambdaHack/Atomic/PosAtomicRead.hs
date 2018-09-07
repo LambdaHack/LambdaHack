@@ -90,7 +90,7 @@ posUpdAtomic cmd = case cmd of
     return $! if bproj b
               then PosSight (blid b) [fromP, toP]
               else PosFidAndSight [bfid b] (blid b) [fromP, toP]
-  UpdWaitActor aid _ -> singleAid aid
+  UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
   UpdMoveItem _ _ _ _ CSha ->
     error $ "" `showFailure` cmd  -- shared stash is private

@@ -128,25 +128,29 @@ setBWait cmd aid b = do
             return $ nAll - 1
           _ -> error $ "setBWait: missing or multiple" `showFailure` (name, is)
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  if | bwait b == -1 ->
+  if | bwait b == Sleep ->
        when (not (calmEnough b actorMaxSk) || mwait /= Just True) $ do
          nAll <- removeConditionSingle "asleep"
          when (nAll == 0) $
-           execUpdAtomic $ UpdWaitActor aid 1
-     | mwait == Just True ->
-       if bwait b >= 100 && calmEnough b actorMaxSk then do
-         nAll <- removeConditionSingle "braced"
-         let !_A = assert (nAll == 0) ()
-         addCondition "asleep"
-         execUpdAtomic $ UpdWaitActor aid (- bwait b - 1)
-       else do
-         when (bwait b == 0) $ addCondition "braced"
-         execUpdAtomic $ UpdWaitActor aid 1
-     | bwait b > 0 -> do
-       nAll <- removeConditionSingle "braced"
-       let !_A = assert (nAll == 0) ()
-       execUpdAtomic $ UpdWaitActor aid (- bwait b)
-     | otherwise -> return ()
+           execUpdAtomic $ UpdWaitActor aid Sleep Watch
+     | mwait == Just True -> case bwait b of
+         Wait n | n >= 100 && calmEnough b actorMaxSk -> do
+           nAll <- removeConditionSingle "braced"
+           let !_A = assert (nAll == 0) ()
+           addCondition "asleep"
+           execUpdAtomic $ UpdWaitActor aid (Wait n) Sleep
+         Wait n ->
+           execUpdAtomic $ UpdWaitActor aid (Wait n) (Wait $ n + 1)
+         Watch -> do
+           addCondition "braced"
+           execUpdAtomic $ UpdWaitActor aid Watch (Wait 1)
+         Sleep -> error "setBWait: impossible Sleep"
+     | otherwise -> case bwait b of
+         Wait _ -> do
+           nAll <- removeConditionSingle "braced"
+           let !_A = assert (nAll == 0) ()
+           execUpdAtomic $ UpdWaitActor aid (bwait b) Watch
+         _ -> return ()
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
