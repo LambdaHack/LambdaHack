@@ -3,8 +3,8 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , dropCStoreItem, highestImpression, dominateFidSfx, pickDroppable
-  , refillHP, cutCalm
+  , allGroupItems, dropCStoreItem, highestImpression, dominateFidSfx
+  , pickDroppable, refillHP, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
@@ -13,7 +13,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDominate, dominateFid, effectImpress, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
   , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
-  , effectDropItem, allGroupItems, effectPolyItem, effectIdentify, identifyIid
+  , effectDropItem, effectPolyItem, effectIdentify, identifyIid
   , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
