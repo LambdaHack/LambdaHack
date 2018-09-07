@@ -116,18 +116,36 @@ setBWait cmd aid b = do
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
       c = CActor aid COrgan
-  if mwait == Just True then do
-    execUpdAtomic $ UpdWaitActor aid 1
-    when (bwait b == 0) $
-      void $ rollAndRegisterItem (blid b) [("braced", 1)] c False Nothing
-  else when (bwait b /= 0) $ do
-    execUpdAtomic $ UpdWaitActor aid (- bwait b)
-    is <- allGroupItems COrgan "braced" aid
-    case is of
-      [(iid, kit)] -> do
-        itemBase <- getsState $ getItemBody iid
-        execUpdAtomic $ UpdLoseItem False iid itemBase kit c
-      _ -> error "missing or multiple 'braced' item"
+      addCondition name =
+        void $ rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
+      removeConditionSingle name = do
+        is <- allGroupItems COrgan name aid
+        case is of
+          [(iid, (nAll, itemTimer))] -> do
+            itemBase <- getsState $ getItemBody iid
+            execUpdAtomic $ UpdLoseItem False iid itemBase (1, itemTimer) c
+            return $ nAll - 1
+          _ -> error $ "setBWait: missing or multiple" `showFailure` (name, is)
+  actorMaxSk <- getsState $ getActorMaxSkills aid
+  if | bwait b == -1 ->
+       when (not (calmEnough b actorMaxSk) || mwait /= Just True) $ do
+         nAll <- removeConditionSingle "asleep"
+         when (nAll == 0) $
+           execUpdAtomic $ UpdWaitActor aid 1
+     | mwait == Just True ->
+       if bwait b >= 100 && calmEnough b actorMaxSk then do
+         nAll <- removeConditionSingle "braced"
+         let !_A = assert (nAll == 0) ()
+         addCondition "asleep"
+         execUpdAtomic $ UpdWaitActor aid (- 101)
+       else do
+         when (bwait b == 0) $ addCondition "braced"
+         execUpdAtomic $ UpdWaitActor aid 1
+     | bwait b > 0 -> do
+       nAll <- removeConditionSingle "braced"
+       let !_A = assert (nAll == 0) ()
+       execUpdAtomic $ UpdWaitActor aid (- bwait b)
+     | otherwise -> return ()
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m

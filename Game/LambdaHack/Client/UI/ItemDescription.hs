@@ -229,7 +229,13 @@ partItemWsR side factionD ranged count localTime itemFull kit =
           | temporary ->
               MU.Phrase [MU.Text $ tshow count <> "-fold", name, stats]
           | unique && count == 1 -> MU.Phrase ["the", name, stats]
-          | tmpCondition -> MU.Phrase [name, stats]
+          | tmpCondition && count == 1 -> MU.Phrase [name, stats]
+          | tmpCondition ->
+              let maxCount = Dice.maxDice $ IK.icount $ itemKind itemFull
+                  percent = 100 * count `divUp` maxCount
+                  amount = tshow count <> "-strong"
+                           <+> "(" <> tshow percent <> "%)"
+              in MU.Phrase [MU.Text amount, name, stats]
           | otherwise -> MU.Phrase [MU.CarWs count name, stats] )
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
