@@ -657,9 +657,10 @@ drawSelected drawnLevelId width selected = do
   ours <- getsState $ filter (not . bproj . snd)
                       . inline actorAssocs (== side) drawnLevelId
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
-      viewOurs (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
+      viewOurs (aid, Actor{bhp, bwait}, ActorUI{bsymbol, bcolor}) =
         let bg = if | mleader == Just aid -> Color.HighlightRed
                     | ES.member aid selected -> Color.HighlightBlue
+                    | bwait == Sleep -> Color.HighlightMagenta
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
