@@ -184,6 +184,7 @@ posSfxAtomic cmd = case cmd of
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxSortSlots -> return PosAll
   SfxCollideTile aid _ -> singleAid aid
+  SfxTaunt aid -> singleAid aid
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =

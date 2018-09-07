@@ -162,7 +162,7 @@ hearUpdAtomic as cmd = do
     _ -> return Nothing
 
 -- | Messages for some unseen sfx.
-hearSfxAtomic :: MonadStateRead m
+hearSfxAtomic :: MonadServer m
               => [(ActorId, Actor)] -> SfxAtomic
               -> m (Maybe (HearMsg, [ActorId]))
 hearSfxAtomic as cmd =
@@ -181,6 +181,9 @@ hearSfxAtomic as cmd =
       return $! if null aids
                 then Nothing
                 else Just (HearSummon (bproj b) grp p, aids)
+    SfxTaunt source -> do
+      (subject, verb) <- displayTaunt rndToAction source
+      return $ Just (HearTaunt $ subject <+> verb, [])
     _ -> return Nothing
 
 filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]

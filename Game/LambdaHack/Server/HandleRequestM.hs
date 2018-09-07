@@ -14,7 +14,8 @@ module Game.LambdaHack.Server.HandleRequestM
     -- * Internal operations
   , execFailure, setBWait, managePerRequest, handleRequestTimedCases
   , affectSmell, reqMelee, reqMeleeChecked, reqAlter
-  , reqWait, reqMoveItems, reqMoveItem, computeRndTimeout, reqProject, reqApply
+  , reqWait, reqYell, reqMoveItems, reqMoveItem, computeRndTimeout
+  , reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
   ) where
@@ -191,6 +192,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqAlter tpos -> reqAlter aid tpos
   ReqWait -> reqWait aid
   ReqWait10 -> reqWait aid  -- the differences are handled elsewhere
+  ReqYell -> reqYell aid
   ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
@@ -683,6 +685,21 @@ reqWait source = do
   actorSk <- currentSkillsServer source
   unless (Ability.getSk Ability.SkWait actorSk > 0) $
     execFailure source ReqWait WaitUnskilled
+
+-- * ReqYell
+
+-- | Yell/yawn/stretch/taunt.
+-- Wakes up (gradually) from sleep. Causes noise heard by enemies on the level
+-- even if out of their hearing range.
+--
+-- Governed by the waiting skill (because everyone is supposed to have it).
+reqYell :: MonadServerAtomic m => ActorId -> m ()
+reqYell source = do
+  actorSk <- currentSkillsServer source
+  if Ability.getSk Ability.SkWait actorSk > 0 then
+    execSfxAtomic $ SfxTaunt source
+  else
+    execFailure source ReqWait YellUnskilled
 
 -- * ReqMoveItems
 

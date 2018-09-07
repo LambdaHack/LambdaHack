@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
   , getState, getLevel, nUI
-  , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM
+  , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM, displayTaunt
   ) where
 
 import Prelude ()
@@ -11,14 +11,17 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Content.ModeKind
@@ -78,3 +81,31 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
   return $! if | forced -> map (1,) kitAss
                | Ability.getSk Ability.SkMelee actorSk <= 0 -> []
                | otherwise -> strongest
+
+displayTaunt :: MonadStateRead m
+             => (Rnd (Text, Text) -> m (Text, Text))
+             -> ActorId -> m (Text, Text)
+displayTaunt rndToAction source = do
+  b <- getsState $ getActorBody source
+  actorMaxSk <- getsState $ getActorMaxSkills source
+  let canHear = Ability.getSk Ability.SkHearing actorMaxSk > 0
+        -- if hears, probably also emits sound
+      canApply = Ability.getSk Ability.SkApply actorMaxSk > 1
+        -- if applies complex items, probably intelligent
+      dumbWake = [ (2, ("something", "stretch"))
+                 , (1, ("something", "clash its appendages")) ]
+  case bwait b of
+    Sleep -> rndToAction $ frequency $ toFreq "SfxTaunt" $
+      if calmEnough b actorMaxSk
+      then if canHear
+           then (5, ("somebody", "yawn")) : dumbWake
+           else dumbWake
+      else if canHear
+           then [(1, ("somebody", "yell"))]
+           else [(1, ("something", "flail around"))]
+    _ -> return $!
+      if canHear
+      then if canApply
+           then ("somebody", "holler a taunt")
+           else ("somebody", "yell")
+      else ("something", "stomp repeatedly")

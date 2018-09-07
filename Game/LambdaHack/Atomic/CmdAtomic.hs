@@ -134,6 +134,7 @@ data HearMsg =
     HearUpd Bool UpdAtomic
   | HearStrike (ContentId ItemKind)
   | HearSummon Bool (GroupName ItemKind) Dice.Dice
+  | HearTaunt Text
   deriving (Show, Eq, Generic)
 
 instance Binary HearMsg
@@ -155,6 +156,7 @@ data SfxAtomic =
   | SfxMsgFid FactionId SfxMsg
   | SfxSortSlots
   | SfxCollideTile ActorId Point
+  | SfxTaunt ActorId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -263,6 +265,7 @@ undoSfxAtomic cmd = case cmd of
   SfxMsgFid{} -> cmd
   SfxSortSlots -> cmd
   SfxCollideTile{} -> cmd
+  SfxTaunt{} -> cmd
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic (UpdAtomic cmd) = UpdAtomic <$> undoUpdAtomic cmd

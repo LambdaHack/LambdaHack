@@ -53,6 +53,7 @@ data RequestTimed =
   | ReqAlter Point
   | ReqWait
   | ReqWait10
+  | ReqYell
   | ReqMoveItems [(ItemId, Int, CStore, CStore)]
   | ReqProject Point Int ItemId CStore
   | ReqApply ItemId CStore
