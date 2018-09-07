@@ -138,7 +138,7 @@ setBWait cmd aid b = do
          nAll <- removeConditionSingle "braced"
          let !_A = assert (nAll == 0) ()
          addCondition "asleep"
-         execUpdAtomic $ UpdWaitActor aid (- 101)
+         execUpdAtomic $ UpdWaitActor aid (- bwait b - 1)
        else do
          when (bwait b == 0) $ addCondition "braced"
          execUpdAtomic $ UpdWaitActor aid 1
