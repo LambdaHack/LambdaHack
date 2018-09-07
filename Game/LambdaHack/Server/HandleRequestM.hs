@@ -116,8 +116,9 @@ setBWait cmd aid b = do
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
       c = CActor aid COrgan
-      addCondition name =
-        void $ rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
+      addCondition name = do
+        mresult <- rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
+        assert (isJust mresult) $ return ()
       removeConditionSingle name = do
         is <- allGroupItems COrgan name aid
         case is of
