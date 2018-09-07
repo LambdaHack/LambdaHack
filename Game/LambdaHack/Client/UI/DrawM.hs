@@ -296,7 +296,7 @@ drawFrameActor drawnLevelId = do
   let {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
-          let Actor{bhp, bproj, bfid, btrunk} = getActorBody aid s
+          let Actor{bhp, bproj, bfid, btrunk, bwait} = getActorBody aid s
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               Item{jfid} = getItemBody btrunk s
               symbol | bhp > 0 || bproj = bsymbol
@@ -308,6 +308,8 @@ drawFrameActor drawnLevelId = do
                         | dominated -> if bfid == side  -- dominated by us
                                        then Color.HighlightWhite
                                        else Color.HighlightMagenta
+                        | bwait == Sleep
+                          && bfid /= side -> Color.HighlightMagenta
                         | otherwise -> Color.HighlightNone
               fg | bfid /= side || bproj || bhp <= 0 = bcolor
                  | otherwise =
