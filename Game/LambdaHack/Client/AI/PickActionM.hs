@@ -282,10 +282,16 @@ actionStrategy aid retry = do
           , if condInMelee then condCanMelee && condAimEnemyPresent
             else not (condThreat 2) || not condMeleeBad )
         ]
-      fallback =
+      fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
-          , waitBlockNow
-            -- Wait until friends sidestep; ensures strategy is never empty.
+          , let maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
+            in case bwait body of
+              Sleep -> if condAimEnemyPresent || bhp body >= xM maxHp
+                       then yellNow  -- wake up
+                       else waitBlockNow
+              _ -> if condAimEnemyPresent
+                   then yellNow  -- intimidate
+                   else waitBlockNow
           , True )
         ]
   -- Check current, not maximal skills, since this can be a leader as well
@@ -310,6 +316,9 @@ actionStrategy aid retry = do
 
 waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
+
+yellNow :: MonadClient m => m (Strategy RequestTimed)
+yellNow = return $! returN "yell" ReqYell
 
 pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 pickup aid onlyWeapon = do
