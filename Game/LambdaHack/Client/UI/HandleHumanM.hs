@@ -74,6 +74,7 @@ cmdAction cmd = case cmd of
 
   Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman)
   Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10)
+  Yell -> weaveJust <$> (ReqUITimed <$$> yellHuman)
   MoveDir v ->
     weaveJust <$> (ReqUITimed <$$> moveRunHuman True True False False v)
   RunDir v -> weaveJust <$> (ReqUITimed <$$> moveRunHuman True True True True v)

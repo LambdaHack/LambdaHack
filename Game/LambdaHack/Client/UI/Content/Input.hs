@@ -47,25 +47,28 @@ makeData :: UIOptions        -- ^ UI client options
 makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
+      yellTriple = ([CmdMove], "", Yell)
       moveXhairOr n cmd v = ByAimMode { exploration = cmd v
                                       , aiming = MoveXhair v n }
       bcmdList =
-        (if uVi
-         then filter (\(k, _) ->
-           k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-         else id) copsClient
+        (if | uVi -> filter (\(k, _) ->
+              k `notElem` [K.mkKM "period", K.mkKM "C-period"])
+            | uLaptop -> filter (\(k, _) ->
+              k `notElem` [K.mkKM "i", K.mkKM "C-i", K.mkKM "I"])
+            | otherwise -> id) copsClient
         ++ uCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
-           , (K.mkKM "KP_5", waitTriple)
+           , (K.mkKM "KP_5", yellTriple)
            , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ (if | uVi ->
                  [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "C-period", wait10Triple) ]
+                 , (K.mkKM "C-period", wait10Triple)
+                 , (K.mkKM "%", yellTriple) ]
                | uLaptop ->
                  [ (K.mkKM "i", waitTriple)
                  , (K.mkKM "C-i", wait10Triple)
-                 , (K.mkKM "I", waitTriple) ]
+                 , (K.mkKM "I", yellTriple) ]
                | otherwise ->
                  [])
         ++ K.moveBinding uVi uLaptop
@@ -136,9 +139,9 @@ mouseLMB =
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
---    , (CaCalmGauge, Macro ["KP_5", "C-V"])
---    , (CaCalmValue, Macro ["KP_5", "C-V"])
-    , (CaHPGauge, Macro ["KP_5", "C-V"])
+--    , (CaCalmGauge, Macro ["KP_Begin", "C-V"])
+    , (CaCalmValue, Yell)
+    , (CaHPGauge, Macro ["KP_Begin", "C-V"])
     , (CaHPValue, Wait)
     , (CaTargetDesc, projectICmd flingTs) ]
 
@@ -168,9 +171,9 @@ mouseRMB =
     , (CaLevelNumber, AimAscend (-1))
     , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
---    , (CaCalmGauge, Macro ["C-KP_5", "V"])
---    , (CaCalmValue, Macro ["C-KP_5", "V"])
-    , (CaHPGauge, Macro ["C-KP_5", "V"])
+--    , (CaCalmGauge, Macro ["C-KP_Begin", "V"])
+    , (CaCalmValue, Yell)
+    , (CaHPGauge, Macro ["C-KP_Begin", "V"])
     , (CaHPValue, Wait10)
     , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ]
 

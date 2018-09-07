@@ -52,12 +52,12 @@ keyHelp COps{corule}
       , "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
       , "Press 'KP_5' ('5' on keypad, or 'i' or '.') to wait, bracing for impact,"
       , "which reduces any damage taken and prevents displacement by foes. Press"
-      , "'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing."
+      , "'C-KP_5' (the key with Control) to wait 0.1 of a turn, without bracing and"
+      , "'S-KP_5' (with Shift) to yell/yawn, taunting and waking up enemies/yourself."
       , "You displace enemies by running into them with Shift/Control or RMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
       , "The best item to attack with is automatically chosen from among weapons"
       , "in your personal equipment and your body parts."
-      , ""
       ]
     movBlurbEnd =
       [ "Press SPACE or scroll the mouse wheel to see the minimal command set."
@@ -187,7 +187,7 @@ keyHelp COps{corule}
       else
         [ ( casualDescription <> "."
           , okxs CmdMinimal
-                 (movText ++ [""] ++ minimalText ++ [keyCaption])
+                 (movText ++ ["", ""] ++ minimalText ++ [keyCaption])
                  casualEnd ) ]
     , if catLength CmdItemMenu + catLength CmdItem
          + 5 > rheight then

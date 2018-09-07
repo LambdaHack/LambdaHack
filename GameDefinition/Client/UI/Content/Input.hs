@@ -106,9 +106,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("X", ( [CmdMove]
           , "autoexplore 25 times"
           , autoexplore25Cmd ))
-  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_5", "C-V"]))
+  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-V"]))
   , ("C-R", ( [CmdMove], "lurk (wait 0.1 turns 100 times)"
-            , Macro ["C-KP_5", "V"] ))
+            , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
   , ("^", ( [CmdItem], "sort items by ownership, kind and stats", SortSlots))
@@ -267,6 +267,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safe11", ( [CmdInternal]
                , "wait 0.1 of a turn"
                , Wait10 ))
+  , ("safe12", ( [CmdInternal]
+               , "yell/yawn"
+               , Yell ))
   ]
   ++ map defaultHeroSelect [0..6]
 

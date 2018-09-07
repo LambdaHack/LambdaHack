@@ -107,6 +107,7 @@ data HumanCmd =
     -- These usually take time.
   | Wait
   | Wait10
+  | Yell
   | MoveDir Vector
   | RunDir Vector
   | RunOnceAhead

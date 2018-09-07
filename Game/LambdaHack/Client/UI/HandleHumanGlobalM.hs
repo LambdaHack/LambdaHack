@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , composeIfLocalHuman, composeUnlessErrorHuman, compose2ndLocalHuman
   , loopOnNothingHuman, executeIfClearHuman
     -- * Global commands that usually take time
-  , waitHuman, waitHuman10, moveRunHuman
+  , waitHuman, waitHuman10, yellHuman, moveRunHuman
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman
@@ -258,6 +258,16 @@ waitHuman10 = do
   if Ability.getSk Ability.SkWait actorSk > 0 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait10
+  else failSer WaitUnskilled
+
+-- * Yell
+
+-- | Leader yells or yawns, if sleeping.
+yellHuman :: MonadClientUI m => m (FailOrCmd RequestTimed)
+yellHuman = do
+  actorSk <- leaderSkillsClientUI
+  if Ability.getSk Ability.SkWait actorSk > 0 then
+    return $ Right ReqYell
   else failSer WaitUnskilled
 
 -- * MoveDir and RunDir
