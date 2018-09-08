@@ -370,7 +370,7 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   trunkId <- registerItem (itemFull, kit) itemKnown container False
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  when (prefersSleep actorMaxSk) $ addSleep aid
+  when (canSleep actorMaxSk && prefersSleep actorMaxSk) $ addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m

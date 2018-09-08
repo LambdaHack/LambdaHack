@@ -56,9 +56,10 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick the most desirable AI ation for the actor.
-pickAction :: MonadClient m => ActorId -> Bool -> m RequestTimed
+pickAction :: MonadClient m
+           => Maybe (ActorId) -> ActorId -> Bool -> m RequestTimed
 {-# INLINE pickAction #-}
-pickAction aid retry = do
+pickAction moldLeader aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
@@ -69,7 +70,7 @@ pickAction aid retry = do
                     `swith` (aid, bfid body, side)) ()
   -- Reset fleeing flag. May then be set in @flee@.
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
-  stratAction <- actionStrategy aid retry
+  stratAction <- actionStrategy moldLeader aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
@@ -80,14 +81,17 @@ pickAction aid retry = do
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> Bool -> m (Strategy RequestTimed)
+               => Maybe (ActorId) -> ActorId -> Bool
+               -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
-actionStrategy aid retry = do
+actionStrategy moldLeader aid retry = do
+  mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
   scondInMelee <- getsClient scondInMelee
   let condInMelee = scondInMelee LEM.! blid body
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
+  condAimCrucial <- condAimCrucialM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
@@ -107,6 +111,17 @@ actionStrategy aid retry = do
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
   let actorMaxSk = actorMaxSkills EM.! aid
+      maySleep = not condAimEnemyPresent
+                 && not condAimEnemyRemembered
+                 && not (hpFull body actorMaxSk)
+                 && canSleep actorMaxSk
+      dozes = maySleep
+              && (Just aid /= mleader || maybe True (== aid) moldLeader)
+                   -- perhaps waited last turn only due to not being a leader,
+                   -- so dozing interrupted when becomes a leader
+              && case bwait body of
+                   Wait{} -> True
+                   _ -> False
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
@@ -142,7 +157,7 @@ actionStrategy aid retry = do
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
-      prefix, suffix :: [([Skill], m (Strategy RequestTimed), Bool)]
+      prefix :: [([Skill], m (Strategy RequestTimed), Bool)]
       prefix =
         [ ( [SkApply]
           , applyItem aid ApplyFirstAid
@@ -222,35 +237,35 @@ actionStrategy aid retry = do
       -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
       -- Only the best variant of @chase@ is taken, but it's almost always
       -- good, and if not, the @chase@ in @suffix@ may fix that.
-      distant :: [([Skill], m (Frequency RequestTimed), Bool)]
+      distant, suffix :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
-          , stratToFreq (if condInMelee then 2 else 20000)
+          , stratToFreq (if condInMelee then 20 else 20000)
             $ yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [SkMoveItem]
-          , stratToFreq 1
+          , stratToFreq 10
             $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed) )
         , ( [SkProject]
-          , stratToFreq (if condTgtNonmoving then 20 else 3)
+          , stratToFreq (if condTgtNonmoving then 200 else 30)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
         , ( [SkApply]
-          , stratToFreq 1
+          , stratToFreq 10
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
-                              400  -- friends pummeled by target, go to help
+                              4000  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
-                              2  -- if enemy only remembered, investigate anyway
+                              20  -- if enemy only remembered investigate anyway
                             | otherwise ->
-                              20)
+                              200)
             $ chase aid (not condInMelee
                          && (condThreat 12 || heavilyDistressed)
                          && aCanDeLight) retry
@@ -270,17 +285,28 @@ actionStrategy aid retry = do
       -- Order matters again.
       suffix =
         [ ( [SkMoveItem]
-          , pickup aid False  -- e.g., to give to other party members
-          , not condInMelee )
+          , stratToFreq 2000
+            $ pickup aid False  -- e.g., to give to other party members
+          , not condInMelee && not dozes)
         , ( [SkMoveItem]
-          , unEquipItems aid  -- late, because these items not bad
-          , not condInMelee )
+          , stratToFreq 1
+            $ unEquipItems aid  -- late, because these items not bad
+          , not condInMelee && not dozes)
+        , ( [SkWait]
+            -- This has to be random or all actors would fall asleep
+            -- in specific and predictable locations.
+          , stratToFreq (if | prefersSleep actorMaxSk -> 100
+                            | not condAimCrucial -> 1  -- not looting ATM
+                            | otherwise -> 0)
+                        waitBlockNow  -- try to fall asleep, rarely
+          , maySleep)
         , ( runSkills
-          , chase aid (not condInMelee
-                       && heavilyDistressed
-                       && aCanDeLight) retry
-          , if condInMelee then condCanMelee && condAimEnemyPresent
-            else not (condThreat 2) || not condMeleeBad )
+          , stratToFreq 20000 $ chase aid (not condInMelee
+                                           && heavilyDistressed
+                                           && aCanDeLight) retry
+          , not dozes
+            && if condInMelee then condCanMelee && condAimEnemyPresent
+               else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
@@ -306,12 +332,12 @@ actionStrategy aid retry = do
         let as = filter checkAction abFreq
         strats <- mapM (\(_, m, _) -> m) as
         return $! msum strats
-      combineDistant as = liftFrequency <$> sumF as
+      combineWeighted as = liftFrequency <$> sumF as
   sumPrefix <- sumS prefix
-  comDistant <- combineDistant distant
-  sumSuffix <- sumS suffix
+  comDistant <- combineWeighted distant
+  comSuffix <- combineWeighted suffix
   sumFallback <- sumS fallback
-  return $! sumPrefix .| comDistant .| sumSuffix .| sumFallback
+  return $! sumPrefix .| comDistant .| comSuffix .| sumFallback
 
 waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait

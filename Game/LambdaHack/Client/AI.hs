@@ -74,5 +74,5 @@ pickActorAndAction maid aid = do
   treq <- case maid of
     Just (aidOld, treqOld) | aidToMove == aidOld ->
       return treqOld  -- no better leader found
-    _ -> pickAction aidToMove (isJust maid)
+    _ -> pickAction mleader aidToMove (isJust maid)
   return (aidToMove, treq, oldFlee)

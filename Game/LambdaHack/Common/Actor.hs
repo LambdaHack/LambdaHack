@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), ResDelta(..), ActorMaxSkills, WaitState(..)
   , deltaSerious, deltaMild, actorCanMelee
   , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
-  , hpTooLow, calmEnough, hpEnough, hpFull, prefersSleep
+  , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
   , ActorDict, monsterGenChance, smellTimeout
@@ -160,11 +160,14 @@ hpEnough b actorMaxSk =
 hpFull :: Actor -> Ability.Skills -> Bool
 hpFull b actorMaxSk = xM (Ability.getSk Ability.SkMaxHP actorMaxSk) <= bhp b
 
+-- | Can wake us easily, so can sleep safely.
+canSleep :: Ability.Skills -> Bool
+canSleep actorMaxSk = Ability.getSk Ability.SkSight actorMaxSk > 0
+                      || Ability.getSk Ability.SkHearing actorMaxSk > 0
+
+-- | Can't loot, so sometimes prefers to sleep instead of exploring.
 prefersSleep :: Ability.Skills -> Bool
-prefersSleep actorMaxSk =
-  Ability.getSk Ability.SkMoveItem actorMaxSk <= 0  -- prefer looting
-  && (Ability.getSk Ability.SkSight actorMaxSk > 0  -- can wake up easily
-      || Ability.getSk Ability.SkHearing actorMaxSk > 0)
+prefersSleep actorMaxSk = Ability.getSk Ability.SkMoveItem actorMaxSk <= 0
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

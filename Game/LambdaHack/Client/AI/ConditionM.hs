@@ -2,6 +2,7 @@
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
+  , condAimCrucialM
   , condTgtNonmovingM
   , condAnyFoeAdjM
   , condAdjTriggerableM
@@ -70,6 +71,18 @@ condAimEnemyRememberedM aid = do
   return $ case btarget of
     Just (TPoint (TEnemyPos _ permit) lid _) -> lid == blid b && not permit
     _ -> False
+
+-- | Require that the target is crucial to success, e.g., an item.
+condAimCrucialM :: MonadClient m => ActorId -> m Bool
+condAimCrucialM aid = do
+  b <- getsState $ getActorBody aid
+  btarget <- getsClient $ getTarget aid
+  return $ case btarget of
+    Just (TEnemy _ permit) -> not permit
+    Just (TPoint tgoal lid _) ->
+      lid == blid b && tgoal `notElem` [TUnknown, TKnown, TAny]
+    Just TVector{} -> False
+    Nothing -> False
 
 -- | Check if the target is nonmoving.
 condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
