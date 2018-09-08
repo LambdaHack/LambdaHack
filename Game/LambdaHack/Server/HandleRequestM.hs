@@ -119,10 +119,12 @@ setBWait cmd aid b = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   case bwait b of
     SleepState ->
-      when (not (isJust mwait)  -- not a wait nor lurk
-            || not (calmEnough b actorMaxSk)
-               && mwait /= Just False) $  -- lurk can't wake up; too fast
-        removeSleepSingle aid
+      if | not (isJust mwait)  -- not a wait nor lurk
+           || not (calmEnough b actorMaxSk)
+              && mwait /= Just False ->  -- lurk can't wake up; too fast
+           removeSleepSingle aid
+         | otherwise -> execUpdAtomic $ UpdRefillHP aid 100
+             -- no @xM@, so slow, but each turn HP gauge green
     WaitState n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do

@@ -327,7 +327,7 @@ applyPeriodicLevel = do
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
           mapM_ (applyPeriodicItem aid CEqp beqp) $ EM.assocs $ beqp b
-          -- While we are at it, also update their calm.
+          -- While we are at it, also update his Calm.
           manageCalmAndDomination aid b
   allActors <- getsState sactorD
   mapM_ applyPeriodicActor $ EM.assocs allActors

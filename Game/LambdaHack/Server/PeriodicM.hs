@@ -245,6 +245,8 @@ updateCalm target deltaCalm = do
     -- disengage after one of their actors is dominated and wait for him
     -- to regenerate Calm. This is unnatural and boring. Better fight
     -- and hope he gets his Calm again to 0 and then defects back.
+    -- We could instead tell here that Calm is fully regenerated,
+    -- but that would be too verbose.
 
 leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
