@@ -3,7 +3,7 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , allGroupItems, dropCStoreItem, highestImpression, dominateFidSfx
+  , dropCStoreItem, highestImpression, dominateFidSfx
   , pickDroppable, refillHP, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -1084,17 +1084,6 @@ effectDropItem execSfx ngroup kcopy store grp target = do
     unless (store == COrgan) execSfx
     mapM_ (uncurry (dropCStoreItem True store target b kcopy)) $ take ngroup is
     return UseUp
-
-allGroupItems :: MonadServerAtomic m
-              => CStore -> GroupName ItemKind -> ActorId
-              -> m [(ItemId, ItemQuant)]
-allGroupItems store grp target = do
-  b <- getsState $ getActorBody target
-  getKind <- getsState $ flip getIidKindServer
-  let hasGroup (iid, _) =
-        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
-  assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
-  return $! filter hasGroup assocsCStore
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
 -- at most one explodes to avoid excessive carnage and UI clutter

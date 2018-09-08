@@ -116,43 +116,28 @@ setBWait cmd aid b = do
         ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
-      c = CActor aid COrgan
-      addCondition name = do
-        mresult <- rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
-        assert (isJust mresult) $ return ()
-      removeConditionSingle name = do
-        is <- allGroupItems COrgan name aid
-        case is of
-          [(iid, (nAll, itemTimer))] -> do
-            itemBase <- getsState $ getItemBody iid
-            execUpdAtomic $ UpdLoseItem False iid itemBase (1, itemTimer) c
-            return $ nAll - 1
-          _ -> error $ "setBWait: missing or multiple" `showFailure` (name, is)
   actorMaxSk <- getsState $ getActorMaxSkills aid
   case bwait b of
     Sleep ->
       when (not (isJust mwait)  -- not a wait nor lurk
             || not (calmEnough b actorMaxSk)
-               && mwait /= Just False) $ do  -- lurk can't wake up; too fast
-        nAll <- removeConditionSingle "asleep"
-        when (nAll == 0) $
-          execUpdAtomic $ UpdWaitActor aid Sleep Watch
+               && mwait /= Just False) $  -- lurk can't wake up; too fast
+        removeSleepSingle aid
     Wait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do
-          nAll <- removeConditionSingle "braced"
+          nAll <- removeConditionSingle "braced" aid
           let !_A = assert (nAll == 0) ()
-          addCondition "asleep"
-          execUpdAtomic $ UpdWaitActor aid (Wait n) Sleep
+          addSleep aid
         else
           execUpdAtomic $ UpdWaitActor aid (Wait n) (Wait $ n + 1)
       _ -> do
-        nAll <- removeConditionSingle "braced"
+        nAll <- removeConditionSingle "braced" aid
         let !_A = assert (nAll == 0) ()
         execUpdAtomic $ UpdWaitActor aid (Wait n) Watch
     Watch ->
       when (mwait == Just True) $ do  -- only long wait switches to wait state
-        addCondition "braced"
+        addCondition "braced" aid
         execUpdAtomic $ UpdWaitActor aid Watch (Wait 1)
   return mwait
 

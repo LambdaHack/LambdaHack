@@ -5,7 +5,8 @@ module Game.LambdaHack.Server.CommonM
   , deduceQuits, deduceKilled, electLeader, supplantLeader
   , updatePer, recomputeCachePer, projectFail
   , addActorFromGroup, registerActor, discoverIfMinorEffects
-  , pickWeaponServer, currentSkillsServer
+  , pickWeaponServer, currentSkillsServer, allGroupItems
+  , addCondition, removeConditionSingle, addSleep, removeSleepSingle
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
@@ -369,15 +370,10 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   trunkId <- registerItem (itemFull, kit) itemKnown container False
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let c = CActor aid COrgan
-      addCondition name = do
-        mresult <- rollAndRegisterItem lid [(name, 1)] c False Nothing
-        assert (isJust mresult) $ return ()
   when (Ability.getSk Ability.SkMoveItem actorMaxSk <= 0  -- prefer looting
         && (Ability.getSk Ability.SkSight actorMaxSk > 0  -- can wake up easily
-            || Ability.getSk Ability.SkHearing actorMaxSk > 0)) $ do
-    addCondition "asleep"
-    execUpdAtomic $ UpdWaitActor aid Watch Sleep
+            || Ability.getSk Ability.SkHearing actorMaxSk > 0)) $
+    addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m
@@ -546,3 +542,45 @@ getCacheTotal fid lid = do
           fperCache = EM.adjust (EM.insert lid perCache) fid
       modifyServer $ \ser -> ser {sperCacheFid = fperCache $ sperCacheFid ser}
       return total
+
+allGroupItems :: MonadServerAtomic m
+              => CStore -> GroupName ItemKind -> ActorId
+              -> m [(ItemId, ItemQuant)]
+allGroupItems store grp target = do
+  b <- getsState $ getActorBody target
+  getKind <- getsState $ flip getIidKindServer
+  let hasGroup (iid, _) =
+        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
+  assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
+  return $! filter hasGroup assocsCStore
+
+addCondition :: MonadServerAtomic m => GroupName ItemKind -> ActorId -> m ()
+addCondition name aid = do
+  b <- getsState $ getActorBody aid
+  let c = CActor aid COrgan
+  mresult <- rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
+  assert (isJust mresult) $ return ()
+
+removeConditionSingle :: MonadServerAtomic m
+                      => GroupName ItemKind -> ActorId -> m Int
+removeConditionSingle name aid = do
+  let c = CActor aid COrgan
+  is <- allGroupItems COrgan name aid
+  case is of
+    [(iid, (nAll, itemTimer))] -> do
+      itemBase <- getsState $ getItemBody iid
+      execUpdAtomic $ UpdLoseItem False iid itemBase (1, itemTimer) c
+      return $ nAll - 1
+    _ -> error $ "missing or multiple item" `showFailure` (name, is)
+
+addSleep :: MonadServerAtomic m => ActorId -> m ()
+addSleep aid = do
+  b <- getsState $ getActorBody aid
+  addCondition "asleep" aid
+  execUpdAtomic $ UpdWaitActor aid (bwait b) Sleep
+
+removeSleepSingle :: MonadServerAtomic m => ActorId -> m ()
+removeSleepSingle aid = do
+  nAll <- removeConditionSingle "asleep" aid
+  when (nAll == 0) $
+    execUpdAtomic $ UpdWaitActor aid Sleep Watch
