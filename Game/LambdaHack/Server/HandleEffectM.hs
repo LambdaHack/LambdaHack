@@ -10,7 +10,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , UseResult(..)
   , applyMeleeDamage, imperishableKit, itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
-  , effectDominate, dominateFid, effectImpress, effectSummon
+  , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
   , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
   , effectDropItem, effectPolyItem, effectIdentify, identifyIid
@@ -136,7 +136,7 @@ cutCalm target = do
       deltaCalm = min minusM1 (upperBound - bcalm tb)
   -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
   -- which is emitted when decreasing Calm by @minusM@.
-  udpateCalm target deltaCalm
+  updateCalm target deltaCalm
 
 -- Here melee damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
@@ -298,6 +298,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
+    IK.PutToSleep -> effectPutToSleep execSfx target
     IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
@@ -475,7 +476,7 @@ effectRefillCalm execSfx power0 source target = do
                        -tenthM
                      | otherwise -> deltaCalm0
   execSfx
-  udpateCalm target deltaCalm
+  updateCalm target deltaCalm
   return UseUp
 
 -- ** Dominate
@@ -614,6 +615,23 @@ effectImpress recursiveCall execSfx source target = do
                           "impressed" IK.timerNone
        else return UseDud  -- no message, because common and not crucial
 
+-- ** PutToSleep
+
+effectPutToSleep :: MonadServerAtomic m => m () -> ActorId -> m UseResult
+effectPutToSleep execSfx target = do
+  tb <- getsState $ getActorBody target
+  if | bproj tb -> return UseDud
+     | bwait tb == Sleep -> return UseDud  -- can't increase sleep
+     | otherwise -> do
+       actorMaxSk <- getsState $ getActorMaxSkills target
+       let maxCalm = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
+           deltaCalm = maxCalm - bcalm tb
+       when (deltaCalm > 0) $
+         updateCalm target deltaCalm  -- max Calm, but asleep vulnerability
+       execSfx
+       addSleep target
+       return UseUp
+
 -- ** Summon
 
 -- Note that the Calm expended doesn't depend on the number of actors summoned.
@@ -652,7 +670,7 @@ effectSummon grp nDm iid source target periodic = do
        return UseId
      | otherwise -> do
        execSfx
-       unless (bproj sb) $ udpateCalm source deltaCalm
+       unless (bproj sb) $ updateCalm source deltaCalm
        let validTile t = not $ Tile.isNoActor coTileSpeedup t
        ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
        localTime <- getsState $ getLocalTime (blid tb)

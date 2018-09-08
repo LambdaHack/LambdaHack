@@ -300,7 +300,7 @@ manageCalmAndDomination aid b = do
     newCalmDelta <- getsState $ regenCalmDelta aid b
     unless (newCalmDelta == 0) $
       -- Update delta for the current player turn.
-      udpateCalm aid newCalmDelta
+      updateCalm aid newCalmDelta
 
 -- | Trigger periodic items for all actors on the given level.
 applyPeriodicLevel :: MonadServerAtomic m => m ()

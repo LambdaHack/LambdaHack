@@ -51,6 +51,7 @@ effectToSuffix detailLevel effect =
     RefillCalm p -> "of dismaying" <+> wrapInParens (affixBonus p)
     Dominate -> "of domination"
     Impress -> "of impression"
+    PutToSleep -> "of sleep"
     Summon grp p -> makePhrase
       [ "of summoning"
       , if p <= 1 then "" else MU.Text $ tshow p

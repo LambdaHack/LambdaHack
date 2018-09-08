@@ -88,6 +88,7 @@ data Effect =
   | RefillCalm Int     -- ^ modify Calm of the actor by this amount
   | Dominate           -- ^ change actor's allegiance
   | Impress            -- ^ make actor susceptible to domination
+  | PutToSleep         -- ^ put actor to sleep, also calming him
   | Summon (GroupName ItemKind) Dice.Dice
       -- ^ summon the given number of actors of this group
   | Ascend Bool           -- ^ ascend to another level of the dungeon

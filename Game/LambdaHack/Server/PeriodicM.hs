@@ -2,7 +2,7 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor
-  , advanceTime, overheadActorTime, swapTime, udpateCalm, leadLevelSwitch
+  , advanceTime, overheadActorTime, swapTime, updateCalm, leadLevelSwitch
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , rollSpawnPos
@@ -232,8 +232,8 @@ swapTime source target = do
   when (tdelta /= Delta timeZero) $ modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid tb) (blid tb) target tdelta $ sactorTime ser}
 
-udpateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
-udpateCalm target deltaCalm = do
+updateCalm :: MonadServerAtomic m => ActorId -> Int64 -> m ()
+updateCalm target deltaCalm = do
   tb <- getsState $ getActorBody target
   actorMaxSk <- getsState $ getActorMaxSkills target
   let calmMax64 = xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
