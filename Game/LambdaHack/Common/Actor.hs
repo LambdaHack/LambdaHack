@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), ResDelta(..), ActorMaxSkills, WaitState(..)
   , deltaSerious, deltaMild, actorCanMelee
   , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
-  , hpTooLow, calmEnough, hpEnough
+  , hpTooLow, calmEnough, hpEnough, hpFull, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
   , ActorDict, monsterGenChance, smellTimeout
@@ -156,6 +156,15 @@ calmEnough b actorMaxSk =
 hpEnough :: Actor -> Ability.Skills -> Bool
 hpEnough b actorMaxSk =
   xM (Ability.getSk Ability.SkMaxHP actorMaxSk) <= 2 * bhp b && bhp b > oneM
+
+hpFull :: Actor -> Ability.Skills -> Bool
+hpFull b actorMaxSk = xM (Ability.getSk Ability.SkMaxHP actorMaxSk) <= bhp b
+
+prefersSleep :: Ability.Skills -> Bool
+prefersSleep actorMaxSk =
+  Ability.getSk Ability.SkMoveItem actorMaxSk <= 0  -- prefer looting
+  && (Ability.getSk Ability.SkSight actorMaxSk > 0  -- can wake up easily
+      || Ability.getSk Ability.SkHearing actorMaxSk > 0)
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

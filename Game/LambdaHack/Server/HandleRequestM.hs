@@ -683,6 +683,8 @@ reqYell :: MonadServerAtomic m => ActorId -> m ()
 reqYell source = do
   actorSk <- currentSkillsServer source
   if Ability.getSk Ability.SkWait actorSk > 0 then
+    -- Last yawn before waking up is displayed as a yell, but that's fine.
+    -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
     execSfxAtomic $ SfxTaunt source
   else
     execFailure source ReqWait YellUnskilled

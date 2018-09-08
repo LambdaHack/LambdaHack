@@ -284,9 +284,8 @@ actionStrategy aid retry = do
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
-          , let maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
-            in case bwait body of
-              Sleep -> if condAimEnemyPresent || bhp body >= xM maxHp
+          , case bwait body of
+              Sleep -> if condAimEnemyPresent || hpFull body actorMaxSk
                        then yellNow  -- wake up
                        else waitBlockNow
               _ -> if condAimEnemyPresent
