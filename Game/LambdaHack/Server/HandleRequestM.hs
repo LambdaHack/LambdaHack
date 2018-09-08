@@ -118,27 +118,27 @@ setBWait cmd aid b = do
         _ -> Nothing
   actorMaxSk <- getsState $ getActorMaxSkills aid
   case bwait b of
-    Sleep ->
+    SleepState ->
       when (not (isJust mwait)  -- not a wait nor lurk
             || not (calmEnough b actorMaxSk)
                && mwait /= Just False) $  -- lurk can't wake up; too fast
         removeSleepSingle aid
-    Wait n -> case cmd of
+    WaitState n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do
           nAll <- removeConditionSingle "braced" aid
           let !_A = assert (nAll == 0) ()
           addSleep aid
         else
-          execUpdAtomic $ UpdWaitActor aid (Wait n) (Wait $ n + 1)
+          execUpdAtomic $ UpdWaitActor aid (WaitState n) (WaitState $ n + 1)
       _ -> do
         nAll <- removeConditionSingle "braced" aid
         let !_A = assert (nAll == 0) ()
-        execUpdAtomic $ UpdWaitActor aid (Wait n) Watch
-    Watch ->
+        execUpdAtomic $ UpdWaitActor aid (WaitState n) WatchState
+    WatchState ->
       when (mwait == Just True) $ do  -- only long wait switches to wait state
         addCondition "braced" aid
-        execUpdAtomic $ UpdWaitActor aid Watch (Wait 1)
+        execUpdAtomic $ UpdWaitActor aid WatchState (WaitState 1)
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m

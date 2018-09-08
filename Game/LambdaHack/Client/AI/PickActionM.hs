@@ -120,7 +120,7 @@ actionStrategy moldLeader aid retry = do
                    -- perhaps waited last turn only due to not being a leader,
                    -- so dozing interrupted when becomes a leader
               && case bwait body of
-                   Wait{} -> True
+                   WaitState{} -> True
                    _ -> False
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
@@ -311,9 +311,9 @@ actionStrategy moldLeader aid retry = do
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
           , case bwait body of
-              Sleep -> if condAimEnemyPresent || hpFull body actorMaxSk
-                       then yellNow  -- wake up
-                       else waitBlockNow
+              SleepState -> if condAimEnemyPresent || hpFull body actorMaxSk
+                            then yellNow  -- wake up
+                            else waitBlockNow
               _ -> if condAimEnemyPresent
                    then yellNow  -- intimidate
                    else waitBlockNow

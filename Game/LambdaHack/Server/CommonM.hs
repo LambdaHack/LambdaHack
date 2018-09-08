@@ -574,10 +574,10 @@ addSleep :: MonadServerAtomic m => ActorId -> m ()
 addSleep aid = do
   b <- getsState $ getActorBody aid
   addCondition "asleep" aid
-  execUpdAtomic $ UpdWaitActor aid (bwait b) Sleep
+  execUpdAtomic $ UpdWaitActor aid (bwait b) SleepState
 
 removeSleepSingle :: MonadServerAtomic m => ActorId -> m ()
 removeSleepSingle aid = do
   nAll <- removeConditionSingle "asleep" aid
   when (nAll == 0) $
-    execUpdAtomic $ UpdWaitActor aid Sleep Watch
+    execUpdAtomic $ UpdWaitActor aid SleepState WatchState

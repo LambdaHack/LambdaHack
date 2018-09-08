@@ -85,7 +85,7 @@ type ActorMaxSkills = EM.EnumMap ActorId Ability.Skills
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
 
-data WaitState = Watch | Wait Int | Sleep
+data WaitState = WatchState | WaitState Int | SleepState
   deriving (Show, Eq, Generic)
 
 instance Binary WaitState
@@ -128,7 +128,7 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       beqp    = EM.empty
       binv    = EM.empty
       bweapon = 0
-      bwait   = Watch  -- overriden elsewhere, sometimes
+      bwait   = WatchState  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
@@ -136,7 +136,7 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
 waitedLastTurn :: Actor -> Bool
 {-# INLINE waitedLastTurn #-}
 waitedLastTurn b = case bwait b of
-  Wait{} -> True
+  WaitState{} -> True
   _ -> False
 
 actorDying :: Actor -> Bool

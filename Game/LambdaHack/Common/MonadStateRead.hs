@@ -95,7 +95,7 @@ displayTaunt rndToAction source = do
       dumbWake = [ (2, ("something", "stretch"))
                  , (1, ("something", "clash its appendages")) ]
   case bwait b of
-    Sleep -> rndToAction $ frequency $ toFreq "SfxTaunt" $
+    SleepState -> rndToAction $ frequency $ toFreq "SfxTaunt" $
       if calmEnough b actorMaxSk
       then if canHear
            then (5, ("somebody", "yawn")) : dumbWake

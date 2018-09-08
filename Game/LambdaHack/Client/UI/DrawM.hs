@@ -308,7 +308,7 @@ drawFrameActor drawnLevelId = do
                         | dominated -> if bfid == side  -- dominated by us
                                        then Color.HighlightWhite
                                        else Color.HighlightMagenta
-                        | bwait == Sleep
+                        | bwait == SleepState
                           && bfid /= side -> Color.HighlightMagenta
                         | otherwise -> Color.HighlightNone
               fg | bfid /= side || bproj || bhp <= 0 = bcolor
@@ -577,7 +577,7 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
           checkSleep body resDelta
-            | bwait body == Sleep = addColor Color.BrMagenta
+            | bwait body == SleepState = addColor Color.BrMagenta
             | otherwise = checkDelta resDelta
           calmAddAttr = checkSleep b $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
@@ -662,7 +662,7 @@ drawSelected drawnLevelId width selected = do
       viewOurs (aid, Actor{bhp, bwait}, ActorUI{bsymbol, bcolor}) =
         let bg = if | mleader == Just aid -> Color.HighlightRed
                     | ES.member aid selected -> Color.HighlightBlue
-                    | bwait == Sleep -> Color.HighlightMagenta
+                    | bwait == SleepState -> Color.HighlightMagenta
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
