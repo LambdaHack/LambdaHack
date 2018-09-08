@@ -131,13 +131,14 @@ setBWait cmd aid b = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   case bwait b of
     Sleep ->
-      when (not (isJust mwait)  -- not a wait, long nor short
-            || not (calmEnough b actorMaxSk)) $ do
+      when (not (isJust mwait)  -- not a wait nor lurk
+            || not (calmEnough b actorMaxSk)
+               && mwait /= Just False) $ do  -- lurk can't wake up; too fast
         nAll <- removeConditionSingle "asleep"
         when (nAll == 0) $
           execUpdAtomic $ UpdWaitActor aid Sleep Watch
-    Wait n -> case mwait of
-      Just True ->  -- only long wait prevents switching to watchfulness
+    Wait n -> case cmd of
+      ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do
           nAll <- removeConditionSingle "braced"
           let !_A = assert (nAll == 0) ()
