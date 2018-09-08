@@ -369,9 +369,14 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   trunkId <- registerItem (itemFull, kit) itemKnown container False
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
   actorMaxSk <- getsState $ getActorMaxSkills aid
+  let c = CActor aid COrgan
+      addCondition name = do
+        mresult <- rollAndRegisterItem lid [(name, 1)] c False Nothing
+        assert (isJust mresult) $ return ()
   when (Ability.getSk Ability.SkMoveItem actorMaxSk <= 0  -- prefer looting
         && (Ability.getSk Ability.SkSight actorMaxSk > 0  -- can wake up easily
-            || Ability.getSk Ability.SkHearing actorMaxSk > 0)) $
+            || Ability.getSk Ability.SkHearing actorMaxSk > 0)) $ do
+    addCondition "asleep"
     execUpdAtomic $ UpdWaitActor aid Watch Sleep
   return aid
 
