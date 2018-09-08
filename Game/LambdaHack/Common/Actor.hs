@@ -176,6 +176,8 @@ monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
                  lvlAlreadySpawned actorCoeff =
   assert (totalDepth > 0 && n > 0) $
+    -- This is now all doubled compare to the comment below, due to sleep:
+    --
     -- Heroes have to endure a level depth-sized wave of immediate
     -- spawners for each level and only then the monsters start
     -- to trickle more and more slowly, at the speed dictated
@@ -184,7 +186,7 @@ monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
     -- 8 spawn immediately. In general at level n, n+3 spawn at once.
     let scaledDepth = n * 10 `div` totalDepth
         coeff = actorCoeff * (lvlAlreadySpawned - scaledDepth - 2)
-    in chance $ 1%fromIntegral (coeff `max` 1)
+    in chance $ 2%fromIntegral (coeff `max` 1)  -- 2 --- doubled
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
