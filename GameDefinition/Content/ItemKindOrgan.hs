@@ -437,7 +437,7 @@ bonusHP = armoredSkin
   , iweight  = 0
   , iaspects = [ AddSkill SkMaxHP 1
                , SetFlag Durable ]
-  , idesc    = ""
+  , idesc    = "Increased training and connections in the right places give this actor augmented internal organs, much more resilient to damage."
   }
 braced = armoredSkin
   { isymbol  = 'B'
@@ -449,7 +449,7 @@ braced = armoredSkin
   , iaspects = [ AddSkill SkArmorMelee 50, AddSkill SkArmorRanged 25
                , SetFlag Fragile, SetFlag Durable ]
                    -- hack: display as condition
-  , idesc    = ""
+  , idesc    = "Apart of increased resilience to attacks, being braced against attacks protects from displacement by foes and other forms of forced translocation, e.g., being pushed or pulled."
   }
 asleep = armoredSkin
   { isymbol  = 'A'
@@ -463,7 +463,7 @@ asleep = armoredSkin
                , AddSkill SkSight (-3), AddSkill SkArmorMelee (-10)
                , SetFlag Fragile, SetFlag Durable ]
                    -- hack: display as condition
-  , idesc    = ""
+  , idesc    = "Sleep helps regain health, albeit extremely slowly and especially so if the body is in fact not harmed or exhausted in a significant way. Being asleep makes an actor vulnerable, with gradually diminishing effects as the slumber wears off over several turns. Any non-idle action, not only combat but even yawning or stretching removes a sizable portion of the sleepiness."
   }
 impressed = armoredSkin
   { isymbol  = '!'
@@ -478,7 +478,7 @@ impressed = armoredSkin
                , SetFlag Fragile, SetFlag Durable ]
                    -- hack: destroy on drop
   , ieffects = [OnSmash $ tmpNoLonger "impressed"]  -- not Periodic
-  , idesc    = ""
+  , idesc    = "Being impressed by one's adversary sounds like fun, but on battlefield it equals treason. Almost. Throw in depleted battle calm and it leads to mindless desertion outright."
   }
 
 -- * LH-specific
