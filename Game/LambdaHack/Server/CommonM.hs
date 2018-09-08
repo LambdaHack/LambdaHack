@@ -367,7 +367,13 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
       itemKnown = (kindIx, ar, jfid)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem (itemFull, kit) itemKnown container False
-  addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
+  aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
+  actorMaxSk <- getsState $ getActorMaxSkills aid
+  when (Ability.getSk Ability.SkMoveItem actorMaxSk <= 0  -- prefer looting
+        && (Ability.getSk Ability.SkSight actorMaxSk > 0  -- can wake up easily
+            || Ability.getSk Ability.SkHearing actorMaxSk > 0)) $
+    execUpdAtomic $ UpdWaitActor aid Watch Sleep
+  return aid
 
 addProjectile :: MonadServerAtomic m
               => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
@@ -434,7 +440,6 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId diffHP calm pos lid bfid bproj
-      -- Insert the trunk as the actor's organ.
       withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}

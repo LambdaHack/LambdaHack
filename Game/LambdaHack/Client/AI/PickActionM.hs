@@ -3,8 +3,8 @@ module Game.LambdaHack.Client.AI.PickActionM
   ( pickAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , actionStrategy
-  , waitBlockNow, pickup, equipItems, toShare, yieldUnneeded, unEquipItems
+  , actionStrategy, waitBlockNow, yellNow
+  , pickup, equipItems, toShare, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, ApplyItemGroup, applyItem, flee
   , displaceFoe, displaceBlocker, displaceTgt

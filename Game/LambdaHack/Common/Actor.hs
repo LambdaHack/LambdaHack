@@ -128,7 +128,7 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       beqp    = EM.empty
       binv    = EM.empty
       bweapon = 0
-      bwait   = Watch
+      bwait   = Watch  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
