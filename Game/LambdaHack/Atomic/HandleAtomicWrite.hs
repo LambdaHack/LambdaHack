@@ -260,13 +260,14 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   updateActor aid $ const newBody
   moveActorMap aid body newBody
 
-updWaitActor :: MonadStateWrite m => ActorId -> WaitState -> WaitState -> m ()
+updWaitActor :: MonadStateWrite m
+             => ActorId -> Watchfulness -> Watchfulness -> m ()
 updWaitActor aid fromWS toWS = assert (fromWS /= toWS) $ do
   body <- getsState $ getActorBody aid
-  let !_A = assert (fromWS == bwait body
+  let !_A = assert (fromWS == bwatch body
                     `blame` "unexpected actor wait state"
-                    `swith` (aid, fromWS, bwait body, body)) ()
-  updateActor aid $ \b -> b {bwait = toWS}
+                    `swith` (aid, fromWS, bwatch body, body)) ()
+  updateActor aid $ \b -> b {bwatch = toWS}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do

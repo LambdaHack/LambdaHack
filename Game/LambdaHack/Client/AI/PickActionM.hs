@@ -111,17 +111,18 @@ actionStrategy moldLeader aid retry = do
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
   let actorMaxSk = actorMaxSkills EM.! aid
-      maySleep = not condAimEnemyPresent
+      maySleep = bwatch body `notElem` [WSleep, WWake]
+                 && not condAimEnemyPresent
                  && not condAimEnemyRemembered
                  && not (hpFull body actorMaxSk)
                  && canSleep actorMaxSk
-      dozes = maySleep
+      dozes = case bwatch body of
+                WWait{} -> True
+                _ -> False
+              &&  maySleep
               && (Just aid /= mleader || maybe True (== aid) moldLeader)
                    -- perhaps waited last turn only due to not being a leader,
                    -- so dozing interrupted when becomes a leader
-              && case bwait body of
-                   WaitState{} -> True
-                   _ -> False
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
@@ -310,10 +311,11 @@ actionStrategy moldLeader aid retry = do
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
-          , case bwait body of
-              SleepState -> if condAimEnemyPresent || hpFull body actorMaxSk
-                            then yellNow  -- wake up
-                            else waitBlockNow
+          , case bwatch body of
+              WSleep -> if condAimEnemyPresent || hpFull body actorMaxSk
+                        then yellNow  -- wake up
+                        else waitBlockNow
+              WWake -> yellNow  -- wake up fully
               _ -> if condAimEnemyPresent
                    then yellNow  -- intimidate
                    else waitBlockNow

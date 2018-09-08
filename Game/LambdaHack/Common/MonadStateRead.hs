@@ -94,18 +94,18 @@ displayTaunt rndToAction source = do
         -- if applies complex items, probably intelligent
       dumbWake = [ (2, ("something", "stretch"))
                  , (1, ("something", "clash its appendages")) ]
-  case bwait b of
-    SleepState -> rndToAction $ frequency $ toFreq "SfxTaunt" $
-      if calmEnough b actorMaxSk
-      then if canHear
-           then (5, ("somebody", "yawn")) : dumbWake
-           else dumbWake
-      else if canHear
-           then [(1, ("somebody", "yell"))]
-           else [(1, ("something", "flail around"))]
-    _ -> return $!
-      if canHear
-      then if canApply
-           then ("somebody", "holler a taunt")
-           else ("somebody", "yell")
-      else ("something", "stomp repeatedly")
+  if bwatch b `elem` [WSleep, WWake]
+  then rndToAction $ frequency $ toFreq "SfxTaunt" $
+    if calmEnough b actorMaxSk
+    then if canHear
+         then (5, ("somebody", "yawn")) : dumbWake
+         else dumbWake
+    else if canHear
+         then [(1, ("somebody", "yell"))]
+         else [(1, ("something", "flail around"))]
+  else return $!
+    if canHear
+    then if canApply
+         then ("somebody", "holler a taunt")
+         else ("somebody", "yell")
+    else ("something", "stomp repeatedly")

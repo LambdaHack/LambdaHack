@@ -77,7 +77,7 @@ data UpdAtomic =
   | UpdLoseItemBag Container ItemBag [(ItemId, Item)]
   -- Move actors and items.
   | UpdMoveActor ActorId Point Point
-  | UpdWaitActor ActorId WaitState WaitState
+  | UpdWaitActor ActorId Watchfulness Watchfulness
   | UpdDisplaceActor ActorId ActorId
   | UpdMoveItem ItemId Int ActorId CStore CStore
   -- Change actor attributes.

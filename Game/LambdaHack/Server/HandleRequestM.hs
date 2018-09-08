@@ -102,7 +102,7 @@ handleRequestUI fid aid cmd = case cmd of
   ReqUIAutomate -> reqAutomate fid >> return Nothing
   ReqUINop -> return Nothing
 
--- | This is a shorthand. Instead of setting @bwait@ in @ReqWait@
+-- | This is a shorthand. Instead of setting @bwatch@ in @ReqWait@
 -- and unsetting in all other requests, we call this once before
 -- executing a request.
 -- In the result, we collect the number of server requests pertaining
@@ -117,30 +117,32 @@ setBWait cmd aid b = do
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  case bwait b of
-    SleepState ->
-      if | not (isJust mwait)  -- not a wait nor lurk
-           || not (calmEnough b actorMaxSk)
-              && mwait /= Just False ->  -- lurk can't wake up; too fast
-           removeSleepSingle aid
-         | otherwise -> execUpdAtomic $ UpdRefillHP aid 100
+  case bwatch b of
+    WSleep ->
+      if not (isJust mwait)  -- not a wait nor lurk
+         || not (calmEnough b actorMaxSk)
+            && mwait /= Just False  -- lurk can't wake up; too fast
+      then execUpdAtomic $ UpdWaitActor aid WSleep WWake
+      else execUpdAtomic $ UpdRefillHP aid 100
              -- no @xM@, so slow, but each turn HP gauge green
-    WaitState n -> case cmd of
+    WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
+      removeSleepSingle aid
+    WWait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do
           nAll <- removeConditionSingle "braced" aid
           let !_A = assert (nAll == 0) ()
           addSleep aid
         else
-          execUpdAtomic $ UpdWaitActor aid (WaitState n) (WaitState $ n + 1)
+          execUpdAtomic $ UpdWaitActor aid (WWait n) (WWait $ n + 1)
       _ -> do
         nAll <- removeConditionSingle "braced" aid
         let !_A = assert (nAll == 0) ()
-        execUpdAtomic $ UpdWaitActor aid (WaitState n) WatchState
-    WatchState ->
+        execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
+    WWatch ->
       when (mwait == Just True) $ do  -- only long wait switches to wait state
         addCondition "braced" aid
-        execUpdAtomic $ UpdWaitActor aid WatchState (WaitState 1)
+        execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m

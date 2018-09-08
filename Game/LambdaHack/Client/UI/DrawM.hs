@@ -296,7 +296,7 @@ drawFrameActor drawnLevelId = do
   let {-# INLINE viewActor #-}
       viewActor _ as = case as of
         aid : _ ->
-          let Actor{bhp, bproj, bfid, btrunk, bwait} = getActorBody aid s
+          let Actor{bhp, bproj, bfid, btrunk, bwatch} = getActorBody aid s
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               Item{jfid} = getItemBody btrunk s
               symbol | bhp > 0 || bproj = bsymbol
@@ -308,7 +308,7 @@ drawFrameActor drawnLevelId = do
                         | dominated -> if bfid == side  -- dominated by us
                                        then Color.HighlightWhite
                                        else Color.HighlightMagenta
-                        | bwait == SleepState
+                        | bwatch == WSleep
                           && bfid /= side -> Color.HighlightMagenta
                         | otherwise -> Color.HighlightNone
               fg | bfid /= side || bproj || bhp <= 0 = bcolor
@@ -577,7 +577,7 @@ drawLeaderStatus waitT = do
               = addColor Color.BrGreen
             | otherwise = stringToAL  -- only if nothing at all noteworthy
           checkSleep body resDelta
-            | bwait body == SleepState = addColor Color.BrMagenta
+            | bwatch body == WSleep = addColor Color.BrMagenta
             | otherwise = checkDelta resDelta
           calmAddAttr = checkSleep b $ bcalmDelta b
           -- We only show ambient light, because in fact client can't tell
@@ -659,10 +659,10 @@ drawSelected drawnLevelId width selected = do
   ours <- getsState $ filter (not . bproj . snd)
                       . inline actorAssocs (== side) drawnLevelId
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
-      viewOurs (aid, Actor{bhp, bwait}, ActorUI{bsymbol, bcolor}) =
+      viewOurs (aid, Actor{bhp, bwatch}, ActorUI{bsymbol, bcolor}) =
         let bg = if | mleader == Just aid -> Color.HighlightRed
                     | ES.member aid selected -> Color.HighlightBlue
-                    | bwait == SleepState -> Color.HighlightMagenta
+                    | bwatch == WSleep -> Color.HighlightMagenta
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr

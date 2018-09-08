@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers
     ActorId
     -- * The@ Acto@r type, its components and operations on them
-  , Actor(..), ResDelta(..), ActorMaxSkills, WaitState(..)
+  , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltaSerious, deltaMild, actorCanMelee
   , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
@@ -63,7 +63,7 @@ data Actor = Actor
   , bweapon     :: Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
-  , bwait       :: WaitState    -- ^ length of the actor's waiting streak
+  , bwatch      :: Watchfulness -- ^ state of the actor's watchfulness
   , bproj       :: Bool         -- ^ is a projectile? affects being able
                                 --   to fly through other projectiles, etc.
   }
@@ -85,10 +85,10 @@ type ActorMaxSkills = EM.EnumMap ActorId Ability.Skills
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
 
-data WaitState = WatchState | WaitState Int | SleepState
+data Watchfulness = WWatch | WWait Int | WSleep | WWake
   deriving (Show, Eq, Generic)
 
-instance Binary WaitState
+instance Binary Watchfulness
 
 deltaSerious :: ResDelta -> Bool
 deltaSerious ResDelta{..} =
@@ -128,15 +128,15 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       beqp    = EM.empty
       binv    = EM.empty
       bweapon = 0
-      bwait   = WatchState  -- overriden elsewhere, sometimes
+      bwatch  = WWatch  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
 
 waitedLastTurn :: Actor -> Bool
 {-# INLINE waitedLastTurn #-}
-waitedLastTurn b = case bwait b of
-  WaitState{} -> True
+waitedLastTurn b = case bwatch b of
+  WWait{} -> True
   _ -> False
 
 actorDying :: Actor -> Bool
