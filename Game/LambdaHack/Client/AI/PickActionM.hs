@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.AI.PickActionM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , actionStrategy, waitBlockNow, yellNow
-  , pickup, equipItems, toShare, yieldUnneeded, unEquipItems
+  , pickup, equipItems, yieldUnneeded, unEquipItems
   , groupByEqpSlot, bestByEqpSlot, harmful, meleeBlocker, meleeAny
   , trigger, projectItem, ApplyItemGroup, applyItem, flee
   , displaceFoe, displaceBlocker, displaceTgt
@@ -400,21 +400,16 @@ equipItems aid = do
   discoBenefit <- getsClient sdiscoBenefit
   let improve :: CStore
               -> (Int, [(ItemId, Int, CStore, CStore)])
-              -> ( EqpSlot
-                 , ( [(Int, (ItemId, ItemFullKit))]
-                   , [(Int, (ItemId, ItemFullKit))] ) )
+              -> ( [(Int, (ItemId, ItemFullKit))]
+                 , [(Int, (ItemId, ItemFullKit))] )
               -> (Int, [(ItemId, Int, CStore, CStore)])
-      improve fromCStore (oldN, l4) (slot, (bestInv, bestEqp)) =
+      improve fromCStore (oldN, l4) (bestInv, bestEqp) =
         let n = 1 + oldN
         in case (bestInv, bestEqp) of
           ((_, (iidInv, _)) : _, []) | not (eqpOverfull body n) ->
             (n, (iidInv, 1, fromCStore, CEqp) : l4)
           ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
-            | vInv > vEqp && not (eqpOverfull body n)
-              -- Only add random minor boosts if one slot remains free
-              -- for major boosts, to avoid wield/unwield loops.
-              -- All slots may be taken only via adding major boosts.
-              || not (toShare slot) && not (eqpOverfull body (n + 1)) ->
+            | vInv > vEqp && not (eqpOverfull body n) ->
                 (n, (iidInv, 1, fromCStore, CEqp) : l4)
           _ -> (oldN, l4)
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
@@ -434,21 +429,15 @@ equipItems aid = do
                                 (filter filterNeeded invAssocs)
                                 (filter filterNeeded shaAssocs)
       bEqpInv = foldl' (improve CInv) (0, [])
-                $ map (\(slot, (eqp, inv, _)) ->
-                        (slot, (inv, eqp))) bestThree
+                $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
       bEqpBoth | calmE =
                    foldl' (improve CSha) bEqpInv
-                   $ map (\(slot, (eqp, _, sha)) ->
-                           (slot, (sha, eqp))) bestThree
+                   $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
                | otherwise = bEqpInv
       (_, prepared) = bEqpBoth
   return $! if null prepared
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
-
-toShare :: EqpSlot -> Bool
-toShare EqpSlotMiscBonus = False
-toShare _ = True
 
 yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 yieldUnneeded aid = do
@@ -496,24 +485,16 @@ unEquipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-  let improve :: CStore -> ( EqpSlot
-                           , ( [(Int, (ItemId, ItemFullKit))]
-                             , [(Int, (ItemId, ItemFullKit))] ) )
+  let improve :: CStore -> ( [(Int, (ItemId, ItemFullKit))]
+                           , [(Int, (ItemId, ItemFullKit))] )
               -> [(ItemId, Int, CStore, CStore)]
-      improve fromCStore (slot, (bestSha, bestEOrI)) =
+      improve fromCStore (bestSha, bestEOrI) =
         case bestEOrI of
-          _ | not (toShare slot)
-              && fromCStore == CEqp
-              && not (eqpOverfull body 1) ->  -- keep minor boosts up to M-1
-            []
-          ((vEOrI, (iidEOrI, bei)) : _) | (toShare slot || fromCStore == CInv)
-                                          && getK bei > 1
+          ((vEOrI, (iidEOrI, bei)) : _) | getK bei > 1
                                           && betterThanSha vEOrI bestSha ->
             -- To share the best items with others, if they care.
             [(iidEOrI, getK bei - 1, fromCStore, CSha)]
-          (_ : (vEOrI, (iidEOrI, bei)) : _) | (toShare slot
-                                               || fromCStore == CInv)
-                                              && betterThanSha vEOrI bestSha ->
+          (_ : (vEOrI, (iidEOrI, bei)) : _) | betterThanSha vEOrI bestSha ->
             -- To share the second best items with others, if they care.
             [(iidEOrI, getK bei, fromCStore, CSha)]
           ((vEOrI, (_, _)) : _) | fromCStore == CEqp
@@ -541,11 +522,9 @@ unEquipItems aid = do
       bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs
                                 (filter filterNeeded shaAssocs)
       bInvSha = concatMap
-                  (improve CInv . (\(slot, (_, inv, sha)) ->
-                                    (slot, (sha, inv)))) bestThree
+                  (improve CInv . (\(_, inv, sha) -> (sha, inv))) bestThree
       bEqpSha = concatMap
-                  (improve CEqp . (\(slot, (eqp, _, sha)) ->
-                                    (slot, (sha, eqp)))) bestThree
+                  (improve CEqp . (\(eqp, _, sha) -> (sha, eqp))) bestThree
       prepared = if calmE then bInvSha ++ bEqpSha else []
   return $! if null prepared
             then reject
@@ -566,10 +545,9 @@ bestByEqpSlot :: DiscoveryBenefit
               -> [(ItemId, ItemFullKit)]
               -> [(ItemId, ItemFullKit)]
               -> [(ItemId, ItemFullKit)]
-              -> [(EqpSlot
-                  , ( [(Int, (ItemId, ItemFullKit))]
-                    , [(Int, (ItemId, ItemFullKit))]
-                    , [(Int, (ItemId, ItemFullKit))] ) )]
+              -> [( [(Int, (ItemId, ItemFullKit))]
+                  , [(Int, (ItemId, ItemFullKit))]
+                  , [(Int, (ItemId, ItemFullKit))] )]
 bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
   let eqpMap = EM.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
       invMap = EM.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
@@ -580,7 +558,7 @@ bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
       bestThree eqpSlot (g1, g2, g3) = (bestSingle eqpSlot g1,
                                         bestSingle eqpSlot g2,
                                         bestSingle eqpSlot g3)
-  in EM.assocs $ EM.mapWithKey bestThree eqpInvShaMap
+  in EM.elems $ EM.mapWithKey bestThree eqpInvShaMap
 
 harmful :: DiscoveryBenefit -> ItemId -> Bool
 harmful discoBenefit iid =

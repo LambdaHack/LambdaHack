@@ -928,7 +928,7 @@ necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
                , Timeout $ (1 `d` 2) * 20
-               , SetFlag Durable, EqpSlot EqpSlotMiscBonus ]
+               , SetFlag Durable, EqpSlot EqpSlotMaxHP ]
                ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = "A cord of freshly dried herbs and healing berries."
