@@ -111,17 +111,17 @@ actionStrategy moldLeader aid retry = do
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
   let actorMaxSk = actorMaxSkills EM.! aid
-      maySleep = bwatch body `notElem` [WSleep, WWake]
-                 && not condAimEnemyPresent
-                 && not condAimEnemyRemembered
-                 && not (hpFull body actorMaxSk)
-                 && not heavilyDistressed
-                 && not condNotCalmEnough
-                 && canSleep actorMaxSk
+      mayFallAsleep = not condAimEnemyRemembered
+                      && mayContinueSleep
+                      && canSleep actorMaxSk
+      mayContinueSleep = not condAimEnemyPresent
+                         && not (hpFull body actorMaxSk)
+                         && not heavilyDistressed
+                         && not condNotCalmEnough
       dozes = case bwatch body of
                 WWait n -> n > 0
                 _ -> False
-              && maySleep
+              && mayFallAsleep
               && (Just aid /= mleader || maybe True (== aid) moldLeader)
                    -- perhaps waited last turn only due to not being a leader,
                    -- so dozing interrupted when becomes a leader
@@ -291,11 +291,11 @@ actionStrategy moldLeader aid retry = do
         [ ( [SkMoveItem]
           , stratToFreq 2000
             $ pickup aid False  -- e.g., to give to other party members
-          , not condInMelee && not dozes)
+          , not condInMelee && not dozes )
         , ( [SkMoveItem]
           , stratToFreq 1
             $ unEquipItems aid  -- late, because these items not bad
-          , not condInMelee && not dozes)
+          , not condInMelee && not dozes )
         , ( [SkWait]
             -- This has to be random or all actors would fall asleep
             -- in specific and predictable locations.
@@ -303,7 +303,7 @@ actionStrategy moldLeader aid retry = do
                             | not condAimCrucial -> 1  -- not looting ATM
                             | otherwise -> 0)
                         waitBlockNow  -- try to fall asleep, rarely
-          , maySleep)
+          , bwatch body `notElem` [WSleep, WWake] && mayFallAsleep )
         , ( runSkills
           , stratToFreq 20000 $ chase aid (not condInMelee
                                            && heavilyDistressed
