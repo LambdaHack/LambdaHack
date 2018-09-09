@@ -132,7 +132,10 @@ setBWait cmd aid b = do
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
     WWait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
-        if n >= 100 && not uneasy then do
+        if n >= 100
+           && not uneasy
+           && Ability.getSk Ability.SkWait actorMaxSk >= 3
+        then do
           nAll <- removeConditionSingle "braced" aid
           let !_A = assert (nAll == 0) ()
           addSleep aid
