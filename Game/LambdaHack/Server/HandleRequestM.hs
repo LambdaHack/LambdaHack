@@ -117,11 +117,11 @@ setBWait cmd aid b = do
         ReqWait10 -> Just False  -- false wait, only one clip at a time
         _ -> Nothing
   actorMaxSk <- getsState $ getActorMaxSkills aid
+  let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
     WSleep ->
       if not (isJust mwait)  -- not a wait nor lurk
-         || not (calmEnough b actorMaxSk)
-            && mwait /= Just False  -- lurk can't wake up; too fast
+         || uneasy && mwait /= Just False  -- lurk can't wake up; too fast
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
       else execUpdAtomic $ UpdRefillHP aid 100
              -- no @xM@, so slow, but each turn HP gauge green
@@ -132,7 +132,7 @@ setBWait cmd aid b = do
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
     WWait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
-        if n >= 100 && calmEnough b actorMaxSk then do
+        if n >= 100 && not uneasy then do
           nAll <- removeConditionSingle "braced" aid
           let !_A = assert (nAll == 0) ()
           addSleep aid

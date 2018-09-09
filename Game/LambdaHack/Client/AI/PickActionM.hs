@@ -115,9 +115,11 @@ actionStrategy moldLeader aid retry = do
                  && not condAimEnemyPresent
                  && not condAimEnemyRemembered
                  && not (hpFull body actorMaxSk)
+                 && not heavilyDistressed
+                 && not condNotCalmEnough
                  && canSleep actorMaxSk
       dozes = case bwatch body of
-                WWait{} -> True
+                WWait n -> n > 0
                 _ -> False
               && maySleep
               && (Just aid /= mleader || maybe True (== aid) moldLeader)
