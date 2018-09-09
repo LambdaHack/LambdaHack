@@ -125,6 +125,7 @@ data Highlight =
   | HighlightGrey
   | HighlightWhite
   | HighlightMagenta
+  | HighlightGreen
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 -- | Text attributes: foreground color and highlight.

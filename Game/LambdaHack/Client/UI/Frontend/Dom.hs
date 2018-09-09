@@ -269,6 +269,8 @@ display ClientOptions{scolorIsBold}
             setProp style "border-color" $ Color.colorToRGB Color.White
           Color.HighlightMagenta ->
             setProp style "border-color" $ Color.colorToRGB Color.Magenta
+          Color.HighlightGreen ->
+            setProp style "border-color" $ Color.colorToRGB Color.Green
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.

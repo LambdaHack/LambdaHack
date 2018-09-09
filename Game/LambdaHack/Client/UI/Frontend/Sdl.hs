@@ -302,7 +302,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
               Color.HighlightGrey -> normalizeAc Color.BrBlack
               Color.HighlightWhite -> normalizeAc Color.White
               Color.HighlightMagenta -> normalizeAc Color.BrMagenta
-        -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
+              Color.HighlightGreen -> normalizeAc Color.Green
+      -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
             -- Make all visible floors bold (no bold fold variant for 16x16x,
