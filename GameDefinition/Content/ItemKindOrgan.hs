@@ -452,10 +452,10 @@ braced = armoredSkin
   , idesc    = "Apart of increased resilience to attacks, being braced against attacks protects from displacement by foes and other forms of forced translocation, e.g., being pushed or pulled."
   }
 asleep = armoredSkin
-  { isymbol  = 'A'
+  { isymbol  = 'S'
   , iname    = "asleep"
   , ifreq    = [("asleep", 1)]
-  , iflavour = zipPlain [BrMagenta]
+  , iflavour = zipPlain [BrGreen]  -- regenerates HP (very slowly)
   , icount   = 5
   , iverbHit = "slay"
   , iweight  = 0
