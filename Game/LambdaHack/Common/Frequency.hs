@@ -41,7 +41,8 @@ instance Monad Frequency where
   Frequency xs name >>= f =
     Frequency [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger q <= _maxBound32)
+                assert (toInteger p * toInteger q <= _maxBound32
+                        `blame` (name, map fst xs))
 #endif
                 (p * q, y)
               | (p, x) <- xs
@@ -58,7 +59,8 @@ instance Applicative Frequency where
   Frequency fs fname <*> Frequency ys yname =
     Frequency [
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger q <= _maxBound32)
+                assert (toInteger p * toInteger q <= _maxBound32
+                        `blame` (fname, map fst fs, yname, map fst ys))
 #endif
                 (p * q, f y)
               | (p, f) <- fs
@@ -101,7 +103,8 @@ scaleFreq n (Frequency xs name) =
   assert (n > 0 `blame` "non-positive frequency scale" `swith` (name, n, xs)) $
   let multN p =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-                assert (toInteger p * toInteger n <= _maxBound32) $
+                assert (toInteger p * toInteger n <= _maxBound32
+                        `blame` (n, Frequency xs name)) $
 #endif
                 p * n
   in Frequency (map (first multN) xs) name

@@ -238,35 +238,37 @@ actionStrategy moldLeader aid retry = do
       -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
       -- Only the best variant of @chase@ is taken, but it's almost always
       -- good, and if not, the @chase@ in @suffix@ may fix that.
+      -- The scaling values for @stratToFreq@ need to be so low-resolution
+      -- or we get 32bit @Freqency@ overflows, which would bite us in JS.
       distant, suffix :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
-          , stratToFreq (if condInMelee then 20 else 20000)
+          , stratToFreq (if condInMelee then 2 else 20000)
             $ yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [SkMoveItem]
-          , stratToFreq 10
+          , stratToFreq 1
             $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
                  || condNotCalmEnough
                  || heavilyDistressed) )
         , ( [SkProject]
-          , stratToFreq (if condTgtNonmoving then 200 else 30)
+          , stratToFreq (if condTgtNonmoving then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
         , ( [SkApply]
-          , stratToFreq 10
+          , stratToFreq 1
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
-                              4000  -- friends pummeled by target, go to help
+                              400  -- friends pummeled by target, go to help
                             | not condAimEnemyPresent ->
-                              20  -- if enemy only remembered investigate anyway
+                              2  -- if enemy only remembered investigate anyway
                             | otherwise ->
-                              200)
+                              20)
             $ chase aid (not condInMelee
                          && (condThreat 12 || heavilyDistressed)
                          && aCanDeLight) retry
@@ -283,7 +285,6 @@ actionStrategy moldLeader aid retry = do
                        -- two aliens attack always, because more aggressive
                      && not condDesirableFloorItem) )
         ]
-      -- Order matters again.
       suffix =
         [ ( [SkMoveItem]
           , stratToFreq 2000
