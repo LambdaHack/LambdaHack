@@ -118,11 +118,12 @@ data EqpSlot =
   | EqpSlotSight
   | EqpSlotLightSource
   | EqpSlotWeapon
-  | EqpSlotMiscAbility
   | EqpSlotMove
   | EqpSlotMelee
   | EqpSlotDisplace
   | EqpSlotAlter
+  | EqpSlotWait
+  | EqpSlotMoveItem
   | EqpSlotProject
   | EqpSlotApply
   | EqpSlotSwimming

@@ -218,13 +218,12 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
     EqpSlotSight -> Ability.getSk Ability.SkSight aSkills
     EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
     EqpSlotWeapon -> error $ "" `showFailure` arItem
-    EqpSlotMiscAbility ->
-      Ability.getSk Ability.SkWait aSkills
-      + Ability.getSk Ability.SkMoveItem aSkills
     EqpSlotMove -> Ability.getSk Ability.SkMove aSkills
     EqpSlotMelee -> Ability.getSk Ability.SkMelee aSkills
     EqpSlotDisplace -> Ability.getSk Ability.SkDisplace aSkills
     EqpSlotAlter -> Ability.getSk Ability.SkAlter aSkills
+    EqpSlotWait -> Ability.getSk Ability.SkWait aSkills
+    EqpSlotMoveItem -> Ability.getSk Ability.SkMoveItem aSkills
     EqpSlotProject -> Ability.getSk Ability.SkProject aSkills
     EqpSlotApply -> Ability.getSk Ability.SkApply aSkills
     EqpSlotSwimming -> Ability.getSk Ability.SkSwimming aSkills

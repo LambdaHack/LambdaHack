@@ -448,7 +448,6 @@ equipItems aid = do
 
 toShare :: EqpSlot -> Bool
 toShare EqpSlotMiscBonus = False
-toShare EqpSlotMiscAbility = False
 toShare _ = True
 
 yieldUnneeded :: MonadClient m => ActorId -> m (Strategy RequestTimed)
