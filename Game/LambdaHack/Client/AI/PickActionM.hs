@@ -908,6 +908,7 @@ displaceTgt aid target retry = do
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
+              || bwatch b2 == WSleep  -- friend sleeping; doesn't care
               || retry  -- desperate
                  && not (boldpos b == Just target  -- and no displace loop
                          && not (waitedLastTurn b))
