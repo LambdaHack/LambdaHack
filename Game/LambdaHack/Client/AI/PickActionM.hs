@@ -342,7 +342,9 @@ actionStrategy moldLeader aid retry = do
   comDistant <- combineWeighted distant
   comSuffix <- combineWeighted suffix
   sumFallback <- sumS fallback
-  return $! sumPrefix .| comDistant .| comSuffix .| sumFallback
+  return $! if bwatch body == WSleep && mayContinueSleep
+            then returN "sleep" ReqWait
+            else sumPrefix .| comDistant .| comSuffix .| sumFallback
 
 waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
