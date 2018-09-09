@@ -629,6 +629,12 @@ effectPutToSleep execSfx target = do
        when (deltaCalm > 0) $
          updateCalm target deltaCalm  -- max Calm, but asleep vulnerability
        execSfx
+       case bwatch tb of
+         WWait{} -> do
+           nAll <- removeConditionSingle "braced" target
+           let !_A = assert (nAll == 0) ()
+           return ()
+         _ -> return ()
        addSleep target
        return UseUp
 
