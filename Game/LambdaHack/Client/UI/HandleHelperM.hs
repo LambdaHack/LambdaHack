@@ -442,7 +442,11 @@ lookAtActors p lidV = do
               -- No "a" prefix even if singular and inanimate, to distinguish
               -- from items lying on the floor (and to simplify code).
               (subject, person) = squashedWWandW subjects
-              verb = "be here"
+              verb = case bwatch body of
+                WWatch -> "be here"
+                WWait{} -> "brace for impact"
+                WSleep -> "sleep here"
+                WWake -> "be waking up"
               factDesc = case jfid $ itemBase itemFull of
                 Just tfid | tfid /= bfid body ->
                   let dominatedBy = if bfid body == side
