@@ -119,7 +119,7 @@ actionStrategy moldLeader aid retry = do
       dozes = case bwatch body of
                 WWait{} -> True
                 _ -> False
-              &&  maySleep
+              && maySleep
               && (Just aid /= mleader || maybe True (== aid) moldLeader)
                    -- perhaps waited last turn only due to not being a leader,
                    -- so dozing interrupted when becomes a leader

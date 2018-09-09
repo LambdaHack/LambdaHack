@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.HandleRequestM
     -- * Internal operations
   , execFailure, setBWait, managePerRequest, handleRequestTimedCases
   , affectSmell, reqMelee, reqMeleeChecked, reqAlter
-  , reqWait, reqYell, reqMoveItems, reqMoveItem, computeRndTimeout
+  , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, computeRndTimeout
   , reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
@@ -127,6 +127,9 @@ setBWait cmd aid b = do
              -- no @xM@, so slow, but each turn HP gauge green
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
+    WWait 0 -> case cmd of
+      ReqWait -> return ()
+      _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
     WWait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 && calmEnough b actorMaxSk then do
@@ -141,8 +144,11 @@ setBWait cmd aid b = do
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WWatch ->
       when (mwait == Just True) $ do  -- only long wait switches to wait state
-        addCondition "braced" aid
-        execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
+        if Ability.getSk Ability.SkWait actorMaxSk >= 1 then do
+          addCondition "braced" aid
+          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
+        else
+          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
   return mwait
 
 handleRequestTimed :: MonadServerAtomic m
@@ -181,7 +187,7 @@ handleRequestTimedCases aid cmd = case cmd of
   ReqDisplace target -> reqDisplace aid target
   ReqAlter tpos -> reqAlter aid tpos
   ReqWait -> reqWait aid
-  ReqWait10 -> reqWait aid  -- the differences are handled elsewhere
+  ReqWait10 -> reqWait10 aid
   ReqYell -> reqYell aid
   ReqMoveItems l -> reqMoveItems aid l
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
@@ -674,6 +680,18 @@ reqWait :: MonadServerAtomic m => ActorId -> m ()
 reqWait source = do
   actorSk <- currentSkillsServer source
   unless (Ability.getSk Ability.SkWait actorSk > 0) $
+    execFailure source ReqWait WaitUnskilled
+
+-- * ReqWait10
+
+-- | Do nothing.
+--
+-- Something is sometimes done in 'setBWait'.
+reqWait10 :: MonadServerAtomic m => ActorId -> m ()
+{-# INLINE reqWait10 #-}
+reqWait10 source = do
+  actorSk <- currentSkillsServer source
+  unless (Ability.getSk Ability.SkWait actorSk >= 3) $
     execFailure source ReqWait WaitUnskilled
 
 -- * ReqYell

@@ -630,11 +630,12 @@ effectPutToSleep execSfx target = do
          updateCalm target deltaCalm  -- max Calm, but asleep vulnerability
        execSfx
        case bwatch tb of
-         WWait{} -> do
+         WWait n | n > 0 -> do
            nAll <- removeConditionSingle "braced" target
            let !_A = assert (nAll == 0) ()
            return ()
          _ -> return ()
+       -- Forced sleep. No check if the actor can sleep naturally.
        addSleep target
        return UseUp
 

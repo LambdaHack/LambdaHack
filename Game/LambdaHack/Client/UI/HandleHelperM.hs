@@ -444,7 +444,8 @@ lookAtActors p lidV = do
               (subject, person) = squashedWWandW subjects
               verb = case bwatch body of
                 WWatch -> "be here"
-                WWait{} -> "brace for impact"
+                WWait 0 -> "idle here"
+                WWait _ -> "brace for impact"
                 WSleep -> "sleep here"
                 WWake -> "be waking up"
               factDesc = case jfid $ itemBase itemFull of
