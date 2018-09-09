@@ -879,7 +879,7 @@ displaceBlocker aid retry = do
         return reject  -- not a real blocker but goal, possibly enemy to melee
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target
-      displaceTgt aid q retry
+        displaceTgt aid q retry
     _ -> return reject  -- goal reached
 
 displaceTgt :: MonadClient m
