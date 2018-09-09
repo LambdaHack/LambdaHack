@@ -181,7 +181,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
          when (n >= bhp b && bhp b > 0) $
            actorVerbMU aid bUI "return from the brink of death"
          mleader <- getsClient sleader
-         when (Just aid == mleader) $ do
+         if Just aid == mleader then do
            actorMaxSk <- getsState $ getActorMaxSkills aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
@@ -190,21 +190,27 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                                                   actorMaxSk)) $ do
              actorVerbMU aid bUI "recover your health fully"
              stopPlayBack
-  UpdRefillCalm aid calmDelta ->
-    when (calmDelta == minusM) $ do  -- lower deltas come from hits; obvious
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      body <- getsState $ getActorBody aid
-      when (bfid body == side) $ do
-        let closeFoe !b =  -- mimics isHeardFoe
-                      blid b == blid body
-                      && inline chessDist (bpos b) (bpos body) <= 3
-                      && not (waitedLastTurn b)  -- uncommon
-                      && inline isFoe side fact (bfid b)  -- costly
-        anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
-        unless anyCloseFoes $ do  -- obvious where the feeling comes from
-          duplicated <- aidVerbDuplicateMU aid "hear something"
-          unless duplicated stopPlayBack
+         else when (bfid b == side) $
+           markDisplayNeeded (blid b)
+  UpdRefillCalm aid calmDelta -> do
+    side <- getsClient sside
+    body <- getsState $ getActorBody aid
+    when (bfid body == side) $ do
+      if | calmDelta > 0 ->  -- regeneration or effect
+             markDisplayNeeded (blid body)
+         | calmDelta == minusM -> do
+           fact <- getsState $ (EM.! side) . sfactionD
+           let closeFoe !b =  -- mimics isHeardFoe
+                         blid b == blid body
+                         && inline chessDist (bpos b) (bpos body) <= 3
+                         && not (waitedLastTurn b)  -- uncommon
+                         && inline isFoe side fact (bfid b)  -- costly
+           anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
+           unless anyCloseFoes $ do  -- obvious where the feeling comes from
+             duplicated <- aidVerbDuplicateMU aid "hear something"
+             unless duplicated stopPlayBack
+         | otherwise ->  -- low deltas from hits; displayed elsewhere
+           return ()
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
