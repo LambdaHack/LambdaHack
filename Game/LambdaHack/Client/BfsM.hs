@@ -208,7 +208,7 @@ condBFS aid = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let alterSkill =
         min (maxBound - 1)  -- @maxBound :: Word8@ means unalterable
-            (toEnum $ Ability.getSk Ability.SkAlter actorMaxSk)
+            (toEnum $ max 0 $ Ability.getSk Ability.SkAlter actorMaxSk)
       canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
                 || Ability.getSk Ability.SkDisplace actorMaxSk > 0
                 || Ability.getSk Ability.SkProject actorMaxSk > 0
