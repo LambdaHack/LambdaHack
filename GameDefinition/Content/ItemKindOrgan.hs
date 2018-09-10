@@ -16,11 +16,11 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
+  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
   -- LH-specific
   ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
 
-fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
+fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
 -- LH-specific
 tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
@@ -134,7 +134,8 @@ rhinoHorn = fist
   , idamage  = 5 `d` 1
   , iaspects = [Timeout 7, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [Recharging Impress]  -- the owner is a mid-boss, after all
+  , ieffects = [Recharging Impress, Recharging Yell]
+                 -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
   }
 tentacle = fist
@@ -335,13 +336,22 @@ ear10 = ear 10
 
 -- * Assorted
 
+rattleOrgan = armoredSkin
+  { iname    = "rattle"
+  , ifreq    = [("rattle", 100)]
+  , iverbHit = "announce"
+  , iaspects = [ Timeout $ 10 + (1 `d` 2) * 10
+               , SetFlag Periodic, SetFlag Durable ]
+  , ieffects = [Recharging Yell]
+  , idesc    = ""
+  }
 insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
   , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging (RefillHP (-1))]
+  , ieffects = [Recharging (RefillHP (-1)), Recharging Yell]
   , idesc    = ""
   }
 sapientBrain = armoredSkin
@@ -374,7 +384,7 @@ speedGland n = armoredSkin
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice $ 100 `div` n
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging (RefillHP 1)]
+  , ieffects = [Recharging (RefillHP 1), Recharging Yell]
   , idesc    = ""
   }
 speedGland2 = speedGland 2

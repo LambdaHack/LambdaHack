@@ -391,7 +391,7 @@ rattlesnake = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
-  , ikit     = [ ("venom fang", COrgan)
+  , ikit     = [ ("venom fang", COrgan), ("rattle", COrgan)
                , ("eye 4", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
