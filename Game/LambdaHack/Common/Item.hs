@@ -87,8 +87,8 @@ newtype ItemKindIx = ItemKindIx Word16
   deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable, Binary)
 
 -- | The secret part of the information about an item. If a faction
--- knows the aspect record of the item (the @kmConst@ flag is set or
--- the @itemAspect@ field is @Left@), this is a complete secret information.
+-- knows the aspect record of the item (the @kmConst@ flag is set),
+-- this is a complete secret information.
 -- Items that don't need second identification may be identified or not and both
 -- cases are OK (their display flavour will differ and that may be the point).
 --

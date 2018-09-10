@@ -184,9 +184,11 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
              [] -> []
       aspectDescs =
         let aspects = case itemDisco of
+              ItemDiscoMean IA.KindMean{..} | kmConst ->
+                IA.aspectRecordToList kmMean  -- exact and collated
               ItemDiscoMean{} -> IK.iaspects itemKind
-                -- faster than @aspectRecordToList@ of mean
-                -- and doesn't completely lose the @Odds@ case
+                -- doesn't completely lose the @Odds@ case, so better than
+                -- the above, even if does not collate multiple skill bonuses
               ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
             aMain IK.Timeout{} = True
             aMain IK.AddSkill{} = True
@@ -301,9 +303,11 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, aspectSentences, damageAnalysis) =
         let aspects = case itemDisco of
+              ItemDiscoMean IA.KindMean{..} | kmConst ->
+                IA.aspectRecordToList kmMean  -- exact and collated
               ItemDiscoMean{} -> IK.iaspects itemKind
-                -- faster than @aspectRecordToList@ of mean
-                -- and doesn't completely lose the @Odds@ case
+                -- doesn't completely lose the @Odds@ case, so better than
+                -- the above, even if does not collate multiple skill bonuses
               ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
             sentences = tsuspect ++ mapMaybe aspectToSentence aspects
             aHurtMeleeOfItem = IA.getSkill Ability.SkHurtMelee arItem
