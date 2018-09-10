@@ -76,7 +76,8 @@ effectToBenefit cops fact insideRecharging eff =
     IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100
     IK.Impress -> (0, -20)
-    IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies,
+    IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
+    IK.Yell -> (-5, -10)  -- usually uncontrollably wakes up enemies, so bad
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP

@@ -33,7 +33,9 @@ import Game.LambdaHack.Common.Point
 
 -- | The type representing visibility of atomic commands to factions,
 -- based on the position of the command, etc. Note that the server
--- sees and smells all positions.
+-- sees and smells all positions. Also note that hearing is not covered
+-- because it gives very restricted information, so hearing doesn't equal
+-- seeing (and we assume smelling actors get lots of data from smells).
 data PosAtomic =
     PosSight LevelId [Point]    -- ^ whomever sees all the positions, notices
   | PosFidAndSight [FactionId] LevelId [Point]

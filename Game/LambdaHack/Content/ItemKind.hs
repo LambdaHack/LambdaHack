@@ -89,6 +89,7 @@ data Effect =
   | Dominate           -- ^ change actor's allegiance
   | Impress            -- ^ make actor susceptible to domination
   | PutToSleep         -- ^ put actor to sleep, also calming him
+  | Yell               -- ^ make the actor yell/yawn, waking him and others up
   | Summon (GroupName ItemKind) Dice.Dice
       -- ^ summon the given number of actors of this group
   | Ascend Bool           -- ^ ascend to another level of the dungeon

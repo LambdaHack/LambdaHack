@@ -1063,6 +1063,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           stopPlayBack
         IK.Impress -> actorVerbMU aid bUI "be awestruck"
         IK.PutToSleep -> actorVerbMU aid bUI "be put to sleep"
+        IK.Yell -> actorVerbMU aid bUI "start"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- works, because exact number sent, not dice

@@ -299,6 +299,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.Dominate -> effectDominate source target
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.PutToSleep -> effectPutToSleep execSfx target
+    IK.Yell -> effectYell execSfx target
     IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape source target
@@ -638,6 +639,17 @@ effectPutToSleep execSfx target = do
        -- Forced sleep. No check if the actor can sleep naturally.
        addSleep target
        return UseUp
+
+-- ** Yell
+
+-- This is similar to 'reqYell', but also mentions that the actor is startled,
+-- because, presumably, he yells involuntarily and also wakes him up via Calm.
+effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
+effectYell execSfx target = do
+  execSfx
+  execSfxAtomic $ SfxTaunt target
+  execUpdAtomic $ UpdRefillCalm target (xM $ -2)
+  return UseUp
 
 -- ** Summon
 

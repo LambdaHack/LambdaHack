@@ -52,6 +52,7 @@ effectToSuffix detailLevel effect =
     Dominate -> "of domination"
     Impress -> "of impression"
     PutToSleep -> "of sleep"
+    Yell -> "of alarm"
     Summon grp p -> makePhrase
       [ "of summoning"
       , if p <= 1 then "" else MU.Text $ tshow p
