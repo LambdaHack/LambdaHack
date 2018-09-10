@@ -459,6 +459,7 @@ braced = armoredSkin
   , iverbHit = "brace"
   , iweight  = 0
   , iaspects = [ AddSkill SkArmorMelee 50, AddSkill SkArmorRanged 25
+               , AddSkill SkHearing 10
                , SetFlag Fragile, SetFlag Durable ]
                    -- hack: display as condition
   , idesc    = "Apart of increased resilience to attacks, being braced against attacks protects from displacement by foes and other forms of forced translocation, e.g., being pushed or pulled."

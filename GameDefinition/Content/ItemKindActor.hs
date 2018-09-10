@@ -47,7 +47,7 @@ warrior = ItemKind
   , idesc    = ""
   -- , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan)
-               , ("eye 6", COrgan), ("ear 9", COrgan)
+               , ("eye 6", COrgan), ("ear 4", COrgan)
                , ("sapient brain", COrgan) ]
   }
 warrior2 = warrior
