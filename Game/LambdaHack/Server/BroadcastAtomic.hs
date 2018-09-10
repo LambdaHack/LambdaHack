@@ -181,10 +181,10 @@ hearSfxAtomic as cmd =
       return $! if null aids
                 then Nothing
                 else Just (HearSummon (bproj b) grp p, aids)
-    SfxTaunt source -> do
-      b <- getsState $ getActorBody source
+    SfxTaunt voluntary aid -> do
+      b <- getsState $ getActorBody aid
       aids <- filterHear (bpos b) as
-      (subject, verb) <- displayTaunt rndToAction source
+      (subject, verb) <- displayTaunt voluntary rndToAction aid
       return $ Just (HearTaunt $ subject <+> verb, aids)  -- intentional
     _ -> return Nothing
 

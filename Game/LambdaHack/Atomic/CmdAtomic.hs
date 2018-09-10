@@ -156,7 +156,7 @@ data SfxAtomic =
   | SfxMsgFid FactionId SfxMsg
   | SfxSortSlots
   | SfxCollideTile ActorId Point
-  | SfxTaunt ActorId
+  | SfxTaunt Bool ActorId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic

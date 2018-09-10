@@ -647,7 +647,7 @@ effectPutToSleep execSfx target = do
 effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectYell execSfx target = do
   execSfx
-  execSfxAtomic $ SfxTaunt target
+  execSfxAtomic $ SfxTaunt False target
   execUpdAtomic $ UpdRefillCalm target (xM $ -2)
   return UseUp
 

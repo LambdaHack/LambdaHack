@@ -83,11 +83,11 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
                | otherwise -> strongest
 
 displayTaunt :: MonadStateRead m
-             => (Rnd (Text, Text) -> m (Text, Text))
+             => Bool -> (Rnd (Text, Text) -> m (Text, Text))
              -> ActorId -> m (Text, Text)
-displayTaunt rndToAction source = do
-  b <- getsState $ getActorBody source
-  actorMaxSk <- getsState $ getActorMaxSkills source
+displayTaunt voluntary rndToAction aid = do
+  b <- getsState $ getActorBody aid
+  actorMaxSk <- getsState $ getActorMaxSkills aid
   let canApply = Ability.getSk Ability.SkApply actorMaxSk > 1
                  && canHear
         -- if applies complex items, probably intelligent and can speak
@@ -96,31 +96,31 @@ displayTaunt rndToAction source = do
       canBrace = Ability.getSk Ability.SkWait actorMaxSk > 1
         -- not an insect, plant, geyser, faucet, fence, etc.
         -- so can emit sound by hitting something with body parts
-      braceWake = [ (2, ("something", "stretch"))
+      braceUneasy = [ (2, ("something", "flail around"))
+                    , (1, ("something", "toss blindly"))
+                    , (1, ("something", "squirm dizzily")) ]
+      braceEasy = [ (2, ("something", "stretch"))
                   , (1, ("something", "fidget"))
                   , (1, ("something", "fret")) ]
-      bracePanic = [ (2, ("something", "flail around"))
-                   , (1, ("something", "toss blindly"))
-                   , (1, ("something", "squirm dizzily")) ]
       uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
-  if bwatch b `elem` [WSleep, WWake]
+  if bwatch b `elem` [WSleep, WWake] || not voluntary
   then rndToAction $ frequency $ toFreq "SfxTaunt" $
     if uneasy
     then if | canApply -> (5, ("somebody", "yell"))
                           : (3, ("somebody", "bellow"))
-                          : bracePanic
+                          : braceUneasy
             | canHear -> (5, ("somebody", "bellow"))
                          : (3, ("something", "howl"))
-                         : bracePanic
-            | canBrace -> bracePanic
+                         : braceUneasy
+            | canBrace -> braceUneasy
             | otherwise -> [(1, ("something", "drone enquiringly"))]
     else if | canApply -> (5, ("somebody", "yawn"))
                           : (3, ("somebody", "grunt"))
-                          : braceWake
+                          : braceEasy
             | canHear -> (5, ("somebody", "grunt"))
                          : (3, ("something", "bark"))
-                         : braceWake
-            | canBrace -> braceWake
+                         : braceEasy
+            | canBrace -> braceEasy
             | otherwise -> [(1, ("something", "hum silently"))]
   else return $!
     if | canApply -> ("somebody", "holler a taunt")

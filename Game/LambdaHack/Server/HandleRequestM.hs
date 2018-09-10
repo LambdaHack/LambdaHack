@@ -712,7 +712,7 @@ reqYell source = do
   if Ability.getSk Ability.SkWait actorSk > 0 then
     -- Last yawn before waking up is displayed as a yell, but that's fine.
     -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
-    execSfxAtomic $ SfxTaunt source
+    execSfxAtomic $ SfxTaunt True source
   else
     execFailure source ReqWait YellUnskilled
 

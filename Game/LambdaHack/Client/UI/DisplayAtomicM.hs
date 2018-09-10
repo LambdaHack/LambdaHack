@@ -1146,10 +1146,10 @@ displayRespSfxAtomicUI sfx = case sfx of
     let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
     msgAdd $! makeSentence
       [MU.SubjectVerbSg spart "painfully collide", "with", object]
-  SfxTaunt source -> do
-    sbUI <- getsSession $ getActorUI source
-    spart <- partActorLeader source sbUI
-    (_heardSubject, verb) <- displayTaunt rndToActionForget source
+  SfxTaunt voluntary aid -> do
+    sbUI <- getsSession $ getActorUI aid
+    spart <- partActorLeader aid sbUI
+    (_heardSubject, verb) <- displayTaunt voluntary rndToActionForget aid
     msgAdd $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m Text
