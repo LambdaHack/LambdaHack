@@ -257,27 +257,7 @@ skillToDecorator skill b t =
     SkFlying -> tshow t
 
 statSlots :: [Skill]
-statSlots = [ SkHurtMelee
-            , SkArmorMelee
-            , SkArmorRanged
-            , SkMaxHP
-            , SkMaxCalm
-            , SkSpeed
-            , SkSight
-            , SkSmell
-            , SkShine
-            , SkNocto
--- WIP:           , SkAggression
-            , SkMove
-            , SkMelee
-            , SkDisplace
-            , SkAlter
-            , SkWait
-            , SkMoveItem
-            , SkProject
-            , SkApply
-            , SkSwimming
-            , SkFlying ]
+statSlots = [SkHurtMelee .. SkFlying] ++ [SkMove .. SkApply]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
