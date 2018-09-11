@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -69,6 +69,8 @@ tmpFarSighted = tmpAspects "far-sighted" [AddSkill SkSight 5]
 tmpBlind = tmpAspects "blind" [AddSkill SkSight (-99)]
 tmpKeenSmelling = tmpAspects "keen-smelling" [AddSkill SkSmell 2]
 tmpNoctovision = tmpAspects "shiny-eyed" [AddSkill SkNocto 2]
+tmpDeafened = tmpAspects "deafened" [AddSkill SkHearing (-10)]
+tmpDeaf = tmpAspects "deaf" [AddSkill SkHearing (-99)]
 tmpDrunk = tmpAspects "drunk" [ AddSkill SkHurtMelee 30  -- fury
                               , AddSkill SkArmorMelee (-20)
                               , AddSkill SkArmorRanged (-20)

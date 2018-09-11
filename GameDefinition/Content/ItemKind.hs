@@ -201,7 +201,7 @@ harpoon = ItemKind
   , iweight  = 750
   , idamage  = 5 `d` 1
   , iaspects = [AddSkill SkHurtMelee $ (-10 + 1 `d` 2 + 1 `dL` 3) * 5]
-  , ieffects = [PullActor (ThrowMod 200 50)]
+  , ieffects = [PullActor (ThrowMod 200 50), Yell]  -- yell, because brutal
   , idesc    = "The cruel, barbed head lodges in its victim so painfully that the weakest tug of the thin line sends the victim flying."
   , ikit     = []
   }
@@ -439,7 +439,7 @@ flask12 = flaskTemplate
   , iaspects = [ELabel "of whiskey"]
                ++ iaspects flaskTemplate
   , ieffects = [ toOrganGood "drunk" (20 + 1 `d` 5)
-               , Burn 1, RefillHP 3
+               , Burn 1, RefillHP 3, Yell
                , OnSmash (Explode "whiskey spray") ]
   }
 flask13 = flaskTemplate
@@ -658,9 +658,9 @@ fragmentationBomb = ItemKind
 concussionBomb = fragmentationBomb
   { iname    = "satchel"
       -- slightly stabilized nitroglycerine in a soft satchel, hence
-      -- no fragmentation, but huge shock wave despite small size and lack
-      -- of strong container to build up pressure; indoors help the shock wave;
-      -- unstable enough that no fuze required
+      -- no fragmentation, but huge shock wave despite small size and lack of
+      -- strong container to build up pressure (hence only mild hearing loss);
+      -- indoors helps the shock wave; unstable enough that no fuze required
   , iflavour = zipPlain [Magenta]
   , iverbHit = "flap"
   , iweight  = 400
@@ -673,9 +673,9 @@ concussionBomb = fragmentationBomb
   , idesc    = ""
   }
 -- Not flashbang, because powerful bang without fragmentation is harder
--- to manufacture (requires an oxidizer and steel canister with holes)
--- and because we don't model hearing adequately yet. The bang would also
--- paralyze and/or lower the movement skill (out of balance due to ear trauma).
+-- to manufacture (requires an oxidizer and steel canister with holes).
+-- The bang would also paralyze and/or lower the movement skill
+-- (out of balance due to ear trauma).
 flashBomb = fragmentationBomb
   { iname    = "magnesium ribbon"  -- filled with magnesium flash powder
   , iflavour = zipPlain [BrWhite]
@@ -949,7 +949,8 @@ necklace2 = necklaceTemplate
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ ELabel "of fearful listening"
-               , Timeout $ (1 `d` 2) * 20 ]
+               , Timeout $ (1 `d` 2) * 20
+               , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Detect DetectActor 10)
                , Recharging (RefillCalm (-20)) ]
@@ -967,7 +968,7 @@ necklace5 = necklaceTemplate
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
                , Recharging (Detect DetectExit 20)
-               , Recharging (RefillHP (-2)) ]  -- prevent micromanagement
+               , Recharging Yell ]  -- prevent micromanagement
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1316,7 +1317,8 @@ daggerDropBestWeapon = dagger
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 20 - 16 ]
                ++ iaspects dagger
-  , ieffects = [ Recharging DropBestWeapon, Recharging $ RefillCalm (-3) ]
+  , ieffects = [ Recharging DropBestWeapon
+               , Recharging Yell ]
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade occasionally."
   }
 hammer = ItemKind
@@ -1413,7 +1415,8 @@ swordNullify = sword
                , Timeout 10 ]
                ++ iaspects sword
   , ieffects = [ Recharging $ DropItem 1 maxBound COrgan "condition"
-               , Recharging $ RefillCalm (-10) ]
+               , Recharging $ RefillCalm (-10)
+               , Recharging Yell ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind

@@ -145,7 +145,8 @@ spreadConcussion = ItemKind
   , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , DropItem 1 maxBound COrgan "condition" ]
+               , DropItem 1 maxBound COrgan "condition"
+               , toOrganBad "deafened" (80 + 1 `d` 29) ]
   , idesc    = ""
   , ikit     = []
   }
