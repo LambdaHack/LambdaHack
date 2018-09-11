@@ -243,8 +243,9 @@ largeTail = fist
   , icount   = 1
   , iverbHit = "knock"
   , idamage  = 7 `d` 1
-  , iaspects = [Timeout $ 1 + 1 `d` 3, AddSkill SkHurtMelee 20]
+  , iaspects = [Timeout $ 2 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
+                 -- timeout higher, lest they regain push before closing again
   , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps
   , idesc    = "Slow but heavy."
   }
