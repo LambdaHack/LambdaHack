@@ -41,7 +41,8 @@ burningOil n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
-               , toOrganBad "slowed" (2 + 1 `d` 2) ]
+               , toOrganBad "no SkMelee" (5 + 1 `d` 3) ]
+                   -- slips and frantically puts out fire
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
   }
@@ -146,7 +147,8 @@ spreadConcussion = ItemKind
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "condition"
-               , toOrganBad "deafened" (80 + 1 `d` 29) ]
+               , toOrganBad "no SkMove" (5 + 1 `d` 3)   -- no balance
+               , toOrganBad "deafened" (20 + 1 `d` 5) ]
   , idesc    = ""
   , ikit     = []
   }
@@ -187,7 +189,7 @@ spreadFlash = ItemKind
   , iaspects = [ toLinger 20  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
-  , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 30]
+  , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 20]
                  -- Wikipedia says: blind for five seconds and afterimage
                  -- for much longer, harming aim
   , idesc    = "A flash of fire."
@@ -321,8 +323,8 @@ odorDistressing = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [RefillCalm (-20)]
-  , idesc    = "It turns the stomach."
+  , ieffects = [RefillCalm (-10), toOrganBad "no SkWait" (5 + 1 `d` 3)]
+  , idesc    = "It turns the stomach."  -- and so can't stand still
   , ikit     = []
   }
 mistHealing = ItemKind
@@ -403,7 +405,8 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , idamage  = 0
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = []
+  , ieffects = [toOrganBad "no SkProject" (5 + 1 `d` 3)]
+                  -- choking and tears, can rougly see, but not aim
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
   }
@@ -450,7 +453,7 @@ waste = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [Burn 1]
+  , ieffects = [toOrganBad "no SkMoveItem" (10 + 1 `d` 10)]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -536,7 +539,7 @@ sparseShower = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "weakened" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad "weakened" (5 + 1 `d` 3)]
   , idesc    = "Light droplets that cling to clothing."
   , ikit     = []
   }
@@ -581,7 +584,7 @@ vulnerabilityBalm = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "defenseless" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad "defenseless" (5 + 1 `d` 3)]
   , idesc    = "Only the most learned make use of this."
   , ikit     = []
   }
@@ -751,7 +754,7 @@ blastNoBasicAbility grp = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganBad (toGroupName $ "no" <+> grp) (10 + 1 `d` 10)]
+  , ieffects = [toOrganBad (toGroupName $ "no" <+> grp) (5 + 1 `d` 3)]
   , idesc    = ""
   , ikit     = []
   }
@@ -776,7 +779,7 @@ blastBonusBasicAbility grp = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganGood (toGroupName $ "bonus" <+> grp) (80 + 1 `d` 20)]
+  , ieffects = [toOrganGood (toGroupName $ "bonus" <+> grp) (20 + 1 `d` 5)]
   , idesc    = ""
   , ikit     = []
   }

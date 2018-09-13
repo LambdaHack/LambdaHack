@@ -171,7 +171,8 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
-  , ieffects = []  -- nothing interesting fits the weaken/poison biological data
+  , ieffects = [toOrganBad "no SkApply" (5 + 1 `d` 3)]
+               -- weaken/poison, impacting intellectual abilities first
   , idesc    = ""
   }
 sulfurFissure = boilingFissure
@@ -201,7 +202,7 @@ sting = fist
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
-  , ieffects = [Recharging (Paralyze 4)]
+  , ieffects = [Recharging (toOrganBad "no SkAlter" (10 + 1 `d` 10))]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
