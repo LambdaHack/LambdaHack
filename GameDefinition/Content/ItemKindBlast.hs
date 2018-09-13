@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
-  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote, mistSleep]
+  [burningOil2, burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, mistAntiSlow, mistAntidote, mistSleep, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, blastNoSkMove, blastNoSkMelee, blastNoSkDisplace, blastNoSkAlter, blastNoSkWait, blastNoSkMoveItem, blastNoSkProject, blastNoSkApply, blastBonusSkMove, blastBonusSkMelee, blastBonusSkDisplace, blastBonusSkAlter, blastBonusSkWait, blastBonusSkMoveItem, blastBonusSkProject, blastBonusSkApply]
 
-burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass,fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, mistAntiSlow, mistAntidote, mistSleep :: ItemKind
+burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracker3, firecracker4, firecracker5, spreadFragmentation, spreadFragmentation8, focusedFragmentation, spreadConcussion, spreadConcussion8, focusedConcussion, spreadFlash, spreadFlash8, focusedFlash, singleSpark, glassPiece, focusedGlass, fragrance, pheromone, mistCalming, odorDistressing, mistHealing, mistHealing2, mistWounding, distortion, smoke, boilingWater, glue, waste, mistAntiSlow, mistAntidote, mistSleep, denseShower, sparseShower, protectingBalmMelee, protectingBalmRanged, vulnerabilityBalm, resolutionDust, hasteSpray, slownessMist, eyeDrop, ironFiling, smellyDroplet, eyeShine, whiskeySpray, youthSprinkle, poisonCloud, blastNoSkMove, blastNoSkMelee, blastNoSkDisplace, blastNoSkAlter, blastNoSkWait, blastNoSkMoveItem, blastNoSkProject, blastNoSkApply, blastBonusSkMove, blastBonusSkMelee, blastBonusSkDisplace, blastBonusSkAlter, blastBonusSkWait, blastBonusSkMoveItem, blastBonusSkProject, blastBonusSkApply :: ItemKind
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
@@ -41,7 +41,7 @@ burningOil n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
-               , toOrganBad "slowed" (2 + 1 `d` 2) ]  -- tripping on oil
+               , toOrganBad "slowed" (2 + 1 `d` 2) ]
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
   }
@@ -257,7 +257,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   , ieffects = [RefillHP (-1), OnSmash $ Explode "glass hail"]
   }
 
--- * Assorted immediate effect blasts
+-- * Assorted non-temporary condition blasts
 
 fragrance = ItemKind
   { isymbol  = '`'
@@ -452,6 +452,54 @@ waste = ItemKind
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [Burn 1]
   , idesc    = "Sodden and foul-smelling."
+  , ikit     = []
+  }
+mistAntiSlow = ItemKind
+  { isymbol  = '`'
+  , iname    = "mist"
+  , ifreq    = [("anti-slow mist", 1)]
+  , iflavour = zipFancy [BrYellow]
+  , icount   = 8
+  , irarity  = [(1, 1)]
+  , iverbHit = "propel"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
+               , SetFlag Fragile, SetFlag Blast ]
+  , ieffects = [DropItem 1 1 COrgan "slowed"]
+  , idesc    = "A cleansing rain."
+  , ikit     = []
+  }
+mistAntidote = ItemKind
+  { isymbol  = '`'
+  , iname    = "mist"
+  , ifreq    = [("antidote mist", 1)]
+  , iflavour = zipFancy [BrBlue]
+  , icount   = 8
+  , irarity  = [(1, 1)]
+  , iverbHit = "cure"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
+               , SetFlag Fragile, SetFlag Blast ]
+  , ieffects = [DropItem 1 maxBound COrgan "poisoned"]
+  , idesc    = "Washes away death's dew."
+  , ikit     = []
+  }
+mistSleep = ItemKind
+  { isymbol  = '`'
+  , iname    = "mist"
+  , ifreq    = [("sleep mist", 1)]
+  , iflavour = zipFancy [BrMagenta]
+  , icount   = 8
+  , irarity  = [(1, 1)]
+  , iverbHit = "put to sleep"
+  , iweight  = 1
+  , idamage  = 0
+  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
+               , SetFlag Fragile, SetFlag Blast ]
+  , ieffects = [PutToSleep]
+  , idesc    = "Luls weary warriors."
   , ikit     = []
   }
 
@@ -690,51 +738,53 @@ poisonCloud = ItemKind
   , idesc    = "Choking gas that stings the eyes."
   , ikit     = []
   }
-mistAntiSlow = ItemKind
+blastNoBasicAbility :: Text -> ItemKind
+blastNoBasicAbility grp = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
-  , ifreq    = [("anti-slow mist", 1)]
-  , iflavour = zipFancy [BrYellow]
-  , icount   = 8
+  , ifreq    = [(toGroupName $ "no" <+> grp <+> "mist", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = 12
   , irarity  = [(1, 1)]
-  , iverbHit = "propel"
+  , iverbHit = "disable basic ability"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
+  , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [DropItem 1 1 COrgan "slowed"]
-  , idesc    = "A cleansing rain."
+  , ieffects = [toOrganBad (toGroupName $ "no" <+> grp) (10 + 1 `d` 10)]
+  , idesc    = ""
   , ikit     = []
   }
-mistAntidote = ItemKind
+blastNoSkMove = blastNoBasicAbility "SkMove"
+blastNoSkMelee = blastNoBasicAbility "SkMelee"
+blastNoSkDisplace = blastNoBasicAbility "SkDisplace"
+blastNoSkAlter = blastNoBasicAbility "SkAlter"
+blastNoSkWait = blastNoBasicAbility "SkWait"
+blastNoSkMoveItem = blastNoBasicAbility "SkMoveItem"
+blastNoSkProject = blastNoBasicAbility "SkProject"
+blastNoSkApply = blastNoBasicAbility "SkApply"
+blastBonusBasicAbility :: Text -> ItemKind
+blastBonusBasicAbility grp = ItemKind
   { isymbol  = '`'
-  , iname    = "mist"
-  , ifreq    = [("antidote mist", 1)]
-  , iflavour = zipFancy [BrBlue]
-  , icount   = 8
+  , iname    = "dew"
+  , ifreq    = [(toGroupName $ "bonus" <+> grp <+> "dew", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = 12
   , irarity  = [(1, 1)]
-  , iverbHit = "cure"
+  , iverbHit = "increase basic ability"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
+  , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [DropItem 1 maxBound COrgan "poisoned"]
-  , idesc    = "Washes away death's dew."
+  , ieffects = [toOrganGood (toGroupName $ "bonus" <+> grp) (80 + 1 `d` 20)]
+  , idesc    = ""
   , ikit     = []
   }
-mistSleep = ItemKind
-  { isymbol  = '`'
-  , iname    = "mist"
-  , ifreq    = [("sleep mist", 1)]
-  , iflavour = zipFancy [BrMagenta]
-  , icount   = 8
-  , irarity  = [(1, 1)]
-  , iverbHit = "put to sleep"
-  , iweight  = 1
-  , idamage  = 0
-  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
-               , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [PutToSleep]
-  , idesc    = "Luls weary warriors."
-  , ikit     = []
-  }
+blastBonusSkMove = blastBonusBasicAbility "SkMove"
+blastBonusSkMelee = blastBonusBasicAbility "SkMelee"
+blastBonusSkDisplace = blastBonusBasicAbility "SkDisplace"
+blastBonusSkAlter = blastBonusBasicAbility "SkAlter"
+blastBonusSkWait = blastBonusBasicAbility "SkWait"
+blastBonusSkMoveItem = blastBonusBasicAbility "SkMoveItem"
+blastBonusSkProject = blastBonusBasicAbility "SkProject"
+blastBonusSkApply = blastBonusBasicAbility "SkApply"

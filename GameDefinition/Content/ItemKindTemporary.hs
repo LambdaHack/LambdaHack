@@ -16,17 +16,17 @@ import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
-tmpAspects :: Text -> [Aspect] -> ItemKind
-tmpAspects name aspects = ItemKind
+tmpAspects2 :: (GroupName ItemKind) -> Text -> [Aspect] -> ItemKind
+tmpAspects2 groupName name aspects = ItemKind
   { isymbol  = '+'
   , iname    = name
-  , ifreq    = [(toGroupName name, 1), ("condition", 1)]
+  , ifreq    = [(groupName, 1), ("condition", 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -43,6 +43,9 @@ tmpAspects name aspects = ItemKind
   , idesc    = ""  -- no description needed; stats are enough
   , ikit     = []
   }
+
+tmpAspects :: Text -> [Aspect] -> ItemKind
+tmpAspects name = tmpAspects2 (toGroupName name) name
 
 tmpEffects :: Text -> Dice -> [Effect] -> ItemKind
 tmpEffects name icount effects =
@@ -76,6 +79,40 @@ tmpDrunk = tmpAspects "drunk" [ AddSkill SkHurtMelee 30  -- fury
                               , AddSkill SkArmorRanged (-20)
                               , AddSkill SkSight (-8)
                               ]
+
+tmpNoSkMove =
+  tmpAspects2 "no SkMove" "immobile" [AddSkill SkMove (-99)]
+tmpNoSkMelee =
+  tmpAspects2 "no SkMelee" "pacified" [AddSkill SkMelee (-99)]
+tmpNoSkDisplace =
+  tmpAspects2 "no SkDisplace" "irreplaceable" [AddSkill SkDisplace (-99)]
+tmpNoSkAlter =
+  tmpAspects2 "no SkAlter" "retaining" [AddSkill SkAlter (-99)]
+tmpNoSkWait =
+  tmpAspects2 "no SkWait" "impatient" [AddSkill SkWait (-99)]
+tmpNoSkMoveItem =
+  tmpAspects2 "no SkMoveItem" "dispossessed" [AddSkill SkMoveItem (-99)]
+tmpNoSkProject =
+  tmpAspects2 "no SkProject" "withholding" [AddSkill SkProject (-99)]
+tmpNoSkApply =
+  tmpAspects2 "no SkApply" "parsimonious" [AddSkill SkApply (-99)]
+
+tmpBonusSkMove =
+  tmpAspects2 "bonus SkMove" "more mobile" [AddSkill SkMove 5]
+tmpBonusSkMelee =
+  tmpAspects2 "bonus SkMelee" "more combative" [AddSkill SkMelee 5]
+tmpBonusSkDisplace =
+  tmpAspects2 "bonus SkDisplace" "more displacing" [AddSkill SkDisplace 5]
+tmpBonusSkAlter =
+  tmpAspects2 "bonus SkAlter" "more altering" [AddSkill SkAlter 5]
+tmpBonusSkWait =
+  tmpAspects2 "bonus SkWait" "more patient" [AddSkill SkWait 5]
+tmpBonusSkMoveItem =
+  tmpAspects2 "bonus SkMoveItem" "tidier" [AddSkill SkMoveItem 5]
+tmpBonusSkProject =
+  tmpAspects2 "bonus SkProject" "more projecting" [AddSkill SkProject 5]
+tmpBonusSkApply =
+  tmpAspects2 "bonus SkApply" "more practical" [AddSkill SkApply 5]
 
 tmpRegenerating =
   tmpEffects "regenerating" (4 + 1 `d` 2) [Recharging (RefillHP 1)]

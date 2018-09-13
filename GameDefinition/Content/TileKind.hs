@@ -37,7 +37,7 @@ ldarkColorable = [tree, bush, floorArena, floorDamp, floorDirt, floorDirtSpice, 
 -- some noWalk can be changed without opening, regardless of symbol
 -- not used yet:
 -- : (curtain, etc., not flowing, but solid and static)
--- `' (not visible enough, would need font modification)
+-- `' (not visible enough when immobile)
 
 -- Note that for AI hints and UI comfort, most multiple-use @Embed@ tiles
 -- should have a variant, which after first use transforms into a different
