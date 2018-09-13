@@ -323,7 +323,10 @@ actionStrategy moldLeader aid retry = do
                    then yellNow  -- intimidate
                    else waitBlockNow
           , True )
-        ]
+        , ( []
+          , yellNow  -- desperate fallback
+          , True )
+       ]
   -- Check current, not maximal skills, since this can be a leader as well
   -- as non-leader action.
   let abInSkill sk = getSk sk actorSk > 0

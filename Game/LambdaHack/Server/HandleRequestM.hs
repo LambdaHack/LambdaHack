@@ -709,12 +709,21 @@ reqWait10 source = do
 reqYell :: MonadServerAtomic m => ActorId -> m ()
 reqYell source = do
   actorSk <- currentSkillsServer source
-  if Ability.getSk Ability.SkWait actorSk > 0 then
-    -- Last yawn before waking up is displayed as a yell, but that's fine.
-    -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
-    execSfxAtomic $ SfxTaunt True source
-  else
-    execFailure source ReqWait YellUnskilled
+  if | Ability.getSk Ability.SkWait actorSk > 0 ->
+       -- Last yawn before waking up is displayed as a yell, but that's fine.
+       -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
+       execSfxAtomic $ SfxTaunt True source
+     | Ability.getSk Ability.SkMove actorSk <= 0
+       && Ability.getSk Ability.SkDisplace actorSk <= 0
+       && Ability.getSk Ability.SkMelee actorSk <= 0 ->
+       -- Potentially, only waiting is possible, so given that it's drained,
+       -- don't let the actor be stuck nor alarm about server failure.
+       execSfxAtomic $ SfxTaunt False source
+     | otherwise ->
+       -- In (almost?) every situation one of the 3 actions above
+       -- can be performed and waiting skill is not needed for that,
+       -- so given the 3 skills are available, alarm and waste turn.
+       execFailure source ReqWait YellUnskilled
 
 -- * ReqMoveItems
 
