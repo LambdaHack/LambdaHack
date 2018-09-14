@@ -482,7 +482,7 @@ asleep = armoredSkin
   , idesc    = "Sleep helps regain health, albeit extremely slowly. Being asleep makes an actor vulnerable, with gradually diminishing effects as the slumber wears off over several turns. Any non-idle action, not only combat but even yawning or stretching removes a sizable portion of the sleepiness."
   }
 impressed = armoredSkin
-  { isymbol  = '!'
+  { isymbol  = 'I'
   , iname    = "impressed"
   , ifreq    = [("impressed", 1), ("condition", 1)]
   , iflavour = zipPlain [BrRed]
