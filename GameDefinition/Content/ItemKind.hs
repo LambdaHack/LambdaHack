@@ -266,7 +266,9 @@ light2 = ItemKind
   , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-1)
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotLightSource ]
-  , ieffects = [Burn 1, Paralyze 6, OnSmash (Explode "burning oil 2")]
+  , ieffects = [ Burn 1
+               , toOrganBad "no SkMelee" (2 + 1 `d` 2)
+               , OnSmash (Explode "burning oil 2") ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -279,11 +281,13 @@ light3 = ItemKind
   , irarity  = [(10, 6)]
   , iverbHit = "burn"
   , iweight  = 3000
-  , idamage  = 4 `d` 1
+  , idamage  = 2 `d` 1
   , iaspects = [ AddSkill SkShine 4, AddSkill SkSight (-1)
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotLightSource ]
-  , ieffects = [Burn 1, Paralyze 8, OnSmash (Explode "burning oil 4")]
+  , ieffects = [ Burn 1
+               , toOrganBad "no SkMelee" (4 + 1 `d` 2)
+               , OnSmash (Explode "burning oil 4") ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -981,13 +985,11 @@ necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
-               , AddSkill SkMaxHP 15, AddSkill SkArmorMelee 20
-               , AddSkill SkArmorRanged 10
+               , AddSkill SkMaxHP 15, AddSkill SkWait (-10)
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
-               , Recharging (RefillCalm (-1))  -- fake "hears something" :)
-               , Recharging (RefillHP (-1)) ]
+               , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate

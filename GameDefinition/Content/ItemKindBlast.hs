@@ -32,7 +32,7 @@ burningOil n = ItemKind
   , iname    = "burning oil"
   , ifreq    = [(toGroupName $ "burning oil" <+> tshow n, 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = intToDice (n * 8)
+  , icount   = intToDice (4 + n * 4)
   , irarity  = [(1, 1)]
   , iverbHit = "sear"
   , iweight  = 1
@@ -41,7 +41,7 @@ burningOil n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
-               , toOrganBad "no SkMelee" (5 + 1 `d` 3) ]
+               , toOrganBad "no SkMelee" (1 `d` 2) ]
                    -- slips and frantically puts out fire
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
@@ -147,7 +147,7 @@ spreadConcussion = ItemKind
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "condition"
-               , toOrganBad "no SkMove" (5 + 1 `d` 3)   -- no balance
+               , toOrganBad "no SkMove" (2 + 1 `d` 2)   -- no balance
                , toOrganBad "deafened" (20 + 1 `d` 5) ]
   , idesc    = ""
   , ikit     = []
