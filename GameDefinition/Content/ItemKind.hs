@@ -329,8 +329,8 @@ flaskTemplate = ItemKind
   { isymbol  = symbolFlask
   , iname    = "flask"
   , ifreq    = [("flask unknown", 1)]
-  , iflavour = zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
-               ++ zipLiquid brightCol
+  , iflavour = zipGlassPlain darkCol ++ zipGlassFancy darkCol
+               ++ zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
   , icount   = 1 `dL` 3
   , irarity  = [(1, 7), (10, 3)]
   , iverbHit = "splash"
@@ -527,7 +527,6 @@ potionTemplate = ItemKind
   , iname    = "potion"
   , ifreq    = [("potion unknown", 1)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
-               ++ zipLiquid darkCol
   , icount   = 1 `dL` 3
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "splash"

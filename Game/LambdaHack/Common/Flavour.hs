@@ -4,14 +4,14 @@ module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
     Flavour(Flavour)
   , -- * Constructors
-    zipPlain, zipFancy, zipLiquid
+    zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy
   , -- * Accessors
     flavourToColor, flavourToName
     -- * Assorted
   , colorToPlainName, colorToFancyName, colorToTeamName
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , FancyName, colorToLiquidName
+  , FancyName, colorToLiquidName, colorToGlassPlainName, colorToGlassFancyName
 #endif
   ) where
 
@@ -27,7 +27,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 
-data FancyName = Plain | Fancy | Liquid
+data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData FancyName
@@ -55,10 +55,12 @@ instance Binary Flavour where
 instance NFData Flavour
 
 -- | Turn a colour set into a flavour set.
-zipPlain, zipFancy, zipLiquid :: [Color] -> [Flavour]
+zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy :: [Color] -> [Flavour]
 zipPlain = map (Flavour Plain)
 zipFancy = map (Flavour Fancy)
 zipLiquid = map (Flavour Liquid)
+zipGlassPlain = map (Flavour GlassPlain)
+zipGlassFancy = map (Flavour GlassFancy)
 
 -- | Get the underlying base colour of a flavour.
 flavourToColor :: Flavour -> Color
@@ -69,6 +71,10 @@ flavourToName :: Flavour -> Text
 flavourToName Flavour{fancyName=Plain, ..} = colorToPlainName baseColor
 flavourToName Flavour{fancyName=Fancy, ..} = colorToFancyName baseColor
 flavourToName Flavour{fancyName=Liquid, ..} = colorToLiquidName baseColor
+flavourToName Flavour{fancyName=GlassPlain, ..} =
+  colorToGlassPlainName baseColor
+flavourToName Flavour{fancyName=GlassFancy, ..} =
+  colorToGlassFancyName baseColor
 
 -- | Human-readable names for item colors. The plain set.
 colorToPlainName :: Color -> Text
@@ -126,6 +132,14 @@ colorToLiquidName BrBlue    = "blue-speckled"
 colorToLiquidName BrMagenta = "hazy"
 colorToLiquidName BrCyan    = "misty"
 colorToLiquidName BrWhite   = "shining"
+
+-- | Human-readable names for item colors. The plain glass set.
+colorToGlassPlainName :: Color -> Text
+colorToGlassPlainName color = colorToPlainName color <+> "glass"
+
+-- | Human-readable names for item colors. The fancy glass set.
+colorToGlassFancyName :: Color -> Text
+colorToGlassFancyName color = colorToFancyName color <+> "crystal"
 
 -- | Simple names for team colors (bright colours preferred).
 colorToTeamName :: Color -> Text
