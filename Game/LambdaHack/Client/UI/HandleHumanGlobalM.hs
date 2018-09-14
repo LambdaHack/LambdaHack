@@ -268,10 +268,10 @@ yellHuman = do
   actorSk <- leaderSkillsClientUI
   if Ability.getSk Ability.SkWait actorSk > 0
      -- If waiting drained and really, potentially, no other possible action,
-     -- allow yelling.
+     -- still allow yelling.
      || Ability.getSk Ability.SkMove actorSk <= 0
-        && Ability.getSk Ability.SkDisplace actorSk <= 0
-        && Ability.getSk Ability.SkMelee actorSk <= 0
+     || Ability.getSk Ability.SkDisplace actorSk <= 0
+     || Ability.getSk Ability.SkMelee actorSk <= 0
   then return $ Right ReqYell
   else failSer WaitUnskilled
 

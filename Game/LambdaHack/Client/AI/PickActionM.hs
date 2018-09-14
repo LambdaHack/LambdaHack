@@ -331,7 +331,7 @@ actionStrategy moldLeader aid retry = do
   -- as non-leader action.
   let abInSkill sk = getSk sk actorSk > 0
       checkAction :: ([Skill], m a, Bool) -> Bool
-      checkAction (abts, _, cond) = any abInSkill abts && cond
+      checkAction (abts, _, cond) = (null abts || any abInSkill abts) && cond
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- mapM (\(_, m, _) -> m) as

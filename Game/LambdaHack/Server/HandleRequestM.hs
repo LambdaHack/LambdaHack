@@ -714,8 +714,8 @@ reqYell source = do
        -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
        execSfxAtomic $ SfxTaunt True source
      | Ability.getSk Ability.SkMove actorSk <= 0
-       && Ability.getSk Ability.SkDisplace actorSk <= 0
-       && Ability.getSk Ability.SkMelee actorSk <= 0 ->
+       || Ability.getSk Ability.SkDisplace actorSk <= 0
+       || Ability.getSk Ability.SkMelee actorSk <= 0 ->
        -- Potentially, only waiting is possible, so given that it's drained,
        -- don't let the actor be stuck nor alarm about server failure.
        execSfxAtomic $ SfxTaunt False source
