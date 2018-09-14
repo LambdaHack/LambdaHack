@@ -695,7 +695,7 @@ reqWait10 :: MonadServerAtomic m => ActorId -> m ()
 reqWait10 source = do
   actorSk <- currentSkillsServer source
   unless (Ability.getSk Ability.SkWait actorSk >= 3) $
-    execFailure source ReqWait WaitUnskilled
+    execFailure source ReqWait10 WaitUnskilled
 
 -- * ReqYell
 
@@ -720,10 +720,10 @@ reqYell source = do
        -- don't let the actor be stuck nor alarm about server failure.
        execSfxAtomic $ SfxTaunt False source
      | otherwise ->
-       -- In (almost?) every situation one of the 3 actions above
+       -- In almost every situation one of the 3 actions above
        -- can be performed and waiting skill is not needed for that,
        -- so given the 3 skills are available, alarm and waste turn.
-       execFailure source ReqWait YellUnskilled
+       execFailure source ReqYell YellUnskilled
 
 -- * ReqMoveItems
 

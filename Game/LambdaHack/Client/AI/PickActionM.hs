@@ -113,9 +113,9 @@ actionStrategy moldLeader aid retry = do
   let actorMaxSk = actorMaxSkills EM.! aid
       mayFallAsleep = not condAimEnemyRemembered
                       && mayContinueSleep
-                      && canSleep actorMaxSk
+                      && canSleep actorSk
       mayContinueSleep = not condAimEnemyPresent
-                         && not (hpFull body actorMaxSk)
+                         && not (hpFull body actorSk)
                          && not heavilyDistressed
                          && not condNotCalmEnough
       dozes = case bwatch body of
@@ -130,6 +130,7 @@ actionStrategy moldLeader aid retry = do
       condHpTooLow = hpTooLow body actorMaxSk
       condNotCalmEnough = not (calmEnough body actorMaxSk)
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
+      -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
@@ -315,7 +316,7 @@ actionStrategy moldLeader aid retry = do
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
           , case bwatch body of
-              WSleep -> if condAimEnemyPresent || hpFull body actorMaxSk
+              WSleep -> if condAimEnemyPresent || hpFull body actorSk
                         then yellNow  -- wake up
                         else waitBlockNow
               WWake -> yellNow  -- wake up fully
@@ -345,7 +346,9 @@ actionStrategy moldLeader aid retry = do
   comDistant <- combineWeighted distant
   comSuffix <- combineWeighted suffix
   sumFallback <- sumS fallback
-  return $! if bwatch body == WSleep && mayContinueSleep
+  return $! if bwatch body == WSleep
+               && mayContinueSleep
+               && Ability.getSk SkWait actorSk >= 2
             then returN "sleep" ReqWait
             else sumPrefix .| comDistant .| comSuffix .| sumFallback
 
