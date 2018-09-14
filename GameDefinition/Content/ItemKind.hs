@@ -27,9 +27,9 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency]
 
-sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency :: ItemKind
+sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, flask18, flask19, flask20, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency :: ItemKind
 
 -- Keep the dice rolls and sides in aspects small so that not too many
 -- distinct items are generated (for display in item lore and for narrative
@@ -320,8 +320,7 @@ blanket = ItemKind
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
--- In reality, they just cover all conditions, which in turn matches
--- all aspects.
+-- In reality, they just cover all conditions, except those for basic abilites.
 --
 -- There is no flask nor temporary organ of Calm depletion,
 -- because Calm reduced often via combat, etc..
@@ -518,9 +517,10 @@ flask20 = flaskTemplate
                , OnSmash (Explode "glass hail") ]  -- enough glass to cause that
   }
 
--- Potions are often natural. Appear deeper than most flasks. Various
--- configurations of effects. A different class of effects is on scrolls
--- and mechanical items. Some are shared.
+-- Potions are often natural, including natural basic abilites.
+-- They appear deeper than most flasks. Various configurations of effects.
+-- A different class of effects is on scrolls and mechanical items.
+-- Some are shared.
 
 potionTemplate = ItemKind
   { isymbol  = symbolPotion
@@ -632,6 +632,18 @@ potion10 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
   , ieffects = [ PutToSleep
                , OnSmash (Explode "sleep mist") ]
+  }
+potion11 = potionTemplate
+  { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
+  , irarity  = [(10, 5)]
+  , iaspects = [ELabel "of grenadier focus"]
+               ++ iaspects potionTemplate
+  , ieffects = [ toOrganGood "bonus SkProject" (40 + 1 `d` 10)
+               , toOrganBad "no SkMelee" (5 + 1 `d` 3)
+                   -- has to be weak, or would be too good when thrown at foes
+               , OnSmash (Explode "bonus SkProject dew")
+               , OnSmash (Explode "no SkMelee mist") ]
+  -- , idesc    = ""
   }
 
 -- * Explosives, with the only effect being @Explode@
@@ -1115,8 +1127,8 @@ ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
   , idesc    = "A sturdy ring with a large, shining stone."
   }
 ring7 = ringTemplate
-  { ifreq    = [("common item", 10), ("ring of opportunity sniper", 1) ]
-  , irarity  = [(10, 5)]  -- low @ifreq@
+  { ifreq    = [("ring of opportunity sniper", 1) ]  -- only for scenarios
+  , irarity  = [(1, 1)]
   , iaspects = [ ELabel "of opportunity sniper"
                , AddSkill SkProject 8
                , EqpSlot EqpSlotProject ]
@@ -1124,7 +1136,7 @@ ring7 = ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 ring8 = ringTemplate
-  { ifreq    = [("common item", 1), ("ring of opportunity grenadier", 1) ]
+  { ifreq    = [("ring of opportunity grenadier", 1) ]  -- only for scenarios
   , irarity  = [(1, 1)]
   , iaspects = [ ELabel "of opportunity grenadier"
                , AddSkill SkProject 11

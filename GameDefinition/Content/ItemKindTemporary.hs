@@ -110,7 +110,7 @@ tmpBonusSkWait =
 tmpBonusSkMoveItem =
   tmpAspects2 "bonus SkMoveItem" "tidier" [AddSkill SkMoveItem 5]
 tmpBonusSkProject =
-  tmpAspects2 "bonus SkProject" "more projecting" [AddSkill SkProject 5]
+  tmpAspects2 "bonus SkProject" "more projecting" [AddSkill SkProject 11]
 tmpBonusSkApply =
   tmpAspects2 "bonus SkApply" "more practical" [AddSkill SkApply 5]
 
