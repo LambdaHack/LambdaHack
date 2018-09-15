@@ -85,33 +85,42 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
   in ( not (null lsource) || temporary
      , unique, capName, MU.Phrase $ map MU.Text ts )
 
+-- TODO: simplify the code a lot
 textAllAE :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
   let arItem = aspectRecordFull itemFull
+      aspectsFull = case itemDisco of
+        ItemDiscoMean IA.KindMean{..} | kmConst ->
+          IA.aspectRecordToList kmMean  -- exact and collated
+        ItemDiscoMean{} -> IK.iaspects itemKind
+          -- doesn't completely lose the @Odds@ case, so better than
+          -- the above, even if does not collate multiple skill bonuses
+        ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
       timeoutAspect :: IK.Aspect -> Bool
       timeoutAspect IK.Timeout{} = True
       timeoutAspect _ = False
+      -- Dice needed, not @Int@, so @arItem@ not consulted directly.
+      -- If item not known fully and timeout under @Odds@, it's ignored.
+      mtimeout = find timeoutAspect aspectsFull
+      elab = IA.aELabel arItem
+      periodic = IA.checkFlag Ability.Periodic arItem
       hurtMeleeAspect :: IK.Aspect -> Bool
       hurtMeleeAspect (IK.AddSkill Ability.SkHurtMelee _) = True
       hurtMeleeAspect _ = False
       active = IA.goesIntoEqp arItem
-      splitA :: DetailLevel -> [IK.Aspect] -> [Text]
-      splitA detLev aspects =
+      splitA :: Bool -> DetailLevel -> [IK.Aspect] -> [Text]
+      splitA secondPass detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            periodic = IA.checkFlag Ability.Periodic arItem
-            -- Dice needed, not @Int@, so @arItem@ not consulted directly.
-            -- If item not known fully and timeout under @Odds@, it's ignored.
-            mtimeout = find timeoutAspect aspects
-            elab = IA.aELabel arItem
             -- Effects are not being sorted here, because they should fire
             -- in the order specified in content.
             restAs = sort aspects
-            restEs | detLev >= DetailHigh
+            restEs | secondPass = []
+                   | detLev >= DetailHigh
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
-                     | otherwise = []
+                   | otherwise = []
             rechargingTs = T.intercalate " " $ filter (not . T.null)
                            $ map ppE $ IK.stripRecharging restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
@@ -126,7 +135,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
                   then map ppA displayedAs ++ map ppE restEs
                   else map ppE restEs ++ map ppA displayedAs
             periodicOrTimeout =
-              if | skipRecharging || T.null rechargingTs -> ""
+              if | skipRecharging || secondPass || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
                      Nothing | durable && not fragile ->
                        "(each turn:" <+> rechargingTs <> ")"
@@ -148,6 +157,7 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
             -- If item not known fully and @AbHurtMelee@ under @Odds@,
             -- it's ignored.
             damage = case find hurtMeleeAspect restAs of
+              _ | secondPass -> ""
               Just (IK.AddSkill Ability.SkHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
@@ -156,12 +166,11 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
               _ -> if IK.idamage itemKind == 0
                    then ""
                    else tshow (IK.idamage itemKind)
-        in filter (/= "")
-           $ elab : if detLev >= DetailHigh
-                       || detLev >= DetailMedium && T.null elab
-                    then [periodicOrTimeout] ++ [damage] ++ aes
-                         ++ [onSmash | detLev >= DetailAll]
-                    else [damage]
+        in if detLev >= DetailHigh
+              || detLev >= DetailMedium && T.null elab
+           then [periodicOrTimeout] ++ [damage] ++ aes
+                ++ [onSmash | detLev >= DetailAll]
+           else [damage]
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
@@ -176,27 +185,23 @@ textAllAE detailLevel skipRecharging itemFull@ItemFull{itemKind, itemDisco} =
         -- Note that avg melee damage would be too complex to display here,
         -- because in case of @MOwned@ the owner is different than leader,
         -- so the value would be different than when viewing the item.
-      splitTry ass =
-        let splits = map (`splitA` ass) [minBound..maxBound]
+      splitTry secondPass ass =
+        let splits = map (\det -> splitA secondPass det ass)
+                         [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
              [] -> []
       aspectDescs =
-        let aspects = case itemDisco of
-              ItemDiscoMean IA.KindMean{..} | kmConst ->
-                IA.aspectRecordToList kmMean  -- exact and collated
-              ItemDiscoMean{} -> IK.iaspects itemKind
-                -- doesn't completely lose the @Odds@ case, so better than
-                -- the above, even if does not collate multiple skill bonuses
-              ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
-            aMain IK.Timeout{} = True
-            aMain IK.AddSkill{} = True
+        let aMain IK.AddSkill{} = True
             aMain _ = False
-            (aspectsMain, aspectsAux) = partition aMain aspects
-        in splitTry aspectsMain ++ if detailLevel >= DetailAll
-                                   then splitTry aspectsAux
-                                   else []
+            (aspectsMain, aspectsAux) = partition aMain aspectsFull
+        in filter (/= "")
+           $ elab
+             : splitTry False aspectsMain
+             ++ if detailLevel >= DetailAll
+                then splitTry True aspectsAux
+                else []
   in (aspectDescs, rangedDamageDesc)
 
 -- | The part of speech describing the item.
