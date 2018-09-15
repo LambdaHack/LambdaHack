@@ -320,9 +320,7 @@ actionStrategy moldLeader aid retry = do
                         then yellNow  -- wake up
                         else waitBlockNow
               WWake -> yellNow  -- wake up fully
-              _ -> if condAimEnemyPresent
-                   then yellNow  -- intimidate
-                   else waitBlockNow
+              _ -> waitBlockNow  -- block, etc.
           , True )
         , ( []
           , yellNow  -- desperate fallback

@@ -704,6 +704,7 @@ reqWait10 source = do
 -- even if out of their hearing range.
 --
 -- Governed by the waiting skill (because everyone is supposed to have it).
+-- unlike @ReqWait@, induces overhead.
 --
 -- This is similar to the effect 'Yell', but always voluntary.
 reqYell :: MonadServerAtomic m => ActorId -> m ()
