@@ -1034,11 +1034,12 @@ necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
-               , AddSkill SkMaxHP 15, AddSkill SkWait (-10)
+               , AddSkill SkMaxHP 15
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
-               , Recharging (RefillCalm (-1)) ]  -- fake "hears something" :)
+               , Recharging (RefillCalm (-1))  -- fake "hears something" :)
+               , Recharging (toOrganBad "no SkWait" 4)]
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate
