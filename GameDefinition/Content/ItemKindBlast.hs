@@ -41,7 +41,7 @@ burningOil n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
-               , toOrganBad "no SkMelee" (1 `d` 2) ]
+               , toOrganBad "pacified" (1 `d` 2) ]
                    -- slips and frantically puts out fire
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
@@ -147,7 +147,7 @@ spreadConcussion = ItemKind
                , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "condition"
-               , toOrganBad "no SkMove" (2 + 1 `d` 2)   -- no balance
+               , toOrganBad "immobile" (2 + 1 `d` 2)   -- no balance
                , toOrganBad "deafened" (20 + 1 `d` 5) ]
   , idesc    = ""
   , ikit     = []
@@ -323,7 +323,7 @@ odorDistressing = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [RefillCalm (-10), toOrganBad "no SkWait" (5 + 1 `d` 3)]
+  , ieffects = [RefillCalm (-10), toOrganBad "impatient" (5 + 1 `d` 3)]
   , idesc    = "It turns the stomach."  -- and so can't stand still
   , ikit     = []
   }
@@ -405,7 +405,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , idamage  = 0
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganBad "no SkProject" (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad "withholding" (5 + 1 `d` 3)]
                   -- choking and tears, can rougly see, but not aim
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
@@ -453,7 +453,7 @@ waste = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "no SkMoveItem" (10 + 1 `d` 10)]
+  , ieffects = [toOrganBad "dispossessed" (10 + 1 `d` 10)]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -745,7 +745,7 @@ blastNoBasicAbility :: Text -> ItemKind
 blastNoBasicAbility grp = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
-  , ifreq    = [(toGroupName $ "no" <+> grp <+> "mist", 1)]
+  , ifreq    = [(toGroupName $ grp <+> "mist", 1)]
   , iflavour = zipFancy [White]
   , icount   = 12
   , irarity  = [(1, 1)]
@@ -754,23 +754,23 @@ blastNoBasicAbility grp = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganBad (toGroupName $ "no" <+> grp) (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad (toGroupName grp) (5 + 1 `d` 3)]
   , idesc    = ""
   , ikit     = []
   }
-blastNoSkMove = blastNoBasicAbility "SkMove"
-blastNoSkMelee = blastNoBasicAbility "SkMelee"
-blastNoSkDisplace = blastNoBasicAbility "SkDisplace"
-blastNoSkAlter = blastNoBasicAbility "SkAlter"
-blastNoSkWait = blastNoBasicAbility "SkWait"
-blastNoSkMoveItem = blastNoBasicAbility "SkMoveItem"
-blastNoSkProject = blastNoBasicAbility "SkProject"
-blastNoSkApply = blastNoBasicAbility "SkApply"
+blastNoSkMove = blastNoBasicAbility "immobile"
+blastNoSkMelee = blastNoBasicAbility "pacified"
+blastNoSkDisplace = blastNoBasicAbility "irreplaceable"
+blastNoSkAlter = blastNoBasicAbility "retaining"
+blastNoSkWait = blastNoBasicAbility "impatient"
+blastNoSkMoveItem = blastNoBasicAbility "dispossessed"
+blastNoSkProject = blastNoBasicAbility "withholding"
+blastNoSkApply = blastNoBasicAbility "parsimonious"
 blastBonusBasicAbility :: Text -> ItemKind
 blastBonusBasicAbility grp = ItemKind
   { isymbol  = '`'
   , iname    = "dew"
-  , ifreq    = [(toGroupName $ "bonus" <+> grp <+> "dew", 1)]
+  , ifreq    = [(toGroupName $ grp <+> "dew", 1)]
   , iflavour = zipFancy [White]
   , icount   = 12
   , irarity  = [(1, 1)]
@@ -779,15 +779,15 @@ blastBonusBasicAbility grp = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganGood (toGroupName $ "bonus" <+> grp) (20 + 1 `d` 5)]
+  , ieffects = [toOrganGood (toGroupName grp) (20 + 1 `d` 5)]
   , idesc    = ""
   , ikit     = []
   }
-blastBonusSkMove = blastBonusBasicAbility "SkMove"
-blastBonusSkMelee = blastBonusBasicAbility "SkMelee"
-blastBonusSkDisplace = blastBonusBasicAbility "SkDisplace"
-blastBonusSkAlter = blastBonusBasicAbility "SkAlter"
-blastBonusSkWait = blastBonusBasicAbility "SkWait"
-blastBonusSkMoveItem = blastBonusBasicAbility "SkMoveItem"
-blastBonusSkProject = blastBonusBasicAbility "SkProject"
-blastBonusSkApply = blastBonusBasicAbility "SkApply"
+blastBonusSkMove = blastBonusBasicAbility "more mobile"
+blastBonusSkMelee = blastBonusBasicAbility "more combative"
+blastBonusSkDisplace = blastBonusBasicAbility "more displacing"
+blastBonusSkAlter = blastBonusBasicAbility "more altering"
+blastBonusSkWait = blastBonusBasicAbility "more patient"
+blastBonusSkMoveItem = blastBonusBasicAbility "tidier"
+blastBonusSkProject = blastBonusBasicAbility "more projecting"
+blastBonusSkApply = blastBonusBasicAbility "more practical"

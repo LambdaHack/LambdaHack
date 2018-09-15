@@ -267,7 +267,7 @@ light2 = ItemKind
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotLightSource ]
   , ieffects = [ Burn 1
-               , toOrganBad "no SkMelee" (2 + 1 `d` 2)
+               , toOrganBad "pacified" (2 + 1 `d` 2)
                , OnSmash (Explode "burning oil 2") ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
@@ -286,7 +286,7 @@ light3 = ItemKind
                , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
                , EqpSlot EqpSlotLightSource ]
   , ieffects = [ Burn 1
-               , toOrganBad "no SkMelee" (4 + 1 `d` 2)
+               , toOrganBad "pacified" (4 + 1 `d` 2)
                , OnSmash (Explode "burning oil 4") ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
@@ -638,11 +638,11 @@ potion11 = potionTemplate
   , irarity  = [(10, 5)]
   , iaspects = [ELabel "of grenadier focus"]
                ++ iaspects potionTemplate
-  , ieffects = [ toOrganGood "bonus SkProject" (40 + 1 `d` 10)
-               , toOrganBad "no SkMelee" (5 + 1 `d` 3)
+  , ieffects = [ toOrganGood "more projecting" (40 + 1 `d` 10)
+               , toOrganBad "pacified" (5 + 1 `d` 3)
                    -- has to be weak, or would be too good when thrown at foes
-               , OnSmash (Explode "bonus SkProject dew")
-               , OnSmash (Explode "no SkMelee mist") ]
+               , OnSmash (Explode "more projecting dew")
+               , OnSmash (Explode "pacified mist") ]
   -- , idesc    = ""
   }
 potion12 = potionTemplate
@@ -652,10 +652,10 @@ potion12 = potionTemplate
                ++ iaspects potionTemplate
   , ieffects = [ Yell
                , toOrganGood "strengthened" (20 + 1 `d` 5)
-               , toOrganBad "no SkAlter" (40 + 1 `d` 10)
+               , toOrganBad "retaining" (40 + 1 `d` 10)
                , OnSmash (Explode "dense shower")
-               , OnSmash (Explode "no SkAlter mist")
-               , OnSmash (Explode "no SkAlter mist") ]
+               , OnSmash (Explode "retaining mist")
+               , OnSmash (Explode "retaining mist") ]
   }
 potion13 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -665,10 +665,10 @@ potion13 = potionTemplate
   , ieffects = [ RefillCalm (-30)
                , toOrganGood "hasted" (20 + 1 `d` 5)
                , toOrganBad "weakened" (20 + 1 `d` 5)
-               , toOrganBad "no SkProject" (20 + 1 `d` 5)
+               , toOrganBad "withholding" (20 + 1 `d` 5)
                , OnSmash (Explode "haste spray")
                , OnSmash (Explode "sparse shower")
-               , OnSmash (Explode "no SkProject mist") ]
+               , OnSmash (Explode "withholding mist") ]
   }
 potion14 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -677,10 +677,10 @@ potion14 = potionTemplate
                ++ iaspects potionTemplate
   , ieffects = [ toOrganGood "hasted" (20 + 1 `d` 5)
                , toOrganBad "blind" (20 + 1 `d` 5)
-               , toOrganBad "no SkMove" (20 + 1 `d` 5)
+               , toOrganBad "immobile" (20 + 1 `d` 5)
                , OnSmash (Explode "haste spray")
                , OnSmash (Explode "iron filing")
-               , OnSmash (Explode "no SkMove mist") ]
+               , OnSmash (Explode "immobile mist") ]
   }
 
 -- * Explosives, with the only effect being @Explode@
@@ -1039,7 +1039,7 @@ necklace7 = necklaceTemplate
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
-               , Recharging (toOrganBad "no SkWait" 4)]
+               , Recharging (toOrganBad "impatient" 4)]
   -- , idesc    = ""
   }
 necklace8 = necklaceTemplate

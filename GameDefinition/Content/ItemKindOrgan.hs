@@ -171,7 +171,7 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
-  , ieffects = [toOrganBad "no SkApply" (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad "parsimonious" (5 + 1 `d` 3)]
                -- weaken/poison, impacting intellectual abilities first
   , idesc    = ""
   }
@@ -202,7 +202,7 @@ sting = fist
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
-  , ieffects = [Recharging (toOrganBad "no SkAlter" (10 + 1 `d` 10))]
+  , ieffects = [Recharging (toOrganBad "retaining" (10 + 1 `d` 10))]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
