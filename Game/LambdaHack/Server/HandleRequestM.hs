@@ -721,10 +721,12 @@ reqYell source = do
        -- don't let the actor be stuck nor alarm about server failure.
        execSfxAtomic $ SfxTaunt False source
      | otherwise ->
-       -- In almost every situation one of the 3 actions above
+       -- In most situation one of the 3 actions above
        -- can be performed and waiting skill is not needed for that,
-       -- so given the 3 skills are available, alarm and waste turn.
-       execFailure source ReqYell YellUnskilled
+       -- so given the 3 skills are available, waste turn
+       -- but don't alarm, because it does happen sometimes in crowds.
+       --   execFailure source ReqYell YellUnskilled
+       return ()
 
 -- * ReqMoveItems
 

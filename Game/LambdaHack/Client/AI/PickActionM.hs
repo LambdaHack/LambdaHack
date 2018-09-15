@@ -322,6 +322,14 @@ actionStrategy moldLeader aid retry = do
               WWake -> yellNow  -- wake up fully
               _ -> waitBlockNow  -- block, etc.
           , True )
+        , ( runSkills  -- if can't block, at least change something
+          , chase aid (not condInMelee
+                       && heavilyDistressed
+                       && aCanDeLight) True
+          , not condInMelee || condCanMelee && condAimEnemyPresent )
+        , ( [SkDisplace]  -- if can't block, at least change something
+          , displaceBlocker aid True
+          , True )
         , ( []
           , yellNow  -- desperate fallback
           , True )
