@@ -44,7 +44,7 @@ data Faction = Faction
   , gcolor    :: Color.Color     -- ^ color of actors or their frames
   , gplayer   :: Player          -- ^ the player spec for this faction
   , ginitial  :: [(Int, Int, GroupName ItemKind)]  -- ^ initial actors
-  , gdipl     :: Dipl            -- ^ diplomatic mode
+  , gdipl     :: Dipl            -- ^ diplomatic standing
   , gquit     :: Maybe Status    -- ^ cause of game end/exit
   , _gleader  :: Maybe ActorId   -- ^ the leader of the faction; don't use
                                  --   in place of sleader on clients
