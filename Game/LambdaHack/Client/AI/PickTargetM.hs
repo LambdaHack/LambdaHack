@@ -53,8 +53,8 @@ refreshTarget (aid, body) = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
                     `swith` (aid, body, side)) ()
-  let !_A = assert (isNothing (btrajectory body) && not (bproj body)
-                    `blame` "AI gets to manually move its trajectory actors"
+  let !_A = assert (not (bproj body)
+                    `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, body, side)) ()
   mtarget <- computeTarget aid
   case mtarget of

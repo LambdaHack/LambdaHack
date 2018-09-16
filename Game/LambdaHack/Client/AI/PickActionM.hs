@@ -65,8 +65,8 @@ pickAction moldLeader aid retry = do
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move enemy actor"
                     `swith` (aid, bfid body, side)) ()
-  let !_A = assert (isNothing (btrajectory body) && not (bproj body)
-                    `blame` "AI gets to manually move its trajectory actors"
+  let !_A = assert (not (bproj body)
+                    `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
   -- Reset fleeing flag. May then be set in @flee@.
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
