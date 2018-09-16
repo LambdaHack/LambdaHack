@@ -527,7 +527,11 @@ dominateFidSfx target fid = do
   -- when they are the last survivors, they could get stuck and the game
   -- wouldn't end. Also, they are a hassle to guide through the dungeon.
   canTra <- getsState $ canTraverse target
-  if canTra && not (bproj tb) && bhp tb > 0 then do
+  -- Being pushed protects from domination, for simplicity.
+  -- A possible interesting exploit, but much help from content would be needed
+  -- to make it practical.
+  if not (bproj tb) && isNothing (btrajectory tb)
+     && canTra && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     gameOver <- dominateFid fid target
