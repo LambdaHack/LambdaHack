@@ -558,7 +558,7 @@ dominateFid fid target = do
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
-  -- Actor is not pushed nor projectiles, so @sactorTime@ suffices.
+  -- Actor is not pushed nor projectile, so @sactorTime@ suffices.
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
@@ -1371,21 +1371,20 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
       let weight = sum $ map (IK.iweight . itemKind . snd) weightAssocs
           path = bpos tb : pos : rest
-          (trajectory, (speed, range)) =
+          (trajectory, (speed, _)) =
             computeTrajectory weight throwVelocity throwLinger path
           ts = Just (trajectory, speed)
       if null trajectory || btrajectory tb == ts
       then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
       else do
         execSfx
+        -- Old and new trajectories are not added; the old one is replaced.
         execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-        -- Give the actor back all the time spent flying (range/speed)
-        -- and also let the push start ASAP. So, he will not lose
-        -- any turn of movement (but he may need to retrace the push).
-        let delta = timeDeltaScale (ticksPerMeter speed) (-range)
-        modifyServer $ \ser ->  -- TODO!!!
-          ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
-                            $ sactorTime ser}
+        -- Reset flying time to now, so that the (new) push happens ASAP.
+        localTime <- getsState $ getLocalTime (blid tb)
+        modifyServer $ \ser ->
+          ser {strajTime = updateActorTime (bfid tb) (blid tb) target localTime
+                           $ strajTime ser}
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m

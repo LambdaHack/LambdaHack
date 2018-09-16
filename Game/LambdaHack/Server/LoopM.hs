@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.LoopM
     -- * Internal operations
   , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
   , manageCalmAndDomination, applyPeriodicLevel
-  , handleTrajectories, hTrajectories, setTrajectory
+  , handleTrajectories, hTrajectories, advanceTrajectory
   , handleActors, hActors, restartGame
 #endif
   ) where
@@ -357,10 +357,11 @@ hTrajectories aid = do
   b1 <- getsState $ getActorBody aid
   if | actorDying b1 -> dieSer aid b1
      | isJust (btrajectory b1) -> do  -- don't advance time if no trajectory
-       setTrajectory aid b1
-       -- @setTrajectory@ might have affected @actorDying@, so we check again
-       -- ASAP to make sure the body of the projectile (or pushed actor)
-       -- doesn't block movement of other actors, but vanishes promptly.
+       advanceTrajectory aid b1
+       -- Here, @advanceTrajectory@ might have affected @actorDying@,
+       -- so we check again ASAP to make sure the body of the projectile
+       -- (or pushed actor) doesn't block movement of other actors,
+       -- but vanishes promptly.
        -- Bodies of actors that die not flying remain on the battlefied until
        -- their natural next turn, to give them a chance of rescue.
        -- Note that domination of pushed actors is not checked
@@ -368,7 +369,12 @@ hTrajectories aid = do
        -- but also invulnerable in this respect.
        b2 <- getsState $ getActorBody aid
        if actorDying b2 then dieSer aid b2 else advanceTimeTraj aid
-     | otherwise -> return ()  -- no longer fulfills criteria, ignore him
+     | otherwise ->
+       -- No longer fulfills criteria and was not removed above; remove him.
+       modifyServer $ \ser ->
+         ser {strajTime =
+                EM.adjust (EM.adjust (EM.delete aid) (blid b1)) (bfid b1)
+                          (strajTime ser)}
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.
@@ -387,9 +393,9 @@ hTrajectories aid = do
 -- Not advancing time forces dead projectiles to be destroyed ASAP.
 -- Otherwise, with some timings, it can stay on the game map dead,
 -- blocking path of human-controlled actors and alarming the hapless human.
-setTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
-{-# INLINE setTrajectory #-}
-setTrajectory aid b = do
+advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
+{-# INLINE advanceTrajectory #-}
+advanceTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel $ blid b
   case btrajectory b of
@@ -413,6 +419,8 @@ setTrajectory aid b = do
           when (bhp b > oneM) $
             execUpdAtomic $ UpdRefillHP aid minusM
         else do
+          -- Will be removed from @strajTime@ in recursive call
+          -- to @handleTrajectories@.
           execSfxAtomic $ SfxCollideTile aid tpos
           mfail <- reqAlterFail aid tpos
           case mfail of
@@ -427,6 +435,8 @@ setTrajectory aid b = do
     Just ([], _) ->
       -- Non-projectile actor stops flying (a projectile with empty trajectory
       -- would be intercepted earlier on as dead).
+      -- Will be removed from @strajTime@ in recursive call
+      -- to @handleTrajectories@.
       assert (not $ bproj b)
       $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
     _ -> error $ "Nothing trajectory" `showFailure` (aid, b)
