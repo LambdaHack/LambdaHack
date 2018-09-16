@@ -339,7 +339,7 @@ handleTrajectories lid fid = do
   getActorB <- getsState $ flip getActorBody
   let l = map (fst . snd)
           $ sortBy (Ord.comparing fst)
-          $ filter (\(_, (_, b)) -> isJust (btrajectory b) || bhp b <= 0)
+          $ filter (\(_, (_, b)) -> isJust (btrajectory b))
           $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The actor body obtained above may be outdated before @hTrajectories@
@@ -443,7 +443,7 @@ handleActors lid fid = do
   getActorB <- getsState $ flip getActorBody
   let l = map (fst . snd)
           $ sortBy (Ord.comparing fst)
-          $ filter (\(_, (_, b)) -> isNothing (btrajectory b) && bhp b > 0)
+          $ filter (\(_, (_, b)) -> isNothing (btrajectory b))
           $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The actor body obtained above may be outdated before @hActors@
@@ -463,7 +463,11 @@ hActors :: forall m. (MonadServerAtomic m, MonadServerComm m)
         => [ActorId] -> m Bool
 hActors [] = return False
 hActors as@(aid : rest) = do
-  b1 <- getsState $ getActorBody aid
+ b1 <- getsState $ getActorBody aid
+ if bhp b1 <= 0 then do
+   dieSer aid b1
+   hActors rest
+ else do
   let side = bfid b1
       !_A = assert (not $ bproj b1) ()
   fact <- getsState $ (EM.! side) . sfactionD
