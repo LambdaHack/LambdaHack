@@ -175,6 +175,11 @@ slingBullet = ItemKind
 -- * Exotic thrown weapons
 
 -- Identified, because shape (and name) says it all. Detailed stats id by use.
+-- This is an extremely large value for @Paralyze@. Normally for such values
+-- we should instead use condition that disables (almost) all skills,
+-- except @SkWait@, so that the player can switch leader and not be
+-- helpless nor experience instadeath (unless his party is 1-person
+-- or the actor is isolated, but that's usually player's fault).
 paralizingProj = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "bolas set"
