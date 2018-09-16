@@ -439,11 +439,15 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId diffHP calm pos lid bfid bproj
       withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
+      bodyTweaked = tweakBody withTrunk
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
+  -- We assume actor is never born pushed.
   modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
-  execUpdAtomic $ UpdCreateActor aid (tweakBody withTrunk) [(trunkId, itemBase)]
+    if isJust $ btrajectory bodyTweaked
+    then ser {strajTime = updateActorTime bfid lid aid time $ strajTime ser}
+    else ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
+  execUpdAtomic $ UpdCreateActor aid bodyTweaked [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
   forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))

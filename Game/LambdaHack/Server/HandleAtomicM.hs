@@ -54,6 +54,8 @@ cmdAtomicSemSer oldState cmd = case cmd of
     modifyServer $ \ser ->
       ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                    (sactorTime ser)
+          , strajTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
+                                  (strajTime ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
   UpdCreateItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
@@ -86,6 +88,8 @@ cmdAtomicSemSer oldState cmd = case cmd of
     modifyServer $ \ser ->
       ser { sactorTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                    (sactorTime ser)
+          , strajTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
+                                  (strajTime ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
   UpdSpotItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect

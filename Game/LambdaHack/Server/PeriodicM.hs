@@ -2,7 +2,8 @@
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
   ( spawnMonster, addAnyActor
-  , advanceTime, overheadActorTime, swapTime, updateCalm, leadLevelSwitch
+  , advanceTime, advanceTimeTraj, overheadActorTime, swapTime
+  , updateCalm, leadLevelSwitch
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , rollSpawnPos
@@ -171,6 +172,18 @@ advanceTime aid percent breakStasis = do
              -- actor moved, so he broke the time stasis, he can be
              -- paralyzed as well as propelled again
 
+-- | Advance the trajectory following time for the given actor.
+advanceTimeTraj :: MonadServerAtomic m => ActorId -> m ()
+advanceTimeTraj aid = do
+  b <- getsState $ getActorBody aid
+  let speedTraj = case btrajectory b of
+        Nothing -> error $ "" `showFailure` b
+        Just (_, speed) -> speed
+      t = ticksPerMeter speedTraj
+  -- @t@ may be negative; that's OK.
+  modifyServer $ \ser ->
+    ser {strajTime = ageActor (bfid b) (blid b) aid t $ strajTime ser}
+
 -- | Add communication overhead time delta to all non-projectile, non-dying
 -- faction's actors, except the leader. Effectively, this limits moves
 -- of a faction on a level to 10, regardless of the number of actors
@@ -187,14 +200,14 @@ advanceTime aid percent breakStasis = do
 -- having very long UI turns, introducing UI lag.
 overheadActorTime :: MonadServerAtomic m => FactionId -> LevelId -> m ()
 overheadActorTime fid lid = do
+  -- Only non-projectiles processed, because @strajTime@ ignored.
   actorTimeFid <- getsServer $ (EM.! fid) . sactorTime
   let actorTimeLid = actorTimeFid EM.! lid
   getActorB <- getsState $ flip getActorBody
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   let f !aid !time =
         let body = getActorB aid
-        in if isNothing (btrajectory body)
-              && bhp body > 0  -- speed up all-move-at-once carcass removal
+        in if bhp body > 0  -- speed up all-move-at-once carcass removal
               && Just aid /= mleader  -- leader fast, for UI to be fast
            then timeShift time (Delta timeClip)
            else time
@@ -204,15 +217,17 @@ overheadActorTime fid lid = do
     ser {sactorTime = EM.insert fid actorTimeFid2 $ sactorTime ser}
 
 -- | Swap the relative move times of two actors (e.g., when switching
--- a UI leader).
+-- a UI leader). Notice that their trajectory move times are not swapped.
 swapTime :: MonadServerAtomic m => ActorId -> ActorId -> m ()
 swapTime source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   slvl <- getsState $ getLocalTime (blid sb)
   tlvl <- getsState $ getLocalTime (blid tb)
-  btime_sb <- getsServer $ (EM.! source) . (EM.! blid sb) . (EM.! bfid sb) . sactorTime
-  btime_tb <- getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
+  btime_sb <-
+    getsServer $ (EM.! source) . (EM.! blid sb) . (EM.! bfid sb) . sactorTime
+  btime_tb <-
+    getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   let lvlDelta = slvl `timeDeltaToFrom` tlvl
       bDelta = btime_sb `timeDeltaToFrom` btime_tb
       sdelta = timeDeltaSubtract lvlDelta bDelta

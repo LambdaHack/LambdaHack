@@ -85,7 +85,8 @@ reinitGame = do
   mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
-  modifyServer $ \ser -> ser {sactorTime}
+      strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
+  modifyServer $ \ser -> ser {sactorTime, strajTime}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)

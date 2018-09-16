@@ -335,20 +335,16 @@ applyPeriodicLevel = do
 handleTrajectories :: MonadServerAtomic m => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
-  levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
-  getActorB <- getsState $ flip getActorBody
-  let l = map (fst . snd)
+  levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . strajTime
+  let l = map fst
           $ sortBy (Ord.comparing fst)
-          $ filter (\(_, (_, b)) -> isJust (btrajectory b))
-          $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  -- The actor body obtained above may be outdated before @hTrajectories@
+  -- The @strajTime@ map may be outdated before @hTrajectories@
   -- call (due to other actors following their trajectories),
   -- so it's only used to decide which actors are processed in this
-  -- @handleTrajectories@ call and not passed to @hTrajectories@.
-  -- If the actor no longer fulfills the criteria above, @hTrajectories@
-  -- ignores it. If it starts fulfilling them, the recursive call
-  -- to @handleTrajectories@ will detect that and process him later on.
+  -- @handleTrajectories@ call. If an actor is added to the map,
+  -- the recursive call to @handleTrajectories@ will detect that
+  -- and process him later on.
   -- If the actor is no longer on the level or no longer belongs
   -- to the faction, it is nevertheless processed without a problem.
   -- We are guaranteed the actor still exists.
@@ -371,8 +367,8 @@ hTrajectories aid = do
        -- nor is their calm updated. They are helpless wrt movement,
        -- but also invulnerable in this respect.
        b2 <- getsState $ getActorBody aid
-       if actorDying b2 then dieSer aid b2 else advanceTime aid 100 False
-     | otherwise -> return ()  -- no longer fulfills citeria, ignore him
+       if actorDying b2 then dieSer aid b2 else advanceTimeTraj aid
+     | otherwise -> return ()  -- no longer fulfills criteria, ignore him
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.
@@ -440,14 +436,11 @@ handleActors :: (MonadServerAtomic m, MonadServerComm m)
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
-  getActorB <- getsState $ flip getActorBody
-  let l = map (fst . snd)
+  let l = map fst
           $ sortBy (Ord.comparing fst)
-          $ filter (\(_, (_, b)) -> isNothing (btrajectory b))
-          $ map (\(a, atime) -> (atime, (a, getActorB a)))
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
-  -- The actor body obtained above may be outdated before @hActors@
-  -- call gets to it (due to other actors on the list acting),
+  -- The @sactorTime@ map may be outdated before @hActors@
+  -- call (due to other actors on the list acting),
   -- so it's only used to decide which actors are processed in this call.
   -- If the actor is no longer on the level or no longer belongs
   -- to the faction, it is nevertheless processed without a problem

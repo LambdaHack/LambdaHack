@@ -558,6 +558,7 @@ dominateFid fid target = do
         maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getKind iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
+  -- Actor is not pushed nor projectiles, so @sactorTime@ suffices.
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
   execUpdAtomic $ UpdLoseActor target tb ais
@@ -734,8 +735,10 @@ effectAscend recursiveCall execSfx up source target pos = do
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
        execSfx
-       btime_bOld <- getsServer $ (EM.! target) . (EM.! lid1)
-                       . (EM.! bfid b1) . sactorTime
+       mbtime_bOld <-
+         getsServer $ lookupActorTime (bfid b1) lid1 target . sactorTime
+       mbtimeTraj_bOld <-
+         getsServer $ lookupActorTime (bfid b1) lid1 target . strajTime
        pos3 <- findStairExit (bfid sb) up lid2 pos2
        let switch1 = void $ switchLevels1 (target, b1)
            switch2 = do
@@ -743,7 +746,8 @@ effectAscend recursiveCall execSfx up source target pos = do
              -- to let him clear the stairs for others to follow.
              let mlead = if bproj b1 then Nothing else Just target
              -- Move the actor to where the inhabitants were, if any.
-             switchLevels2 lid2 pos3 (target, b1) btime_bOld mlead
+             switchLevels2 lid2 pos3 (target, b1)
+                           mbtime_bOld mbtimeTraj_bOld mlead
        -- The actor will be added to the new level,
        -- but there can be other actors at his new position.
        inhabitants <- getsState $ posToAssocs pos3 lid2
@@ -764,11 +768,15 @@ effectAscend recursiveCall execSfx up source target pos = do
                  -- so possibly has nothing worhwhile to do on the new level
                  -- (and could try to switch back, if made a leader,
                  -- leading to a loop).
-                 btime_inh <-
-                   getsServer $ (EM.! fst inh) . (EM.! lid2)
-                                . (EM.! bfid (snd inh)) . sactorTime
+                 mbtime_inh <-
+                   getsServer $ lookupActorTime (bfid (snd inh)) lid2 (fst inh)
+                                . sactorTime
+                 mbtimeTraj_inh <-
+                   getsServer $ lookupActorTime (bfid (snd inh)) lid2 (fst inh)
+                                . strajTime
                  inhMLead <- switchLevels1 inh
-                 switchLevels2 lid1 (bpos b1) inh btime_inh inhMLead
+                 switchLevels2 lid1 (bpos b1) inh
+                               mbtime_inh mbtimeTraj_inh inhMLead
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
            switch2
@@ -816,9 +824,10 @@ switchLevels1 (aid, bOld) = do
   return mlead
 
 switchLevels2 ::MonadServerAtomic m
-              => LevelId -> Point -> (ActorId, Actor) -> Time -> Maybe ActorId
+              => LevelId -> Point -> (ActorId, Actor)
+              -> Maybe Time -> Maybe Time -> Maybe ActorId
               -> m ()
-switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
+switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   let lidOld = blid bOld
       side = bfid bOld
   let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `swith` lidNew) ()
@@ -860,10 +869,20 @@ switchLevels2 lidNew posNew (aid, bOld) btime_bOld mlead = do
   -- This time shift may cause a double move of a foe of the same speed,
   -- but this is OK --- the foe didn't have a chance to move
   -- before, because the arena went inactive, so he moves now one more time.
-  let btime = shiftByDelta btime_bOld
-  modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime (bfid bNew) lidNew aid btime
-                      $ sactorTime ser}
+  maybe (return ())
+        (\btime_bOld ->
+    modifyServer $ \ser ->
+      ser {sactorTime = updateActorTime (bfid bNew) lidNew aid
+                                        (shiftByDelta btime_bOld)
+                        $ sactorTime ser})
+        mbtime_bOld
+  maybe (return ())
+        (\btime_bOld ->
+    modifyServer $ \ser ->
+      ser {strajTime = updateActorTime (bfid bNew) lidNew aid
+                                       (shiftByDelta btime_bOld)
+                       $ strajTime ser})
+        mbtimeTraj_bOld
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
@@ -918,6 +937,7 @@ paralyze execSfx nDm source target = do
      | otherwise -> do
        execSfx
        let t = timeDeltaScale (Delta timeClip) power
+       -- Only the normal time, not the trajectory time, is affected.
        modifyServer $ \ser ->
          ser { sactorTime = ageActor (bfid tb) (blid tb) target t
                             $ sactorTime ser
@@ -961,14 +981,14 @@ effectInsertMove execSfx nDm source target = do
   let power = max power0 1  -- KISS, avoid special case
       actorTurn = ticksPerMeter $ momentarySpeed tb actorMaxSk
       t = timeDeltaScale actorTurn (-power)
-  -- Projectiles permitted; can't be suspended mid-air, as in @effectParalyze@
-  -- but can be propelled.
-  if | ES.member target actorStasis -> do
+  if | bproj tb -> return UseDud  -- shortcut for speed
+     | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
+       -- Only the normal time, not the trajectory time, is affected.
        modifyServer $ \ser ->
          ser { sactorTime = ageActor (bfid tb) (blid tb) target t
                             $ sactorTime ser
@@ -1363,7 +1383,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
         -- and also let the push start ASAP. So, he will not lose
         -- any turn of movement (but he may need to retrace the push).
         let delta = timeDeltaScale (ticksPerMeter speed) (-range)
-        modifyServer $ \ser ->
+        modifyServer $ \ser ->  -- TODO!!!
           ser {sactorTime = ageActor (bfid tb) (blid tb) target delta
                             $ sactorTime ser}
         return UseUp

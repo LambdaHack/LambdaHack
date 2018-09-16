@@ -103,7 +103,10 @@ debugAid :: MonadServer m => ActorId -> Text -> m Text
 debugAid aid label = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
-  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b) . sactorTime
+  -- If non-projectile pushed, we only show its push time, not normal time.
+  let traj = isJust (btrajectory b)
+  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b)
+                        . if traj then strajTime else sactorTime
   return $! debugShow DebugAid { label
                                , aid
                                , faction = bfid b

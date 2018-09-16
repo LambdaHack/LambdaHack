@@ -1,7 +1,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
   ( StateServer(..), ActorTime
-  , emptyStateServer, updateActorTime, ageActor
+  , emptyStateServer, updateActorTime, lookupActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -29,7 +29,8 @@ import Game.LambdaHack.Server.ServerOptions
 -- | State with server-specific data, including a copy of each client's
 -- basic game state, but not the server's basic state.
 data StateServer = StateServer
-  { sactorTime    :: ActorTime      -- ^ absolute times of next actions
+  { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
+  , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
@@ -72,6 +73,7 @@ emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
     { sactorTime = EM.empty
+    , strajTime = EM.empty
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
@@ -105,6 +107,14 @@ updateActorTime :: FactionId -> LevelId -> ActorId -> Time -> ActorTime
 updateActorTime !fid !lid !aid !time =
   EM.adjust (EM.adjust (EM.insert aid time) lid) fid
 
+lookupActorTime :: FactionId -> LevelId -> ActorId -> ActorTime
+                -> Maybe Time
+lookupActorTime !fid !lid !aid !atime = do
+  m1 <- EM.lookup fid atime
+  m2 <- EM.lookup lid m1
+  m3 <- EM.lookup aid m2
+  return m3
+
 ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
          -> ActorTime
 ageActor !fid !lid !aid !delta =
@@ -113,6 +123,7 @@ ageActor !fid !lid !aid !delta =
 instance Binary StateServer where
   put StateServer{..} = do
     put sactorTime
+    put strajTime
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
@@ -127,6 +138,7 @@ instance Binary StateServer where
     put soptions
   get = do
     sactorTime <- get
+    strajTime <- get
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get
