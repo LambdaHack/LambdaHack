@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltaSerious, deltaMild, actorCanMelee
-  , momentarySpeed, gearSpeed, actorTemplate, waitedLastTurn, actorDying
+  , gearSpeed, actorTemplate, waitedLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
@@ -105,13 +105,6 @@ actorCanMelee actorMaxSkills aid b =
       condUsableWeapon = bweapon b > 0
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
-
--- | Current physical speed, whether from being pushed or from organs and gear.
-momentarySpeed :: Actor -> Ability.Skills -> Speed
-momentarySpeed !b actorMaxSk =
-  case btrajectory b of
-    Nothing -> gearSpeed actorMaxSk
-    Just (_, speed) -> speed
 
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: Ability.Skills -> Speed

@@ -699,7 +699,7 @@ effectSummon grp nDm iid source target periodic = do
        ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
        localTime <- getsState $ getLocalTime (blid tb)
        -- Make sure summoned actors start acting after the victim.
-       let actorTurn = ticksPerMeter $ momentarySpeed tb tMaxSk
+       let actorTurn = ticksPerMeter $ gearSpeed tMaxSk
            targetTime = timeShift localTime actorTurn
            afterTime = timeShift targetTime $ Delta timeClip
        bs <- forM (take power ps) $ \p -> do
@@ -979,7 +979,7 @@ effectInsertMove execSfx nDm source target = do
   actorStasis <- getsServer sactorStasis
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
-      actorTurn = ticksPerMeter $ momentarySpeed tb actorMaxSk
+      actorTurn = ticksPerMeter $ gearSpeed actorMaxSk
       t = timeDeltaScale actorTurn (-power)
   if | bproj tb -> return UseDud  -- shortcut for speed
      | ES.member target actorStasis -> do
@@ -1058,8 +1058,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         actorMaxSk <- getsState $ getActorMaxSkills target
         -- A tiny bit added to make sure length 1 effect doesn't end before
         -- the end of first turn, which would make, e.g., speed, useless.
-        let actorTurn =timeDeltaPercent (ticksPerMeter
-                                         $ momentarySpeed tb actorMaxSk) 101
+        let actorTurn =
+              timeDeltaPercent (ticksPerMeter $ gearSpeed actorMaxSk) 101
         fscale actorTurn nDm
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store

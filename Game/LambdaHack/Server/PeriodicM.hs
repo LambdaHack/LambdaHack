@@ -162,7 +162,7 @@ advanceTime :: MonadServerAtomic m => ActorId -> Int -> Bool -> m ()
 advanceTime aid percent breakStasis = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let t = timeDeltaPercent (ticksPerMeter $ momentarySpeed b actorMaxSk) percent
+  let t = timeDeltaPercent (ticksPerMeter $ gearSpeed actorMaxSk) percent
   -- @t@ may be negative; that's OK.
   modifyServer $ \ser ->
     ser {sactorTime = ageActor (bfid b) (blid b) aid t $ sactorTime ser}
