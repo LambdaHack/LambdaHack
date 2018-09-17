@@ -92,6 +92,7 @@ displayTaunt voluntary rndToAction aid = do
                  && canHear
         -- if applies complex items, probably intelligent and can speak
       canHear = Ability.getSk Ability.SkHearing actorMaxSk > 0
+                && canBrace
         -- if hears, probably also emits sound vocally
       canBrace = Ability.getSk Ability.SkWait actorMaxSk > 1
         -- not an insect, plant, geyser, faucet, fence, etc.
