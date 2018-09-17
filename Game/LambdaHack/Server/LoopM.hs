@@ -368,7 +368,9 @@ hTrajectories aid = do
        -- nor is their calm updated. They are helpless wrt movement,
        -- but also invulnerable in this respect.
        b2 <- getsState $ getActorBody aid
-       if actorDying b2 then dieSer aid b2 else advanceTimeTraj aid
+       if | actorDying b2 -> dieSer aid b2
+          | isJust (btrajectory b2) -> advanceTimeTraj aid
+          | otherwise -> return ()  -- handled later on
      | otherwise ->
        -- No longer fulfills criteria and was not removed above; remove him.
        modifyServer $ \ser ->
