@@ -651,10 +651,14 @@ effectPutToSleep execSfx target = do
 -- because, presumably, he yells involuntarily and also wakes him up via Calm.
 effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectYell execSfx target = do
-  execSfx
-  execSfxAtomic $ SfxTaunt False target
-  execUpdAtomic $ UpdRefillCalm target (xM $ -2)
-  return UseUp
+  tb <- getsState $ getActorBody target
+  if bhp tb <= 0 then  -- avoid yelling corpses
+    return UseDud  -- the yell never manifested
+  else do
+    execSfx
+    execSfxAtomic $ SfxTaunt False target
+    execUpdAtomic $ UpdRefillCalm target (xM $ -2)
+    return UseUp
 
 -- ** Summon
 
@@ -1357,7 +1361,9 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   tb <- getsState $ getActorBody target
   let eps = 0
       fpos = bpos tb `shift` v
-  if waitedLastTurn tb then do
+  if bhp tb <= 0 then  -- avoid dragging around corpses
+    return UseDud  -- the impact never manifested
+  else if waitedLastTurn tb then do
     sb <- getsState $ getActorBody source
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on
