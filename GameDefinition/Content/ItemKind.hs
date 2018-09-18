@@ -462,7 +462,7 @@ flask13 = flaskTemplate
                , OnSmash (Summon "mobile animal" 1)
                , OnSmash Impress
                , OnSmash (Explode "waste") ]
- }
+  }
 -- The player has full control over throwing the flask at his party,
 -- so he can milk the explosion, so it has to be much weaker, so a weak
 -- healing effect is enough. OTOH, throwing a harmful flask at many enemies
@@ -475,7 +475,7 @@ flask14 = flaskTemplate
   , ieffects = [ toOrganNoTimer "regenerating"
                , toOrganNoTimer "regenerating"  -- x2
                , OnSmash (Explode "youth sprinkle") ]
- }
+  }
 flask15 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , iaspects = [ELabel "of poison"]
