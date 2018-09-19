@@ -337,12 +337,10 @@ dungeonGen cops serverOptions caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      placeCaveGroup :: [Int] -> ([(LevelId, Level)], [(Point, Text)])
-                     -> GroupName CaveKind
+      placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
+                     -> (Int, GroupName CaveKind)
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      placeCaveGroup ns (lvls, ldown) genName = do
-        let freeLevels = filter (`notElem` map (fromEnum. fst) lvls) ns
-        n <- oneOf freeLevels
+      placeCaveGroup (lvls, ldown) (n, genName) = do
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions n genName minD freshTotalDepth ldown
@@ -350,8 +348,10 @@ dungeonGen cops serverOptions caves = do
       buildLvls :: ([(LevelId, Level)], [(Point, Text)])
                 -> ([Int], [GroupName CaveKind])
                 -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      buildLvls (lvls, ldown) (ns, l) =
-         foldlM' (placeCaveGroup ns) (lvls, ldown) l
+      buildLvls (lvls, ldown) (ns, l) = assert (length ns == length l) $ do
+        lShuffled <- shuffle l
+        let nsl = zip ns lShuffled
+        foldlM' placeCaveGroup (lvls, ldown) nsl
   (levels, _) <- foldlM' buildLvls ([], []) caves
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
