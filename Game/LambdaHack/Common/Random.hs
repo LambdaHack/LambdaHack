@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, random, oneOf, frequency
+  , randomR, random, oneOf, shuffle, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -47,6 +47,13 @@ oneOf [x] = return x
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return $! xs !! r
+
+-- | Generates a random permutation. Naive, but good enough for small inputs.
+shuffle :: Eq a => [a] -> Rnd [a]
+shuffle [] = return []
+shuffle l = do
+  x <- oneOf l
+  (x :) <$> shuffle (delete x l)
 
 -- | Gen an element according to a frequency distribution.
 frequency :: Show a => Frequency a -> Rnd a

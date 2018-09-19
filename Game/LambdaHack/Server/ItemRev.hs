@@ -128,11 +128,6 @@ emptyDiscoveryKindRev = DiscoveryKindRev U.empty
 serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do
   let ixs = [toEnum 0..toEnum (olength coitem - 1)]
-      shuffle :: Eq a => [a] -> Rnd [a]
-      shuffle [] = return []
-      shuffle l = do
-        x <- oneOf l
-        (x :) <$> shuffle (delete x l)
   shuffled <- shuffle ixs
   let f (!ikMap, !ikRev, ix : rest) kmKind _ =
         (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
