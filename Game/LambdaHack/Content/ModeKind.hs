@@ -19,8 +19,6 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import qualified Data.IntMap.Strict as IM
-import qualified Data.IntSet as IS
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -44,10 +42,8 @@ data ModeKind = ModeKind
 
 instance NFData ModeKind
 
--- | Requested cave groups for particular levels. The second component
--- is the @Escape@ feature on the level. @True@ means it's represented
--- by @<@, @False@, by @>@.
-type Caves = IM.IntMap (GroupName CaveKind)
+-- | Requested cave groups for particular level intervals.
+type Caves = [([Int], [GroupName CaveKind])]
 
 -- | The specification of players for the game mode.
 data Roster = Roster
@@ -160,6 +156,11 @@ nameOfHorrorFact = "horror"
 validateSingle :: ModeKind -> [Text]
 validateSingle ModeKind{..} =
   [ "mname longer than 20" | T.length mname > 20 ]
+  ++ let f cave@(ns, l) =
+           [ "not enough or too many levels for required cave groups:"
+             <+> tshow cave
+           | length ns /= length l ]
+     in concatMap f mcaves
   ++ validateSingleRoster mcaves mroster
 
 -- | Checks, in particular, that there is at least one faction with fneverEmpty
@@ -178,11 +179,11 @@ validateSingleRoster caves Roster{..} =
            ++ checkPl field pl2
      in concatMap (checkDipl "rosterEnemy") rosterEnemy
         ++ concatMap (checkDipl "rosterAlly") rosterAlly
-  ++ let keySet = IM.keysSet caves
+  ++ let keys = concatMap fst caves
          f (_, l) = concatMap g l
          g i3@(ln, _, _) =
            [ "initial actor levels not among caves:" <+> tshow i3
-           | ln `IS.notMember` keySet ]
+           | ln `notElem` keys ]
      in concatMap f rosterList
 
 validateSinglePlayer :: Player -> [Text]
@@ -202,8 +203,9 @@ validateAll :: ContentData CaveKind
             -> ContentData ModeKind
             -> [Text]
 validateAll cocave coitem content comode =
-  let missingCave = filter (not . omemberGroup cocave)
-                    $ concatMap (IM.elems . mcaves) content
+  let caveGroups = concatMap snd . mcaves
+      missingCave = filter (not . omemberGroup cocave)
+                    $ concatMap caveGroups content
       f Roster{rosterList} =
         concatMap (\(p, l) -> delete nameOfHorrorFact (fgroups p)
                               ++ map (\(_, _, grp) -> grp) l)

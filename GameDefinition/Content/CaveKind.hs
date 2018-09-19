@@ -21,8 +21,7 @@ rogue,    arena, arena2, laboratory, noise, noise2, empty, shallow2rogue, shallo
 rogue = CaveKind
   { csymbol       = 'R'
   , cname         = "A maze of twisty passages"
-  , cfreq         = [ ("default random", 100), ("deep random", 100)
-                    , ("caveRogue", 1) ]
+  , cfreq         = [ ("default random", 100), ("caveRogue", 1) ]
   , cXminSize     = 80
   , cYminSize     = 21
   , ccellSize     = DiceXY (2 `d` 4 + 10) 6
@@ -65,7 +64,7 @@ rogue = CaveKind
 arena = rogue
   { csymbol       = 'A'
   , cname         = "Dusty underground library"
-  , cfreq         = [("default random", 40), ("caveArena", 1)]
+  , cfreq         = [("default random", 60), ("caveArena", 1)]
   , cXminSize     = 50
   , cYminSize     = 21
   , ccellSize     = DiceXY (3 `d` 3 + 17) (1 `d` 3 + 4)
@@ -96,7 +95,7 @@ arena = rogue
   }
 arena2 = arena
   { cname         = "Smoking rooms"
-  , cfreq         = [("deep random", 30), ("caveArena2", 1)]
+  , cfreq         = [("caveArena2", 1)]
   , cdarkOdds     = 41 + 1 `d` 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
@@ -108,7 +107,7 @@ arena2 = arena
 laboratory = rogue
   { csymbol       = 'L'
   , cname         = "Burnt laboratory"
-  , cfreq         = [("deep random", 20), ("caveLaboratory", 1)]
+  , cfreq         = [("caveLaboratory", 1)]
   , cXminSize     = 60
   , cYminSize     = 21
   , ccellSize     = DiceXY (1 `d` 2 + 5) 6
@@ -133,7 +132,7 @@ laboratory = rogue
 noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky burrowed sediment"
-  , cfreq         = [("default random", 10), ("caveNoise", 1)]
+  , cfreq         = [("default random", 30), ("caveNoise", 1)]
   , cXminSize     = 50
   , cYminSize     = 21
   , ccellSize     = DiceXY (3 `d` 5 + 12) 6
@@ -210,7 +209,7 @@ empty = rogue
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 shallow2rogue = rogue
-  { cfreq         = [("shallow random 2", 100)]
+  { cfreq         = [("shallow rogue 2", 100)]
   , cXminSize     = 60
   , cYminSize     = 21
   , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot

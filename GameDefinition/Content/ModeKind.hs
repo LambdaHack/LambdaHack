@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.IntMap.Strict as IM
-
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Misc
@@ -464,44 +462,50 @@ rosterDefenseEmpty = rosterCrawl
 
 cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
 
-cavesRaid = IM.fromList [(-2, "caveRaid")]
+cavesRaid = [([-2], ["caveRaid"])]
 
-cavesBrawl = IM.fromList [(-3, "caveBrawl")]
+cavesBrawl = [([-3], ["caveBrawl"])]
 
-cavesShootout = IM.fromList [(-5, "caveShootout")]
+cavesShootout = [([-5], ["caveShootout"])]
 
-cavesEscape = IM.fromList [(-7, "caveEscape")]
+cavesEscape = [([-7], ["caveEscape"])]
 
-cavesZoo = IM.fromList [(-8, "caveZoo")]
+cavesZoo = [([-8], ["caveZoo"])]
 
-cavesAmbush = IM.fromList [(-9, "caveAmbush")]
+cavesAmbush = [([-9], ["caveAmbush"])]
 
-listCrawl :: [(Int, GroupName CaveKind)]
+listCrawl :: [([Int], [GroupName CaveKind])]
 listCrawl =
-  [ (-1, "outermost")
-  , (-2, "shallow random 2")
-  , (-3, "caveEmpty")
-  , (-4, "default random")
-  , (-5, "default random")
-  , (-6, "deep random")
-  , (-7, "deep random")
-  , (-8, "deep random")
-  , (-9, "deep random")
-  , (-10, "caveNoise2") ]
+  [ ([-1], ["outermost"])
+  , ([-2], ["shallow rogue 2"])
+  , ([-3], ["caveEmpty"])
+  , ([-4, -5, -6], ["default random", "caveRogue", "caveArena"])
+  , ([-7, -8, -9], ["caveRogue", "caveArena2", "caveLaboratory"])
+  , ([-10], ["caveNoise2"]) ]
 
-cavesCrawl = IM.fromList listCrawl
+cavesCrawl = listCrawl
 
-cavesDig = IM.fromList $ zip [-1, -2 ..] $ map snd $ concat
-                       $ replicate 100 listCrawl
+renumberCaves :: Int -> ([Int], [GroupName CaveKind])
+              -> ([Int], [GroupName CaveKind])
+renumberCaves offset (ns, l) = (map (+ offset) ns, l)
 
-cavesSee = IM.fromList $ zip [-1, -2 ..] $ concat $ map (replicate 8)
+cavesDig = concat $ zipWith (map . renumberCaves)
+                            [0, -10 ..]
+                            (replicate 100 listCrawl)
+
+cavesSee = let numberCaves n c = ([n], [c])
+           in zipWith numberCaves [-1, -2 ..]
+              $ concatMap (replicate 8) allCaves
+
+allCaves :: [GroupName CaveKind]
+allCaves =
   [ "caveRaid", "caveBrawl", "caveShootout", "caveEscape", "caveZoo"
   , "caveAmbush"
   , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveArena2"
   , "caveNoise", "caveNoise2" ]
 
-cavesSafari = IM.fromList [ (-4, "caveSafari1")
-                          , (-7, "caveSafari2")
-                          , (-10, "caveSafari3") ]
+cavesSafari = [ ([-4], ["caveSafari1"])
+              , ([-7], ["caveSafari2"])
+              , ([-10], ["caveSafari3"]) ]
 
-cavesBattle = IM.fromList [(-5, "caveBattle")]
+cavesBattle = [([-5], ["caveBattle"])]

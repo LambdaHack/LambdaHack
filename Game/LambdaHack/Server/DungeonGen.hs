@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
@@ -332,22 +331,27 @@ data FreshDungeon = FreshDungeon
 -- | Generate the dungeon for a new game.
 dungeonGen :: COps -> ServerOptions -> Caves -> Rnd FreshDungeon
 dungeonGen cops serverOptions caves = do
-  let (minD, maxD) | Just ((s, _), _) <- IM.minViewWithKey caves
-                   , Just ((e, _), _) <- IM.maxViewWithKey caves
-                   = (s, e)
-                   | otherwise
-                   = error $ "no caves" `showFailure` caves
+  let keys = concatMap fst caves
+      minD = minimum keys
+      maxD = maximum keys
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      buildLvl :: ([(LevelId, Level)], [(Point, Text)])
-               -> (Int, GroupName CaveKind)
-               -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      buildLvl (l, ldown) (n, genName) = do
-        -- lstairUp for the next level is lstairDown for the current level
-        (lvl, ldown2) <-
+      placeCaveGroup :: [Int] -> ([(LevelId, Level)], [(Point, Text)])
+                     -> GroupName CaveKind
+                     -> Rnd ([(LevelId, Level)], [(Point, Text)])
+      placeCaveGroup ns (lvls, ldown) genName = do
+        let freeLevels = filter (`notElem` map (fromEnum. fst) lvls) ns
+        n <- oneOf freeLevels
+        (newLevel, ldown2) <-
+          -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions n genName minD freshTotalDepth ldown
-        return ((toEnum n, lvl) : l, ldown2)
-  (levels, _) <- foldlM' buildLvl ([], []) $ reverse $ IM.assocs caves
+        return ((toEnum n, newLevel) : lvls, ldown2)
+      buildLvls :: ([(LevelId, Level)], [(Point, Text)])
+                -> ([Int], [GroupName CaveKind])
+                -> Rnd ([(LevelId, Level)], [(Point, Text)])
+      buildLvls (lvls, ldown) (ns, l) =
+         foldlM' (placeCaveGroup ns) (lvls, ldown) l
+  (levels, _) <- foldlM' buildLvls ([], []) caves
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
