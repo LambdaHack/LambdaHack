@@ -1378,6 +1378,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       let weight = sum $ map (IK.iweight . itemKind . snd) weightAssocs
           path = bpos tb : pos : rest
           (trajectory, (speed, _)) =
+            -- Note that the @ThrowMod@ stat of the actor's trunk is ignored.
             computeTrajectory weight throwVelocity throwLinger path
           ts = Just (trajectory, speed)
       if null trajectory || btrajectory tb == ts
