@@ -63,7 +63,10 @@ data Aspect =
     Timeout Dice.Dice  -- ^ some effects disabled until item recharges;
                        --   expressed in game turns
   | AddSkill Ability.Skill Dice.Dice
-                       -- ^ bonus to a skill
+                       -- ^ bonus to a skill; in content, avoid boosting
+                       --   skills such as SkApply via permanent equipment,
+                       --   to avoid micromanagement through swapping items
+                       --   among party members before each skill use
   | SetFlag Ability.Flag
                        -- ^ item feature
   | ELabel Text        -- ^ extra label of the item; it's not pluralized
