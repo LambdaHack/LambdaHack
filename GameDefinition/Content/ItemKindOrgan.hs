@@ -210,7 +210,7 @@ venomTooth = fist
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , idamage  = 2 `d` 1
+  , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 7 - 1 `dL` 3]
                ++ iaspects fist
   , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
@@ -221,7 +221,7 @@ venomFang = fist
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
   , iverbHit = "bite"
-  , idamage  = 2 `d` 1
+  , idamage  = 0
   , iaspects = [Timeout $ 10 - 1 `dL` 4]
                ++ iaspects fist
   , ieffects = [Recharging (toOrganNoTimer "poisoned")]
