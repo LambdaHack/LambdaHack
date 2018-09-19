@@ -349,12 +349,17 @@ dispEnemy source target actorMaxSk s =
         in any friend adjacentAssocs
       sb = getActorBody source s
       tb = getActorBody target s
+      dozes = case bwatch tb of
+        WSleep -> True
+        WWake -> True
+        _ -> False
       tfact = sfactionD s EM.! bfid tb
   in bproj tb
      || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
              || waitedLastTurn tb
              || Ability.getSk Ability.SkMove actorMaxSk <= 0
+                && not dozes  -- roots weak if the tree sleeps
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull
