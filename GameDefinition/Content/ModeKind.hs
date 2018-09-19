@@ -480,10 +480,14 @@ listCrawl :: [(Int, GroupName CaveKind)]
 listCrawl =
   [ (-1, "outermost")
   , (-2, "shallow random 2")
-  , (-3, "caveEmpty") ]
-  ++ zip [-4, -5] (repeat "default random")
-  ++ zip [-6, -7, -8, -9] (repeat "deep random")
-  ++ [(-10, "caveNoise2")]
+  , (-3, "caveEmpty")
+  , (-4, "default random")
+  , (-5, "default random")
+  , (-6, "deep random")
+  , (-7, "deep random")
+  , (-8, "deep random")
+  , (-9, "deep random")
+  , (-10, "caveNoise2") ]
 
 cavesCrawl = IM.fromList listCrawl
 
