@@ -507,12 +507,12 @@ cavesAmbush = [([-9], ["caveAmbush"])]
 
 listCrawl :: [([Int], [GroupName CaveKind])]
 listCrawl =
-  [ ([-1], ["outermost"])
-  , ([-2], ["shallow rogue 2"])
+  [ ([-1], ["caveOutermost"])
+  , ([-2], ["caveShallowRogue"])
   , ([-3], ["caveEmpty"])
   , ([-4, -5, -6], ["default random", "caveRogue", "caveArena"])
-  , ([-7, -8, -9], ["caveRogue", "caveArena2", "caveLaboratory"])
-  , ([-10], ["caveNoise2"]) ]
+  , ([-7, -8, -9], ["caveRogue", "caveSmoking", "caveLaboratory"])
+  , ([-10], ["caveMine"]) ]
 
 cavesCrawl = listCrawl
 
@@ -532,8 +532,8 @@ allCaves :: [GroupName CaveKind]
 allCaves =
   [ "caveRaid", "caveBrawl", "caveShootout", "caveEscape", "caveZoo"
   , "caveAmbush"
-  , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveArena2"
-  , "caveNoise", "caveNoise2" ]
+  , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveSmoking"
+  , "caveNoise", "caveMine" ]
 
 cavesSafari = [ ([-4], ["caveSafari1"])
               , ([-7], ["caveSafari2"])

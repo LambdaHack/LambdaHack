@@ -14,9 +14,9 @@ import Game.LambdaHack.Content.CaveKind
 
 content :: [CaveKind]
 content =
-  [rogue, arena, arena2, laboratory, noise, noise2, empty,shallow2rogue, shallow1rogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
+  [rogue, arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
 
-rogue,    arena, arena2, laboratory, noise, noise2, empty, shallow2rogue, shallow1rogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -93,9 +93,9 @@ arena = rogue
                     , ("tiny staircase", 1) ]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
   }
-arena2 = arena
+smoking = arena
   { cname         = "Smoking rooms"
-  , cfreq         = [("caveArena2", 1)]
+  , cfreq         = [("caveSmoking", 1)]
   , cdarkOdds     = 41 + 1 `d` 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
@@ -160,9 +160,9 @@ noise = rogue
                     , ("tiny staircase", 1) ]
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
   }
-noise2 = noise
+mine = noise
   { cname         = "Frozen derelict mine"
-  , cfreq         = [("caveNoise2", 1)]
+  , cfreq         = [("caveMine", 1)]
   , cnightOdds    = 51  -- easier variant, but looks sinister
   , citemNum      = 11 `d` 5  -- an incentive to explore the final labyrinth
   , citemFreq     = [ ("common item", 20), ("treasure", 60)
@@ -208,17 +208,17 @@ empty = rogue
                     , ("tiny staircase", 1) ]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
-shallow2rogue = rogue
-  { cfreq         = [("shallow rogue 2", 100)]
+shallowRogue = rogue
+  { cfreq         = [("caveShallowRogue", 100)]
   , cXminSize     = 60
   , cYminSize     = 21
   , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot
   , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
-shallow1rogue = shallow2rogue
+outermost = shallowRogue
   { csymbol       = 'B'
   , cname         = "Cave entrance"
-  , cfreq         = [("outermost", 100)]
+  , cfreq         = [("caveOutermost", 100)]
   , cXminSize     = 40
   , cYminSize     = 21
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
