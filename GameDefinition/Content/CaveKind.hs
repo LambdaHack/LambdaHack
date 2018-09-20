@@ -14,9 +14,9 @@ import Game.LambdaHack.Content.CaveKind
 
 content :: [CaveKind]
 content =
-  [rogue, arena, arena2, laboratory, noise, noise2, empty,shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3]
+  [rogue, arena, arena2, laboratory, noise, noise2, empty,shallow2rogue, shallow1rogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
 
-rogue,    arena, arena2, laboratory, noise, noise2, empty, shallow2rogue, shallow1rogue, raid, brawl, shootout, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,    arena, arena2, laboratory, noise, noise2, empty, shallow2rogue, shallow1rogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 rogue = CaveKind
   { csymbol       = 'R'
@@ -322,6 +322,36 @@ shootout = rogue  -- a scenario with strong missiles;
   , cfenceTileW   = "outdoor outer fence"
   , cdesc         = ""
   }
+hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
+  { csymbol       = 'H'
+  , cname         = "Misty meadow"
+  , cfreq         = [("caveHunt", 1)]
+  , ccellSize     = DiceXY (1 `d` 2 + 6) 6
+  , cminPlaceSize = DiceXY 3 3
+  , cmaxPlaceSize = DiceXY 4 4
+  , cdarkOdds     = 51
+  , cnightOdds    = 0
+  , cauxConnects  = 1%10
+  , cdoorChance   = 1
+  , copenChance   = 0
+  , cextraStairs  = 0
+  , chidden       = 0
+  , cactorFreq    = []
+  , citemNum      = 5 `d` 10
+  , citemFreq     = [ ("common item", 30)
+                    , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
+  , cplaceFreq    = [("brawl", 50), ("shootout", 100)]
+  , cpassable     = True
+  , cdefTile      = "shootoutSetLit"
+  , cdarkCorTile  = "dirt Lit"
+  , clitCorTile   = "dirt Lit"
+  , cstairFreq    = []
+  , cfenceTileN   = "outdoor outer fence"
+  , cfenceTileE   = "outdoor outer fence"
+  , cfenceTileS   = "outdoor outer fence"
+  , cfenceTileW   = "outdoor outer fence"
+  , cdesc         = ""
+  }
 escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                 -- on them; dark, so solid obstacles are to hide from missiles,
                 -- not view; obstacles are not lit, to frustrate the AI;
@@ -391,7 +421,7 @@ ambush = rogue  -- a scenario with strong missiles;
                 -- not view, and they are all lit, because stopped missiles
                 -- are frustrating, while a few LOS-only obstacles are not lit;
                 -- lots of small lights to cross, to give a chance to snipe;
-                -- a crucial difference wrt shootout is that trajectories
+                -- crucial difference wrt shootout and hunt is that trajectories
                 -- of missiles are usually not seen, so enemy can't be guessed;
                 -- camping doesn't pay off, because enemies can sneak and only
                 -- active scouting, throwing flares and shooting discovers them

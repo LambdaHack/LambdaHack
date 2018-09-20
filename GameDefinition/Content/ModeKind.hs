@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
 content =
-  [raid, brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
 
-raid,    brawl, shootout, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -67,9 +67,18 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. (To display the trajectory of any soaring entity, point it with the crosshair in aiming mode.)"
   }
 
+hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
+  { msymbol = 'h'
+  , mname   = "hunt (4)"
+  , mfreq   = [("hunt", 1), ("campaign scenario", 1)]
+  , mroster = rosterHunt
+  , mcaves  = cavesHunt
+  , mdesc   = "Who is the hunter and who is the prey?"
+  }
+
 escape = ModeKind  -- asymmetric ranged and stealth race at night
   { msymbol = 'e'
-  , mname   = "escape (4)"
+  , mname   = "escape (5)"
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
@@ -78,7 +87,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
 
 zoo = ModeKind  -- asymmetric crowd melee at night
   { msymbol = 'b'
-  , mname   = "zoo (5)"
+  , mname   = "zoo (6)"
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
@@ -95,7 +104,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 -- shoots (and often also scouts) and others just gather ammo.
 ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   { msymbol = 'm'
-  , mname   = "ambush (6)"
+  , mname   = "ambush (7)"
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
@@ -230,20 +239,26 @@ screensaverShootout = shootout
   , mroster = screensave (AutoLeader False False) rosterShootout
   }
 
+screensaverHunt = hunt
+  { mname   = "auto-hunt (4)"
+  , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
+  , mroster = screensave (AutoLeader False False) rosterHunt
+  }
+
 screensaverEscape = escape
-  { mname   = "auto-escape (4)"
+  { mname   = "auto-escape (5)"
   , mfreq   = [("starting", 1), ("starting JS", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterEscape
   }
 
 screensaverZoo = zoo
-  { mname   = "auto-zoo (5)"
+  { mname   = "auto-zoo (6)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterZoo
   }
 
 screensaverAmbush = ambush
-  { mname   = "auto-ambush (6)"
+  { mname   = "auto-ambush (7)"
   , mfreq   = [("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterAmbush
   }
@@ -261,7 +276,7 @@ screensaverSafari = safari
               screensave (AutoLeader False True) rosterSafari
   }
 
-rosterRaid, rosterBrawl, rosterShootout, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
@@ -304,6 +319,20 @@ rosterShootout = Roster
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
                    , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
+                 , (playerHorror, []) ]
+  , rosterEnemy = [ ("Explorer", "Indigo Researcher")
+                  , ("Explorer", "Horror Den")
+                  , ("Indigo Researcher", "Horror Den") ]
+  , rosterAlly = [] }
+
+rosterHunt = Roster
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller }
+                   , [(-5, 12, "soldier hero")] )
+                 , ( playerAntiHero { fname = "Indigo Researcher"
+                                    , fcanEscape = False
+                                    , fhiCondPoly = hiDweller }
+                   , [(-5, 1, "scout hero"), (-5, 5, "ambusher hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
@@ -460,13 +489,15 @@ rosterDefenseEmpty = rosterCrawl
   , rosterEnemy = []
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = [([-2], ["caveRaid"])]
 
 cavesBrawl = [([-3], ["caveBrawl"])]
 
 cavesShootout = [([-5], ["caveShootout"])]
+
+cavesHunt = [([-5], ["caveHunt"])]
 
 cavesEscape = [([-7], ["caveEscape"])]
 
