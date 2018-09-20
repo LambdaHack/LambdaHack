@@ -93,13 +93,13 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 -- For now, while we have no shooters with timeout, massive ranged battles
 -- without reaction fire don't make sense, because then usually only one hero
 -- shoots (and often also scouts) and others just gather ammo.
-ambush = ModeKind  -- dense ranged with reaction fire at night
+ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   { msymbol = 'm'
   , mname   = "ambush (6)"
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be aggressive. Fast execution is what makes or breaks a creative team."
+  , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
   }
 
 crawl = ModeKind
@@ -342,7 +342,7 @@ rosterAmbush = Roster
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
-                   , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
+                   , [(-9, 12, "soldier hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
