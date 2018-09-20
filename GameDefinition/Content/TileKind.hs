@@ -180,7 +180,7 @@ pillar = TileKind
   , tfreq    = [ ("cachable", 70)
                , ("stair terminal Lit", 100), ("stair terminal Dark", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSetLit", 700), ("noisePowerSetDark", 700)
+               , ("noiseSetLit", 700), ("powerSetDark", 700)
                , ("battleSetDark", 200), ("brawlSetLit", 50)
                , ("shootoutSetLit", 10), ("zooSetDark", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
@@ -265,7 +265,7 @@ rubble = TileKind
   , tfreq    = [ ("rubble", 1), ("legendLit", 1), ("legendDark", 1)
                , ("stair terminal Lit", 4), ("stair terminal Dark", 4)
                , ("emptySetLit", 10), ("emptySetDark", 10)
-               , ("noiseSetLit", 50), ("noisePowerSetDark", 50)
+               , ("noiseSetLit", 50), ("powerSetDark", 50)
                , ("zooSetDark", 100), ("ambushSetDark", 20) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
@@ -433,7 +433,7 @@ wallGlassHSpice = wallGlassH
 pillarIce = TileKind
   { tsymbol  = '^'
   , tname    = "icy outcrop"
-  , tfreq    = [("noisePowerSetDark", 300)]
+  , tfreq    = [("powerSetDark", 300)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
@@ -500,7 +500,7 @@ fog = TileKind
   }
 fogDark = fog
   { tname    = "thick fog"
-  , tfreq    = [ ("emptySetDark", 50), ("noisePowerSetDark", 100)
+  , tfreq    = [ ("emptySetDark", 50), ("powerSetDark", 100)
                , ("escapeSetDark", 50) ]
   , tfeature = Dark : tfeature fog
   }
@@ -562,7 +562,7 @@ floorArena = floorCorridor
   }
 floorDamp = floorArena
   { tname    = "damp stone floor"
-  , tfreq    = [ ("noiseSetLit", 600), ("noisePowerSetLit", 600)
+  , tfreq    = [ ("noiseSetLit", 600), ("powerSetLit", 600)
                , ("damp floor Lit", 1), ("stair terminal Lit", 20) ]
   }
 floorDirt = floorArena
@@ -595,7 +595,7 @@ shallowWater = TileKind
   , tname    = "water puddle"
   , tfreq    = [ ("shallow water Lit", 1), ("legendLit", 100)
                , ("emptySetLit", 5), ("noiseSetLit", 20)
-               , ("noisePowerSetLit", 20), ("shootoutSetLit", 5) ]
+               , ("powerSetLit", 20), ("shootoutSetLit", 5) ]
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0
