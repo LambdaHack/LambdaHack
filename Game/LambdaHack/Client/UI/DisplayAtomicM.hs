@@ -944,7 +944,7 @@ ppHearMsg hearMsg = case hearMsg of
                  else MU.Ws $ MU.Text $ tshow grp
     return $! makeSentence ["you hear", verb, object]
   HearTaunt t ->
-    return $! makeSentence ["you hear", MU.Text t]
+    return $! makeSentence ["you overhear", MU.Text t]
 
 -- * RespSfxAtomicUI
 

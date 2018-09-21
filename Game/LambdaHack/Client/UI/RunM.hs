@@ -113,6 +113,11 @@ continueRunDir params = case params of
     report <- getsSession $ newReport . shistory
     let boringMsgs = map stringToAL
           [ "You hear a distant"
+          , "You hear distant"
+          , "You overhear"
+          , "You move with difficulty."
+          , "You move swiftly."
+          , "walk over"
           , "reveals that the"
           , "Macro will be recorded"
           , "Macro activated"
