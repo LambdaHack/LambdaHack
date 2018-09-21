@@ -180,7 +180,8 @@ pillar = TileKind
   , tfreq    = [ ("cachable", 70)
                , ("stair terminal Lit", 100), ("stair terminal Dark", 100)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSetLit", 700), ("powerSetDark", 700)
+               , ("emptySetLit", 20), ("noiseSetLit", 700)
+               , ("powerSetDark", 700)
                , ("battleSetDark", 200), ("brawlSetLit", 50)
                , ("shootoutSetLit", 10), ("zooSetDark", 10) ]
   , tcolor   = BrCyan  -- not BrWhite, to tell from heroes
