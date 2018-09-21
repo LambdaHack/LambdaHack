@@ -324,7 +324,7 @@ shootout = rogue  -- a scenario with strong missiles;
   }
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   { csymbol       = 'H'
-  , cname         = "Misty meadow"
+  , cname         = "Noon swamp"
   , cfreq         = [("caveHunt", 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
