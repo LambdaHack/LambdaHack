@@ -100,7 +100,7 @@ data Effect =
   | Paralyze Dice.Dice    -- ^ paralyze for this many game clips
   | ParalyzeInWater Dice.Dice
                           -- ^ paralyze for this many game clips due to water
-  | InsertMove Dice.Dice  -- ^ give free time to actor of this many actor turns
+  | InsertMove Dice.Dice  -- ^ give actor extra tengths of the actor move
   | Teleport Dice.Dice    -- ^ teleport actor across rougly this distance
   | CreateItem CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given

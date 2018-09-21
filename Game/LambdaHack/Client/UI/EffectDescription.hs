@@ -81,8 +81,12 @@ effectToSuffix detailLevel effect =
       in "of retardation for" <+> time
     InsertMove dice ->
       let moves = case Dice.reduceDice dice of
-            Nothing -> tshow dice <+> "moves"
-            Just p -> makePhrase [MU.CarWs p "move"]
+            Nothing -> tshow dice <+> "tenths of a move"
+            Just p ->
+              let (d, m) = p `divMod` 10
+              in if m == 0
+                 then makePhrase [MU.CarWs d "move"]
+                 else makePhrase [MU.CarWs p "tenth", "of a move"]
       in "of speed surge for" <+> moves
     Teleport dice | Dice.maxDice dice <= 9 ->
       "of blinking" <+> wrapInParens (tshow dice)

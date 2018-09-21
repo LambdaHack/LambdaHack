@@ -97,7 +97,7 @@ effectToBenefit cops fact insideRecharging eff =
     -- of battle, let's say each turn is worth ~10.
     IK.Paralyze d -> delta $ -20 * Dice.meanDice d  -- clips
     IK.ParalyzeInWater d -> delta $ -10 * Dice.meanDice d  -- clips; resistable
-    IK.InsertMove d -> delta $ 100 * Dice.meanDice d  -- turns
+    IK.InsertMove d -> delta $ 10 * Dice.meanDice d  -- turns
     IK.Teleport d -> if Dice.meanDice d <= 8
                      then (1, 0)     -- blink to shoot at foes
                      else (-9, -1)  -- for self, don't derail exploration

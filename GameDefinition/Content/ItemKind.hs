@@ -802,7 +802,7 @@ scroll4 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
   , irarity  = [(1, 14)]
-  , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 10
+  , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 30
                       , Detect DetectEmbed 12, Detect DetectItem 20 ]]
   }
 scroll5 = scrollTemplate
@@ -828,7 +828,7 @@ scroll8 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 1  -- too poweful en masse
   , irarity  = [(10, 4)]
-  , ieffects = [InsertMove $ 1 + 1 `d` 2 + 1 `dL` 2]
+  , ieffects = [InsertMove $ 20 + 1 `dL` 20]
   }
 scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
@@ -1052,7 +1052,7 @@ necklace7 = necklaceTemplate
                , AddSkill SkMaxHP 15
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (InsertMove $ 1 `d` 3)  -- unpredictable
+  , ieffects = [ Recharging (InsertMove $ 20 + 1 `d` 10)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
                , Recharging (toOrganBad "impatient" 4)]
   -- , idesc    = ""

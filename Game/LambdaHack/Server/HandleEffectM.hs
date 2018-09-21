@@ -971,7 +971,7 @@ effectParalyzeInWater execSfx nDm source target = do
 
 -- ** InsertMove
 
--- | Give target actor the given number of extra moves. Don't give
+-- | Give target actor the given number of tenths of extra move. Don't give
 -- an absolute amount of time units, to benefit slow actors more.
 effectInsertMove :: MonadServerAtomic m
                  => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
@@ -984,7 +984,7 @@ effectInsertMove execSfx nDm source target = do
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max power0 1  -- KISS, avoid special case
       actorTurn = ticksPerMeter $ gearSpeed actorMaxSk
-      t = timeDeltaScale actorTurn (-power)
+      t = timeDeltaScale (timeDeltaPercent actorTurn 10) (-power)
   if | bproj tb -> return UseDud  -- shortcut for speed
      | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
