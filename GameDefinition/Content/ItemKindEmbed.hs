@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath]
 
-scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -315,6 +315,21 @@ shallowWater = ItemKind
   , idamage  = 0
   , iaspects = [SetFlag Durable]
   , ieffects = [ParalyzeInWater 2]
+  , idesc    = ""
+  , ikit     = []
+  }
+straightPath = ItemKind
+  { isymbol  = '.'
+  , iname    = "straight path"
+  , ifreq    = [("straight path", 1)]
+  , iflavour = zipFancy [BrRed]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "propel"
+  , iweight  = 10000
+  , idamage  = 0
+  , iaspects = [SetFlag Durable]
+  , ieffects = [InsertMove 2]
   , idesc    = ""
   , ikit     = []
   }
