@@ -204,20 +204,6 @@ strongestSlot discoBenefit eqpSlot is =
 valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
 valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
   case eqpSlot of
-    EqpSlotMiscBonus ->
-      aTimeout  -- usually better items have longer timeout
-      + Ability.getSk Ability.SkMaxCalm aSkills
-      + Ability.getSk Ability.SkSmell aSkills
-      + Ability.getSk Ability.SkNocto aSkills
-          -- powerful, but hard to boost over aSight
-    EqpSlotHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
-    EqpSlotArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
-    EqpSlotArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
-    EqpSlotMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
-    EqpSlotSpeed -> Ability.getSk Ability.SkSpeed aSkills
-    EqpSlotSight -> Ability.getSk Ability.SkSight aSkills
-    EqpSlotLightSource -> Ability.getSk Ability.SkShine aSkills
-    EqpSlotWeapon -> error $ "" `showFailure` arItem
     EqpSlotMove -> Ability.getSk Ability.SkMove aSkills
     EqpSlotMelee -> Ability.getSk Ability.SkMelee aSkills
     EqpSlotDisplace -> Ability.getSk Ability.SkDisplace aSkills
@@ -228,6 +214,20 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
     EqpSlotApply -> Ability.getSk Ability.SkApply aSkills
     EqpSlotSwimming -> Ability.getSk Ability.SkSwimming aSkills
     EqpSlotFlying -> Ability.getSk Ability.SkFlying aSkills
+    EqpSlotHurtMelee -> Ability.getSk Ability.SkHurtMelee aSkills
+    EqpSlotArmorMelee -> Ability.getSk Ability.SkArmorMelee aSkills
+    EqpSlotArmorRanged -> Ability.getSk Ability.SkArmorRanged aSkills
+    EqpSlotMaxHP -> Ability.getSk Ability.SkMaxHP aSkills
+    EqpSlotSpeed -> Ability.getSk Ability.SkSpeed aSkills
+    EqpSlotSight -> Ability.getSk Ability.SkSight aSkills
+    EqpSlotShine -> Ability.getSk Ability.SkShine aSkills
+    EqpSlotMiscBonus ->
+      aTimeout  -- usually better items have longer timeout
+      + Ability.getSk Ability.SkMaxCalm aSkills
+      + Ability.getSk Ability.SkSmell aSkills
+      + Ability.getSk Ability.SkNocto aSkills
+          -- powerful, but hard to boost over aSight
+    EqpSlotWeapon -> error $ "" `showFailure` arItem
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =

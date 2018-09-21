@@ -310,6 +310,8 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkMoveItem p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkProject p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkApply p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkSwimming p -> Dice.meanDice p
+    IK.AddSkill Ability.SkFlying p -> Dice.meanDice p
     IK.AddSkill Ability.SkHurtMelee p -> Dice.meanDice p  -- offence favoured
     IK.AddSkill Ability.SkArmorMelee p -> Dice.meanDice p / 4
                                               -- only partial protection
@@ -326,8 +328,6 @@ aspectToBenefit asp =
                                        -- > sight + light; stealth, slots
     IK.AddSkill Ability.SkHearing p -> Dice.meanDice p * 2
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
-    IK.AddSkill Ability.SkSwimming p -> Dice.meanDice p
-    IK.AddSkill Ability.SkFlying p -> Dice.meanDice p
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere

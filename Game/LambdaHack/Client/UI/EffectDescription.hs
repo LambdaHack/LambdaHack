@@ -147,15 +147,6 @@ detectToVerb d = case d of
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of
-  EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."
-  EqpSlotHurtMelee -> "Veteran melee fighters are known to devote equipment slot to it."
-  EqpSlotArmorMelee -> "Worn by people in risk of melee wounds."
-  EqpSlotArmorRanged -> "People scared of shots in the dark wear it."
-  EqpSlotMaxHP -> "The frail wear it to increase their Hit Point capacity."
-  EqpSlotSpeed -> "The slughish equip it to speed up their whole life."
-  EqpSlotSight -> "The short-sighted wear it to spot their demise sooner."
-  EqpSlotLightSource -> "Explorers brave enough to highlight themselves put it in their equipment."
-  EqpSlotWeapon -> "Melee fighters pick it for their weapon combo."
   EqpSlotMove -> "Those unskilled in movement equip it."
   EqpSlotMelee -> "Those unskilled in melee equip it."
   EqpSlotDisplace -> "Those unskilled in displacing equip it."
@@ -166,6 +157,15 @@ slotToSentence es = case es of
   EqpSlotApply -> "Those unskilled in applying items equip it."
   EqpSlotSwimming -> "Useful to any that wade or swim in water."
   EqpSlotFlying -> "Those not afraid to fly, put it on."
+  EqpSlotHurtMelee -> "Veteran melee fighters are known to devote equipment slot to it."
+  EqpSlotArmorMelee -> "Worn by people in risk of melee wounds."
+  EqpSlotArmorRanged -> "People scared of shots in the dark wear it."
+  EqpSlotMaxHP -> "The frail wear it to increase their Hit Point capacity."
+  EqpSlotSpeed -> "The slughish equip it to speed up their whole life."
+  EqpSlotSight -> "The short-sighted wear it to spot their demise sooner."
+  EqpSlotShine -> "Explorers brave enough to highlight themselves put it in their equipment."
+  EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."
+  EqpSlotWeapon -> "Melee fighters pick it for their weapon combo."
 
 skillName :: Skill -> Text
 skillName SkMove = "move skill"
@@ -176,6 +176,8 @@ skillName SkWait = "wait skill"
 skillName SkMoveItem = "manage items skill"
 skillName SkProject = "fling skill"
 skillName SkApply = "apply skill"
+skillName SkSwimming = "swimming ability"
+skillName SkFlying = "flying ability"
 skillName SkHurtMelee = "to melee damage"
 skillName SkArmorMelee = "melee armor"
 skillName SkArmorRanged = "ranged armor"
@@ -188,8 +190,6 @@ skillName SkShine = "shine radius"
 skillName SkNocto = "night vision radius"
 skillName SkHearing = "hearing radius"
 skillName SkAggression = "aggression level"
-skillName SkSwimming = "swimming ability"
-skillName SkFlying = "flying ability"
 
 skillDesc :: Skill -> Text
 skillDesc skill =
@@ -204,6 +204,8 @@ skillDesc skill =
     SkMoveItem -> "determines whether the character can pick up items and manage inventory."
     SkProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
     SkApply -> "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+    SkSwimming -> "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
+    SkFlying -> "is the degree of avoidance of bad effects of any hazards spread on the ground."
     SkHurtMelee -> "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
     SkArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
     SkArmorRanged -> "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
@@ -216,8 +218,6 @@ skillDesc skill =
     SkNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkHearing -> "is the limit of hearing. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
-    SkSwimming -> "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
-    SkFlying -> "is the degree of avoidance of bad effects of any hazards spread on the ground."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
@@ -239,6 +239,8 @@ skillToDecorator skill b t =
     SkMoveItem -> tshow t
     SkProject -> tshow t
     SkApply -> tshow t
+    SkSwimming -> tshow t
+    SkFlying -> tshow t
     SkHurtMelee -> tshow200 t <> "%"
     SkArmorMelee -> "[" <> tshow200 t <> "%]"
     SkArmorRanged -> "{" <> tshow200 t <> "%}"
@@ -257,8 +259,6 @@ skillToDecorator skill b t =
     SkNocto -> tshowRadius (max 0 t)
     SkHearing -> tshowRadius (max 0 t)
     SkAggression -> tshow t
-    SkSwimming -> tshow t
-    SkFlying -> tshow t
 
 statSlots :: [Skill]
 statSlots = [SkHurtMelee .. SkFlying] ++ [SkMove .. SkApply]
@@ -284,6 +284,8 @@ kindAspectToSuffix aspect =
     AddSkill SkMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
     AddSkill SkProject t -> wrapInParens $ affixDice t <+> "fling"
     AddSkill SkApply t -> wrapInParens $ affixDice t <+> "apply"
+    AddSkill SkSwimming t -> wrapInParens $ affixDice t <+> "swimming"
+    AddSkill SkFlying t -> wrapInParens $ affixDice t <+> "flying"
     AddSkill SkHurtMelee _ ->
       ""  -- printed together with dice, even if dice is zero
     AddSkill SkArmorMelee t -> "[" <> affixDice t <> "%]"
@@ -297,8 +299,6 @@ kindAspectToSuffix aspect =
     AddSkill SkNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddSkill SkHearing t -> wrapInParens $ affixDice t <+> "hearing"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
-    AddSkill SkSwimming t -> wrapInParens $ affixDice t <+> "swimming"
-    AddSkill SkFlying t -> wrapInParens $ affixDice t <+> "flying"
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"

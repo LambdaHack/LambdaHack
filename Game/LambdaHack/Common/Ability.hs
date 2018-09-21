@@ -35,6 +35,8 @@ data Skill =
   | SkProject
   | SkApply
   -- Assorted abilities.
+  | SkSwimming
+  | SkFlying
   | SkHurtMelee
   | SkArmorMelee
   | SkArmorRanged
@@ -47,8 +49,6 @@ data Skill =
   | SkNocto
   | SkHearing
   | SkAggression
-  | SkSwimming
-  | SkFlying
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities. These are cumulative from actor
@@ -109,16 +109,7 @@ instance Hashable Tactic
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
-    EqpSlotMiscBonus
-  | EqpSlotHurtMelee
-  | EqpSlotArmorMelee
-  | EqpSlotArmorRanged
-  | EqpSlotMaxHP
-  | EqpSlotSpeed
-  | EqpSlotSight
-  | EqpSlotLightSource
-  | EqpSlotWeapon
-  | EqpSlotMove
+    EqpSlotMove
   | EqpSlotMelee
   | EqpSlotDisplace
   | EqpSlotAlter
@@ -128,6 +119,15 @@ data EqpSlot =
   | EqpSlotApply
   | EqpSlotSwimming
   | EqpSlotFlying
+  | EqpSlotHurtMelee
+  | EqpSlotArmorMelee
+  | EqpSlotArmorRanged
+  | EqpSlotMaxHP
+  | EqpSlotSpeed
+  | EqpSlotSight
+  | EqpSlotShine
+  | EqpSlotMiscBonus
+  | EqpSlotWeapon
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData Skill
