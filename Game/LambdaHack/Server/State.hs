@@ -31,6 +31,7 @@ import Game.LambdaHack.Server.ServerOptions
 data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
   , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
+  , strajPushedBy :: ActorPushedBy  -- ^ culprits for actors with trajectories
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
@@ -68,12 +69,16 @@ data StateServer = StateServer
 type ActorTime =
   EM.EnumMap FactionId (EM.EnumMap LevelId (EM.EnumMap ActorId Time))
 
+-- | Record who last propelled a given actor with trajectory.
+type ActorPushedBy = EM.EnumMap ActorId ActorId
+
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
     { sactorTime = EM.empty
     , strajTime = EM.empty
+    , strajPushedBy = EM.empty
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
@@ -124,6 +129,7 @@ instance Binary StateServer where
   put StateServer{..} = do
     put sactorTime
     put strajTime
+    put strajPushedBy
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
@@ -139,6 +145,7 @@ instance Binary StateServer where
   get = do
     sactorTime <- get
     strajTime <- get
+    strajPushedBy <- get
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get

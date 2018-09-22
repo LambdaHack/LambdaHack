@@ -1390,8 +1390,9 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
         -- Reset flying time to now, so that the (new) push happens ASAP.
         localTime <- getsState $ getLocalTime (blid tb)
         modifyServer $ \ser ->
-          ser {strajTime = updateActorTime (bfid tb) (blid tb) target localTime
-                           $ strajTime ser}
+          ser { strajTime = updateActorTime (bfid tb) (blid tb) target localTime
+                            $ strajTime ser
+              , strajPushedBy = EM.insert target source $ strajPushedBy ser }
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m

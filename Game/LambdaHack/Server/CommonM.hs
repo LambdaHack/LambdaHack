@@ -341,7 +341,7 @@ projectBla source pos rest iid cstore blast = do
     Just kit@(_, it) -> do
       let delay = if IK.iweight itemKind == 0 then timeTurn else timeClip
           btime = absoluteTimeAdd delay localTime
-      addProjectile pos rest iid kit lid (bfid sb) btime
+      addProjectile source pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem False iid itemBase (1, take 1 it) c
 
@@ -374,20 +374,23 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   return aid
 
 addProjectile :: MonadServerAtomic m
-              => Point -> [Point] -> ItemId -> ItemQuant -> LevelId -> FactionId
-              -> Time
+              => ActorId -> Point -> [Point] -> ItemId -> ItemQuant -> LevelId
+              -> FactionId -> Time
               -> m ()
-addProjectile bpos rest iid (_, it) blid bfid btime = do
+addProjectile originator pos rest iid (_, it) lid fid time = do
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       (trajectory, (speed, _)) =
-        IA.itemTrajectory arItem (itemKind itemFull) (bpos : rest)
+        IA.itemTrajectory arItem (itemKind itemFull) (pos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
       tweakBody b = b { bhp = oneM
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it) }
-  void $ addActorIid iid itemFull True bfid bpos blid tweakBody btime
+  aid <- addActorIid iid itemFull True fid pos lid tweakBody
+  modifyServer $ \ser ->
+    ser { strajTime = updateActorTime fid lid aid time $ strajTime ser
+        , strajPushedBy = EM.insert aid originator $ strajPushedBy ser }
 
 addNonProjectile :: MonadServerAtomic m
                  => Bool -> ItemId -> ItemFullKit -> FactionId -> Point
@@ -399,14 +402,18 @@ addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
                                 then bcalm b * 2 `div` 3 - xM 3
                                   -- will summon in 3 turns, if calm regenerates
                                 else bcalm b }
-  addActorIid trunkId itemFull False fid pos lid tweakBody time
+  aid <- addActorIid trunkId itemFull False fid pos lid tweakBody
+  -- We assume actor is never born pushed.
+  modifyServer $ \ser ->
+    ser {sactorTime = updateActorTime fid lid aid time $ sactorTime ser}
+  return aid
 
 addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
-            -> (Actor -> Actor) -> Time
+            -> (Actor -> Actor)
             -> m ActorId
 addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
-            bproj bfid pos lid tweakBody time = do
+            bproj fid pos lid tweakBody = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let arItem = itemAspect itemDisco
       hp = xM (max 2 $ IA.getSkill Ability.SkMaxHP arItem) `div` 2
@@ -426,10 +433,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       boostFact = not bproj
                   && if diffBonusCoeff > 0
                      then any (hasUIorEscapes . snd)
-                              (filter (\(fi, fa) -> isFriend fi fa bfid)
+                              (filter (\(fi, fa) -> isFriend fi fa fid)
                                       (EM.assocs factionD))
                      else any (hasUIorEscapes . snd)
-                              (filter (\(fi, fa) -> isFoe fi fa bfid)
+                              (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
       diffHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
                            then xM 999 - hp -- as much as UI can stand
@@ -437,16 +444,11 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
              | otherwise = hp
       bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
       healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
-      b = actorTemplate trunkId diffHP calm pos lid bfid bproj
+      b = actorTemplate trunkId diffHP calm pos lid fid bproj
       withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
       bodyTweaked = tweakBody withTrunk
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
-  -- We assume actor is never born pushed.
-  modifyServer $ \ser ->
-    if isJust $ btrajectory bodyTweaked
-    then ser {strajTime = updateActorTime bfid lid aid time $ strajTime ser}
-    else ser {sactorTime = updateActorTime bfid lid aid time $ sactorTime ser}
   execUpdAtomic $ UpdCreateActor aid bodyTweaked [(trunkId, itemBase)]
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.

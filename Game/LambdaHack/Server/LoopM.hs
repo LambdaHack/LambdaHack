@@ -374,9 +374,10 @@ hTrajectories aid = do
      | otherwise ->
        -- No longer fulfills criteria and was not removed above; remove him.
        modifyServer $ \ser ->
-         ser {strajTime =
-                EM.adjust (EM.adjust (EM.delete aid) (blid b1)) (bfid b1)
-                          (strajTime ser)}
+         ser { strajTime =
+                 EM.adjust (EM.adjust (EM.delete aid) (blid b1)) (bfid b1)
+                           (strajTime ser)
+             , strajPushedBy = EM.delete aid (strajPushedBy ser) }
   -- if @actorDying@ due to @bhp b <= 0@:
   -- If @b@ is a projectile, it means hits an actor or is hit by actor.
   -- Then the carried item is destroyed and that's all.
