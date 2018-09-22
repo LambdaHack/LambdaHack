@@ -400,6 +400,15 @@ advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 {-# INLINE advanceTrajectory #-}
 advanceTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
+  -- An approximation: if an actor in the chain pushes another
+  -- due to being pushed himself, he gets blamed anyway.
+  let findKiller aidPassive = do
+        aidActive <- getsServer $ (EM.! aidPassive) . strajPushedBy
+        bActive <- getsState $ getActorBody aidActive
+        if bproj bActive
+        then findKiller aidActive
+        else return aidActive
+  killer <- findKiller aid
   lvl <- getLevel $ blid b
   case btrajectory b of
     Just (d : lv, speed) -> do
@@ -409,6 +418,10 @@ advanceTrajectory aid b = do
         -- Hit clears trajectory of non-projectiles in @reqMelee@,
         -- so no need to do that here.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
+        when (null lv && bproj b) $
+          modifyServer $ \ser ->
+            ser {sanalytics = addKill KillDropLaunch killer (bfid b) (btrunk b)
+                              $ sanalytics ser}
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         case posToAidsLvl tpos lvl of
@@ -418,7 +431,10 @@ advanceTrajectory aid b = do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
         -- The second call of @actorDying@ above will catch the dead projectile.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        if bproj b then
+        if bproj b then do
+          modifyServer $ \ser ->
+            ser {sanalytics = addKill KillTileLaunch killer (bfid b) (btrunk b)
+                              $ sanalytics ser}
           -- Lose HP due to hitting an obstacle.
           when (bhp b > oneM) $
             execUpdAtomic $ UpdRefillHP aid minusM
