@@ -9,11 +9,12 @@
 -- influence the outcome of the evaluation.
 module Game.LambdaHack.Server.HandleRequestM
   ( handleRequestAI, handleRequestUI, handleRequestTimed, switchLeader
-  , reqMove, reqDisplace, reqAlterFail, reqGameDropAndExit, reqGameSaveAndExit
+  , reqMoveGeneric, reqDisplaceGeneric, reqAlterFail
+  , reqGameDropAndExit, reqGameSaveAndExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , execFailure, setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMelee, reqMeleeChecked, reqAlter
+  , affectSmell, reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
   , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, computeRndTimeout
   , reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
@@ -265,7 +266,10 @@ affectSmell aid = do
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
 reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
-reqMove source dir = do
+reqMove = reqMoveGeneric True
+
+reqMoveGeneric :: MonadServerAtomic m => Bool -> ActorId -> Vector -> m ()
+reqMoveGeneric voluntary source dir = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
@@ -318,7 +322,7 @@ reqMove source dir = do
       mweapon <- pickWeaponServer source
       case mweapon of
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
-          reqMeleeChecked source target wp cstore
+          reqMeleeChecked voluntary source target wp cstore
         _ -> return ()  -- waiting, even if no @AbWait@ skill
     _ -> do
       -- Either the position is empty, or all involved actors are proj.
@@ -347,12 +351,12 @@ reqMelee :: MonadServerAtomic m
 reqMelee source target iid cstore = do
   actorSk <- currentSkillsServer source
   if Ability.getSk Ability.SkMelee actorSk > 0 then
-    reqMeleeChecked source target iid cstore
+    reqMeleeChecked True source target iid cstore
   else execFailure source (ReqMelee target iid cstore) MeleeUnskilled
 
 reqMeleeChecked :: MonadServerAtomic m
-                => ActorId -> ActorId -> ItemId -> CStore -> m ()
-reqMeleeChecked source target iid cstore = do
+                => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
+reqMeleeChecked voluntary source target iid cstore = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let req = ReqMelee target iid cstore
@@ -451,7 +455,10 @@ reqMeleeChecked source target iid cstore = do
 
 -- | Actor tries to swap positions with another.
 reqDisplace :: MonadServerAtomic m => ActorId -> ActorId -> m ()
-reqDisplace source target = do
+reqDisplace = reqDisplaceGeneric True
+
+reqDisplaceGeneric :: MonadServerAtomic m => Bool -> ActorId -> ActorId -> m ()
+reqDisplaceGeneric voluntary source target = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
@@ -478,7 +485,7 @@ reqDisplace source target = do
        mweapon <- pickWeaponServer source
        case mweapon of
          Just (wp, cstore) | abInSkill Ability.SkMelee ->
-           reqMeleeChecked source target wp cstore
+           reqMeleeChecked voluntary source target wp cstore
          _ -> return ()  -- waiting, even if no @AbWait@ skill
      | otherwise -> do
        let lid = blid sb
