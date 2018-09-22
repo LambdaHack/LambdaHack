@@ -84,36 +84,57 @@ type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
 
 -- | Statistics of past events concerning an actor.
 data Analytics = Analytics
-  { akillMelee  :: KillMap
-  , akillRanged :: KillMap
-  , akillBlast  :: KillMap
-  , akillPush   :: KillMap
-  , akillTile   :: KillMap
-  , akillCatch  :: KillMap
-  , akillLaunch :: KillMap  -- registered only when they hit an actor
+  { akillKineticMelee  :: KillMap
+  , akillKineticRanged :: KillMap
+  , akillKineticBlast  :: KillMap
+  , akillKineticPush   :: KillMap
+  , akillKineticTile   :: KillMap
+  , akillOtherMelee    :: KillMap
+  , akillOtherRanged   :: KillMap
+  , akillOtherBlast    :: KillMap
+  , akillOtherPush     :: KillMap
+  , akillOtherTile     :: KillMap
+  , akillActorLaunch   :: KillMap
+  , akillTileLaunch    :: KillMap
+  , akillDropLaunch    :: KillMap
+  , akillCatch         :: KillMap
   }
   deriving (Show, Generic)
 
 instance Binary Analytics
 
 data KillHow =
-    KillMelee
-  | KillRanged
-  | KillBlast
-  | KillPush
-  | KillTile
+    KillKineticMelee
+  | KillKineticRanged
+  | KillKineticBlast
+  | KillKineticPush
+  | KillKineticTile
+  | KillOtherMelee
+  | KillOtherRanged
+  | KillOtherBlast
+  | KillOtherPush
+  | KillOtherTile
+  | KillActorLaunch
+  | KillTileLaunch
+  | KillDropLaunch
   | KillCatch
-  | KillLaunch
 
 emptyAnalytics :: Analytics
 emptyAnalytics = Analytics
-  { akillMelee  = EM.empty
-  , akillRanged = EM.empty
-  , akillBlast  = EM.empty
-  , akillPush   = EM.empty
-  , akillTile   = EM.empty
-  , akillCatch  = EM.empty
-  , akillLaunch = EM.empty
+  { akillKineticMelee  = EM.empty
+  , akillKineticRanged = EM.empty
+  , akillKineticBlast  = EM.empty
+  , akillKineticPush   = EM.empty
+  , akillKineticTile   = EM.empty
+  , akillOtherMelee    = EM.empty
+  , akillOtherRanged   = EM.empty
+  , akillOtherBlast    = EM.empty
+  , akillOtherPush     = EM.empty
+  , akillOtherTile     = EM.empty
+  , akillActorLaunch   = EM.empty
+  , akillTileLaunch    = EM.empty
+  , akillDropLaunch    = EM.empty
+  , akillCatch         = EM.empty
   }
 
 alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
@@ -131,13 +152,34 @@ addKill :: KillHow -> ActorId -> FactionId -> ItemId
 {-# INLINE addKill #-}
 addKill killHow aid fid iid =
   let applyAtKill an = case killHow of
-        KillMelee -> an {akillMelee = alterIncrement fid iid $ akillMelee an}
-        KillRanged -> an {akillRanged = alterIncrement fid iid $ akillRanged an}
-        KillBlast -> an {akillBlast = alterIncrement fid iid $ akillBlast an}
-        KillPush -> an {akillPush = alterIncrement fid iid $ akillPush an}
-        KillTile -> an {akillTile = alterIncrement fid iid $ akillTile an}
-        KillCatch -> an {akillCatch = alterIncrement fid iid $ akillCatch an}
-        KillLaunch -> an {akillLaunch = alterIncrement fid iid $ akillLaunch an}
+        KillKineticMelee -> an {akillKineticMelee =
+          alterIncrement fid iid $ akillKineticMelee an}
+        KillKineticRanged -> an {akillKineticRanged =
+          alterIncrement fid iid $ akillKineticRanged an}
+        KillKineticBlast -> an {akillKineticBlast =
+          alterIncrement fid iid $ akillKineticBlast an}
+        KillKineticPush -> an {akillKineticPush =
+          alterIncrement fid iid $ akillKineticPush an}
+        KillKineticTile -> an {akillKineticTile =
+          alterIncrement fid iid $ akillKineticTile an}
+        KillOtherMelee -> an {akillOtherMelee =
+          alterIncrement fid iid $ akillOtherMelee an}
+        KillOtherRanged -> an {akillOtherRanged =
+          alterIncrement fid iid $ akillOtherRanged an}
+        KillOtherBlast -> an {akillOtherBlast =
+          alterIncrement fid iid $ akillOtherBlast an}
+        KillOtherPush -> an {akillOtherPush =
+          alterIncrement fid iid $ akillOtherPush an}
+        KillOtherTile -> an {akillOtherTile =
+          alterIncrement fid iid $ akillOtherTile an}
+        KillActorLaunch -> an {akillActorLaunch =
+          alterIncrement fid iid $ akillActorLaunch an}
+        KillTileLaunch -> an {akillTileLaunch =
+          alterIncrement fid iid $ akillTileLaunch an}
+        KillDropLaunch -> an {akillDropLaunch =
+          alterIncrement fid iid $ akillDropLaunch an}
+        KillCatch -> an {akillCatch =
+          alterIncrement fid iid $ akillCatch an}
       f Nothing = Just $ applyAtKill emptyAnalytics
       f (Just an) = Just $ applyAtKill an
   in EM.alter f aid

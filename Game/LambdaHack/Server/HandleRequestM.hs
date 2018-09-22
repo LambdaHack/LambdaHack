@@ -429,8 +429,8 @@ reqMeleeChecked voluntary source target iid cstore = do
         when (bhp tb <= oneM) $ do
           -- If projectile has too low HP to pierce, terminate its flight.
           let arWeapon = discoAspect EM.! iid
-              killHow | IA.isBlast arWeapon = KillBlast
-                      | otherwise = KillRanged
+              killHow | IA.isBlast arWeapon = KillKineticBlast
+                      | otherwise = KillKineticRanged
           haltTrajectory killHow target tb
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
@@ -459,7 +459,7 @@ reqMeleeChecked voluntary source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
-            haltTrajectory KillLaunch source sb2
+            haltTrajectory KillActorLaunch source sb2
         _ -> return ()
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.
