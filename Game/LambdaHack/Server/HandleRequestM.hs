@@ -363,13 +363,29 @@ reqMeleeChecked voluntary source target iid cstore = do
   if source == target then execFailure source req MeleeSelf
   else if not (checkAdjacent sb tb) then execFailure source req MeleeDistant
   else do
+    -- An approximation: if an actor in the chain pushes another
+    -- due to being pushed himself, he gets blamed anyway.
+    let findKiller aid = do
+          aid2 <- getsServer $ (EM.! aid) . strajPushedBy
+          b2 <- getsState $ getActorBody aid2
+          if bproj b2
+          then findKiller aid2
+          else return aid2
+    -- Blame for the first step in the chain is exact, based on @voluntary@.
+    killer <- if voluntary && not (bproj sb)
+              then return source
+              else findKiller source
     let sfid = bfid sb
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory
         -- so that it doesn't pretend to have hit a wall.
-        haltProjectile aid b = case btrajectory b of
-          btra@(Just (l, speed)) | not $ null l ->
+        haltTrajectory killHow aid b = case btrajectory b of
+          btra@(Just (l, speed)) | not $ null l -> do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
+            when (bproj b) $
+              modifyServer $ \ser ->
+                ser {sanalytics = addKill killHow killer tfid (btrunk tb)
+                                  $ sanalytics ser}
           _ -> return ()
     sfact <- getsState $ (EM.! sfid) . sfactionD
     discoAspect <- getsState sdiscoAspect
@@ -399,7 +415,7 @@ reqMeleeChecked voluntary source target iid cstore = do
           itemFull <- getsState $ itemToFull iid2
           discoverIfMinorEffects (CActor source CInv) iid2 (itemKindId itemFull)
         err -> error $ "" `showFailure` err
-      haltProjectile target tb
+      haltTrajectory KillCatch target tb
     else do
       if bproj sb && bproj tb then do
         -- Special case for collision of projectiles, because they just
@@ -410,9 +426,12 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- The source projectile terminates flight (unless pierces) later on.
         when (bhp tb > oneM) $
           execUpdAtomic $ UpdRefillHP target minusM
-        when (bhp tb <= oneM) $
+        when (bhp tb <= oneM) $ do
           -- If projectile has too low HP to pierce, terminate its flight.
-          haltProjectile target tb
+          let arWeapon = discoAspect EM.! iid
+              killHow | IA.isBlast arWeapon = KillBlast
+                      | otherwise = KillRanged
+          haltTrajectory killHow target tb
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
         -- the source part of the strike.
@@ -440,7 +459,7 @@ reqMeleeChecked voluntary source target iid cstore = do
           when (not (bproj sb2) || bhp sb2 <= oneM) $
             -- Non-projectiles can't pierce, so terminate their flight.
             -- If projectile has too low HP to pierce, ditto.
-            haltProjectile source sb2
+            haltTrajectory KillLaunch source sb2
         _ -> return ()
       -- The only way to start a war is to slap an enemy. Being hit by
       -- and hitting projectiles count as unintentional friendly fire.

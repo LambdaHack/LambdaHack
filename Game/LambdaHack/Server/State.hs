@@ -90,7 +90,7 @@ data Analytics = Analytics
   , akillPush   :: KillMap
   , akillTile   :: KillMap
   , akillCatch  :: KillMap
-  , akillLaunch :: KillMap
+  , akillLaunch :: KillMap  -- registered only when they hit an actor
   }
   deriving (Show, Generic)
 
