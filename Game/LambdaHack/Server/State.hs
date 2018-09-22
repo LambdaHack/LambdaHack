@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
-  ( StateServer(..), ActorTime
-  , emptyStateServer, updateActorTime, lookupActorTime, ageActor
+  ( StateServer(..)
+  , ActorTime, ActorPushedBy
+  , ActorAnalytics, KillMap, Analytics(..), KillHow(..)
+  , addKill, emptyStateServer, updateActorTime, lookupActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -12,6 +15,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
+import           GHC.Generics (Generic)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
@@ -32,6 +36,7 @@ data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
   , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
   , strajPushedBy :: ActorPushedBy  -- ^ culprits for actors with trajectories
+  , sanalytics    :: ActorAnalytics -- ^ various past events data for actors
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
@@ -72,6 +77,71 @@ type ActorTime =
 -- | Record who last propelled a given actor with trajectory.
 type ActorPushedBy = EM.EnumMap ActorId ActorId
 
+-- | Analytics data for each live actor.
+type ActorAnalytics = EM.EnumMap ActorId Analytics
+
+type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
+
+-- | Statistics of past events concerning an actor.
+data Analytics = Analytics
+  { akillMelee  :: KillMap
+  , akillRanged :: KillMap
+  , akillBlast  :: KillMap
+  , akillPush   :: KillMap
+  , akillTile   :: KillMap
+  , akillCatch  :: KillMap
+  , akillLaunch :: KillMap
+  }
+  deriving (Show, Generic)
+
+instance Binary Analytics
+
+data KillHow =
+    KillMelee
+  | KillRanged
+  | KillBlast
+  | KillPush
+  | KillTile
+  | KillCatch
+  | KillLaunch
+
+emptyAnalytics :: Analytics
+emptyAnalytics = Analytics
+  { akillMelee  = EM.empty
+  , akillRanged = EM.empty
+  , akillBlast  = EM.empty
+  , akillPush   = EM.empty
+  , akillTile   = EM.empty
+  , akillCatch  = EM.empty
+  , akillLaunch = EM.empty
+  }
+
+alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
+{-# NOINLINE alterIncrement #-}
+alterIncrement fid iid =
+  let f Nothing = Just $ EM.singleton iid 1
+      f (Just iidMap) = Just $ EM.alter g iid iidMap
+      g Nothing = Just 1
+      g (Just n) = Just $ n + 1
+  in EM.alter f fid
+
+addKill :: KillHow -> ActorId -> FactionId -> ItemId
+        -> ActorAnalytics
+        -> ActorAnalytics
+{-# INLINE addKill #-}
+addKill killHow aid fid iid =
+  let applyAtKill an = case killHow of
+        KillMelee -> an {akillMelee = alterIncrement fid iid $ akillMelee an}
+        KillRanged -> an {akillRanged = alterIncrement fid iid $ akillRanged an}
+        KillBlast -> an {akillBlast = alterIncrement fid iid $ akillBlast an}
+        KillPush -> an {akillPush = alterIncrement fid iid $ akillPush an}
+        KillTile -> an {akillTile = alterIncrement fid iid $ akillTile an}
+        KillCatch -> an {akillCatch = alterIncrement fid iid $ akillCatch an}
+        KillLaunch -> an {akillLaunch = alterIncrement fid iid $ akillLaunch an}
+      f Nothing = Just $ applyAtKill emptyAnalytics
+      f (Just an) = Just $ applyAtKill an
+  in EM.alter f aid
+
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
 emptyStateServer =
@@ -79,6 +149,7 @@ emptyStateServer =
     { sactorTime = EM.empty
     , strajTime = EM.empty
     , strajPushedBy = EM.empty
+    , sanalytics = EM.empty
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
@@ -130,6 +201,7 @@ instance Binary StateServer where
     put sactorTime
     put strajTime
     put strajPushedBy
+    put sanalytics
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
@@ -146,6 +218,7 @@ instance Binary StateServer where
     sactorTime <- get
     strajTime <- get
     strajPushedBy <- get
+    sanalytics <- get
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get
