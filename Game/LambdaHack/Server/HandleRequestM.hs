@@ -370,10 +370,10 @@ reqMeleeChecked source target iid cstore = do
     sfact <- getsState $ (EM.! sfid) . sfactionD
     discoAspect <- getsState sdiscoAspect
     let arItem = discoAspect EM.! btrunk tb
-    -- Only catch with appendages, never with weapons. Never steal trunk
-    -- from an already caught projectile or one with many items inside.
+    -- Only catch if braced. Never steal trunk from an already caught
+    -- projectile or one with many items inside.
     if bproj tb && EM.size (beqp tb) == 1 && not (IA.isBlast arItem)
-       && cstore == COrgan then do
+       && waitedLastTurn sb then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
       -- and the weapon (organ) is never destroyed, even if not durable.
