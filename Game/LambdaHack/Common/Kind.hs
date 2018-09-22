@@ -1,9 +1,10 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( ContentId, ContentData, COps(..)
-  , emptyCOps, okind, ouniqGroup, opick
+  , emptyCOps
+  , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
-  , olength
+  , olength, linearInterpolation
   ) where
 
 import Prelude ()
