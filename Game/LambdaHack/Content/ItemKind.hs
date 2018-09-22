@@ -46,7 +46,7 @@ data ItemKind = ItemKind
   , irarity  :: Rarity          -- ^ rarity on given depths
   , iverbHit :: MU.Part         -- ^ the verb for hitting
   , iweight  :: Int             -- ^ weight in grams
-  , idamage  :: Dice.Dice       -- ^ basic impact damage
+  , idamage  :: Dice.Dice       -- ^ basic kinetic damage
   , iaspects :: [Aspect]        -- ^ affect the actor continuously
   , ieffects :: [Effect]        -- ^ cause the effects when triggered
   , idesc    :: Text            -- ^ description

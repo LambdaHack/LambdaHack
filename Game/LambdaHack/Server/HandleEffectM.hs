@@ -2,13 +2,13 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( applyItem, meleeEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
+  ( applyItem, kineticEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
   , dropCStoreItem, highestImpression, dominateFidSfx
-  , pickDroppable, refillHP, cutCalm
+  , pickDroppable, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
-  , applyMeleeDamage, imperishableKit, itemEffectDisco, effectSem
+  , applyKineticDamage, refillHP, imperishableKit, itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
   , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
@@ -73,11 +73,11 @@ applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
-  meleeEffectAndDestroy aid aid iid c
+  kineticEffectAndDestroy aid aid iid c
 
-applyMeleeDamage :: MonadServerAtomic m
-                 => ActorId -> ActorId -> ItemId -> m Bool
-applyMeleeDamage source target iid = do
+applyKineticDamage :: MonadServerAtomic m
+                   => ActorId -> ActorId -> ItemId -> m Bool
+applyKineticDamage source target iid = do
   itemKind <- getsState $ getIidKindServer iid
   if IK.idamage itemKind == 0 then return False else do  -- speedup
     sb <- getsState $ getActorBody source
@@ -138,35 +138,35 @@ cutCalm target = do
   -- which is emitted when decreasing Calm by @minusM@.
   updateCalm target deltaCalm
 
--- Here melee damage is applied. This is necessary so that the same
+-- Here kinetic damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
-meleeEffectAndDestroy :: MonadServerAtomic m
-                      => ActorId -> ActorId -> ItemId -> Container -> m ()
-meleeEffectAndDestroy source target iid c = do
-  meleePerformed <- applyMeleeDamage source target iid
+kineticEffectAndDestroy :: MonadServerAtomic m
+                        => ActorId -> ActorId -> ItemId -> Container -> m ()
+kineticEffectAndDestroy source target iid c = do
+  kineticPerformed <- applyKineticDamage source target iid
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
       itemFull <- getsState $ itemToFull iid
       let IK.ItemKind{IK.ieffects} = itemKind itemFull
-      effectAndDestroy meleePerformed source target iid c False ieffects
+      effectAndDestroy kineticPerformed source target iid c False ieffects
                        (itemFull, kit)
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFullKit
                  -> m ()
-effectAndDestroy meleePerformed _ _ iid container periodic []
+effectAndDestroy kineticPerformed _ _ iid container periodic []
                  (itemFull@ItemFull{itemBase}, kit@(_, itemTimer)) =
   -- No identification occurs if effects are null. This case is also a speedup.
-  if meleePerformed then do  -- melee may cause item destruction
+  if kineticPerformed then do  -- kinetic may cause item destruction
     let (imperishable, kit2) =
           imperishableKit True periodic itemTimer itemFull kit
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
   else return ()
-effectAndDestroy meleePerformed source target iid container periodic effs
+effectAndDestroy kineticPerformed source target iid container periodic effs
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , kit@(itemK, itemTimer) ) = do
   let timeout = IA.aTimeout $ itemAspect itemDisco
@@ -195,10 +195,11 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     execUpdAtomic $ UpdTimeItem iid container itemTimer it2
   -- If the activation is not periodic, trigger at least the effects
   -- that are not recharging and so don't depend on @recharged@.
-  -- Also, if the item was meleed with, let it get destroyed, if perishable,
+  -- Also, if the item was kinetically hit with,
+  -- let it get destroyed, if perishable,
   -- and let it get identified, even if no effect was eventually triggered.
   -- Otherwise don't even id the item --- no risk of destruction, no id.
-  when (not periodic || recharged || meleePerformed) $ do
+  when (not periodic || recharged || kineticPerformed) $ do
     -- We have to destroy the item before the effect affects the item
     -- or the actor holding it or standing on it (later on we could
     -- lose track of the item and wouldn't be able to destroy it) .
@@ -213,7 +214,7 @@ effectAndDestroy meleePerformed source target iid container periodic effs
     -- so we don't pass @c@ along.
     triggeredEffect <- itemEffectDisco source target iid itemKind container
                                        recharged periodic effs
-    let triggered = if meleePerformed then UseUp else triggeredEffect
+    let triggered = if kineticPerformed then UseUp else triggeredEffect
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
@@ -248,7 +249,7 @@ itemEffectEmbedded aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
-  meleeEffectAndDestroy aid aid iid c
+  kineticEffectAndDestroy aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
@@ -1445,7 +1446,7 @@ effectActivateInv :: MonadServerAtomic m
 effectActivateInv execSfx target symbol = do
   let c = CActor target CInv
   effectTransformContainer execSfx symbol c $ \iid _ ->
-    meleeEffectAndDestroy target target iid c
+    kineticEffectAndDestroy target target iid c
 
 effectTransformContainer :: forall m. MonadServerAtomic m
                          => m () -> Char -> Container

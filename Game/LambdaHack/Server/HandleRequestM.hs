@@ -439,8 +439,8 @@ reqMeleeChecked voluntary source target iid cstore = do
         let c = CActor source cstore
         -- Msgs inside @itemEffect@ describe the target part of the strike.
         -- If any effects and aspects, this is also where they are identified.
-        -- Here also the melee damage is applied, before any effects are.
-        meleeEffectAndDestroy source target iid c
+        -- Here also the kinetic damage is applied, before any effects are.
+        kineticEffectAndDestroy source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do
