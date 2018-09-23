@@ -363,10 +363,11 @@ reqMeleeChecked voluntary source target iid cstore = do
   if source == target then execFailure source req MeleeSelf
   else if not (checkAdjacent sb tb) then execFailure source req MeleeDistant
   else do
-    -- Blame for the first step in the chain is exact, based on @voluntary@.
-    killer <- if voluntary && not (bproj sb)
-              then return source
-              else findKiller source
+    -- If @voluntary@ is set, blame is exact, otherwise, an approximation.
+    killer <- if | voluntary -> assert (not (bproj sb)) $ return source
+                 | bproj sb -> getsServer $ EM.findWithDefault source source
+                               . strajPushedBy
+                 | otherwise -> return source
     let sfid = bfid sb
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory
@@ -843,7 +844,7 @@ reqProject source tpxy eps iid cstore = do
   let calmE = calmEnough b actorMaxSk
   if cstore == CSha && not calmE then execFailure source req ItemNotCalm
   else do
-    mfail <- projectFail source tpxy eps False iid cstore False
+    mfail <- projectFail source source tpxy eps False iid cstore False
     maybe (return ()) (execFailure source req) mfail
 
 -- * ReqApply

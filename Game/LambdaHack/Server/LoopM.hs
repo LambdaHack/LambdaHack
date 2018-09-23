@@ -400,7 +400,6 @@ advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 {-# INLINE advanceTrajectory #-}
 advanceTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
-  killer <- findKiller aid
   lvl <- getLevel $ blid b
   case btrajectory b of
     Just (d : lv, speed) -> do
@@ -410,7 +409,8 @@ advanceTrajectory aid b = do
         -- Hit clears trajectory of non-projectiles in @reqMelee@,
         -- so no need to do that here.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
-        when (null lv && bproj b) $
+        when (null lv && bproj b) $ do
+          killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
           modifyServer $ \ser ->
             ser {sanalytics = addKill KillDropLaunch killer (bfid b) (btrunk b)
                               $ sanalytics ser}
@@ -424,6 +424,7 @@ advanceTrajectory aid b = do
         -- The second call of @actorDying@ above will catch the dead projectile.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
         if bproj b then do
+          killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
           modifyServer $ \ser ->
             ser {sanalytics = addKill KillTileLaunch killer (bfid b) (btrunk b)
                               $ sanalytics ser}

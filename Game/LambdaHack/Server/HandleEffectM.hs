@@ -294,7 +294,7 @@ effectSem source target iid c recharged periodic effect = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
   case effect of
     IK.Burn nDm -> effectBurn nDm source target
-    IK.Explode t -> effectExplode execSfx t target
+    IK.Explode t -> effectExplode execSfx t source target
     IK.RefillHP p -> effectRefillHP p source target
     IK.RefillCalm p -> effectRefillCalm execSfx p source target
     IK.Dominate -> effectDominate source target
@@ -353,8 +353,8 @@ effectBurn nDm source target = do
 -- ** Explode
 
 effectExplode :: MonadServerAtomic m
-              => m () -> GroupName ItemKind -> ActorId -> m UseResult
-effectExplode execSfx cgroup target = do
+              => m () -> GroupName ItemKind -> ActorId -> ActorId -> m UseResult
+effectExplode execSfx cgroup source target = do
   execSfx
   tb <- getsState $ getActorBody target
   let itemFreq = [(cgroup, 1)]
@@ -409,7 +409,8 @@ effectExplode execSfx cgroup target = do
                   $ take 8 (drop ((k100 + fuzz) `mod` 8) $ cycle psFuzz)]
         forM_ ps $ \(centerRaw, tpxy) -> do
           let center = centerRaw && itemK >= 8  -- if few, keep them regular
-          mfail <- projectFail target tpxy veryrandom center iid COrgan True
+          mfail <- projectFail source target tpxy veryrandom center
+                               iid COrgan True
           case mfail of
             Nothing -> return ()
             Just ProjectBlockTerrain -> return ()
@@ -1359,13 +1360,13 @@ effectSendFlying :: MonadServerAtomic m
                  -> m UseResult
 effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
   v <- sendFlyingVector source target modePush
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let eps = 0
       fpos = bpos tb `shift` v
   if bhp tb <= 0 then  -- avoid dragging around corpses
     return UseDud  -- the impact never manifested
   else if waitedLastTurn tb then do
-    sb <- getsState $ getActorBody source
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on
   else do
@@ -1390,10 +1391,20 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
         execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
         -- Reset flying time to now, so that the (new) push happens ASAP.
         localTime <- getsState $ getLocalTime (blid tb)
+        -- If propeller is a projectile, it pushes involuntarily,
+        -- so its originator is to blame.
+        -- However, we can't easily see whether a pushed non-projectile actor
+        -- pushed another due to colliding or voluntarily, so we assign
+        -- blame to him.
+        originator <- if bproj sb
+                      then getsServer $ EM.findWithDefault source source
+                                        . strajPushedBy
+                      else return source
         modifyServer $ \ser ->
           ser { strajTime = updateActorTime (bfid tb) (blid tb) target localTime
                             $ strajTime ser
-              , strajPushedBy = EM.insert target source $ strajPushedBy ser }
+              , strajPushedBy = EM.insert target originator
+                                $ strajPushedBy ser }
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m

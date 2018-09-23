@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.CommonM
   , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
-  , findKiller, addKill
+  , addKill
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
@@ -264,7 +264,8 @@ recomputeCachePer fid lid = do
 -- The missile item is removed from the store only if the projection
 -- went into effect (no failure occured).
 projectFail :: MonadServerAtomic m
-            => ActorId    -- ^ actor projecting the item (is on current lvl)
+            => ActorId    -- ^ actor causing the projection
+            -> ActorId    -- ^ actor projecting the item (is on current lvl)
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
             -> Bool       -- ^ whether to start at the source position
@@ -272,7 +273,7 @@ projectFail :: MonadServerAtomic m
             -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
-projectFail source tpxy eps center iid cstore blast = do
+projectFail propeller source tpxy eps center iid cstore blast = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -310,27 +311,29 @@ projectFail source tpxy eps center iid cstore blast = do
                 if not $ all (bproj . snd) lab
                 then if blast && bproj sb then do
                        -- Hit the blocking actor.
-                       projectBla source spos (pos:rest) iid cstore blast
+                       projectBla propeller source spos (pos:rest)
+                                  iid cstore blast
                        return Nothing
                      else return $ Just ProjectBlockActor
                 else do
                   -- Make the explosion less regular and weaker at edges.
                   if blast && bproj sb && center then
                     -- Start in the center, not around.
-                    projectBla source spos (pos:rest) iid cstore blast
+                    projectBla propeller source spos (pos:rest) iid cstore blast
                   else
-                    projectBla source pos rest iid cstore blast
+                    projectBla propeller source pos rest iid cstore blast
                   return Nothing
 
 projectBla :: MonadServerAtomic m
-           => ActorId    -- ^ actor projecting the item (is on current lvl)
+           => ActorId    -- ^ actor causing the projection
+           -> ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ starting point of the projectile
            -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> Bool       -- ^ whether the item is a blast
            -> m ()
-projectBla source pos rest iid cstore blast = do
+projectBla propeller source pos rest iid cstore blast = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
@@ -342,7 +345,7 @@ projectBla source pos rest iid cstore blast = do
     Just kit@(_, it) -> do
       let delay = if IK.iweight itemKind == 0 then timeTurn else timeClip
           btime = absoluteTimeAdd delay localTime
-      addProjectile source pos rest iid kit lid (bfid sb) btime
+      addProjectile propeller pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
       execUpdAtomic $ UpdLoseItem False iid itemBase (1, take 1 it) c
 
@@ -378,7 +381,7 @@ addProjectile :: MonadServerAtomic m
               => ActorId -> Point -> [Point] -> ItemId -> ItemQuant -> LevelId
               -> FactionId -> Time
               -> m ()
-addProjectile originator pos rest iid (_, it) lid fid time = do
+addProjectile propeller pos rest iid (_, it) lid fid time = do
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       (trajectory, (speed, _)) =
@@ -389,6 +392,16 @@ addProjectile originator pos rest iid (_, it) lid fid time = do
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it) }
   aid <- addActorIid iid itemFull True fid pos lid tweakBody
+  bp <- getsState $ getActorBody propeller
+  -- If propeller is a projectile, it may produce other projectiles, e.g.,
+  -- by exploding, so it's not voluntary, so others are to blame.
+  -- However, we can't easily see whether a pushed non-projectile actor
+  -- produced a projectile due to colliding or voluntarily, so we assign
+  -- blame to him.
+  originator <- if bproj bp
+                then getsServer $ EM.findWithDefault propeller propeller
+                                  . strajPushedBy
+                else return propeller
   modifyServer $ \ser ->
     ser { strajTime = updateActorTime fid lid aid time $ strajTime ser
         , strajPushedBy = EM.insert aid originator $ strajPushedBy ser }
@@ -588,21 +601,6 @@ removeSleepSingle aid = do
   nAll <- removeConditionSingle "asleep" aid
   when (nAll == 0) $
     execUpdAtomic $ UpdWaitActor aid WWake WWatch
-
--- An approximation: if an actor in the chain pushes another
--- due to being pushed himself, he gets blamed anyway.
-findKiller :: MonadServerAtomic m => ActorId -> m ActorId
-findKiller aidPassive = do
-  maidActive <- getsServer $ EM.lookup aidPassive . strajPushedBy
-  case maidActive of
-    Just aidActive -> do
-      actorD <- getsState sactorD
-      case EM.lookup aidActive actorD of
-        Just bActive -> if bproj bActive
-                        then findKiller aidActive
-                        else return aidActive
-        Nothing -> return aidPassive
-    Nothing -> return aidPassive  -- originator of the proj already dead
 
 alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
 {-# NOINLINE alterIncrement #-}
