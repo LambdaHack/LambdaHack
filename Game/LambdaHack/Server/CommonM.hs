@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.CommonM
   , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
-  , addKill
+  , addKillToAnalytics
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
@@ -648,3 +648,12 @@ addKill killHow aid fid iid =
       f Nothing = Just $ applyAtKill emptyAnalytics
       f (Just an) = Just $ applyAtKill an
   in EM.alter f aid
+
+addKillToAnalytics :: MonadServerAtomic m
+                   => KillHow -> ActorId -> FactionId -> ItemId -> m ()
+{-# INLINE addKillToAnalytics #-}
+addKillToAnalytics killHow aid fid iid = do
+  alive <- getsState $ (EM.member aid) . sactorD
+  when alive $
+    modifyServer $ \ser ->
+      ser {sanalytics = addKill killHow aid fid iid $ sanalytics ser}

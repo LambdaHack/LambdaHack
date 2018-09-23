@@ -57,6 +57,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                   (strajTime ser)
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
+          , sanalytics = EM.delete aid (sanalytics ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
   UpdCreateItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
@@ -92,6 +93,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajTime = EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                                   (strajTime ser)
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
+          , sanalytics = EM.delete aid (sanalytics ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
   UpdSpotItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect

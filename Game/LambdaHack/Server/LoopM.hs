@@ -411,9 +411,7 @@ advanceTrajectory aid b = do
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
         when (null lv && bproj b) $ do
           killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-          modifyServer $ \ser ->
-            ser {sanalytics = addKill KillDropLaunch killer (bfid b) (btrunk b)
-                              $ sanalytics ser}
+          addKillToAnalytics KillDropLaunch killer (bfid b) (btrunk b)
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         case posToAidsLvl tpos lvl of
@@ -425,9 +423,7 @@ advanceTrajectory aid b = do
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
         if bproj b then do
           killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-          modifyServer $ \ser ->
-            ser {sanalytics = addKill KillTileLaunch killer (bfid b) (btrunk b)
-                              $ sanalytics ser}
+          addKillToAnalytics KillTileLaunch killer (bfid b) (btrunk b)
           -- Lose HP due to hitting an obstacle.
           when (bhp b > oneM) $
             execUpdAtomic $ UpdRefillHP aid minusM

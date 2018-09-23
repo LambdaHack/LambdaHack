@@ -375,10 +375,7 @@ reqMeleeChecked voluntary source target iid cstore = do
         haltTrajectory killHow aid b = case btrajectory b of
           btra@(Just (l, speed)) | not $ null l -> do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
-            when (bproj b) $
-              modifyServer $ \ser ->
-                ser {sanalytics = addKill killHow killer tfid (btrunk tb)
-                                  $ sanalytics ser}
+            when (bproj b) $ addKillToAnalytics killHow killer tfid (btrunk tb)
           _ -> return ()
     sfact <- getsState $ (EM.! sfid) . sfactionD
     discoAspect <- getsState sdiscoAspect
