@@ -1,10 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
-  ( StateServer(..)
-  , ActorTime, ActorPushedBy
-  , ActorAnalytics, KillMap, Analytics(..), KillHow(..)
-  , emptyStateServer, emptyAnalytics, updateActorTime, lookupActorTime, ageActor
+  ( StateServer(..), ActorTime, ActorPushedBy
+  , emptyStateServer, updateActorTime, lookupActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -15,11 +12,11 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import           GHC.Generics (Generic)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Analytics
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
@@ -76,60 +73,6 @@ type ActorTime =
 
 -- | Record who last propelled a given actor with trajectory.
 type ActorPushedBy = EM.EnumMap ActorId ActorId
-
--- | Analytics data for each live actor.
-type ActorAnalytics = EM.EnumMap ActorId Analytics
-
-type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
-
--- | Statistics of past events concerning an actor.
-data Analytics = Analytics
-  { akillKineticMelee  :: KillMap
-  , akillKineticRanged :: KillMap
-  , akillKineticBlast  :: KillMap
-  , akillKineticPush   :: KillMap
-  , akillOtherMelee    :: KillMap
-  , akillOtherRanged   :: KillMap
-  , akillOtherBlast    :: KillMap
-  , akillOtherPush     :: KillMap
-  , akillActorLaunch   :: KillMap
-  , akillTileLaunch    :: KillMap
-  , akillDropLaunch    :: KillMap
-  , akillCatch         :: KillMap
-  }
-  deriving (Show, Generic)
-
-instance Binary Analytics
-
-data KillHow =
-    KillKineticMelee
-  | KillKineticRanged
-  | KillKineticBlast
-  | KillKineticPush
-  | KillOtherMelee
-  | KillOtherRanged
-  | KillOtherBlast
-  | KillOtherPush
-  | KillActorLaunch
-  | KillTileLaunch
-  | KillDropLaunch
-  | KillCatch
-
-emptyAnalytics :: Analytics
-emptyAnalytics = Analytics
-  { akillKineticMelee  = EM.empty
-  , akillKineticRanged = EM.empty
-  , akillKineticBlast  = EM.empty
-  , akillKineticPush   = EM.empty
-  , akillOtherMelee    = EM.empty
-  , akillOtherRanged   = EM.empty
-  , akillOtherBlast    = EM.empty
-  , akillOtherPush     = EM.empty
-  , akillActorLaunch   = EM.empty
-  , akillTileLaunch    = EM.empty
-  , akillDropLaunch    = EM.empty
-  , akillCatch         = EM.empty
-  }
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer

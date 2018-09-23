@@ -167,6 +167,7 @@ library
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
                       Game.LambdaHack.Common.Ability
+                      Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
