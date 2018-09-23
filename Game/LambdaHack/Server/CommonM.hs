@@ -596,10 +596,12 @@ findKiller aidPassive = do
   maidActive <- getsServer $ EM.lookup aidPassive . strajPushedBy
   case maidActive of
     Just aidActive -> do
-      bActive <- getsState $ getActorBody aidActive
-      if bproj bActive
-      then findKiller aidActive
-      else return aidActive
+      actorD <- getsState sactorD
+      case EM.lookup aidActive actorD of
+        Just bActive -> if bproj bActive
+                        then findKiller aidActive
+                        else return aidActive
+        Nothing -> return aidPassive
     Nothing -> return aidPassive  -- originator of the proj already dead
 
 alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
