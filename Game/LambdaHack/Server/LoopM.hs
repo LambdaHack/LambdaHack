@@ -320,9 +320,10 @@ applyPeriodicLevel = do
             when (IA.checkFlag Ability.Periodic arItem) $
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.
-              effectAndDestroy False aid aid iid (CActor aid cstore) True
-                               (IK.filterRecharging $ IK.ieffects itemKind)
-                               (itemFull, kit)
+              effectAndDestroyAndAddKill
+                True aid
+                False aid aid iid (CActor aid cstore) True
+                (IK.filterRecharging $ IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b

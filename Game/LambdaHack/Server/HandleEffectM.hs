@@ -2,13 +2,14 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( applyItem, kineticEffectAndDestroy, effectAndDestroy, itemEffectEmbedded
-  , dropCStoreItem, highestImpression, dominateFidSfx
+  ( applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
+  , itemEffectEmbedded, dropCStoreItem, highestImpression, dominateFidSfx
   , pickDroppable, cutCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
-  , applyKineticDamage, refillHP, imperishableKit, itemEffectDisco, effectSem
+  , applyKineticDamage, effectAndDestroy
+  , refillHP, imperishableKit, itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
   , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
@@ -165,8 +166,30 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
     Just kit -> do
       itemFull <- getsState $ itemToFull iid
       let IK.ItemKind{IK.ieffects} = itemKind itemFull
-      effectAndDestroy kineticPerformed source target iid c False ieffects
-                       (itemFull, kit)
+      effectAndDestroyAndAddKill voluntary killer
+                                 kineticPerformed source target iid c
+                                 False ieffects (itemFull, kit)
+
+effectAndDestroyAndAddKill :: MonadServerAtomic m
+                           => Bool -> ActorId
+                           -> Bool -> ActorId -> ActorId -> ItemId -> Container
+                           -> Bool -> [IK.Effect] -> ItemFullKit
+                           -> m ()
+effectAndDestroyAndAddKill voluntary killer
+                           kineticPerformed source target iid container
+                           periodic effs (itemFull, kit) = do
+  tbOld <- getsState $ getActorBody target
+  effectAndDestroy kineticPerformed source target iid container
+                   periodic effs (itemFull, kit)
+  tb <- getsState $ getActorBody target
+  when (kineticPerformed && bhp tb <= 0 && bhp tbOld > 0) $ do
+    sb <- getsState $ getActorBody source
+    arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
+    let killHow | not (bproj sb) =
+                  if voluntary then KillOtherMelee else KillOtherPush
+                | IA.isBlast arWeapon = KillOtherBlast
+                | otherwise = KillOtherRanged
+    addKillToAnalytics killHow killer (bfid tbOld) (btrunk tbOld)
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
@@ -1190,7 +1213,10 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
     -- Activate even if effects null, to destroy the item.
-    effectAndDestroy False aid aid iid c False effs (itemFull, kit)
+    -- We don't know if it's voluntary, so we conservatively assume it is
+    -- and we blame @aid@.
+    effectAndDestroyAndAddKill True aid
+                               False aid aid iid c False effs (itemFull, kit)
   else do
     cDrop <- pickDroppable aid b
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
