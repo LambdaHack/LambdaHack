@@ -363,17 +363,6 @@ reqMeleeChecked voluntary source target iid cstore = do
   if source == target then execFailure source req MeleeSelf
   else if not (checkAdjacent sb tb) then execFailure source req MeleeDistant
   else do
-    -- An approximation: if an actor in the chain pushes another
-    -- due to being pushed himself, he gets blamed anyway.
-    let findKiller aidPassive = do
-          maidActive <- getsServer $ EM.lookup aidPassive . strajPushedBy
-          case maidActive of
-            Just aidActive -> do
-              bActive <- getsState $ getActorBody aidActive
-              if bproj bActive
-              then findKiller aidActive
-              else return aidActive
-            Nothing -> return aidPassive  -- originator of the proj already dead
     -- Blame for the first step in the chain is exact, based on @voluntary@.
     killer <- if voluntary && not (bproj sb)
               then return source

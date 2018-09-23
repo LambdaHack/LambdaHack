@@ -400,17 +400,6 @@ advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 {-# INLINE advanceTrajectory #-}
 advanceTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
-  -- An approximation: if an actor in the chain pushes another
-  -- due to being pushed himself, he gets blamed anyway.
-  let findKiller aidPassive = do
-        maidActive <- getsServer $ EM.lookup aidPassive . strajPushedBy
-        case maidActive of
-          Just aidActive -> do
-            bActive <- getsState $ getActorBody aidActive
-            if bproj bActive
-            then findKiller aidActive
-            else return aidActive
-          Nothing -> return aidPassive  -- originator of the proj already dead
   killer <- findKiller aid
   lvl <- getLevel $ blid b
   case btrajectory b of

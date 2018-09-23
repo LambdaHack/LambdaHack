@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.State
   ( StateServer(..)
   , ActorTime, ActorPushedBy
   , ActorAnalytics, KillMap, Analytics(..), KillHow(..)
-  , addKill, emptyStateServer, updateActorTime, lookupActorTime, ageActor
+  , emptyStateServer, emptyAnalytics, updateActorTime, lookupActorTime, ageActor
   ) where
 
 import Prelude ()
@@ -136,53 +136,6 @@ emptyAnalytics = Analytics
   , akillDropLaunch    = EM.empty
   , akillCatch         = EM.empty
   }
-
-alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
-{-# NOINLINE alterIncrement #-}
-alterIncrement fid iid =
-  let f Nothing = Just $ EM.singleton iid 1
-      f (Just iidMap) = Just $ EM.alter g iid iidMap
-      g Nothing = Just 1
-      g (Just n) = Just $ n + 1
-  in EM.alter f fid
-
-addKill :: KillHow -> ActorId -> FactionId -> ItemId
-        -> ActorAnalytics
-        -> ActorAnalytics
-{-# INLINE addKill #-}
-addKill killHow aid fid iid =
-  let applyAtKill an = case killHow of
-        KillKineticMelee -> an {akillKineticMelee =
-          alterIncrement fid iid $ akillKineticMelee an}
-        KillKineticRanged -> an {akillKineticRanged =
-          alterIncrement fid iid $ akillKineticRanged an}
-        KillKineticBlast -> an {akillKineticBlast =
-          alterIncrement fid iid $ akillKineticBlast an}
-        KillKineticPush -> an {akillKineticPush =
-          alterIncrement fid iid $ akillKineticPush an}
-        KillKineticTile -> an {akillKineticTile =
-          alterIncrement fid iid $ akillKineticTile an}
-        KillOtherMelee -> an {akillOtherMelee =
-          alterIncrement fid iid $ akillOtherMelee an}
-        KillOtherRanged -> an {akillOtherRanged =
-          alterIncrement fid iid $ akillOtherRanged an}
-        KillOtherBlast -> an {akillOtherBlast =
-          alterIncrement fid iid $ akillOtherBlast an}
-        KillOtherPush -> an {akillOtherPush =
-          alterIncrement fid iid $ akillOtherPush an}
-        KillOtherTile -> an {akillOtherTile =
-          alterIncrement fid iid $ akillOtherTile an}
-        KillActorLaunch -> an {akillActorLaunch =
-          alterIncrement fid iid $ akillActorLaunch an}
-        KillTileLaunch -> an {akillTileLaunch =
-          alterIncrement fid iid $ akillTileLaunch an}
-        KillDropLaunch -> an {akillDropLaunch =
-          alterIncrement fid iid $ akillDropLaunch an}
-        KillCatch -> an {akillCatch =
-          alterIncrement fid iid $ akillCatch an}
-      f Nothing = Just $ applyAtKill emptyAnalytics
-      f (Just an) = Just $ applyAtKill an
-  in EM.alter f aid
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer

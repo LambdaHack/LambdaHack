@@ -7,10 +7,11 @@ module Game.LambdaHack.Server.CommonM
   , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
   , addCondition, removeConditionSingle, addSleep, removeSleepSingle
+  , findKiller, addKill
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
-  , addProjectile, addActorIid, getCacheLucid, getCacheTotal
+  , addProjectile, addActorIid, getCacheLucid, getCacheTotal, alterIncrement
 #endif
   ) where
 
@@ -587,3 +588,63 @@ removeSleepSingle aid = do
   nAll <- removeConditionSingle "asleep" aid
   when (nAll == 0) $
     execUpdAtomic $ UpdWaitActor aid WWake WWatch
+
+-- An approximation: if an actor in the chain pushes another
+-- due to being pushed himself, he gets blamed anyway.
+findKiller :: MonadServerAtomic m => ActorId -> m ActorId
+findKiller aidPassive = do
+  maidActive <- getsServer $ EM.lookup aidPassive . strajPushedBy
+  case maidActive of
+    Just aidActive -> do
+      bActive <- getsState $ getActorBody aidActive
+      if bproj bActive
+      then findKiller aidActive
+      else return aidActive
+    Nothing -> return aidPassive  -- originator of the proj already dead
+
+alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
+{-# NOINLINE alterIncrement #-}
+alterIncrement fid iid =
+  let f Nothing = Just $ EM.singleton iid 1
+      f (Just iidMap) = Just $ EM.alter g iid iidMap
+      g Nothing = Just 1
+      g (Just n) = Just $ n + 1
+  in EM.alter f fid
+
+addKill :: KillHow -> ActorId -> FactionId -> ItemId
+        -> ActorAnalytics
+        -> ActorAnalytics
+{-# INLINE addKill #-}
+addKill killHow aid fid iid =
+  let applyAtKill an = case killHow of
+        KillKineticMelee -> an {akillKineticMelee =
+          alterIncrement fid iid $ akillKineticMelee an}
+        KillKineticRanged -> an {akillKineticRanged =
+          alterIncrement fid iid $ akillKineticRanged an}
+        KillKineticBlast -> an {akillKineticBlast =
+          alterIncrement fid iid $ akillKineticBlast an}
+        KillKineticPush -> an {akillKineticPush =
+          alterIncrement fid iid $ akillKineticPush an}
+        KillKineticTile -> an {akillKineticTile =
+          alterIncrement fid iid $ akillKineticTile an}
+        KillOtherMelee -> an {akillOtherMelee =
+          alterIncrement fid iid $ akillOtherMelee an}
+        KillOtherRanged -> an {akillOtherRanged =
+          alterIncrement fid iid $ akillOtherRanged an}
+        KillOtherBlast -> an {akillOtherBlast =
+          alterIncrement fid iid $ akillOtherBlast an}
+        KillOtherPush -> an {akillOtherPush =
+          alterIncrement fid iid $ akillOtherPush an}
+        KillOtherTile -> an {akillOtherTile =
+          alterIncrement fid iid $ akillOtherTile an}
+        KillActorLaunch -> an {akillActorLaunch =
+          alterIncrement fid iid $ akillActorLaunch an}
+        KillTileLaunch -> an {akillTileLaunch =
+          alterIncrement fid iid $ akillTileLaunch an}
+        KillDropLaunch -> an {akillDropLaunch =
+          alterIncrement fid iid $ akillDropLaunch an}
+        KillCatch -> an {akillCatch =
+          alterIncrement fid iid $ akillCatch an}
+      f Nothing = Just $ applyAtKill emptyAnalytics
+      f (Just an) = Just $ applyAtKill an
+  in EM.alter f aid
