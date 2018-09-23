@@ -451,9 +451,10 @@ reqMeleeChecked voluntary source target iid cstore = do
             -- If projectile has too low HP to pierce, ditto.
             haltTrajectory KillActorLaunch source sb2
         _ -> return ()
-      -- The only way to start a war is to slap an enemy. Being hit by
-      -- and hitting projectiles count as unintentional friendly fire.
-      let friendlyFire = bproj sb2 || bproj tb
+      -- The only way to start a war is to slap an enemy voluntarily..
+      -- Being hit by and hitting projectiles, as well as via pushing,
+      -- count as unintentional friendly fire.
+      let friendlyFire = bproj sb2 || bproj tb || not voluntary
           fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
       unless (friendlyFire
               || isFoe sfid sfact tfid  -- already at war
