@@ -244,8 +244,8 @@ imperishableKit permanent periodic it2 itemFull (itemK, _) =
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
 itemEffectEmbedded :: MonadServerAtomic m
-                   => ActorId -> LevelId -> Point -> ItemId -> m ()
-itemEffectEmbedded aid lid tpos iid = do
+                   => Bool -> ActorId -> LevelId -> Point -> ItemId -> m ()
+itemEffectEmbedded voluntary aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos

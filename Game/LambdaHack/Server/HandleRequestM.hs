@@ -331,7 +331,8 @@ reqMoveGeneric voluntary source dir = do
         if abInSkill Ability.SkMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
-          void $ reqAlterFail source tpos  -- possibly alter or activate
+          void $ reqAlterFail voluntary source tpos
+            -- possibly alter or activate
         else execFailure source (ReqMove dir) MoveUnskilled
       else
         -- Client foolishly tries to move into unwalkable tile.
@@ -511,8 +512,9 @@ reqDisplaceGeneric voluntary source target = do
              -- so sometimes smellers will backtrack once to wipe smell. OK.
              affectSmell source
              affectSmell target
-             void $ reqAlterFail source tpos  -- possibly alter or activate
-             void $ reqAlterFail target spos
+             void $ reqAlterFail voluntary source tpos
+               -- possibly alter or activate
+             void $ reqAlterFail voluntary target spos
            _ -> execFailure source req DisplaceProjectiles
        else
          -- Client foolishly tries to displace an actor without access.
@@ -523,12 +525,13 @@ reqDisplaceGeneric voluntary source target = do
 -- | Search and/or alter the tile.
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  mfail <- reqAlterFail source tpos
+  mfail <- reqAlterFail True source tpos
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
-reqAlterFail :: MonadServerAtomic m => ActorId -> Point -> m (Maybe ReqFailure)
-reqAlterFail source tpos = do
+reqAlterFail :: MonadServerAtomic m
+             => Bool -> ActorId -> Point -> m (Maybe ReqFailure)
+reqAlterFail voluntary source tpos = do
   COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
@@ -562,7 +565,7 @@ reqAlterFail source tpos = do
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> IK.iname itemKind) reqFail
-          _ -> itemEffectEmbedded source lid tpos iid
+          _ -> itemEffectEmbedded voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant

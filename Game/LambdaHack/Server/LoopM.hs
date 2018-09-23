@@ -431,7 +431,7 @@ advanceTrajectory aid b = do
           -- Will be removed from @strajTime@ in recursive call
           -- to @handleTrajectories@.
           execSfxAtomic $ SfxCollideTile aid tpos
-          mfail <- reqAlterFail aid tpos
+          mfail <- reqAlterFail False aid tpos
           case mfail of
             Nothing -> return ()  -- too late to announce anything
             Just{} ->
