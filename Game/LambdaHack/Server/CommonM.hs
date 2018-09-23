@@ -625,8 +625,6 @@ addKill killHow aid fid iid =
           alterIncrement fid iid $ akillKineticBlast an}
         KillKineticPush -> \an -> an {akillKineticPush =
           alterIncrement fid iid $ akillKineticPush an}
-        KillKineticTile -> \an -> an {akillKineticTile =
-          alterIncrement fid iid $ akillKineticTile an}
         KillOtherMelee -> \an -> an {akillOtherMelee =
           alterIncrement fid iid $ akillOtherMelee an}
         KillOtherRanged -> \an -> an {akillOtherRanged =
@@ -635,8 +633,6 @@ addKill killHow aid fid iid =
           alterIncrement fid iid $ akillOtherBlast an}
         KillOtherPush -> \an -> an {akillOtherPush =
           alterIncrement fid iid $ akillOtherPush an}
-        KillOtherTile -> \an -> an {akillOtherTile =
-          alterIncrement fid iid $ akillOtherTile an}
         KillActorLaunch -> \an -> an {akillActorLaunch =
           alterIncrement fid iid $ akillActorLaunch an}
         KillTileLaunch -> \an -> an {akillTileLaunch =

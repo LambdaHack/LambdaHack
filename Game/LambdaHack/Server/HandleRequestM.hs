@@ -431,7 +431,7 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- Msgs inside @itemEffect@ describe the target part of the strike.
         -- If any effects and aspects, this is also where they are identified.
         -- Here also the kinetic damage is applied, before any effects are.
-        kineticEffectAndDestroy source target iid c
+        kineticEffectAndDestroy voluntary killer source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do

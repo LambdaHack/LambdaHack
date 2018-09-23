@@ -88,12 +88,10 @@ data Analytics = Analytics
   , akillKineticRanged :: KillMap
   , akillKineticBlast  :: KillMap
   , akillKineticPush   :: KillMap
-  , akillKineticTile   :: KillMap
   , akillOtherMelee    :: KillMap
   , akillOtherRanged   :: KillMap
   , akillOtherBlast    :: KillMap
   , akillOtherPush     :: KillMap
-  , akillOtherTile     :: KillMap
   , akillActorLaunch   :: KillMap
   , akillTileLaunch    :: KillMap
   , akillDropLaunch    :: KillMap
@@ -108,12 +106,10 @@ data KillHow =
   | KillKineticRanged
   | KillKineticBlast
   | KillKineticPush
-  | KillKineticTile
   | KillOtherMelee
   | KillOtherRanged
   | KillOtherBlast
   | KillOtherPush
-  | KillOtherTile
   | KillActorLaunch
   | KillTileLaunch
   | KillDropLaunch
@@ -125,12 +121,10 @@ emptyAnalytics = Analytics
   , akillKineticRanged = EM.empty
   , akillKineticBlast  = EM.empty
   , akillKineticPush   = EM.empty
-  , akillKineticTile   = EM.empty
   , akillOtherMelee    = EM.empty
   , akillOtherRanged   = EM.empty
   , akillOtherBlast    = EM.empty
   , akillOtherPush     = EM.empty
-  , akillOtherTile     = EM.empty
   , akillActorLaunch   = EM.empty
   , akillTileLaunch    = EM.empty
   , akillDropLaunch    = EM.empty

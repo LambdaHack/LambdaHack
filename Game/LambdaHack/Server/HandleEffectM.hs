@@ -73,7 +73,10 @@ applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid cstore
   let c = CActor aid cstore
-  kineticEffectAndDestroy aid aid iid c
+  -- Treated as if the actor hit himself with the item as a weapon,
+  -- incurring both the kinetic damage and effect, hence the same call
+  -- as in @reqMelee@.
+  kineticEffectAndDestroy True aid aid aid iid c
 
 applyKineticDamage :: MonadServerAtomic m
                    => ActorId -> ActorId -> ItemId -> m Bool
@@ -141,9 +144,21 @@ cutCalm target = do
 -- Here kinetic damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
 kineticEffectAndDestroy :: MonadServerAtomic m
-                        => ActorId -> ActorId -> ItemId -> Container -> m ()
-kineticEffectAndDestroy source target iid c = do
+                        => Bool -> ActorId -> ActorId -> ActorId
+                        -> ItemId -> Container
+                        -> m ()
+kineticEffectAndDestroy voluntary killer source target iid c = do
+  tbOld <- getsState $ getActorBody target
   kineticPerformed <- applyKineticDamage source target iid
+  tb <- getsState $ getActorBody target
+  when (kineticPerformed && bhp tb <= 0 && bhp tbOld > 0) $ do
+    sb <- getsState $ getActorBody source
+    arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
+    let killHow | not (bproj sb) =
+                  if voluntary then KillKineticMelee else KillKineticPush
+                | IA.isBlast arWeapon = KillKineticBlast
+                | otherwise = KillKineticRanged
+    addKillToAnalytics killHow killer (bfid tbOld) (btrunk tbOld)
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
@@ -249,7 +264,11 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
-  kineticEffectAndDestroy aid aid iid c
+  -- Treated as if the actor hit himself with the embedded item as a weapon,
+  -- incurring both the kinetic damage and effect, hence the same call
+  -- as in @reqMelee@. Information whether this happened due to being pushed
+  -- is preserved, but how did the pushing is lost, so we blame the victim.
+  kineticEffectAndDestroy voluntary aid aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
@@ -321,7 +340,7 @@ effectSem source target iid c recharged periodic effect = do
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target (Just False)
     IK.DropBestWeapon -> effectDropBestWeapon execSfx target
-    IK.ActivateInv symbol -> effectActivateInv execSfx target symbol
+    IK.ActivateInv symbol -> effectActivateInv execSfx source target symbol
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
@@ -1453,11 +1472,13 @@ effectDropBestWeapon execSfx target = do
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
 effectActivateInv :: MonadServerAtomic m
-                  => m () -> ActorId -> Char -> m UseResult
-effectActivateInv execSfx target symbol = do
+                  => m () -> ActorId -> ActorId -> Char -> m UseResult
+effectActivateInv execSfx source target symbol = do
   let c = CActor target CInv
   effectTransformContainer execSfx symbol c $ \iid _ ->
-    kineticEffectAndDestroy target target iid c
+    -- We don't know if it's voluntary, so we conservatively assume it is
+    -- and we blame @source@.
+    kineticEffectAndDestroy True source target target iid c
 
 effectTransformContainer :: forall m. MonadServerAtomic m
                          => m () -> Char -> Container
