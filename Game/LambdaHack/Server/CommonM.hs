@@ -616,34 +616,34 @@ addKill :: KillHow -> ActorId -> FactionId -> ItemId
         -> ActorAnalytics
 {-# INLINE addKill #-}
 addKill killHow aid fid iid =
-  let applyAtKill an = case killHow of
-        KillKineticMelee -> an {akillKineticMelee =
+  let applyAtKill = case killHow of
+        KillKineticMelee -> \an -> an {akillKineticMelee =
           alterIncrement fid iid $ akillKineticMelee an}
-        KillKineticRanged -> an {akillKineticRanged =
+        KillKineticRanged -> \an -> an {akillKineticRanged =
           alterIncrement fid iid $ akillKineticRanged an}
-        KillKineticBlast -> an {akillKineticBlast =
+        KillKineticBlast -> \an -> an {akillKineticBlast =
           alterIncrement fid iid $ akillKineticBlast an}
-        KillKineticPush -> an {akillKineticPush =
+        KillKineticPush -> \an -> an {akillKineticPush =
           alterIncrement fid iid $ akillKineticPush an}
-        KillKineticTile -> an {akillKineticTile =
+        KillKineticTile -> \an -> an {akillKineticTile =
           alterIncrement fid iid $ akillKineticTile an}
-        KillOtherMelee -> an {akillOtherMelee =
+        KillOtherMelee -> \an -> an {akillOtherMelee =
           alterIncrement fid iid $ akillOtherMelee an}
-        KillOtherRanged -> an {akillOtherRanged =
+        KillOtherRanged -> \an -> an {akillOtherRanged =
           alterIncrement fid iid $ akillOtherRanged an}
-        KillOtherBlast -> an {akillOtherBlast =
+        KillOtherBlast -> \an -> an {akillOtherBlast =
           alterIncrement fid iid $ akillOtherBlast an}
-        KillOtherPush -> an {akillOtherPush =
+        KillOtherPush -> \an -> an {akillOtherPush =
           alterIncrement fid iid $ akillOtherPush an}
-        KillOtherTile -> an {akillOtherTile =
+        KillOtherTile -> \an -> an {akillOtherTile =
           alterIncrement fid iid $ akillOtherTile an}
-        KillActorLaunch -> an {akillActorLaunch =
+        KillActorLaunch -> \an -> an {akillActorLaunch =
           alterIncrement fid iid $ akillActorLaunch an}
-        KillTileLaunch -> an {akillTileLaunch =
+        KillTileLaunch -> \an -> an {akillTileLaunch =
           alterIncrement fid iid $ akillTileLaunch an}
-        KillDropLaunch -> an {akillDropLaunch =
+        KillDropLaunch -> \an -> an {akillDropLaunch =
           alterIncrement fid iid $ akillDropLaunch an}
-        KillCatch -> an {akillCatch =
+        KillCatch -> \an -> an {akillCatch =
           alterIncrement fid iid $ akillCatch an}
       f Nothing = Just $ applyAtKill emptyAnalytics
       f (Just an) = Just $ applyAtKill an
