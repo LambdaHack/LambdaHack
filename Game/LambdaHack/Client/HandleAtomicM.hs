@@ -97,7 +97,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     recomputeInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
-  UpdQuitFaction fid _ toSt -> do
+  UpdQuitFaction fid _ toSt _ -> do
     side <- getsClient sside
     when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
       let won = case toSt of

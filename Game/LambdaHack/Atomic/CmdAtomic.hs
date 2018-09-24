@@ -32,6 +32,7 @@ import GHC.Generics (Generic)
 import           Game.LambdaHack.Client.ClientOptions
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Analytics
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
@@ -86,6 +87,7 @@ data UpdAtomic =
   | UpdTrajectory ActorId (Maybe ([Vector], Speed)) (Maybe ([Vector], Speed))
   -- Change faction attributes.
   | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
+                   (Maybe FactionAnalytics)
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
   | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic
@@ -209,7 +211,8 @@ undoUpdAtomic cmd = case cmd of
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
-  UpdQuitFaction fid fromSt toSt -> Just $ UpdQuitFaction fid toSt fromSt
+  UpdQuitFaction fid fromSt toSt manalytics ->
+    Just $ UpdQuitFaction fid toSt fromSt manalytics
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl

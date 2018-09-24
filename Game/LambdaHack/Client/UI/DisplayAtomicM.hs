@@ -48,6 +48,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Analytics
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
@@ -214,7 +215,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
-  UpdQuitFaction fid _ toSt -> quitFactionUI fid toSt
+  UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
   UpdLeadFaction fid (Just source) (Just target) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     lidV <- viewedLevelUI
@@ -729,8 +730,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
-quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
-quitFactionUI fid toSt = do
+quitFactionUI :: MonadClientUI m
+              => FactionId -> Maybe Status -> (Maybe FactionAnalytics) -> m ()
+quitFactionUI fid toSt manalytics = do
   COps{coitem} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact

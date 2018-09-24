@@ -53,7 +53,7 @@ endOrLoop loop restart = do
       campers = filter (isCamper . snd) $ EM.assocs factionD
   -- Wipe out the quit flag for the savegame files.
   mapM_ (\(fid, fact) ->
-    execUpdAtomic $ UpdQuitFaction fid (gquit fact) Nothing) campers
+    execUpdAtomic $ UpdQuitFaction fid (gquit fact) Nothing Nothing) campers
   swriteSave <- getsServer swriteSave
   when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}

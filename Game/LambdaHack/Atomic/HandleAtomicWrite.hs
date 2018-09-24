@@ -88,7 +88,7 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
-  UpdQuitFaction fid fromSt toSt -> updQuitFaction fid fromSt toSt
+  UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl

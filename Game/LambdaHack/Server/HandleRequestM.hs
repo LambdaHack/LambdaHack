@@ -894,8 +894,12 @@ reqGameRestart aid groupName scurChalSer = do
   -- This call to `revealItems` is really needed, because the other
   -- happens only at game conclusion, not at quitting.
   unless isNoConfirms $ revealItems Nothing
-  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
-                $ Just $ Status Restart (fromEnum $ blid b) (Just groupName)
+  factionAn <- getsServer sfactionAn
+  execUpdAtomic $ UpdQuitFaction
+                    (bfid b)
+                    oldSt
+                    (Just $ Status Restart (fromEnum $ blid b) (Just groupName))
+                    (Just factionAn)
 
 -- * ReqGameDropAndExit
 
@@ -906,8 +910,11 @@ reqGameDropAndExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser -> ser {sbreakLoop = True}
-  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
-                $ Just $ Status Camping (fromEnum $ blid b) Nothing
+  execUpdAtomic $ UpdQuitFaction
+                    (bfid b)
+                    oldSt
+                    (Just $ Status Camping (fromEnum $ blid b) Nothing)
+                    Nothing
 
 -- * ReqGameSaveAndExit
 
@@ -919,8 +926,10 @@ reqGameSaveAndExit aid = do
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   modifyServer $ \ser -> ser { sbreakASAP = True
                              , swriteSave = True }
-  execUpdAtomic $ UpdQuitFaction (bfid b) oldSt
-                $ Just $ Status Camping (fromEnum $ blid b) Nothing
+  execUpdAtomic $ UpdQuitFaction
+                    (bfid b)
+                    oldSt
+                    (Just $ Status Camping (fromEnum $ blid b) Nothing) Nothing
 
 -- * ReqGameSave
 

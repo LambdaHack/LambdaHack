@@ -41,7 +41,7 @@ data KillHow =
   | KillTileLaunch
   | KillDropLaunch
   | KillCatch
-  deriving (Show, Enum, Generic)
+  deriving (Show, Eq, Enum, Generic)
 
 instance Binary KillHow
 
@@ -51,7 +51,7 @@ type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
 newtype Analytics = Analytics
   { akillCounts :: EM.EnumMap KillHow KillMap
   }
-  deriving (Show, Binary)
+  deriving (Show, Eq, Binary)
 
 emptyAnalytics :: Analytics
 emptyAnalytics = Analytics

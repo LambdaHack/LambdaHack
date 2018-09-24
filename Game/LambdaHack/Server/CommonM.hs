@@ -126,7 +126,8 @@ quitF status fid = do
         -- Likely, by this time UI faction is no longer AI-controlled,
         -- so the score will get registered.
         registerScore status fid
-      execUpdAtomic $ UpdQuitFaction fid oldSt $ Just status
+      factionAn <- getsServer sfactionAn
+      execUpdAtomic $ UpdQuitFaction fid oldSt (Just status) (Just factionAn)
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
