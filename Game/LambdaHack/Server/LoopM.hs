@@ -414,7 +414,7 @@ advanceTrajectory aid b = do
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
         when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
           killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-          addKillToAnalytics KillDropLaunch killer (bfid b) (btrunk b)
+          addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         case posToAidsLvl tpos lvl of
@@ -428,7 +428,7 @@ advanceTrajectory aid b = do
           -- Kill counts for each blast particle is TMI.
           when (not (IA.isBlast arTrunk)) $ do
             killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-            addKillToAnalytics KillTileLaunch killer (bfid b) (btrunk b)
+            addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
           -- Losing HP due to hitting an obstacle not needed, because
           -- trajectory is halted, so projectile will die soon anyway.
         else do

@@ -33,7 +33,9 @@ data StateServer = StateServer
   { sactorTime    :: ActorTime      -- ^ absolute times of actors next actions
   , strajTime     :: ActorTime      -- ^ and same for actors with trajectories
   , strajPushedBy :: ActorPushedBy  -- ^ culprits for actors with trajectories
-  , sanalytics    :: ActorAnalytics -- ^ various past events data for actors
+  , sfactionAn    :: FactionAnalytics
+                                    -- ^ various past events data for factions
+  , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
@@ -81,7 +83,8 @@ emptyStateServer =
     { sactorTime = EM.empty
     , strajTime = EM.empty
     , strajPushedBy = EM.empty
-    , sanalytics = EM.empty
+    , sfactionAn = EM.empty
+    , sactorAn = EM.empty
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
@@ -133,7 +136,8 @@ instance Binary StateServer where
     put sactorTime
     put strajTime
     put strajPushedBy
-    put sanalytics
+    put sfactionAn
+    put sactorAn
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
@@ -150,7 +154,8 @@ instance Binary StateServer where
     sactorTime <- get
     strajTime <- get
     strajPushedBy <- get
-    sanalytics <- get
+    sfactionAn <- get
+    sactorAn <- get
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get

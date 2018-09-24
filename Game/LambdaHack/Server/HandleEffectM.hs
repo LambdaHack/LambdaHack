@@ -160,7 +160,7 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
                   if voluntary then KillKineticMelee else KillKineticPush
                 | IA.isBlast arWeapon = KillKineticBlast
                 | otherwise = KillKineticRanged
-    addKillToAnalytics killHow killer (bfid tbOld) (btrunk tbOld)
+    addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
@@ -190,7 +190,7 @@ effectAndDestroyAndAddKill voluntary killer
                   if voluntary then KillOtherMelee else KillOtherPush
                 | IA.isBlast arWeapon = KillOtherBlast
                 | otherwise = KillOtherRanged
-    addKillToAnalytics killHow killer (bfid tbOld) (btrunk tbOld)
+    addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool

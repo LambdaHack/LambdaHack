@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Per-actor analytics of personal feats.
 module Game.LambdaHack.Common.Analytics
-  ( ActorAnalytics, KillMap, Analytics(..), KillHow(..)
-  , emptyAnalytics, addKill
+  ( FactionAnalytics, ActorAnalytics, KillMap, Analytics(..), KillHow(..)
+  , emptyAnalytics, addFactionKill, addActorKill
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , addKill
 #endif
   ) where
 
@@ -19,6 +20,9 @@ import           GHC.Generics (Generic)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+
+-- | Summary analytics data for each faction.
+type FactionAnalytics = EM.EnumMap FactionId Analytics
 
 -- | Analytics data for each live actor.
 type ActorAnalytics = EM.EnumMap ActorId Analytics
@@ -54,18 +58,28 @@ emptyAnalytics = Analytics
   { akillCounts = EM.empty
   }
 
-addKill :: ActorId -> KillHow -> FactionId -> ItemId
-        -> ActorAnalytics
-        -> ActorAnalytics
-addKill aid killHow fid iid =
-  let f Nothing = Just $ Analytics {akillCounts =
+addKill :: KillHow -> FactionId -> ItemId -> Maybe Analytics -> Analytics
+addKill killHow fid iid =
+  let f Nothing = Analytics {akillCounts =
         EM.singleton killHow $ EM.singleton fid $ EM.singleton iid 1}
-      f (Just an) =
-        Just $ an {akillCounts = EM.alter g killHow $ akillCounts an}
+      f (Just an) = an {akillCounts =
+        EM.alter g killHow $ akillCounts an}
       g Nothing = Just $ EM.singleton fid $ EM.singleton iid 1
       g (Just killMap) = Just $ EM.alter h fid killMap
       h Nothing = Just $ EM.singleton iid 1
       h (Just iidMap) = Just $ EM.alter i iid iidMap
       i Nothing = Just 1
       i (Just n) = Just $ n + 1
-  in EM.alter f aid
+  in f
+
+addFactionKill :: FactionId -> KillHow -> FactionId -> ItemId
+               -> FactionAnalytics
+               -> FactionAnalytics
+addFactionKill fidOfKiller killHow fid iid =
+  EM.alter (Just . addKill killHow fid iid) fidOfKiller
+
+addActorKill :: ActorId -> KillHow -> FactionId -> ItemId
+             -> ActorAnalytics
+             -> ActorAnalytics
+addActorKill aid killHow fid iid =
+  EM.alter (Just . addKill killHow fid iid) aid

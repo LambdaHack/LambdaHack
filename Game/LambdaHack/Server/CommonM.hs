@@ -604,9 +604,14 @@ removeSleepSingle aid = do
     execUpdAtomic $ UpdWaitActor aid WWake WWatch
 
 addKillToAnalytics :: MonadServerAtomic m
-                   => KillHow -> ActorId -> FactionId -> ItemId -> m ()
-addKillToAnalytics killHow aid fid iid = do
-  alive <- getsState $ (EM.member aid) . sactorD
-  when alive $
-    modifyServer $ \ser ->
-      ser {sanalytics = addKill aid killHow fid iid $ sanalytics ser}
+                   => ActorId -> KillHow -> FactionId -> ItemId -> m ()
+addKillToAnalytics aid killHow fid iid = do
+  actorD <- getsState sactorD
+  case EM.lookup aid actorD of
+    Just b ->
+      modifyServer $ \ser ->
+        ser { sfactionAn = addFactionKill (bfid b) killHow fid iid
+                           $ sfactionAn ser
+            , sactorAn = addActorKill aid killHow fid iid
+                         $ sactorAn ser }
+    Nothing -> return ()  -- killer dead, too late to assign blame

@@ -356,7 +356,7 @@ reqMelee source target iid cstore = do
     reqMeleeChecked True source target iid cstore
   else execFailure source (ReqMelee target iid cstore) MeleeUnskilled
 
-reqMeleeChecked :: MonadServerAtomic m
+reqMeleeChecked :: forall m. MonadServerAtomic m
                 => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
 reqMeleeChecked voluntary source target iid cstore = do
   sb <- getsState $ getActorBody source
@@ -376,12 +376,13 @@ reqMeleeChecked voluntary source target iid cstore = do
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory
         -- so that it doesn't pretend to have hit a wall.
+        haltTrajectory :: KillHow -> ActorId -> Actor -> m ()
         haltTrajectory killHow aid b = case btrajectory b of
           btra@(Just (l, speed)) | not $ null l -> do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
             let arTrunkAid = discoAspect EM.! btrunk b
             when (bproj b && not (IA.isBlast arTrunkAid)) $
-              addKillToAnalytics killHow killer (bfid b) (btrunk b)
+              addKillToAnalytics killer killHow (bfid b) (btrunk b)
           _ -> return ()
     -- Only catch if braced. Never steal trunk from an already caught
     -- projectile or one with many items inside.
