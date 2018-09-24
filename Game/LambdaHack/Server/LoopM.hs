@@ -403,6 +403,7 @@ advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 advanceTrajectory aid b = do
   COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel $ blid b
+  arTrunk <- getsState $ (EM.! btrunk b) . sdiscoAspect
   case btrajectory b of
     Just (d : lv, speed) -> do
       let tpos = bpos b `shift` d  -- target position
@@ -411,7 +412,7 @@ advanceTrajectory aid b = do
         -- Hit clears trajectory of non-projectiles in @reqMelee@,
         -- so no need to do that here.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
-        when (null lv && bproj b) $ do
+        when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
           killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
           addKillToAnalytics KillDropLaunch killer (bfid b) (btrunk b)
         -- Non-projectiles displace, to make pushing in crowds less lethal
@@ -423,9 +424,11 @@ advanceTrajectory aid b = do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
         -- The second call of @actorDying@ above will catch the dead projectile.
         execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        if bproj b then do
-          killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-          addKillToAnalytics KillTileLaunch killer (bfid b) (btrunk b)
+        if bproj b then
+          -- Kill counts for each blast particle is TMI.
+          when (not (IA.isBlast arTrunk)) $ do
+            killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
+            addKillToAnalytics KillTileLaunch killer (bfid b) (btrunk b)
           -- Losing HP due to hitting an obstacle not needed, because
           -- trajectory is halted, so projectile will die soon anyway.
         else do

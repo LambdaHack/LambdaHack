@@ -146,9 +146,9 @@ hearUpdAtomic as cmd = do
       -- Non-blast projectile hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
-      let arItem = discoAspect EM.! btrunk b
+      let arTrunk = discoAspect EM.! btrunk b
       aids <- filterHear (bpos b) as
-      return $! if bproj b && IA.isBlast arItem || null aids
+      return $! if bproj b && IA.isBlast arTrunk || null aids
                 then Nothing
                 else Just aids
     UpdAlterTile _ p _ toTile -> do

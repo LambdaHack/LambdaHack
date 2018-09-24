@@ -370,21 +370,22 @@ reqMeleeChecked voluntary source target iid cstore = do
                  | bproj sb -> getsServer $ EM.findWithDefault source source
                                . strajPushedBy
                  | otherwise -> return source
-    let sfid = bfid sb
+    discoAspect <- getsState sdiscoAspect
+    let arTrunk = discoAspect EM.! btrunk tb
+        sfid = bfid sb
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory
         -- so that it doesn't pretend to have hit a wall.
         haltTrajectory killHow aid b = case btrajectory b of
           btra@(Just (l, speed)) | not $ null l -> do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
-            when (bproj b) $ addKillToAnalytics killHow killer tfid (btrunk tb)
+            let arTrunkAid = discoAspect EM.! btrunk b
+            when (bproj b && not (IA.isBlast arTrunkAid)) $
+              addKillToAnalytics killHow killer (bfid b) (btrunk b)
           _ -> return ()
-    sfact <- getsState $ (EM.! sfid) . sfactionD
-    discoAspect <- getsState sdiscoAspect
-    let arItem = discoAspect EM.! btrunk tb
     -- Only catch if braced. Never steal trunk from an already caught
     -- projectile or one with many items inside.
-    if bproj tb && EM.size (beqp tb) == 1 && not (IA.isBlast arItem)
+    if bproj tb && EM.size (beqp tb) == 1 && not (IA.isBlast arTrunk)
        && waitedLastTurn sb then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
@@ -456,6 +457,7 @@ reqMeleeChecked voluntary source target iid cstore = do
       -- The only way to start a war is to slap an enemy voluntarily..
       -- Being hit by and hitting projectiles, as well as via pushing,
       -- count as unintentional friendly fire.
+      sfact <- getsState $ (EM.! sfid) . sfactionD
       let friendlyFire = bproj sb2 || bproj tb || not voluntary
           fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
       unless (friendlyFire
