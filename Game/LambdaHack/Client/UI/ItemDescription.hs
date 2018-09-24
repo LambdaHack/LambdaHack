@@ -366,6 +366,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
             "Coming from" <+> whose fid
             <> "." <+> discoFirst
           _ -> discoFirst
+      ikitStrings = map (show . fst) $ filter ((== COrgan) . snd)
+                                     $ IK.ikit itemKind
+      ikitDesc | null ikitStrings = ""
+               | otherwise = makeSentence
+        [ "the actor also has organs of this kind:"
+        , MU.String $ intercalate ", " ikitStrings ]
       colorSymbol = viewItem itemFull
       blurb =
         ((" "
@@ -380,4 +386,6 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
         <+> aspectSentences
         <+> sourceDesc
         <+> damageAnalysis
+        <> (if markParagraphs && not (T.null ikitDesc) then "\n\n" else "\n")
+        <> ikitDesc
   in colorSymbol : textToAL blurb
