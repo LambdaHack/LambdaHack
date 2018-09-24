@@ -902,8 +902,10 @@ displayGameOverAnalytics manalytics = case manalytics of
                  $ concatMap EM.elems $ catMaybes
                  $ map (\killHow -> EM.lookup killHow ourAn)
                        [KillKineticMelee .. KillOtherPush]
-        trunkBag = EM.map (\n -> (n, [])) foesAn
-        lSlots = EM.filter (`EM.member` trunkBag) $ itemSlots EM.! STrunk
+        trunkBagRaw = EM.map (\n -> (n, [])) foesAn
+        lSlots = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
+        trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
+                                     (EM.elems lSlots)
     let examTrunk slotIndex = do
           let lSlotsElems = EM.elems lSlots
               lSlotsBound = length lSlotsElems - 1
