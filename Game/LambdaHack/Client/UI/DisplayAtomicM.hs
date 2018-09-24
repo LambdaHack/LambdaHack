@@ -810,8 +810,6 @@ displayGameOverLoot (itemBag, total) = do
   side <- getsClient sside
   revCmd <- revCmdMap
   arena <- getArenaUI
-  localTime <- getsState $ getLocalTime arena
-  factionD <- getsState sfactionD
   ItemSlots itemSlots <- getsSession sslots
   let currencyName = MU.Text $ IK.iname
                      $ okind coitem $ ouniqGroup coitem "currency"
@@ -825,6 +823,8 @@ displayGameOverLoot (itemBag, total) = do
             iid2 = lSlotsElems !! slotIndex
             kit2@(k, _) = itemBag EM.! iid2
         itemFull2 <- getsState $ itemToFull iid2
+        localTime <- getsState $ getLocalTime arena
+        factionD <- getsState sfactionD
         let attrLine = itemDesc True side factionD 0
                                 CGround localTime itemFull2 kit2
             ov = splitAttrLine rwidth attrLine
@@ -890,8 +890,6 @@ displayGameOverAnalytics manalytics = case manalytics of
     revCmd <- revCmdMap
     CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
     arena <- getArenaUI
-    localTime <- getsState $ getLocalTime arena
-    factionD <- getsState sfactionD
     ItemSlots itemSlots <- getsSession sslots
     let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
                           HumanCmd.SortSlots
@@ -912,6 +910,8 @@ displayGameOverAnalytics manalytics = case manalytics of
               iid2 = lSlotsElems !! slotIndex
               kit2 = trunkBag EM.! iid2
           itemFull2 <- getsState $ itemToFull iid2
+          localTime <- getsState $ getLocalTime arena
+          factionD <- getsState sfactionD
           let attrLine = itemDesc True side factionD 0
                                   CGround localTime itemFull2 kit2
               ov = splitAttrLine rwidth attrLine

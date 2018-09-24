@@ -113,70 +113,70 @@ chooseItemDialogMode :: MonadClientUI m
                      => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
 chooseItemDialogMode c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  let subject = partActor
-      verbSha body actorMaxSk = if calmEnough body actorMaxSk
-                        then "notice"
-                        else "paw distractedly"
+  let verbSha body actorMaxSk = if calmEnough body actorMaxSk
+                                then "notice"
+                                else "paw distractedly"
       prompt body bodyUI actorMaxSk c2 =
         let (tIn, t) = ppItemDialogMode c2
+            subject = partActor bodyUI
         in case c2 of
         MStore CGround ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "notice"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
             , MU.Text "at"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CSha ->
           makePhrase
             [ MU.Capitalize
-              $ MU.SubjectVerbSg (subject bodyUI) (verbSha body actorMaxSk)
+              $ MU.SubjectVerbSg subject (verbSha body actorMaxSk)
             , MU.Text tIn
             , MU.Text t ]
         MOrgans ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "feel"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MOwned ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
             , MU.Text tIn
             , MU.Text t ]
         MStats ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "estimate"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MLore{} ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
             , MU.Text t ]
         MPlaces ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "recall"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
             , MU.Text t ]
         _ ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg (subject bodyUI) "see"
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "see"
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  bUI <- getsSession $ getActorUI leader
-  itemToF <- getsState $ flip itemToFull
-  localTime <- getsState $ getLocalTime (blid b)
-  factionD <- getsState sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills leader
+  bUI <- getsSession $ getActorUI leader
+  side <- getsClient sside
+  arena <- getArenaUI
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
-      let lSlotsElems = EM.elems lSlots
-          lSlotsBound = length lSlotsElems - 1
-          displayLore slotIndex promptFun = do
-            let iid2 = lSlotsElems !! slotIndex
-                itemFull2 = itemToF iid2
+      let displayItemLore slotIndex promptFun = do
+            let lSlotsElems = EM.elems lSlots
+                lSlotsBound = length lSlotsElems - 1
+                iid2 = lSlotsElems !! slotIndex
                 kit2 = itemBag EM.! iid2
-                attrLine =
-                  itemDesc True (bfid b) factionD
+            itemFull2 <- getsState $ itemToFull iid2
+            localTime <- getsState $ getLocalTime arena
+            factionD <- getsState sfactionD
+            let attrLine =
+                  itemDesc True side factionD
                            (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                            CGround localTime itemFull2 kit2
                 ov = splitAttrLine rwidth attrLine
@@ -187,12 +187,12 @@ chooseItemDialogMode c = do
             slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
             km <- getConfirms ColorFull keys slides
             case K.key km of
-              K.Space -> chooseItemDialogMode c2
-              K.Up -> displayLore (slotIndex - 1) promptFun
-              K.Down -> displayLore (slotIndex + 1) promptFun
-              K.Esc -> failWith "never mind"
+              K.Space -> return True
+              K.Up -> displayItemLore (slotIndex - 1) promptFun
+              K.Down -> displayItemLore (slotIndex + 1) promptFun
+              K.Esc -> return False
               _ -> error $ "" `showFailure` km
-          ix0 = fromJust $ findIndex (== iid) lSlotsElems
+          ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
       case c2 of
         MStore fromCStore -> do
           modifySession $ \sess ->
@@ -205,9 +205,10 @@ chooseItemDialogMode c = do
                 else "organ"
               prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
                                               , MU.AW $ blurb itemFull ]
-          displayLore ix0 prompt2
+          go <- displayItemLore ix0 prompt2
+          if go then chooseItemDialogMode c2 else failWith "never mind"
         MOwned -> do
-          found <- getsState $ findIid leader (bfid b) iid
+          found <- getsState $ findIid leader side iid
           let (newAid, bestStore) = case leader `lookup` found of
                 Just (_, store) -> (leader, store)
                 Nothing -> case found of
@@ -215,11 +216,11 @@ chooseItemDialogMode c = do
                   [] -> error $ "" `showFailure` iid
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, bestStore, False)}
-          arena <- getArenaUI
           b2 <- getsState $ getActorBody newAid
-          fact <- getsState $ (EM.! bfid b2) . sfactionD
+          fact <- getsState $ (EM.! side) . sfactionD
           let (autoDun, _) = autoDungeonLevel fact
-          if | blid b2 /= arena && autoDun ->
+          if | newAid == leader -> return $ Right c2
+             | blid b2 /= arena && autoDun ->
                failSer NoChangeDunLeader
              | otherwise -> do
                -- We switch leader only here, not in lore screens, because
@@ -227,14 +228,17 @@ chooseItemDialogMode c = do
                void $ pickLeader True newAid
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
-        MLore slore -> displayLore ix0 $ const $
-          makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                       , MU.Text (ppSLore slore), "lore" ]
+        MLore slore -> do
+          go <- displayItemLore ix0 $ const $
+            makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                         , MU.Text (ppSLore slore), "lore" ]
+          if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
     (Left err, (MStats, ekm)) -> case ekm of
       Right slot0 -> assert (err == "stats") $ do
         let slotListBound = length statSlots - 1
             displayOneSlot slotIndex = do
+              b <- getsState $ getActorBody leader
               let slot = allSlots !! slotIndex
                   skill = statSlots !! fromJust (elemIndex slot allSlots)
                   valueText =
