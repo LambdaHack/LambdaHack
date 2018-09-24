@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Per-actor analytics of personal feats.
 module Game.LambdaHack.Common.Analytics
   ( ActorAnalytics, KillMap, Analytics(..), KillHow(..)
-  , emptyAnalytics
+  , emptyAnalytics, addKill
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
 #endif
@@ -23,27 +23,7 @@ import Game.LambdaHack.Common.Item
 -- | Analytics data for each live actor.
 type ActorAnalytics = EM.EnumMap ActorId Analytics
 
-type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
-
--- | Statistics of past events concerning an actor.
-data Analytics = Analytics
-  { akillKineticMelee  :: KillMap
-  , akillKineticRanged :: KillMap
-  , akillKineticBlast  :: KillMap
-  , akillKineticPush   :: KillMap
-  , akillOtherMelee    :: KillMap
-  , akillOtherRanged   :: KillMap
-  , akillOtherBlast    :: KillMap
-  , akillOtherPush     :: KillMap
-  , akillActorLaunch   :: KillMap
-  , akillTileLaunch    :: KillMap
-  , akillDropLaunch    :: KillMap
-  , akillCatch         :: KillMap
-  }
-  deriving (Show, Generic)
-
-instance Binary Analytics
-
+-- | Labels of individual kill count analytics.
 data KillHow =
     KillKineticMelee
   | KillKineticRanged
@@ -57,19 +37,35 @@ data KillHow =
   | KillTileLaunch
   | KillDropLaunch
   | KillCatch
+  deriving (Show, Enum, Generic)
+
+instance Binary KillHow
+
+type KillMap = EM.EnumMap FactionId (EM.EnumMap ItemId Int)
+
+-- | Statistics of past events concerning an actor.
+newtype Analytics = Analytics
+  { akillCounts :: EM.EnumMap KillHow KillMap
+  }
+  deriving (Show, Binary)
 
 emptyAnalytics :: Analytics
 emptyAnalytics = Analytics
-  { akillKineticMelee  = EM.empty
-  , akillKineticRanged = EM.empty
-  , akillKineticBlast  = EM.empty
-  , akillKineticPush   = EM.empty
-  , akillOtherMelee    = EM.empty
-  , akillOtherRanged   = EM.empty
-  , akillOtherBlast    = EM.empty
-  , akillOtherPush     = EM.empty
-  , akillActorLaunch   = EM.empty
-  , akillTileLaunch    = EM.empty
-  , akillDropLaunch    = EM.empty
-  , akillCatch         = EM.empty
+  { akillCounts = EM.empty
   }
+
+addKill :: ActorId -> KillHow -> FactionId -> ItemId
+        -> ActorAnalytics
+        -> ActorAnalytics
+addKill aid killHow fid iid =
+  let f Nothing = Just $ Analytics {akillCounts =
+        EM.singleton killHow $ EM.singleton fid $ EM.singleton iid 1}
+      f (Just an) =
+        Just $ an {akillCounts = EM.alter g killHow $ akillCounts an}
+      g Nothing = Just $ EM.singleton fid $ EM.singleton iid 1
+      g (Just killMap) = Just $ EM.alter h fid killMap
+      h Nothing = Just $ EM.singleton iid 1
+      h (Just iidMap) = Just $ EM.alter i iid iidMap
+      i Nothing = Just 1
+      i (Just n) = Just $ n + 1
+  in EM.alter f aid

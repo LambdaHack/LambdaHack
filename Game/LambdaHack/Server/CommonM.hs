@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.CommonM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
-  , addProjectile, addActorIid, getCacheLucid, getCacheTotal, alterIncrement
+  , addProjectile, addActorIid, getCacheLucid, getCacheTotal
 #endif
   ) where
 
@@ -603,54 +603,10 @@ removeSleepSingle aid = do
   when (nAll == 0) $
     execUpdAtomic $ UpdWaitActor aid WWake WWatch
 
-alterIncrement :: FactionId -> ItemId -> KillMap -> KillMap
-{-# NOINLINE alterIncrement #-}
-alterIncrement fid iid =
-  let f Nothing = Just $ EM.singleton iid 1
-      f (Just iidMap) = Just $ EM.alter g iid iidMap
-      g Nothing = Just 1
-      g (Just n) = Just $ n + 1
-  in EM.alter f fid
-
-addKill :: KillHow -> ActorId -> FactionId -> ItemId
-        -> ActorAnalytics
-        -> ActorAnalytics
-{-# INLINE addKill #-}
-addKill killHow aid fid iid =
-  let applyAtKill = case killHow of
-        KillKineticMelee -> \an -> an {akillKineticMelee =
-          alterIncrement fid iid $ akillKineticMelee an}
-        KillKineticRanged -> \an -> an {akillKineticRanged =
-          alterIncrement fid iid $ akillKineticRanged an}
-        KillKineticBlast -> \an -> an {akillKineticBlast =
-          alterIncrement fid iid $ akillKineticBlast an}
-        KillKineticPush -> \an -> an {akillKineticPush =
-          alterIncrement fid iid $ akillKineticPush an}
-        KillOtherMelee -> \an -> an {akillOtherMelee =
-          alterIncrement fid iid $ akillOtherMelee an}
-        KillOtherRanged -> \an -> an {akillOtherRanged =
-          alterIncrement fid iid $ akillOtherRanged an}
-        KillOtherBlast -> \an -> an {akillOtherBlast =
-          alterIncrement fid iid $ akillOtherBlast an}
-        KillOtherPush -> \an -> an {akillOtherPush =
-          alterIncrement fid iid $ akillOtherPush an}
-        KillActorLaunch -> \an -> an {akillActorLaunch =
-          alterIncrement fid iid $ akillActorLaunch an}
-        KillTileLaunch -> \an -> an {akillTileLaunch =
-          alterIncrement fid iid $ akillTileLaunch an}
-        KillDropLaunch -> \an -> an {akillDropLaunch =
-          alterIncrement fid iid $ akillDropLaunch an}
-        KillCatch -> \an -> an {akillCatch =
-          alterIncrement fid iid $ akillCatch an}
-      f Nothing = Just $ applyAtKill emptyAnalytics
-      f (Just an) = Just $ applyAtKill an
-  in EM.alter f aid
-
 addKillToAnalytics :: MonadServerAtomic m
                    => KillHow -> ActorId -> FactionId -> ItemId -> m ()
-{-# INLINE addKillToAnalytics #-}
 addKillToAnalytics killHow aid fid iid = do
   alive <- getsState $ (EM.member aid) . sactorD
   when alive $
     modifyServer $ \ser ->
-      ser {sanalytics = addKill killHow aid fid iid $ sanalytics ser}
+      ser {sanalytics = addKill aid killHow fid iid $ sanalytics ser}
