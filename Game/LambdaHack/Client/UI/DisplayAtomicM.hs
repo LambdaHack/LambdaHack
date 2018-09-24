@@ -828,7 +828,7 @@ displayGameOverLoot (itemBag, total) = do
                       , "out of the rumoured total"
                       , MU.CarWs dungeonTotal currencyName ]
       examItem = displayItemLore lSlots itemBag 0 promptFun
-  viewItems lSlots itemBag prompt examItem
+  viewLoreItems lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
                          => (Maybe FactionAnalytics) -> m Bool
@@ -850,7 +850,7 @@ displayGameOverAnalytics manalytics = case manalytics of
         promptFun _ _ = "You recall the adversary:"
         prompt = "Your team vangished the following adversaries:"
         examItem = displayItemLore lSlots trunkBag 0 promptFun
-    viewItems lSlots trunkBag prompt examItem
+    viewLoreItems lSlots trunkBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do

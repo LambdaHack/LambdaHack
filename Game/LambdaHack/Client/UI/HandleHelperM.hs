@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtTile, lookAtActors, lookAtItems
-  , displayItemLore, viewItems
+  , displayItemLore, viewLoreItems
   ) where
 
 import Prelude ()
@@ -533,9 +533,9 @@ displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
     K.Esc -> return False
     _ -> error $ "" `showFailure` km
 
-viewItems :: MonadClientUI m
-          => SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool) -> m Bool
-viewItems lSlots trunkBag prompt examItem =
+viewLoreItems :: MonadClientUI m
+              => SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool) -> m Bool
+viewLoreItems lSlots trunkBag prompt examItem =
   if EM.null lSlots then return True else do
     CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
     arena <- getArenaUI
@@ -550,16 +550,21 @@ viewItems lSlots trunkBag prompt examItem =
         keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
         allOKX = concatMap snd $ slideshow itemSlides
         keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-    ekm <- displayChoiceScreen "quit viewItems" ColorFull False
+    ekm <- displayChoiceScreen "quit viewLoreItems" ColorFull False
                                itemSlides keysMain
     case ekm of
       Left km | km == K.spaceKM -> return True
       Left km | km == caretKey -> do
-        sortSlots
-        viewItems lSlots trunkBag prompt examItem
+        -- Here, unlike for inventory items, slots are not sorted persistently
+        -- and only for the single slot category.
+        itemToF <- getsState $ flip itemToFull
+        let newSlots = sortSlotMap itemToF lSlots
+        viewLoreItems newSlots trunkBag prompt examItem
       Left km | km == K.escKM -> return False
       Left _ -> error $ "" `showFailure` ekm
       Right slot -> do
         let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
         go2 <- examItem ix0
-        if go2 then viewItems lSlots trunkBag prompt examItem else return True
+        if go2
+        then viewLoreItems lSlots trunkBag prompt examItem
+        else return True
