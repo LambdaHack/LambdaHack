@@ -180,7 +180,7 @@ chooseItemDialogMode c = do
                 makeSentence [ partActor bUI, "can't remove"
                              , MU.AW $ blurb itemFull ]
               ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
-          go <- displayItemLore lSlots itemBag meleeSkill ix0 promptFun
+          go <- displayItemLore lSlots itemBag meleeSkill promptFun ix0
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MOwned -> do
           found <- getsState $ findIid leader side iid
@@ -209,7 +209,7 @@ chooseItemDialogMode c = do
               promptFun _ _ =
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                              , MU.Text (ppSLore slore), "lore" ]
-          go <- displayItemLore lSlots itemBag meleeSkill ix0 promptFun
+          go <- displayItemLore lSlots itemBag meleeSkill promptFun ix0
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
     (Left err, (MStats, ekm)) -> case ekm of

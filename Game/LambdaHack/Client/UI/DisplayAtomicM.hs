@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , actorVerbMU, aidVerbMU, aidVerbDuplicateMU, itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
-  , moveItemUI, quitFactionUI, discover, ppSfxMsg, strike
+  , moveItemUI, quitFactionUI, displayGameOverLoot, displayGameOverAnalytics
+  , discover, ppSfxMsg, strike
 #endif
   ) where
 
@@ -28,12 +29,10 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
-import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -42,7 +41,6 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -806,15 +804,9 @@ quitFactionUI fid toSt manalytics = do
 displayGameOverLoot :: MonadClientUI m => (ItemBag, Int) -> m Bool
 displayGameOverLoot (itemBag, total) = do
   COps{coitem} <- getsState scops
-  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  revCmd <- revCmdMap
-  arena <- getArenaUI
   ItemSlots itemSlots <- getsSession sslots
   let currencyName = MU.Text $ IK.iname
                      $ okind coitem $ ouniqGroup coitem "currency"
-      caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
-                        HumanCmd.SortSlots
-      keysPre = [K.spaceKM, caretKey, K.escKM]
       lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
       promptFun itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
@@ -825,40 +817,18 @@ displayGameOverLoot (itemBag, total) = do
                     | otherwise = makeSentence
               ["this item is not worth any", MU.Ws currencyName]
         in lootMsg
-      examItem slotIndex = displayItemLore lSlots itemBag 0 slotIndex promptFun
-  let viewItems = if EM.null itemBag then return True else do
-        dungeonTotal <- getsState sgold
-        let spoilsMsg =
-              if | dungeonTotal == 0 ->
-                     "All your spoils are of the practical kind."
-                 | total == 0 ->
-                     "You haven't found any genuine treasure."
-                 | otherwise -> makeSentence
-                     [ "your spoils are worth"
-                     , MU.CarWs total currencyName
-                     , "out of the rumoured total"
-                     , MU.CarWs dungeonTotal currencyName ]
-        promptAdd0 spoilsMsg
-        io <- itemOverlay lSlots arena itemBag
-        itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-        let keyOfEKM (Left km) = km
-            keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-            allOKX = concatMap snd $ slideshow itemSlides
-            keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-        ekm <- displayChoiceScreen "quit loot" ColorFull False
-                                   itemSlides keysMain
-        case ekm of
-          Left km | km == K.spaceKM -> return True
-          Left km | km == caretKey -> do
-            sortSlots
-            viewItems
-          Left km | km == K.escKM -> return False
-          Left _ -> error $ "" `showFailure` ekm
-          Right slot -> do
-            let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-            go2 <- examItem ix0
-            if go2 then viewItems else return True
-  viewItems
+  dungeonTotal <- getsState sgold
+  let prompt = if | dungeonTotal == 0 ->
+                      "All your spoils are of the practical kind."
+                  | total == 0 ->
+                      "You haven't found any genuine treasure."
+                  | otherwise -> makeSentence
+                      [ "your spoils are worth"
+                      , MU.CarWs total currencyName
+                      , "out of the rumoured total"
+                      , MU.CarWs dungeonTotal currencyName ]
+      examItem = displayItemLore lSlots itemBag 0 promptFun
+  viewItems lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
                          => (Maybe FactionAnalytics) -> m Bool
@@ -866,14 +836,8 @@ displayGameOverAnalytics manalytics = case manalytics of
   Nothing -> return True
   Just analytics -> do
     side <- getsClient sside
-    revCmd <- revCmdMap
-    CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-    arena <- getArenaUI
     ItemSlots itemSlots <- getsSession sslots
-    let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
-                          HumanCmd.SortSlots
-        keysPre = [K.spaceKM, caretKey, K.escKM]
-        ourAn = akillCounts
+    let ourAn = akillCounts
                 $ EM.findWithDefault emptyAnalytics side analytics
         foesAn = EM.unionsWith (+)
                  $ concatMap EM.elems $ catMaybes
@@ -884,30 +848,9 @@ displayGameOverAnalytics manalytics = case manalytics of
         trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                      (EM.elems lSlots)
         promptFun _ _ = "You recall the adversary:"
-        examItem slotIndex =
-          displayItemLore lSlots trunkBag 0 slotIndex promptFun
-    let viewAnalytics = if EM.null lSlots then return True else do
-          promptAdd0 "Your team vangished the following adversaries:"
-          io <- itemOverlay lSlots arena trunkBag
-          itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-          let keyOfEKM (Left km) = km
-              keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-              allOKX = concatMap snd $ slideshow itemSlides
-              keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-          ekm <- displayChoiceScreen "quit analytics" ColorFull False
-                                     itemSlides keysMain
-          case ekm of
-            Left km | km == K.spaceKM -> return True
-            Left km | km == caretKey -> do
-              sortSlots
-              viewAnalytics
-            Left km | km == K.escKM -> return False
-            Left _ -> error $ "" `showFailure` ekm
-            Right slot -> do
-              let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-              go2 <- examItem ix0
-              if go2 then viewAnalytics else return True
-    viewAnalytics
+        prompt = "Your team vangished the following adversaries:"
+        examItem = displayItemLore lSlots trunkBag 0 promptFun
+    viewItems lSlots trunkBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do

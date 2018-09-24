@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtTile, lookAtActors, lookAtItems
+  , displayItemLore, viewItems
   ) where
 
 import Prelude ()
@@ -27,6 +28,7 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -497,3 +499,67 @@ lookAtItems canSee p aid = do
   return $! if EM.null is then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map (snd . nWs) $ EM.assocs is]
+
+displayItemLore :: MonadClientUI m
+                => SingleItemSlots -> ItemBag -> Int
+                -> (ItemFull -> Int -> Text) -> Int
+                -> m Bool
+displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  side <- getsClient sside
+  arena <- getArenaUI
+  let lSlotsElems = EM.elems lSlots
+      lSlotsBound = length lSlotsElems - 1
+      iid2 = lSlotsElems !! slotIndex
+      kit2@(k, _) = itemBag EM.! iid2
+  itemFull2 <- getsState $ itemToFull iid2
+  localTime <- getsState $ getLocalTime arena
+  factionD <- getsState sfactionD
+  let attrLine = itemDesc True side factionD meleeSkill
+                          CGround localTime itemFull2 kit2
+      ov = splitAttrLine rwidth attrLine
+      keys = [K.spaceKM, K.escKM]
+             ++ [K.upKM | slotIndex /= 0]
+             ++ [K.downKM | slotIndex /= lSlotsBound]
+  promptAdd0 $ promptFun itemFull2 k
+  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
+  km <- getConfirms ColorFull keys slides
+  case K.key km of
+    K.Space -> return True
+    K.Up ->
+      displayItemLore lSlots itemBag meleeSkill promptFun (slotIndex - 1)
+    K.Down ->
+      displayItemLore lSlots itemBag meleeSkill promptFun (slotIndex + 1)
+    K.Esc -> return False
+    _ -> error $ "" `showFailure` km
+
+viewItems :: MonadClientUI m
+          => SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool) -> m Bool
+viewItems lSlots trunkBag prompt examItem =
+  if EM.null lSlots then return True else do
+    CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+    arena <- getArenaUI
+    revCmd <- revCmdMap
+    let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
+                          HumanCmd.SortSlots
+        keysPre = [K.spaceKM, caretKey, K.escKM]
+    promptAdd0 prompt
+    io <- itemOverlay lSlots arena trunkBag
+    itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+    let keyOfEKM (Left km) = km
+        keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+        allOKX = concatMap snd $ slideshow itemSlides
+        keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+    ekm <- displayChoiceScreen "quit viewItems" ColorFull False
+                               itemSlides keysMain
+    case ekm of
+      Left km | km == K.spaceKM -> return True
+      Left km | km == caretKey -> do
+        sortSlots
+        viewItems lSlots trunkBag prompt examItem
+      Left km | km == K.escKM -> return False
+      Left _ -> error $ "" `showFailure` ekm
+      Right slot -> do
+        let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+        go2 <- examItem ix0
+        if go2 then viewItems lSlots trunkBag prompt examItem else return True
