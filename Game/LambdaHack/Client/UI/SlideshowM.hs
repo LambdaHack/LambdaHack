@@ -236,7 +236,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
 
 displayItemLore :: MonadClientUI m
                 => SingleItemSlots -> ItemBag -> Int
-                -> Int -> (ItemFull -> Text)
+                -> Int -> (ItemFull -> Int -> Text)
                 -> m Bool
 displayItemLore lSlots itemBag meleeSkill slotIndex promptFun = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
@@ -245,7 +245,7 @@ displayItemLore lSlots itemBag meleeSkill slotIndex promptFun = do
   let lSlotsElems = EM.elems lSlots
       lSlotsBound = length lSlotsElems - 1
       iid2 = lSlotsElems !! slotIndex
-      kit2 = itemBag EM.! iid2
+      kit2@(k, _) = itemBag EM.! iid2
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
@@ -255,7 +255,7 @@ displayItemLore lSlots itemBag meleeSkill slotIndex promptFun = do
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
-  promptAdd0 $ promptFun itemFull2
+  promptAdd0 $ promptFun itemFull2 k
   slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of

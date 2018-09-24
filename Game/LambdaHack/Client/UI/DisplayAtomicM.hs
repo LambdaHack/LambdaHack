@@ -806,8 +806,7 @@ quitFactionUI fid toSt manalytics = do
 displayGameOverLoot :: MonadClientUI m => (ItemBag, Int) -> m Bool
 displayGameOverLoot (itemBag, total) = do
   COps{coitem} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  side <- getsClient sside
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   revCmd <- revCmdMap
   arena <- getArenaUI
   ItemSlots itemSlots <- getsSession sslots
@@ -817,20 +816,7 @@ displayGameOverLoot (itemBag, total) = do
                         HumanCmd.SortSlots
       keysPre = [K.spaceKM, caretKey, K.escKM]
       lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
-  let examItem slotIndex = do
-        let lSlotsElems = EM.elems lSlots
-            lSlotsBound = length lSlotsElems - 1
-            iid2 = lSlotsElems !! slotIndex
-            kit2@(k, _) = itemBag EM.! iid2
-        itemFull2 <- getsState $ itemToFull iid2
-        localTime <- getsState $ getLocalTime arena
-        factionD <- getsState sfactionD
-        let attrLine = itemDesc True side factionD 0
-                                CGround localTime itemFull2 kit2
-            ov = splitAttrLine rwidth attrLine
-            keys = [K.spaceKM, K.escKM]
-                   ++ [K.upKM | slotIndex /= 0]
-                   ++ [K.downKM | slotIndex /= lSlotsBound]
+      promptFun itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg | worth /= 0 = makeSentence $
               ["this particular loot is worth"]
@@ -838,15 +824,8 @@ displayGameOverLoot (itemBag, total) = do
               ++ [MU.CarWs worth currencyName]
                     | otherwise = makeSentence
               ["this item is not worth any", MU.Ws currencyName]
-        promptAdd0 lootMsg
-        slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-        km <- getConfirms ColorFull keys slides
-        case K.key km of
-          K.Space -> return True
-          K.Up -> examItem (slotIndex - 1)
-          K.Down -> examItem (slotIndex + 1)
-          K.Esc -> return False
-          _ -> error $ "" `showFailure` km
+        in lootMsg
+      examItem slotIndex = displayItemLore lSlots itemBag 0 slotIndex promptFun
   let viewItems = if EM.null itemBag then return True else do
         dungeonTotal <- getsState sgold
         let spoilsMsg =
@@ -888,7 +867,7 @@ displayGameOverAnalytics manalytics = case manalytics of
   Just analytics -> do
     side <- getsClient sside
     revCmd <- revCmdMap
-    CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+    CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
     arena <- getArenaUI
     ItemSlots itemSlots <- getsSession sslots
     let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
@@ -904,29 +883,9 @@ displayGameOverAnalytics manalytics = case manalytics of
         lSlots = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
         trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                      (EM.elems lSlots)
-    let examTrunk slotIndex = do
-          let lSlotsElems = EM.elems lSlots
-              lSlotsBound = length lSlotsElems - 1
-              iid2 = lSlotsElems !! slotIndex
-              kit2 = trunkBag EM.! iid2
-          itemFull2 <- getsState $ itemToFull iid2
-          localTime <- getsState $ getLocalTime arena
-          factionD <- getsState sfactionD
-          let attrLine = itemDesc True side factionD 0
-                                  CGround localTime itemFull2 kit2
-              ov = splitAttrLine rwidth attrLine
-              keys = [K.spaceKM, K.escKM]
-                     ++ [K.upKM | slotIndex /= 0]
-                     ++ [K.downKM | slotIndex /= lSlotsBound]
-          promptAdd0 "You recall the adversary:"
-          slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-          km <- getConfirms ColorFull keys slides
-          case K.key km of
-            K.Space -> return True
-            K.Up -> examTrunk (slotIndex - 1)
-            K.Down -> examTrunk (slotIndex + 1)
-            K.Esc -> return False
-            _ -> error $ "" `showFailure` km
+        promptFun _ _ = "You recall the adversary:"
+        examItem slotIndex =
+          displayItemLore lSlots trunkBag 0 slotIndex promptFun
     let viewAnalytics = if EM.null lSlots then return True else do
           promptAdd0 "Your team vangished the following adversaries:"
           io <- itemOverlay lSlots arena trunkBag
@@ -946,7 +905,7 @@ displayGameOverAnalytics manalytics = case manalytics of
             Left _ -> error $ "" `showFailure` ekm
             Right slot -> do
               let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-              go2 <- examTrunk ix0
+              go2 <- examItem ix0
               if go2 then viewAnalytics else return True
     viewAnalytics
 

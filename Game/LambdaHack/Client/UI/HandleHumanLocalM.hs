@@ -176,10 +176,11 @@ chooseItemDialogMode c = do
                 if IA.looksLikeCondition $ aspectRecordFull itemFull
                 then "condition"
                 else "organ"
-              prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
-                                              , MU.AW $ blurb itemFull ]
+              promptFun itemFull _ =
+                makeSentence [ partActor bUI, "can't remove"
+                             , MU.AW $ blurb itemFull ]
               ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
-          go <- displayItemLore lSlots itemBag meleeSkill ix0 prompt2
+          go <- displayItemLore lSlots itemBag meleeSkill ix0 promptFun
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MOwned -> do
           found <- getsState $ findIid leader side iid
@@ -205,9 +206,10 @@ chooseItemDialogMode c = do
         MStats -> error $ "" `showFailure` ggi
         MLore slore -> do
           let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
-          go <- displayItemLore lSlots itemBag meleeSkill ix0 $ const $
-            makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                         , MU.Text (ppSLore slore), "lore" ]
+              promptFun _ _ =
+                makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
+                             , MU.Text (ppSLore slore), "lore" ]
+          go <- displayItemLore lSlots itemBag meleeSkill ix0 promptFun
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
     (Left err, (MStats, ekm)) -> case ekm of
