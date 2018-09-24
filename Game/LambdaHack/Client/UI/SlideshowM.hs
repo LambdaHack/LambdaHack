@@ -2,18 +2,23 @@
 module Game.LambdaHack.Client.UI.SlideshowM
   ( overlayToSlideshow, reportToSlideshow, reportToSlideshowKeep
   , displaySpaceEsc, displayMore, displayMoreKeep, displayYesNo, getConfirms
-  , displayChoiceScreen
+  , displayChoiceScreen, displayItemLore
   ) where
 
 import Prelude ()
 
-import           Data.Either
-import qualified Data.Map.Strict as M
-import           Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Common.Prelude
 
+import           Data.Either
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.Map.Strict as M
+
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.FrameM
+import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -21,8 +26,13 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.State
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
@@ -223,3 +233,36 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
     modifySession $ \sess ->
       sess {smenuIxMap = M.insert menuName (pointer - initIx) menuIxMap}
   assert (either (`elem` keys) (const True) km) $ return km
+
+displayItemLore :: MonadClientUI m
+                => SingleItemSlots -> ItemBag -> Int
+                -> Int -> (ItemFull -> Text)
+                -> m Bool
+displayItemLore lSlots itemBag meleeSkill slotIndex promptFun = do
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  side <- getsClient sside
+  arena <- getArenaUI
+  let lSlotsElems = EM.elems lSlots
+      lSlotsBound = length lSlotsElems - 1
+      iid2 = lSlotsElems !! slotIndex
+      kit2 = itemBag EM.! iid2
+  itemFull2 <- getsState $ itemToFull iid2
+  localTime <- getsState $ getLocalTime arena
+  factionD <- getsState sfactionD
+  let attrLine = itemDesc True side factionD meleeSkill
+                          CGround localTime itemFull2 kit2
+      ov = splitAttrLine rwidth attrLine
+      keys = [K.spaceKM, K.escKM]
+             ++ [K.upKM | slotIndex /= 0]
+             ++ [K.downKM | slotIndex /= lSlotsBound]
+  promptAdd0 $ promptFun itemFull2
+  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
+  km <- getConfirms ColorFull keys slides
+  case K.key km of
+    K.Space -> return True
+    K.Up ->
+      displayItemLore lSlots itemBag meleeSkill (slotIndex - 1) promptFun
+    K.Down ->
+      displayItemLore lSlots itemBag meleeSkill (slotIndex + 1) promptFun
+    K.Esc -> return False
+    _ -> error $ "" `showFailure` km

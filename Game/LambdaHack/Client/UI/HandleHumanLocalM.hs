@@ -54,7 +54,6 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
-import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -162,37 +161,11 @@ chooseItemDialogMode c = do
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
   actorMaxSk <- getsState $ getActorMaxSkills leader
+  let meleeSkill = Ability.getSk Ability.SkHurtMelee actorMaxSk
   bUI <- getsSession $ getActorUI leader
   side <- getsClient sside
-  arena <- getArenaUI
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) -> do
-      let displayItemLore slotIndex promptFun = do
-            let lSlotsElems = EM.elems lSlots
-                lSlotsBound = length lSlotsElems - 1
-                iid2 = lSlotsElems !! slotIndex
-                kit2 = itemBag EM.! iid2
-            itemFull2 <- getsState $ itemToFull iid2
-            localTime <- getsState $ getLocalTime arena
-            factionD <- getsState sfactionD
-            let attrLine =
-                  itemDesc True side factionD
-                           (Ability.getSk Ability.SkHurtMelee actorMaxSk)
-                           CGround localTime itemFull2 kit2
-                ov = splitAttrLine rwidth attrLine
-                keys = [K.spaceKM, K.escKM]
-                       ++ [K.upKM | slotIndex /= 0]
-                       ++ [K.downKM | slotIndex /= lSlotsBound]
-            promptAdd0 $ promptFun itemFull2
-            slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-            km <- getConfirms ColorFull keys slides
-            case K.key km of
-              K.Space -> return True
-              K.Up -> displayItemLore (slotIndex - 1) promptFun
-              K.Down -> displayItemLore (slotIndex + 1) promptFun
-              K.Esc -> return False
-              _ -> error $ "" `showFailure` km
-          ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
       case c2 of
         MStore fromCStore -> do
           modifySession $ \sess ->
@@ -205,7 +178,8 @@ chooseItemDialogMode c = do
                 else "organ"
               prompt2 itemFull = makeSentence [ partActor bUI, "can't remove"
                                               , MU.AW $ blurb itemFull ]
-          go <- displayItemLore ix0 prompt2
+              ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
+          go <- displayItemLore lSlots itemBag meleeSkill ix0 prompt2
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MOwned -> do
           found <- getsState $ findIid leader side iid
@@ -216,6 +190,7 @@ chooseItemDialogMode c = do
                   [] -> error $ "" `showFailure` iid
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, bestStore, False)}
+          arena <- getArenaUI
           b2 <- getsState $ getActorBody newAid
           fact <- getsState $ (EM.! side) . sfactionD
           let (autoDun, _) = autoDungeonLevel fact
@@ -229,7 +204,8 @@ chooseItemDialogMode c = do
                return $ Right c2
         MStats -> error $ "" `showFailure` ggi
         MLore slore -> do
-          go <- displayItemLore ix0 $ const $
+          let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
+          go <- displayItemLore lSlots itemBag meleeSkill ix0 $ const $
             makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                          , MU.Text (ppSLore slore), "lore" ]
           if go then chooseItemDialogMode c2 else failWith "never mind"
