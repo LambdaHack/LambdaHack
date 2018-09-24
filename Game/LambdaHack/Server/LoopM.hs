@@ -426,9 +426,8 @@ advanceTrajectory aid b = do
         if bproj b then do
           killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
           addKillToAnalytics KillTileLaunch killer (bfid b) (btrunk b)
-          -- Lose HP due to hitting an obstacle.
-          when (bhp b > oneM) $
-            execUpdAtomic $ UpdRefillHP aid minusM
+          -- Losing HP due to hitting an obstacle not needed, because
+          -- trajectory is halted, so projectile will die soon anyway.
         else do
           -- Will be removed from @strajTime@ in recursive call
           -- to @handleTrajectories@.
