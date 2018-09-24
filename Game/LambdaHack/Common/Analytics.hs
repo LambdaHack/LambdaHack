@@ -65,7 +65,7 @@ addKill killHow fid iid =
       f (Just an) = an {akillCounts =
         EM.alter g killHow $ akillCounts an}
       g Nothing = Just $ EM.singleton fid $ EM.singleton iid 1
-      g (Just killMap) = Just $ EM.alter h fid killMap
+      g (Just fidMap) = Just $ EM.alter h fid fidMap
       h Nothing = Just $ EM.singleton iid 1
       h (Just iidMap) = Just $ EM.alter i iid iidMap
       i Nothing = Just 1

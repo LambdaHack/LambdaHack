@@ -733,7 +733,6 @@ moveItemUI iid k aid cstore1 cstore2 = do
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status -> (Maybe FactionAnalytics) -> m ()
 quitFactionUI fid toSt manalytics = do
-  COps{coitem} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
@@ -785,98 +784,169 @@ quitFactionUI fid toSt manalytics = do
       when (side == fid) recordHistory
         -- we are going to exit or restart, so record and clear, but only once
       when go $ do
-        CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-        revCmd <- revCmdMap
-        let currencyName = MU.Text $ IK.iname
-                           $ okind coitem $ ouniqGroup coitem "currency"
-            caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
-                              HumanCmd.SortSlots
-            keysPre = [K.spaceKM, caretKey, K.escKM]
-        arena <- getArenaUI
         (itemBag, total) <- getsState $ calculateTotal side
-        localTime <- getsState $ getLocalTime arena
-        factionD <- getsState sfactionD
-        let examItem slotIndex = do
-              ItemSlots itemSlots <- getsSession sslots
-              let lSlots = EM.filter (`EM.member` itemBag)
-                           $ itemSlots EM.! SItem
-                  lSlotsElems = EM.elems lSlots
-                  lSlotsBound = length lSlotsElems - 1
-                  iid2 = lSlotsElems !! slotIndex
-                  kit2@(k, _) = itemBag EM.! iid2
-              itemFull2 <- getsState $ itemToFull iid2
-              let attrLine = itemDesc True side factionD 0
-                                      CGround localTime itemFull2 kit2
-                  ov = splitAttrLine rwidth attrLine
-                  keys = [K.spaceKM, K.escKM]
-                         ++ [K.upKM | slotIndex /= 0]
-                         ++ [K.downKM | slotIndex /= lSlotsBound]
-              let worth = itemPrice 1 $ itemKind itemFull2
-                  lootMsg | worth /= 0 = makeSentence $
-                    ["this particular loot is worth"]
-                    ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
-                    ++ [MU.CarWs worth currencyName]
-                          | otherwise = makeSentence
-                    ["this item is not worth any", MU.Ws currencyName]
-              promptAdd0 lootMsg
-              slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
-              km <- getConfirms ColorFull keys slides
-              case K.key km of
-                K.Space -> return True
-                K.Up -> examItem (slotIndex - 1)
-                K.Down -> examItem (slotIndex + 1)
-                K.Esc -> return False
-                _ -> error $ "" `showFailure` km
-            viewItems = if EM.null itemBag then return True else do
-              dungeonTotal <- getsState sgold
-              let spoilsMsg =
-                    if | dungeonTotal == 0 ->
-                           "All your spoils are of the practical kind."
-                       | total == 0 ->
-                           "You haven't found any genuine treasure."
-                       | otherwise -> makeSentence
-                           [ "your spoils are worth"
-                           , MU.CarWs total currencyName
-                           , "out of the rumoured total"
-                           , MU.CarWs dungeonTotal currencyName ]
-              promptAdd0 spoilsMsg
-              ItemSlots itemSlots <- getsSession sslots
-              let lSlots = EM.filter (`EM.member` itemBag)
-                           $ itemSlots EM.! SItem
-              io <- itemOverlay lSlots arena itemBag
-              itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-              let keyOfEKM (Left km) = km
-                  keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-                  allOKX = concatMap snd $ slideshow itemSlides
-                  keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-              ekm <- displayChoiceScreen "quit loot" ColorFull False
-                                         itemSlides keysMain
-              case ekm of
-                Left km | km == K.spaceKM -> return True
-                Left km | km == caretKey -> do
-                  sortSlots
-                  viewItems
-                Left km | km == K.escKM -> return False
-                Left _ -> error $ "" `showFailure` ekm
-                Right slot -> do
-                  let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-                  go2 <- examItem ix0
-                  if go2 then viewItems else return True
-        go3 <- viewItems
+        go3 <- displayGameOverLoot (itemBag, total)
         when go3 $ do
-          unless isNoConfirms $ do
-            -- Show score for any UI client after any kind of game exit,
-            -- even though it is saved only for human UI clients at game over
-            -- (that is not a noConfirms or benchmark game).
-            scoreSlides <- scoreToSlideshow total status
-            void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-          -- The last prompt stays onscreen during shutdown, etc.
-          promptAdd0 pp
-          partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-          void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+          go4 <- displayGameOverAnalytics manalytics
+          when go4 $ do
+            unless isNoConfirms $ do
+              -- Show score for any UI client after any kind of game exit,
+              -- even though it is saved only for human UI clients at game over
+              -- (that is not a noConfirms or benchmark game).
+              scoreSlides <- scoreToSlideshow total status
+              void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+            -- The last prompt stays onscreen during shutdown, etc.
+            promptAdd0 pp
+            partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+            void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
+
+displayGameOverLoot :: MonadClientUI m => (ItemBag, Int) -> m Bool
+displayGameOverLoot (itemBag, total) = do
+  COps{coitem} <- getsState scops
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  side <- getsClient sside
+  revCmd <- revCmdMap
+  arena <- getArenaUI
+  localTime <- getsState $ getLocalTime arena
+  factionD <- getsState sfactionD
+  ItemSlots itemSlots <- getsSession sslots
+  let currencyName = MU.Text $ IK.iname
+                     $ okind coitem $ ouniqGroup coitem "currency"
+      caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
+                        HumanCmd.SortSlots
+      keysPre = [K.spaceKM, caretKey, K.escKM]
+      lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
+  let examItem slotIndex = do
+        let lSlotsElems = EM.elems lSlots
+            lSlotsBound = length lSlotsElems - 1
+            iid2 = lSlotsElems !! slotIndex
+            kit2@(k, _) = itemBag EM.! iid2
+        itemFull2 <- getsState $ itemToFull iid2
+        let attrLine = itemDesc True side factionD 0
+                                CGround localTime itemFull2 kit2
+            ov = splitAttrLine rwidth attrLine
+            keys = [K.spaceKM, K.escKM]
+                   ++ [K.upKM | slotIndex /= 0]
+                   ++ [K.downKM | slotIndex /= lSlotsBound]
+        let worth = itemPrice 1 $ itemKind itemFull2
+            lootMsg | worth /= 0 = makeSentence $
+              ["this particular loot is worth"]
+              ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
+              ++ [MU.CarWs worth currencyName]
+                    | otherwise = makeSentence
+              ["this item is not worth any", MU.Ws currencyName]
+        promptAdd0 lootMsg
+        slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
+        km <- getConfirms ColorFull keys slides
+        case K.key km of
+          K.Space -> return True
+          K.Up -> examItem (slotIndex - 1)
+          K.Down -> examItem (slotIndex + 1)
+          K.Esc -> return False
+          _ -> error $ "" `showFailure` km
+  let viewItems = if EM.null itemBag then return True else do
+        dungeonTotal <- getsState sgold
+        let spoilsMsg =
+              if | dungeonTotal == 0 ->
+                     "All your spoils are of the practical kind."
+                 | total == 0 ->
+                     "You haven't found any genuine treasure."
+                 | otherwise -> makeSentence
+                     [ "your spoils are worth"
+                     , MU.CarWs total currencyName
+                     , "out of the rumoured total"
+                     , MU.CarWs dungeonTotal currencyName ]
+        promptAdd0 spoilsMsg
+        io <- itemOverlay lSlots arena itemBag
+        itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+        let keyOfEKM (Left km) = km
+            keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+            allOKX = concatMap snd $ slideshow itemSlides
+            keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+        ekm <- displayChoiceScreen "quit loot" ColorFull False
+                                   itemSlides keysMain
+        case ekm of
+          Left km | km == K.spaceKM -> return True
+          Left km | km == caretKey -> do
+            sortSlots
+            viewItems
+          Left km | km == K.escKM -> return False
+          Left _ -> error $ "" `showFailure` ekm
+          Right slot -> do
+            let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+            go2 <- examItem ix0
+            if go2 then viewItems else return True
+  viewItems
+
+displayGameOverAnalytics :: MonadClientUI m
+                         => (Maybe FactionAnalytics) -> m Bool
+displayGameOverAnalytics manalytics = case manalytics of
+  Nothing -> return True
+  Just analytics -> do
+    side <- getsClient sside
+    revCmd <- revCmdMap
+    CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+    arena <- getArenaUI
+    localTime <- getsState $ getLocalTime arena
+    factionD <- getsState sfactionD
+    ItemSlots itemSlots <- getsSession sslots
+    let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
+                          HumanCmd.SortSlots
+        keysPre = [K.spaceKM, caretKey, K.escKM]
+        ourAn = akillCounts
+                $ EM.findWithDefault emptyAnalytics side analytics
+        foesAn = EM.unionsWith (+)
+                 $ concatMap EM.elems $ catMaybes
+                 $ map (\killHow -> EM.lookup killHow ourAn)
+                       [KillKineticMelee .. KillOtherPush]
+        trunkBag = EM.map (\n -> (n, [])) foesAn
+        lSlots = EM.filter (`EM.member` trunkBag) $ itemSlots EM.! STrunk
+    let examTrunk slotIndex = do
+          let lSlotsElems = EM.elems lSlots
+              lSlotsBound = length lSlotsElems - 1
+              iid2 = lSlotsElems !! slotIndex
+              kit2 = trunkBag EM.! iid2
+          itemFull2 <- getsState $ itemToFull iid2
+          let attrLine = itemDesc True side factionD 0
+                                  CGround localTime itemFull2 kit2
+              ov = splitAttrLine rwidth attrLine
+              keys = [K.spaceKM, K.escKM]
+                     ++ [K.upKM | slotIndex /= 0]
+                     ++ [K.downKM | slotIndex /= lSlotsBound]
+          promptAdd0 "You recall the adversary:"
+          slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
+          km <- getConfirms ColorFull keys slides
+          case K.key km of
+            K.Space -> return True
+            K.Up -> examTrunk (slotIndex - 1)
+            K.Down -> examTrunk (slotIndex + 1)
+            K.Esc -> return False
+            _ -> error $ "" `showFailure` km
+    let viewAnalytics = if EM.null lSlots then return True else do
+          promptAdd0 "Your team vangished the following adversaries:"
+          io <- itemOverlay lSlots arena trunkBag
+          itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+          let keyOfEKM (Left km) = km
+              keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+              allOKX = concatMap snd $ slideshow itemSlides
+              keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+          ekm <- displayChoiceScreen "quit analytics" ColorFull False
+                                     itemSlides keysMain
+          case ekm of
+            Left km | km == K.spaceKM -> return True
+            Left km | km == caretKey -> do
+              sortSlots
+              viewAnalytics
+            Left km | km == K.escKM -> return False
+            Left _ -> error $ "" `showFailure` ekm
+            Right slot -> do
+              let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+              go2 <- examTrunk ix0
+              if go2 then viewAnalytics else return True
+    viewAnalytics
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
