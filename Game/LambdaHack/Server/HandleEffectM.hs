@@ -406,7 +406,7 @@ effectExplode execSfx cgroup source target = do
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, ((ItemFull{itemBase}, (itemK, _)), _)) =
+  let (iid, (ItemFull{itemBase}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
       semirandom = case jkind itemBase of

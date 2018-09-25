@@ -114,16 +114,16 @@ rollItem lvlSpawned lid itemFreq = do
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
-                    -> m (Maybe (ItemId, (ItemFullKit, GroupName ItemKind)))
+                    -> m (Maybe (ItemId, ItemFullKit))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
   m3 <- rollItem 0 lid itemFreq
   case m3 of
     Nothing -> return Nothing
-    Just (itemKnown, (itemFull, kit), itemGroup) -> do
+    Just (itemKnown, (itemFull, kit), _) -> do
       let kit2 = (fromMaybe (fst kit) mk, snd kit)
       iid <- registerItem (itemFull, kit2) itemKnown container verbose
-      return $ Just (iid, ((itemFull, kit2), itemGroup))
+      return $ Just (iid, (itemFull, kit2))
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m
                     => EM.EnumMap LevelId [Point] -> m ()

@@ -475,7 +475,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
     mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
-      Just (iid, ((itemFull2, _), _)) ->
+      Just (iid, (itemFull2, _)) ->
         -- The items are create in inventory, so won't be picked up,
         -- so we have to discover them now, if eligible.
         discoverIfMinorEffects container iid (itemKindId itemFull2)
