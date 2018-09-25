@@ -114,8 +114,9 @@ data Effect =
       -- ^ get a suitable (i.e., numerous enough) non-unique item
       --   on the floor and polymorph it randomly
   | RerollItem
-      -- ^ get a suitable (i.e., random enough) stack of items (even unique),
-      --   on the floor and change the random bonuses of the items randomly
+      -- ^ get a suitable (i.e., with any random aspects) stack of items
+      --   (even unique) on the floor and change the random bonuses
+      --   of the items randomly, with maximal depth coefficient
   | DupItem
       -- ^ exactly duplicate a single non-unique item on the floor
   | Identify

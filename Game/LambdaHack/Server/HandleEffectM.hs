@@ -1279,27 +1279,35 @@ effectPolyItem execSfx source target = do
 effectRerollItem :: MonadServerAtomic m
                  => m () -> ActorId -> ActorId -> m UseResult
 effectRerollItem execSfx source target = do
+  COps{coItemSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  let cstore = CGround
+  let cstore = CGround  -- if ever changed, call @discoverIfMinorEffects@
   kitAss <- getsState $ kitAssocs target [cstore]
   case kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNothing
       return UseId
-    (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
-          , kit@(itemK, _) )) : _ -> do
-      if | -- TODO:
-           False -> do
+    (iid, ( ItemFull{itemBase, itemKindId, itemKind}
+          , kit )) : _ -> do
+      if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNotRandom
            return UseId
          | otherwise -> do
            let c = CActor target cstore
+               freq = pure (itemKindId, itemKind)
            execSfx
            identifyIid iid c itemKindId
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-           -- TODO:
-           effectCreateItem (Just $ bfid sb) (Just itemK)
-                            target cstore "common item" IK.timerNone
+           tdepth <- getsState stotalDepth
+           dungeon <- getsState sdungeon
+           let hasTDepth (_, Level{ldepth}) = ldepth == tdepth
+               totalLid = fst $ fromJust $ find hasTDepth $ EM.assocs dungeon
+           m2 <- rollItemAspect freq totalLid
+           case m2 of
+             Nothing -> error "effectRerollItem: can't create rerolled item"
+             Just (itemKnown, (itemFull, _)) -> do
+               void $ registerItem (itemFull, kit) itemKnown c True
+               return UseUp
 
 -- ** DupItem
 
