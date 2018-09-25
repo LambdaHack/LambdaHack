@@ -100,8 +100,8 @@ rollItem lvlSpawned lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m2 <- rndToAction $ newItem cops flavour discoRev uniqueSet
-                              itemFreq lvlSpawned lid ldepth totalDepth
+  let freq = newItemKind cops uniqueSet itemFreq lvlSpawned ldepth totalDepth
+  m2 <- rndToAction $ newItem cops freq flavour discoRev lid ldepth totalDepth
   case m2 of
     Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _)) -> do
       let arItem = aspectRecordFull itemFull

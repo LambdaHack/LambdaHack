@@ -2,7 +2,7 @@
 -- | Creation of items on the server. Types and operations that don't involve
 -- server state nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
-  ( ItemKnown, ItemRev, UniqueSet, buildItem, newItem
+  ( ItemKnown, ItemRev, UniqueSet, buildItem, newItemKind, newItem
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -70,14 +70,12 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
       jflavour = toEnum $ fromEnum $ flavourMap U.! contentIdIndex ikChosen
   in Item{..}
 
--- | Generate an item based on level.
-newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
-        -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFullKit))
-newItem cops@COps{coitem} flavourMap discoRev uniqueSet
-        itemFreq lvlSpawned lid
-        levelDepth@(Dice.AbsDepth ldepth)
-        totalDepth@(Dice.AbsDepth tdepth) = do
+-- | Roll an item kind based on given @Freqs@ and kind rarities
+newItemKind :: COps -> UniqueSet -> Freqs ItemKind -> Int
+            -> Dice.AbsDepth -> Dice.AbsDepth
+            -> Frequency (ContentId IK.ItemKind, ItemKind)
+newItemKind COps{coitem} uniqueSet itemFreq lvlSpawned
+            (Dice.AbsDepth ldepth) (Dice.AbsDepth tdepth) =
   -- Effective generation depth of actors (not items) increases with spawns.
   let scaledDepth = ldepth * 10 `div` tdepth
       numSpawnedCoeff = lvlSpawned `div` 2
@@ -95,7 +93,15 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         in (q * p * rarity, (ik, kind)) : acc
       g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f q) []
       freqDepth = concatMap g itemFreq
-      freq = toFreq "newItem" freqDepth
+  in toFreq "newItemKind" freqDepth
+
+-- | Given item kind frequency, roll item kind, generate item aspects
+-- based on level and put together the full item data set.
+newItem :: COps -> Frequency (ContentId IK.ItemKind, ItemKind)
+        -> FlavourMap -> DiscoveryKindRev -> LevelId
+        -> Dice.AbsDepth -> Dice.AbsDepth
+        -> Rnd (Maybe (ItemKnown, ItemFullKit))
+newItem cops freq flavourMap discoRev lid levelDepth totalDepth = do
   if nullFreq freq then return Nothing
   else do
     (itemKindId, itemKind) <- frequency freq
@@ -114,6 +120,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, arItem, jfid itemBase)
                   , (itemFull, (itemK, itemTimer)) )
+
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.
