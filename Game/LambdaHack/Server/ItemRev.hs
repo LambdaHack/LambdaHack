@@ -73,7 +73,7 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
 -- | Generate an item based on level.
 newItem :: COps -> FlavourMap -> DiscoveryKindRev -> UniqueSet
         -> Freqs ItemKind -> Int -> LevelId -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFullKit, GroupName ItemKind))
+        -> Rnd (Maybe (ItemKnown, ItemFullKit))
 newItem cops@COps{coitem} flavourMap discoRev uniqueSet
         itemFreq lvlSpawned lid
         levelDepth@(Dice.AbsDepth ldepth)
@@ -84,21 +84,21 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
       ldSpawned = max ldepth  -- the first fast spawns are of the nominal level
                   $ min tdepth
                   $ ldepth + numSpawnedCoeff - scaledDepth
-      f _ _ acc _ ik _ | ik `ES.member` uniqueSet = acc
-      f !itemGroup !q !acc !p !ik !kind =
+      f _ acc _ ik _ | ik `ES.member` uniqueSet = acc
+      f !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
         let ld = if IK.SetFlag Ability.Unique `elem` IK.iaspects kind
                  then ldepth
                  else ldSpawned
             rarity = linearInterpolation ld tdepth (IK.irarity kind)
-        in (q * p * rarity, ((ik, kind), itemGroup)) : acc
-      g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f itemGroup q) []
+        in (q * p * rarity, (ik, kind)) : acc
+      g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f q) []
       freqDepth = concatMap g itemFreq
       freq = toFreq "newItem" freqDepth
   if nullFreq freq then return Nothing
   else do
-    ((itemKindId, itemKind), itemGroup) <- frequency freq
+    (itemKindId, itemKind) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice levelDepth totalDepth (IK.icount itemKind)
     arItem <-
@@ -113,8 +113,7 @@ newItem cops@COps{coitem} flavourMap discoRev uniqueSet
     let itemDisco = ItemDiscoFull {itemAspect = arItem, ..}
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, arItem, jfid itemBase)
-                  , (itemFull, (itemK, itemTimer))
-                  , itemGroup )
+                  , (itemFull, (itemK, itemTimer)) )
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.

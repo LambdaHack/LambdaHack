@@ -100,16 +100,16 @@ rollItem lvlSpawned lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  m3 <- rndToAction $ newItem cops flavour discoRev uniqueSet
+  m2 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
-  case m3 of
-    Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _), _) -> do
+  case m2 of
+    Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _)) -> do
       let arItem = aspectRecordFull itemFull
       when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
       return $ Just (itemKnown, ifk)
-    _ -> return Nothing
+    Nothing -> return Nothing
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
