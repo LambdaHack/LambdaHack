@@ -901,7 +901,7 @@ displaceTgt aid target retry = do
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
             | q == source  -- friend wants to swap
-              || bwatch b2 == WSleep  -- friend sleeping; doesn't care
+              || bwatch b2 `elem` [WSleep, WWake]  -- friend sleeps, not cares
               || retry  -- desperate
                  && not (boldpos b == Just target  -- and no displace loop
                          && not (waitedLastTurn b))
@@ -910,8 +910,8 @@ displaceTgt aid target retry = do
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself
               return $! returN "displace friend" $ ReqDisplace aid2
-          Just _ -> return reject
-          Nothing -> do  -- an enemy or ally or disoriented friend --- swap
+          Just _ | bwatch b2 `notElem` [WSleep, WWake] -> return reject
+          _ -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk

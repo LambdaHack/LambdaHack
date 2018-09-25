@@ -399,10 +399,7 @@ displaceAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
-  let dozes = case bwatch tb of
-        WSleep -> True
-        WWake -> True
-        _ -> False
+  let  dozes = bwatch tb `elem` [WSleep, WWake]
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills target
   disp <- getsState $ dispEnemy leader target actorMaxSk

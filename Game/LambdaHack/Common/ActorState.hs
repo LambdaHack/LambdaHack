@@ -349,10 +349,7 @@ dispEnemy source target actorMaxSk s =
         in any friend adjacentAssocs
       sb = getActorBody source s
       tb = getActorBody target s
-      dozes = case bwatch tb of
-        WSleep -> True
-        WWake -> True
-        _ -> False
+      dozes = bwatch tb `elem` [WSleep, WWake]
       tfact = sfactionD s EM.! bfid tb
   in bproj tb
      || not (isFoe (bfid tb) tfact (bfid sb))

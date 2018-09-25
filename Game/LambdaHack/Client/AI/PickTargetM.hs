@@ -172,7 +172,8 @@ computeTarget aid = do
               | condInMelee = if attacksFriends then 4 else 0
               | otherwise = meleeNearby
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
-                        && bwatch body /= WSleep  -- exploit sleep weakness
+                        && bwatch body `notElem` [WSleep, WWake]
+                             -- exploit sleep weakness
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
@@ -445,4 +446,4 @@ computeTarget aid = do
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $ Just $ TgtAndPath (TEnemy aid True) NoPath
+  else return $ Just $ TgtAndPath (TPoint TAny (blid b) (bpos b)) NoPath
