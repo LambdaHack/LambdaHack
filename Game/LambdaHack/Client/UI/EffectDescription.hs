@@ -263,7 +263,7 @@ skillToDecorator skill b t =
     SkAggression -> tshow t
 
 statSlots :: [Skill]
-statSlots = [SkHurtMelee .. SkFlying] ++ [SkMove .. SkApply]
+statSlots = [SkMove .. SkAggression]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
