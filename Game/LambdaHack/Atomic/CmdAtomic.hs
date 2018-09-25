@@ -181,10 +181,14 @@ data SfxMsg =
   | SfxWaterParalysisResisted
   | SfxTransImpossible
   | SfxIdentifyNothing
-  | SfxPurposeNothing CStore
+  | SfxPurposeNothing
   | SfxPurposeTooFew Int Int
   | SfxPurposeUnique
   | SfxPurposeNotCommon
+  | SfxRerollNothing
+  | SfxRerollNotRandom
+  | SfxDupNothing
+  | SfxDupUnique
   | SfxColdFish
   | SfxTimerExtended LevelId ActorId ItemId CStore
   | SfxCollideActor LevelId ActorId ActorId

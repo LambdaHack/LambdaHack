@@ -1078,6 +1078,16 @@ displayRespSfxAtomicUI sfx = case sfx of
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd $ makeSentence
             [MU.SubjectVerbSg subject "repurpose", "what lies", ppstore]
+        IK.RerollItem -> do
+          subject <- partActorLeader aid bUI
+          let ppstore = MU.Text $ ppCStoreIn CGround
+          msgAdd $ makeSentence
+            [MU.SubjectVerbSg subject "reshape", "what lies", ppstore]
+        IK.DupItem -> do
+          subject <- partActorLeader aid bUI
+          let ppstore = MU.Text $ ppCStoreIn CGround
+          msgAdd $ makeSentence
+            [MU.SubjectVerbSg subject "multiply", "what lies", ppstore]
         IK.Identify -> do
           subject <- partActorLeader aid bUI
           pronoun <- partPronounLeader aid bUI
@@ -1179,14 +1189,22 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxWaterParalysisResisted -> return ""  -- don't spam
   SfxTransImpossible -> return "Translocation not possible."
   SfxIdentifyNothing -> return "Nothing to identify."
-  SfxPurposeNothing store -> return $!
+  SfxPurposeNothing -> return $!
     "The purpose of repurpose cannot be availed without an item"
-    <+> ppCStoreIn store <> "."
+    <+> ppCStoreIn CGround <> "."
   SfxPurposeTooFew maxCount itemK -> return $!
     "The purpose of repurpose is served by" <+> tshow maxCount
     <+> "pieces of this item, not by" <+> tshow itemK <> "."
   SfxPurposeUnique -> return "Unique items can't be repurposed."
   SfxPurposeNotCommon -> return "Only ordinary common items can be repurposed."
+  SfxRerollNothing -> return $!
+    "The shape of reshape cannot be assumed without an item"
+    <+> ppCStoreIn CGround <> "."
+  SfxRerollNotRandom -> return "Only items of variable shape can be reshaped."
+  SfxDupNothing -> return $!
+    "Mutliplicity won't rise above zero without an item"
+    <+> ppCStoreIn CGround <> "."
+  SfxDupUnique -> return "Unique items can't be multiplied."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
   SfxTimerExtended lid aid iid cstore -> do
     aidSeen <- getsState $ memActor aid lid

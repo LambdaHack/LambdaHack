@@ -355,6 +355,8 @@ effectSem source target iid c recharged periodic effect = do
       effectCreateItem (Just $ bfid sb) Nothing target store grp tim
     IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
     IK.PolyItem -> effectPolyItem execSfx source target
+    IK.RerollItem -> effectRerollItem execSfx source target
+    IK.DupItem -> effectDupItem execSfx source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
@@ -1246,7 +1248,7 @@ effectPolyItem execSfx source target = do
   kitAss <- getsState $ kitAssocs target [cstore]
   case kitAss of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxPurposeNothing cstore
+      execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeNothing
       return UseId
     (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
@@ -1271,6 +1273,58 @@ effectPolyItem execSfx source target = do
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
            effectCreateItem (Just $ bfid sb) Nothing
                             target cstore "common item" IK.timerNone
+
+-- ** RerollItem
+
+effectRerollItem :: MonadServerAtomic m
+                 => m () -> ActorId -> ActorId -> m UseResult
+effectRerollItem execSfx source target = do
+  sb <- getsState $ getActorBody source
+  let cstore = CGround
+  kitAss <- getsState $ kitAssocs target [cstore]
+  case kitAss of
+    [] -> do
+      execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNothing
+      return UseId
+    (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
+          , kit@(itemK, _) )) : _ -> do
+      if | -- TODO:
+           False -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNotRandom
+           return UseId
+         | otherwise -> do
+           let c = CActor target cstore
+           execSfx
+           identifyIid iid c itemKindId
+           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+           -- TODO:
+           effectCreateItem (Just $ bfid sb) (Just itemK)
+                            target cstore "common item" IK.timerNone
+
+-- ** DupItem
+
+effectDupItem :: MonadServerAtomic m
+              => m () -> ActorId -> ActorId -> m UseResult
+effectDupItem execSfx source target = do
+  sb <- getsState $ getActorBody source
+  let cstore = CGround
+  kitAss <- getsState $ kitAssocs target [cstore]
+  case kitAss of
+    [] -> do
+      execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupNothing
+      return UseId
+    (iid, ( itemFull@ItemFull{itemBase, itemKindId}
+          , _ )) : _ -> do
+      let arItem = aspectRecordFull itemFull
+      if | IA.checkFlag Ability.Unique arItem -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupUnique
+           return UseId
+         | otherwise -> do
+           let c = CActor target cstore
+           execSfx
+           identifyIid iid c itemKindId
+           execUpdAtomic $ UpdCreateItem iid itemBase (1, []) c
+           return UseUp
 
 -- ** Identify
 

@@ -139,6 +139,8 @@ effectToBenefit cops fact insideRecharging eff =
                    -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
     IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
+    IK.RerollItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
+    IK.DupItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)

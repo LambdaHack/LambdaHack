@@ -105,6 +105,8 @@ effectToSuffix detailLevel effect =
             else ("drop", "from" <+> snd (ppCStore store))
       in "of" <+> verb <+> ntxt <+> tshow grp <+> fromStore
     PolyItem -> "of repurpose on the ground"
+    RerollItem -> "of reshape on the ground"
+    DupItem -> "of multiplication on the ground"
     Identify -> "of identify"
     Detect d radius ->
       "of" <+> detectToObject d <+> "location" <+> wrapInParens (tshow radius)
