@@ -5,8 +5,11 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , ppSLore, loreFromMode, loreFromContainer, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, statsOverlay, placesFromState, placeParts, placesOverlay
-  , pickNumber, lookAtTile, lookAtActors, lookAtItems
-  , displayItemLore, viewLoreItems
+  , pickNumber, lookAtItems, lookAtPosition, displayItemLore, viewLoreItems
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , lookAtTile, lookAtActors
+#endif
   ) where
 
 import Prelude ()
@@ -49,6 +52,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
@@ -499,6 +503,19 @@ lookAtItems canSee p aid = do
   return $! if EM.null is then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
                               , MU.WWandW $ map (snd . nWs) $ EM.assocs is]
+
+-- | Produces a textual description of everything at the requested
+-- level's position.
+lookAtPosition :: MonadClientUI m => LevelId -> Point -> m Text
+lookAtPosition lidV p = do
+  leader <- getLeaderUI
+  per <- getPerFid lidV
+  let canSee = ES.member p (totalVisible per)
+  -- Show general info about current position.
+  tileBlurb <- lookAtTile canSee p leader lidV
+  actorsBlurb <- lookAtActors p lidV
+  itemsBlurb <- lookAtItems canSee p leader
+  return $! tileBlurb <+> actorsBlurb <+> itemsBlurb
 
 displayItemLore :: MonadClientUI m
                 => SingleItemSlots -> ItemBag -> Int

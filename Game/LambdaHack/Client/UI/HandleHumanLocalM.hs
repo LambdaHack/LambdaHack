@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , repeatHuman, recordHuman, historyHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, tgtClearHuman, doLookAtPos, itemClearHuman
+  , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -73,7 +73,6 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
@@ -811,19 +810,8 @@ doLook = do
       xhairPos <- xhairToPos
       b <- getsState $ getActorBody leader
       let p = fromMaybe (bpos b) xhairPos
-      doLookAtPos lidV p
-
--- | Perform look around at the requested level's position.
-doLookAtPos :: MonadClientUI m => LevelId -> Point -> m ()
-doLookAtPos lidV p = do
-  leader <- getLeaderUI
-  per <- getPerFid lidV
-  let canSee = ES.member p (totalVisible per)
-  -- Show general info about current position.
-  tileBlurb <- lookAtTile canSee p leader lidV
-  actorsBlurb <- lookAtActors p lidV
-  itemsBlurb <- lookAtItems canSee p leader
-  promptAdd1 $! tileBlurb <+> actorsBlurb <+> itemsBlurb
+      blurb <- lookAtPosition lidV p
+      promptAdd1 blurb
 
 -- * ItemClear
 

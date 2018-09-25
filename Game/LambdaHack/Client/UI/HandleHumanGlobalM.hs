@@ -467,7 +467,8 @@ moveSearchAlter run dir = do
            else failSer MoveUnskilled
        -- Not walkable, so search and/or alter the tile.
        | run -> do
-           doLookAtPos (blid sb) tpos
+           blurb <- lookAtPosition (blid sb) tpos
+           promptAdd1 blurb
            failWith $ if alterable
                       then "potentially alterable"
                       else "not alterable"
