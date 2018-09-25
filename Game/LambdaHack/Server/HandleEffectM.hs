@@ -1117,9 +1117,9 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   bagBefore <- getsState $ getBodyStoreBag tb store
   let litemFreq = [(grp, 1)]
   -- Power depth of new items unaffected by number of spawned actors.
-  m3 <- rollItem 0 (blid tb) litemFreq
-  let (itemKnownRaw, (itemFullRaw, kitRaw), _) =
-        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m3
+  m2 <- rollItem 0 (blid tb) litemFreq
+  let (itemKnownRaw, (itemFullRaw, kitRaw)) =
+        fromMaybe (error $ "" `showFailure` (blid tb, litemFreq, c)) m2
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Temporary organs are
       -- allowed to be duplicated, because they provide really useful info

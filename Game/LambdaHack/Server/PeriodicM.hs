@@ -85,10 +85,10 @@ addAnyActor summoned actorFreq lid time mpos = do
   lvl <- getLevel lid
   factionD <- getsState sfactionD
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
-  m3 <- rollItem lvlSpawned lid actorFreq
-  case m3 of
+  m2 <- rollItem lvlSpawned lid actorFreq
+  case m2 of
     Nothing -> return Nothing
-    Just (itemKnownRaw, (itemFullRaw, kit), _) -> do
+    Just (itemKnownRaw, (itemFullRaw, kit)) -> do
       let freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
           f fact = fgroups (gplayer fact)
           factGroups = concatMap f $ EM.elems factionD

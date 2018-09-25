@@ -92,7 +92,7 @@ embedItem lid pos tk = do
 
 rollItem :: MonadServerAtomic m
          => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFullKit, GroupName ItemKind))
+         -> m (Maybe (ItemKnown, ItemFullKit))
 rollItem lvlSpawned lid itemFreq = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -103,13 +103,13 @@ rollItem lvlSpawned lid itemFreq = do
   m3 <- rndToAction $ newItem cops flavour discoRev uniqueSet
                               itemFreq lvlSpawned lid ldepth totalDepth
   case m3 of
-    Just (_, (itemFull@ItemFull{itemKindId}, _), _) -> do
+    Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _), _) -> do
       let arItem = aspectRecordFull itemFull
       when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
-    _ -> return ()
-  return m3
+      return $ Just (itemKnown, ifk)
+    _ -> return Nothing
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
@@ -117,10 +117,10 @@ rollAndRegisterItem :: MonadServerAtomic m
                     -> m (Maybe (ItemId, ItemFullKit))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
-  m3 <- rollItem 0 lid itemFreq
-  case m3 of
+  m2 <- rollItem 0 lid itemFreq
+  case m2 of
     Nothing -> return Nothing
-    Just (itemKnown, (itemFull, kit), _) -> do
+    Just (itemKnown, (itemFull, kit)) -> do
       let kit2 = (fromMaybe (fst kit) mk, snd kit)
       iid <- registerItem (itemFull, kit2) itemKnown container verbose
       return $ Just (iid, (itemFull, kit2))
