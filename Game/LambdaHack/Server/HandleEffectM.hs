@@ -1313,11 +1313,14 @@ effectDupItem execSfx source target = do
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupNothing
       return UseId
-    (iid, ( itemFull@ItemFull{itemBase, itemKindId}
+    (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , _ )) : _ -> do
       let arItem = aspectRecordFull itemFull
       if | IA.checkFlag Ability.Unique arItem -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupUnique
+           return UseId
+         | maybe False (> 0) $ lookup "valuable" $ IK.ifreq itemKind -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupValuable
            return UseId
          | otherwise -> do
            let c = CActor target cstore

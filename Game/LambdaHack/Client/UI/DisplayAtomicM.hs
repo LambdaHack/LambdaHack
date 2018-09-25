@@ -1205,6 +1205,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     "Mutliplicity won't rise above zero without an item"
     <+> ppCStoreIn CGround <> "."
   SfxDupUnique -> return "Unique items can't be multiplied."
+  SfxDupValuable -> return "Valuable items can't be multiplied."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
   SfxTimerExtended lid aid iid cstore -> do
     aidSeen <- getsState $ memActor aid lid

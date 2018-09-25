@@ -189,6 +189,7 @@ data SfxMsg =
   | SfxRerollNotRandom
   | SfxDupNothing
   | SfxDupUnique
+  | SfxDupValuable
   | SfxColdFish
   | SfxTimerExtended LevelId ActorId ItemId CStore
   | SfxCollideActor LevelId ActorId ActorId
