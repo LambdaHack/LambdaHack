@@ -1,6 +1,6 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( registerItem, embedItem, rollItem, rollAndRegisterItem
+  ( registerItem, embedItem, rollItemAspect, rollItem, rollAndRegisterItem
   , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -23,6 +23,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.ContentData
+import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -36,6 +37,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Content.CaveKind (citemFreq, citemNum)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Server.ItemRev
 import           Game.LambdaHack.Server.MonadServer
@@ -90,17 +92,25 @@ embedItem lid pos tk = do
       f grp = rollAndRegisterItem lid [(grp, 1)] container False Nothing
   mapM_ f embeds
 
-rollItem :: MonadServerAtomic m
-         => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFullKit))
-rollItem lvlSpawned lid itemFreq = do
+prepareItemKind :: MonadServerAtomic m
+                => Int -> LevelId -> Freqs ItemKind
+                -> m (Frequency (ContentId IK.ItemKind, ItemKind))
+prepareItemKind lvlSpawned lid itemFreq = do
   cops <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoKindRev
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  let freq = newItemKind cops uniqueSet itemFreq lvlSpawned ldepth totalDepth
+  return $! newItemKind cops uniqueSet itemFreq lvlSpawned ldepth totalDepth
+
+rollItemAspect :: MonadServerAtomic m
+               => Frequency (ContentId IK.ItemKind, ItemKind) -> LevelId
+               -> m (Maybe (ItemKnown, ItemFullKit))
+rollItemAspect freq lid = do
+  cops <- getsState scops
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoKindRev
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel lid
   m2 <- rndToAction $ newItem cops freq flavour discoRev lid ldepth totalDepth
   case m2 of
     Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _)) -> do
@@ -110,6 +120,13 @@ rollItem lvlSpawned lid itemFreq = do
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
       return $ Just (itemKnown, ifk)
     Nothing -> return Nothing
+
+rollItem :: MonadServerAtomic m
+         => Int -> LevelId -> Freqs ItemKind
+         -> m (Maybe (ItemKnown, ItemFullKit))
+rollItem lvlSpawned lid itemFreq = do
+  freq <- prepareItemKind lvlSpawned lid itemFreq
+  rollItemAspect freq lid
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
