@@ -318,7 +318,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   tgts <- getsState $ posToAssocs tpos arena
   case tgts of
     [] -> do  -- move or search or alter
-      runStopOrCmd <- moveSearchAlter dir
+      runStopOrCmd <- moveSearchAlter run dir
       case runStopOrCmd of
         Left stopMsg -> return $ Left stopMsg
         Right runCmd ->
@@ -431,8 +431,9 @@ displaceAid target = do
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.
-moveSearchAlter :: MonadClientUI m => Vector -> m (FailOrCmd RequestTimed)
-moveSearchAlter dir = do
+moveSearchAlter :: MonadClientUI m
+                => Bool -> Vector -> m (FailOrCmd RequestTimed)
+moveSearchAlter run dir = do
   COps{cotile, coTileSpeedup} <- getsState scops
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
@@ -456,6 +457,7 @@ moveSearchAlter dir = do
             legal = permittedApply localTime applySkill calmE itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
+      alterable = Tile.isModifiable coTileSpeedup t || canApplyEmbeds
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -464,7 +466,12 @@ moveSearchAlter dir = do
              return $ Right $ ReqMove dir
            else failSer MoveUnskilled
        -- Not walkable, so search and/or alter the tile.
-       | not (Tile.isModifiable coTileSpeedup t || canApplyEmbeds) -> do
+       | run -> do
+           doLookAtPos (blid sb) tpos
+           failWith $ if alterable
+                      then "potentially alterable"
+                      else "not alterable"
+       | not alterable -> do
            let name = MU.Text $ TK.tname $ okind cotile t
            failWith $ makePhrase ["there is no point kicking", MU.AW name]
              -- misclick? related to AlterNothing but no searching possible;

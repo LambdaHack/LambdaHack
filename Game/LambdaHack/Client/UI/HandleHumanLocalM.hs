@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , repeatHuman, recordHuman, historyHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
+  , cancelHuman, acceptHuman, tgtClearHuman, doLookAtPos, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -798,11 +798,6 @@ tgtClearHuman = do
       clearXhair
       doLook
 
--- * ItemClear
-
-itemClearHuman :: MonadClientUI m => m ()
-itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
-
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.
 doLook :: MonadClientUI m => m ()
@@ -814,15 +809,26 @@ doLook = do
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
       xhairPos <- xhairToPos
-      per <- getPerFid lidV
       b <- getsState $ getActorBody leader
       let p = fromMaybe (bpos b) xhairPos
-          canSee = ES.member p (totalVisible per)
-      -- Show general info about current position.
-      tileBlurb <- lookAtTile canSee p leader lidV
-      actorsBlurb <- lookAtActors p lidV
-      itemsBlurb <- lookAtItems canSee p leader
-      promptAdd1 $! tileBlurb <+> actorsBlurb <+> itemsBlurb
+      doLookAtPos lidV p
+
+-- | Perform look around at the requested level's position.
+doLookAtPos :: MonadClientUI m => LevelId -> Point -> m ()
+doLookAtPos lidV p = do
+  leader <- getLeaderUI
+  per <- getPerFid lidV
+  let canSee = ES.member p (totalVisible per)
+  -- Show general info about current position.
+  tileBlurb <- lookAtTile canSee p leader lidV
+  actorsBlurb <- lookAtActors p lidV
+  itemsBlurb <- lookAtItems canSee p leader
+  promptAdd1 $! tileBlurb <+> actorsBlurb <+> itemsBlurb
+
+-- * ItemClear
+
+itemClearHuman :: MonadClientUI m => m ()
+itemClearHuman = modifySession $ \sess -> sess {sitemSel = Nothing}
 
 -- * MoveXhair
 
