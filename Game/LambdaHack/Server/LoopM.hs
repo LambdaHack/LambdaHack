@@ -371,7 +371,8 @@ hTrajectories aid = do
        -- but also invulnerable in this respect.
        b2 <- getsState $ getActorBody aid
        if | actorDying b2 -> dieSer aid b2
-          | isJust (btrajectory b2) -> advanceTimeTraj aid
+          | maybe False (not . null) $ fst <$> btrajectory b2 ->
+              advanceTimeTraj aid  -- delay next iteration only if still flying
           | otherwise -> return ()  -- handled later on
      | otherwise ->
        -- No longer fulfills criteria and was not removed above; remove him.
