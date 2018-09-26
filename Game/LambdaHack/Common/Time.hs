@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Time
   , timeDeltaToDigit
   , Speed, toSpeed, fromSpeed, minSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
-  , speedScale, speedAdd, speedNegate
+  , speedScale, speedAdd
   , ticksPerMeter, speedFromWeight, rangeFromSpeedAndLinger
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -237,11 +237,6 @@ speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
 speedAdd :: Speed -> Speed -> Speed
 {-# INLINE speedAdd #-}
 speedAdd (Speed s1) (Speed s2) = Speed (s1 + s2)
-
--- | Speed negation.
-speedNegate :: Speed -> Speed
-{-# INLINE speedNegate #-}
-speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time

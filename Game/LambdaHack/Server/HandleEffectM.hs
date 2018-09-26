@@ -1493,14 +1493,13 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
             -- Note that the @ThrowMod@ stat of the actor's trunk is ignored.
             computeTrajectory weight throwVelocity throwLinger path
           ts = Just (trajectory, speed)
-      if null trajectory || btrajectory tb == ts
+      if null trajectory
       then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
       else do
         execSfx
         -- Old and new trajectories are not added; the old one is replaced.
-        execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
-        -- Reset flying time to now, so that the (new) push happens ASAP.
-        localTime <- getsState $ getLocalTime (blid tb)
+        unless (btrajectory tb == ts) $
+          execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
         -- If propeller is a projectile, it pushes involuntarily,
         -- so its originator is to blame.
         -- However, we can't easily see whether a pushed non-projectile actor
@@ -1511,10 +1510,19 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
                                         . strajPushedBy
                       else return source
         modifyServer $ \ser ->
-          ser { strajTime = updateActorTime (bfid tb) (blid tb) target localTime
-                            $ strajTime ser
-              , strajPushedBy = EM.insert target originator
-                                $ strajPushedBy ser }
+          ser {strajPushedBy = EM.insert target originator $ strajPushedBy ser}
+        -- In case of pre-existing pushing, don't touch the time
+        -- so that the pending @advanceTimeTraj@ can do its job
+        -- (it will, because non-empty trajectory is here set, unless, e.g.,
+        -- subsequent effects from the same item change the trajectory).
+        when (isNothing $ btrajectory tb) $ do
+          -- Set flying time to now, so that the push happens ASAP,
+          -- because it's the first one, so no delay is needed.
+          localTime <- getsState $ getLocalTime (blid tb)
+          modifyServer $ \ser ->
+            ser {strajTime =
+                   updateActorTime (bfid tb) (blid tb) target localTime
+                   $ strajTime ser}
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m

@@ -894,13 +894,10 @@ ppHearMsg hearMsg = case hearMsg of
     let sound = case cmd of
           UpdDestroyActor{} -> "shriek"
           UpdCreateItem{} -> "clatter"
-          UpdTrajectory{} ->
-            -- Projectile hits an non-walkable tile on leader's level.
-            "thud"
-          UpdAlterTile _ _ _ toTile ->
-            if Tile.isDoor coTileSpeedup toTile
-            then "creaking sound"
-            else "rumble"
+          UpdTrajectory{} -> "thud"  -- Projectile hits a non-walkable tile.
+          UpdAlterTile _ _ _ toTile -> if Tile.isDoor coTileSpeedup toTile
+                                       then "creaking sound"
+                                       else "rumble"
           UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
                                              else "fizzing noise"
           _ -> error $ "" `showFailure` cmd
