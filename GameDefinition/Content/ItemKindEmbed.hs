@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround]
 
-scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -330,6 +330,24 @@ straightPath = ItemKind
   , idamage  = 0
   , iaspects = [SetFlag Durable]
   , ieffects = [InsertMove 2]
+  , idesc    = ""
+  , ikit     = []
+  }
+frozenGround = ItemKind
+  { isymbol  = '.'
+  , iname    = "frozen ground"
+  , ifreq    = [("frozen ground", 1)]
+  , iflavour = zipFancy [BrBlue]
+  , icount   = 1
+  , irarity  = [(1, 1)]
+  , iverbHit = "betray"
+  , iweight  = 10000
+  , idamage  = 0
+  , iaspects = [SetFlag Durable]  -- very thick ice and refreezes
+  , ieffects = [PushActor (ThrowMod 400 10)]
+                  -- the high speed represents gliding rather than flying
+                  -- and so no need to lift actor's weight off the ground;
+                  -- low linger comes from abrupt halt over normal surface
   , idesc    = ""
   , ikit     = []
   }
