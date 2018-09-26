@@ -1476,7 +1476,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
       fpos = bpos tb `shift` v
   if bhp tb <= 0 then  -- avoid dragging around corpses
     return UseDud  -- the impact never manifested
-  else if waitedLastTurn tb then do
+  else if waitedLastTurn tb && isNothing (btrajectory tb) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseId  -- the message reveals what's going on
   else do
