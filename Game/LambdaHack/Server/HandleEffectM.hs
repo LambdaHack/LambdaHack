@@ -1298,10 +1298,9 @@ effectRerollItem execSfx source target = do
            execSfx
            identifyIid iid c itemKindId
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-           tdepth <- getsState stotalDepth
            dungeon <- getsState sdungeon
-           let hasTDepth (_, Level{ldepth}) = ldepth == tdepth
-               totalLid = fst $ fromJust $ find hasTDepth $ EM.assocs dungeon
+           let totalLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
+                              $ EM.assocs dungeon
            m2 <- rollItemAspect freq totalLid
            case m2 of
              Nothing -> error "effectRerollItem: can't create rerolled item"
