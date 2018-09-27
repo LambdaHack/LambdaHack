@@ -425,7 +425,7 @@ lidFromC :: Container -> State -> LevelId
 lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
 lidFromC (CActor aid _) s = blid $ getActorBody aid s
-lidFromC c@CTrunk{} _ = error $ "" `showFailure` c
+lidFromC (CTrunk _ lid _) _ = lid
 
 posFromC :: Container -> State -> Point
 posFromC (CFloor _ pos) _ = pos
