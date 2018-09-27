@@ -305,7 +305,13 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> do
     sdisplayNeeded <- getsSession sdisplayNeeded
-    when sdisplayNeeded pushFrame
+    time <- getsState stime
+    let clipN = time `timeFit` timeClip
+        clipInTurn = let r = timeTurn `timeFit` timeClip
+                     in assert (r >= 5) r
+        clipMod = clipN `mod` clipInTurn
+        ping = clipMod == 0
+    when (sdisplayNeeded || ping) pushFrame
   UpdUnAgeGame{} -> return ()
   UpdDiscover c iid _ _ -> discover c iid
   UpdCover{} -> return ()  -- don't spam when doing undo

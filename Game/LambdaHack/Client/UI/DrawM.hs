@@ -551,6 +551,7 @@ drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   let calmHeaderText = "Calm"
       hpHeaderText = "HP"
+      slashes = ["/", "|", "\\", "|"]
   sUIOptions <- getsSession sUIOptions
   mleader <- getsClient sleader
   case mleader of
@@ -560,14 +561,17 @@ drawLeaderStatus waitT = do
       (hpCheckWarning, calmCheckWarning)
         <- getsState $ checkWarnings sUIOptions leader
       bdark <- getsState $ \s -> not (actorInAmbient b s)
+      time <- getsState stime
       let showTrunc x = let t = show x
                         in if length t > 3
                            then if x > 0 then "***" else "---"
                            else t
+          waitGlobal = timeFit time timeTurn
+          waitSlash | waitedLastTurn b = waitT
+                    | otherwise = waitGlobal
           -- This is a valuable feedback for the otherwise hard to observe
-          -- 'wait' command.
-          slashes = ["/", "|", "\\", "|"]
-          slashPick = slashes !! (max 0 waitT `mod` length slashes)
+          -- 'wait' command or for passing of time when sole leader sleeps.
+          slashPick = slashes !! (max 0 waitSlash `mod` length slashes)
           addColor c = map (Color.attrChar2ToW32 c)
           checkDelta ResDelta{..}
             | fst resCurrentTurn < 0 || fst resPreviousTurn < 0
@@ -591,12 +595,12 @@ drawLeaderStatus waitT = do
                          else "/")
                      <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxCalm
                                                          actorMaxSk)
-          bracePick | waitedLastTurn b  = "}"
+          bracePick | waitedLastTurn b = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
           hpText = showTrunc (bhp b `divUp` oneM)
-                   <> (if waitedLastTurn b || not bdark
+                   <> (if not bdark || waitedLastTurn b
                        then slashPick
                        else "/")
                    <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxHP
@@ -607,8 +611,14 @@ drawLeaderStatus waitT = do
                 <> colorWarning calmCheckWarning (justifyRight 7 calmText)
                 <+:> hpHeader
                 <> colorWarning hpCheckWarning (justifyRight 7 hpText)
-    Nothing -> return $! stringToAL (calmHeaderText ++ ":  --/--")
-                         <+:> stringToAL (hpHeaderText <> ":  --/--")
+    Nothing -> do
+      -- This is a valuable feedback for passing of time while faction
+      -- leaderless and especially while temporarily actor-less..
+      time <- getsState stime
+      let waitGlobal = timeFit time timeTurn
+          slashPick = slashes !! (max 0 waitGlobal `mod` length slashes)
+      return $! stringToAL (calmHeaderText ++ ":  --" ++ slashPick ++ "--")
+                <+:> stringToAL (hpHeaderText <> ":  --/--")
 
 drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
