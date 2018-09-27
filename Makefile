@@ -123,13 +123,16 @@ nodeBenchBattle:
 nodeBench: nodeBenchBattle nodeBenchCrawl
 
 
-test-travis: test-short test-medium benchNull
+test-travis: test-sniff test-short test-medium benchNull
 
-test: test-short test-medium benchNull
+test: test-sniff test-short test-medium benchNull
 
 test-short: test-short-new test-short-load
 
 test-medium: testRaid-medium testBrawl-medium testShootout-medium testHunt-medium testEscape-medium testZoo-medium testAmbush-medium testCrawl-medium testCrawlEmpty-medium testCrawl-medium-know testSafari-medium testSafariSurvival-medium testBattle-medium testBattleSurvival-medium testDig-medium testDefenseEmpty-medium
+
+test-sniff:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 5 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterFrames 1  --dumpInitRngs --automateAll --keepAutomated --gameMode raid --sniff 2> /tmp/teletypetest.log
 
 testRaid-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 20 --dumpInitRngs --automateAll --keepAutomated --gameMode raid 2> /tmp/teletypetest.log
