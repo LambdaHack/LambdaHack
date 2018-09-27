@@ -676,7 +676,9 @@ reqAlterFail voluntary source tpos = do
             unless (EM.null embeds) $ do
               -- Can't send @SfxTrigger@ afterwards, because actor may be moved
               -- by the embeds to another level, where @tpos@ is meaningless.
-              execSfxAtomic $ SfxTrigger source tpos
+              -- However, don't spam with projectiles on ice.
+              unless (bproj sb || underFeet) $
+                execSfxAtomic $ SfxTrigger source tpos
               -- The embeds of the initial tile are activated before the tile
               -- is altered. This prevents, e.g., trying to activate items
               -- where none are present any more, or very different to what
