@@ -532,8 +532,9 @@ displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
+  jlid <- getsSession $ (EM.! iid2) . sitemUI
   let attrLine = itemDesc True side factionD meleeSkill
-                          CGround localTime itemFull2 kit2
+                          CGround localTime jlid itemFull2 kit2
       ov = splitAttrLine rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]

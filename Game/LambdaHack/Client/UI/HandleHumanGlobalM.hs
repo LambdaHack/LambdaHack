@@ -1128,6 +1128,7 @@ itemMenuHuman cmdAction = do
           found <- getsState $ findIid leader (bfid b) iid
           factionD <- getsState sfactionD
           sactorUI <- getsSession sactorUI
+          jlid <- getsSession $ (EM.! iid) . sitemUI
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
@@ -1146,7 +1147,7 @@ itemMenuHuman cmdAction = do
                 if null foundTexts then "" else "The item is also in:"
               desc = itemDesc False (bfid b) factionD
                               (Ability.getSk Ability.SkHurtMelee actorMaxSk)
-                              fromCStore localTime itemFull kit
+                              fromCStore localTime jlid itemFull kit
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1
