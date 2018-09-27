@@ -353,15 +353,15 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime
         | weight > 1000 =
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
-      onLevel = "on level" <+> tshow (abs $ fromEnum $ jlid itemBase) <> "."
+--      onLevel = "on level" <+> tshow (abs $ fromEnum $ jlid itemBase) <> "."
       discoFirst = (if unique then "Discovered" else "First seen")
-                   <+> onLevel
+--                   <+> onLevel
       whose fid = gname (factionD EM.! fid)
       sourceDesc =
         case jfid itemBase of
           Just fid | IA.looksLikeCondition arItem ->
             "Caused by" <+> (if fid == side then "us" else whose fid)
-            <> ". First observed" <+> onLevel
+--            <> ". First observed" <+> onLevel
           Just fid ->
             "Coming from" <+> whose fid
             <> "." <+> discoFirst

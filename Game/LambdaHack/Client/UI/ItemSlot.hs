@@ -97,7 +97,7 @@ compareItemFull itemFull1 itemFull2 =
   let kindAndAppearance ItemFull{itemBase=Item{..}, ..} =
         ( not itemSuspect, itemKindId, itemDisco
         , IK.isymbol itemKind, IK.iname itemKind
-        , jflavour, jfid, jlid )
+        , jflavour, jfid )
   in comparing kindAndAppearance itemFull1 itemFull2
 
 sortSlotMap :: (ItemId -> ItemFull)-> SingleItemSlots -> SingleItemSlots

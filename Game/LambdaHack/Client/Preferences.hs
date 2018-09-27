@@ -273,7 +273,6 @@ recBenefit grp cops@COps{coitem, coItemSpeedup} fact =
 fakeItem :: ContentId IK.ItemKind -> IK.ItemKind -> IA.KindMean -> ItemFull
 fakeItem kindId kind km =
   let jkind    = IdentityObvious kindId
-      jlid     = toEnum 1  -- dummy
       jfid     = Nothing  -- the default
       jflavour = Flavour minBound minBound  -- dummy
       itemBase = Item{..}

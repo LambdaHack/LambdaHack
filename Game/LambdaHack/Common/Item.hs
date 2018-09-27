@@ -52,7 +52,6 @@ newtype ItemId = ItemId Int
 -- items may or may not need identification of their aspect record).
 data Item = Item
   { jkind    :: ItemIdentity  -- ^ the kind of the item, or an indiretion
-  , jlid     :: LevelId       -- ^ lowest level the item was created at
   , jfid     :: Maybe FactionId
                               -- ^ the faction that created the item, if any
   , jflavour :: Flavour       -- ^ flavour, always the real one, not hidden;
