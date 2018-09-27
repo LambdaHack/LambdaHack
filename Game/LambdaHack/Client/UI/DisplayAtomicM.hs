@@ -82,6 +82,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem iid _item kit c -> do
+    recordItemLid iid c
     updateItemSlot c iid
     case c of
       CActor aid store ->
@@ -566,11 +567,12 @@ createActorUI born aid body = do
              then "be here"
              else "appear" <+> if bfid body == side then "" else "suddenly"
         else "be spotted"
-  mapM_ (\(iid, store) ->
+  mapM_ (\(iid, store) -> do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
-           in void $ updateItemSlot c iid)
+           void $ updateItemSlot c iid
+           recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
   when (bfid body /= side) $ do
@@ -634,6 +636,7 @@ spotItem :: MonadClientUI m
 spotItem verbose iid kit c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
+  recordItemLid iid c
   ItemSlots itemSlots <- getsSession sslots
   arItem <- getsState $ aspectRecordFromIid iid
   let slore = loreFromContainer arItem c
@@ -668,6 +671,14 @@ spotItem verbose iid kit c = do
           verb = MU.Text $ makePhrase $ "be added to" : ownW
       itemVerbMU iid kit verb c
     _ -> return ()
+
+recordItemLid :: MonadClientUI m => ItemId -> Container -> m ()
+recordItemLid iid c = do
+  mjlid <- getsSession $ EM.lookup iid . sitemUI
+  when (isNothing mjlid) $ do
+    lid <- getsState $ lidFromC c
+    modifySession $ \sess ->
+      sess {sitemUI = EM.insert iid lid $ sitemUI sess}
 
 moveActor :: MonadClientUI m => ActorId -> Point -> Point -> m ()
 moveActor aid source target = do

@@ -38,6 +38,7 @@ import           Game.LambdaHack.Common.Vector
 data SessionUI = SessionUI
   { sxhair         :: Target             -- ^ the common xhair
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
+  , sitemUI        :: ItemDictUI         -- ^ assigned item first seen level
   , sslots         :: ItemSlots          -- ^ map from slots to items
   , slastItemMove  :: Maybe (CStore, CStore)
                                          -- ^ last item move stores
@@ -76,6 +77,8 @@ data SessionUI = SessionUI
                                     --   to current game start
   }
 
+type ItemDictUI = EM.EnumMap ItemId LevelId
+
 -- | Current aiming mode of a client.
 newtype AimMode = AimMode { aimLevelId :: LevelId }
   deriving (Show, Eq, Binary)
@@ -109,6 +112,7 @@ emptySessionUI sUIOptions =
   SessionUI
     { sxhair = TVector $ Vector 0 0
     , sactorUI = EM.empty
+    , sitemUI = EM.empty
     , sslots = ItemSlots $ EM.fromAscList
                $ zip [minBound..maxBound] (repeat EM.empty)
     , slastItemMove = Nothing
@@ -155,6 +159,7 @@ instance Binary SessionUI where
   put SessionUI{..} = do
     put sxhair
     put sactorUI
+    put sitemUI
     put sslots
     put sUIOptions
     put saimMode
@@ -168,6 +173,7 @@ instance Binary SessionUI where
   get = do
     sxhair <- get
     sactorUI <- get
+    sitemUI <- get
     sslots <- get
     sUIOptions <- get  -- is overwritten ASAP, but useful for, e.g., crash debug
     saimMode <- get
