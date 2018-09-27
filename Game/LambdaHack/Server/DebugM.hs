@@ -12,7 +12,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
 import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
@@ -94,7 +93,8 @@ data DebugAid = DebugAid
   , faction :: FactionId
   , lid     :: LevelId
   , bHP     :: Int64
-  , btime   :: Time
+  , btime   :: Maybe Time
+  , btrTime :: Maybe Time
   , time    :: Time
   }
   deriving Show
@@ -103,14 +103,13 @@ debugAid :: MonadServer m => ActorId -> Text -> m Text
 debugAid aid label = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
-  -- If non-projectile pushed, we only show its push time, not normal time.
-  let traj = isJust (btrajectory b)
-  btime <- getsServer $ (EM.! aid) . (EM.! blid b) . (EM.! bfid b)
-                        . if traj then strajTime else sactorTime
+  btime <- getsServer $ lookupActorTime (bfid b) (blid b) aid . sactorTime
+  btrTime <- getsServer $ lookupActorTime (bfid b) (blid b) aid . strajTime
   return $! debugShow DebugAid { label
                                , aid
                                , faction = bfid b
                                , lid = blid b
                                , bHP = bhp b
                                , btime
+                               , btrTime
                                , time }
