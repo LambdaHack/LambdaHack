@@ -488,12 +488,12 @@ hActors :: forall m. (MonadServerAtomic m, MonadServerComm m)
 hActors [] = return False
 hActors as@(aid : rest) = do
  b1 <- getsState $ getActorBody aid
+ let !_A = assert (not $ bproj b1) ()
  if bhp b1 <= 0 then do
    dieSer aid b1
    hActors rest
  else do
   let side = bfid b1
-      !_A = assert (not $ bproj b1) ()
   fact <- getsState $ (EM.! side) . sfactionD
   breakLoop <- getsServer sbreakLoop
   let mleader = gleader fact

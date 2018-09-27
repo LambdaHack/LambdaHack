@@ -1516,12 +1516,15 @@ effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
         -- (it will, because non-empty trajectory is here set, unless, e.g.,
         -- subsequent effects from the same item change the trajectory).
         when (isNothing $ btrajectory tb) $ do
-          -- Set flying time to now, so that the push happens ASAP,
-          -- because it's the first one, so no delay is needed.
+          -- Set flying time to almost now, so that the push happens ASAP,
+          -- because it's the first one, so almost no delay is needed.
           localTime <- getsState $ getLocalTime (blid tb)
+          -- But add a slight overhead to avoid displace-slide loops
+          -- of 3 actors in a line.
+          let overheadTime = timeShift localTime (Delta timeClip)
           modifyServer $ \ser ->
             ser {strajTime =
-                   updateActorTime (bfid tb) (blid tb) target localTime
+                   updateActorTime (bfid tb) (blid tb) target overheadTime
                    $ strajTime ser}
         return UseUp
 
