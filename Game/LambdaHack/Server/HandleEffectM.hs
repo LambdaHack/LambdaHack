@@ -360,11 +360,11 @@ effectSem source target iid c recharged periodic effect = do
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
-      effectSendFlying execSfx tmod source target Nothing
+      effectSendFlying execSfx tmod source target c Nothing
     IK.PushActor tmod ->
-      effectSendFlying execSfx tmod source target (Just True)
+      effectSendFlying execSfx tmod source target c (Just True)
     IK.PullActor tmod ->
-      effectSendFlying execSfx tmod source target (Just False)
+      effectSendFlying execSfx tmod source target c (Just False)
     IK.DropBestWeapon -> effectDropBestWeapon execSfx target
     IK.ActivateInv symbol -> effectActivateInv execSfx source target symbol
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
@@ -699,7 +699,7 @@ effectPutToSleep execSfx target = do
 effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectYell execSfx target = do
   tb <- getsState $ getActorBody target
-  if bhp tb <= 0 then  -- avoid yelling corpses
+  if bproj tb || bhp tb <= 0 then  -- avoid yelling projectiles or corpses
     return UseDud  -- the yell never manifested
   else do
     execSfx
@@ -1188,13 +1188,13 @@ effectDropItem :: MonadServerAtomic m
                => m () -> Int -> Int -> CStore -> GroupName ItemKind -> ActorId
                -> m UseResult
 effectDropItem execSfx ngroup kcopy store grp target = do
-  b <- getsState $ getActorBody target
+  tb <- getsState $ getActorBody target
   is <- allGroupItems store grp target
-  if null is
+  if bproj tb || null is
   then return UseDud
   else do
     unless (store == COrgan) execSfx
-    mapM_ (uncurry (dropCStoreItem True store target b kcopy)) $ take ngroup is
+    mapM_ (uncurry (dropCStoreItem True store target tb kcopy)) $ take ngroup is
     return UseUp
 
 -- | Drop a single actor's item. Note that if there are multiple copies,
@@ -1466,15 +1466,20 @@ effectDetectX d predicate action execSfx radius target = do
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.
 effectSendFlying :: MonadServerAtomic m
-                 => m () -> IK.ThrowMod -> ActorId -> ActorId -> Maybe Bool
+                 => m () -> IK.ThrowMod -> ActorId -> ActorId -> Container
+                 -> Maybe Bool
                  -> m UseResult
-effectSendFlying execSfx IK.ThrowMod{..} source target modePush = do
+effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
   v <- sendFlyingVector source target modePush
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let eps = 0
       fpos = bpos tb `shift` v
-  if bhp tb <= 0 then  -- avoid dragging around corpses
+      isEmbed = case c of
+        CEmbed{} -> True
+        _ -> False
+  if bhp tb <= 0  -- avoid dragging around corpses
+     || bproj tb && isEmbed then  -- fyling projectiles can't slip on the floor
     return UseDud  -- the impact never manifested
   else if waitedLastTurn tb && isNothing (btrajectory tb) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
@@ -1555,17 +1560,18 @@ sendFlyingVector source target modePush = do
 effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectDropBestWeapon execSfx target = do
   tb <- getsState $ getActorBody target
-  localTime <- getsState $ getLocalTime (blid tb)
-  kitAssRaw <- getsState $ kitAssocs target [CEqp]
-  let kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
-  case strongestMelee Nothing localTime kitAss of
-    (_, (iid, _)) : _ -> do
-      execSfx
-      let kit = beqp tb EM.! iid
-      dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack
-      return UseUp
-    [] ->
-      return UseDud
+  if bproj tb then return UseDud else do
+    localTime <- getsState $ getLocalTime (blid tb)
+    kitAssRaw <- getsState $ kitAssocs target [CEqp]
+    let kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
+    case strongestMelee Nothing localTime kitAss of
+      (_, (iid, _)) : _ -> do
+        execSfx
+        let kit = beqp tb EM.! iid
+        dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack
+        return UseUp
+      [] ->
+        return UseDud
 
 -- ** ActivateInv
 
