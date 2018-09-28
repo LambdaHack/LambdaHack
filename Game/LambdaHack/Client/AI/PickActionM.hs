@@ -110,7 +110,9 @@ actionStrategy moldLeader aid retry = do
   condTgtNonmoving <- condTgtNonmovingM aid
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
-  let actorMaxSk = actorMaxSkills EM.! aid
+  friends <- getsState $ friendRegularList (bfid body) (blid body)
+  let anyFriendOnLevelAwake = any ((/= WSleep) . bwatch) friends
+      actorMaxSk = actorMaxSkills EM.! aid
       mayFallAsleep = not condAimEnemyRemembered
                       && mayContinueSleep
                       && canSleep actorSk
@@ -118,6 +120,7 @@ actionStrategy moldLeader aid retry = do
                          && not (hpFull body actorSk)
                          && not heavilyDistressed
                          && not condNotCalmEnough
+                         && anyFriendOnLevelAwake  -- friend guards the sleeper
       dozes = case bwatch body of
                 WWait n -> n > 0
                 _ -> False
