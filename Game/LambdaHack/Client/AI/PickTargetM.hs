@@ -113,25 +113,31 @@ computeTarget aid = do
          | bpos b == pathGoal tapPath ->
              return mtgtMPath  -- goal reached; stay there picking up items
          | otherwise -> return $! case tapPath of
-             AndPath{..} -> case span (/= bpos b) pathList of
+             AndPath{..} -> case break (== bpos b) pathList of
                (crossed, _ : rest) ->  -- step or many steps along path
                  if null rest then Nothing  -- path to the goal was partial
                  else let newPath =
                             AndPath{ pathList = rest
                                    , pathGoal
-                                   , pathLen = pathLen - length crossed }
+                                   , pathLen = pathLen - length crossed - 1 }
                       in if stepAccesible newPath
                          then Just tap{tapPath=newPath}
                          else Nothing
-               (q : _, []) | adjacent q (bpos b) ->
-                 -- No move or a single sidestep last turn.
-                 if stepAccesible tapPath
-                 then mtgtMPath
-                 else Nothing
-               _ ->
-                 -- If null, path to the goal was partial; retarget.
-                 -- Otherwise, veered off the path a lot; retarget.
-                 Nothing
+               (_, []) -> case break (adjacent $ bpos b) $ reverse pathList of
+                 (_, []) -> Nothing  -- veered off the path a lot
+                 (_, [_]) ->  -- speedup
+                   -- No move or a single sidestep last turn.
+                   if stepAccesible tapPath
+                   then mtgtMPath
+                   else Nothing
+                 (restRev, adj : crossedRev) ->
+                   let newPath =
+                         AndPath{ pathList = adj : reverse restRev
+                                , pathGoal
+                                , pathLen = pathLen - length crossedRev }
+                   in if stepAccesible newPath
+                      then Just tap{tapPath=newPath}
+                      else Nothing
              NoPath -> error $ "" `showFailure` tap
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
