@@ -319,9 +319,9 @@ actionStrategy moldLeader aid retry = do
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
         [ ( [SkWait]
           , case bwatch body of
-              WSleep -> if condAimEnemyPresent || hpFull body actorSk
-                        then yellNow  -- wake up
-                        else waitBlockNow
+              WSleep -> if mayContinueSleep
+                        then waitBlockNow
+                        else yellNow  -- wake up
               WWake -> yellNow  -- wake up fully
               _ -> waitBlockNow  -- block, etc.
           , True )
