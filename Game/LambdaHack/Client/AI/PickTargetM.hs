@@ -113,21 +113,25 @@ computeTarget aid = do
          | bpos b == pathGoal tapPath ->
              return mtgtMPath  -- goal reached; stay there picking up items
          | otherwise -> return $! case tapPath of
-             AndPath{pathList=q : rest,..} -> case chessDist (bpos b) q of
-               0 ->  -- step along path
-                 let newPath = AndPath{ pathList = rest
-                                      , pathGoal
-                                      , pathLen = pathLen - 1 }
-                 in if stepAccesible newPath
-                    then Just tap{tapPath=newPath}
-                    else Nothing
-               1 ->  -- no move or a sidestep last turn
+             AndPath{..} -> case span (/= bpos b) pathList of
+               (crossed, _ : rest) ->  -- step or many steps along path
+                 if null rest then Nothing  -- path to the goal was partial
+                 else let newPath =
+                            AndPath{ pathList = rest
+                                   , pathGoal
+                                   , pathLen = pathLen - length crossed }
+                      in if stepAccesible newPath
+                         then Just tap{tapPath=newPath}
+                         else Nothing
+               (q : _, []) | adjacent q (bpos b) ->
+                 -- No move or a single sidestep last turn.
                  if stepAccesible tapPath
                  then mtgtMPath
                  else Nothing
-               _ -> Nothing  -- veered off the path
-             AndPath{pathList=[],..}->
-               Nothing  -- path to the goal was partial; let's target again
+               _ ->
+                 -- If null, path to the goal was partial; retarget.
+                 -- Otherwise, veered off the path a lot; retarget.
+                 Nothing
              NoPath -> error $ "" `showFailure` tap
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
