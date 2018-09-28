@@ -386,11 +386,12 @@ addProjectile :: MonadServerAtomic m
 addProjectile propeller pos rest iid (_, it) lid fid time = do
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
+      IK.ThrowMod{IK.throwHP} = IA.aToThrow arItem
       (trajectory, (speed, _)) =
         IA.itemTrajectory arItem (itemKind itemFull) (pos : rest)
       -- Trunk is added to equipment, not to organs, because it's the
       -- projected item, so it's carried, not grown.
-      tweakBody b = b { bhp = oneM
+      tweakBody b = b { bhp = xM throwHP
                       , btrajectory = Just (trajectory, speed)
                       , beqp = EM.singleton iid (1, take 1 it) }
   aid <- addActorIid iid itemFull True fid pos lid tweakBody
