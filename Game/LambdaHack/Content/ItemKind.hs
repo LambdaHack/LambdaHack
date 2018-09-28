@@ -172,6 +172,7 @@ instance Show TimerDice where
 data ThrowMod = ThrowMod
   { throwVelocity :: Int  -- ^ fly with this percentage of base throw speed
   , throwLinger   :: Int  -- ^ fly for this percentage of 2 turns
+  , throwHP       :: Int  -- ^ start flight with this many HP
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -306,10 +307,10 @@ tmpLess :: Text -> Effect
 tmpLess name = Temporary $ "become less" <+> name
 
 toVelocity :: Int -> Aspect
-toVelocity n = ToThrow $ ThrowMod n 100
+toVelocity n = ToThrow $ ThrowMod n 100 1
 
 toLinger :: Int -> Aspect
-toLinger n = ToThrow $ ThrowMod 100 n
+toLinger n = ToThrow $ ThrowMod 100 n 1
 
 timerNone :: TimerDice
 timerNone = TimerNone

@@ -77,7 +77,7 @@ emptyAspectRecord = AspectRecord
   , aSkills  = Ability.zeroSkills
   , aFlags   = Ability.Flags ES.empty
   , aELabel  = ""
-  , aToThrow = IK.ThrowMod 100 100
+  , aToThrow = IK.ThrowMod 100 100 1
   , aHideAs  = Nothing
   , aEqpSlot = Nothing
   }
@@ -147,7 +147,7 @@ aspectRecordToList AspectRecord{..} =
      | (sk, n) <- Ability.skillsToList aSkills ]
   ++ [IK.SetFlag feat | feat <- ES.elems $ Ability.flags aFlags]
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
-  ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100]
+  ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100 1]
   ++ maybe [] (\ha -> [IK.HideAs ha]) aHideAs
   ++ maybe [] (\slot -> [IK.EqpSlot slot]) aEqpSlot
 

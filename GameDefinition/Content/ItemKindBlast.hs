@@ -144,7 +144,7 @@ spreadConcussion = ItemKind
       -- it's much faster than black powder shock wave, but we are beyond
       -- human-noticeable speed differences on short distances anyway
   , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
-               , PushActor (ThrowMod 400 25)  -- 1 step, fast; after DropItem
+               , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "condition"
                , toOrganBad "immobile" (2 + 1 `d` 2)   -- no balance

@@ -112,7 +112,7 @@ antler = fist
   , iaspects = [ Timeout $ 3 + (1 `d` 3) * 3
                , AddSkill SkArmorMelee 10 ]  -- bonus doubled
                ++ iaspects fist
-  , ieffects = [Recharging (PushActor (ThrowMod 100 50))]  -- 1 step, slow
+  , ieffects = [Recharging (PushActor (ThrowMod 100 50 1))]  -- 1 step, slow
   , idesc    = ""
   }
 horn = fist
@@ -247,7 +247,7 @@ largeTail = fist
   , iaspects = [Timeout $ 2 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
                  -- timeout higher, lest they regain push before closing again
-  , ieffects = [Recharging (PushActor (ThrowMod 400 50))]  -- 2 steps, fast
+  , ieffects = [Recharging (PushActor (ThrowMod 400 50 1))]  -- 2 steps, fast
   , idesc    = "Slow but heavy."
   }
 

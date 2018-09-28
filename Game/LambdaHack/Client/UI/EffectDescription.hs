@@ -271,8 +271,10 @@ tmodToSuff verb ThrowMod{..} =
             | otherwise = "v=" <> tshow throwVelocity <> "%"
       tSuff | throwLinger == 100 = ""
             | otherwise = "t=" <> tshow throwLinger <> "%"
-  in if vSuff == "" && tSuff == "" then ""
-     else verb <+> "with" <+> vSuff <+> tSuff
+      hSuff | throwHP == 1 = ""
+            | otherwise = "pierce=" <> tshow throwHP
+  in if vSuff == "" && tSuff == "" && hSuff == "" then ""
+     else verb <+> "with" <+> vSuff <+> tSuff <+> hSuff
 
 kindAspectToSuffix :: Aspect -> Text
 kindAspectToSuffix aspect =
