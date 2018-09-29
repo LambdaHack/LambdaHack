@@ -5,7 +5,9 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjGlobalAssocs, actorAssocs
   , fidActorRegularAssocs, fidActorRegularIds
   , foeRegularAssocs, foeRegularList, friendRegularAssocs, friendRegularList
-  , bagAssocs, bagAssocsK, posToAidsLvl, posToAids, posToAssocs
+  , bagAssocs, bagAssocsK
+  , posToBigLvl, posToBig, posToBigAssoc, occupiedBigLvl
+  , posToProjsLvl, posToProjs, posToProjAssocs, occupiedProjLvl
   , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
@@ -17,7 +19,7 @@ module Game.LambdaHack.Common.ActorState
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
-  , isStair, anyFoeAdj, actorAdjacentAssocs
+  , isStair, anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
   , armorHurtBonus, inMelee
   ) where
 
@@ -104,17 +106,37 @@ bagAssocsK s bag =
   let iidItem (iid, kit) = (iid, (getItemBody iid s, kit))
   in map iidItem $ EM.assocs bag
 
-posToAidsLvl :: Point -> Level -> [ActorId]
-{-# INLINE posToAidsLvl #-}
-posToAidsLvl pos lvl = EM.findWithDefault [] pos $ lactor lvl
+posToBigLvl :: Point -> Level -> Maybe ActorId
+{-# INLINE posToBigLvl #-}
+posToBigLvl pos lvl = EM.lookup pos $ lbig lvl
 
-posToAids :: Point -> LevelId -> State -> [ActorId]
-posToAids pos lid s = posToAidsLvl pos $ sdungeon s EM.! lid
+posToBig :: Point -> LevelId -> State -> Maybe ActorId
+posToBig pos lid s = posToBigLvl pos $ sdungeon s EM.! lid
 
-posToAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
-posToAssocs pos lid s =
-  let l = posToAidsLvl pos $ sdungeon s EM.! lid
+posToBigAssoc :: Point -> LevelId -> State -> Maybe (ActorId, Actor)
+posToBigAssoc pos lid s =
+  let maid = posToBigLvl pos $ sdungeon s EM.! lid
+  in fmap (\aid -> (aid, getActorBody aid s)) maid
+
+occupiedBigLvl :: Point -> Level -> Bool
+{-# INLINE occupiedBigLvl #-}
+occupiedBigLvl pos lvl = pos `EM.member` lbig lvl
+
+posToProjsLvl :: Point -> Level -> [ActorId]
+{-# INLINE posToProjsLvl #-}
+posToProjsLvl pos lvl = EM.findWithDefault [] pos $ lproj lvl
+
+posToProjs :: Point -> LevelId -> State -> [ActorId]
+posToProjs pos lid s = posToProjsLvl pos $ sdungeon s EM.! lid
+
+posToProjAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
+posToProjAssocs pos lid s =
+  let l = posToProjsLvl pos $ sdungeon s EM.! lid
   in map (\aid -> (aid, getActorBody aid s)) l
+
+occupiedProjLvl :: Point -> Level -> Bool
+{-# INLINE occupiedProjLvl #-}
+occupiedProjLvl pos lvl = pos `EM.member` lproj lvl
 
 nearbyFreePoints :: (ContentId TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
@@ -123,7 +145,7 @@ nearbyFreePoints f start lid s =
       COps{corule=RuleContent{rXmax, rYmax}} = scops s
       good p = f (lvl `at` p)
                && Tile.isWalkable (coTileSpeedup $ scops s) (lvl `at` p)
-               && null (posToAidsLvl p lvl)
+               && null (posToProjsLvl p lvl) && isNothing (posToBigLvl p lvl)
       ps = nub $ start : concatMap (vicinityBounded rXmax rYmax) ps
   in filter good ps
 
@@ -307,16 +329,12 @@ regenCalmDelta aid body s =
       fact = (EM.! bfid body) . sfactionD $ s
       -- Worry actor by (even projectile) enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
-      isHeardFoe (!p, l) =
-        -- In case of multiple projectiles on the same position,
-        -- the following is not reliable, but that's OK (and fast).
-        let b = case l of
-              aid2 : _ -> getActorBody aid2 s
-              [] -> error $ "" `showFailure` (aid, body, p)
+      isHeardFoe (!p, aid2) =
+        let b = getActorBody aid2 s
         in inline chessDist p (bpos body) <= 3
            && not (waitedLastTurn b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
-  in if any isHeardFoe $ EM.assocs $ lactor $ sdungeon s EM.! blid body
+  in if any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body
      then minusM  -- even if all calmness spent, keep informing the client
      else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
 
@@ -342,11 +360,10 @@ canDeAmbientList b s =
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
 dispEnemy source target actorMaxSk s =
   let hasBackup b =
-        let adjacentAssocs = actorAdjacentAssocs b s
+        let adjAssocs = adjacentBigAssocs b s
             fact = sfactionD s EM.! bfid b
-            friend (_, b2) =
-              not (bproj b2) && isFriend (bfid b) fact (bfid b2) && bhp b2 > 0
-        in any friend adjacentAssocs
+            friend (_, b2) = isFriend (bfid b) fact (bfid b2) && bhp b2 > 0
+        in any friend adjAssocs
       sb = getActorBody source s
       tb = getActorBody target s
       dozes = bwatch tb `elem` [WSleep, WWake]
@@ -451,18 +468,29 @@ anyFoeAdj aid s =
   let body = getActorBody aid s
       lvl = (EM.! blid body) . sdungeon $ s
       fact = (EM.! bfid body) . sfactionD $ s
-      f !mv = case posToAidsLvl (shift (bpos body) mv) lvl of
-        [] -> False
-        aid2 : _ -> g $ getActorBody aid2 s
+      f !mv = case posToBigLvl (shift (bpos body) mv) lvl of
+        Nothing -> False
+        Just aid2 -> g $ getActorBody aid2 s
       g !b = inline isFoe (bfid body) fact (bfid b)
              && bhp b > 0  -- uncommon
-  in any f moves
+      h !mv = case posToProjsLvl (shift (bpos body) mv) lvl of
+        [] -> False
+        aid2 : _ -> g $ getActorBody aid2 s
+  in any f moves || any h moves
 
-actorAdjacentAssocs :: Actor -> State -> [(ActorId, Actor)]
-{-# INLINE actorAdjacentAssocs #-}
-actorAdjacentAssocs body s =
+adjacentBigAssocs :: Actor -> State -> [(ActorId, Actor)]
+{-# INLINE adjacentBigAssocs #-}
+adjacentBigAssocs body s =
   let lvl = (EM.! blid body) . sdungeon $ s
-      f !mv = posToAidsLvl (shift (bpos body) mv) lvl
+      f !mv = posToBigLvl (shift (bpos body) mv) lvl
+      g !aid = (aid, getActorBody aid s)
+  in map g $ mapMaybe f moves
+
+adjacentProjAssocs :: Actor -> State -> [(ActorId, Actor)]
+{-# INLINE adjacentProjAssocs #-}
+adjacentProjAssocs body s =
+  let lvl = (EM.! blid body) . sdungeon $ s
+      f !mv = posToProjsLvl (shift (bpos body) mv) lvl
       g !aid = (aid, getActorBody aid s)
   in map g $ concatMap f moves
 

@@ -432,7 +432,7 @@ advanceTrajectory aid b = do
           addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
         -- Non-projectiles displace, to make pushing in crowds less lethal
         -- and chaotic and to avoid hitting harpoons when pulled by them.
-        case posToAidsLvl tpos lvl of
+        case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
           [target] | not (bproj b) -> reqDisplaceGeneric False aid target
           _ -> reqMoveGeneric False aid d
       else do

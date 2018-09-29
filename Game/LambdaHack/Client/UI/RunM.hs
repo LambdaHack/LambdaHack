@@ -138,10 +138,12 @@ continueRunDir params = case params of
       lvl <- getLevel lid
       let posHere = bpos body
           posThere = posHere `shift` dir
-          actorsThere = posToAidsLvl posThere lvl
+          bigActorThere = occupiedBigLvl posThere lvl
+          projsThere = occupiedProjLvl posThere lvl
       let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
           check
-            | not $ null actorsThere = return $ Left "actor in the way"
+            | bigActorThere = return $ Left "actor in the way"
+            | projsThere = return $ Left "projectile in the way"
                 -- don't displace actors, except with leader in step 0
             | enterableDir cops lvl posHere dir =
                 if runInitial && aid /= runLeader
@@ -199,7 +201,8 @@ checkAndRun aid dir = do
   let posHere = bpos body
       posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
-      actorsThere = posToAidsLvl posThere lvl
+      bigActorThere = occupiedBigLvl posThere lvl
+      projsThere = occupiedProjLvl posThere lvl
   let posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
       -- This is supposed to work on unit vectors --- diagonal, as well as,
@@ -240,7 +243,8 @@ checkAndRun aid dir = do
       itemChangeRight = posHasItems rightForwardPosHere
                         `notElem` map posHasItems rightPsLast
       check
-        | not $ null actorsThere = return $ Left "actor in the way"
+        | bigActorThere = return $ Left "actor in the way"
+        | projsThere = return $ Left "projectile in the way"
             -- Actor in possibly another direction tnan original.
             -- (e.g., called from @tryTurning@).
         | terrainChangeLeft = return $ Left "terrain change on the left"

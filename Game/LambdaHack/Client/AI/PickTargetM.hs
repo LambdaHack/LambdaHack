@@ -369,7 +369,8 @@ computeTarget aid = do
                    -- (wait until blocking actors move or displace or melee).
                    -- We don't want to wander away in search of loot, only to
                    -- turn around next turn when the enemy is again considered.
-                   if not condInMelee || null (posToAidsLvl q lvl)
+                   if not condInMelee || not (occupiedBigLvl q lvl)
+                                         && not (occupiedProjLvl q lvl)
                    then return $ Just tap{tapPath=mpath}
                    else pickNewTargetIgnore (Just a)
           -- In this case, need to retarget, to focus on foes that melee ours

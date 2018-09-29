@@ -368,10 +368,9 @@ projectCheck tpos = do
       if not $ Tile.isWalkable coTileSpeedup t
         then return $ Just ProjectBlockTerrain
         else do
-          lab <- getsState $ posToAssocs pos lid
-          if all (bproj . snd) lab
-          then return Nothing
-          else return $ Just ProjectBlockActor
+          if occupiedBigLvl pos lvl
+          then return $ Just ProjectBlockActor
+          else return Nothing
 
 -- | Check whether one is permitted to aim (for projecting) at a target
 -- (this is only checked for actor targets so that the player doesn't miss
@@ -437,8 +436,8 @@ posFromXhair = do
             Just reqFail -> return $ Left $ showReqFailure reqFail
     Left cause -> return $ Left cause
 
--- | On top of @permittedProjectClient@, it also checks LOS, legality
--- of aiming at the target, projection range. It also modifies @eps@.
+-- | On top of @permittedProjectClient@, it also checks legality
+-- of aiming at the target and projection range. It also modifies @eps@.
 psuitReq :: (MonadClient m, MonadClientUI m)
          => m (Either Text (ItemFull -> Either ReqFailure (Point, Bool)))
 psuitReq = do

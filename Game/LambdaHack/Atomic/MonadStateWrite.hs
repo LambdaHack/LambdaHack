@@ -1,7 +1,8 @@
 -- | The monad for writing to the main game state.
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..), AtomicFail(..), atomicFail
-  , putState, updateLevel, updateActor, updateFaction, moveActorMap
+  , putState, updateLevel, updateActor, updateFaction
+  , moveActorMap, swapActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
   , addAis, itemsMatch, addItemToActorMaxSkills, resetActorMaxSkills
@@ -82,25 +83,55 @@ updateFaction fid f = do
 
 moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
 moveActorMap aid body newBody = do
-  let rmActor Nothing = error $ "actor already removed"
-                                `showFailure` (aid, body)
-      rmActor (Just l) =
+  let rmBig Nothing = error $ "actor already removed"
+                              `showFailure` (aid, body)
+      rmBig (Just aid2) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (aid == aid2 `blame` "actor already removed"
+                            `swith` (aid, body, aid2))
+#endif
+        Nothing
+      addBig Nothing = Just aid
+      addBig (Just aid2) = error $ "an actor already present there"
+                                   `showFailure` (aid, body, aid2)
+      updBig = EM.alter addBig (bpos newBody)
+               . EM.alter rmBig (bpos body)
+  let rmProj Nothing = error $ "actor already removed"
+                               `showFailure` (aid, body)
+      rmProj (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         assert (aid `elem` l `blame` "actor already removed"
                              `swith` (aid, body, l))
 #endif
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
-      addActor Nothing = Just [aid]
-      addActor (Just l) =
+      addProj Nothing = Just [aid]
+      addProj (Just l) = Just $ aid : l
+      updProj = EM.alter addProj (bpos newBody)
+                . EM.alter rmProj (bpos body)
+  updateLevel (blid body) $ if bproj body
+                            then updateProjMap updProj
+                            else updateBigMap updBig
+
+swapActorMap :: MonadStateWrite m
+             => ActorId -> Actor -> ActorId -> Actor -> m ()
+swapActorMap source sbody target tbody = do
+  let addBig aid1 aid2 Nothing =
+        error $ "actor already removed"
+                `showFailure` (aid1, aid2, source, sbody, target, tbody)
+      addBig aid1 aid2 (Just aid) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (aid `notElem` l `blame` "actor already added"
-                                `swith` (aid, body, l))
+        assert (aid == aid1 `blame` "wrong actor present"
+                            `swith` (aid, aid1, aid2, sbody, tbody))
 #endif
-        (Just $ aid : l)
-      updActor = EM.alter addActor (bpos newBody)
-                 . EM.alter rmActor (bpos body)
-  updateLevel (blid body) $ updateActorMap updActor
+        (Just aid2)
+      updBig = EM.alter (addBig source target) (bpos sbody)
+               . EM.alter (addBig target source) (bpos tbody)
+  if not (bproj sbody) && not (bproj tbody)
+  then updateLevel (blid sbody) $ updateBigMap updBig
+  else do
+    moveActorMap source sbody tbody
+    moveActorMap target tbody sbody
 
 insertBagContainer :: MonadStateWrite m
                    => ItemBag -> Container -> m ()

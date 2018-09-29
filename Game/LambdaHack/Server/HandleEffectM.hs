@@ -801,7 +801,8 @@ effectAscend recursiveCall execSfx up source target pos = do
                            mbtime_bOld mbtimeTraj_bOld mlead
        -- The actor will be added to the new level,
        -- but there can be other actors at his new position.
-       inhabitants <- getsState $ posToAssocs pos3 lid2
+       inhabitants <- getsState $ \s -> maybeToList (posToBigAssoc pos3 lid2 s)
+                                        ++ posToProjAssocs pos3 lid2 s
        case inhabitants of
          [] -> do
            switch1
@@ -846,7 +847,8 @@ findStairExit side moveUp lid pos = do
       ps = filter (Tile.isWalkable coTileSpeedup . (lvl `at`))
            $ map (shift pos) mvs
       posOcc :: State -> Int -> Point -> Bool
-      posOcc s k p = case posToAssocs p lid s of
+      posOcc s k p = case maybeToList (posToBigAssoc p lid s)
+                          ++ posToProjAssocs p lid s of
         [] -> k == 0
         (_, b) : _ | bproj b -> k == 3
         (_, b) : _ | isFoe side fact (bfid b) -> k == 1  -- non-proj foe
@@ -1070,7 +1072,8 @@ effectTeleport execSfx nDm source target = do
     (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
                  || not (Tile.isNoActor coTileSpeedup t)
-                    && null (posToAidsLvl p lvl)))
+                    && not (occupiedBigLvl p lvl))
+                    && not (occupiedProjLvl p lvl))
     [ dist 1
     , dist $ 1 + range `div` 9
     , dist $ 1 + range `div` 7
@@ -1392,7 +1395,7 @@ effectDetect execSfx d radius target pos = do
   lvl <- getLevel $ blid b
   let (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
-        IK.DetectActor -> ((`EM.member` lactor lvl), const $ return False)
+        IK.DetectActor -> ((`EM.member` lbig lvl), const $ return False)
         IK.DetectItem -> ((`EM.member` lfloor lvl), const $ return False)
         IK.DetectExit ->
           let (ls1, ls2) = lstair lvl

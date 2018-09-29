@@ -313,7 +313,8 @@ reqMoveGeneric voluntary source dir = do
        && (sbursting && (tdamaging || tbursting)
            || (tbursting && (sdamaging || sbursting)))
   -- We start by checking actors at the target position.
-  tgt <- getsState $ posToAssocs tpos lid
+  tgt <- getsState $ \s -> maybeToList (posToBigAssoc tpos lid s)
+                           ++ posToProjAssocs tpos lid s
   case tgt of
     (target, tb) : _ | not (bproj sb) || not (bproj tb) || collides tb -> do
       -- A projectile is too small and insubstantial to hit another projectile,
@@ -507,7 +508,7 @@ reqDisplaceGeneric voluntary source target = do
        lvl <- getLevel lid
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-         case posToAidsLvl tpos lvl of
+         case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
            [] -> error $ "" `showFailure` (source, sb, target, tb)
            [_] -> do
              execUpdAtomic $ UpdDisplaceActor source target
@@ -668,7 +669,8 @@ reqAlterFail voluntary source tpos = do
         return $ Just AlterNothing  -- no altering possible; silly client
       else
         if underFeet || EM.notMember tpos (lfloor lvl) then
-          if underFeet || null (posToAidsLvl tpos lvl) then do
+          if underFeet || not (occupiedBigLvl tpos lvl)
+                          && not (occupiedProjLvl tpos lvl) then do
             -- If the only thing that happens is the change of the tile,
             -- don't display a message, because the change
             -- is visible on the map (unless it changes into itself)

@@ -167,12 +167,12 @@ actorsAvoidedDist = BfsDistance 5
 -- avoid displacing and instead perform two separate moves, wasting 1 turn
 -- in total. But in corridors they will still displace and elsewhere
 -- this scenario was quite rare already.
-findPathBfs :: ActorMap -> PointArray.Array Word8 -> (Point -> Bool)
+findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (Point -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
 {-# INLINE findPathBfs #-}
-findPathBfs lactor lalter fovLit pathSource pathGoal sepsRaw
+findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
             arr@PointArray.Array{..} =
   let !pathGoalI = PointArray.pindex axsize pathGoal
       !pathSourceI = PointArray.pindex axsize pathSource
@@ -203,7 +203,7 @@ findPathBfs lactor lalter fovLit pathSource pathGoal sepsRaw
                  then minChild minP maxDark minAlter mvs
                  else let pP = PointArray.punindex axsize p
                           free = dist < actorsAvoidedDist
-                                 || pP `EM.notMember` lactor
+                                 || pP `EM.notMember` lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster
                           dark = not $ fovLit pP

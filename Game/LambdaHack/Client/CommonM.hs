@@ -56,20 +56,19 @@ aidTgtToPos aid lidV tgt s = case tgt of
         shifted = shiftBounded rXmax rYmax (bpos b) v
     in if shifted == bpos b && v /= Vector 0 0 then Nothing else Just shifted
 
--- | Counts the number of steps until the projectile would hit
--- an actor or obstacle. Starts searching with the given eps and returns
+-- | Counts the number of steps until the projectile would hit a non-projectile
+-- actor or obstacle. Starts searching with the given eps and returns
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
 makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid body)
-  posA <- getsState $ \s p -> posToAssocs p (blid body) s
   let dist = chessDist (bpos body) fpos
       calcScore eps = case bla rXmax rYmax eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
-              noActor p = all (bproj . snd) (posA p) || p == fpos
+              noActor p = p == fpos || not (occupiedBigLvl p lvl)
               accessibleUnknown tpos =
                 let tt = lvl `at` tpos
                 in Tile.isWalkable coTileSpeedup tt || isUknownSpace tt

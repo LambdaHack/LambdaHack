@@ -133,7 +133,6 @@ handleUpdAtomic cmd = case cmd of
 updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updCreateActor aid body ais = do
-  -- Add actor to @sactorD@.
   -- The exception is possible, e.g., when we teleport and so see our actor
   -- at the new location, but also the location is part of new perception,
   -- so @UpdSpotActor@ is sent.
@@ -141,7 +140,6 @@ updCreateActor aid body ais = do
       f (Just b) = assert (body == b `blame` (aid, body, b)) $
         atomicFail $ "actor already added" `showFailure` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
-  -- Add actor to @sprio@.
   let g Nothing = Just [aid]
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -150,7 +148,12 @@ updCreateActor aid body ais = do
                                 `swith` (aid, body, l))
 #endif
         (Just $ aid : l)
-  updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
+  let h Nothing = Just aid
+      h (Just aid2) = error $ "an actor already present there"
+                              `showFailure` (aid, body, aid2)
+  updateLevel (blid body) $ if bproj body
+                            then updateProjMap (EM.alter g (bpos body))
+                            else updateBigMap (EM.alter h (bpos body))
   addAis ais
   actorMaxSk <- getsState $ maxSkillsFromActor body
   modifyState $ updateActorMaxSkills $ EM.insert aid actorMaxSk
@@ -171,7 +174,6 @@ updDestroyActor aid body ais = do
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
                                      `swith` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
-  -- Remove actor from @lactor@.
   let g Nothing = error $ "actor already removed" `showFailure` (aid, body)
       g (Just l) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -181,7 +183,17 @@ updDestroyActor aid body ais = do
 #endif
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
-  updateLevel (blid body) $ updateActorMap (EM.alter g (bpos body))
+  let h Nothing = error $ "actor already removed" `showFailure` (aid, body)
+      h (Just aid2) =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        -- Not so much expensive, as doubly impossible.
+        assert (aid == aid2 `blame` "actor already removed"
+                            `swith` (aid, body, aid2))
+#endif
+        Nothing
+  updateLevel (blid body) $ if bproj body
+                            then updateProjMap (EM.alter g (bpos body))
+                            else updateBigMap (EM.alter h (bpos body))
   modifyState $ updateActorMaxSkills $ EM.delete aid
 
 -- Create a few copies of an item that is already registered for the dungeon
@@ -279,8 +291,7 @@ updDisplaceActor source target = assert (source /= target) $ do
       tnewBody = tbody {bpos = spos, boldpos = Just tpos}
   updateActor source $ const snewBody
   updateActor target $ const tnewBody
-  moveActorMap source sbody snewBody
-  moveActorMap target tbody tnewBody
+  swapActorMap source sbody target tbody
 
 updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> ActorId -> CStore -> CStore

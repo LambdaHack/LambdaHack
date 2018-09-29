@@ -318,16 +318,16 @@ fleeList aid = do
         _ -> Right []
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  s <- getState
-  let posFoes = map bpos $ foeRegularList (bfid b) (blid b) s
-      myVic = vicinityUnsafe $ bpos b
+  posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
+  let myVic = vicinityUnsafe $ bpos b
       dist p | null posFoes = 100
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
       -- Flee, if possible. Direct access required; not enough time to open.
       -- Can't be occupied.
       accUnocc p = Tile.isWalkable coTileSpeedup (lvl `at` p)
-                   && null (posToAssocs p (blid b) s)
+                   && not (occupiedBigLvl p lvl)
+                   && not (occupiedProjLvl p lvl)
       accVic = filter (accUnocc . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accVic
       eqVic = filter ((== dist (bpos b)) . fst) accVic

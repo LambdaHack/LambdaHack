@@ -309,7 +309,8 @@ levelFromCave COps{coTileSpeedup} Cave{..} ldepth ltile lstair lescape =
        , ldepth
        , lfloor = EM.empty
        , lembed = EM.empty
-       , lactor = EM.empty
+       , lbig = EM.empty
+       , lproj = EM.empty
        , ltile
        , lentry = dentry
        , larea = darea

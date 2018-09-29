@@ -430,14 +430,15 @@ lookAtMove aid = do
     itemsBlurb <- lookAtItems True (bpos body) aid
     msgAdd itemsBlurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  adjacentAssocs <- getsState $ actorAdjacentAssocs body
+  adjBigAssocs <- getsState $ adjacentBigAssocs body
+  adjProjAssocs <- getsState $ adjacentProjAssocs body
   if not (bproj body) && side == bfid body then do
     let foe (_, b2) = isFoe (bfid body) fact (bfid b2)
-        adjFoes = filter foe adjacentAssocs
+        adjFoes = filter foe $ adjBigAssocs ++ adjProjAssocs
     unless (null adjFoes) stopPlayBack
   else when (isFoe (bfid body) fact side) $ do
-    let our (_, b2) = not (bproj b2) && bfid b2 == side
-        adjOur = filter our adjacentAssocs
+    let our (_, b2) = bfid b2 == side
+        adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
 actorVerbMU :: MonadClientUI m => ActorId -> ActorUI -> MU.Part -> m ()

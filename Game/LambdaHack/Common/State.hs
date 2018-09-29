@@ -157,7 +157,8 @@ unknownLevel COps{corule, cotile}
            , ldepth
            , lfloor = EM.empty
            , lembed = EM.empty
-           , lactor = EM.empty
+           , lbig = EM.empty
+           , lproj = EM.empty
            , ltile = unknownTileMap outerId (rXmax corule) (rYmax corule)
            , lentry = EM.empty
            , larea

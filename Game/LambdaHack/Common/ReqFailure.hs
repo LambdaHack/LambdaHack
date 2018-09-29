@@ -121,7 +121,7 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceUnskilled -> "unskilled actors cannot displace"
   DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "switching places without access"
-  DisplaceProjectiles -> "trying to displace multiple projectiles"
+  DisplaceProjectiles -> "trying to displace multiple actors"
   DisplaceDying -> "trying to displace a dying foe"
   DisplaceBraced -> "trying to displace a braced foe"
   DisplaceImmobile -> "trying to displace an immobile foe"

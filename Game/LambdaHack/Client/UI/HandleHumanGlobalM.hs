@@ -315,7 +315,8 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgts <- getsState $ posToAssocs tpos arena
+  tgts <- getsState $ \s -> maybeToList (posToBigAssoc tpos arena s)
+                            ++ posToProjAssocs tpos arena s
   case tgts of
     [] -> do  -- move or search or alter
       runStopOrCmd <- moveSearchAlter run dir
@@ -333,8 +334,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       displaceAid target
     _ : _ : _ | run
                 && initialStep
-                && Ability.getSk Ability.SkDisplace actorSk > 0 -> do
-      let !_A = assert (all (bproj . snd) tgts) ()
+                && Ability.getSk Ability.SkDisplace actorSk > 0 ->
       failSer DisplaceProjectiles
     (target, tb) : _ | not run
                        && initialStep && finalGoal
@@ -424,10 +424,12 @@ displaceAid target = do
        lvl <- getLevel lid
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-         case posToAidsLvl tpos lvl of
-           [] -> error $ "" `showFailure` (leader, sb, target, tb)
-           [_] -> return $ Right $ ReqDisplace target
-           _ -> failSer DisplaceProjectiles
+         case posToBigLvl tpos lvl of
+           Just{} -> return $ Right $ ReqDisplace target
+           Nothing -> case posToProjsLvl tpos lvl of
+             [] -> error $ "" `showFailure` (leader, sb, target, tb)
+             [_] -> return $ Right $ ReqDisplace target
+             _ -> failSer DisplaceProjectiles
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.
@@ -483,7 +485,8 @@ moveSearchAlter run dir = do
        | not (Tile.isSuspect coTileSpeedup t)
          && alterSkill < alterMinSkill -> failSer AlterUnwalked
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
-       | not $ null $ posToAidsLvl tpos lvl -> failSer AlterBlockActor
+       | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
+           failSer AlterBlockActor
        | otherwise -> do  -- promising
            verAlters <- verifyAlters (blid sb) tpos
            case verAlters of
@@ -603,8 +606,8 @@ multiActorGoTo arena c paramOld =
         let paramNew = paramOld {runMembers = rs}
         multiActorGoTo arena c paramNew
       else do
-        s <- getState
-        modifyClient $ updateLeader r s
+        sL <- getState
+        modifyClient $ updateLeader r sL
         let runMembersNew = rs ++ [r]
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
@@ -619,7 +622,8 @@ multiActorGoTo arena c paramOld =
           AndPath{pathList = p1 : _} -> do
             let finalGoal = p1 == c
                 dir = towards (bpos b) p1
-            tgts <- getsState $ posToAids p1 arena
+            tgts <- getsState $ \s -> maybeToList (posToBig p1 arena s)
+                                      ++ posToProjs p1 arena s
             case tgts of
               [] -> do
                 modifySession $ \sess -> sess {srunning = Just paramNew}
@@ -960,7 +964,8 @@ alterTileAtPos ts tpos pText = do
         && alterSkill < alterMinSkill -> failSer AlterUnwalked
     trs ->
       if EM.notMember tpos $ lfloor lvl then
-        if null (posToAidsLvl tpos lvl) then do
+        if not (occupiedBigLvl tpos lvl)
+           && not (occupiedProjLvl tpos lvl) then do
           let v = case trs of
                 [] -> "alter"
                 tr : _ -> ttverb tr

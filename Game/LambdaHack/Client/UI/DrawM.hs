@@ -289,20 +289,19 @@ drawFrameActor drawnLevelId = do
   COps{corule=RuleContent{rXmax}} <- getsState scops
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
-  Level{lactor} <- getLevel drawnLevelId
+  Level{lbig, lproj} <- getLevel drawnLevelId
   side <- getsClient sside
   mleader <- getsClient sleader
   s <- getState
-  let {-# INLINE viewActor #-}
-      viewActor _ as = case as of
-        aid : _ ->
-          let Actor{bhp, bproj, bfid, btrunk, bwatch} = getActorBody aid s
+  let {-# INLINE viewBig #-}
+      viewBig _ aid =
+          let Actor{bhp, bfid, btrunk, bwatch} = getActorBody aid s
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               Item{jfid} = getItemBody btrunk s
-              symbol | bhp > 0 || bproj = bsymbol
+              symbol | bhp > 0 = bsymbol
                      | otherwise = '%'
               dominated = maybe False (/= bfid) jfid
-              bg = if bproj then Color.HighlightNone else case mleader of
+              bg = case mleader of
                 Just leader | aid == leader -> Color.HighlightRed
                 _ -> if | aid `ES.member` sselected -> Color.HighlightBlue
                         | dominated -> if bfid == side  -- dominated by us
@@ -310,7 +309,7 @@ drawFrameActor drawnLevelId = do
                                        else Color.HighlightMagenta
                         | bwatch == WSleep -> Color.HighlightGreen
                         | otherwise -> Color.HighlightNone
-              fg | bfid /= side || bproj || bhp <= 0 = bcolor
+              fg | bfid /= side || bhp <= 0 = bcolor
                  | otherwise =
                 let (hpCheckWarning, calmCheckWarning) =
                       checkWarnings sUIOptions aid s
@@ -318,7 +317,14 @@ drawFrameActor drawnLevelId = do
                    then Color.Red
                    else bcolor
          in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} symbol
-        [] -> error $ "lactor not sparse" `showFailure` ()
+      {-# INLINE viewProj #-}
+      viewProj _ as = case as of
+        aid : _ ->
+          let ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
+              bg = Color.HighlightNone
+              fg = bcolor
+         in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} bsymbol
+        [] -> error $ "lproj not sparse" `showFailure` ()
       mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}
@@ -330,8 +336,9 @@ drawFrameActor drawnLevelId = do
               VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
-      upd = FrameForall $ \v ->
-        mapVAL viewActor (EM.assocs lactor) v
+      upd = FrameForall $ \v -> do
+        mapVAL viewProj (EM.assocs lproj) v
+        mapVAL viewBig (EM.assocs lbig) v  -- big actor overlay projectiles
   return upd
 
 drawFrameExtra :: forall m. MonadClientUI m

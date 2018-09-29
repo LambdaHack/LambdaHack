@@ -6,15 +6,15 @@ module Game.LambdaHack.Common.Level
     LevelId, Dungeon
   , dungeonBounds, ascendInBranch, whereTo
     -- * The @Level@ type and its components
-  , ItemFloor, ActorMap, TileMap, SmellMap, Level(..)
+  , ItemFloor, BigActorMap, ProjectileMap, TileMap, SmellMap, Level(..)
     -- * Component updates
-  , updateFloor, updateEmbed, updateActorMap, updateTile, updateEntry
-  , updateSmell
+  , updateFloor, updateEmbed, updateBigMap, updateProjMap
+  , updateTile, updateEntry, updateSmell
     -- * Level query
   , at, findPos, findPosTry, findPosTry2
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , assertSparseItems, assertSparseActors
+  , assertSparseItems, assertSparseProjectiles
 #endif
   ) where
 
@@ -92,8 +92,11 @@ whereTo lid pos mup dungeon =
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag
 
--- | Items located on map tiles.
-type ActorMap = EM.EnumMap Point [ActorId]
+-- | Big actors located on map tiles.
+type BigActorMap = EM.EnumMap Point ActorId
+
+-- | Collections of projectiles located on map tiles.
+type ProjectileMap = EM.EnumMap Point [ActorId]
 
 -- | Tile kinds on the map.
 type TileMap = PointArray.Array (ContentId TileKind)
@@ -110,8 +113,13 @@ data Level = Level
                           -- ^ absolute depth of the level
   , lfloor  :: ItemFloor  -- ^ remembered items lying on the floor
   , lembed  :: ItemFloor  -- ^ remembered items embedded in the tile
-  , lactor  :: ActorMap   -- ^ seen actors at positions on the level;
+  , lbig    :: BigActorMap
+                          -- ^ seen big (non-projectile) actors at positions
+                          --   on the level;
                           --   could be recomputed at resume, but small enough
+  , lproj   :: ProjectileMap
+                          -- ^ seen projectiles at positions on the level;
+                          --   could be recomputed at resume
   , ltile   :: TileMap    -- ^ remembered level map
   , lentry  :: EntryMap   -- ^ room entrances on the level
   , larea   :: Area       -- ^ area of the level
@@ -131,10 +139,10 @@ assertSparseItems m =
   assert (EM.null (EM.filter EM.null m)
           `blame` "null floors found" `swith` m) m
 
-assertSparseActors :: ActorMap -> ActorMap
-assertSparseActors m =
+assertSparseProjectiles :: ProjectileMap -> ProjectileMap
+assertSparseProjectiles m =
   assert (EM.null (EM.filter null m)
-          `blame` "null actor lists found" `swith` m) m
+          `blame` "null projectile lists found" `swith` m) m
 
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
@@ -142,8 +150,11 @@ updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateEmbed f lvl = lvl {lembed = f (lembed lvl)}
 
-updateActorMap :: (ActorMap -> ActorMap) -> Level -> Level
-updateActorMap f lvl = lvl {lactor = f (lactor lvl)}
+updateBigMap :: (BigActorMap -> BigActorMap) -> Level -> Level
+updateBigMap f lvl = lvl {lbig = f (lbig lvl)}
+
+updateProjMap :: (ProjectileMap -> ProjectileMap) -> Level -> Level
+updateProjMap f lvl = lvl {lproj = f (lproj lvl)}
 
 updateTile :: (TileMap -> TileMap) -> Level -> Level
 updateTile f lvl = lvl {ltile = f (ltile lvl)}
@@ -224,7 +235,8 @@ instance Binary Level where
     put ldepth
     put (assertSparseItems lfloor)
     put (assertSparseItems lembed)
-    put (assertSparseActors lactor)
+    put lbig
+    put (assertSparseProjectiles lproj)
     put ltile
     put lentry
     put larea
@@ -240,7 +252,8 @@ instance Binary Level where
     ldepth <- get
     lfloor <- get
     lembed <- get
-    lactor <- get
+    lbig <- get
+    lproj <- get
     ltile <- get
     lentry <- get
     larea <- get

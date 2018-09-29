@@ -224,19 +224,19 @@ atomicForget :: FactionId -> LevelId -> Perception -> State
 atomicForget side lid outPer sClient =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
-      outPrio = concatMap (\p -> posToAssocs p lid sClient) $ ES.elems outFov
       fActor (aid, b) =
         -- We forget only currently invisible actors. Actors can be outside
         -- perception, but still visible, if they belong to our faction,
         -- e.g., if they teleport to outside of current perception
         -- or if they have disabled senses.
-        if not (bproj b) && bfid b == side
-        then Nothing
-        else Just $ UpdLoseActor aid b $ getCarriedAssocsAndTrunk b sClient
+        UpdLoseActor aid b $ getCarriedAssocsAndTrunk b sClient
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
-      outActor = mapMaybe fActor outPrio
-  in outActor
+      outPrioBig = mapMaybe (\p -> posToBigAssoc p lid sClient)
+                   $ ES.elems outFov
+      outPrioProj = concatMap (\p -> posToProjAssocs p lid sClient)
+                    $ ES.elems outFov
+  in map fActor $ filter ((/= side) . bfid . snd) outPrioBig ++ outPrioProj
 
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
@@ -320,7 +320,8 @@ atomicRemember lid inPer sClient s =
       inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
       -- Actors come last to report the environment they land on.
-      inAssocs = concatMap (\p -> posToAssocs p lid s) inFov
+      inAssocs = concatMap (\p -> maybeToList (posToBigAssoc p lid s)
+                                  ++ posToProjAssocs p lid s) inFov
       -- Here, the actor may be already visible, e.g., when teleporting,
       -- so the exception is caught in @sendUpdate@ above.
       fActor (aid, b) = let ais = getCarriedAssocsAndTrunk b s

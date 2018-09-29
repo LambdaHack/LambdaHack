@@ -242,9 +242,9 @@ breakUpdAtomic cmd = case cmd of
     tb <- getsState $ getActorBody target
     tais <- getsState $ getCarriedAssocsAndTrunk tb
     return [ UpdLoseActor source sb sais
+           , UpdLoseActor target tb tais
            , UpdSpotActor source sb { bpos = bpos tb
                                     , boldpos = Just $ bpos sb } sais
-           , UpdLoseActor target tb tais
            , UpdSpotActor target tb { bpos = bpos sb
                                     , boldpos = Just $ bpos tb } tais
            ]

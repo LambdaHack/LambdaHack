@@ -601,14 +601,17 @@ meleeBlocker aid = do
     Just TgtAndPath{tapPath=AndPath{pathList=q : _, pathGoal}} -> do
       -- We prefer the goal position, so that we can kill the foe and enter it,
       -- but we accept any @q@ as well.
+      lvl <- getLevel (blid b)
       let maim | adjacent (bpos b) pathGoal = Just pathGoal
                | adjacent (bpos b) q = Just q
                | otherwise = Nothing  -- MeleeDistant
-      lBlocker <- case maim of
-        Nothing -> return []
-        Just aim -> getsState $ posToAssocs aim (blid b)
+          lBlocker = case maim of
+            Nothing -> []
+            Just aim -> maybeToList (posToBigLvl aim lvl)
+                        ++ posToProjsLvl aim lvl
       case lBlocker of
-        (aid2, body2) : _ -> do
+        aid2 : _ -> do
+          body2 <- getsState $ getActorBody aid2
           actorMaxSk2 <- getsState $ getActorMaxSkills aid2
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
@@ -636,10 +639,9 @@ meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) =
-        not (bproj b2) && isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
-      adjFoes = filter foe adjacentAssocs
+  adjBigAssocs <- getsState $ adjacentBigAssocs b
+  let foe (_, b2) = isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
+      adjFoes = filter foe adjBigAssocs
   btarget <- getsClient $ getTarget aid
   mtarget <- case btarget of
     Just (TEnemy aid2 _) -> do
@@ -842,10 +844,9 @@ displaceFoe aid = do
   lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ friendRegularList (bfid b) (blid b)
-  adjacentAssocs <- getsState $ actorAdjacentAssocs b
-  let foe (_, b2) = not (bproj b2) && isFoe (bfid b) fact (bfid b2)
-        -- DisplaceProjectiles
-      adjFoes = filter foe adjacentAssocs
+  adjBigAssocs <- getsState $ adjacentBigAssocs b
+  let foe (_, b2) = isFoe (bfid b) fact (bfid b2)
+      adjFoes = filter foe adjBigAssocs
       walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
@@ -880,33 +881,32 @@ displaceBlocker aid retry = do
 
 displaceTgt :: MonadClient m
             => ActorId -> Point -> Bool -> m (Strategy RequestTimed)
-displaceTgt aid target retry = do
+displaceTgt source tpos retry = do
   COps{coTileSpeedup} <- getsState scops
-  b <- getsState $ getActorBody aid
-  let source = bpos b
-  let !_A = assert (adjacent source target) ()
+  b <- getsState $ getActorBody source
+  let !_A = assert (adjacent (bpos b) tpos) ()
   lvl <- getLevel $ blid b
   let walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
         boldpos body /= Just p || waitedLastTurn body
-  if walkable target && notLooping b target then do
+  if walkable tpos && notLooping b tpos then do
     mleader <- getsClient sleader
-    mBlocker <- getsState $ posToAssocs target (blid b)
-    case mBlocker of
+    case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
       [] -> return reject
-      [(aid2, b2)] | Just aid2 /= mleader -> do
+      [aid2] | Just aid2 /= mleader -> do
+        b2 <- getsState $ getActorBody aid2
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
-        enemyTgt <- condAimEnemyPresentM aid
-        enemyPos <- condAimEnemyRememberedM aid
+        enemyTgt <- condAimEnemyPresentM source
+        enemyPos <- condAimEnemyRememberedM source
         enemyTgt2 <- condAimEnemyPresentM aid2
         enemyPos2 <- condAimEnemyRememberedM aid2
         case mtgtMPath of
           Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
-            | q == source  -- friend wants to swap
+            | q == bpos b  -- friend wants to swap
               || bwatch b2 `elem` [WSleep, WWake]  -- friend sleeps, not cares
               || retry  -- desperate
-                 && not (boldpos b == Just target  -- and no displace loop
+                 && not (boldpos b == Just tpos  -- and no displace loop
                          && not (waitedLastTurn b))
               || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) ->
                  -- he doesn't have Enemy target and I have, so push him aside,
@@ -917,7 +917,7 @@ displaceTgt aid target retry = do
           _ -> do  -- an enemy or ally or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- getsState $ getActorMaxSkills aid2
-            dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
+            dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk
               -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
               -- DisplaceSupported
             if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
@@ -961,8 +961,10 @@ moveTowards aid target goal relaxed = do
                     `blame` (source, target, aid, b, goal)) ()
   fact <- getsState $ (EM.! bfid b) . sfactionD
   salter <- getsClient salter
-  noFriends <- getsState $ \s p -> all (isFoe (bfid b) fact . bfid . snd)
-                                       (posToAssocs p (blid b) s)
+  noFriends <- getsState $ \s p ->
+    all (isFoe (bfid b) fact . bfid . snd)
+        (maybeToList (posToBigAssoc p (blid b) s)
+         ++ posToProjAssocs p (blid b) s)  -- don't kill own projectiles
   let lalter = salter EM.! blid b
       -- Only actors with SkAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
@@ -1005,21 +1007,22 @@ moveOrRunAid source dir = do
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
-  -- We start by checking actors at the target position,
-  -- which gives a partial information (actors can be invisible),
-  -- as opposed to accessibility (and items) which are always accurate
-  -- (tiles can't be invisible).
-  tgts <- getsState $ posToAssocs tpos lid
+      -- We start by checking actors at the target position,
+      -- which gives a partial information (actors can be invisible),
+      -- as opposed to accessibility (and items) which are always accurate
+      -- (tiles can't be invisible).
+      tgts = maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl
   case tgts of
-    [(target, b2)] | walkable
-                     && getSk SkDisplace actorSk > 0
-                     && notLooping sb tpos -> do
+    [target] | walkable
+               && getSk SkDisplace actorSk > 0
+               && notLooping sb tpos -> do
       -- @target@ can be a foe, as well as a friend.
-      tfact <- getsState $ (EM.! bfid b2) . sfactionD
+      tb <- getsState $ getActorBody target
+      tfact <- getsState $ (EM.! bfid tb) . sfactionD
       actorMaxSk <- getsState $ getActorMaxSkills target
       dEnemy <- getsState $ dispEnemy source target actorMaxSk
         -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
-      if isFoe (bfid b2) tfact (bfid sb) && not dEnemy
+      if isFoe (bfid tb) tfact (bfid sb) && not dEnemy
       then return Nothing
       else return $ Just $ ReqDisplace target
     [] | walkable && getSk SkMove actorSk > 0 ->

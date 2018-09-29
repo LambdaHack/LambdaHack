@@ -146,7 +146,8 @@ rollSpawnPos COps{coTileSpeedup} visible
   findPosTry2 (if mobile then 500 else 100) lvl
     ( \p t -> Tile.isWalkable coTileSpeedup t
               && not (Tile.isNoActor coTileSpeedup t)
-              && null (posToAidsLvl p lvl))
+              && not (occupiedBigLvl p lvl)
+              && not (occupiedProjLvl p lvl) )
     condList
     (\p t -> distantSo (> 4) p t  -- otherwise actors in dark rooms swarmed
              && not (p `ES.member` visible))  -- visibility and plausibility
