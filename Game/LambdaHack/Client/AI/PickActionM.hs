@@ -748,6 +748,8 @@ applyItem aid applyGroup = do
       -- Both effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
       getTweak IK.PolyItem = True
+      getTweak IK.RerollItem = True
+      getTweak IK.DupItem = True
       getTweak IK.Identify = True
       getTweak (IK.OneOf l) = any getTweak l
       getTweak (IK.Recharging eff) = getTweak eff
