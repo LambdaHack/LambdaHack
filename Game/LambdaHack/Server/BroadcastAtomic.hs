@@ -208,7 +208,7 @@ sendPer fid lid outPer inPer perNew = do
   unless knowEvents $ do  -- inconsistencies would quickly manifest
     sendUpdNoState fid $ UpdPerception lid outPer inPer
     sClient <- getsServer $ (EM.! fid) . sclientStates
-    let forget = atomicForget fid lid outPer sClient
+    let forget = atomicForget lid outPer sClient
     remember <- getsState $ atomicRemember lid inPer sClient
     let seenNew = seenAtomicCli False fid perNew
     psRem <- mapM posUpdAtomic remember
@@ -219,9 +219,8 @@ sendPer fid lid outPer inPer perNew = do
 
 -- Remembered items, map tiles and smells are not wiped out when they get
 -- out of FOV. Clients remember them. Only actors are forgotten.
-atomicForget :: FactionId -> LevelId -> Perception -> State
-             -> [UpdAtomic]
-atomicForget side lid outPer sClient =
+atomicForget :: LevelId -> Perception -> State -> [UpdAtomic]
+atomicForget lid outPer sClient =
   -- Wipe out actors that just became invisible due to changed FOV.
   let outFov = totalVisible outPer
       fActor (aid, b) =
@@ -236,7 +235,7 @@ atomicForget side lid outPer sClient =
                    $ ES.elems outFov
       outPrioProj = concatMap (\p -> posToProjAssocs p lid sClient)
                     $ ES.elems outFov
-  in map fActor $ filter ((/= side) . bfid . snd) outPrioBig ++ outPrioProj
+  in map fActor $ outPrioBig ++ outPrioProj
 
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
