@@ -553,8 +553,9 @@ displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
     _ -> error $ "" `showFailure` km
 
 viewLoreItems :: MonadClientUI m
-              => SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool) -> m Bool
-viewLoreItems lSlots trunkBag prompt examItem =
+              => String -> SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool)
+              -> m Bool
+viewLoreItems menuName lSlots trunkBag prompt examItem =
   if EM.null lSlots then return True else do
     CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
     arena <- getArenaUI
@@ -569,8 +570,7 @@ viewLoreItems lSlots trunkBag prompt examItem =
         keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
         allOKX = concatMap snd $ slideshow itemSlides
         keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-    ekm <- displayChoiceScreen "quit viewLoreItems" ColorFull False
-                               itemSlides keysMain
+    ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
     case ekm of
       Left km | km == K.spaceKM -> return True
       Left km | km == caretKey -> do
@@ -578,12 +578,12 @@ viewLoreItems lSlots trunkBag prompt examItem =
         -- and only for the single slot category.
         itemToF <- getsState $ flip itemToFull
         let newSlots = sortSlotMap itemToF lSlots
-        viewLoreItems newSlots trunkBag prompt examItem
+        viewLoreItems menuName newSlots trunkBag prompt examItem
       Left km | km == K.escKM -> return False
       Left _ -> error $ "" `showFailure` ekm
       Right slot -> do
         let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
         go2 <- examItem ix0
         if go2
-        then viewLoreItems lSlots trunkBag prompt examItem
+        then viewLoreItems menuName lSlots trunkBag prompt examItem
         else return True
