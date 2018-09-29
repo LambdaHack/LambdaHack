@@ -422,44 +422,47 @@ advanceTrajectory aid b = do
   case btrajectory b of
     Just (d : lv, speed) -> do
       let tpos = bpos b `shift` d  -- target position
-      if Tile.isWalkable coTileSpeedup $ lvl `at` tpos
-      then do
-        -- Hit will clear trajectories in @reqMelee@,
-        -- so no need to do that here.
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
-        when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
-          killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-          addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
-        -- Non-projectiles displace, to make pushing in crowds less lethal
-        -- and chaotic and to avoid hitting harpoons when pulled by them.
-        case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
-          [target] | not (bproj b) -> reqDisplaceGeneric False aid target
-          _ -> reqMoveGeneric False True aid d
-      else do
-        -- @Nothing@ trajectory of a projectile signals an obstacle hit.
-        -- The second call of @actorDying@ above will catch the dead projectile.
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-        if bproj b then
-          -- Kill counts for each blast particle is TMI.
-          when (not (IA.isBlast arTrunk)) $ do
-            killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-            addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
-          -- Losing HP due to hitting an obstacle not needed, because
-          -- trajectory is halted, so projectile will die soon anyway.
-        else do
-          -- Will be removed from @strajTime@ in recursive call
-          -- to @handleTrajectories@.
-          execSfxAtomic $ SfxCollideTile aid tpos
-          mfail <- reqAlterFail False aid tpos
-          case mfail of
-            Nothing -> return ()  -- too late to announce anything
-            Just{} ->
-              -- Altering failed, probably just a wall, so lose HP
-              -- due to being pushed into an obstacle. Never kill in this way.
-              when (bhp b > oneM) $ do
-                execUpdAtomic $ UpdRefillHP aid minusM
-                let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
-                execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
+      if | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
+           -- Hit will clear trajectories in @reqMelee@,
+           -- so no need to do that here.
+           execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
+           when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
+             killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
+             addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
+           -- Non-projectiles displace, to make pushing in crowds less lethal
+           -- and chaotic and to avoid hitting harpoons when pulled by them.
+           case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+             [target] | not (bproj b) -> reqDisplaceGeneric False aid target
+             _ -> reqMoveGeneric False True aid d
+         | bproj b -> do
+           -- @Nothing@ trajectory of a projectile signals an obstacle hit.
+           -- Second call of @actorDying@ above will catch the dead projectile.
+           execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+           -- Kill counts for each blast particle is TMI.
+           when (not (IA.isBlast arTrunk)) $ do
+             killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
+             addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
+           -- Losing HP due to hitting an obstacle not needed, because
+           -- trajectory is halted, so projectile will die soon anyway.
+         | otherwise -> do
+           -- Will be removed from @strajTime@ in recursive call
+           -- to @handleTrajectories@.
+           execSfxAtomic $ SfxCollideTile aid tpos
+           mfail <- reqAlterFail False aid tpos
+           lvl2 <- getLevel $ blid b
+           case mfail of
+             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos ->
+               -- Too late to announce anything, but given that the way
+               -- is opened, continue flight. Don't even lose any HP.
+               return ()
+             _ -> do
+               -- Altering failed, probably just a wall, so lose HP
+               -- due to being pushed into an obstacle. Never kill in this way.
+               execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+               when (bhp b > oneM) $ do
+                 execUpdAtomic $ UpdRefillHP aid minusM
+                 let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
+                 execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
     _ -> error $ "Nothing or empty trajectory" `showFailure` (aid, b)
 
 handleActors :: (MonadServerAtomic m, MonadServerComm m)
