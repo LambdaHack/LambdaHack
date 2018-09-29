@@ -92,7 +92,7 @@ spreadFragmentation = ItemKind
   , iweight  = 1
   , idamage  = 3 `d` 1  -- deadly and adjacent actor hit by 2 on average;
                         -- however, moderate armour blocks completely
-  , iaspects = [ toLinger 20  -- 4 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
   , ieffects = [DropItem 1 maxBound COrgan "condition"]
@@ -103,7 +103,7 @@ spreadFragmentation8 = spreadFragmentation
   { iname    = "fragmentation burst"
   , ifreq    = [("fragmentation", 1)]
   , icount   = 8
-  , iaspects = [ toLinger 10  -- 2 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
       -- smaller radius, so worse for area effect, but twice the direct damage
@@ -137,7 +137,7 @@ spreadConcussion = ItemKind
   , iweight  = 1
   , idamage  = 1 `d` 1  -- only air pressure, so not as deadly as fragmentation,
                         -- but armour can't block completely that easily
-  , iaspects = [ toLinger 20  -- 4 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
       -- outdoors it has short range, but we only model indoors in the game;
@@ -156,7 +156,7 @@ spreadConcussion8 = spreadConcussion
   { iname    = "concussion blast"
   , ifreq    = [("concussion", 1)]
   , icount   = 8
-  , iaspects = [ toLinger 10  -- 2 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -8 * 5 ]
   }
@@ -186,7 +186,7 @@ spreadFlash = ItemKind
   , iverbHit = "dazzle"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toLinger 20  -- 4 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
   , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 20]
@@ -200,7 +200,7 @@ spreadFlash8 = spreadFlash
   , ifreq    = [("spark", 1)]
   , icount   = 8
   , iverbHit = "blind"
-  , iaspects = [ toLinger 10  -- 2 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
   }
@@ -242,7 +242,7 @@ glassPiece = ItemKind
   , iverbHit = "cut"
   , iweight  = 1
   , idamage  = 2 `d` 1
-  , iaspects = [ toLinger 20  -- 4 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkHurtMelee $ -15 * 5 ]
                  -- brittle, not too dense; armor blocks
@@ -735,7 +735,7 @@ poisonCloud = ItemKind
   , iverbHit = "poison"
   , iweight  = 0
   , idamage  = 0
-  , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
+  , iaspects = [ ToThrow $ ThrowMod 10 100 2  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [toOrganNoTimer "poisoned"]
   , idesc    = "Choking gas that stings the eyes."
