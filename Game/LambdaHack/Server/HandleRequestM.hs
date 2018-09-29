@@ -267,10 +267,11 @@ affectSmell aid = do
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
 reqMove :: MonadServerAtomic m => ActorId -> Vector -> m ()
-reqMove = reqMoveGeneric True
+reqMove = reqMoveGeneric True True
 
-reqMoveGeneric :: MonadServerAtomic m => Bool -> ActorId -> Vector -> m ()
-reqMoveGeneric voluntary source dir = do
+reqMoveGeneric :: MonadServerAtomic m
+               => Bool -> Bool -> ActorId -> Vector -> m ()
+reqMoveGeneric voluntary mayAttack source dir = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsServer source
   sb <- getsState $ getActorBody source
@@ -316,7 +317,9 @@ reqMoveGeneric voluntary source dir = do
   tgt <- getsState $ \s -> maybeToList (posToBigAssoc tpos lid s)
                            ++ posToProjAssocs tpos lid s
   case tgt of
-    (target, tb) : _ | not (bproj sb) || not (bproj tb) || collides tb -> do
+    (target, tb) : _ | mayAttack
+                       && (not (bproj sb) || not (bproj tb)
+                           || collides tb) -> do
       -- A projectile is too small and insubstantial to hit another projectile,
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
@@ -326,6 +329,12 @@ reqMoveGeneric voluntary source dir = do
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
           reqMeleeChecked voluntary source target wp cstore
         _ -> return ()  -- waiting, even if no @AbWait@ skill
+      -- Movement of projectiles only happens after melee and a check
+      -- if they survive, so that if they don't, they explode in front
+      -- of enemy, not under him, so that already first explosion blasts
+      -- reach him, not only potential secondary explosions.
+      b2 <- getsState $ getActorBody source
+      unless (actorDying b2) $ reqMoveGeneric voluntary False source dir
     _ -> do
       -- Either the position is empty, or all involved actors are proj.
       -- Movement requires full access and skill.

@@ -434,7 +434,7 @@ advanceTrajectory aid b = do
         -- and chaotic and to avoid hitting harpoons when pulled by them.
         case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
           [target] | not (bproj b) -> reqDisplaceGeneric False aid target
-          _ -> reqMoveGeneric False aid d
+          _ -> reqMoveGeneric False True aid d
       else do
         -- @Nothing@ trajectory of a projectile signals an obstacle hit.
         -- The second call of @actorDying@ above will catch the dead projectile.
