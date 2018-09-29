@@ -111,14 +111,14 @@ data Effect =
       --   how many copies of each kind to drop; for non-organs, beware of
       --   not dropping all, or cluttering store with rubbish becomes beneficial
   | PolyItem
-      -- ^ get a suitable (i.e., numerous enough) non-unique item
+      -- ^ get a suitable (i.e., numerous enough) non-unique common item
       --   on the floor and polymorph it randomly
   | RerollItem
       -- ^ get a suitable (i.e., with any random aspects) stack of items
       --   (even unique) on the floor and change the random bonuses
       --   of the items randomly, with maximal depth coefficient
   | DupItem
-      -- ^ exactly duplicate a single non-unique item on the floor
+      -- ^ exactly duplicate a single non-unique, non-valuable item on the floor
   | Identify
       -- ^ find a suitable (i.e., not identified) item, starting from
       --   the floor, and identify it
