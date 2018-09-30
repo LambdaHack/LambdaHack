@@ -317,9 +317,9 @@ reqMoveGeneric voluntary mayAttack source dir = do
   tgt <- getsState $ \s -> maybeToList (posToBigAssoc tpos lid s)
                            ++ posToProjAssocs tpos lid s
   case tgt of
-    (target, tb) : _ | mayAttack
-                       && (not (bproj sb) || not (bproj tb)
-                           || collides tb) -> do
+    (target, tb) : _ | mayAttack && (not (bproj sb)
+                                     || not (bproj tb)
+                                     || collides tb) -> do
       -- A projectile is too small and insubstantial to hit another projectile,
       -- unless it's large enough or tends to explode (fragile and lobable).
       -- The actor in the way is visible or not; server sees him always.
@@ -333,8 +333,9 @@ reqMoveGeneric voluntary mayAttack source dir = do
       -- if they survive, so that if they don't, they explode in front
       -- of enemy, not under him, so that already first explosion blasts
       -- reach him, not only potential secondary explosions.
-      b2 <- getsState $ getActorBody source
-      unless (actorDying b2) $ reqMoveGeneric voluntary False source dir
+      when (bproj sb) $ do
+        b2 <- getsState $ getActorBody source
+        unless (actorDying b2) $ reqMoveGeneric voluntary False source dir
     _ ->
       -- Either the position is empty, or all involved actors are proj.
       -- Movement requires full access and skill.
