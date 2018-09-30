@@ -1646,7 +1646,7 @@ gemTemplate = ItemKind
   , ikit     = []
   }
 gem1 = gemTemplate
-  { ifreq    = [ ("treasure", 100), ("gem", 100)
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
   , irarity  = [(3, 0), (10, 24)]
   , iaspects = [AddSkill SkShine 1, AddSkill SkSpeed (-1)]
@@ -1656,24 +1656,24 @@ gem1 = gemTemplate
   , ieffects = [RefillCalm (-1)]  -- minor effect to ensure no id-on-pickup
   }
 gem2 = gem1
-  { ifreq    = [ ("treasure", 100), ("gem", 100)
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
   , irarity  = [(5, 0), (10, 28)]
   }
 gem3 = gem1
-  { ifreq    = [ ("treasure", 100), ("gem", 100)
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
   , irarity  = [(7, 0), (10, 32)]
   }
 gem4 = gem1
-  { ifreq    = [ ("treasure", 100), ("gem", 100)
+  { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
   , irarity  = [(9, 0), (10, 100)]
   }
 gem5 = gem1
   { isymbol  = symbolSpecial
   , iname    = "elixir"
-  , ifreq    = [ ("treasure", 100), ("gem", 25)
+  , ifreq    = [ ("treasure", 100), ("gem", 25), ("any jewelry", 25)
                , ("valuable", 100) ]
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]

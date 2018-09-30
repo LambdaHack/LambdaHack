@@ -252,8 +252,7 @@ torsor = ItemKind
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
                , ("pupil", COrgan), ("ear 9", COrgan)
-               , ("any jewelry", CEqp), ("any jewelry", CEqp)
-               , ("any jewelry", CEqp), ("any jewelry", CEqp)
+               , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv)
                , ("sapient brain", COrgan) ]
   }
 -- "ground x" --- for immovable monster that can only tele or prob travel
