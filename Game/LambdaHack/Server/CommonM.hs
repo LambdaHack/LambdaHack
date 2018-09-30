@@ -489,8 +489,7 @@ discoverIfMinorEffects c iid itemKindId = do
   let arItem = discoAspect EM.! iid
       itemKind = okind coitem itemKindId
   if IA.onlyMinorEffects arItem itemKind
-  then do
-    execUpdAtomic $ UpdDiscover c iid itemKindId arItem
+  then execUpdAtomic $ UpdDiscover c iid itemKindId arItem
   else return ()  -- discover by use when item's effects get activated later on
 
 pickWeaponServer :: MonadServer m => ActorId -> m (Maybe (ItemId, CStore))

@@ -69,8 +69,7 @@ actorRegularAssocs p lid s =
   in filter f $ EM.assocs $ sactorD s
 
 fidActorRegularAssocs :: FactionId -> LevelId -> State -> [(ActorId, Actor)]
-fidActorRegularAssocs fid lid s =
-  actorRegularAssocs (== fid) lid s
+fidActorRegularAssocs fid = actorRegularAssocs (== fid)
 
 fidActorRegularIds :: FactionId -> LevelId -> State -> [ActorId]
 fidActorRegularIds fid lid s =
@@ -453,7 +452,7 @@ posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 isStair :: LevelId -> Point -> State -> Bool
 isStair lid p s =
   let bag = getEmbedBag lid p s
-      ks = map (flip getIidKind s) $ EM.keys bag
+      ks = map (`getIidKind` s) $ EM.keys bag
   in any (any IK.isEffAscend . IK.ieffects) ks
 
 -- | Require that any non-dying foe is adjacent. We include even

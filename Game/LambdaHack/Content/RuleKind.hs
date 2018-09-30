@@ -62,5 +62,5 @@ makeData rc =
   let singleOffenders = validateSingle rc
   in assert (null singleOffenders
              `blame` "Rule Content not valid"
-             `swith` singleOffenders) $
+             `swith` singleOffenders)
      rc

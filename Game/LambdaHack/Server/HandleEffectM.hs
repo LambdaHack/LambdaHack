@@ -971,7 +971,7 @@ effectParalyze :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectParalyze execSfx nDm source target = do
   tb <- getsState $ getActorBody target
-  if bproj tb then return UseDud else do  -- shortcut for speed
+  if bproj tb then return UseDud else  -- shortcut for speed
     paralyze execSfx nDm source target
 
 paralyze :: MonadServerAtomic m
@@ -1291,7 +1291,7 @@ effectRerollItem execSfx source target = do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNothing
       return UseId
     (iid, ( ItemFull{itemBase, itemKindId, itemKind}
-          , kit )) : _ -> do
+          , kit )) : _ ->
       if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNotRandom
            return UseId

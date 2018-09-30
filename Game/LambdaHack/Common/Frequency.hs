@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable, TupleSections #-}
 -- | A list of entities with relative frequencies of appearance.
 module Game.LambdaHack.Common.Frequency
   ( -- * The @Frequency@ type
@@ -84,7 +84,7 @@ instance Alternative Frequency where
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a
-uniformFreq name l = Frequency (map (\x -> (1, x)) l) name
+uniformFreq name l = Frequency (map (1,) l) name
 
 -- | Takes a name and a list of frequencies and items
 -- into the frequency distribution.

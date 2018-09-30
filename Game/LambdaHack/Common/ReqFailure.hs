@@ -172,12 +172,11 @@ permittedPreciousAI :: Bool -> ItemFull -> Bool
 permittedPreciousAI calmE itemFull@ItemFull{itemDisco} =
   let arItem = aspectRecordFull itemFull
       isPrecious = IA.checkFlag Ability.Precious arItem
-  in if not calmE && isPrecious
-     then False
-     else IA.checkFlag Ability.Durable arItem
-          || case itemDisco of
-               ItemDiscoFull{} -> True
-               _ -> not isPrecious
+  in (calmE || not isPrecious)
+     && IA.checkFlag Ability.Durable arItem
+        || case itemDisco of
+             ItemDiscoFull{} -> True
+             _ -> not isPrecious
 
 permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedProject forced skill calmE itemFull =

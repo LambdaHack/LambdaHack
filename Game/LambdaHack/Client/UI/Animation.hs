@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
@@ -52,13 +53,13 @@ mapPosToOffset ScreenContent{rwidth} (Point{..}, attr) =
 
 mzipSingleton :: ScreenContent -> Point -> Maybe AttrCharW32 -> IntOverlay
 mzipSingleton coscreen p1 mattr1 = map (mapPosToOffset coscreen) $
-  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
+  let mzip (pos, mattr) = fmap (pos,) mattr
   in catMaybes [mzip (p1, mattr1)]
 
 mzipPairs :: ScreenContent -> (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
           -> IntOverlay
 mzipPairs coscreen (p1, p2) (mattr1, mattr2) = map (mapPosToOffset coscreen) $
-  let mzip (pos, mattr) = fmap (\attr -> (pos, attr)) mattr
+  let mzip (pos, mattr) = fmap (pos,) mattr
   in catMaybes $ if p1 /= p2
                  then [mzip (p1, mattr1), mzip (p2, mattr2)]
                  else -- If actor affects himself, show only the effect,

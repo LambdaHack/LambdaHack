@@ -73,7 +73,7 @@ loopCli ccui sUIOptions soptions = do
       -- Restore game.
       schanF <- getsSession schanF
       sccui <- getsSession sccui
-      maybe (return ()) (\sess -> modifySession $ \_ ->
+      maybe (return ()) (\sess -> modifySession $ const
         sess {schanF, sccui, sUIOptions}) msess
       putClient cli {soptions}
       return True

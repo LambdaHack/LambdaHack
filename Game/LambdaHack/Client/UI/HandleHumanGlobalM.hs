@@ -564,7 +564,7 @@ goToXhair initialStep run = do
       Just c | c == bpos b -> do
         actorSk <- leaderSkillsClientUI
         if initialStep && Ability.getSk Ability.SkWait actorSk > 0
-        then return $ Right $ ReqWait
+        then return $ Right ReqWait
         else failWith "position reached"
       Just c -> do
         running <- getsSession srunning

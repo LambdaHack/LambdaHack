@@ -148,7 +148,7 @@ setBWait cmd aid b = do
         let !_A = assert (nAll == 0) ()
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WWatch ->
-      when (mwait == Just True) $ do  -- only long wait switches to wait state
+      when (mwait == Just True) $  -- only long wait switches to wait state
         if Ability.getSk Ability.SkWait actorMaxSk >= 1 then do
           addCondition "braced" aid
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
@@ -335,7 +335,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
       -- reach him, not only potential secondary explosions.
       b2 <- getsState $ getActorBody source
       unless (actorDying b2) $ reqMoveGeneric voluntary False source dir
-    _ -> do
+    _ ->
       -- Either the position is empty, or all involved actors are proj.
       -- Movement requires full access and skill.
       if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then

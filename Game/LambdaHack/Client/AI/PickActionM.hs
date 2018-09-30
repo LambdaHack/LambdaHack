@@ -21,7 +21,6 @@ import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Function
-import           Data.Ord
 import           Data.Ratio
 
 import           Game.LambdaHack.Client.AI.ConditionM
@@ -57,7 +56,7 @@ import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m
-           => Maybe (ActorId) -> ActorId -> Bool -> m RequestTimed
+           => Maybe ActorId -> ActorId -> Bool -> m RequestTimed
 {-# INLINE pickAction #-}
 pickAction moldLeader aid retry = do
   side <- getsClient sside
@@ -81,8 +80,7 @@ pickAction moldLeader aid retry = do
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => Maybe (ActorId) -> ActorId -> Bool
-               -> m (Strategy RequestTimed)
+               => Maybe ActorId -> ActorId -> Bool -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
 actionStrategy moldLeader aid retry = do
   mleader <- getsClient sleader
@@ -987,7 +985,7 @@ moveTowards aid target goal relaxed = do
                                        && enterableHere p
         sensible = [ ((goesBack p, chessDist p goal), v)
                    | v <- moves, let p = source `shift` v, isSensible p ]
-        sorted = sortBy (comparing fst) sensible
+        sorted = sortOn fst sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs

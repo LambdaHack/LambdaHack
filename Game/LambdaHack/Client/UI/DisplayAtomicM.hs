@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Display atomic commands received by the client.
 module Game.LambdaHack.Client.UI.DisplayAtomicM
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
@@ -195,7 +196,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
     body <- getsState $ getActorBody aid
-    when (bfid body == side) $ do
+    when (bfid body == side) $
       if | calmDelta > 0 ->  -- regeneration or effect
              markDisplayNeeded (blid body)
          | calmDelta == minusM -> do
@@ -747,7 +748,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 quitFactionUI :: MonadClientUI m
-              => FactionId -> Maybe Status -> (Maybe FactionAnalytics) -> m ()
+              => FactionId -> Maybe Status -> Maybe FactionAnalytics -> m ()
 quitFactionUI fid toSt manalytics = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
@@ -849,7 +850,7 @@ displayGameOverLoot (itemBag, total) = do
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
-                         => (Maybe FactionAnalytics) -> m Bool
+                         => Maybe FactionAnalytics -> m Bool
 displayGameOverAnalytics manalytics = case manalytics of
   Nothing -> return True
   Just analytics -> do
@@ -859,9 +860,8 @@ displayGameOverAnalytics manalytics = case manalytics of
                 $ EM.findWithDefault emptyAnalytics side analytics
         foesAn = EM.unionsWith (+)
                  $ concatMap EM.elems $ catMaybes
-                 $ map (\killHow -> EM.lookup killHow ourAn)
-                       [KillKineticMelee .. KillOtherPush]
-        trunkBagRaw = EM.map (\n -> (n, [])) foesAn
+                 $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
+        trunkBagRaw = EM.map (, []) foesAn
         lSlots = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
         trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                      (EM.elems lSlots)
@@ -926,7 +926,7 @@ ppHearMsg hearMsg = case hearMsg of
   HearStrike ik -> do
     COps{coitem} <- getsState scops
     let verb = IK.iverbHit $ okind coitem ik
-        msg = makeSentence $ [ "you hear something", verb, "someone"]
+        msg = makeSentence [ "you hear something", verb, "someone"]
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"

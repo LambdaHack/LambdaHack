@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.ItemAspect
   ( AspectRecord(..), KindMean(..), ItemSpeedup

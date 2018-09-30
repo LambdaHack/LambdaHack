@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TupleSections #-}
 -- | Weapons, treasure and all the other items in the game.
 module Game.LambdaHack.Common.Item
   ( ItemId, Item(..), ItemIdentity(..)
@@ -164,7 +164,7 @@ itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
   let (itemKindId, itemSuspect) = case jkind itemBase of
         IdentityObvious ik -> (ik, False)
         IdentityCovered ix ik ->
-          maybe (ik, True) (\ki -> (ki, False)) $ ix `EM.lookup` discoKind
+          maybe (ik, True) (, False) $ ix `EM.lookup` discoKind
       itemKind = okind coitem itemKindId
       km = IA.getKindMean itemKindId coItemSpeedup
       -- If the kind is not identified, we know nothing about the real

@@ -153,10 +153,8 @@ hearUpdAtomic as cmd = do
                 else Just aids
     UpdAlterTile _ p _ toTile -> do
       aids <- filterHear p as
-      return $! if Tile.isDoor coTileSpeedup toTile
-                then if null aids
-                     then Nothing
-                     else Just aids
+      return $! if Tile.isDoor coTileSpeedup toTile && null aids
+                then Nothing
                 else Just aids  -- profound
     UpdAlterExplorable{} -> return $ Just []  -- profound
     _ -> return Nothing

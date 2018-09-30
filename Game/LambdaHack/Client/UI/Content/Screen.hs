@@ -40,5 +40,5 @@ makeData sc =
   let singleOffenders = validateSingle sc
   in assert (null singleOffenders
              `blame` "Screen Content" ++ ": some content items not valid"
-             `swith` singleOffenders) $
+             `swith` singleOffenders)
      sc

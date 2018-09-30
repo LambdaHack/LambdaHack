@@ -123,8 +123,7 @@ lookupActorTime :: FactionId -> LevelId -> ActorId -> ActorTime
 lookupActorTime !fid !lid !aid !atime = do
   m1 <- EM.lookup fid atime
   m2 <- EM.lookup lid m1
-  m3 <- EM.lookup aid m2
-  return m3
+  EM.lookup aid m2
 
 ageActor :: FactionId -> LevelId -> ActorId -> Delta Time -> ActorTime
          -> ActorTime

@@ -164,7 +164,7 @@ chooseItemDialogMode c = do
   bUI <- getsSession $ getActorUI leader
   side <- getsClient sside
   case ggi of
-    (Right (iid, itemBag, lSlots), (c2, _)) -> do
+    (Right (iid, itemBag, lSlots), (c2, _)) ->
       case c2 of
         MStore fromCStore -> do
           modifySession $ \sess ->
@@ -253,7 +253,7 @@ chooseItemDialogMode c = do
                     places !! fromJust (elemIndex slot allSlots)
                   pkind = okind coplace pk
                   partsPhrase = makePhrase $ placeParts stats
-                  prompt2 = makeSentence $
+                  prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
                     , MU.Text $ PK.pname pkind ]
                   onLevels | ES.null es = []
@@ -367,10 +367,9 @@ projectCheck tpos = do
       let t = lvl `at` pos
       if not $ Tile.isWalkable coTileSpeedup t
         then return $ Just ProjectBlockTerrain
-        else do
-          if occupiedBigLvl pos lvl
-          then return $ Just ProjectBlockActor
-          else return Nothing
+        else if occupiedBigLvl pos lvl
+             then return $ Just ProjectBlockActor
+             else return Nothing
 
 -- | Check whether one is permitted to aim (for projecting) at a target
 -- (this is only checked for actor targets so that the player doesn't miss

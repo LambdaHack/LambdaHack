@@ -26,7 +26,6 @@ import           Data.Binary
 import           Data.Function
 import           Data.Hashable (Hashable)
 import qualified Data.Map.Strict as M
-import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
@@ -75,7 +74,7 @@ contentIdIndex (ContentId k) = fromEnum k
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
-  let sortedRarity = sortBy (comparing fst) rarity
+  let sortedRarity = sortOn fst rarity
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
         | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
@@ -123,9 +122,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
       singleOffenders = [ (offences, a)
                         | a <- content
                         , let offences = validateSingle a
-                                         ++ if T.null (getName a)
-                                            then ["empty name"]
-                                            else []
+                                         ++ ["empty name" | T.null (getName a)]
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content

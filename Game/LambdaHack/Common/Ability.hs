@@ -159,7 +159,7 @@ getSk :: Skill -> Skills -> Int
 getSk sk (Skills skills) = EM.findWithDefault 0 sk skills
 
 addSk :: Skill -> Int -> Skills -> Skills
-addSk sk n skills = addSkills (Skills $ EM.singleton sk n) skills
+addSk sk n = addSkills (Skills $ EM.singleton sk n)
 
 checkFl :: Flag -> Flags -> Bool
 {-# INLINE checkFl #-}
@@ -183,7 +183,7 @@ addSkills (Skills sk1) (Skills sk2) =
   Skills $ compactSkills $ EM.unionWith (+) sk1 sk2
 
 scaleSkills :: Int -> EM.EnumMap Skill Int -> EM.EnumMap Skill Int
-scaleSkills n skills = EM.map (n *) skills
+scaleSkills n = EM.map (n *)
 
 sumScaledSkills :: [(Skills, Int)] -> Skills
 sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)

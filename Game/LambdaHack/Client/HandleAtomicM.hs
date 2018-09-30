@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
   ( MonadClientSetup(..)
@@ -220,9 +221,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , snxtScenario
-                  , scondInMelee = LEM.fromAscList
-                                   $ map (\lid -> (lid, False))
-                                   $ EM.keys (sdungeon s)
+                  , scondInMelee = LEM.fromAscList $ map (, False)
+                                                   $ EM.keys (sdungeon s)
                   , svictories
                   , soptions }
     salter <- getsState createSalter

@@ -96,7 +96,7 @@ newItem :: COps -> Frequency (ContentId IK.ItemKind, ItemKind)
         -> FlavourMap -> DiscoveryKindRev
         -> Dice.AbsDepth -> Dice.AbsDepth
         -> Rnd (Maybe (ItemKnown, ItemFullKit))
-newItem cops freq flavourMap discoRev levelDepth totalDepth = do
+newItem cops freq flavourMap discoRev levelDepth totalDepth =
   if nullFreq freq then return Nothing
   else do
     (itemKindId, itemKind) <- frequency freq

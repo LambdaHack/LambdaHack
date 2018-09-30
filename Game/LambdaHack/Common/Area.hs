@@ -71,9 +71,4 @@ instance Binary Area where
     put y0
     put x1
     put y1
-  get = do
-    x0 <- get
-    y0 <- get
-    x1 <- get
-    y1 <- get
-    return (Area x0 y0 x1 y1)
+  get = Area <$> get <*> get <*> get <*> get

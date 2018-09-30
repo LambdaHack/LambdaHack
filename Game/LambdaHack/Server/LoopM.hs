@@ -357,14 +357,14 @@ hTrajectories :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE hTrajectories #-}
 hTrajectories aid = do
   b1 <- getsState $ getActorBody aid
-  let removePushed b = do
+  let removePushed b =
         -- No longer fulfills criteria and was not removed by dying; remove him.
         modifyServer $ \ser ->
           ser { strajTime =
                   EM.adjust (EM.adjust (EM.delete aid) (blid b)) (bfid b)
                             (strajTime ser)
               , strajPushedBy = EM.delete aid (strajPushedBy ser) }
-      removeTrajectory b = do
+      removeTrajectory b =
         -- Non-projectile actor stops flying (a projectile with empty trajectory
         -- would be intercepted earlier on as dead).
         -- Will be removed from @strajTime@ in recursive call

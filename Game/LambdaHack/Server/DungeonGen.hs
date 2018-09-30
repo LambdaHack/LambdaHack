@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | The dungeon generation routine. It creates empty dungeons, without
 -- actors and without items, either lying on the floor or embedded inside tiles.
 module Game.LambdaHack.Server.DungeonGen
@@ -109,13 +110,13 @@ buildTileMap cops@COps{cotile, cocave} Cave{dkind, darea, dmap} = do
   let CaveKind{cpassable, cdefTile} = okind cocave dkind
       pickDefTile = fromMaybe (error $ "" `showFailure` cdefTile)
                     <$> opick cotile cdefTile (const True)
-      wcond kt = Tile.isEasyOpenKind kt
+      wcond = Tile.isEasyOpenKind
       mpickPassable =
         if cpassable
         then Just $ fromMaybe (error $ "" `showFailure` cdefTile)
                     <$> opick cotile cdefTile wcond
         else Nothing
-      nwcond kt = not (Tile.kindHasFeature TK.Walkable kt)
+      nwcond = not . Tile.kindHasFeature TK.Walkable
   areAllWalkable <- isNothing <$> opick cotile cdefTile nwcond
   convertTileMaps cops areAllWalkable pickDefTile mpickPassable darea dmap
 
@@ -203,7 +204,7 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
       freqDown =
         map (first (\gn -> toGroupName $ tshow gn <+> "down"))
         $ cstairFreq kc
-      fixedStairsDown = map (\p -> (p, freqDown)) pstairsSingleDown
+      fixedStairsDown = map (, freqDown) pstairsSingleDown
       pallExits = pallUpAndEscape ++ pstairsSingleDown
       fixedCenters = EM.fromList $
         fixedEscape ++ fixedStairsDouble ++ fixedStairsUp ++ fixedStairsDown
