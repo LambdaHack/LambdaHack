@@ -142,6 +142,10 @@ handleFidUpd updatePerFid fid fact = do
   -- Let players ponder new game state while the engine is busy saving.
   -- Also, this ensures perception before game save is exactly the same
   -- as at game resume, which is an invariant we check elsewhere.
+  -- However, perception is not updated after the action, so the actor
+  -- may not see his vicinity, so may not see enemy that displaces him
+  -- resulting in breaking the displace action and temporary leader loss,
+  -- which is fine, though a bit alarming.
   updatePerFid fid
   -- Move a single actor only. Bail out if immediate loop break requested by UI.
   let handle [] = return ()
@@ -187,6 +191,8 @@ loopUpd updConn = do
         -- factions (when we reenable multiplayer). Then players will request
         -- save&exit and others will vote on it and it will happen
         -- after the clip has ended, not at the start.
+        -- Note that at most a single actor with a time-consuming action
+        -- is processed per faction, so it's fair, but many loops are needed.
         mapM_ handleFid $ EM.toDescList factionD
         breakASAP <- getsServer sbreakASAP
         breakLoop <- getsServer sbreakLoop

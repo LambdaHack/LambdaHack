@@ -16,6 +16,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic.CmdAtomic
@@ -27,6 +28,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -230,8 +232,9 @@ breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> do
     -- We assume other factions don't see leaders and we know the actor's
-    -- faction always sees the atomic command, so the leader doesn't
-    -- need to be updated (or the actor is a projectile, hence not a leader).
+    -- faction always sees the atomic command and no other commands
+    -- may be inserted between the two below, so the leader doesn't
+    -- need to be updated, even when aid is the leader.
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocsAndTrunk b
     return [ UpdLoseActor aid b ais
@@ -241,13 +244,31 @@ breakUpdAtomic cmd = case cmd of
     sais <- getsState $ getCarriedAssocsAndTrunk sb
     tb <- getsState $ getActorBody target
     tais <- getsState $ getCarriedAssocsAndTrunk tb
-    return [ UpdLoseActor source sb sais
-           , UpdLoseActor target tb tais
-           , UpdSpotActor source sb { bpos = bpos tb
-                                    , boldpos = Just $ bpos sb } sais
-           , UpdSpotActor target tb { bpos = bpos sb
-                                    , boldpos = Just $ bpos tb } tais
-           ]
+    -- The order ensures the invariant that no two big actors occupy the same
+    -- position is maintained. The actions about leadership are required
+    -- to keep faction data (identify of the leader) consistent with actor
+    -- data (the actor that is the leader exists). Here, for speed
+    -- and simplicity we violate the property that in a faction
+    -- that has leaders, if any eligible actor is alive,
+    -- the leader is set, because for a moment there may be no leader,
+    -- even though other actors of the faction may exist.
+    msleader <- getsState $ gleader . (EM.! bfid sb) . sfactionD
+    mtleader <- getsState $ gleader . (EM.! bfid tb) . sfactionD
+    return $ [ UpdLeadFaction (bfid sb) msleader Nothing
+             | Just source == msleader ]
+             ++ [ UpdLeadFaction (bfid tb) mtleader Nothing
+                | Just target == mtleader ]
+             ++ [ UpdLoseActor source sb sais
+                , UpdLoseActor target tb tais
+                , UpdSpotActor source sb { bpos = bpos tb
+                                         , boldpos = Just $ bpos sb } sais
+                , UpdSpotActor target tb { bpos = bpos sb
+                                         , boldpos = Just $ bpos tb } tais
+                ]
+             ++ [ UpdLeadFaction (bfid sb) Nothing msleader
+                | Just source == msleader ]
+             ++ [ UpdLeadFaction (bfid tb) Nothing mtleader
+                | Just target == mtleader ]
   _ -> return []
 
 -- | Given the client, its perception and an atomic command, determine
