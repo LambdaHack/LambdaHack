@@ -356,17 +356,17 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- Timeout between 0 and 1 means item usable each turn, so we consider
       -- it equivalent to a permanent item --- without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
-      -- so a single such item may be worth half of the permanet value.
+      -- so a single such item may be worth half of the permanent value.
       -- Hence, we multiply item value by the proportion of the average desired
       -- delay between item uses @avgItemDelay@ and the actual timeout.
+      -- For simplicity and for speed we consider timeout less or equal
+      -- to @avgItemDelay@ as not reducing the value of the item.
       timeout = IA.aTimeout arItem
       (chargeSelf, chargeFoe) =
         let scaleChargeBens bens
-              | timeout <= 3 = bens
+              | fromIntegral timeout <= avgItemDelay = bens  -- speedup
               | otherwise = map (\eff ->
-                  if avgItemDelay >= fromIntegral timeout
-                  then eff
-                  else eff * avgItemDelay / fromIntegral timeout) bens
+                  eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) = unzip $ map (effectToBenefit cops fact True)
                                         (IK.stripRecharging effects)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
@@ -407,6 +407,12 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         / if durable then 1 else durabilityMult
       -- For melee, we add the foe part.
       benMelee = min 0 $
+        (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+         + if periodic
+           then 0
+           else sum chargeFoe * fromIntegral timeout / avgItemDelay)
+        / if durable then 1 else durabilityMult
+      benMeleeAverage = min 0 $
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
          + if periodic then 0 else sum chargeFoe)
         / if durable then 1 else durabilityMult
@@ -461,8 +467,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
           ( True  -- equip, melee crucial, and only weapons in eqp can be used
           , if durable
             then eqpSum
-                 + max benApply (- benMelee)  -- apply or melee or not
-            else - benMelee)  -- melee is predominant
+                 + max benApply (- benMeleeAverage)  -- apply or melee or not
+            else - benMeleeAverage)  -- melee is predominant
         | (IA.goesIntoEqp arItem
           || isJust (lookup "condition" $ IK.ifreq itemKind))
                -- hack to record benefit, to use it in calculations later on
