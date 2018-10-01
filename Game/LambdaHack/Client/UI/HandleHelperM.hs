@@ -56,6 +56,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.TileKind as TK
@@ -516,7 +517,14 @@ lookAtPosition lidV p = do
   tileBlurb <- lookAtTile canSee p leader lidV
   actorsBlurb <- lookAtActors p lidV
   itemsBlurb <- lookAtItems canSee p leader
-  return $! tileBlurb <+> actorsBlurb <+> itemsBlurb
+  Level{lsmell, ltime} <- getLevel lidV
+  let smellBlurb = case EM.lookup p lsmell of
+        Just sml | sml > ltime ->
+          let Delta t = sml `timeDeltaToFrom` ltime
+              seconds = t `timeFitUp` timeSecond
+          in "A smelly body passed here around" <+> tshow seconds <> "s ago."
+        _ -> ""
+  return $! tileBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
 
 displayItemLore :: MonadClientUI m
                 => SingleItemSlots -> ItemBag -> Int
