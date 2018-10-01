@@ -1657,14 +1657,14 @@ effectRecharging recursiveCall e recharged =
 effectTemporary :: MonadServerAtomic m
                 => m () -> ActorId -> ItemId -> Container -> m UseResult
 effectTemporary execSfx source iid c = do
+  b <- getsState $ getActorBody source
   case c of
     CActor _ COrgan -> do
-      b <- getsState $ getActorBody source
       case iid `EM.lookup` borgan b of
         Just _ -> return ()  -- still some copies left of a multi-copy tmp organ
         Nothing -> execSfx  -- last copy just destroyed
     _ ->
-      execSfx
+      unless (bproj b) execSfx  -- don't spam when projectiles activate
   return UseUp  -- temporary, so usually used up just by sitting there
 
 -- ** Composite
