@@ -520,7 +520,8 @@ lookAtPosition lidV p = do
   Level{lsmell, ltime} <- getLevel lidV
   let smellBlurb = case EM.lookup p lsmell of
         Just sml | sml > ltime ->
-          let Delta t = sml `timeDeltaToFrom` ltime
+          let Delta t = smellTimeout `timeDeltaSubtract`
+                          (sml `timeDeltaToFrom` ltime)
               seconds = t `timeFitUp` timeSecond
           in "A smelly body passed here around" <+> tshow seconds <> "s ago."
         _ -> ""

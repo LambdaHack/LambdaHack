@@ -191,7 +191,8 @@ drawFrameContent drawnLevelId = do
       {-# INLINE viewSmell #-}
       viewSmell p0 sml =
         let fg = toEnum $ fromEnum p0 `rem` 14 + 1
-            smlt = sml `timeDeltaToFrom` ltime
+            smlt = smellTimeout `timeDeltaSubtract`
+                     (sml `timeDeltaToFrom` ltime)
         in Color.attrChar2ToW32 fg (timeDeltaToDigit smellTimeout smlt)
       mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
              -> FrameST s

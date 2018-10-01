@@ -202,4 +202,4 @@ monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
-smellTimeout = timeDeltaScale (Delta timeTurn) 100
+smellTimeout = timeDeltaScale (Delta timeTurn) 200

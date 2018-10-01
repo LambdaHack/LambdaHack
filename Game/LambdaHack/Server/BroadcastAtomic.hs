@@ -311,6 +311,9 @@ atomicRemember lid inPer sClient s =
            ++ [UpdSpotEntry lid entries | not $ null entries]
       -- Wipe out remembered smell on tiles that now came into smell Fov.
       -- Smell radius is small, so we can just wipe and send all.
+      -- TODO: only send smell younger than ltime (states get out of sync)
+      -- or remove older smell elsewhere in the code each turn (expensive).
+      -- For now clients act as if this was the case, not peeking into old.
       inSmellFov = ES.elems $ totalSmelled inPer
       inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvlClient)) inSmellFov
       inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]

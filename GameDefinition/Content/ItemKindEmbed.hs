@@ -76,6 +76,7 @@ subtleFresco = ItemKind
                , RefillCalm 2
                , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
                , Recharging $ toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
+                 -- hearing gets a boost through bracing, so no need here
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
   }
