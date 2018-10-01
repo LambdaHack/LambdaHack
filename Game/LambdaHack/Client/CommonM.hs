@@ -111,8 +111,8 @@ currentSkillsClient aid = do
 -- Client has to choose the weapon based on its partial knowledge,
 -- because if server chose it, it would leak item discovery information.
 --
--- Note that currently the stats of the target actor are not considered,
--- because all weapons share the sum of all source actor stats and only differ
+-- Note that currently the aspects of the target actor are not considered,
+-- because all weapons share the sum of all source actor aspects and only differ
 -- in damage (equally important for all targets) and effects (really hard
 -- to tell which is better for which target or even which is better
 -- for the same target, so it's random). If only individual weapon's +toHit

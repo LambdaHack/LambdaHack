@@ -319,7 +319,7 @@ itemEffectDisco source target iid itemKind c recharged periodic effs = do
     execUpdAtomic $ UpdDiscover c iid kindId arItem
   return ur
 
--- | The source actor affects the target actor, with a given effect and power.
+-- | Source actor affects target actor, with a given effect and it strength.
 -- Both actors are on the current level and can be the same actor.
 -- The item may or may not still be in the container.
 -- The boolean result indicates if the effect actually fired up,
@@ -1463,8 +1463,7 @@ effectDetectX d predicate action execSfx radius target = do
 
 -- ** SendFlying
 
--- | Send the target actor flying like a projectile. The arguments correspond
--- to @ToThrow@ and @Linger@ properties of items. If the actors are adjacent,
+-- | Send the target actor flying like a projectile. If the actors are adjacent,
 -- the vector is directed outwards, if no, inwards, if it's the same actor,
 -- boldpos is used, if it can't, a random outward vector of length 10
 -- is picked.

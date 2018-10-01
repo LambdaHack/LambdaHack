@@ -32,11 +32,17 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 
--- | Actor properties that are changing throughout the game.
--- If they appear dublets of properties of actor kinds, e.g. HP,
+-- | Actor attributes that are changing throughout the game.
+-- If they appear to be dublets of aspects from actor kinds, e.g. HP,
 -- they may be results of casting the dice specified in their respective
 -- actor kind and/or may be modified temporarily, but return
 -- to the original value from their respective kind over time.
+--
+-- Other properties of an actor, in particular its current aspects,
+-- are derived from the actor's trunk, organs and equipment.
+-- A class of the aspects, the boolean ones, are called flags.
+-- Another class are skills. Stats are a subclass that determines
+-- if particular actions are permitted for the actor (or faction).
 data Actor = Actor
   { -- The trunk of the actor's body (present also in @borgan@ or @beqp@)
     btrunk      :: ItemId       -- ^ the trunk organ of the actor's body

@@ -80,7 +80,7 @@ addAnyActor :: MonadServerAtomic m
             -> m (Maybe ActorId)
 addAnyActor summoned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- that contains the constant properties.
+  -- that contains the fixed properties of all actors of that kind.
   cops <- getsState scops
   lvl <- getLevel lid
   factionD <- getsState sfactionD

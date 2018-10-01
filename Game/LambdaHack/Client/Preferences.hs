@@ -1,4 +1,4 @@
--- | Actor preferences for targets and actions, based on actor attributes.
+-- | Actor preferences for targets and actions, based on actor aspects.
 module Game.LambdaHack.Client.Preferences
   ( totalUsefulness
 #ifdef EXPOSE_INTERNAL

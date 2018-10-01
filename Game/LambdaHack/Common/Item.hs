@@ -194,7 +194,7 @@ strongestSlot discoBenefit eqpSlot is =
            else Just $
              let ben = if eqpSlot == Ability.EqpSlotWeapon
                        -- For equipping/unequipping a weapon we take into
-                       -- account not only melee power, but also aspects, etc.
+                       -- account not only melee damage, but also aspects, etc.
                        then ceiling benPickup
                        else valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))

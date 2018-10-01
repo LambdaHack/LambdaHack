@@ -194,7 +194,7 @@ projectList discoBenefit skill aid
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
   in filter q $ benAvailableItems discoBenefit aid stores s
 
--- | Produce the list of items with a given property available to the actor
+-- | Produce the list of items from the given stores available to the actor
 -- and the items' values.
 benAvailableItems :: DiscoveryBenefit -> ActorId -> [CStore] -> State
                   -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]

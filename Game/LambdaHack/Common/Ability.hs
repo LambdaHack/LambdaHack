@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
--- | AI strategy abilities.
+-- | Abilities of items, actors and factions.
 module Game.LambdaHack.Common.Ability
   ( Skill(..), Skills, Flag(..), Flags(..), Tactic(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
@@ -23,9 +23,10 @@ import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 
--- | Actor and faction abilities. See 'skillDesc' for documentation.
+-- | Actor and faction skills. They are a subset of actor aspects.
+-- See 'skillDesc' for documentation.
 data Skill =
-  -- Basic abilities affecting permitted actions.
+  -- Stats, thats is skills affecting permitted actions.
     SkMove
   | SkMelee
   | SkDisplace
@@ -34,7 +35,7 @@ data Skill =
   | SkMoveItem
   | SkProject
   | SkApply
-  -- Assorted abilities.
+  -- Assorted skills.
   | SkSwimming
   | SkFlying
   | SkHurtMelee
@@ -52,18 +53,18 @@ data Skill =
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Skill level in particular abilities. These are cumulative from actor
--- organs and so pertain to an actor as well as to items.
+-- organs and equipment and so pertain to an actor as well as to items.
 --
 -- This representation is sparse, so better than a record when there are more
 -- item kinds (with few abilities) than actors (with many abilities),
 -- especially if the number of abilities grows as the engine is developed.
 -- It's also easier to code and maintain.
 --
--- The tree is by construction sparse, so equality is semantical.
+-- The tree is by construction sparse, so the derived equality is semantical.
 newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
 
--- | Item features.
+-- | Item flag aspects.
 data Flag =
     Fragile       -- ^ drop and break at target tile, even if no hit
   | Lobable       -- ^ drop at target tile, even if no hit

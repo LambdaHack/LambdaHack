@@ -36,6 +36,7 @@ import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
+-- Of these, aspects and effects are jointly called item powers.
 -- Note that this type is mutually recursive with 'Effect' and `Aspect`.
 data ItemKind = ItemKind
   { isymbol  :: Char            -- ^ map symbol

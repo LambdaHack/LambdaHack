@@ -355,7 +355,7 @@ addActorFromGroup :: MonadServerAtomic m
                   -> m (Maybe ActorId)
 addActorFromGroup actorGroup bfid pos lid time = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
-  -- that contains the constant properties.
+  -- that contains the fixed properties of all actors of that kind.
   let trunkFreq = [(actorGroup, 1)]
   m2 <- rollItem 0 lid trunkFreq
   case m2 of
