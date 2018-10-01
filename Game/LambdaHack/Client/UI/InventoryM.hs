@@ -48,7 +48,7 @@ ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOrgans = ("in", "body")
 ppItemDialogMode MOwned = ("in", "our possession")
-ppItemDialogMode MStats = ("among", "strengths")
+ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")
 
@@ -65,7 +65,7 @@ accessModeBag leader s MOrgans = let b = getActorBody leader s
                                  in getBodyStoreBag b COrgan s
 accessModeBag leader s MOwned = let fid = bfid $ getActorBody leader s
                                 in combinedItems fid s
-accessModeBag _ _ MStats = EM.empty
+accessModeBag _ _ MSkills = EM.empty
 accessModeBag _ s MLore{} = EM.map (const (1, [])) $ sitemD s
 accessModeBag _ _ MPlaces = EM.empty
 
@@ -109,7 +109,7 @@ getStoreItem prompt cInitial = do
       allCs = case cInitial of
         MLore{} -> loreCs
         MPlaces -> loreCs
-        _ -> itemCs ++ [MOwned, MOrgans, MStats]
+        _ -> itemCs ++ [MOwned, MOrgans, MSkills]
       (pre, rest) = break (== cInitial) allCs
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
@@ -275,7 +275,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         MOrgans -> mergeItemSlots itemToF [ itemSlots EM.! SOrgan
                                           , itemSlots EM.! STrunk
                                           , itemSlots EM.! STmp ]
-        MStats -> EM.empty
+        MSkills -> EM.empty
         MPlaces -> EM.empty
         _ -> itemSlots EM.! loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
@@ -356,7 +356,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = cCur /= MOrgans  -- auto-sorted each time
-                       && cCur /= MStats  -- artificial slots
+                       && cCur /= MSkills  -- artificial slots
                        && cCur /= MPlaces  -- artificial slots
            , defAction = \_ -> do
                sortSlots
@@ -419,12 +419,12 @@ transition psuit prompt promptGeneric permitMulitple cLegal
           ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur <> ":")
           IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur <> ":")
   case cCur of
-    MStats -> do
-      io <- statsOverlay leader
+    MSkills -> do
+      io <- skillsOverlay leader
       let slotLabels = map fst $ snd io
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-          statsDef :: DefItemKey m
-          statsDef = DefItemKey
+          skillsDef :: DefItemKey m
+          skillsDef = DefItemKey
             { defLabel = Left ""
             , defCond = True
             , defAction = \ekm ->
@@ -434,15 +434,15 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                         _ -> error $ "unexpected key:"
                                      `showFailure` K.showKey key
                       Right sl -> sl
-                in return (Left "stats", (MStats, Right slot))
+                in return (Left "skills", (MSkills, Right slot))
             }
-      runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
+      runDefItemKey keyDefs skillsDef io slotKeys promptChosen cCur
     MPlaces -> do
       io <- placesOverlay
       let slotLabels = map fst $ snd io
           slotKeys = mapMaybe (keyOfEKM numPrefix) slotLabels
-          statsDef :: DefItemKey m
-          statsDef = DefItemKey
+          placesDef :: DefItemKey m
+          placesDef = DefItemKey
             { defLabel = Left ""
             , defCond = True
             , defAction = \ekm ->
@@ -454,7 +454,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                       Right sl -> sl
                 in return (Left "places", (MPlaces, Right slot))
             }
-      runDefItemKey keyDefs statsDef io slotKeys promptChosen cCur
+      runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
     _ -> do
       io <- itemOverlay lSlots (blid body) bagFiltered
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)

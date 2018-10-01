@@ -40,7 +40,7 @@ tmpAspects name aspects = ItemKind
                     -- hack: destroy on drop
   , ieffects = [ Recharging $ tmpLess name
                , OnSmash $ tmpLess name ]
-  , idesc    = ""  -- no description needed; stats are enough
+  , idesc    = ""  -- no description needed; powers are enough
   , ikit     = []
   }
 

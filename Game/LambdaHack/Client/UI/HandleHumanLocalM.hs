@@ -98,7 +98,7 @@ macroHuman kms = do
 sortSlotsHuman :: MonadClientUI m => m ()
 sortSlotsHuman = do
   sortSlots
-  promptAdd1 "Items sorted by kind and stats."
+  promptAdd1 "Items sorted by kind and rolled aspects."
 
 -- * ChooseItem
 
@@ -139,7 +139,7 @@ chooseItemDialogMode c = do
             [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
             , MU.Text tIn
             , MU.Text t ]
-        MStats ->
+        MSkills ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
@@ -202,7 +202,7 @@ chooseItemDialogMode c = do
                -- lore is only about inspecting items, no activation submenu.
                void $ pickLeader True newAid
                return $ Right c2
-        MStats -> error $ "" `showFailure` ggi
+        MSkills -> error $ "" `showFailure` ggi
         MLore slore -> do
           let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
               promptFun _ _ =
@@ -211,13 +211,13 @@ chooseItemDialogMode c = do
           go <- displayItemLore lSlots itemBag meleeSkill promptFun ix0
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
-    (Left err, (MStats, ekm)) -> case ekm of
-      Right slot0 -> assert (err == "stats") $ do
-        let slotListBound = length statSlots - 1
+    (Left err, (MSkills, ekm)) -> case ekm of
+      Right slot0 -> assert (err == "skills") $ do
+        let slotListBound = length skillSlots - 1
             displayOneSlot slotIndex = do
               b <- getsState $ getActorBody leader
               let slot = allSlots !! slotIndex
-                  skill = statSlots !! fromJust (elemIndex slot allSlots)
+                  skill = skillSlots !! fromJust (elemIndex slot allSlots)
                   valueText =
                     skillToDecorator skill b $ Ability.getSk skill actorMaxSk
                   prompt2 = makeSentence
@@ -232,7 +232,7 @@ chooseItemDialogMode c = do
               slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
-                K.Space -> chooseItemDialogMode MStats
+                K.Space -> chooseItemDialogMode MSkills
                 K.Up -> displayOneSlot $ slotIndex - 1
                 K.Down -> displayOneSlot $ slotIndex + 1
                 K.Esc -> failWith "never mind"
@@ -249,10 +249,10 @@ chooseItemDialogMode c = do
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  (pk, stats@(es, _, _, _)) =
+                  (pk, figures@(es, _, _, _)) =
                     places !! fromJust (elemIndex slot allSlots)
                   pkind = okind coplace pk
-                  partsPhrase = makePhrase $ placeParts stats
+                  partsPhrase = makePhrase $ placeParts figures
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
                     , MU.Text $ PK.pname pkind ]

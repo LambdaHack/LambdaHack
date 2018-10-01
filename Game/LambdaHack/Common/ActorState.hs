@@ -215,7 +215,7 @@ getActorBody :: ActorId -> State -> Actor
 getActorBody aid s = sactorD s EM.! aid
 
 -- For now, faction and tactic skill modifiers only change
--- the basic skills that affect permitted actions @SkMove..SkApply@,
+-- the stats that affect permitted actions (@SkMove..SkApply@),
 -- so the expensive @actorCurrentSkills@ operation doesn't need to be used
 -- when checking the other skills, e.g., for FOV calculations,
 -- and the @getActorMaxSkills@ cheap operation suffices.

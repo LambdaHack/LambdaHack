@@ -26,7 +26,7 @@ import           GHC.Generics (Generic)
 -- | Actor and faction skills. They are a subset of actor aspects.
 -- See 'skillDesc' for documentation.
 data Skill =
-  -- Stats, thats is skills affecting permitted actions.
+  -- Stats, that is skills affecting permitted actions.
     SkMove
   | SkMelee
   | SkDisplace
@@ -52,12 +52,12 @@ data Skill =
   | SkAggression
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
--- | Skill level in particular abilities. These are cumulative from actor
+-- | Strength of particular skills. This is cumulative from actor
 -- organs and equipment and so pertain to an actor as well as to items.
 --
 -- This representation is sparse, so better than a record when there are more
--- item kinds (with few abilities) than actors (with many abilities),
--- especially if the number of abilities grows as the engine is developed.
+-- item kinds (with few skills) than actors (with many skills),
+-- especially if the number of skills grows as the engine is developed.
 -- It's also easier to code and maintain.
 --
 -- The tree is by construction sparse, so the derived equality is semantical.

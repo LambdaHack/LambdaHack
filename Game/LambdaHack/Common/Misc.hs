@@ -89,7 +89,7 @@ data ItemDialogMode =
     MStore CStore  -- ^ a leader's store
   | MOrgans        -- ^ leader's organs
   | MOwned         -- ^ all party's items
-  | MStats         -- ^ not items, but determined by leader's items
+  | MSkills        -- ^ not items, but determined by leader's items
   | MLore SLore    -- ^ not party's items, but all known generalized items
   | MPlaces        -- ^ not items at all, but definitely a lore
   deriving (Show, Read, Eq, Ord, Generic)

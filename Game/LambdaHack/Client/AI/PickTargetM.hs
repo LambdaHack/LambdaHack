@@ -88,7 +88,7 @@ computeTarget aid = do
   scondInMelee <- getsClient scondInMelee
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same
-  -- set of abilities as the leader, anyway) and set his target accordingly.
+  -- set of skills as the leader, anyway) and set his target accordingly.
   actorMaxSkills <- getsState sactorMaxSkills
   let lalter = salter EM.! blid b
       condInMelee = scondInMelee LEM.! blid b

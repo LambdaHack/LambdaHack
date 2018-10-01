@@ -174,9 +174,9 @@ slingBullet = ItemKind
 
 -- * Exotic thrown weapons
 
--- Identified, because shape (and name) says it all. Detailed stats id by use.
+-- Identified, because shape (and name) says it all. Detailed aspects id by use.
 -- This is an extremely large value for @Paralyze@. Normally for such values
--- we should instead use condition that disables (almost) all skills,
+-- we should instead use condition that disables (almost) all stats,
 -- except @SkWait@, so that the player can switch leader and not be
 -- helpless nor experience instadeath (unless his party is 1-person
 -- or the actor is isolated, but that's usually player's fault).
@@ -326,7 +326,7 @@ blanket = ItemKind
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
--- In reality, they just cover all conditions, except those for basic abilites.
+-- In reality, they just cover all conditions, except those for stats.
 --
 -- There is no flask nor temporary organ of Calm depletion,
 -- because Calm reduced often via combat, etc..
@@ -523,7 +523,7 @@ flask20 = flaskTemplate
                , OnSmash (Explode "glass hail") ]  -- enough glass to cause that
   }
 
--- Potions are often natural, including natural basic abilites.
+-- Potions are often natural, including natural stats.
 -- They appear deeper than most flasks. Various configurations of effects.
 -- A different class of effects is on scrolls and mechanical items.
 -- Some are shared.

@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , ppSLore, loreFromMode, loreFromContainer, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
-  , itemOverlay, statsOverlay, placesFromState, placeParts, placesOverlay
+  , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtItems, lookAtPosition, displayItemLore, viewLoreItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -105,7 +105,7 @@ loreFromMode c = case c of
   MStore _ -> SItem
   MOrgans -> undefined  -- slots from many lore kinds
   MOwned -> SItem
-  MStats -> undefined  -- artificial slots
+  MSkills -> undefined  -- artificial slots
   MLore slore -> slore
   MPlaces -> undefined  -- artificial slots
 
@@ -279,22 +279,22 @@ itemOverlay lSlots lid bag = do
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
   return (concat ts, zipWith renumber [0..] kxs)
 
-statsOverlay :: MonadClientRead m => ActorId -> m OKX
-statsOverlay aid = do
+skillsOverlay :: MonadClientRead m => ActorId -> m OKX
+skillsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let prSlot :: (Y, SlotChar) -> Ability.Skill -> (Text, KYX)
       prSlot (y, c) skill =
-        let statName = skillName skill
+        let skName = skillName skill
             fullText t =
               makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' ' statName
+                         , MU.Text $ T.justifyLeft 22 ' ' skName
                          , MU.Text t ]
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
-      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) statSlots
+      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
   return (map textToAL ts, kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State

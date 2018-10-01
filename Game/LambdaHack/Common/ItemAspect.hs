@@ -38,7 +38,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | Record of skills conferred by an item as well as of item flags
--- and other item stats.
+-- and other item aspects.
 data AspectRecord = AspectRecord
   { aTimeout :: Int
   , aSkills  :: Ability.Skills

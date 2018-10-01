@@ -741,15 +741,15 @@ poisonCloud = ItemKind
   , idesc    = "Choking gas that stings the eyes."
   , ikit     = []
   }
-blastNoBasicAbility :: Text -> ItemKind
-blastNoBasicAbility grp = ItemKind
+blastNoStat :: Text -> ItemKind
+blastNoStat grp = ItemKind
   { isymbol  = '`'
   , iname    = "mist"
   , ifreq    = [(toGroupName $ grp <+> "mist", 1)]
   , iflavour = zipFancy [White]
   , icount   = 12
   , irarity  = [(1, 1)]
-  , iverbHit = "disable basic ability of"
+  , iverbHit = "disable a stat of"
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
@@ -758,23 +758,23 @@ blastNoBasicAbility grp = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-blastNoSkMove = blastNoBasicAbility "immobile"
-blastNoSkMelee = blastNoBasicAbility "pacified"
-blastNoSkDisplace = blastNoBasicAbility "irreplaceable"
-blastNoSkAlter = blastNoBasicAbility "retaining"
-blastNoSkWait = blastNoBasicAbility "impatient"
-blastNoSkMoveItem = blastNoBasicAbility "dispossessed"
-blastNoSkProject = blastNoBasicAbility "withholding"
-blastNoSkApply = blastNoBasicAbility "parsimonious"
-blastBonusBasicAbility :: Text -> ItemKind
-blastBonusBasicAbility grp = ItemKind
+blastNoSkMove = blastNoStat "immobile"
+blastNoSkMelee = blastNoStat "pacified"
+blastNoSkDisplace = blastNoStat "irreplaceable"
+blastNoSkAlter = blastNoStat "retaining"
+blastNoSkWait = blastNoStat "impatient"
+blastNoSkMoveItem = blastNoStat "dispossessed"
+blastNoSkProject = blastNoStat "withholding"
+blastNoSkApply = blastNoStat "parsimonious"
+blastBonusStat :: Text -> ItemKind
+blastBonusStat grp = ItemKind
   { isymbol  = '`'
   , iname    = "dew"
   , ifreq    = [(toGroupName $ grp <+> "dew", 1)]
   , iflavour = zipFancy [White]
   , icount   = 12
   , irarity  = [(1, 1)]
-  , iverbHit = "increase basic ability of"
+  , iverbHit = "increase a stat of"
   , iweight  = 1
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
@@ -783,11 +783,11 @@ blastBonusBasicAbility grp = ItemKind
   , idesc    = ""
   , ikit     = []
   }
-blastBonusSkMove = blastBonusBasicAbility "more mobile"
-blastBonusSkMelee = blastBonusBasicAbility "more combative"
-blastBonusSkDisplace = blastBonusBasicAbility "more displacing"
-blastBonusSkAlter = blastBonusBasicAbility "more altering"
-blastBonusSkWait = blastBonusBasicAbility "more patient"
-blastBonusSkMoveItem = blastBonusBasicAbility "tidier"
-blastBonusSkProject = blastBonusBasicAbility "more projecting"
-blastBonusSkApply = blastBonusBasicAbility "more practical"
+blastBonusSkMove = blastBonusStat "more mobile"
+blastBonusSkMelee = blastBonusStat "more combative"
+blastBonusSkDisplace = blastBonusStat "more displacing"
+blastBonusSkAlter = blastBonusStat "more altering"
+blastBonusSkWait = blastBonusStat "more patient"
+blastBonusSkMoveItem = blastBonusStat "tidier"
+blastBonusSkProject = blastBonusStat "more projecting"
+blastBonusSkApply = blastBonusStat "more practical"

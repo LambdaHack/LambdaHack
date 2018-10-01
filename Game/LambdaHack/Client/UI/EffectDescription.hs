@@ -1,7 +1,7 @@
 -- | Description of effects.
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
-  , skillName, skillDesc, skillToDecorator, statSlots
+  , skillName, skillDesc, skillToDecorator, skillSlots
   , kindAspectToSuffix, aspectToSentence, affixDice
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -170,16 +170,16 @@ slotToSentence es = case es of
   EqpSlotWeapon -> "Melee fighters pick it for their weapon combo."
 
 skillName :: Skill -> Text
-skillName SkMove = "move skill"
-skillName SkMelee = "melee skill"
-skillName SkDisplace = "displace skill"
-skillName SkAlter = "alter tile skill"
-skillName SkWait = "wait skill"
-skillName SkMoveItem = "manage items skill"
-skillName SkProject = "fling skill"
-skillName SkApply = "apply skill"
-skillName SkSwimming = "swimming ability"
-skillName SkFlying = "flying ability"
+skillName SkMove = "move stat"
+skillName SkMelee = "melee stat"
+skillName SkDisplace = "displace stat"
+skillName SkAlter = "alter tile stat"
+skillName SkWait = "wait stat"
+skillName SkMoveItem = "manage items stat"
+skillName SkProject = "fling stat"
+skillName SkApply = "apply stat"
+skillName SkSwimming = "swimming"
+skillName SkFlying = "flying"
 skillName SkHurtMelee = "to melee damage"
 skillName SkArmorMelee = "melee armor"
 skillName SkArmorRanged = "ranged armor"
@@ -195,31 +195,54 @@ skillName SkAggression = "aggression level"
 
 skillDesc :: Skill -> Text
 skillDesc skill =
-  let statName = skillName skill
-      capName = "The '" <> statName <> "' stat"
-  in capName <+> case skill of
-    SkMove -> "determines whether the character can move. Actors not capable of movement can't be dominated."
-    SkMelee -> "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
-    SkDisplace -> "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
-    SkAlter -> "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
-    SkWait -> "determines whether the character can wait, brace for combat (potentially blocking the effects of some attacks), sleep and lurk."
-    SkMoveItem -> "determines whether the character can pick up items and manage inventory."
-    SkProject -> "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
-    SkApply -> "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
-    SkSwimming -> "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
-    SkFlying -> "is the degree of avoidance of bad effects of any hazards spread on the ground."
-    SkHurtMelee -> "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
-    SkArmorMelee -> "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
-    SkArmorRanged -> "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
-    SkMaxHP -> "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
-    SkMaxCalm -> "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
-    SkSpeed -> "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
-    SkSight -> "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkSmell -> "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkShine -> "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkNocto -> "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkHearing -> "is the limit of hearing. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkAggression -> "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
+  let skName = skillName skill
+      capSkillName = "The '" <> skName <> "' skill"
+      capStatName = "The '" <> T.unwords (init $ T.words skName) <> "' stat"
+  in case skill of
+    SkMove -> capStatName <+>
+      "determines whether the character can move. Actors not capable of movement can't be dominated."
+    SkMelee -> capStatName <+>
+      "determines whether the character can melee. Actors that can't melee can still cause damage by flinging missiles or by ramming (being pushed) at opponents."
+    SkDisplace -> capStatName <+>
+      "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
+    SkAlter -> capStatName <+>
+      "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
+    SkWait -> capStatName <+>
+      "determines whether the character can wait, brace for combat (potentially blocking the effects of some attacks), sleep and lurk."
+    SkMoveItem -> capStatName <+>
+      "determines whether the character can pick up items and manage inventory."
+    SkProject -> capStatName <+>
+      "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
+    SkApply -> capStatName <+>
+      "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+    SkSwimming -> capSkillName <+>
+      "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
+    SkFlying -> capSkillName <+>
+      "is the degree of avoidance of bad effects of any hazards spread on the ground."
+    SkHurtMelee -> capSkillName <+>
+      "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
+    SkArmorMelee -> capSkillName <+>
+      "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
+    SkArmorRanged -> capSkillName <+>
+      "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
+    SkMaxHP -> capSkillName <+>
+      "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
+    SkMaxCalm -> capSkillName <+>
+      "is a cap on Calm of the actor, except for some rare effects able to overfill Calm. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) Calm is lowered, sometimes very significantly and always at least back down to the cap."
+    SkSpeed -> capSkillName <+>
+      "is expressed in meters per second, which corresponds to map location (1m by 1m) per two standard turns (0.5s each). Thus actor at standard speed of 2m/s moves one location per standard turn."
+    SkSight -> capSkillName <+>
+      "is the limit of visibility in light. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkSmell -> capSkillName <+>
+      "determines the maximal area smelled by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkShine -> capSkillName <+>
+      "determines the maximal area lit by the actor. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkNocto -> capSkillName <+>
+      "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkHearing -> capSkillName <+>
+      "is the limit of hearing. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
+    SkAggression -> capSkillName <+>
+      "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
@@ -262,8 +285,8 @@ skillToDecorator skill b t =
     SkHearing -> tshowRadius (max 0 t)
     SkAggression -> tshow t
 
-statSlots :: [Skill]
-statSlots = [SkMove .. SkAggression]
+skillSlots :: [Skill]
+skillSlots = [SkMove .. SkAggression]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =

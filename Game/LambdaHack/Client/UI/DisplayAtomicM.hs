@@ -497,15 +497,15 @@ itemAidVerbMU aid verb iid ek cstore = do
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ snd $ partItemWs side factionD n localTime itemFull kit
             Left Nothing ->
-              let (_, _, name, stats) =
+              let (_, _, name, powers) =
                     partItem side factionD localTime itemFull kit
-              in MU.Phrase [name, stats]
+              in MU.Phrase [name, powers]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ let (_, _, name1, stats) =
+              $ let (_, _, name1, powers) =
                       partItemShort side factionD localTime itemFull kit
                     name = if n == 1 then name1 else MU.CarWs n name1
-                in MU.Phrase ["the", name, stats]
+                in MU.Phrase ["the", name, powers]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
@@ -1221,13 +1221,13 @@ ppSfxMsg sfxMsg = case sfxMsg of
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
       let kit = (1, [])
-          (_, _, name, stats) =
+          (_, _, name, powers) =
             partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
                  | IA.looksLikeCondition $ aspectRecordFull itemFull ]
       return $! makeSentence $
-        ["the", name, stats] ++ cond ++ storeOwn ++ ["will now last longer"]
+        ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last longer"]
     else return ""
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid

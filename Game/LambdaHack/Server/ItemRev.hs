@@ -48,7 +48,7 @@ type ItemRev = HM.HashMap ItemKnown ItemId
 
 type UniqueSet = ES.EnumSet (ContentId ItemKind)
 
--- | Build an item with the given stats.
+-- | Build an item with the given kind and aspects.
 buildItem :: COps -> IA.AspectRecord -> FlavourMap
           -> DiscoveryKindRev -> ContentId ItemKind
           -> Item

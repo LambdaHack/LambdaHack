@@ -53,7 +53,7 @@ of colon after "HP" means the leader is braced for combat (see section
 Instead of a monster, the target area may describe a position on the map,
 a recently spotted item on the floor or an item in inventory selected
 for further action or, if none are available, just display the current
-leader name. Weapon damage and other item stats are displayed using
+leader name. Weapon damage and other item properties are displayed using
 the dice notation `xdy`, which means `x` rolls of `y`-sided dice.
 A variant denoted `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
@@ -251,11 +251,11 @@ capped at 200%) minus the melee armor modifier of the defender
 which means that at least 1% of damage always gets through
 and the damage is always lower than twice the dice roll.
 The current leader's melee bonus, armor modifier and other detailed
-stats can be viewed via the `#` command.
+skills can be viewed via the `#` command.
 
 In ranged combat, the missile is assumed to be attacking the defender
 in melee, using itself as the weapon, with the usual dice and damage bonus.
-This time, the ranged armor stat of the defender is taken into account
+This time, the ranged armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
 (by default you are offered only the appropriate items; press `?`to cycle

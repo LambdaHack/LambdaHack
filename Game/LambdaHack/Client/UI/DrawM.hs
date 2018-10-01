@@ -105,12 +105,12 @@ targetDesc mtarget = do
                 itemFull <- getsState $ itemToFull iid
                 side <- getsClient sside
                 factionD <- getsState sfactionD
-                let (_, _, name, stats) =
+                let (_, _, name, powers) =
                       partItem side factionD localTime itemFull kit
                 return $! makePhrase
                           $ if k == 1
-                            then [name, stats]  -- "a sword" too wordy
-                            else [MU.CarWs k name, stats]
+                            then [name, powers]  -- "a sword" too wordy
+                            else [MU.CarWs k name, powers]
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (Just pointedText, Nothing)
@@ -418,8 +418,8 @@ drawFrameStatus drawnLevelId = do
     Nothing -> return (Nothing, Nothing, Nothing)
   let widthX = 80
       widthTgt = 39
-      widthStats = widthX - widthTgt - 1
-      arenaStatus = drawArenaStatus cops lvl widthStats
+      widthStatus = widthX - widthTgt - 1
+      arenaStatus = drawArenaStatus cops lvl widthStatus
       displayPathText mp mt =
         let (plen, llen) | Just target <- mp
                          , Just bfs <- mbfs
@@ -455,17 +455,17 @@ drawFrameStatus drawnLevelId = do
       leaderStatusWidth = 23
   leaderStatus <- drawLeaderStatus swaitTimes
   (selectedStatusWidth, selectedStatus)
-    <- drawSelected drawnLevelId (widthStats - leaderStatusWidth) sselected
-  damageStatus <- drawLeaderDamage (widthStats - leaderStatusWidth
-                                               - selectedStatusWidth)
+    <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
+  damageStatus <- drawLeaderDamage (widthStatus - leaderStatusWidth
+                                                - selectedStatusWidth)
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   -- The indicators must fit, they are the actual information.
   let pathTgt = displayPathText tgtPos mtargetHP
       widthTgtOrItem = widthTgt - T.length pathTgt - 8
-      statusGap = emptyAttrLine (widthStats - leaderStatusWidth
-                                            - selectedStatusWidth
-                                            - length damageStatus)
+      statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
+                                             - selectedStatusWidth
+                                             - length damageStatus)
       fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
                  then "This faction never picks a leader"
                  else "Waiting for a team member to spawn"
@@ -485,12 +485,12 @@ drawFrameStatus drawnLevelId = do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemFull <- getsState $ itemToFull iid
                 factionD <- getsState sfactionD
-                let (_, _, name, stats) =
+                let (_, _, name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase
                         $ if k == 1
-                          then [name, stats]  -- "a sword" too wordy
-                          else [MU.CarWs k name, stats]
+                          then [name, powers]  -- "a sword" too wordy
+                          else [MU.CarWs k name, powers]
                 return $! "Item:" <+> trimTgtDesc widthTgtOrItem t
         | otherwise =
             return $! tgtBlurb

@@ -408,7 +408,7 @@ reqMeleeChecked voluntary source target iid cstore = do
       -- is needed to sync (if not, attacker should switch missiles)
       -- and so only every other missile can be caught. Normal sidestepping
       -- or sync and displace, if in a corridor, is as effective
-      -- and blocking can be even more so, depending on stats of the missile.
+      -- and blocking can be even more so, depending on powers of the missile.
       -- Missiles are really easy to defend against, but sight (and so, Calm)
       -- is the key, as well as light, ambush around a corner, etc.
       execSfxAtomic $ SfxSteal source target iid cstore
