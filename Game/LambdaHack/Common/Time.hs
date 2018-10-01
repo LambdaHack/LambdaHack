@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Time
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
   , timeDeltaReverse, timeDeltaScale, timeDeltaPercent, timeDeltaDiv
-  , timeDeltaToDigit
+  , timeDeltaToDigit, timeDeltaInSeconds
   , Speed, toSpeed, fromSpeed, minSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, speedAdd
@@ -152,6 +152,10 @@ timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
             | k < 1     = '-'
             | otherwise = Char.intToDigit $ fromEnum k
   in digit
+
+timeDeltaInSeconds :: Delta Time -> Double
+timeDeltaInSeconds (Delta (Time dt)) =
+  fromIntegral dt / fromIntegral (timeTicks timeSecond)
 
 -- | Speed in meters per 1 million seconds (m/Ms).
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)
