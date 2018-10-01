@@ -361,17 +361,19 @@ embedBenefit fleeVia aid pbags = do
           then -- Actor uses the embedded item on himself, hence @effApply@.
                -- Let distance be the deciding factor and also prevent
                -- overflow on 32-bit machines.
-               min 1000 $ sum
-               $ map (\iid -> benApply $ discoBenefit EM.! iid) (EM.keys bag)
+               let sacrificeForExperiment = 101  -- single explosion acceptable
+                   sumBen = sum $ map (\iid ->
+                     benApply $ discoBenefit EM.! iid) (EM.keys bag)
+               in min 1000 $ sacrificeForExperiment + sumBen
           else 0
-      interestingHere p =
-        -- For speed and to avoid greedy AI loops, filter targets.
-        Tile.consideredByAI coTileSpeedup (lvl `at` p)
+      benFeats = map (\pbag -> (bens pbag, pbag)) pbags
+      considered (benefitAndSacrifice, (p, _bag)) =
+        benefitAndSacrifice > 0
         -- Only actors with high enough AbAlter can trigger embedded items.
         && alterSkill >= fromEnum (alterMinSkill p)
-      ebags = filter (interestingHere . fst) pbags
-      benFeats = map (\pbag -> (bens pbag, pbag)) ebags
-  return $! filter ((> 0 ) . fst) benFeats
+        -- For speed and to avoid greedy AI loops, only experiment with few.
+        && Tile.consideredByAI coTileSpeedup (lvl `at` p)
+  return $! filter considered benFeats
 
 -- | Closest (wrt paths) AI-triggerable tiles with embedded items.
 -- In AI, the level the actor is on is either explored or the actor already
