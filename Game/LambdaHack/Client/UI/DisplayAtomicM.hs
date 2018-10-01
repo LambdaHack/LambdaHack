@@ -994,7 +994,6 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
     case effect of
-        IK.Burn{} | bproj b -> return ()
         IK.Burn{} -> do
           if isOurAlive
           then actorVerbMU aid bUI "feel burned"
@@ -1002,7 +1001,6 @@ displayRespSfxAtomicUI sfx = case sfx of
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
-        IK.RefillHP{} | bproj b -> return ()
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
@@ -1031,7 +1029,6 @@ displayRespSfxAtomicUI sfx = case sfx of
             actorVerbMU aid bUI "feel agitated"
           else
             actorVerbMU aid bUI "look agitated"
-        IK.Dominate | bproj b -> return ()
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor bUI
@@ -1074,18 +1071,14 @@ displayRespSfxAtomicUI sfx = case sfx of
             lvl <- getLevel lid
             msgAdd $ cdesc $ okind cocave $ lkind lvl
         IK.Escape{} -> return ()
-        IK.Paralyze{} | bproj b -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
-        IK.ParalyzeInWater{} | bproj b -> return ()
         IK.ParalyzeInWater{} -> actorVerbMU aid bUI "move with difficulty"
-        IK.InsertMove{} | bproj b -> return ()
         IK.InsertMove d -> if d >= 10
                            then actorVerbMU aid bUI "act with extreme speed"
                            else actorVerbMU aid bUI "move swiftly"
         IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
-        IK.DropItem{} | bproj b -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> actorVerbMU aid bUI "be stripped"
         IK.PolyItem -> do
@@ -1116,13 +1109,9 @@ displayRespSfxAtomicUI sfx = case sfx of
               object = MU.Ws $ MU.Text $ detectToObject d
           msgAdd $ makeSentence [MU.SubjectVerbSg subject verb, object]
           displayMore ColorFull ""
-        IK.SendFlying{} | bproj b -> return ()
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
-        IK.PushActor{} | bproj b -> return ()
         IK.PushActor{} -> actorVerbMU aid bUI "be pushed"
-        IK.PullActor{} | bproj b -> return ()
         IK.PullActor{} -> actorVerbMU aid bUI "be pulled"
-        IK.DropBestWeapon | bproj b -> return ()
         IK.DropBestWeapon -> actorVerbMU aid bUI "be disarmed"
         IK.ActivateInv{} -> return ()
         IK.ApplyPerfume ->
