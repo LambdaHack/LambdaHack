@@ -327,7 +327,7 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkShine p -> Dice.meanDice p * 2
     IK.AddSkill Ability.SkNocto p -> Dice.meanDice p * 10
                                        -- > sight + light; stealth, slots
-    IK.AddSkill Ability.SkHearing p -> Dice.meanDice p * 2
+    IK.AddSkill Ability.SkHearing p -> Dice.meanDice p
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
