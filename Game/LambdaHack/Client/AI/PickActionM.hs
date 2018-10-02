@@ -109,7 +109,8 @@ actionStrategy moldLeader aid retry = do
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
   friends <- getsState $ friendRegularList (bfid body) (blid body)
-  let anyFriendOnLevelAwake = any ((/= WSleep) . bwatch) friends
+  let anyFriendOnLevelAwake = any (\b ->
+        bwatch b /= WSleep && bpos b /= bpos body) friends
       actorMaxSk = actorMaxSkills EM.! aid
       mayFallAsleep = not condAimEnemyRemembered
                       && mayContinueSleep
