@@ -198,7 +198,9 @@ monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
     -- On level 1/10, first 4 monsters spawn immediately, at level 5/10,
     -- 8 spawn immediately. In general at level n, n+3 spawn at once.
     let scaledDepth = ldepth * 10 `div` totalDepth
-        coeff = actorCoeff * (lvlSpawned - scaledDepth - 2)
+        -- Never spawn too rarely so that camping is never safe.
+        maxCoeff = 100 * 30  -- safe level after 30 spawns flattens out
+        coeff = min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
     in chance $ 2%fromIntegral (coeff `max` 1)  -- 2 --- doubled
 
 -- | How long until an actor's smell vanishes from a tile.
