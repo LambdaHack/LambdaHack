@@ -128,8 +128,8 @@ type ItemIxMap = EM.EnumMap ItemKindIx (ES.EnumSet ItemId)
 -- 1. whether the item should be kept in equipment (not in pack nor stash)
 -- 2. the total benefit from picking the item up (to use or to put in equipment)
 -- 3. the benefit of applying the item to self
--- 4. the (usually negative) benefit of hitting a foe in meleeing with the item
--- 5. the (usually negative) benefit of flinging an item at an opponent
+-- 4. the (usually negative, for him) value of hitting a foe in melee with it
+-- 5. the (usually negative, for him) value of flinging the item at an opponent
 data Benefit = Benefit
   { benInEqp  :: ~Bool
   , benPickup :: ~Double
@@ -226,7 +226,7 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
       + Ability.getSk Ability.SkSmell aSkills
       + Ability.getSk Ability.SkNocto aSkills
           -- powerful, but hard to boost over aSight
-    EqpSlotWeapon -> error $ "" `showFailure` arItem
+    EqpSlotWeapon -> error $ "" `showFailure` arItem  -- sum of all benefits
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =

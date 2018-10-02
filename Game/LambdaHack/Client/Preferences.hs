@@ -464,7 +464,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         | IA.isMelee arItem  -- probably known even if not identified
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
-          ( True  -- equip, melee crucial, and only weapons in eqp can be used
+          ( True  -- equip, melee crucial and only weapons in eqp can be used
           , if durable
             then eqpSum
                  + max benApply (- benMeleeAverage)  -- apply or melee or not

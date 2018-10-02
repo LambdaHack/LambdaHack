@@ -69,8 +69,8 @@ data Flag =
     Fragile       -- ^ drop and break at target tile, even if no hit
   | Lobable       -- ^ drop at target tile, even if no hit
   | Durable       -- ^ don't break even when hitting or applying
-  | Equipable     -- ^ AI and UI flag: consider equipping (independent of
-                  --   'EqpSlot', e.g., in case of mixed blessings)
+  | Equipable     -- ^ AI and UI flag: consider equipping (may or may not
+                  --   have 'EqpSlot', e.g., if the benefit is periodic)
   | Meleeable     -- ^ AI and UI flag: consider meleeing with
   | Precious      -- ^ AI and UI flag: don't risk identifying by use;
                   --   also, can't throw or apply if not calm enough

@@ -984,7 +984,7 @@ gorget = necklaceTemplate
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 2
                , AddSkill SkArmorMelee 3, AddSkill SkArmorRanged 2
-               , SetFlag Durable, EqpSlot EqpSlotMiscBonus ]
+               , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (RefillCalm 1)]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
@@ -1010,7 +1010,7 @@ necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
                , Timeout $ (1 `d` 2) * 20
-               , SetFlag Durable, EqpSlot EqpSlotMaxHP ]
+               , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = "A cord of freshly dried herbs and healing berries."
@@ -1064,7 +1064,7 @@ necklace7 = necklaceTemplate
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
                , AddSkill SkMaxHP 15
-               , SetFlag Durable, EqpSlot EqpSlotSpeed ]
+               , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 20 + 1 `d` 10)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
