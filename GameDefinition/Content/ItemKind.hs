@@ -1345,8 +1345,8 @@ helmArmored = ItemKind
   , iverbHit = "bounce"
   , iweight  = 2000
   , idamage  = 0
-  , iaspects = [ AddSkill SkArmorMelee $ (1 `dL` 2) * 5
-               , AddSkill SkArmorRanged $ (2 + 1 `dL` 2) * 3
+  , iaspects = [ AddSkill SkArmorMelee $ (1 + 1 `dL` 4) * 5
+               , AddSkill SkArmorRanged $ (2 + 1 `dL` 2) * 3  -- headshot
                , AddSkill SkHearing (-7), AddSkill SkSight (-1)
                , AddSkill SkSmell (-5)
                , SetFlag Durable, SetFlag Equipable
