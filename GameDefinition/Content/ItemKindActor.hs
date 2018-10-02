@@ -172,7 +172,7 @@ fastEye = ItemKind
                , ("mobile monster", 100), ("scout monster", 60) ]
   , iflavour = zipFancy [BrBlue]
   , icount   = 1
-  , irarity  = [(5, 5), (10, 5)]
+  , irarity  = [(5, 6), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
