@@ -528,10 +528,10 @@ lookAtPosition lidV p = do
   return $! tileBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
 
 displayItemLore :: MonadClientUI m
-                => SingleItemSlots -> ItemBag -> Int
-                -> (ItemFull -> Int -> Text) -> Int
+                => ItemBag -> Int -> (ItemFull -> Int -> Text) -> Int
+                -> SingleItemSlots
                 -> m Bool
-displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
+displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   side <- getsClient sside
   arena <- getArenaUI
@@ -555,14 +555,15 @@ displayItemLore lSlots itemBag meleeSkill promptFun slotIndex = do
   case K.key km of
     K.Space -> return True
     K.Up ->
-      displayItemLore lSlots itemBag meleeSkill promptFun (slotIndex - 1)
+      displayItemLore itemBag meleeSkill promptFun (slotIndex - 1) lSlots
     K.Down ->
-      displayItemLore lSlots itemBag meleeSkill promptFun (slotIndex + 1)
+      displayItemLore itemBag meleeSkill promptFun (slotIndex + 1) lSlots
     K.Esc -> return False
     _ -> error $ "" `showFailure` km
 
 viewLoreItems :: MonadClientUI m
-              => String -> SingleItemSlots -> ItemBag -> Text -> (Int -> m Bool)
+              => String -> SingleItemSlots -> ItemBag -> Text
+              -> (Int -> SingleItemSlots -> m Bool)
               -> m Bool
 viewLoreItems menuName lSlots trunkBag prompt examItem =
   if EM.null lSlots then return True else do
@@ -592,7 +593,7 @@ viewLoreItems menuName lSlots trunkBag prompt examItem =
       Left _ -> error $ "" `showFailure` ekm
       Right slot -> do
         let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-        go2 <- examItem ix0
+        go2 <- examItem ix0 lSlots
         if go2
         then viewLoreItems menuName lSlots trunkBag prompt examItem
         else return True
