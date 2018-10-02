@@ -100,7 +100,7 @@ prepareItemKind lvlSpawned lid itemFreq = do
   uniqueSet <- getsServer suniqueSet
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel lid
-  return $! newItemKind cops uniqueSet itemFreq lvlSpawned ldepth totalDepth
+  return $! newItemKind cops uniqueSet itemFreq ldepth totalDepth lvlSpawned
 
 rollItemAspect :: MonadServerAtomic m
                => Frequency (ContentId IK.ItemKind, ItemKind) -> LevelId

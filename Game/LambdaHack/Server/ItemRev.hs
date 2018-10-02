@@ -66,16 +66,16 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
   in Item{..}
 
 -- | Roll an item kind based on given @Freqs@ and kind rarities
-newItemKind :: COps -> UniqueSet -> Freqs ItemKind -> Int
-            -> Dice.AbsDepth -> Dice.AbsDepth
+newItemKind :: COps -> UniqueSet -> Freqs ItemKind
+            -> Dice.AbsDepth -> Dice.AbsDepth -> Int
             -> Frequency (ContentId IK.ItemKind, ItemKind)
-newItemKind COps{coitem} uniqueSet itemFreq lvlSpawned
-            (Dice.AbsDepth ldepth) (Dice.AbsDepth tdepth) =
+newItemKind COps{coitem} uniqueSet itemFreq
+            (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
   -- Effective generation depth of actors (not items) increases with spawns.
-  let scaledDepth = ldepth * 10 `div` tdepth
+  let scaledDepth = ldepth * 10 `div` totalDepth
       numSpawnedCoeff = lvlSpawned `div` 2
       ldSpawned = max ldepth  -- the first fast spawns are of the nominal level
-                  $ min tdepth
+                  $ min totalDepth
                   $ ldepth + numSpawnedCoeff - scaledDepth
       f _ acc _ ik _ | ik `ES.member` uniqueSet = acc
       f !q !acc !p !ik !kind =
@@ -84,7 +84,7 @@ newItemKind COps{coitem} uniqueSet itemFreq lvlSpawned
         let ld = if IK.SetFlag Ability.Unique `elem` IK.iaspects kind
                  then ldepth
                  else ldSpawned
-            rarity = linearInterpolation ld tdepth (IK.irarity kind)
+            rarity = linearInterpolation ld totalDepth (IK.irarity kind)
         in (q * p * rarity, (ik, kind)) : acc
       g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f q) []
       freqDepth = concatMap g itemFreq

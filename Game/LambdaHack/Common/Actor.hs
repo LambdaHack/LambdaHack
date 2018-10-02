@@ -185,10 +185,11 @@ eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
 -- | Chance that a new monster is generated. Depends on the number
 -- of monsters already present, and on the level depth and its cave kind.
 monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
-monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
-                 lvlAlreadySpawned actorCoeff =
-  assert (totalDepth > 0 && n > 0) $
-    -- This is now all doubled compare to the comment below, due to sleep:
+monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
+                 lvlSpawned actorCoeff =
+  assert (totalDepth > 0 && ldepth > 0) $
+    -- The spawn speed is now doubled compared to the comment below,
+    -- due to some monsters generated asleep:
     --
     -- Heroes have to endure a level depth-sized wave of immediate
     -- spawners for each level and only then the monsters start
@@ -196,8 +197,8 @@ monsterGenChance (Dice.AbsDepth n) (Dice.AbsDepth totalDepth)
     -- by @actorCoeff@ specified in cave kind.
     -- On level 1/10, first 4 monsters spawn immediately, at level 5/10,
     -- 8 spawn immediately. In general at level n, n+3 spawn at once.
-    let scaledDepth = n * 10 `div` totalDepth
-        coeff = actorCoeff * (lvlAlreadySpawned - scaledDepth - 2)
+    let scaledDepth = ldepth * 10 `div` totalDepth
+        coeff = actorCoeff * (lvlSpawned - scaledDepth - 2)
     in chance $ 2%fromIntegral (coeff `max` 1)  -- 2 --- doubled
 
 -- | How long until an actor's smell vanishes from a tile.
