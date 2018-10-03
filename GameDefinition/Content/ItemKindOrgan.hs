@@ -16,11 +16,11 @@ import Game.LambdaHack.Content.ItemKind
 
 organs :: [ItemKind]
 organs =
-  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
+  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
   -- LH-specific
   ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
 
-fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
+fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, eye2, eye3, eye4, eye5, eye6, eye7, eye8, vision4, vision5, vision6, vision7, vision8, vision10, vision12, vision14, vision16, nostril, ear4, ear5, ear6, ear7, ear8, ear9, ear10, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland2, speedGland4, speedGland6, speedGland8, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
 -- LH-specific
 tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
@@ -247,8 +247,17 @@ largeTail = fist
   , iaspects = [Timeout $ 2 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
                  -- timeout higher, lest they regain push before closing again
+  , ieffects = [Recharging (PushActor (ThrowMod 200 50 1))]  -- 1 step, fast
+  , idesc    = "Almost as long as the trunk."
+  }
+hugeTail = largeTail
+  { iname    = "huge tail"
+  , ifreq    = [("huge tail", 50)]
+  , iaspects = [Timeout $ 3 + 1 `d` 2, AddSkill SkHurtMelee 20]
+               ++ iaspects fist
+                 -- timeout higher, lest they regain push before closing again
   , ieffects = [Recharging (PushActor (ThrowMod 400 50 1))]  -- 2 steps, fast
-  , idesc    = "Slow but heavy."
+  , idesc    = "Slow but immensely heavy."
   }
 
 -- Non-weapons

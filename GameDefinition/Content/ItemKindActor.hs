@@ -397,27 +397,6 @@ rattlesnake = ItemKind
                , ("eye 4", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
-komodoDragon = ItemKind  -- regeneration makes it very powerful
-  { isymbol  = 'k'
-  , iname    = "Komodo dragon"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
-  , iflavour = zipPlain [Blue]
-  , icount   = 1
-  , irarity  = [(9, 0), (10, 10)]
-  , iverbHit = "thud"
-  , iweight  = 80000
-  , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 41, AddSkill SkMaxCalm 60
-               , AddSkill SkSpeed 18, AddSkill SkNocto 2
-               , SetFlag Durable ]
-  , ieffects = []
-  , idesc    = "Larger and more aggressive than any other lizard."
-  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
-               , ("hooked claw", COrgan), ("speed gland 4", COrgan)
-               , ("armored skin", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 4", COrgan)
-               , ("animal brain", COrgan) ]
-  }
 hyena = ItemKind
   { isymbol  = 'h'
   , iname    = "spotted hyena"
@@ -438,23 +417,44 @@ hyena = ItemKind
                , ("eye 6", COrgan), ("nostril", COrgan), ("ear 9", COrgan)
                , ("animal brain", COrgan) ]
   }
+komodoDragon = ItemKind
+  { isymbol  = 'k'
+  , iname    = "Komodo dragon"
+  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , iflavour = zipPlain [Red]  -- speedy, so red
+  , icount   = 1
+  , irarity  = [(9, 1), (10, 9)]
+  , iverbHit = "thud"
+  , iweight  = 80000
+  , idamage  = 0
+  , iaspects = [ AddSkill SkMaxHP 30, AddSkill SkMaxCalm 60
+               , AddSkill SkSpeed 18, AddSkill SkNocto 2
+               , SetFlag Durable ]
+  , ieffects = []
+  , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds at its lesser cousins."
+  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
+               , ("hooked claw", COrgan), ("speed gland 4", COrgan)
+               , ("armored skin", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 4", COrgan)
+               , ("animal brain", COrgan) ]
+  }
 alligator = ItemKind
   { isymbol  = 'a'
   , iname    = "alligator"
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
-  , irarity  = [(8, 1), (10, 9)]
+  , irarity  = [(9, 1), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 41, AddSkill SkMaxCalm 70
+  , iaspects = [ AddSkill SkMaxHP 45, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
                , AddSkill SkSwimming 100  -- swims better than walks
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = "An armored predator from the dawn of time."
-  , ikit     = [ ("large jaw", COrgan), ("large tail", COrgan)
+  , idesc    = "An armored predator from the dawn of time. You better not get within its reach."
+  , ikit     = [ ("huge tail", COrgan), ("large jaw", COrgan)
                , ("small claw", COrgan), ("armored skin", COrgan)
                , ("eye 6", COrgan), ("ear 9", COrgan)
                , ("animal brain", COrgan) ]

@@ -144,8 +144,8 @@ actorDying b = bhp b <= 0
 
 hpTooLow :: Actor -> Ability.Skills -> Bool
 hpTooLow b actorMaxSk =
-  5 * bhp b < xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
-  && bhp b <= xM 40 || bhp b <= oneM
+  5 * bhp b < xM (Ability.getSk Ability.SkMaxHP actorMaxSk) && bhp b <= xM 40
+  || bhp b <= oneM
 
 calmEnough :: Actor -> Ability.Skills -> Bool
 calmEnough b actorMaxSk =
