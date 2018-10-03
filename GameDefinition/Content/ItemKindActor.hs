@@ -205,7 +205,7 @@ nose = ItemKind  -- depends solely on smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
-  , ikit     = [ ("nose tip", COrgan), ("lip", COrgan), ("nostril", COrgan)
+  , ikit     = [ ("nostril", COrgan), ("nose tip", COrgan), ("lip", COrgan)
                , ("sapient brain", COrgan) ]  -- no sight nor hearing
   }
 elbow = ItemKind
@@ -320,7 +320,7 @@ skunk = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 5), (10, 3)]
+  , irarity  = [(1, 7), (10, 1)]
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = 0
