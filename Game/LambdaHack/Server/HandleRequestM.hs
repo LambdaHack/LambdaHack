@@ -242,18 +242,17 @@ switchLeader fid aidNew = do
 
 -- * ReqMove
 
--- | Add a smell trace for the actor to the level. For now, only actors
--- with gender leave strong and unique enough smell. If smell already there
+-- | Add a smell trace for the actor to the level. If smell already there
 -- and the actor can smell, remove smell. Projectiles are ignored.
 -- As long as an actor can smell, he doesn't leave any smell ever.
 affectSmell :: MonadServerAtomic m => ActorId -> m ()
 affectSmell aid = do
   b <- getsState $ getActorBody aid
   unless (bproj b) $ do
-    fact <- getsState $ (EM.! bfid b) . sfactionD
     actorMaxSk <- getsState $ getActorMaxSkills aid
     let smellRadius = Ability.getSk Ability.SkSmell actorMaxSk
-    when (fhasGender (gplayer fact) || smellRadius > 0) $ do
+        hadOdor = Ability.getSk Ability.SkOdor actorMaxSk > 0
+    when (hadOdor || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
       lvl <- getLevel $ blid b
       let oldS = fromMaybe timeZero $ EM.lookup (bpos b) . lsmell $ lvl
