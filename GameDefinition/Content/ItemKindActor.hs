@@ -274,7 +274,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
                , ("scavenger", 50) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(1, 3)]
+  , irarity  = [(1, 4)]
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
@@ -320,7 +320,7 @@ skunk = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 7), (10, 1)]
+  , irarity  = [(1, 4)]
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = 0
