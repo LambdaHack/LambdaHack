@@ -101,6 +101,8 @@ data TGoal =
     -- and @q@ is an adjacent open tile
   | TItem ItemBag  -- ^ item lying on the ground
   | TSmell  -- ^ smell potentially left by enemies
+  | TBlock  -- ^ a blocking tile to be approached (and, e.g., revealed
+            --   to be walkable or altered or searched)
   | TUnknown  -- ^ an unknown tile to be explored
   | TKnown  -- ^ a known tile to be patrolled
   | TAny  -- ^ an unspecified goal

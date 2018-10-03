@@ -186,7 +186,7 @@ createPath aid tapTgt = do
           [] -> TgtAndPath{..}
           [g] | g == pathGoal -> TgtAndPath{..}
           newGoal : _ ->
-            let newTgt = TPoint TKnown (blid b) newGoal
+            let newTgt = TPoint TBlock (blid b) newGoal
                 newPath = AndPath{ pathList = walkable ++ [newGoal]
                                  , pathGoal = newGoal
                                  , pathLen = length walkable + 1 }

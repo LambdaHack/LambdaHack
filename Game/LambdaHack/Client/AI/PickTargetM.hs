@@ -359,7 +359,7 @@ computeTarget aid = do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
                -- the target updated by his moves remains @TEnemy@.
-               -- Conversely, he is stuck with @TKnown@ if initial target had
+               -- Conversely, he is stuck with @TBlock@ if initial target had
                -- unwalkable tiles, for as long as they remain. Harmless quirk.
                mpath <- getCachePath aid $ bpos body
                case mpath of
@@ -431,6 +431,17 @@ computeTarget aid = do
                      in sml <= ltime lvl2
                then pickNewTarget  -- others will notice soon enough
                else return $ Just tap
+          TBlock -> do  -- e.g., door or first unknown tile of an area
+            let lvl2 = sdungeon s EM.! lid
+                t = lvl2 `at` pos
+            if isStuck  -- not a very important target, because blocked
+               || alterSkill < fromEnum (lalter PointArray.! pos)
+                    -- tile was searched or altered or skill lowered
+               || Tile.isWalkable coTileSpeedup t
+                    -- tile is no longer unwalkable, so was explored
+                    -- so time to recalculate target
+            then pickNewTarget  -- others will notice soon enough
+            else return $ Just tap
           TUnknown ->
             let lvl2 = sdungeon s EM.! lid
                 t = lvl2 `at` pos
@@ -442,18 +453,11 @@ computeTarget aid = do
                        -- looks silly
                then pickNewTarget  -- others will notice soon enough
                else return $ Just tap
-          TKnown -> do  -- e.g., staircase or first unknown tile of an area
-            explored <- getsClient sexplored
-            let allExplored = ES.size explored == EM.size dungeon
-                lvl2 = sdungeon s EM.! lid
+          TKnown ->
             if bpos b == pos
                || isStuck
                || alterSkill < fromEnum (lalter PointArray.! pos)
                     -- tile was searched or altered or skill lowered
-               || Tile.isWalkable coTileSpeedup (lvl2 `at` pos)
-                  && not allExplored  -- not patrolling explored dungeon
-                    -- tile is no longer unwalkable, so was explored
-                    -- so time to recalculate target
             then pickNewTarget  -- others unconcerned
             else return $ Just tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
