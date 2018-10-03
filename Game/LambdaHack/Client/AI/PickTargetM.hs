@@ -179,7 +179,12 @@ computeTarget aid = do
             n | Ability.getSk Ability.SkAggression actorMaxSk >= 2
               = rangedNearby
                   -- boss never waits
-              | condInMelee = if attacksFriends then 4 else 0
+              | condInMelee = if attacksFriends then 4 else 2
+                  -- attack even if foe not in melee, to create another
+                  -- skirmish and perhaps overwhelm them in this one;
+                  -- also, this looks more natural; also sometimes the foe
+                  -- would attack our friend in a couple of turns anyway,
+                  -- but we may be too far from him at that time
               | otherwise = meleeNearby
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
                         && bwatch body `notElem` [WSleep, WWake]
