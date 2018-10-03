@@ -42,6 +42,7 @@ warrior = ItemKind
                , AddSkill SkProject 2
                , AddSkill SkApply 1
                , AddSkill SkAlter 2
+               , AddSkill SkOdor 1
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = ""
@@ -326,12 +327,13 @@ skunk = ItemKind
   , iaspects = [ AddSkill SkMaxHP 10, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkOdor 5  -- and no smell skill, to let it leave smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Its only defence is the terrible stench."
   , ikit     = [ ("scent gland", COrgan)
                , ("small claw", COrgan), ("snout", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 7", COrgan)
+               , ("eye 3", COrgan), ("ear 7", COrgan)
                , ("animal brain", COrgan) ]
   }
 armadillo = ItemKind

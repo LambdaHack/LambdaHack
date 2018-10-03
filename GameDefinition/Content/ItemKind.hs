@@ -1020,6 +1020,7 @@ necklace2 = necklaceTemplate
       -- too nasty to call it just a "common item"
   , iaspects = [ SetFlag Unique, ELabel "of Live Bait"
                , Timeout 30
+               , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
@@ -1234,8 +1235,8 @@ armorLeather = ItemKind
   , ikit     = []
   }
 armorMail = armorLeather
-  { iname    = "mail armor"
-  , ifreq    = [("common item", 100), ("torso armor", 1), ("armor ranged", 50) ]
+  { iname    = "ring armor"
+  , ifreq    = [("common item", 100), ("torso armor", 1), ("armor ranged", 50)]
   , iflavour = zipPlain [Cyan]
   , irarity  = [(6, 9), (10, 3)]
   , iweight  = 12000
@@ -1243,10 +1244,11 @@ armorMail = armorLeather
   , iaspects = [ AddSkill SkHurtMelee (-3)
                , AddSkill SkArmorMelee $ (2 + 1 `dL` 4) * 5
                , AddSkill SkArmorRanged $ (4 + 1 `dL` 2) * 3
+               , AddSkill SkOdor 2
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorRanged ]
   , ieffects = []
-  , idesc    = "A long shirt woven from iron rings that are hard to pierce through. Discourages foes from attacking your torso, making it harder for them to hit you."
+  , idesc    = "A long shirt with tiny iron rings sewn into it. Discourages foes from attacking your torso, especially with ranged weapons, which can't pierce the rings and nor aim between them. The thick fabric is hard to wash, though."
   }
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
