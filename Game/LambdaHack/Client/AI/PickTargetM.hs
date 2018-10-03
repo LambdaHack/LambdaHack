@@ -297,8 +297,10 @@ computeTarget aid = do
                       upos <- closestUnknown aid
                       case upos of
                         Nothing -> do
-                          modifyClient $ \cli -> cli {sexplored =
-                            ES.insert (blid b) (sexplored cli)}
+                          -- If can't move (i.e., no Bfs data), no info gained.
+                          when canMove $
+                            modifyClient $ \cli -> cli {sexplored =
+                              ES.insert (blid b) (sexplored cli)}
                           explored <- getsClient sexplored
                           let allExplored =
                                 ES.size explored == EM.size dungeon
