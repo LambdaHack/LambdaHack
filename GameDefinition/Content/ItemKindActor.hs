@@ -234,7 +234,7 @@ elbow = ItemKind
   }
 torsor = ItemKind
   { isymbol  = 'T'
-  , iname    = "The Forgetful Torsor"
+  , iname    = "Forgetful Torsor"
   , ifreq    = [("monster", 100), ("mobile", 1)]
   , iflavour = zipFancy [BrCyan]
   , icount   = 1
@@ -461,7 +461,7 @@ alligator = ItemKind
   }
 rhinoceros = ItemKind
   { isymbol  = 'R'
-  , iname    = "The Maddened Rhinoceros"
+  , iname    = "Maddened Rhinoceros"
   , ifreq    = [("animal", 100), ("mobile", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
