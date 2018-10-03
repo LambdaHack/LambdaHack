@@ -51,7 +51,7 @@ ldarkColorable = [tree, bush, floorArena, floorDamp, floorDirt, floorDirtSpice, 
 
 -- *** Not clear
 
-unknown = TileKind  -- needs to have index 0 and alter 1
+unknown = TileKind  -- needs to have index 0 and alter 1; no other with 1
   { tsymbol  = ' '
   , tname    = "unknown space"
   , tfreq    = [("unknown space", 1)]

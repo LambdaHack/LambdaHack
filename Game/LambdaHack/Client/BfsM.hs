@@ -96,7 +96,9 @@ createBfs canMove alterSkill aid = do
   when canMove $ do
     salter <- getsClient salter
     let !lalter = salter EM.! blid b
-        !_a = fillBfs lalter alterSkill source aInitial
+        -- We increase 0 skill to 1, to also path through unknown tiles.
+        -- Since there are not other tiles that require skill 1, this is safe.
+        !_a = fillBfs lalter (max 1 alterSkill) source aInitial
     return ()
   return aInitial
 
@@ -219,8 +221,8 @@ condBFS aid = do
       -- turn for henchmen that can't move and can't alter, usually to TUnknown.
       -- This is rather useless, but correct.
       enterSuspect = smarkSuspect > 0 || underAI
-      skill | enterSuspect = alterSkill  -- dig and search at will
-            | otherwise = 1  -- only walkable tiles and unknown
+      skill | enterSuspect = alterSkill  -- dig and search as skill allows
+            | otherwise = 0  -- only walkable tiles
   return (canMove, skill)  -- keep it lazy
 
 -- | Furthest (wrt paths) known position.

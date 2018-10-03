@@ -228,8 +228,10 @@ validateAll coitem content cotile =
         ]
       missingHardwiredGroups =
         filter (not . omemberGroup cotile) hardwiredTileGroups
-  in [ "first tile should be the unknown one"
+  in [ "unknown tile (the first) should be the unknown one"
      | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
+     ++ [ "no tile other than the unknown (the first) should require skill 1"
+        | all (\tk -> talter tk == 1) (tail content) ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
      ++ [ "mentioned tile groups not in content:" <+> tshow missingTileGroups
