@@ -339,12 +339,12 @@ frozenGround = ItemKind
   , iname    = "frozen ground"
   , ifreq    = [("frozen ground", 1)]
   , iflavour = zipFancy [BrBlue]
-  , icount   = 1
+  , icount   = 50  -- very thick ice and refreezes
   , irarity  = [(1, 1)]
   , iverbHit = "betray"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = [SetFlag Durable]  -- very thick ice and refreezes
+  , iaspects = []  -- no Durable or some items would be impossible to pick up
   , ieffects = [PushActor (ThrowMod 400 10 1)]
                   -- the high speed represents gliding rather than flying
                   -- and so no need to lift actor's weight off the ground;
