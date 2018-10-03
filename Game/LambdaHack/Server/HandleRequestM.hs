@@ -125,8 +125,12 @@ setBWait cmd aid b = do
       if not (isJust mwait)  -- not a wait nor lurk
          || uneasy && mwait /= Just False  -- lurk can't wake up; too fast
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
-      else execUpdAtomic $ UpdRefillHP aid 100
-             -- no @xM@, so slow, but each turn HP gauge green
+      else execUpdAtomic $ UpdRefillHP aid 1000
+             -- no @xM@, so slow, but each turn HP gauge green;
+             -- this is 1HP per 1000 turns, so it's 100 slower than a necklace
+             -- that gives 1HP per 10 turns;
+             -- so if an actor sleeps for the duration of a 10000 turns
+             -- 10-level run, 10HP would be gained, so weak actors would wake up
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
     WWait 0 -> case cmd of

@@ -316,6 +316,7 @@ actionStrategy moldLeader aid retry = do
                else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
+                  -- Also, this is what non-leader heroes, unless they melee.
         [ ( [SkWait]
           , case bwatch body of
               WSleep -> if mayContinueSleep
