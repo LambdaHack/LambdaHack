@@ -208,7 +208,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
           Nothing -> 0
           Just cm -> fromMaybe 0 (M.lookup snxtChal cm)
         (snxtScenario, _) = minimumBy (comparing g) modes
-        h lvl = CK.cactorCoeff (okind cocave $ lkind lvl) > 150
+        h lvl = CK.labyrinth (okind cocave $ lkind lvl)
                 && not (fhasGender $ gplayer fact)
           -- Not to burrow through a labyrinth instead of leaving it for
           -- the human player and to prevent AI losing time there instead

@@ -55,6 +55,7 @@ data CaveKind = CaveKind
   , cplaceFreq      :: Freqs PlaceKind  -- ^ place groups to consider
   , cpassable       :: Bool
       -- ^ are passable default tiles permitted
+  , labyrinth       :: Bool                -- ^ waste of time for AI to explore
   , cdefTile        :: GroupName TileKind  -- ^ the default cave tile
   , cdarkCorTile    :: GroupName TileKind  -- ^ the dark cave corridor tile
   , clitCorTile     :: GroupName TileKind  -- ^ the lit cave corridor tile
