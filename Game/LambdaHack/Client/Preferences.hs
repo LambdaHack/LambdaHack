@@ -329,6 +329,7 @@ aspectToBenefit asp =
                                        -- > sight + light; stealth, slots
     IK.AddSkill Ability.SkHearing p -> Dice.meanDice p
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
+    IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p  -- makes one trackable
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere

@@ -50,6 +50,7 @@ data Skill =
   | SkNocto
   | SkHearing
   | SkAggression
+  | SkOdor
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 -- | Strength of particular skills. This is cumulative from actor

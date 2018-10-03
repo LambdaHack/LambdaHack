@@ -190,6 +190,7 @@ skillName SkShine = "shine radius"
 skillName SkNocto = "night vision radius"
 skillName SkHearing = "hearing radius"
 skillName SkAggression = "aggression level"
+skillName SkOdor = "odor level"
 
 skillDesc :: Skill -> Text
 skillDesc skill =
@@ -239,8 +240,10 @@ skillDesc skill =
       "is the limit of visibility in dark. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
     SkHearing -> capSkillName <+>
       "is the limit of hearing. The radius is measured from the middle of the map location occupied by the character to the edge of the furthest covered location."
-    SkAggression -> capSkillName <+>
+    SkAggression -> "The '" <> skName <> "' property" <+>
       "represents the willingness of the actor to engage in combat, especially close quarters, and conversely, to break engagement when overpowered."
+    SkOdor -> "The '" <> skName <> "' property" <+>
+      "represents the ability to communicate (more specifically, communicate one's presence) through personal odor. Zero or less means the odor is not trackable."
 
 skillToDecorator :: Skill -> Actor -> Int -> Text
 skillToDecorator skill b t =
@@ -282,9 +285,10 @@ skillToDecorator skill b t =
     SkNocto -> tshowRadius (max 0 t)
     SkHearing -> tshowRadius (max 0 t)
     SkAggression -> tshow t
+    SkOdor -> tshow t
 
 skillSlots :: [Skill]
-skillSlots = [SkMove .. SkAggression]
+skillSlots = [minBound .. maxBound]
 
 tmodToSuff :: Text -> ThrowMod -> Text
 tmodToSuff verb ThrowMod{..} =
@@ -324,6 +328,7 @@ kindAspectToSuffix aspect =
     AddSkill SkNocto t -> wrapInParens $ affixDice t <+> "night vision"
     AddSkill SkHearing t -> wrapInParens $ affixDice t <+> "hearing"
     AddSkill SkAggression t -> wrapInParens $ affixDice t <+> "aggression"
+    AddSkill SkOdor t -> wrapInParens $ affixDice t <+> "odor"
     SetFlag Fragile -> wrapInChevrons "fragile"
     SetFlag Lobable -> wrapInChevrons "can be lobbed"
     SetFlag Durable -> wrapInChevrons "durable"
