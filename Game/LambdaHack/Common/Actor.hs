@@ -164,6 +164,7 @@ canSleep :: Ability.Skills -> Bool
 canSleep actorMaxSk = Ability.getSk Ability.SkWait actorMaxSk >= 2
                       && (Ability.getSk Ability.SkSight actorMaxSk > 0
                           || Ability.getSk Ability.SkHearing actorMaxSk > 0)
+                      && Ability.getSk Ability.SkAggression actorMaxSk < 2
 
 -- | Can't loot, so sometimes prefers to sleep instead of exploring.
 prefersSleep :: Ability.Skills -> Bool
