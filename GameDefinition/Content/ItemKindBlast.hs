@@ -273,7 +273,7 @@ fragrance = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [Impress]
+  , ieffects = [Impress, toOrganGood "rose-smelling" (40 + 1 `d` 20)]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
   -- before actor turn's end (e.g., via a necklace).
   , idesc    = "A pleasant scent."
@@ -323,7 +323,9 @@ odorDistressing = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [RefillCalm (-10), toOrganBad "impatient" (5 + 1 `d` 3)]
+  , ieffects = [ RefillCalm (-10)
+               , toOrganBad "foul-smelling" (20 + 1 `d` 5)
+               , toOrganBad "impatient" (5 + 1 `d` 3) ]
   , idesc    = "It turns the stomach."  -- and so can't stand still
   , ikit     = []
   }
@@ -453,7 +455,8 @@ waste = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "dispossessed" (10 + 1 `d` 10)]
+  , ieffects = [ toOrganBad "foul-smelling" (30 + 1 `d` 10)
+               , toOrganBad "dispossessed" (10 + 1 `d` 10) ]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -676,7 +679,7 @@ smellyDroplet = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "keen-smelling" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood "keen-smelling" (5 + 1 `d` 3)]
   , idesc    = "A viscous lump that stains the skin."
   , ikit     = []
   }
@@ -721,7 +724,8 @@ youthSprinkle = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganNoTimer "regenerating"]
+  , ieffects = [ toOrganGood "rose-smelling" (40 + 1 `d` 20)
+               , toOrganNoTimer "regenerating" ]
   , idesc    = "Bright and smelling of the Spring."
   , ikit     = []
   }

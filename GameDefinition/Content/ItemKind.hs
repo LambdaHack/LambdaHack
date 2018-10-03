@@ -472,7 +472,8 @@ flask14 = flaskTemplate
   , irarity  = [(1, 2), (10, 10)]
   , iaspects = ELabel "of regeneration brew"
                : iaspects flaskTemplate
-  , ieffects = [ toOrganNoTimer "regenerating"
+  , ieffects = [ toOrganGood "rose-smelling" (80 + 1 `d` 20)
+               , toOrganNoTimer "regenerating"
                , toOrganNoTimer "regenerating"  -- x2
                , OnSmash (Explode "youth sprinkle") ]
   }
@@ -551,6 +552,7 @@ potion1 = potionTemplate
   , iaspects = ELabel "of rose water"
                : iaspects potionTemplate
   , ieffects = [ Impress, RefillCalm (-5)
+               , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potionTemplate
@@ -1679,9 +1681,10 @@ gem5 = gem1
                , ("valuable", 100) ]
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 40)]
-  , iaspects = [ELabel "of youth", SetFlag Precious]  -- not hidden
+  , iaspects = [ ELabel "of youth", SetFlag Precious  -- not hidden
+               , AddSkill SkOdor (-1) ]
   , ieffects = [RefillCalm 10, RefillHP 40]
-  , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly heals minor ailments rather well."
+  , idesc    = "A crystal vial of amber liquid, supposedly granting eternal youth and fetching 100 gold per piece. The main effect seems to be mild euphoria, but it admittedly smells good and heals minor ailments rather well."
   }
 currencyTemplate = ItemKind
   { isymbol  = symbolGold
