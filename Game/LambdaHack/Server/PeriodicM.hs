@@ -287,7 +287,7 @@ leadLevelSwitch = do
                   | (lid, lvl) <- EM.assocs $ sdungeon s
                   , lid /= blid body || not leaderStuck
                   , let as = -- Drama levels ignored, hence @Regular@.
-                             fidActorRegularAssocs fid lid s
+                             fidActorRegularIds fid lid s
                   , not (null as)
                   , let allSeen =
                           lexpl lvl <= lseen lvl
@@ -313,12 +313,9 @@ leadLevelSwitch = do
             -- Sole stranded actors tend to become (or stay) leaders
             -- so that they can join the main force ASAP.
             let freqList = [ (k, (lid, aid))
-                           | (lid, (_, (aid, b) : rest)) <- ours
+                           | (lid, (_, aid : rest)) <- ours
                            , let len = 1 + min 7 (length rest)
-                                 base = if bwatch b == WSleep
-                                        then 1000
-                                        else 1000000
-                                 k = base `div` len ]
+                                 k = 1000000 `div` len ]
             unless (null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
