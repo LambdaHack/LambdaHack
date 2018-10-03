@@ -71,8 +71,8 @@ effectToBenefit cops fact insideRecharging eff =
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach
     IK.RefillCalm p -> delta $ if p > 0
-                               then min 9 (fromIntegral p)
-                               else max (-9) (fromIntegral p)
+                               then min 50 (fromIntegral p)
+                               else max (-50) (fromIntegral p)
     IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100
     IK.Impress -> (0, -20)
