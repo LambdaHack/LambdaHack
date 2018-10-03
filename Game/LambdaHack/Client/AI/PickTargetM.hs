@@ -268,59 +268,59 @@ computeTarget aid = do
                          else return []
                 case smpos of
                   [] -> do
-                      let vToTgt v0 = do
-                            let vFreq = toFreq "vFreq"
-                                        $ (20, v0) : map (1,) moves
-                            v <- rndToAction $ frequency vFreq
-                            -- Items and smells, etc. considered every 7 moves.
-                            let pathSource = bpos b
-                                tra = trajectoryToPathBounded
-                                        rXmax rYmax pathSource (replicate 7 v)
-                                pathList = nub tra
-                                pathGoal = last pathList
-                                pathLen = length pathList
-                            return $ Just $
-                              TgtAndPath
-                                { tapTgt = TVector v
-                                , tapPath = if pathLen == 0
-                                            then NoPath
-                                            else AndPath{..} }
-                          oldpos = fromMaybe originPoint (boldpos b)
-                          vOld = bpos b `vectorToFrom` oldpos
-                          pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                      if slackTactic && not isStuck
-                         && isUnit vOld && bpos b /= pNew
-                         && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
-                              -- if initial altering, consider carefully below
-                      then vToTgt vOld
-                      else do
-                        upos <- closestUnknown aid
-                        case upos of
-                          Nothing -> do
-                            modifyClient $ \cli -> cli {sexplored =
-                              ES.insert (blid b) (sexplored cli)}
-                            explored <- getsClient sexplored
-                            let allExplored =
-                                  ES.size explored == EM.size dungeon
-                            if allExplored || nullFreq ctriggers then do
-                              -- All stones turned, time to win or die.
-                              afoes <- closestFoes allFoes aid
-                              case afoes of
-                                (_, (aid2, _)) : _ ->
-                                  setPath $ TEnemy aid2 False
-                                [] ->
-                                  if nullFreq ctriggers then do
-                                    furthest <- furthestKnown aid
-                                    setPath $ TPoint TKnown (blid b) furthest
-                                  else do
-                                    (p, (p0, bag)) <-
-                                      rndToAction $ frequency ctriggers
-                                    setPath $ TPoint (TEmbed bag p0) (blid b) p
-                            else do
-                              (p, (p0, bag)) <-
-                                rndToAction $ frequency ctriggers
-                              setPath $ TPoint (TEmbed bag p0) (blid b) p
-                          Just p -> setPath $ TPoint TUnknown (blid b) p
+                    let vToTgt v0 = do
+                          let vFreq = toFreq "vFreq"
+                                      $ (20, v0) : map (1,) moves
+                          v <- rndToAction $ frequency vFreq
+                          -- Items and smells, etc. considered every 7 moves.
+                          let pathSource = bpos b
+                              tra = trajectoryToPathBounded
+                                      rXmax rYmax pathSource (replicate 7 v)
+                              pathList = nub tra
+                              pathGoal = last pathList
+                              pathLen = length pathList
+                          return $ Just $
+                            TgtAndPath
+                              { tapTgt = TVector v
+                              , tapPath = if pathLen == 0
+                                          then NoPath
+                                          else AndPath{..} }
+                        oldpos = fromMaybe originPoint (boldpos b)
+                        vOld = bpos b `vectorToFrom` oldpos
+                        pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                    if slackTactic && not isStuck
+                       && isUnit vOld && bpos b /= pNew
+                       && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
+                            -- if initial altering, consider carefully below
+                    then vToTgt vOld
+                    else do
+                      upos <- closestUnknown aid
+                      case upos of
+                        Nothing -> do
+                          modifyClient $ \cli -> cli {sexplored =
+                            ES.insert (blid b) (sexplored cli)}
+                          explored <- getsClient sexplored
+                          let allExplored =
+                                ES.size explored == EM.size dungeon
+                          if allExplored || nullFreq ctriggers then do
+                            -- All stones turned, time to win or die.
+                            afoes <- closestFoes allFoes aid
+                            case afoes of
+                              (_, (aid2, _)) : _ ->
+                                setPath $ TEnemy aid2 False
+                              [] ->
+                                if nullFreq ctriggers then do
+                                  furthest <- furthestKnown aid
+                                  setPath $ TPoint TKnown (blid b) furthest
+                                else do
+                                  (p, (p0, bag)) <-
+                                    rndToAction $ frequency ctriggers
+                                  setPath $ TPoint (TEmbed bag p0) (blid b) p
+                          else do
+                            (p, (p0, bag)) <-
+                              rndToAction $ frequency ctriggers
+                            setPath $ TPoint (TEmbed bag p0) (blid b) p
+                        Just p -> setPath $ TPoint TUnknown (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
               else do
                 (p, (p0, bag)) <- rndToAction $ frequency ctriggers
