@@ -253,21 +253,21 @@ computeTarget aid = do
             -- and not being too friendly to each other, they just wait and see
             -- and also shout to the teammate to flee and lure foes into ambush
           [] -> do
-            -- Tracking enemies is more important than exploring,
-            -- and smelling actors are usually blind, so bad at exploring.
-            smpos <- if canSmell
-                     then closestSmell aid
-                     else return []
-            case smpos of
-              [] -> do
-                citemsRaw <- closestItems aid
-                let citems = toFreq "closestItems"
-                             $ filter desirableFloor citemsRaw
-                if nullFreq citems then do
-                  -- This is mostly lazy and referred to a few times below.
-                  ctriggersRaw <- closestTriggers ViaAnything aid
-                  let ctriggers = toFreq "closestTriggers" ctriggersRaw
-                  if nullFreq ctriggers then do
+            citemsRaw <- closestItems aid
+            let citems = toFreq "closestItems"
+                         $ filter desirableFloor citemsRaw
+            if nullFreq citems then do
+              -- This is mostly lazy and referred to a few times below.
+              ctriggersRaw <- closestTriggers ViaAnything aid
+              let ctriggers = toFreq "closestTriggers" ctriggersRaw
+              if nullFreq ctriggers then do
+                -- Tracking enemies is more important than exploring, but smell
+                -- is unreliable and may lead to allies, not foes, so avoid it.
+                smpos <- if canSmell
+                         then closestSmell aid
+                         else return []
+                case smpos of
+                  [] -> do
                       let vToTgt v0 = do
                             let vFreq = toFreq "vFreq"
                                         $ (20, v0) : map (1,) moves
@@ -321,13 +321,13 @@ computeTarget aid = do
                                 rndToAction $ frequency ctriggers
                               setPath $ TPoint (TEmbed bag p0) (blid b) p
                           Just p -> setPath $ TPoint TUnknown (blid b) p
-                  else do
-                    (p, (p0, bag)) <- rndToAction $ frequency ctriggers
-                    setPath $ TPoint (TEmbed bag p0) (blid b) p
-                else do
-                  (p, bag) <- rndToAction $ frequency citems
-                  setPath $ TPoint (TItem bag) (blid b) p
-              (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
+                  (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
+              else do
+                (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                setPath $ TPoint (TEmbed bag p0) (blid b) p
+            else do
+              (p, bag) <- rndToAction $ frequency citems
+              setPath $ TPoint (TItem bag) (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of
               TPoint _ lid p -> p /= pos || lid /= blid b
