@@ -56,24 +56,29 @@ spawnMonster = do
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
   arena <- rndToAction $ oneOf arenas
-  Level{lkind, ldepth} <- getLevel arena
+  Level{lkind, ldepth, lbig} <- getLevel arena
   let ck = okind cocave lkind
-  unless (CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck)) $ do
-    totalDepth <- getsState stotalDepth
-    lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
-    rc <- rndToAction
-          $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
-    when rc $ do
-      modifyServer $ \ser ->
-        ser {snumSpawned = EM.insert arena (lvlSpawned + 1) $ snumSpawned ser}
-      localTime <- getsState $ getLocalTime arena
-      maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
-      case maid of
-        Nothing -> return ()  -- suspect content
-        Just aid -> do
-          b <- getsState $ getActorBody aid
-          mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-          when (isNothing mleader) $ supplantLeader (bfid b) aid
+  if | CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck) -> return ()
+     | EM.size lbig >= 100 ->  -- probably not so rare, but debug anyway
+       -- Gameplay consideration: not fun to slog through so many actors.
+       debugPossiblyPrint "Server: spawnMonster: too many big actors on level"
+     | otherwise -> do
+       totalDepth <- getsState stotalDepth
+       lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup arena . snumSpawned
+       rc <- rndToAction
+             $ monsterGenChance ldepth totalDepth lvlSpawned (CK.cactorCoeff ck)
+       when rc $ do
+         modifyServer $ \ser ->
+           ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
+                              $ snumSpawned ser}
+         localTime <- getsState $ getLocalTime arena
+         maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
+         case maid of
+           Nothing -> return ()  -- suspect content
+           Just aid -> do
+             b <- getsState $ getActorBody aid
+             mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
+             when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -87,7 +92,9 @@ addAnyActor summoned actorFreq lid time mpos = do
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
   m2 <- rollItem lvlSpawned lid actorFreq
   case m2 of
-    Nothing -> return Nothing
+    Nothing -> do
+      debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
+      return Nothing
     Just (itemKnownRaw, (itemFullRaw, kit)) -> do
       let freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
           f fact = fgroups (gplayer fact)
