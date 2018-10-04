@@ -4,12 +4,12 @@
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, dropCStoreItem, highestImpression, dominateFidSfx
-  , pickDroppable, cutCalm
+  , pickDroppable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
   , applyKineticDamage, effectAndDestroy
-  , refillHP, imperishableKit, itemEffectDisco, effectSem
+  , refillHP, cutCalm, imperishableKit, itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
   , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
@@ -514,7 +514,7 @@ effectRefillCalm execSfx power0 source target = do
   let power = if power0 <= -1 then power0 else max 1 power0  -- avoid 0
       rawDeltaCalm = xM power
       calmMax = Ability.getSk Ability.SkMaxCalm actorMaxSk
-      serious = rawDeltaCalm < minusM && source /= target && not (bproj tb)
+      serious = rawDeltaCalm <= minusM2 && source /= target && not (bproj tb)
       deltaCalm0 | serious =  -- if overfull, at least cut back to max
                      min rawDeltaCalm (xM calmMax - bcalm tb)
                  | otherwise = rawDeltaCalm
@@ -704,7 +704,8 @@ effectYell execSfx target = do
   else do
     execSfx
     execSfxAtomic $ SfxTaunt False target
-    execUpdAtomic $ UpdRefillCalm target (xM $ -2)
+    when (deltaNotNegative $ bcalmDelta tb) $
+      execUpdAtomic $ UpdRefillCalm target minusM
     return UseUp
 
 -- ** Summon
