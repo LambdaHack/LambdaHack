@@ -1042,6 +1042,7 @@ necklace3 = necklaceTemplate
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
+  , irarity  = [(10, 1)]  -- annoying when AI uses it
   , iaspects = Timeout ((3 + 1 `d` 3 - 1 `dL` 3) * 2)
                : iaspects_necklaceTemplate
   , ieffects = [Recharging (Teleport $ 3 `d` 2)]
@@ -1057,6 +1058,7 @@ necklace5 = necklaceTemplate
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
+  , irarity  = [(10, 1)]  -- annoying when AI uses it
   , iaspects = Timeout (1 + (1 `d` 3) * 2)
                : iaspects_necklaceTemplate
   , ieffects = [Recharging (PushActor (ThrowMod 100 50 1))]  -- 1 step, slow
