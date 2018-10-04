@@ -716,13 +716,13 @@ effectSummon :: MonadServerAtomic m
              -> m UseResult
 effectSummon grp nDm iid source target periodic = do
   -- Obvious effect, nothing announced.
-  COps{coTileSpeedup} <- getsState scops
+  cops@COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   sMaxSk <- getsState $ getActorMaxSkills source
   tMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel (blid tb)
+  lvl@Level{ldepth} <- getLevel (blid tb)
   discoAspect <- getsState sdiscoAspect
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let arItem = discoAspect EM.! iid
@@ -747,7 +747,7 @@ effectSummon grp nDm iid source target periodic = do
        execSfx
        unless (bproj sb) $ updateCalm source deltaCalm
        let validTile t = not $ Tile.isNoActor coTileSpeedup t
-       ps <- getsState $ nearbyFreePoints validTile (bpos tb) (blid tb)
+           ps = nearbyFreePoints cops lvl validTile (bpos tb)
        localTime <- getsState $ getLocalTime (blid tb)
        -- Make sure summoned actors start acting after the victim.
        let actorTurn = ticksPerMeter $ gearSpeed tMaxSk
@@ -1240,13 +1240,13 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
 
 pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
 pickDroppable aid b = do
-  COps{coTileSpeedup} <- getsState scops
+  cops@COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid b)
   let validTile t = not $ Tile.isNoItem coTileSpeedup t
   if validTile $ lvl `at` bpos b
   then return $! CActor aid CGround
   else do
-    ps <- getsState $ nearbyFreePoints validTile (bpos b) (blid b)
+    let ps = nearbyFreePoints cops lvl validTile (bpos b)
     return $! case filter (adjacent $ bpos b) $ take 8 ps of
       [] -> CActor aid CGround  -- fallback; still correct, though not ideal
       pos : _ -> CFloor (blid b) pos

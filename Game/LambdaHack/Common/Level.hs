@@ -11,10 +11,11 @@ module Game.LambdaHack.Common.Level
   , updateFloor, updateEmbed, updateBigMap, updateProjMap
   , updateTile, updateEntry, updateSmell
     -- * Level query
-  , at, findPosTry, findPosTry2
+  , posToBigLvl, occupiedBigLvl, posToProjsLvl, occupiedProjLvl
+  , at, findPosTry, findPosTry2, nearbyFreePoints
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , assertSparseItems, assertSparseProjectiles
+  , nearbyPassablePoints, assertSparseItems, assertSparseProjectiles
 #endif
   ) where
 
@@ -24,6 +25,7 @@ import Game.LambdaHack.Common.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
@@ -34,9 +36,12 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.PlaceKind
+import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | The complete dungeon is a map from level identifiers to levels.
@@ -170,6 +175,22 @@ at :: Level -> Point -> ContentId TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
+posToBigLvl :: Point -> Level -> Maybe ActorId
+{-# INLINE posToBigLvl #-}
+posToBigLvl pos lvl = EM.lookup pos $ lbig lvl
+
+occupiedBigLvl :: Point -> Level -> Bool
+{-# INLINE occupiedBigLvl #-}
+occupiedBigLvl pos lvl = pos `EM.member` lbig lvl
+
+posToProjsLvl :: Point -> Level -> [ActorId]
+{-# INLINE posToProjsLvl #-}
+posToProjsLvl pos lvl = EM.findWithDefault [] pos $ lproj lvl
+
+occupiedProjLvl :: Point -> Level -> Bool
+{-# INLINE occupiedProjLvl #-}
+occupiedProjLvl pos lvl = pos `EM.member` lproj lvl
+
 -- | Try to find a random position on the map satisfying
 -- conjunction of the mandatory and an optional predicate.
 -- If the permitted number of attempts is not enough,
@@ -214,6 +235,42 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
                 -- @pos@ or @tile@ not always needed, so not strict
                 (\pos tile -> m0 pos tile && g pos tile)
                 l
+
+-- | Generate a list of all passable points on (connected component of)
+-- the level in the order of path distance from the starting position (BFS).
+-- The starting position needn't be passable and is always included.
+nearbyPassablePoints :: COps -> Level -> Point -> [Point]
+nearbyPassablePoints cops@COps{corule=RuleContent{rXmax, rYmax}} lvl start =
+  let passable p = Tile.isEasyOpen (coTileSpeedup cops) (lvl `at` p)
+      passableVic p = filter passable $ vicinityBounded rXmax rYmax p
+      siftSingle :: Point
+                 -> (ES.EnumSet Point, [Point])
+                 -> (ES.EnumSet Point, [Point])
+      siftSingle current (seen, sameDistance) =
+        if current `ES.member` seen
+        then (seen, sameDistance)
+        else (ES.insert current seen, current : sameDistance)
+      siftVicinity :: Point
+                   -> (ES.EnumSet Point, [Point])
+                   -> (ES.EnumSet Point, [Point])
+      siftVicinity current seenAndSameDistance =
+        let vic = passableVic current
+        in foldr siftSingle seenAndSameDistance vic
+      siftNearby :: (ES.EnumSet Point, [Point]) -> [Point]
+      siftNearby (seen, sameDistance) =
+        sameDistance
+        ++ case foldr siftVicinity (seen, []) sameDistance of
+             (_, []) -> []
+             (seen2, sameDistance2) -> siftNearby (seen2, sameDistance2)
+  in siftNearby (ES.singleton start, [start])
+
+nearbyFreePoints :: COps -> Level -> (ContentId TileKind -> Bool) -> Point
+                 -> [Point]
+nearbyFreePoints cops lvl f start =
+  let good p = f (lvl `at` p)
+               && Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
+               && null (posToProjsLvl p lvl) && isNothing (posToBigLvl p lvl)
+  in filter good $ nearbyPassablePoints cops lvl start
 
 instance Binary Level where
   put Level{..} = do

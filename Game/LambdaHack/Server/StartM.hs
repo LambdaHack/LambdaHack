@@ -268,6 +268,7 @@ populateDungeon = do
                     arenaFactions
         mapM_ placeAlliance usedPoss
       placeActors lid ((fid3, fact3), ppos, timeOffset) = do
+        lvl <- getLevel lid
         localTime <- getsState $ getLocalTime lid
         let clipInTurn = timeTurn `timeFit` timeClip
             nmult = 1 + timeOffset `mod` clipInTurn
@@ -277,7 +278,7 @@ populateDungeon = do
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
                                 , g ln3 == lid ]
-        psFree <- getsState $ nearbyFreePoints validTile ppos lid
+            psFree = nearbyFreePoints cops lvl validTile ppos
         when (length psFree < length initGroups) $
           debugPossiblyPrint
             "Server: populateDungeon: failed to find enough actor positions"
