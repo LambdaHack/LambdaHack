@@ -173,6 +173,8 @@ data SfxMsg =
   | SfxVoidDetection IK.DetectKind
   | SfxUnimpressed ActorId
   | SfxSummonLackCalm ActorId
+  | SfxSummonTooManyOwn ActorId
+  | SfxSummonTooManyAll ActorId
   | SfxLevelNoMore
   | SfxLevelPushed
   | SfxBracedImmune ActorId

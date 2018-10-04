@@ -722,7 +722,8 @@ effectSummon grp nDm iid source target periodic = do
   sMaxSk <- getsState $ getActorMaxSkills source
   tMaxSk <- getsState $ getActorMaxSkills target
   totalDepth <- getsState stotalDepth
-  lvl@Level{ldepth} <- getLevel (blid tb)
+  lvl@Level{ldepth, lbig} <- getLevel (blid tb)
+  nFriends <- getsState $ length . friendRegularAssocs (bfid sb) (blid sb)
   discoAspect <- getsState sdiscoAspect
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let arItem = discoAspect EM.! iid
@@ -743,6 +744,20 @@ effectSummon grp nDm iid source target periodic = do
        unless (bproj sb) $
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
        return UseId
+     | nFriends >= 20 -> do
+       -- We assume the actor tries to summon his teammates or allies,
+       -- so as he repeats it he is going to bump into this limit.
+       -- If summons others, see the next condition.
+       unless (bproj sb) $
+         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyOwn source
+       return UseId
+     | EM.size lbig >= 80 -> do  -- lower than 100 limit for spawning
+       -- Even if the actor summons foes, he is prevented from exploiting it
+       -- too many times and stopping natural monster spawning on the level
+       -- (e.g., by filling the level with harmless foes).
+       unless (bproj sb) $
+         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyAll source
+       return UseId
      | otherwise -> do
        execSfx
        unless (bproj sb) $ updateCalm source deltaCalm
@@ -760,7 +775,7 @@ effectSummon grp nDm iid source target periodic = do
          -- Mark as summoned to prevent immediate chain summoning.
          maid <- addAnyActor True [(grp, 1)] (blid tb) afterTime (Just p)
          case maid of
-           Nothing -> return False  -- not enough space in dungeon?
+           Nothing -> return False  -- suspect content; server debug elsewhere
            Just aid -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD

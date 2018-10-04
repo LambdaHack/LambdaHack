@@ -1170,8 +1170,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Nothing -> return ""
       Just sbUI -> do
         let subject = partActor sbUI
-            verb = "be unimpressed"
-        return $! makeSentence [MU.SubjectVerbSg subject verb]
+            verb = "is unimpressed"
+        return $! makeSentence [subject, verb]
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1179,7 +1179,23 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "lack Calm to summon"
-        return $! makeSentence [MU.SubjectVerbSg subject verb]
+        return $! makeSentence [subject, verb]
+  SfxSummonTooManyOwn aid -> do
+    msbUI <- getsSession $ EM.lookup aid . sactorUI
+    case msbUI of
+      Nothing -> return ""
+      Just sbUI -> do
+        let subject = partActor sbUI
+            verb = "can't keep track of his numerous friends, let alone summon any more"
+        return $! makeSentence [subject, verb]
+  SfxSummonTooManyAll aid -> do
+    msbUI <- getsSession $ EM.lookup aid . sactorUI
+    case msbUI of
+      Nothing -> return ""
+      Just sbUI -> do
+        let subject = partActor sbUI
+            verb = "can't keep track of everybody around, let alone summon anyone else"
+        return $! makeSentence [subject, verb]
   SfxLevelNoMore -> return "No more levels in this direction."
   SfxLevelPushed -> return "You notice somebody pushed to another level."
   SfxBracedImmune aid -> do
@@ -1188,8 +1204,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Nothing -> return ""
       Just sbUI -> do
         let subject = partActor sbUI
-            verb = "be braced and so immune to translocation"
-        return $! makeSentence [MU.SubjectVerbSg subject verb]
+            verb = "is braced and so immune to translocation"
+        return $! makeSentence [subject, verb]
   SfxEscapeImpossible ->
     return "Escaping outside is unthinkable for members of this faction."
   SfxStasisProtects -> return "Paralysis and speed surge require recovery time."

@@ -74,7 +74,7 @@ spawnMonster = do
          localTime <- getsState $ getLocalTime arena
          maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
          case maid of
-           Nothing -> return ()  -- suspect content
+           Nothing -> return ()  -- suspect content; server debug elsewhere
            Just aid -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
