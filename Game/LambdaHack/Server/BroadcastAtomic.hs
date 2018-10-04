@@ -78,6 +78,12 @@ handleAndBroadcast ps atomicBroken atomic = do
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> do  -- hear only here; broken commands are never loud
+            -- At most @minusM@ applied taol to avoid
+            -- "you hear something" or even distress as if wounded.
+            let f aid = do
+                  b <- getsState $ getActorBody aid
+                  when (deltaNotNegative $ bcalmDelta b) $
+                    execUpdAtomic $ UpdRefillCalm aid minusM
             -- Projectiles never hear, for speed and simplicity,
             -- even though they sometimes see. There are flying cameras,
             -- but no microphones --- drones make too much noise themselves.
@@ -90,17 +96,14 @@ handleAndBroadcast ps atomicBroken atomic = do
                   Just aids -> do
                     sendUpdate fid $ UpdHearFid fid
                                    $ HearUpd (not $ null aids) cmd
-                    mapM_ (\aid -> execUpdAtomic
-                                   $ UpdRefillCalm aid minusM) aids
-                      -- @minusM@ to avoid "you hear something"
+                    mapM_ f aids
               SfxAtomic cmd -> do
                 mhear <- hearSfxAtomic as cmd
                 case mhear of
                   Nothing -> return ()
                   Just (hearMsg, aids) -> do
                     sendUpdate fid $ UpdHearFid fid hearMsg
-                    mapM_ (\aid -> execUpdAtomic
-                                   $ UpdRefillCalm aid minusM) aids
+                    mapM_ f aids
                       -- @minusM@ to avoid "you hear something"
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
