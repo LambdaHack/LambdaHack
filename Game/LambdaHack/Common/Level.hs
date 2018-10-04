@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Level
   , updateFloor, updateEmbed, updateBigMap, updateProjMap
   , updateTile, updateEntry, updateSmell
     -- * Level query
-  , at, findPos, findPosTry, findPosTry2
+  , at, findPosTry, findPosTry2
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , assertSparseItems, assertSparseProjectiles
@@ -170,48 +170,33 @@ at :: Level -> Point -> ContentId TileKind
 {-# INLINE at #-}
 at Level{ltile} p = ltile PointArray.! p
 
--- | Find a random position on the map satisfying a predicate.
-findPos :: Level -> (Point -> ContentId TileKind -> Bool) -> Rnd Point
-findPos lvl@Level{ltile, larea} p =
-  let (Point x0 y0, xspan, yspan) = spanArea larea
-      search 0 = return $! searchAll (xspan * yspan - 1)
-      search count = do
-        pxyRelative <- randomR (0, xspan * yspan - 1)
-        let Point{..} = PointArray.punindex xspan pxyRelative
-            pos = Point (x0 + px) (y0 + py)
-            tile = ltile PointArray.! pos
-        if p pos tile then return $! pos else search (count - 1)
-      searchAll (-1) = error $ "findPos: search failed" `showFailure` lvl
-      searchAll pxyRelative =
-        let Point{..} = PointArray.punindex xspan pxyRelative
-            pos = Point (x0 + px) (y0 + py)
-            tile = ltile PointArray.! pos
-        in if p pos tile then pos else searchAll (pxyRelative - 1)
-  in search (xspan * yspan * 10)
-
 -- | Try to find a random position on the map satisfying
 -- conjunction of the mandatory and an optional predicate.
 -- If the permitted number of attempts is not enough,
 -- try again the same number of times without the next optional predicate,
--- and fall back to trying as many times, as needed, with only the mandatory
--- predicate.
-findPosTry :: Int                                  -- ^ the number of tries
-           -> Level                                -- ^ look up in this level
+-- and fall back to trying with only the mandatory predicate.
+findPosTry :: Int                                    -- ^ the number of tries
+           -> Level                                  -- ^ look up in this level
            -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
            -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
-           -> Rnd Point
+           -> Rnd (Maybe Point)
 {-# INLINE findPosTry #-}
 findPosTry numTries lvl m = findPosTry2 numTries lvl m [] undefined
 
-findPosTry2 :: Int                                  -- ^ the number of tries
-            -> Level                                -- ^ look up in this level
+findPosTry2 :: Int                                    -- ^ the number of tries
+            -> Level                                  -- ^ look up in this level
             -> (Point -> ContentId TileKind -> Bool)  -- ^ mandatory predicate
             -> [Point -> ContentId TileKind -> Bool]  -- ^ optional predicates
             -> (Point -> ContentId TileKind -> Bool)  -- ^ good to have pred.
             -> [Point -> ContentId TileKind -> Bool]  -- ^ worst case predicates
-            -> Rnd Point
-findPosTry2 numTries lvl@Level{ltile, larea} m0 l g r = assert (numTries > 0) $
+            -> Rnd (Maybe Point)
+findPosTry2 numTries Level{ltile, larea} m0 l g r =
+  assert (numTries > 0) $
   let (Point x0 y0, xspan, yspan) = spanArea larea
+      accomodate :: Rnd (Maybe Point)
+                 -> (Point -> ContentId TileKind -> Bool)
+                 -> [Point -> ContentId TileKind -> Bool]
+                 -> Rnd (Maybe Point)
       accomodate fallback _ [] = fallback  -- fallback needs to be non-strict
       accomodate fallback m (hd : tl) =
         let search 0 = accomodate fallback m tl
@@ -221,10 +206,11 @@ findPosTry2 numTries lvl@Level{ltile, larea} m0 l g r = assert (numTries > 0) $
                   pos = Point (x0 + px) (y0 + py)
                   tile = ltile PointArray.! pos
               if m pos tile && hd pos tile
-              then return $! pos
+              then return $ Just pos
               else search (k - 1)
         in search numTries
-  in accomodate (accomodate (findPos lvl m0) m0 r)
+      rAndOnceOnlym0 = r ++ [\_ _ -> True]
+  in accomodate (accomodate (return Nothing) m0 rAndOnceOnlym0)
                 -- @pos@ or @tile@ not always needed, so not strict
                 (\pos tile -> m0 pos tile && g pos tile)
                 l

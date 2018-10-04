@@ -106,17 +106,20 @@ addAnyActor summoned actorFreq lid time mpos = do
           -- Checking skill would be more accurate, but skills can be
           -- inside organs, equipment, tmp organs, created organs, etc.
           mobile = "mobile" `elem` freqNames
-      pos <- case mpos of
-        Just pos -> return pos
+      mrolledPos <- case mpos of
+        Just{} -> return mpos
         Nothing -> do
           rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
           rndToAction rollPos
-      Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
-                             fid pos lid time
+      case mrolledPos of
+        Just pos ->
+          Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
+                                 fid pos lid time
+        Nothing -> return Nothing
 
 rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
-             -> Rnd Point
+             -> Rnd (Maybe Point)
 rollSpawnPos COps{coTileSpeedup} visible
              mobile lid lvl@Level{larea, lstair} fid s = do
   let -- Monsters try to harass enemies ASAP, instead of catching up from afar.

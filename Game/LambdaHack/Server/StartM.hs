@@ -310,14 +310,17 @@ findEntryPoss COps{coTileSpeedup}
                  , dist ps $ factionDist `div` 4
                  , dist ps $ factionDist `div` 6
                  ]
-        np <- findPosTry2 1000 lvl  -- try really hard, for skirmish fairness
+        mp <- findPosTry2 1000 lvl  -- try really hard, for skirmish fairness
                 (\_ t -> Tile.isWalkable coTileSpeedup t
                          && not (Tile.isNoActor coTileSpeedup t))
                 ds
                 (\_p t -> Tile.isOftenActor coTileSpeedup t)
                 ds
-        nps <- tryFind (np : ps) (n - 1)
-        return $! np : nps
+        case mp of
+          Just np -> do
+            nps <- tryFind (np : ps) (n - 1)
+            return $! np : nps
+          Nothing -> return []
       -- Only consider deeper stairs to avoid leaderless spawners that lurk near
       -- their starting stairs ambushing explorers that enter the level,
       -- unless the staircase has both sets of stairs.

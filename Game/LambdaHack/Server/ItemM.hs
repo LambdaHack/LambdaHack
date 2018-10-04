@@ -168,7 +168,7 @@ placeItemsInDungeon alliancePositions = do
                   distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
-              pos <- rndToAction $ findPosTry2 100 lvl
+              mpos <- rndToAction $ findPosTry2 100 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 [ distAndVeryOften
@@ -176,8 +176,11 @@ placeItemsInDungeon alliancePositions = do
                 , distOrVeryOften]
                 distAllianceAndNotFloor
                 [distAllianceAndNotFloor]
-              createLevelItem pos lid
-              placeItems (n + 1)
+              case mpos of
+                Just pos -> do
+                  createLevelItem pos lid
+                  placeItems (n + 1)
+                Nothing -> return ()  -- no more space
         placeItems 0
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all

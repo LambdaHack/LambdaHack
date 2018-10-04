@@ -1068,7 +1068,7 @@ effectTeleport execSfx nDm source target = do
         let d = chessDist spos pos
         in d >= range - delta && d <= range + delta
       dist delta pos _ = dMinMax delta pos
-  tpos <- rndToAction $ findPosTry 200 lvl
+  mtpos <- rndToAction $ findPosTry 200 lvl
     (\p t -> Tile.isWalkable coTileSpeedup t
              && (not (dMinMax 9 p)  -- don't loop, very rare
                  || not (Tile.isNoActor coTileSpeedup t)
@@ -1082,16 +1082,21 @@ effectTeleport execSfx nDm source target = do
     , dist 7
     , dist 9
     ]
-  if | waitedLastTurn tb -> do
-       execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-       return UseId
-     | not (dMinMax 9 tpos) -> do  -- very rare
-       execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
-       return UseId
-     | otherwise -> do
-       execSfx
-       execUpdAtomic $ UpdMoveActor target spos tpos
-       return UseUp
+  case mtpos of
+    Nothing -> do  -- really very rare
+      execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
+      return UseId
+    Just tpos ->
+      if | waitedLastTurn tb -> do
+           execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
+           return UseId
+         | not (dMinMax 9 tpos) -> do  -- very rare
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
+           return UseId
+         | otherwise -> do
+           execSfx
+           execUpdAtomic $ UpdMoveActor target spos tpos
+           return UseUp
 
 -- ** CreateItem
 
