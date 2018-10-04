@@ -256,7 +256,7 @@ populateDungeon = do
                      $ findEntryPoss cops lid lvl (length arenaAlliances)
         when (length entryPoss < length arenaAlliances) $
           debugPossiblyPrint
-            "populateDungeon: failed to find enough alliance positions"
+            "Server: populateDungeon: failed to find enough alliance positions"
         let usedPoss = zip3 arenaAlliances entryPoss [0..]
         return $! (lid, usedPoss)
       initialActors (lid, usedPoss) = do
@@ -280,7 +280,7 @@ populateDungeon = do
         psFree <- getsState $ nearbyFreePoints validTile ppos lid
         when (length psFree < length initGroups) $
           debugPossiblyPrint
-            "populateDungeon: failed to find enough actor positions"
+            "Server: populateDungeon: failed to find enough actor positions"
         let ps = zip initGroups psFree
         forM_ ps $ \ (actorGroup, p) -> do
           maid <- addActorFromGroup actorGroup fid3 p lid ntime

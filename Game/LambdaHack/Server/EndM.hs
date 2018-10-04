@@ -64,7 +64,7 @@ endOrLoop loop restart = do
 
 gameExit :: (MonadServerAtomic m, MonadServerComm m) => m ()
 gameExit = do
---  debugPossiblyPrint "Verifying all perceptions."
+--  debugPossiblyPrint "Server: Verifying all perceptions."
   -- Verify that the possibly not saved caches are equal to future
   -- reconstructed. Otherwise, save/restore would change game state.
   -- This is done even in released binaries, because it only prolongs
@@ -74,10 +74,9 @@ gameExit = do
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
-  -- debugPrint "Server kills clients"
---  debugPossiblyPrint "Killing all clients."
+--  debugPossiblyPrint "Server: Killing all clients."
   killAllClients
---  debugPossiblyPrint "All clients killed."
+--  debugPossiblyPrint "Server: All clients killed."
   return ()
 
 verifyCaches :: MonadServer m => m ()

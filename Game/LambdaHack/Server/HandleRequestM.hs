@@ -77,7 +77,7 @@ execFailure aid req failureSer = do
                       then debugPossiblyPrintAndExit
                       else debugPossiblyPrint
   possiblyAlarm $
-    "execFailure:" <+> msg <> "\n"
+    "Server: execFailure:" <+> msg <> "\n"
     <> debugShow body <> "\n" <> debugShow req <> "\n" <> debugShow failureSer
   execSfxAtomic $ SfxMsgFid fid $ SfxUnexpected failureSer
 

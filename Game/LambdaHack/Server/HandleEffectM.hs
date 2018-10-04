@@ -755,7 +755,7 @@ effectSummon grp nDm iid source target periodic = do
            afterTime = timeShift targetTime $ Delta timeClip
        when (length (take power ps) < power) $
           debugPossiblyPrint
-            "effectSummon: failed to find enough free positions"
+            "Server: effectSummon: failed to find enough free positions"
        bs <- forM (take power ps) $ \p -> do
          -- Mark as summoned to prevent immediate chain summoning.
          maid <- addAnyActor True [(grp, 1)] (blid tb) afterTime (Just p)
@@ -1087,7 +1087,8 @@ effectTeleport execSfx nDm source target = do
     ]
   case mtpos of
     Nothing -> do  -- really very rare, so debug
-      debugPossiblyPrint "effectTeleport: failed to find any free position"
+      debugPossiblyPrint
+        "Server: effectTeleport: failed to find any free position"
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
       return UseId
     Just tpos ->
