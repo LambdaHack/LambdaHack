@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.ActorState
   , bagAssocs, bagAssocsK
   , posToBigLvl, posToBig, posToBigAssoc, occupiedBigLvl
   , posToProjsLvl, posToProjs, posToProjAssocs, occupiedProjLvl
-  , nearbyFreePoints, calculateTotal, itemPrice, mergeItemQuant, findIid
+  , nearbyWalkablePoints, nearbyFreePoints, calculateTotal, itemPrice
+  , mergeItemQuant, findIid
   , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
@@ -137,16 +138,44 @@ occupiedProjLvl :: Point -> Level -> Bool
 {-# INLINE occupiedProjLvl #-}
 occupiedProjLvl pos lvl = pos `EM.member` lproj lvl
 
+-- Generate a list of all passable points on (connected component of)
+-- the level in the order of path distance from the starting position (BFS).
+-- The starting position needn't be passable and is always included.
+nearbyWalkablePoints :: Point -> LevelId -> State -> [Point]
+nearbyWalkablePoints start lid s =
+  let lvl = sdungeon s EM.! lid
+      COps{corule=RuleContent{rXmax, rYmax}} = scops s
+      passable p = Tile.isEasyOpen (coTileSpeedup $ scops s) (lvl `at` p)
+      passableVic p = filter passable $ vicinityBounded rXmax rYmax p
+      siftSingle :: Point
+                 -> (ES.EnumSet Point, [Point])
+                 -> (ES.EnumSet Point, [Point])
+      siftSingle current (seen, sameDistance) =
+        if current `ES.member` seen
+        then (seen, sameDistance)
+        else (ES.insert current seen, current : sameDistance)
+      siftVicinity :: Point
+                   -> (ES.EnumSet Point, [Point])
+                   -> (ES.EnumSet Point, [Point])
+      siftVicinity current seenAndSameDistance =
+        let vic = passableVic current
+        in foldr siftSingle seenAndSameDistance vic
+      siftNearby :: (ES.EnumSet Point, [Point]) -> [Point]
+      siftNearby (seen, sameDistance) =
+        sameDistance
+        ++ case foldr siftVicinity (seen, []) sameDistance of
+             (_, []) -> []
+             (seen2, sameDistance2) -> siftNearby (seen2, sameDistance2)
+  in siftNearby (ES.singleton start, [start])
+
 nearbyFreePoints :: (ContentId TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
 nearbyFreePoints f start lid s =
   let lvl = sdungeon s EM.! lid
-      COps{corule=RuleContent{rXmax, rYmax}} = scops s
       good p = f (lvl `at` p)
                && Tile.isWalkable (coTileSpeedup $ scops s) (lvl `at` p)
                && null (posToProjsLvl p lvl) && isNothing (posToBigLvl p lvl)
-      ps = nub $ start : concatMap (vicinityBounded rXmax rYmax) ps
-  in filter good ps
+  in filter good $ nearbyWalkablePoints start lid s
 
 -- | Calculate loot's worth for a given faction.
 calculateTotal :: FactionId -> State -> (ItemBag, Int)
