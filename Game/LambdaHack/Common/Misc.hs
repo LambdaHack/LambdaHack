@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , GroupName
   , toGroupName, makePhrase, makeSentence, squashedWWandW
-  , appDataDir, xM, xD, minusM, minusM1, oneM, tenthM
+  , appDataDir, xM, xD, minusM, minusM1, minusM2, oneM, tenthM
   , workaroundOnMainThreadMVar
   ) where
 
@@ -154,9 +154,10 @@ xM k = fromIntegral k * 1000000
 xD :: Double -> Double
 xD k = k * 1000000
 
-minusM, minusM1, oneM, tenthM :: Int64
+minusM, minusM1, minusM2, oneM, tenthM :: Int64
 minusM = xM (-1)
 minusM1 = xM (-1) - 1
+minusM2 = xM (-1) - 2
 oneM = xM 1
 tenthM = 100000
 

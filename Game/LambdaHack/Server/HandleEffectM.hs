@@ -138,9 +138,9 @@ cutCalm target = do
   let upperBound = if hpTooLow tb actorMaxSk
                    then 2  -- to trigger domination on next attack, etc.
                    else xM $ Ability.getSk Ability.SkMaxCalm actorMaxSk
-      deltaCalm = min minusM1 (upperBound - bcalm tb)
-  -- HP loss decreases Calm by at least @minusM1@ to avoid "hears something",
-  -- which is emitted when decreasing Calm by @minusM@.
+      deltaCalm = min minusM2 (upperBound - bcalm tb)
+  -- HP loss decreases Calm by at least @minusM2@ to avoid "hears something",
+  -- which is emitted when decreasing Calm by @minusM1@.
   updateCalm target deltaCalm
 
 -- Here kinetic damage is applied. This is necessary so that the same

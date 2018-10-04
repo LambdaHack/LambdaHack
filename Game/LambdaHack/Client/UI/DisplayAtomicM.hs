@@ -199,7 +199,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     when (bfid body == side) $
       if | calmDelta > 0 ->  -- regeneration or effect
              markDisplayNeeded (blid body)
-         | calmDelta == minusM -> do
+         | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
            let closeFoe !b =  -- mimics isHeardFoe
                          blid b == blid body

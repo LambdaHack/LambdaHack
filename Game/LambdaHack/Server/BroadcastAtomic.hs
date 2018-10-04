@@ -91,8 +91,8 @@ handleAndBroadcast ps atomicBroken atomic = do
                     sendUpdate fid $ UpdHearFid fid
                                    $ HearUpd (not $ null aids) cmd
                     mapM_ (\aid -> execUpdAtomic
-                                   $ UpdRefillCalm aid (xM $ -2)) aids
-                      -- -2 to avoid "you hear something"
+                                   $ UpdRefillCalm aid minusM) aids
+                      -- @minusM@ to avoid "you hear something"
               SfxAtomic cmd -> do
                 mhear <- hearSfxAtomic as cmd
                 case mhear of
@@ -100,8 +100,8 @@ handleAndBroadcast ps atomicBroken atomic = do
                   Just (hearMsg, aids) -> do
                     sendUpdate fid $ UpdHearFid fid hearMsg
                     mapM_ (\aid -> execUpdAtomic
-                                   $ UpdRefillCalm aid (xM $ -2)) aids
-                      -- -2 to avoid "you hear something"
+                                   $ UpdRefillCalm aid minusM) aids
+                      -- @minusM@ to avoid "you hear something"
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome

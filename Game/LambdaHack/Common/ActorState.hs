@@ -334,7 +334,7 @@ regenCalmDelta aid body s =
            && not (waitedLastTurn b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
   in if any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body
-     then minusM  -- even if all calmness spent, keep informing the client
+     then minusM1  -- even if all calmness spent, keep informing the client
      else min calmIncr (max 0 maxDeltaCalm)  -- in case Calm is over max
 
 actorInAmbient :: Actor -> State -> Bool

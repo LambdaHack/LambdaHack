@@ -97,13 +97,12 @@ data Watchfulness = WWatch | WWait Int | WSleep | WWake
 instance Binary Watchfulness
 
 deltaSerious :: ResDelta -> Bool
-deltaSerious ResDelta{..} =
-  fst resCurrentTurn < 0 && fst resCurrentTurn /= minusM
-  || fst resPreviousTurn < 0 && fst resPreviousTurn /= minusM
+deltaSerious ResDelta{..} = fst resCurrentTurn <= minusM2
+                            || fst resPreviousTurn <= minusM2
 
 deltaMild :: ResDelta -> Bool
-deltaMild ResDelta{..} = fst resCurrentTurn == minusM
-                         || fst resPreviousTurn == minusM
+deltaMild ResDelta{..} = fst resCurrentTurn == minusM1
+                         || fst resPreviousTurn == minusM1
 
 actorCanMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
 actorCanMelee actorMaxSkills aid b =
