@@ -180,7 +180,8 @@ placeItemsInDungeon alliancePositions = do
                 Just pos -> do
                   createLevelItem pos lid
                   placeItems (n + 1)
-                Nothing -> return ()  -- no more space
+                Nothing -> debugPossiblyPrint
+                  "placeItemsInDungeon: failed to find enough free positions"
         placeItems 0
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all

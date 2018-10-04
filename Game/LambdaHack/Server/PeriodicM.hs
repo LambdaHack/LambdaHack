@@ -115,7 +115,9 @@ addAnyActor summoned actorFreq lid time mpos = do
         Just pos ->
           Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
                                  fid pos lid time
-        Nothing -> return Nothing
+        Nothing -> do
+          debugPossiblyPrint "addAnyActor: failed to find any free position"
+          return Nothing
 
 rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> LevelId -> Level -> FactionId -> State
