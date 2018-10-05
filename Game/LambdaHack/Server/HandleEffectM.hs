@@ -353,10 +353,10 @@ effectSem source target iid c recharged periodic effect = do
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
       effectCreateItem (Just $ bfid sb) Nothing target store grp tim
-    IK.DropItem n k store grp -> effectDropItem execSfx n k store grp target
-    IK.PolyItem -> effectPolyItem execSfx source target
-    IK.RerollItem -> effectRerollItem execSfx source target
-    IK.DupItem -> effectDupItem execSfx source target
+    IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
+    IK.PolyItem -> effectPolyItem execSfx iid source target
+    IK.RerollItem -> effectRerollItem execSfx iid source target
+    IK.DupItem -> effectDupItem execSfx iid source target
     IK.Identify -> effectIdentify execSfx iid source target
     IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
@@ -365,8 +365,8 @@ effectSem source target iid c recharged periodic effect = do
       effectSendFlying execSfx tmod source target c (Just True)
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target c (Just False)
-    IK.DropBestWeapon -> effectDropBestWeapon execSfx target
-    IK.ActivateInv symbol -> effectActivateInv execSfx source target symbol
+    IK.DropBestWeapon -> effectDropBestWeapon execSfx iid target
+    IK.ActivateInv symbol -> effectActivateInv execSfx iid source target symbol
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
@@ -1218,12 +1218,15 @@ effectCreateItem jfidRaw mcount target store grp tim = do
 -- ** DropItem
 
 -- | Make the target actor drop items in a store from the given group.
+-- The item itself is immune (any copies).
 effectDropItem :: MonadServerAtomic m
-               => m () -> Int -> Int -> CStore -> GroupName ItemKind -> ActorId
+               => m () -> ItemId -> Int -> Int -> CStore
+               -> GroupName ItemKind -> ActorId
                -> m UseResult
-effectDropItem execSfx ngroup kcopy store grp target = do
+effectDropItem execSfx iidId ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
-  is <- allGroupItems store grp target
+  isRaw <- allGroupItems store grp target
+  let is = filter ((/= iidId) . fst) isRaw
   if bproj tb || null is
   then return UseDud
   else do
@@ -1274,13 +1277,14 @@ pickDroppable aid b = do
 
 -- ** PolyItem
 
+-- Can't apply to the item itself (any copies).
 effectPolyItem :: MonadServerAtomic m
-               => m () -> ActorId -> ActorId -> m UseResult
-effectPolyItem execSfx source target = do
+               => m () -> ItemId -> ActorId -> ActorId -> m UseResult
+effectPolyItem execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
   kitAss <- getsState $ kitAssocs target [cstore]
-  case kitAss of
+  case filter ((/= iidId) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeNothing
       return UseId
@@ -1310,14 +1314,15 @@ effectPolyItem execSfx source target = do
 
 -- ** RerollItem
 
+-- Can't apply to the item itself (any copies).
 effectRerollItem :: MonadServerAtomic m
-                 => m () -> ActorId -> ActorId -> m UseResult
-effectRerollItem execSfx source target = do
+                 => m () -> ItemId -> ActorId -> ActorId -> m UseResult
+effectRerollItem execSfx iidId source target = do
   COps{coItemSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   let cstore = CGround  -- if ever changed, call @discoverIfMinorEffects@
   kitAss <- getsState $ kitAssocs target [cstore]
-  case kitAss of
+  case filter ((/= iidId) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNothing
       return UseId
@@ -1344,13 +1349,14 @@ effectRerollItem execSfx source target = do
 
 -- ** DupItem
 
+-- Can't apply to the item itself (any copies).
 effectDupItem :: MonadServerAtomic m
-              => m () -> ActorId -> ActorId -> m UseResult
-effectDupItem execSfx source target = do
+              => m () -> ItemId -> ActorId -> ActorId -> m UseResult
+effectDupItem execSfx iidId source target = do
   sb <- getsState $ getActorBody source
   let cstore = CGround
   kitAss <- getsState $ kitAssocs target [cstore]
-  case kitAss of
+  case filter ((/= iidId) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupNothing
       return UseId
@@ -1590,13 +1596,16 @@ sendFlyingVector source target modePush = do
 -- ** DropBestWeapon
 
 -- | Make the target actor drop his best weapon (stack).
-effectDropBestWeapon :: MonadServerAtomic m => m () -> ActorId -> m UseResult
-effectDropBestWeapon execSfx target = do
+-- The item itself is immune (any copies).
+effectDropBestWeapon :: MonadServerAtomic m
+                     => m () -> ItemId -> ActorId -> m UseResult
+effectDropBestWeapon execSfx iidId target = do
   tb <- getsState $ getActorBody target
   if bproj tb then return UseDud else do
     localTime <- getsState $ getLocalTime (blid tb)
     kitAssRaw <- getsState $ kitAssocs target [CEqp]
-    let kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
+    let kitAss = filter (\(iid, (i, _)) -> IA.isMelee (aspectRecordFull i)
+                                           && iid /= iidId) kitAssRaw
     case strongestMelee Nothing localTime kitAss of
       (_, (iid, _)) : _ -> do
         execSfx
@@ -1612,28 +1621,29 @@ effectDropBestWeapon execSfx target = do
 -- in the target actor's equipment (there's no variant that activates
 -- a random one, to avoid the incentive for carrying garbage).
 -- Only one item of each stack is activated (and possibly consumed).
+-- Won't activate the item itself (any copies).
 effectActivateInv :: MonadServerAtomic m
-                  => m () -> ActorId -> ActorId -> Char -> m UseResult
-effectActivateInv execSfx source target symbol = do
+                  => m () -> ItemId -> ActorId -> ActorId -> Char -> m UseResult
+effectActivateInv execSfx iidId source target symbol = do
   let c = CActor target CInv
-  effectTransformContainer execSfx symbol c $ \iid _ ->
+  effectTransformContainer execSfx iidId symbol c $ \iid _ ->
     -- We don't know if it's voluntary, so we conservatively assume it is
     -- and we blame @source@.
     kineticEffectAndDestroy True source target target iid c
 
 effectTransformContainer :: forall m. MonadServerAtomic m
-                         => m () -> Char -> Container
+                         => m () -> ItemId -> Char -> Container
                          -> (ItemId -> ItemQuant -> m ())
                          -> m UseResult
-effectTransformContainer execSfx symbol c m = do
+effectTransformContainer execSfx iidId symbol c m = do
   getKind <- getsState $ flip getIidKindServer
   let hasSymbol (iid, _kit) = do
         let jsymbol = IK.isymbol $ getKind iid
         return $! jsymbol == symbol
   assocsCStore <- getsState $ EM.assocs . getContainerBag c
-  is <- if symbol == ' '
-        then return assocsCStore
-        else filterM hasSymbol assocsCStore
+  is <- filter ((/= iidId) . fst) <$> if symbol == ' '
+                                      then return assocsCStore
+                                      else filterM hasSymbol assocsCStore
   if null is
   then return UseDud
   else do
