@@ -168,7 +168,7 @@ getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  if | source == target -> return $! AndPath [] target 0  -- speedup
+  if | source == target -> return $! AndPath (bpos b) [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
@@ -187,7 +187,8 @@ createPath aid tapTgt = do
           [g] | g == pathGoal -> TgtAndPath{..}
           newGoal : _ ->
             let newTgt = TPoint TBlock (blid b) newGoal
-                newPath = AndPath{ pathList = walkable ++ [newGoal]
+                newPath = AndPath{ pathSource = bpos b
+                                 , pathList = walkable ++ [newGoal]
                                  , pathGoal = newGoal
                                  , pathLen = length walkable + 1 }
             in TgtAndPath{tapTgt = newTgt, tapPath = newPath}
