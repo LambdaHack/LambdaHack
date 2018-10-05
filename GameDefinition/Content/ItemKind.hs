@@ -562,7 +562,7 @@ potion2 = potionTemplate
   , iaspects = [ SetFlag Unique, ELabel "of Attraction"
                , SetFlag Lobable, SetFlag Fragile  -- identified
                , toVelocity 50 ]
-  , ieffects = [ Impress, RefillCalm (-20)
+  , ieffects = [ Dominate
                , OnSmash (Explode "pheromone") ]
   -- , idesc    = ""
   }
