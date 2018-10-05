@@ -757,7 +757,7 @@ effectSummon grp nDm iid source target periodic = do
        unless (bproj sb) $
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyOwn source
        return UseId
-     | EM.size lbig >= 80 -> do  -- lower than 100 limit for spawning
+     | EM.size lbig >= 200 -> do  -- lower than the 300 limit for spawning
        -- Even if the actor summons foes, he is prevented from exploiting it
        -- too many times and stopping natural monster spawning on the level
        -- (e.g., by filling the level with harmless foes).

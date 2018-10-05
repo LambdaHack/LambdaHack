@@ -59,8 +59,9 @@ spawnMonster = do
   Level{lkind, ldepth, lbig} <- getLevel arena
   let ck = okind cocave lkind
   if | CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck) -> return ()
-     | EM.size lbig >= 100 ->  -- probably not so rare, but debug anyway
+     | EM.size lbig >= 300 ->  -- probably not so rare, but debug anyway
        -- Gameplay consideration: not fun to slog through so many actors.
+       -- Caves rarely start with more than 100.
        debugPossiblyPrint "Server: spawnMonster: too many big actors on level"
      | otherwise -> do
        totalDepth <- getsState stotalDepth
