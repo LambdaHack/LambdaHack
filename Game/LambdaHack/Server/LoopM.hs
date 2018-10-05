@@ -295,15 +295,20 @@ endClip updatePerFid = do
 -- | Check if the given actor is dominated and update his calm.
 manageCalmAndDomination :: MonadServerAtomic m => ActorId -> Actor -> m ()
 manageCalmAndDomination aid b = do
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  hiImpression <- highestImpression aid
-  dominated <-
-    if bcalm b == 0
-       && fleaderMode (gplayer fact) /= LeaderNull
-            -- animals/robots/human drones never Calm-dominated
-    then maybe (return False) (dominateFidSfx aid) hiImpression
-    else return False
-  unless dominated $ do
+  performedDomination <-
+    if bcalm b > 0 then return False else do  -- triggered by zeroed Calm
+      hiImpression <- highestImpression b
+      case hiImpression of
+        Nothing -> return False
+        Just (hiImpressionFid, hiImpressionK) -> do
+          fact <- getsState $ (EM.! bfid b) . sfactionD
+          if fleaderMode (gplayer fact) /= LeaderNull
+               -- animals/robots/human drones never Calm-dominated
+             || hiImpressionK >= 10
+               -- unless very high impression, e.g., in a dominated hero
+          then dominateFidSfx aid hiImpressionFid
+          else return False
+  unless performedDomination $ do
     newCalmDelta <- getsState $ regenCalmDelta aid b
     unless (newCalmDelta == 0) $
       -- Update delta for the current player turn.

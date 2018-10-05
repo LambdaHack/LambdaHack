@@ -73,8 +73,9 @@ effectToBenefit cops fact insideRecharging eff =
     IK.RefillCalm p -> delta $ if p > 0
                                then min 50 (fromIntegral p)
                                else max (-50) (fromIntegral p)
-    IK.Dominate -> (0, -300)  -- I obtained an actor with, say 10HP,
-                              -- worth 200, and enemy lost him, another 100
+    IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
+                              -- worth 200, and enemy lost him, another 100;
+                              -- divided by 3, because impression needed first
     IK.Impress -> (0, -20)
     IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
     IK.Yell -> (-5, -10)  -- usually uncontrollably wakes up enemies, so bad

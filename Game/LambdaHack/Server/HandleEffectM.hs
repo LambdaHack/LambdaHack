@@ -529,6 +529,8 @@ effectRefillCalm execSfx power0 source target = do
 
 -- ** Dominate
 
+-- The is another way to trigger domination (the normal way is by zeroed Calm).
+-- Calm is here irrelevant. The other conditions are the same.
 effectDominate :: MonadServerAtomic m => ActorId -> ActorId -> m UseResult
 effectDominate source target = do
   sb <- getsState $ getActorBody source
@@ -537,23 +539,25 @@ effectDominate source target = do
      | bfid tb == bfid sb -> return UseDud  -- accidental hit; ignore
      | otherwise -> do
        fact <- getsState $ (EM.! bfid tb) . sfactionD
-       hiImpression <- highestImpression target
-       permitted <-
-         if fleaderMode (gplayer fact) == LeaderNull
-            -- To tame/hack animal/robot, you need to impress them first.
-            && hiImpression /= Just (bfid sb)
-         then do
-           execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxUnimpressed target
-           return False
-         else return True
+       hiImpression <- highestImpression tb
+       let permitted = case hiImpression of
+             Nothing -> False  -- no impression, no domination
+             Just (hiImpressionFid, hiImpressionK) ->
+                hiImpressionFid == bfid sb
+                  -- highest impression needs to be by us
+                && (fleaderMode (gplayer fact) /= LeaderNull
+                    || hiImpressionK >= 10)
+                     -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
          b <- dominateFidSfx target (bfid sb)
          return $! if b then UseUp else UseDud
-       else return UseDud
+       else do
+         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxUnimpressed target
+         return UseDud
 
-highestImpression :: MonadServerAtomic m => ActorId -> m (Maybe FactionId)
-highestImpression target = do
-  tb <- getsState $ getActorBody target
+highestImpression :: MonadServerAtomic m
+                  => Actor -> m (Maybe (FactionId, Int))
+highestImpression tb = do
   getKind <- getsState $ flip getIidKindServer
   getItem <- getsState $ flip getItemBody
   let isImpression iid =
@@ -565,7 +569,8 @@ highestImpression target = do
   then return Nothing
   else case jfid $ getItem $ fst maxImpression of
     Nothing -> return Nothing
-    Just fid -> assert (fid /= bfid tb) $ return $ Just fid
+    Just fid -> assert (fid /= bfid tb)
+                $ return $ Just (fid, fst $ snd maxImpression)
 
 dominateFidSfx :: MonadServerAtomic m => ActorId -> FactionId -> m Bool
 dominateFidSfx target fid = do
