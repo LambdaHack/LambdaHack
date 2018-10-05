@@ -1,7 +1,7 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Common.Area
   ( Area, toArea, fromArea, spanArea, trivialArea, isTrivialArea
-  , inside, shrink, expand, middlePoint, sumAreas
+  , inside, shrink, expand, middlePoint, areaInnerBorder, sumAreas
   ) where
 
 import Prelude ()
@@ -51,6 +51,13 @@ expand (Area x0 y0 x1 y1) = Area (x0 - 1) (y0 - 1) (x1 + 1) (y1 + 1)
 middlePoint :: Area -> Point
 middlePoint (Area x0 y0 x1 y1) = Point (x0 + (x1 - x0) `div` 2)
                                        (y0 + (y1 - y0) `div` 2)
+
+areaInnerBorder :: Area -> [Point]
+areaInnerBorder (Area x0 y0 x1 y1) =
+  [ Point x y
+  | x <- [x0, x1], y <- [y0..y1] ]
+  ++ [ Point x y
+     | x <- [x0+1..x1-1], y <- [y0, y1] ]
 
 -- We assume the areas are adjacent.
 sumAreas :: Area -> Area -> Area

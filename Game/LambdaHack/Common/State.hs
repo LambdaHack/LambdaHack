@@ -159,7 +159,7 @@ unknownLevel COps{corule, cotile}
            , lembed = EM.empty
            , lbig = EM.empty
            , lproj = EM.empty
-           , ltile = unknownTileMap outerId (rXmax corule) (rYmax corule)
+           , ltile = unknownTileMap larea outerId (rXmax corule) (rYmax corule)
            , lentry = EM.empty
            , larea
            , lsmell = EM.empty
@@ -171,14 +171,10 @@ unknownLevel COps{corule, cotile}
            , lnight
            }
 
-unknownTileMap :: ContentId TileKind -> X -> Y -> TileMap
-unknownTileMap outerId rXmax rYmax =
+unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap
+unknownTileMap larea outerId rXmax rYmax =
   let unknownMap = PointArray.replicateA rXmax rYmax unknownId
-      borders = [ Point x y
-                | x <- [0, rXmax - 1], y <- [1..rYmax - 2] ]
-                ++ [ Point x y
-                   | x <- [0..rXmax - 1], y <- [0, rYmax - 1] ]
-      outerUpdate = zip borders $ repeat outerId
+      outerUpdate = zip (areaInnerBorder larea) $ repeat outerId
   in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
