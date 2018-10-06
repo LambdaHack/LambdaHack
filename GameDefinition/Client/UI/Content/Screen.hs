@@ -9,7 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Language.Haskell.TH.Syntax
-import System.IO (readFile)
+import System.IO
 
 import Game.LambdaHack.Client.UI.Content.Screen
 
@@ -20,6 +20,7 @@ standardLayoutAndFeatures = ScreenContent
   , rheight = 24
   -- ASCII art for the main menu. Only pure 7-bit ASCII characters are allowed,
   -- except for character 183 ('·'), which is rendered as very tiny middle dot.
+  -- The encoding should be utf-8-unix.
   -- When displayed in the main menu screen, the picture is overwritten
   -- with game and engine version strings and keybindings.
   -- The keybindings overwrite places marked with left curly brace signs.
@@ -30,12 +31,18 @@ standardLayoutAndFeatures = ScreenContent
   , rmainMenuArt = $(do
       let path = "GameDefinition/MainMenu.ascii"
       qAddDependentFile path
-      x <- qRunIO (readFile path)
+      x <- qRunIO $ do
+        handle <- openFile path ReadMode
+        hSetEncoding handle utf8
+        hGetContents handle
       lift x)
   , rintroScreen = $(do
       let path = "GameDefinition/PLAYING.md"
       qAddDependentFile path
-      x <- qRunIO (readFile path)
+      x <- qRunIO $ do
+        handle <- openFile path ReadMode
+        hSetEncoding handle utf8
+        hGetContents handle
       let paragraphs :: [String] -> [String] -> [[String]]
           paragraphs [] rows = [reverse rows]
           paragraphs (l : ls) rows = if null l
