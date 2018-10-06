@@ -111,7 +111,7 @@ displayTaunt voluntary rndToAction aid = do
                           : (3, ("somebody", "bellow"))
                           : braceUneasy
             | canHear -> (5, ("somebody", "bellow"))
-                         : (3, ("something", "howl"))
+                         : (3, ("something", "hiss"))
                          : braceUneasy
             | canBrace -> braceUneasy
             | otherwise -> [(1, ("something", "drone enquiringly"))]
