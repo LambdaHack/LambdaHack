@@ -103,6 +103,7 @@ matrix:
       os: osx
 
 before_install:
+  - sudo apt-get update
   - HC=${CC}
   - HCPKG=${HC/ghc/ghc-pkg}
   - unset CC
@@ -191,7 +192,7 @@ script:
 
   - touch /tmp/teletypetest.log;
   - (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
-  - (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
+  - (travis_wait 40 make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
 
 
 # REGENDATA ["--no-no-tests-no-bench","--osx=8.4.3","cabal.project","-o","foo"]
