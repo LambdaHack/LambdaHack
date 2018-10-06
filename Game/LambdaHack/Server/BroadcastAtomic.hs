@@ -80,6 +80,7 @@ handleAndBroadcast ps atomicBroken atomic = do
           [] -> do  -- hear only here; broken commands are never loud
             -- At most @minusM@ applied total to avoid
             -- "you hear something" or even distress as if wounded.
+            -- This may accumulate to eventually wake up sleeping actors.
             let f aid = do
                   b <- getsState $ getActorBody aid
                   when (deltaNotNegative $ bcalmDelta b) $

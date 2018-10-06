@@ -876,6 +876,7 @@ displaceBlocker aid retry = do
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal && not retry ->
         return reject  -- not a real blocker but goal, possibly enemy to melee
+                       -- or followed leader
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target
         displaceTgt aid q retry
@@ -916,7 +917,7 @@ displaceTgt source tpos retry = do
                  -- step aside himself
               return $! returN "displace friend" $ ReqDisplace aid2
           Just _ | bwatch b2 `notElem` [WSleep, WWake] -> return reject
-          _ -> do  -- an enemy or ally or disoriented friend --- swap
+          _ -> do  -- an enemy or ally or dozing or disoriented friend --- swap
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk

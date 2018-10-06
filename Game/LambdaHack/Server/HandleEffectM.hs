@@ -700,7 +700,8 @@ effectPutToSleep execSfx target = do
 -- ** Yell
 
 -- This is similar to 'reqYell', but also mentions that the actor is startled,
--- because, presumably, he yells involuntarily and also wakes him up via Calm.
+-- because, presumably, he yells involuntarily. It doesn't wake him up
+-- via Calm instantly, just like yelling in a dream not always does.
 effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectYell execSfx target = do
   tb <- getsState $ getActorBody target
