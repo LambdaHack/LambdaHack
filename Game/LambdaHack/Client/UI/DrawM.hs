@@ -467,9 +467,11 @@ drawFrameStatus drawnLevelId = do
       statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
                                              - selectedStatusWidth
                                              - length damageStatus)
+      nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
       fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
                  then "This faction never picks a leader"
-                 else "Waiting for a team member to spawn"
+                 else makePhrase
+                        ["Waiting for", nMember, "team member to spawn"]
       leaderName = maybe fallback (\body ->
         "Leader:" <+> trimTgtDesc widthTgtOrItem (bname body)) mbodyUI
       tgtBlurb = maybe leaderName (\t ->
