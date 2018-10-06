@@ -184,11 +184,11 @@ updDestroyActor aid body ais = do
         (let l2 = delete aid l
          in if null l2 then Nothing else Just l2)
   let h Nothing = error $ "actor already removed" `showFailure` (aid, body)
-      h (Just aid2) =
+      h (Just _aid2) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
         -- Not so much expensive, as doubly impossible.
-        assert (aid == aid2 `blame` "actor already removed"
-                            `swith` (aid, body, aid2))
+        assert (aid == _aid2 `blame` "actor already removed"
+                             `swith` (aid, body, _aid2))
 #endif
         Nothing
   updateLevel (blid body) $ if bproj body

@@ -85,10 +85,10 @@ moveActorMap :: MonadStateWrite m => ActorId -> Actor -> Actor -> m ()
 moveActorMap aid body newBody = do
   let rmBig Nothing = error $ "actor already removed"
                               `showFailure` (aid, body)
-      rmBig (Just aid2) =
+      rmBig (Just _aid2) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (aid == aid2 `blame` "actor already removed"
-                            `swith` (aid, body, aid2))
+        assert (aid == _aid2 `blame` "actor already removed"
+                             `swith` (aid, body, _aid2))
 #endif
         Nothing
       addBig Nothing = Just aid
@@ -119,10 +119,10 @@ swapActorMap source sbody target tbody = do
   let addBig aid1 aid2 Nothing =
         error $ "actor already removed"
                 `showFailure` (aid1, aid2, source, sbody, target, tbody)
-      addBig aid1 aid2 (Just aid) =
+      addBig _aid1 aid2 (Just _aid) =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (aid == aid1 `blame` "wrong actor present"
-                            `swith` (aid, aid1, aid2, sbody, tbody))
+        assert (_aid == _aid1 `blame` "wrong actor present"
+                              `swith` (_aid, _aid1, aid2, sbody, tbody))
 #endif
         (Just aid2)
       updBig = EM.alter (addBig source target) (bpos sbody)
