@@ -297,7 +297,13 @@ closestSmell aid = do
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ts
 
 data FleeViaStairsOrEscape =
-  ViaStairs | ViaStairsUp | ViaStairsDown | ViaEscape | ViaNothing | ViaAnything
+    ViaStairs
+  | ViaStairsUp
+  | ViaStairsDown
+  | ViaEscape
+  | ViaExit  -- can change whenever @sexplored@ changes
+  | ViaNothing
+  | ViaAnything
   deriving (Show, Eq)
 
 embedBenefit :: MonadClientRead m
@@ -334,9 +340,10 @@ embedBenefit fleeVia aid pbags = do
       bens (_, bag) = case find IK.isEffEscapeOrAscend $ feats bag of
         Just IK.Escape{} ->
           -- Escape (or guard) only after exploring, for high score, etc.
-          let escapeOrGuard = fcanEscape (gplayer fact)
-                              || fleeVia == ViaAnything  -- targeting to guard
-          in if fleeVia `elem` [ViaEscape, ViaAnything]
+          let escapeOrGuard =
+                fcanEscape (gplayer fact)
+                || fleeVia `elem` [ViaAnything, ViaExit]  -- targeting to guard
+          in if fleeVia `elem` [ViaAnything, ViaEscape, ViaExit]
                 && escapeOrGuard
                 && allExplored
              then 10
@@ -357,6 +364,7 @@ embedBenefit fleeVia aid pbags = do
             ViaStairsUp | up -> 1
             ViaStairsDown | not up -> 1
             ViaStairs -> v
+            ViaExit -> v
             ViaAnything -> v
             _ -> 0  -- don't ascend prematurely
         _ ->
@@ -401,7 +409,7 @@ closestTriggers fleeVia aid = do
   let vicTrigger (cid, (p0, bag)) =
         map (\p -> (cid, (p, (p0, bag)))) $ vicinityBounded rXmax rYmax p0
       vicAll = concatMap vicTrigger efeat
-  return $  -- keep lazy
+  return $!
     let mix (benefit, ppbag) dist =
           let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
               v = (fromIntegral maxd * 10) / (fromIntegral dist + 1)

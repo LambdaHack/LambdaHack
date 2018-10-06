@@ -137,7 +137,6 @@ computeTarget aid = do
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
-  dungeon <- getsState sdungeon
   let canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
                 || Ability.getSk Ability.SkDisplace actorMaxSk > 0
                 -- Needed for now, because AI targets and shoots enemies
@@ -252,9 +251,8 @@ computeTarget aid = do
             let citems = toFreq "closestItems"
                          $ filter desirableFloor citemsRaw
             if nullFreq citems then do
-              -- This is mostly lazy and referred to a few times below.
               ctriggersRaw <- closestTriggers ViaAnything aid
-              let ctriggers = toFreq "closestTriggers" ctriggersRaw
+              let ctriggers = toFreq "ctriggers" ctriggersRaw
               if nullFreq ctriggers then do
                 -- Tracking enemies is more important than exploring, but smell
                 -- is unreliable and may lead to allies, not foes, so avoid it.
@@ -296,26 +294,19 @@ computeTarget aid = do
                           when canMove $
                             modifyClient $ \cli -> cli {sexplored =
                               ES.insert (blid b) (sexplored cli)}
-                          explored <- getsClient sexplored
-                          let allExplored =
-                                ES.size explored == EM.size dungeon
-                          if allExplored || nullFreq ctriggers then do
-                            -- All stones turned, time to win or die.
+                          ctriggersRaw2 <- closestTriggers ViaExit aid
+                          let ctriggers2 = toFreq "ctriggers2" ctriggersRaw2
+                          if nullFreq ctriggers2 then do
                             afoes <- closestFoes allFoes aid
                             case afoes of
                               (_, (aid2, _)) : _ ->
+                                -- All stones turned, time to win or die.
                                 setPath $ TEnemy aid2 False
-                              [] ->
-                                if nullFreq ctriggers then do
-                                  furthest <- furthestKnown aid
-                                  setPath $ TPoint TKnown (blid b) furthest
-                                else do
-                                  (p, (p0, bag)) <-
-                                    rndToAction $ frequency ctriggers
-                                  setPath $ TPoint (TEmbed bag p0) (blid b) p
+                              [] -> do
+                                furthest <- furthestKnown aid
+                                setPath $ TPoint TKnown (blid b) furthest
                           else do
-                            (p, (p0, bag)) <-
-                              rndToAction $ frequency ctriggers
+                            (p, (p0, bag)) <- rndToAction $ frequency ctriggers2
                             setPath $ TPoint (TEmbed bag p0) (blid b) p
                         Just p -> setPath $ TPoint TUnknown (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
