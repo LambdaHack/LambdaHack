@@ -15,9 +15,9 @@ import Game.LambdaHack.Content.ModeKind
 
 content :: [ModeKind]
 content =
-  [raid, brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+  [raid, brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
 
-raid,    brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
+raid,    brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
@@ -185,13 +185,22 @@ battle = ModeKind
   , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
   }
 
+battleDefense = ModeKind
+  { msymbol = 'f'
+  , mname   = "battle defense"
+  , mfreq   = [("battle defense", 1)]
+  , mroster = rosterBattleDefense
+  , mcaves  = cavesBattle
+  , mdesc   = "Odds are stacked for those that breathe mathematics."
+  }
+
 battleSurvival = ModeKind
   { msymbol = 'i'
   , mname   = "battle survival"
   , mfreq   = [("battle survival", 1)]
   , mroster = rosterBattleSurvival
   , mcaves  = cavesBattle
-  , mdesc   = "Odds are stacked for those that breathe mathematics."
+  , mdesc   = "Odds are stacked for those that ally with the strongest."
   }
 
 defense = ModeKind  -- perhaps a real scenario in the future
@@ -276,7 +285,7 @@ screensaverSafari = safari
               screensave (AutoLeader False True) rosterSafari
   }
 
-rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
+rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
@@ -459,6 +468,19 @@ rosterBattle = Roster
   , rosterEnemy = [ ("Explorer", "Monster Hive")
                   , ("Explorer", "Animal Kingdom") ]
   , rosterAlly = [("Monster Hive", "Animal Kingdom")] }
+
+rosterBattleDefense = rosterBattle
+  { rosterList = [ ( playerHero { fcanEscape = False
+                                , fhiCondPoly = hiDweller
+                                , fleaderMode =
+                                    LeaderAI $ AutoLeader False False
+                                , fhasUI = False }
+                   , [(-5, 5, "soldier hero")] )
+                 , ( playerMonster { fneverEmpty = True
+                                   , fhasUI = True }
+                   , [(-5, 35, "mobile monster")] )
+                 , ( playerAnimal {fneverEmpty = True}
+                   , [(-5, 30, "mobile animal")] ) ] }
 
 rosterBattleSurvival = rosterBattle
   { rosterList = [ ( playerHero { fcanEscape = False
