@@ -351,7 +351,7 @@ rattleOrgan = armoredSkin
   { iname    = "rattle"
   , ifreq    = [("rattle", 100)]
   , iverbHit = "announce"
-  , iaspects = [ Timeout $ 10 + (1 `d` 2) * 10
+  , iaspects = [ Timeout $ 10 + (1 `d` 2) * 10 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging Yell]
   , idesc    = ""
@@ -360,7 +360,7 @@ insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
-  , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10
+  , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP (-1)), Recharging Yell]
   , idesc    = ""
@@ -393,7 +393,7 @@ speedGland n = armoredSkin
   , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
   , iverbHit = "spit at"
   , iaspects = [ AddSkill SkSpeed $ intToDice n
-               , Timeout $ intToDice $ 100 `div` n
+               , Timeout $ intToDice (100 `div` n) + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP 1), Recharging Yell]
   , idesc    = ""
