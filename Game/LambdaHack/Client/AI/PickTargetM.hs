@@ -225,8 +225,13 @@ computeTarget aid = do
               if slackTactic then
                 -- Best path only followed 7 moves; then straight on. Cheaper.
                 let path7 = take 7 pathList
-                    vtgt | bpos b == pathGoal = tapTgt  -- goal reached
-                         | otherwise = TVector $ towards (bpos b) pathGoal
+                    vOld = towards (bpos b) pathGoal
+                    pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                    walkable = Tile.isWalkable coTileSpeedup $ lvl `at` pNew
+                    vtgt | bpos b == pathGoal  -- goal reached
+                           || not walkable =  -- can't walk; has to act
+                             tapTgt
+                         | otherwise = TVector vOld
                 in TgtAndPath{tapTgt=vtgt, tapPath=AndPath{pathList=path7, ..}}
               else tap
             take7 tap = tap
@@ -284,7 +289,6 @@ computeTarget aid = do
                     if slackTactic && not isStuck
                        && isUnit vOld && bpos b /= pNew
                        && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
-                            -- if initial altering, consider carefully below
                     then vToTgt vOld
                     else do
                       upos <- closestUnknown aid
