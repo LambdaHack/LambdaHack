@@ -408,7 +408,7 @@ scentGland = armoredSkin
   , ifreq    = [("scent gland", 100)]
   , icount   = 2 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
-  , iaspects = [ Timeout $ (1 `d` 3) * 10
+  , iaspects = [ Timeout $ (1 `d` 3) * 10 + 1 `d` 3
                , SetFlag Periodic ]  -- not Durable
   , ieffects = [ Recharging (Temporary "look spent")
                , Recharging (Explode "distressing odor")
@@ -420,7 +420,7 @@ boilingVent = armoredSkin
   , ifreq    = [("boiling vent", 100)]
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "boiling water")
                , Recharging (RefillHP 2) ]
@@ -431,7 +431,7 @@ arsenicVent = armoredSkin
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "sparse shower")
                , Recharging (RefillHP 2) ]
@@ -442,7 +442,7 @@ sulfurVent = armoredSkin
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "dense shower")
                , Recharging (RefillHP 2) ]
