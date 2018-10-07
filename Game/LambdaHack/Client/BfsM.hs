@@ -377,11 +377,11 @@ embedBenefit fleeVia aid pbags = do
                      benApply $ discoBenefit EM.! iid) (EM.keys bag)
                in min 1000 $ sacrificeForExperiment + sumBen
           else 0
-      benFeats = map (\pbag -> (bens pbag, pbag)) pbags
+      -- Only actors with high enough AbAlter can trigger embedded items.
+      f (p, _) = alterSkill >= fromEnum (alterMinSkill p)
+      benFeats = map (\pbag -> (bens pbag, pbag)) $ filter f pbags
       considered (benefitAndSacrifice, (p, _bag)) =
         benefitAndSacrifice > 0
-        -- Only actors with high enough AbAlter can trigger embedded items.
-        && alterSkill >= fromEnum (alterMinSkill p)
         -- For speed and to avoid greedy AI loops, only experiment with few.
         && Tile.consideredByAI coTileSpeedup (lvl `at` p)
   return $! filter considered benFeats
