@@ -336,7 +336,8 @@ flaskTemplate = ItemKind
   , iname    = "flask"
   , ifreq    = [("flask unknown", 1)]
   , iflavour = zipGlassPlain darkCol ++ zipGlassFancy darkCol
-               ++ zipLiquid darkCol ++ zipPlain darkCol ++ zipFancy darkCol
+               ++ zipLiquid darkCol
+                 -- ++ zipPlain darkCol ++ zipFancy darkCol
   , icount   = 1 `dL` 3
   , irarity  = [(1, 7), (10, 3)]
   , iverbHit = "splash"
