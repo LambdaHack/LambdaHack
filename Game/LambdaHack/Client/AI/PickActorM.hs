@@ -131,20 +131,19 @@ pickActorToMove maidToAvoid = do
                   not $ null $ aCanDeLightL `intersect` map snd fleeL
             return $!
               -- This is a part of the condition for @flee@ in @PickActionM@.
-              not condFastThreatAdj
+              not condInMelee
+              && not condFastThreatAdj
               && if | condThreat 1 ->
                         not condCanMelee
                         || condManyThreatAdj && not condSupport1 && not condSolo
-                    | not condInMelee
-                      && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
+                    | condThreat 2 || condThreat 5 && canFleeFromLight ->
                       not condCanMelee
                       || not condSupport3 && not condSolo
                          && not heavilyDistressed
-                    -- not used: | condThreat 5 -> False
+                    -- not used: | condThreat 5 -> ...
                     -- because actor should be picked anyway, to try to melee
                     | otherwise ->
-                      not condInMelee
-                      && heavilyDistressed
+                      heavilyDistressed
                       && not (EM.member aid fleeD)
                       -- Make him a leader even if can't delight, etc.
                       -- because he may instead take off light or otherwise
