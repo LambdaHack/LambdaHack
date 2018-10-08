@@ -73,7 +73,7 @@ newItemKind COps{coitem} uniqueSet itemFreq
             (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
   -- Effective generation depth of actors (not items) increases with spawns.
   -- Up to 10 spawns, no effect. With 20 spawns, depth + 5, and then
-  -- each 10 spawns adds 5 depth.
+  -- each 10 spawns adds 5 depth. Capped by @totalDepth@, to ensure variety.
   let numSpawnedCoeff = max 0 $ lvlSpawned `div` 2 - 5
       -- The first 10 spawns are of the nominal level.
       ldSpawned = min totalDepth $ ldepth + numSpawnedCoeff
@@ -115,7 +115,6 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
         itemFull = ItemFull {..}
     return $ Just ( (itemIdentity, arItem, jfid itemBase)
                   , (itemFull, (itemK, itemTimer)) )
-
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.
