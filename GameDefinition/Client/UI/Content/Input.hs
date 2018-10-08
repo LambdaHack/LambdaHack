@@ -74,12 +74,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("a", addCmdCategory CmdItemMenu $ applyI [TriggerItem
             { tiverb = "apply"
             , tiobject = "consumable"
-            , tisymbols = "!?/" }])
+            , tisymbols = "!,?/" }])
   , ("C-a", addCmdCategory CmdItemMenu
             $ replaceDesc "apply and keep choice" $ applyIK [TriggerItem
               { tiverb = "apply"
               , tiobject = "consumable"
-              , tisymbols = "!?/" }])
+              , tisymbols = "!,?/" }])
   , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
                          "item" False)
   , ("e", moveItemTriple [CGround, CInv, CSha] CEqp

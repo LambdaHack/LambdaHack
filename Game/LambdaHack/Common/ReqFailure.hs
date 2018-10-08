@@ -211,7 +211,7 @@ permittedApply localTime skill calmE
      -- ApplyRead has precedence for the case of embedced items that
      -- can't be applied if they require reading, but can even if actor
      -- completely unskilled (as long as he is able to alter the tile).
-     | IK.isymbol itemKind /= '.' && skill < 2 -> Left ApplyUnskilled
+     | IK.isymbol itemKind /= ',' && skill < 2 -> Left ApplyUnskilled
      | skill < 1 -> Left ApplyUnskilled
      -- We assume if the item has a timeout, all or most of interesting
      -- effects are under Recharging, so no point activating if not recharged.
