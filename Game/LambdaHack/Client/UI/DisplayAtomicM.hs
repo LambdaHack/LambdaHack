@@ -968,6 +968,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let action = case IK.isymbol itemKind of
           '!' -> "imbibe"
+          ',' -> "eat"
           '?' -> "peruse"
           _ -> "use"
     itemAidVerbMU aid action iid (Left $ Just 1) cstore

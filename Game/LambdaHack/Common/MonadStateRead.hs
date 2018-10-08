@@ -88,7 +88,7 @@ displayTaunt :: MonadStateRead m
 displayTaunt voluntary rndToAction aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let canApply = Ability.getSk Ability.SkApply actorMaxSk > 1
+  let canApply = Ability.getSk Ability.SkApply actorMaxSk > 2
                  && canHear
         -- if applies complex items, probably intelligent and can speak
       canHear = Ability.getSk Ability.SkHearing actorMaxSk > 0
