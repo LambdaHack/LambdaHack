@@ -91,7 +91,8 @@ addAnyActor summoned actorFreq lid time mpos = do
   lvl <- getLevel lid
   factionD <- getsState sfactionD
   lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
-  m2 <- rollItem lvlSpawned lid actorFreq
+  freq <- prepareItemKind lvlSpawned lid actorFreq
+  m2 <- rollItemAspect freq lid
   case m2 of
     Nothing -> do
       debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"

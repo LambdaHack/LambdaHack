@@ -1,6 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( registerItem, embedItem, rollItemAspect, rollItem, rollAndRegisterItem
+  ( registerItem, embedItem, prepareItemKind, rollItemAspect
+  , rollAndRegisterItem
   , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -121,20 +122,14 @@ rollItemAspect freq lid = do
       return $ Just (itemKnown, ifk)
     Nothing -> return Nothing
 
-rollItem :: MonadServerAtomic m
-         => Int -> LevelId -> Freqs ItemKind
-         -> m (Maybe (ItemKnown, ItemFullKit))
-rollItem lvlSpawned lid itemFreq = do
-  freq <- prepareItemKind lvlSpawned lid itemFreq
-  rollItemAspect freq lid
-
 rollAndRegisterItem :: MonadServerAtomic m
                     => LevelId -> Freqs ItemKind -> Container -> Bool
                     -> Maybe Int
                     -> m (Maybe (ItemId, ItemFullKit))
 rollAndRegisterItem lid itemFreq container verbose mk = do
   -- Power depth of new items unaffected by number of spawned actors.
-  m2 <- rollItem 0 lid itemFreq
+  freq <- prepareItemKind 0 lid itemFreq
+  m2 <- rollItemAspect freq lid
   case m2 of
     Nothing -> return Nothing
     Just (itemKnown, (itemFull, kit)) -> do
