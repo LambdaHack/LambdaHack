@@ -525,8 +525,7 @@ potion1 = potionTemplate
   , icount   = 3 `dL` 1  -- very useful, despite appearances
   , iaspects = ELabel "of rose water"
                : iaspects potionTemplate
-  , ieffects = [ Impress, RefillCalm (-5)
-               , toOrganGood "rose-smelling" (80 + 1 `d` 20)
+  , ieffects = [ Impress, toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potionTemplate
@@ -537,7 +536,9 @@ potion2 = potionTemplate
                , SetFlag Lobable, SetFlag Fragile  -- identified
                , toVelocity 50 ]
   , ieffects = [ Dominate
-               , OnSmash (Explode "pheromone") ]
+               , toOrganGood "hasted" (20 + 1 `d` 5)
+               , OnSmash (Explode "pheromone")
+               , OnSmash (Explode "haste spray") ]
   -- , idesc    = ""
   }
 potion3 = potionTemplate
@@ -572,13 +573,14 @@ potion6 = potionTemplate
   , icount   = 3 `dL` 1
   , irarity  = [(10, 8)]
   , ieffects = [ Impress
-               , OneOf [ RefillCalm (-60)
-                       , RefillHP 20, RefillHP 10, Burn 10
+               , OneOf [ RefillHP 20, RefillHP 10, Burn 10
                        , DropItem 1 maxBound COrgan "poisoned"
-                       , toOrganGood "hasted" (20 + 1 `d` 5) ]
+                       , toOrganGood "hasted" (20 + 1 `d` 5)
+                       , toOrganBad "impatient" (10 + 1 `d` 5) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "wounding mist"
                                 , Explode "distressing odor"
+                                , Explode "impatient mist"
                                 , Explode "haste spray"
                                 , Explode "slowness mist"
                                 , Explode "fragrance"
@@ -600,9 +602,10 @@ potion9 = potionTemplate
   , iaspects = [ SetFlag Unique, ELabel "of Love"
                , SetFlag Lobable, SetFlag Fragile  -- identified
                , toVelocity 50 ]
-  , ieffects = [ RefillHP 60, Impress, RefillCalm (-60)
+  , ieffects = [ RefillHP 60, RefillCalm (-60)
+               , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash (Explode "healing mist 2")
-               , OnSmash (Explode "pheromone") ]
+               , OnSmash (Explode "distressing odor") ]
   -- , idesc    = ""
   }
 potion11 = potionTemplate
@@ -842,7 +845,7 @@ scroll5 = scrollTemplate
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
-                       , Detect DetectAll 40, RefillCalm (-100)
+                       , Detect DetectAll 40
                        , CreateItem CGround "common item" timerNone ] ]
   }
 scroll6 = scrollTemplate
