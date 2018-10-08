@@ -780,7 +780,8 @@ effectSummon grp nDm iid source target periodic = do
             "Server: effectSummon: failed to find enough free positions"
        bs <- forM (take power ps) $ \p -> do
          -- Mark as summoned to prevent immediate chain summoning.
-         maid <- addAnyActor True [(grp, 1)] (blid tb) afterTime (Just p)
+         -- Summon from current depth, not deeper due to many spawns already.
+         maid <- addAnyActor True 0 [(grp, 1)] (blid tb) afterTime (Just p)
          case maid of
            Nothing -> return False  -- suspect content; server debug elsewhere
            Just aid -> do

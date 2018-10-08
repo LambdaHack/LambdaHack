@@ -73,7 +73,8 @@ spawnMonster = do
            ser {snumSpawned = EM.insert arena (lvlSpawned + 1)
                               $ snumSpawned ser}
          localTime <- getsState $ getLocalTime arena
-         maid <- addAnyActor False (CK.cactorFreq ck) arena localTime Nothing
+         maid <- addAnyActor False lvlSpawned (CK.cactorFreq ck) arena
+                             localTime Nothing
          case maid of
            Nothing -> return ()  -- suspect content; server debug elsewhere
            Just aid -> do
@@ -82,15 +83,14 @@ spawnMonster = do
              when (isNothing mleader) $ supplantLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
-            => Bool -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
+            => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
             -> m (Maybe ActorId)
-addAnyActor summoned actorFreq lid time mpos = do
+addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   -- We bootstrap the actor by first creating the trunk of the actor's body
   -- that contains the fixed properties of all actors of that kind.
   cops <- getsState scops
   lvl <- getLevel lid
   factionD <- getsState sfactionD
-  lvlSpawned <- getsServer $ fromMaybe 0 . EM.lookup lid . snumSpawned
   freq <- prepareItemKind lvlSpawned lid actorFreq
   m2 <- rollItemAspect freq lid
   case m2 of
