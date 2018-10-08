@@ -2,6 +2,7 @@
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
+  , condAimEnemyNoMeleeM
   , condAimCrucialM
   , condTgtNonmovingM
   , condAnyFoeAdjM
@@ -71,6 +72,17 @@ condAimEnemyRememberedM aid = do
   return $ case btarget of
     Just (TPoint (TEnemyPos _ permit) lid _) -> lid == blid b && not permit
     _ -> False
+
+-- | Require that the target enemy is visible by the party and doesn't melee.
+condAimEnemyNoMeleeM :: MonadClient m => ActorId -> m Bool
+condAimEnemyNoMeleeM aid = do
+  btarget <- getsClient $ getTarget aid
+  case btarget of
+    Just (TEnemy aid2 permit) -> do
+      b2 <- getsState $ getActorBody aid2
+      actorMaxSkills <- getsState sactorMaxSkills
+      return $ not permit && actorCanMelee actorMaxSkills aid2 b2
+    _ -> return False
 
 -- | Require that the target is crucial to success, e.g., an item.
 condAimCrucialM :: MonadClient m => ActorId -> m Bool

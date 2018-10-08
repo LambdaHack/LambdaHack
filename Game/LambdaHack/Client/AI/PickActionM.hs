@@ -88,6 +88,7 @@ actionStrategy moldLeader aid retry = do
   scondInMelee <- getsClient scondInMelee
   let condInMelee = scondInMelee LEM.! blid body
   condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyNoMelee <- condAimEnemyNoMeleeM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimCrucial <- condAimCrucialM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
@@ -205,9 +206,12 @@ actionStrategy moldLeader aid retry = do
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
                     || not condSupport3 && not condSolo && not heavilyDistressed
-                  | condThreat 5 ->
+                  | condThreat 5
+                    || not condInMelee && condAimEnemyNoMelee && condCanMelee ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; advance.
+                    -- Or the target enemy doesn't melee and melee enemies
+                    -- far away, so chase him.
                     False
                   | otherwise ->
                     -- If I'm hit, they are still in range to fling at me,
