@@ -337,7 +337,7 @@ rosterShootout = Roster
 rosterHunt = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiDweller }
-                   , [(-5, 12, "soldier hero")] )
+                   , [(-5, 10, "soldier hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiDweller }
