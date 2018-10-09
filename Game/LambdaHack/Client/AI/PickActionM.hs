@@ -180,6 +180,7 @@ actionStrategy moldLeader aid retry = do
                    && not condDesirableFloorItem) )
         , ( [SkDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
+                             -- and only if a friend is blocked by us
           , condAnyFoeAdj && condBlocksFriends)  -- later checks foe eligible
         , ( [SkMoveItem]
           , pickup aid True
@@ -333,7 +334,7 @@ actionStrategy moldLeader aid retry = do
                        && heavilyDistressed
                        && aCanDeLight) True
           , not condInMelee || condCanMelee && condAimEnemyPresent )
-        , ( [SkDisplace]  -- if can't block, at least change something
+        , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
           , True )
         , ( []
@@ -873,15 +874,18 @@ displaceFoe aid = do
 displaceBlocker :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
+  actorMaxSkills <- getsState sactorMaxSkills
+  let condCanMelee = actorCanMelee actorMaxSkills aid b
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
-    Just TgtAndPath{ tapTgt=TEnemy{}
+    Just TgtAndPath{ tapTgt=TEnemy _ permit
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
-      | q == pathGoal && not retry ->
-        return reject  -- not a real blocker but goal, possibly enemy to melee
-                       -- or followed leader
+      | q == pathGoal  -- not a real blocker but goal; only displace if can't
+                       -- melee (e.g., followed leader) and desperate
+        && not (retry && not permit && condCanMelee) ->
+        return reject
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
-      | adjacent (bpos b) q ->  -- not veered off target
+      | adjacent (bpos b) q ->  -- not veered off target too much
         displaceTgt aid q retry
     _ -> return reject  -- goal reached
 
