@@ -353,7 +353,7 @@ rattleOrgan = armoredSkin
   , iverbHit = "announce"
   , iaspects = [ Timeout $ 10 + (1 `d` 2) * 10 + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging Yell]
+  , ieffects = [Recharging Yell, RefillCalm 5]
   , idesc    = ""
   }
 insectMortality = armoredSkin
