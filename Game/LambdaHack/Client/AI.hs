@@ -41,8 +41,8 @@ queryAI aid = do
   (aidToMove2, treq2) <-
     case treq of
       ReqWait | mleader == Just aid -> do
-        -- Leader waits; a waste; try once to pick a yet different leader.
-        -- Undo state changes in @pickAction@:
+        -- Leader waits; a waste; try once to pick a yet different leader
+        -- or at least a non-waiting action. Undo state changes in @pickAction@:
         modifyClient $ \cli -> cli
           { _sleader = mleader
           , sfleeD = case oldFlee of
@@ -72,7 +72,11 @@ pickActorAndAction maid aid = do
       return aid
   oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
   treq <- case maid of
-    Just (aidOld, treqOld) | aidToMove == aidOld ->
-      return treqOld  -- no better leader found
-    _ -> pickAction mleader aidToMove (isJust maid)
+    Just (aidOld, _) | aidToMove == aidOld ->
+      -- No better leader found, so at least try find a non-waiting action.
+      pickAction mleader aidToMove True
+    _ ->
+      -- A new leader found. Hope (but don't check) that he gets a non-waiting
+      -- actions without desperate measures, such as setting @retry@.
+      pickAction mleader aidToMove False
   return (aidToMove, treq, oldFlee)
