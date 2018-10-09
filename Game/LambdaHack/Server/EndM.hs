@@ -3,7 +3,7 @@ module Game.LambdaHack.Server.EndM
   ( endOrLoop, dieSer, writeSaveAll
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , gameExit, dropAllItems
+  , gameExit
 #endif
   ) where
 
@@ -25,7 +25,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
-import Game.LambdaHack.Server.ItemM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
 import Game.LambdaHack.Server.ServerOptions
@@ -134,12 +133,6 @@ dieSer aid b = do
   dropAllItems aid b2
   b3 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b3 []
-
--- | Drop all actor's items.
-dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
-dropAllItems aid b = do
-  mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
-  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b
 
 -- | Save game on server and all clients.
 writeSaveAll :: MonadServerAtomic m => Bool -> m ()

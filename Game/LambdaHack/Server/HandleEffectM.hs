@@ -4,7 +4,7 @@
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, dropCStoreItem, highestImpression, dominateFidSfx
-  , pickDroppable
+  , dropAllItems, pickDroppable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
@@ -575,6 +575,7 @@ highestImpression tb = do
 dominateFidSfx :: MonadServerAtomic m => ActorId -> FactionId -> m Bool
 dominateFidSfx target fid = do
   tb <- getsState $ getActorBody target
+  let !_A = assert (not $ bproj tb) ()
   -- Actors that don't move freely can't be dominated, for otherwise,
   -- when they are the last survivors, they could get stuck and the game
   -- wouldn't end. Also, they are a hassle to guide through the dungeon.
@@ -582,8 +583,7 @@ dominateFidSfx target fid = do
   -- Being pushed protects from domination, for simplicity.
   -- A possible interesting exploit, but much help from content would be needed
   -- to make it practical.
-  if not (bproj tb) && isNothing (btrajectory tb)
-     && canTra && bhp tb > 0 then do
+  if isNothing (btrajectory tb) && canTra && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
     gameOver <- dominateFid fid target
@@ -600,8 +600,6 @@ dominateFid fid target = do
   deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
-  -- Prevent the faction's stash from being lost in case they are not spawners.
-  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
   actorMaxSk <- getsState $ getActorMaxSkills target
@@ -625,6 +623,8 @@ dominateFid fid target = do
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
   execUpdAtomic $ UpdSpotActor target bNew aisNew
+  -- Focus on the dominated actor, by making him a leader.
+  supplantLeader fid target
   factionD <- getsState sfactionD
   let inGame fact2 = case gquit fact2 of
         Nothing -> True
@@ -632,24 +632,34 @@ dominateFid fid target = do
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   if gameOver
-  then return True  -- avoid spam identifying item at this point
+  then return True  -- avoid spam identifying items at this point
   else do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.timerNone
+    -- Drop all items so that domiation is not too nasty, especially
+    -- if the dominated hero runs off or teleports away with gold
+    -- or starts hitting with the most potent artifact weapon in the game.
+    -- Prevent the faction's stash from being lost in case they are
+    -- not spawners.
+    when (isNothing $ gleader fact) $ moveStores False target CSha CInv
+    dropAllItems target tb
+    -- Identify organs that won't get identified by use.
     getKindId <- getsState $ flip getIidKindIdServer
     let discoverIf (iid, cstore) = do
           let itemKindId = getKindId iid
               c = CActor target cstore
-          -- We avoid forcing the dominated actor to drop all items,
-          -- so they are not picked up by the new controllers, so id them here.
           discoverIfMinorEffects c iid itemKindId
-        aic = (btrunk tb, if bproj tb then CEqp else COrgan)
+        aic = (btrunk tb, COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
-    -- Focus on the dominated actor, by making him a leader.
-    supplantLeader fid target
     return False
+
+-- | Drop all actor's items.
+dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
+dropAllItems aid b = do
+  mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
+  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b
 
 -- ** Impress
 
