@@ -323,8 +323,8 @@ canDeAmbientList b s =
      then filter posDeAmbient (vicinityUnsafe $ bpos b)
      else []
 
--- Check whether an actor can displace an enemy. We assume they are adjacent.
--- If the actor is not, in fact, an enemy, we let it displace.
+-- Check whether an actor can displace another. We assume they are adjacent
+-- and they are foes.
 dispEnemy :: ActorId -> ActorId -> Ability.Skills -> State -> Bool
 dispEnemy source target actorMaxSk s =
   let hasBackup b =
@@ -335,9 +335,7 @@ dispEnemy source target actorMaxSk s =
       sb = getActorBody source s
       tb = getActorBody target s
       dozes = bwatch tb `elem` [WSleep, WWake]
-      tfact = sfactionD s EM.! bfid tb
   in bproj tb
-     || not (isFoe (bfid tb) tfact (bfid sb))
      || not (actorDying tb
              || waitedLastTurn tb
              || Ability.getSk Ability.SkMove actorMaxSk <= 0
