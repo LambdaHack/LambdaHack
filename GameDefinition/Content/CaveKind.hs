@@ -192,7 +192,7 @@ empty = rogue
   , cdoorChance   = 0
   , copenChance   = 0
   , chidden       = 0
-  , cactorCoeff   = 10
+  , cactorCoeff   = 8
   , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
       -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
       -- cascading failure, if the particular starting conditions were
