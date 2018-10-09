@@ -496,11 +496,11 @@ safari1 = brawl
                     , ("outdoor tiny staircase", 1) ]
   , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
-safari2 = ambush  -- lamps instead of trees, but ok, it's only a simulation
+safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
   { cname         = "Deep into the jungle"
   , cfreq         = [("caveSafari2", 1)]
-  , cminPlaceSize = DiceXY 5 3
   , cextraStairs  = 1
+  , cescapeFreq   = []
   , cstairFreq    = [ ("outdoor walled staircase", 20)
                     , ("outdoor closed staircase", 80)
                     , ("outdoor tiny staircase", 1) ]
