@@ -212,10 +212,10 @@ looksLikeCondition ar = checkFlag Ability.Fragile ar
 isBlast :: AspectRecord -> Bool
 isBlast = checkFlag Ability.Blast
 
-isHumanTrinket :: AspectRecord -> Bool
-isHumanTrinket ar =
-  checkFlag Ability.Precious ar  -- risk from treasure hunters
-  && not (checkFlag Ability.Equipable ar)  -- can't wear
+isHumanTrinket :: IK.ItemKind -> Bool
+isHumanTrinket itemKind =
+  maybe False (> 0) $ lookup "valuable" $ IK.ifreq itemKind
+    -- risk from treasure hunters
 
 goesIntoEqp :: AspectRecord -> Bool
 goesIntoEqp ar = checkFlag Ability.Equipable ar

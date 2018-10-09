@@ -53,12 +53,14 @@ import           Game.LambdaHack.Server.State
 
 revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
 revealItems mfid = do
+  COps{coitem} <- getsState scops
   let discover aid store iid _ = do
         discoAspect <- getsState sdiscoAspect
         itemKindId <- getsState $ getIidKindIdServer iid
         let arItem = discoAspect EM.! iid
             c = CActor aid store
-        unless (IA.isHumanTrinket arItem) $  -- a hack
+            itemKind = okind coitem itemKindId
+        unless (IA.isHumanTrinket itemKind) $  -- a hack
           execUpdAtomic $ UpdDiscover c iid itemKindId arItem
       f aid = do
         b <- getsState $ getActorBody aid

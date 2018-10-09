@@ -1406,7 +1406,7 @@ effectIdentify execSfx iidId source target = do
                 IdentityObvious _ -> True
                 IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
           if iid `EM.member` sdiscoAspect s  -- already fully identified
-             || IA.isHumanTrinket arItem  -- hack; keep them non-identified
+             || IA.isHumanTrinket itemKind  -- hack; keep them non-identified
              || store == CGround && IA.onlyMinorEffects arItem itemKind
                -- will be identified when picked up, so don't bother
              || IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)

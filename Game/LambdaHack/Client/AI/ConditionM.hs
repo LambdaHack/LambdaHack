@@ -51,6 +51,7 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- All conditions are (partially) lazy, because they are not always
@@ -254,17 +255,19 @@ benGroundItems aid = do
   discoBenefit <- getsClient sdiscoBenefit
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (ben, _, _, itemFull, _) =
-        desirableItem canEsc (benPickup ben) (aspectRecordFull itemFull)
+        desirableItem canEsc (benPickup ben)
+                      (aspectRecordFull itemFull)
+                      (itemKind itemFull)
   filter isDesirable
     <$> getsState (benAvailableItems discoBenefit aid [CGround])
 
-desirableItem :: Bool -> Double -> IA.AspectRecord -> Bool
-desirableItem canEsc benPickup arItem =
+desirableItem :: Bool -> Double -> IA.AspectRecord -> IK.ItemKind -> Bool
+desirableItem canEsc benPickup arItem itemKind =
   if canEsc
   then benPickup > 0
        || IA.checkFlag Ability.Precious arItem
   else -- A hack to prevent monsters from picking up treasure meant for heroes.
-       let preciousNotUseful = IA.isHumanTrinket arItem
+       let preciousNotUseful = IA.isHumanTrinket itemKind
        in benPickup > 0 && not preciousNotUseful
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool

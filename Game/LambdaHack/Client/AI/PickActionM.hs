@@ -768,7 +768,7 @@ applyItem aid applyGroup = do
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
            && not (any getTweak $ IK.ieffects itemKind)
-           && not (IA.isHumanTrinket arItem)  -- hack for elixir of youth
+           && not (IA.isHumanTrinket itemKind)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
