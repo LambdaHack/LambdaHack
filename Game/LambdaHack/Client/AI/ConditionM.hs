@@ -85,21 +85,23 @@ condAimEnemyNoMeleeM aid = do
       return $ not permit && actorCanMelee actorMaxSkills aid2 b2
     _ -> return False
 
--- | Require that the target is crucial to success, e.g., an item
--- and that it's not too far away and so the changes to get it are high.
+-- | Require that the target is crucial to success, e.g., an item,
+-- or that it's not too far away and so the changes to get it are high.
 condAimCrucialM :: MonadClient m => ActorId -> m Bool
 condAimCrucialM aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let crucialLen = 10
   return $ case mtgtMPath of
     Just TgtAndPath{tapTgt=TEnemy _ permit} -> not permit
-    Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath} ->
-      pathLen tapPath < crucialLen
-      && lid == blid b
-      && tgoal `notElem` [TUnknown, TKnown, TAny]
-    Just TgtAndPath{tapTgt=TVector{}, tapPath} -> pathLen tapPath < crucialLen
-    Nothing -> False
+    Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath=AndPath{pathLen}} ->
+      lid == blid b
+      && (pathLen < 10  -- close enough to get there first
+          || tgoal `notElem` [TUnknown, TKnown, TAny])
+    Just TgtAndPath{tapTgt=TVector{}, tapPath=AndPath{pathLen}} ->
+      pathLen < 7  -- the constant in @vToTgt@, where only
+                   -- non-crucial targets are produced; this will also
+                   -- prevent animals from sleep close to cave edges
+    _ -> False  -- includes the case of target with no path
 
 -- | Check if the target is nonmoving.
 condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
