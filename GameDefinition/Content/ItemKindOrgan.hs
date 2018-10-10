@@ -396,7 +396,7 @@ speedGland n = armoredSkin
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice (100 `div` n) + 1 `d` 3
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging (RefillHP 1), Recharging Yell]
+  , ieffects = [Recharging (RefillHP 1)]
   , idesc    = ""
   }
 speedGland2 = speedGland 2
