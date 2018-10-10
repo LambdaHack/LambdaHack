@@ -820,10 +820,9 @@ scroll1 = scrollTemplate
   }
 scroll2 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(1, 2)]  -- mixed blessing
   , iaspects = ELabel "of greed"
                : iaspects scrollTemplate
-  , ieffects = [Detect DetectItem 20, Teleport 20, RefillCalm (-100)]
+  , ieffects = [Detect DetectItem 20, Teleport 20, RefillCalm (-50)]
   }
 scroll3 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
@@ -1073,7 +1072,7 @@ necklace3 = necklaceTemplate
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 1)]  -- annoying when AI uses it
+  , irarity  = [(10, 1)]  -- annoying when AI uses it; hassle when UI alternates
   , iaspects = Timeout ((3 + 1 `d` 3 - 1 `dL` 3) * 2)
                : iaspects_necklaceTemplate
   , ieffects = [Recharging (Teleport $ 3 `d` 2)]
