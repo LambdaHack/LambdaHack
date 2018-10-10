@@ -85,16 +85,20 @@ condAimEnemyNoMeleeM aid = do
       return $ not permit && actorCanMelee actorMaxSkills aid2 b2
     _ -> return False
 
--- | Require that the target is crucial to success, e.g., an item.
+-- | Require that the target is crucial to success, e.g., an item
+-- and that it's not too far away and so the changes to get it are high.
 condAimCrucialM :: MonadClient m => ActorId -> m Bool
 condAimCrucialM aid = do
   b <- getsState $ getActorBody aid
-  btarget <- getsClient $ getTarget aid
-  return $ case btarget of
-    Just (TEnemy _ permit) -> not permit
-    Just (TPoint tgoal lid _) ->
-      lid == blid b && tgoal `notElem` [TUnknown, TKnown, TAny]
-    Just TVector{} -> False
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  let crucialLen = 10
+  return $ case mtgtMPath of
+    Just TgtAndPath{tapTgt=TEnemy _ permit} -> not permit
+    Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath} ->
+      pathLen tapPath < crucialLen
+      && lid == blid b
+      && tgoal `notElem` [TUnknown, TKnown, TAny]
+    Just TgtAndPath{tapTgt=TVector{}, tapPath} -> pathLen tapPath < crucialLen
     Nothing -> False
 
 -- | Check if the target is nonmoving.

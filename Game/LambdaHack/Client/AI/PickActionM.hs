@@ -117,10 +117,10 @@ actionStrategy moldLeader aid retry = do
                       && mayContinueSleep
                       && canSleep actorSk
       mayContinueSleep = not condAimEnemyPresent
-                         && not condAnyFoeAdj
                          && not (hpFull body actorSk)
                          && not heavilyDistressed
                          && not condNotCalmEnough
+                         && not condAnyFoeAdj
                          && anyFriendOnLevelAwake  -- friend guards the sleeper
       dozes = case bwatch body of
                 WWait n -> n > 0
@@ -165,7 +165,7 @@ actionStrategy moldLeader aid retry = do
       -- Order matters within the list, because it's summed with .| after
       -- filtering. Also, the results of prefix, distant and suffix
       -- are summed with .| at the end.
-      prefix :: [([Skill], m (Strategy RequestTimed), Bool)]
+      prefix, suffix:: [([Skill], m (Strategy RequestTimed), Bool)]
       prefix =
         [ ( [SkApply]
           , applyItem aid ApplyFirstAid
@@ -250,7 +250,7 @@ actionStrategy moldLeader aid retry = do
       -- good, and if not, the @chase@ in @suffix@ may fix that.
       -- The scaling values for @stratToFreq@ need to be so low-resolution
       -- or we get 32bit @Freqency@ overflows, which would bite us in JS.
-      distant, suffix :: [([Skill], m (Frequency RequestTimed), Bool)]
+      distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
           , stratToFreq (if condInMelee then 2 else 20000)
@@ -297,27 +297,24 @@ actionStrategy moldLeader aid retry = do
         ]
       suffix =
         [ ( [SkMoveItem]
-          , stratToFreq 2000
-            $ pickup aid False  -- e.g., to give to other party members
+          , pickup aid False  -- e.g., to give to other party members
           , not condInMelee && not dozes )
         , ( [SkMoveItem]
-          , stratToFreq 1
-            $ unEquipItems aid  -- late, because these items not bad
+          , unEquipItems aid  -- late, because these items not bad
           , not condInMelee && not dozes )
         , ( [SkWait]
-            -- This has to be random or all actors would fall asleep
-            -- in specific and predictable locations.
-          , stratToFreq (if | prefersSleep actorMaxSk -> 100
-                            | not condAimCrucial -> 1  -- not looting ATM
-                            | otherwise -> 0)
-                        waitBlockNow  -- try to fall asleep, rarely
-          , bwatch body `notElem` [WSleep, WWake] && mayFallAsleep )
+          , waitBlockNow  -- try to fall asleep, rarely
+          , bwatch body `notElem` [WSleep, WWake]
+            && mayFallAsleep
+            && prefersSleep actorMaxSk
+            && not condAimCrucial)
         , ( runSkills
-          , stratToFreq 20000 $ chase aid (not condInMelee
-                                           && heavilyDistressed
-                                           && aCanDeLight) retry
+          , chase aid (not condInMelee
+                       && heavilyDistressed
+                       && aCanDeLight) retry
           , not dozes
-            && if condInMelee then condCanMelee && condAimEnemyPresent
+            && if condInMelee
+               then condCanMelee && condAimEnemyPresent
                else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
@@ -357,13 +354,13 @@ actionStrategy moldLeader aid retry = do
       combineWeighted as = liftFrequency <$> sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineWeighted distant
-  comSuffix <- combineWeighted suffix
+  sumSuffix <- sumS suffix
   sumFallback <- sumS fallback
   return $! if bwatch body == WSleep
                && mayContinueSleep
                && Ability.getSk SkWait actorSk >= 2
             then returN "sleep" ReqWait
-            else sumPrefix .| comDistant .| comSuffix .| sumFallback
+            else sumPrefix .| comDistant .| sumSuffix .| sumFallback
 
 waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
