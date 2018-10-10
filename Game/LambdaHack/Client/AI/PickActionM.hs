@@ -117,6 +117,7 @@ actionStrategy moldLeader aid retry = do
                       && mayContinueSleep
                       && canSleep actorSk
       mayContinueSleep = not condAimEnemyPresent
+                         && not condAnyFoeAdj
                          && not (hpFull body actorSk)
                          && not heavilyDistressed
                          && not condNotCalmEnough

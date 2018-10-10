@@ -379,8 +379,8 @@ registerActor summoned (kindIx, ar, _) (itemFullRaw, kit) bfid pos lid time = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
   when (canSleep actorMaxSk
-        && prefersSleep actorMaxSk
-        && not condAnyFoeAdj) $ addSleep aid
+        && not condAnyFoeAdj
+        && prefersSleep actorMaxSk) $ addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m
