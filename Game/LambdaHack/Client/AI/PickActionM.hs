@@ -327,7 +327,6 @@ actionStrategy moldLeader aid retry = do
               WSleep -> if mayContinueSleep
                         then waitBlockNow
                         else yellNow  -- wake up
-              WWake -> yellNow  -- wake up fully
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something
