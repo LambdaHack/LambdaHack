@@ -23,6 +23,10 @@ warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, amb
 -- LH-specific
 geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
+-- Note that the actors that appear in the crawl scenario should
+-- be generated with at most ordinary ammo. Otherwise, farming them
+-- may be rational though boring endeavour.
+
 -- * Hunams
 
 warrior = ItemKind
