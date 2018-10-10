@@ -221,22 +221,20 @@ computeTarget aid = do
       setPath tgt = do
         let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
-            take7 tap@TgtAndPath{tapTgt,tapPath=AndPath{..}} =
-              if slackTactic then
-                -- Best path only followed 7 moves; then straight on. Cheaper.
-                let path7 = take 7 pathList
-                    vOld = towards (bpos b) pathGoal
-                    pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                    walkable = Tile.isWalkable coTileSpeedup $ lvl `at` pNew
-                    vtgt | bpos b == pathGoal  -- goal reached
-                           || not walkable =  -- can't walk; has to act
-                             tapTgt
-                         | otherwise = TVector vOld
-                in TgtAndPath{tapTgt=vtgt, tapPath=AndPath{pathList=path7, ..}}
-              else tap
+            take7 tap@TgtAndPath{tapPath=AndPath{..}} =
+              -- Best path only followed 7 moves; then straight on. Cheaper.
+              let path7 = take 7 pathList
+                  vOld = towards (bpos b) pathGoal
+                  pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                  walkable = Tile.isWalkable coTileSpeedup $ lvl `at` pNew
+                  tapTgt = TVector vOld
+              in if bpos b == pathGoal  -- goal reached, so better know the tgt
+                    || not walkable  -- can't walk, so don't chase a vector
+                 then tap
+                 else TgtAndPath{tapTgt, tapPath=AndPath{pathList=path7, ..}}
             take7 tap = tap
         tgtpath <- createPath aid tgt
-        return $ Just $ take7 tgtpath
+        return $ Just $ if slackTactic then take7 tgtpath else tgtpath
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
