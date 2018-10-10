@@ -146,7 +146,6 @@ computeTarget aid = do
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
-  condEnoughGear <- condEnoughGearM aid
   let condCanMelee = actorCanMelee actorMaxSkills aid b
       condHpTooLow = hpTooLow b actorMaxSk
   friends <- getsState $ friendRegularList (bfid b) (blid b)
@@ -200,10 +199,8 @@ computeTarget aid = do
         tMelee <- targetableMelee aidE body
         return $! targetableRanged body || tMelee
   nearbyFoes <- filterM targetableEnemy allFoes
-  isStairPos <- getsState $ \s lid p -> isStair lid p s
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
-  s <- getState
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
   let desirableIid iid =
@@ -330,8 +327,6 @@ computeTarget aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      tileAdj :: (Point -> Bool) -> Point -> Bool
-      tileAdj f p = any f $ vicinityUnsafe p
       followingWrong permit =
         permit && (condInMelee  -- in melee, stop following
                    || mleader == Just aid)  -- a leader, never follow
@@ -419,15 +414,13 @@ computeTarget aid = do
                      -- to enable pickup; if pickup fails, will retarget
                | otherwise -> return $ Just tap
           TSmell ->
-            let lvl2 = sdungeon s EM.! lid
-            in if not canSmell
-                  || let sml = EM.findWithDefault timeZero pos (lsmell lvl2)
-                     in sml <= ltime lvl2
-               then pickNewTarget  -- others will notice soon enough
-               else return $ Just tap
+            if not canSmell
+               || let sml = EM.findWithDefault timeZero pos (lsmell lvl)
+                  in sml <= ltime lvl
+            then pickNewTarget  -- others will notice soon enough
+            else return $ Just tap
           TBlock -> do  -- e.g., door or first unknown tile of an area
-            let lvl2 = sdungeon s EM.! lid
-                t = lvl2 `at` pos
+            let t = lvl `at` pos
             if isStuck  -- not a very important target, because blocked
                || alterSkill < fromEnum (lalter PointArray.! pos)
                     -- tile was searched or altered or skill lowered
@@ -437,14 +430,9 @@ computeTarget aid = do
             then pickNewTarget  -- others will notice soon enough
             else return $ Just tap
           TUnknown ->
-            let lvl2 = sdungeon s EM.! lid
-                t = lvl2 `at` pos
-            in if lexpl lvl2 <= lseen lvl2
+            let t = lvl `at` pos
+            in if lexpl lvl <= lseen lvl
                   || not (isUknownSpace t)
-                  || condEnoughGear && tileAdj (isStairPos lid) pos
-                       -- the unknown may be on the other side of the level
-                       -- and getting there only to explore 1 tile and get back
-                       -- looks silly
                then pickNewTarget  -- others will notice soon enough
                else return $ Just tap
           TKnown ->
