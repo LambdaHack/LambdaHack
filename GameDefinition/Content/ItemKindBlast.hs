@@ -325,7 +325,7 @@ odorDistressing = ItemKind
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [ RefillCalm (-10)
                , toOrganBad "foul-smelling" (20 + 1 `d` 5)
-               , toOrganBad "impatient" (5 + 1 `d` 3) ]
+               , toOrganBad "impatient" (2 + 1 `d` 2) ]
   , idesc    = "It turns the stomach."  -- and so can't stand still
   , ikit     = []
   }

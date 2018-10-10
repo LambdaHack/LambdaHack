@@ -577,7 +577,7 @@ potion6 = potionTemplate
                , OneOf [ RefillHP 20, RefillHP 10, Burn 10
                        , DropItem 1 maxBound COrgan "poisoned"
                        , toOrganGood "hasted" (20 + 1 `d` 5)
-                       , toOrganBad "impatient" (10 + 1 `d` 5) ]
+                       , toOrganBad "impatient" (2 + 1 `d` 2) ]
                , OnSmash (OneOf [ Explode "healing mist 2"
                                 , Explode "wounding mist"
                                 , Explode "distressing odor"
