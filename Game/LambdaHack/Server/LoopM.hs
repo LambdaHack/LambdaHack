@@ -88,6 +88,8 @@ loopSer serverOptions executorClient = do
                       | otherwise = pers EM.! fid
       mapM_ (\fid -> sendUpdate fid $ UpdResume fid (persFid fid))
             (EM.keys factionD)
+      arenasNew <- arenasForLoop
+      modifyServer $ \ser2 -> ser2 {sarenas = arenasNew, svalidArenas = True}
       -- We dump RNG seeds here, based on @soptionsNxt@, in case the game
       -- wasn't run with @--dumpInitRngs@ previously, but we need the seeds,
       -- e.g., to diagnose a crash.
@@ -143,7 +145,7 @@ handleFidUpd updatePerFid fid fact = do
   -- Also, this ensures perception before game save is exactly the same
   -- as at game resume, which is an invariant we check elsewhere.
   -- However, perception is not updated after the action, so the actor
-  -- may not see his vicinity, so may not see enemy that displaces him
+  -- may not see his vicinity, so may not see enemy that displaces (or hits) him
   -- resulting in breaking the displace action and temporary leader loss,
   -- which is fine, though a bit alarming.
   updatePerFid fid
