@@ -118,13 +118,23 @@ condTgtNonmovingM aid = do
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjM aid = getsState $ anyFoeAdj aid
 
--- | Require the actor stands adjacent to a triggerable tile (e.g., stairs).
-condAdjTriggerableM :: MonadStateRead m => ActorId -> m Bool
+-- | Require the actor stands on or adjacent to a triggerable tile
+-- (e.g., stairs).
+condAdjTriggerableM :: MonadClient m => ActorId -> m Bool
 condAdjTriggerableM aid = do
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let hasTriggerable p = p `EM.member` lembed lvl
-  return $ any hasTriggerable $ vicinityUnsafe $ bpos b
+  actorSk <- currentSkillsClient aid
+  let alterSkill = Ability.getSk Ability.SkAlter actorSk
+      alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
+      underFeet p = p == bpos b  -- if enter and alter, be more permissive
+      -- Before items are applied (which AI attempts even if apply
+      -- skills too low), tile must be alerable, hence both checks.
+      hasTriggerable p = (underFeet p
+                          || alterSkill >= fromEnum (alterMinSkill p))
+                         && p `EM.member` lembed lvl
+  return $ any hasTriggerable $ bpos b : vicinityUnsafe (bpos b)
 
 -- | Produce the chess-distance-sorted list of non-low-HP,
 -- melee-cabable foes on the level. We don't consider path-distance,

@@ -661,6 +661,8 @@ meleeAny aid = do
 -- enemies on other levels.
 -- We don't verify any embedded item is targeted by the actor, but at least
 -- the actor doesn't target a visible enemy at this point.
+-- TODO: In @actionStrategy@ we require minimal @SkAlter@ even for the case
+-- of triggerable tile underfoot. A quirk; a specialization of AI actors.
 trigger :: MonadClient m
         => ActorId -> FleeViaStairsOrEscape
         -> m (Strategy RequestTimed)
@@ -670,7 +672,7 @@ trigger aid fleeVia = do
   let f pos = case EM.lookup pos $ lembed lvl of
         Nothing -> Nothing
         Just bag -> Just (pos, bag)
-      pbags = mapMaybe f $ vicinityUnsafe (bpos b)
+      pbags = mapMaybe f $ bpos b : vicinityUnsafe (bpos b)
   efeat <- embedBenefit fleeVia aid pbags
   return $! liftFrequency $ toFreq "trigger"
     [ (ceiling benefit, ReqAlter pos)

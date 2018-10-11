@@ -460,6 +460,7 @@ moveSearchAlter run dir = do
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
+      underFeet = tpos == spos  -- if enter and alter, be more permissive
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -481,8 +482,9 @@ moveSearchAlter run dir = do
              -- we don't show tile description, because it only comes from
              -- embedded items and here probably there are none (can be all
              -- charging, but that's rare)
-       | alterSkill <= 1 -> failSer AlterUnskilled
+       | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t)
+         && not underFeet
          && alterSkill < alterMinSkill -> failSer AlterUnwalked
        | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds ->
            failWith "unable to exploit the terrain"
