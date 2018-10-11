@@ -578,7 +578,7 @@ drawLeaderStatus waitT = do
                            then if x > 0 then "***" else "---"
                            else t
           waitSlash | bwatch b == WSleep = waitGlobal
-                    | otherwise = waitT
+                    | otherwise = abs waitT
           -- This is a valuable feedback for the otherwise hard to observe
           -- 'wait' command or for passing of time when sole leader sleeps.
           slashPick = slashes !! (max 0 waitSlash `mod` length slashes)
