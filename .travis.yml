@@ -192,8 +192,7 @@ script:
 
   - touch /tmp/teletypetest.log;
   - (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
-  - (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77));
-
+  - "if [ \"$(uname)\" != \"Darwin\" ]; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 
 # REGENDATA ["--no-no-tests-no-bench","--osx=8.4.3","cabal.project","-o","foo"]
 # EOF
