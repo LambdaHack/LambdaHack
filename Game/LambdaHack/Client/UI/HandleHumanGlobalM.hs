@@ -459,7 +459,7 @@ moveSearchAlter run dir = do
             legal = permittedApply localTime applySkill calmE itemFull kit
         -- Let even completely unskilled actors trigger basic embeds.
         in either (const False) (const True) legal
-      alterable = Tile.isModifiable coTileSpeedup t || canApplyEmbeds
+      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -484,6 +484,8 @@ moveSearchAlter run dir = do
        | alterSkill <= 1 -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t)
          && alterSkill < alterMinSkill -> failSer AlterUnwalked
+       | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds ->
+           failWith "unable to exploit the terrain"
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
        | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
            failSer AlterBlockActor
