@@ -144,10 +144,10 @@ handleFidUpd updatePerFid fid fact = do
   -- Let players ponder new game state while the engine is busy saving.
   -- Also, this ensures perception before game save is exactly the same
   -- as at game resume, which is an invariant we check elsewhere.
-  -- However, perception is not updated after the action, so the actor
+  -- However, if perception is not updated after the action, the actor
   -- may not see his vicinity, so may not see enemy that displaces (or hits) him
   -- resulting in breaking the displace action and temporary leader loss,
-  -- which is fine, though a bit alarming.
+  -- which is fine, though a bit alarming. So, we update it at the end.
   updatePerFid fid
   -- Move a single actor only. Bail out if immediate loop break requested by UI.
   let handle [] = return ()
@@ -164,6 +164,10 @@ handleFidUpd updatePerFid fid fact = do
         Just myArena -> myArena : delete myArena arenas
         Nothing -> arenas
   handle myArenas
+  -- We update perception at the end, see comment above. This is usually
+  -- cheap, and when not, if it's AI faction, it's a waste, but if it's UI,
+  -- that's exactly where it prevent lost attack messages, etc.
+  updatePerFid fid
 
 -- | Handle a clip (the smallest fraction of a game turn for which a frame may
 -- potentially be generated). Run the leader and other actors moves.
