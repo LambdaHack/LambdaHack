@@ -156,7 +156,8 @@ handleFidUpd updatePerFid fid fact = do
         unless breakASAP $ do
           nonWaitMove <- handleActors lid fid
           unless nonWaitMove $ handle rest
-  -- Start on arena with leader, if available.
+  -- Start on arena with leader, if available. This is crucial to ensure
+  -- that no actor (even ours) moves before UI declares save(&exit).
   fa <- factionArena fact
   arenas <- getsServer sarenas
   let myArenas = case fa of
@@ -178,10 +179,16 @@ loopUpd updConn = do
               (EM.assocs perValid)
       handleFid :: (FactionId, Faction) -> m ()
       {-# NOINLINE handleFid #-}
-      handleFid (fid, fact) = handleFidUpd updatePerFid fid fact
+      handleFid (fid, fact) = do
+        breakASAP <- getsServer sbreakASAP
+        -- Don't process other factions, even their perceptions,
+        -- if UI saves and/or exits.
+        unless breakASAP $ handleFidUpd updatePerFid fid fact
       loopConditionally = do
         factionD <- getsState sfactionD
-        -- Update perception one last time to satisfy save/resume assertions.
+        -- Update perception one last time to satisfy save/resume assertions,
+        -- because we may get here at arbitrary moment due to game over
+        -- and so have outdated perception.
         mapM_ updatePerFid (EM.keys factionD)
         modifyServer $ \ser -> ser { sbreakLoop = False
                                    , sbreakASAP = False }
