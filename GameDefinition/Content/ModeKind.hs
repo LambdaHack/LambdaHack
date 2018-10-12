@@ -533,7 +533,8 @@ listCrawl =
   , ([-2], ["caveShallowRogue"])
   , ([-3], ["caveEmpty"])
   , ([-4, -5, -6], ["default random", "caveRogue", "caveArena"])
-  , ([-7, -8, -9], ["caveRogue", "caveSmoking", "caveLaboratory"])
+  , ([-7, -8], ["caveRogue", "caveSmoking"])
+  , ([-9], ["caveLaboratory"])
   , ([-10], ["caveMine"]) ]
 
 cavesCrawl = listCrawl
