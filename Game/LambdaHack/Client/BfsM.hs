@@ -315,7 +315,8 @@ embedBenefit fleeVia aid pbags = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
-  actorSk <- if fleeVia == ViaAnything  -- targeting, e.g., when not a leader
+  actorSk <- if fleeVia `elem` [ViaAnything, ViaExit]
+                  -- targeting, possibly when not a leader
              then getsState $ getActorMaxSkills aid
              else currentSkillsClient aid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
