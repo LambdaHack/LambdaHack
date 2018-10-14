@@ -1533,7 +1533,7 @@ hammer3 = hammer
 hammerParalyze = hammer
   { iname    = "Concussion Hammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (8, 6)]
+  , irarity  = [(4, 1), (8, 10)]
   , idamage  = 8 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout 7 ]
@@ -1544,7 +1544,7 @@ hammerParalyze = hammer
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (8, 6)]
+  , irarity  = [(4, 1), (8, 10)]
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout 10
@@ -1575,7 +1575,7 @@ sword = ItemKind
 swordImpress = sword
   { iname    = "Master's Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (8, 6)]
+  , irarity  = [(4, 1), (8, 10)]
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 40 - 30 ]
                ++ iaspects sword
@@ -1585,7 +1585,7 @@ swordImpress = sword
 swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(5, 1), (8, 6)]
+  , irarity  = [(4, 1), (8, 10)]
   , iaspects = [ SetFlag Unique
                , Timeout 10 ]
                ++ iaspects sword
@@ -1600,7 +1600,7 @@ halberd = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 20)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(6, 1), (8, 15)]
+  , irarity  = [(6, 1), (8, 20)]
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = 12 `d` 1
@@ -1629,7 +1629,7 @@ halberd3 = halberd
 halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(7, 1), (9, 15)]
+  , irarity  = [(6, 1), (8, 15)]
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 10 ]
