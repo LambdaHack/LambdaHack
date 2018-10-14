@@ -115,10 +115,12 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           -- Checking skill would be more accurate, but skills can be
           -- inside organs, equipment, tmp organs, created organs, etc.
           mobile = "mobile" `elem` freqNames
+          aquatic = "aquatic" `elem` freqNames
       mrolledPos <- case mpos of
         Just{} -> return mpos
         Nothing -> do
-          rollPos <- getsState $ rollSpawnPos cops allPers mobile lid lvl fid
+          rollPos <-
+            getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
           rndToAction rollPos
       case mrolledPos of
         Just pos ->
@@ -130,10 +132,10 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           return Nothing
 
 rollSpawnPos :: COps -> ES.EnumSet Point
-             -> Bool -> LevelId -> Level -> FactionId -> State
+             -> Bool -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd (Maybe Point)
 rollSpawnPos COps{coTileSpeedup} visible
-             mobile lid lvl@Level{larea, lstair} fid s = do
+             mobile aquatic lid lvl@Level{larea, lstair} fid s = do
   let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
       inhabitants = foeRegularList fid lid s
       nearInh df p = all (\b -> df $ chessDist (bpos b) p) inhabitants
@@ -143,8 +145,8 @@ rollSpawnPos COps{coTileSpeedup} visible
       nearStairs df p = any (\pstair -> df $ chessDist pstair p) deeperStairs
       -- Near deep stairs, risk of close enemy spawn is higher.
       -- Also, spawns are common midway between actors and stairs.
-      distantSo df p _ = nearInh df p && nearStairs df p
-      distantMiddle d p _ = chessDist p (middlePoint larea) < d
+      distantSo df p = nearInh df p && nearStairs df p
+      distantMiddle d p = chessDist p (middlePoint larea) < d
       condList | mobile =
         [ distantSo (<= 15)
         , distantSo (<= 20)
@@ -163,12 +165,13 @@ rollSpawnPos COps{coTileSpeedup} visible
               && not (Tile.isNoActor coTileSpeedup t)
               && not (occupiedBigLvl p lvl)
               && not (occupiedProjLvl p lvl) )
-    condList
-    (\p t -> distantSo (> 4) p t  -- otherwise actors in dark rooms swarmed
-             && not (p `ES.member` visible))  -- visibility and plausibility
-    [ \p t -> distantSo (> 3) p t
+    (map (\f p _ -> f p) condList)
+    (\p t -> distantSo (> 4) p  -- otherwise actors in dark rooms swarmed
+             && not (p `ES.member` visible)  -- visibility and plausibility
+             && (not aquatic || Tile.isAquatic coTileSpeedup t))
+    [ \p _ -> distantSo (> 3) p
               && not (p `ES.member` visible)
-    , \p t -> distantSo (> 2) p t -- otherwise actors hit on entering level
+    , \p _ -> distantSo (> 2) p  -- otherwise actors hit on entering level
               && not (p `ES.member` visible)
     , \p _ -> not (p `ES.member` visible)
     ]

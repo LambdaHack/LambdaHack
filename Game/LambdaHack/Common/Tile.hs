@@ -19,7 +19,7 @@ module Game.LambdaHack.Common.Tile
   , isClear, isLit, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor
-  , isEasyOpen, isEmbed, alterMinSkill, alterMinWalk
+  , isEasyOpen, isEmbed, isAquatic, alterMinSkill, alterMinWalk
     -- * Slow property lookups
   , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
   , obscureAs, hideAs, buildAs
@@ -97,6 +97,8 @@ speedupTile allClear cotile =
         let getTo TK.Embed{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
+      isAquaticTab = createTab cotile $ \tk ->
+        maybe False (> 0) $ lookup "aquatic" $ TK.tfreq tk
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}
@@ -221,6 +223,10 @@ isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab
 isEmbed :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isEmbed #-}
 isEmbed TileSpeedup{isEmbedTab} = accessTab isEmbedTab
+
+isAquatic :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isAquatic #-}
+isAquatic TileSpeedup{isAquaticTab} = accessTab isAquaticTab
 
 alterMinSkill :: TileSpeedup -> ContentId TileKind -> Int
 {-# INLINE alterMinSkill #-}

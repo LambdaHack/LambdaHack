@@ -237,12 +237,12 @@ populateDungeon = do
       needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
-      g (ln, _, _) = max minD . min maxD . toEnum $ ln
-      getEntryLevels (_, fact) = map g $ ginitialWolf fact
+      boundLid (ln, _, _) = max minD . min maxD . toEnum $ ln
+      getEntryLevels (_, fact) = map boundLid $ ginitialWolf fact
       arenas = ES.toList $ ES.fromList
                $ concatMap getEntryLevels needInitialCrew
       hasActorsOnArena lid (_, fact) =
-        any ((== lid) . g) $ ginitialWolf fact
+        any ((== lid) . boundLid) $ ginitialWolf fact
       initialActorPositions lid = do
         lvl <- getLevel lid
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
@@ -277,7 +277,7 @@ populateDungeon = do
             initActors = ginitialWolf fact3
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
-                                , g ln3 == lid ]
+                                , boundLid ln3 == lid ]
             psFree = nearbyFreePoints cops lvl validTile ppos
         when (length psFree < length initGroups) $
           debugPossiblyPrint

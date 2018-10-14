@@ -118,6 +118,7 @@ data TileSpeedup = TileSpeedup
   , isNoActorTab       :: Tab Bool
   , isEasyOpenTab      :: Tab Bool
   , isEmbedTab         :: Tab Bool
+  , isAquaticTab       :: Tab Bool
   , alterMinSkillTab   :: Tab Word8
   , alterMinWalkTab    :: Tab Word8
   }
@@ -139,7 +140,7 @@ emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab
+                               emptyTab emptyTab emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty
