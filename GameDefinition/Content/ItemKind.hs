@@ -971,7 +971,7 @@ seeingItem = ItemKind
   , iverbHit = "gaze at"
   , iweight  = 100
   , idamage  = 0
-  , iaspects = [ Timeout $ 1 + 1 `d` 2
+  , iaspects = [ Timeout 3
                , AddSkill SkSight 10, AddSkill SkMaxCalm 30, AddSkill SkShine 2
                , SetFlag Periodic ]
   , ieffects = [ Recharging (toOrganNoTimer "poisoned")
