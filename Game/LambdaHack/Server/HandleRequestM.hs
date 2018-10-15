@@ -246,16 +246,19 @@ switchLeader fid aidNew = do
 -- | Add a smell trace for the actor to the level. If smell already there
 -- and the actor can smell, remove smell. Projectiles are ignored.
 -- As long as an actor can smell, he doesn't leave any smell ever.
+-- Smell trace is never left in water tiles.
 affectSmell :: MonadServerAtomic m => ActorId -> m ()
 affectSmell aid = do
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
-  unless (bproj b) $ do
+  lvl <- getLevel $ blid b
+  let aquatic = Tile.isAquatic coTileSpeedup $ lvl `at` bpos b
+  unless (bproj b || aquatic) $ do
     actorMaxSk <- getsState $ getActorMaxSkills aid
     let smellRadius = Ability.getSk Ability.SkSmell actorMaxSk
-        hadOdor = Ability.getSk Ability.SkOdor actorMaxSk > 0
-    when (hadOdor || smellRadius > 0) $ do
+        hasOdor = Ability.getSk Ability.SkOdor actorMaxSk > 0
+    when (hasOdor || smellRadius > 0) $ do
       localTime <- getsState $ getLocalTime $ blid b
-      lvl <- getLevel $ blid b
       let oldS = fromMaybe timeZero $ EM.lookup (bpos b) . lsmell $ lvl
           newTime = timeShift localTime smellTimeout
           newS = if smellRadius > 0
