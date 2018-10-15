@@ -153,10 +153,9 @@ rollSpawnPos COps{coTileSpeedup} visible
         , distantSo (<= 25)
         ]
                | otherwise =
-        [ distantMiddle 10
-        , distantMiddle 20
-        , distantMiddle 50
-        , distantMiddle 100
+        [ distantMiddle 8
+        , distantMiddle 16
+        , distantMiddle 24
         ]
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
