@@ -286,8 +286,9 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
           -- reset back to black
-      setChar :: Int -> Word32 -> Word32 -> IO ()
-      setChar i w wPrev = unless (w == wPrev) $ do
+      setChar :: Int -> (Word32, Word32) -> IO Int
+      setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
+      setChar i (w, _) = do
         atlas <- readIORef satlas
         let (y, x) = i `divMod` rwidth coscreen
             acRaw = Color.AttrCharW32 w
@@ -339,13 +340,14 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.fillRect srenderer $ Just box
         SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
         maybe (return ()) (drawHighlight x y) mlineColor
+        return $! i + 1
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Just texture
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
-  U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
-                       (PointArray.avector $ singleFrame prevFrame)
+  U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleFrame curFrame)
+                              (PointArray.avector $ singleFrame prevFrame)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer
