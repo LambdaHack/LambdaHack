@@ -279,31 +279,32 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
-      drawHighlight x y color = do
+      drawHighlight !x !y !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
         let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                  (Vect.V2 (toEnum boxSize) (toEnum boxSize))
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
           -- reset back to black
+      chooseAndDrawHighlight !x !y !bg = case bg of
+        Color.HighlightNone -> return ()
+        Color.HighlightRed -> drawHighlight x y Color.Red
+        Color.HighlightBlue -> drawHighlight x y Color.Blue
+        Color.HighlightYellow -> drawHighlight x y Color.BrYellow
+        Color.HighlightGrey -> drawHighlight x y Color.BrBlack
+        Color.HighlightWhite -> drawHighlight x y Color.White
+        Color.HighlightMagenta -> drawHighlight x y Color.BrMagenta
+        Color.HighlightGreen -> drawHighlight x y Color.Green
       setChar :: Int -> (Word32, Word32) -> IO Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
       setChar i (w, _) = do
         atlas <- readIORef satlas
-        let (y, x) = i `divMod` rwidth coscreen
-            acRaw = Color.AttrCharW32 w
+        let acRaw = Color.AttrCharW32 w
             Color.AttrChar{acAttr=Color.Attr{..}, acChar=acCharRaw} =
               Color.attrCharFromW32 acRaw
-            normalizeAc color = (Color.attrChar2ToW32 fg acCharRaw, Just color)
-            (ac, mlineColor) = case bg of
-              Color.HighlightNone -> (acRaw, Nothing)
-              Color.HighlightRed -> normalizeAc Color.Red
-              Color.HighlightBlue -> normalizeAc Color.Blue
-              Color.HighlightYellow -> normalizeAc Color.BrYellow
-              Color.HighlightGrey -> normalizeAc Color.BrBlack
-              Color.HighlightWhite -> normalizeAc Color.White
-              Color.HighlightMagenta -> normalizeAc Color.BrMagenta
-              Color.HighlightGreen -> normalizeAc Color.Green
+            ac = if bg == Color.HighlightNone
+                 then acRaw
+                 else Color.attrChar2ToW32 fg acCharRaw
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
@@ -325,7 +326,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
-        let box = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
+        let (!y, !x) = i `quotRem` rwidth coscreen
+            box = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
             width = min boxSize $ fromEnum $ SDL.textureWidth ti
             height = min boxSize $ fromEnum $ SDL.textureHeight ti
@@ -339,7 +341,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                                  (Vect.V2 (toEnum width) (toEnum height))
         SDL.fillRect srenderer $ Just box
         SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
-        maybe (return ()) (drawHighlight x y) mlineColor
+        -- Potentially overwrite a portion of the glyph.
+        chooseAndDrawHighlight x y bg
         return $! i + 1
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
