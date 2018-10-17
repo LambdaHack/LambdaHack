@@ -11,7 +11,7 @@ module Game.LambdaHack.Atomic
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, breakUpdAtomic
   , seenAtomicCli, seenAtomicSer
     -- * Re-exported from "Game.LambdaHack.Atomic.MonadStateWrite"
-  , MonadStateWrite(..), AtomicFail(..), putState
+  , MonadStateWrite(..), AtomicFail(..)
   ) where
 
 import Prelude ()

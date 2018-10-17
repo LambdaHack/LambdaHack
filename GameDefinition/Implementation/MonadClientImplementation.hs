@@ -17,7 +17,7 @@ import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
 
-import           Game.LambdaHack.Atomic (MonadStateWrite (..), putState)
+import           Game.LambdaHack.Atomic (MonadStateWrite (..))
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.BfsM as BfsM
 import           Game.LambdaHack.Client.HandleAtomicM
@@ -57,6 +57,9 @@ instance MonadStateWrite CliImplementation where
   modifyState f = CliImplementation $ state $ \cliS ->
     let !newCliState = f $ cliState cliS
     in ((), cliS {cliState = newCliState})
+  {-# INLINE putState #-}
+  putState !newCliState = CliImplementation $ state $ \cliS ->
+    ((), cliS {cliState = newCliState})
 
 instance MonadClientRead CliImplementation where
   {-# INLINE getsClient #-}

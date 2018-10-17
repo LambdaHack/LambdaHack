@@ -1,7 +1,7 @@
 -- | The monad for writing to the main game state.
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..), AtomicFail(..), atomicFail
-  , putState, updateLevel, updateActor, updateFaction
+  , updateLevel, updateActor, updateFaction
   , moveActorMap, swapActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
@@ -41,6 +41,7 @@ import           Game.LambdaHack.Common.State
 -- are given semantics in this monad.
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
+  putState :: State -> m ()
 
 -- | Exception signifying that atomic action failed because
 -- the information it carries is inconsistent with the client's state,
@@ -57,9 +58,6 @@ instance Ex.Exception AtomicFail
 
 atomicFail :: String -> a
 atomicFail = Ex.throw . AtomicFail
-
-putState :: MonadStateWrite m => State -> m ()
-putState s = modifyState (const s)
 
 -- INLIning offers no speedup, increases alloc and binary size.
 -- EM.alter not necessary, because levels not removed, so little risk

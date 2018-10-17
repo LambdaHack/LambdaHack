@@ -66,6 +66,9 @@ instance MonadStateWrite SerImplementation where
   modifyState f = SerImplementation $ state $ \serS ->
     let !newSerState = f $ serState serS
     in ((), serS {serState = newSerState})
+  {-# INLINE putState #-}
+  putState !newSerState = SerImplementation $ state $ \serS ->
+    ((), serS {serState = newSerState})
 
 instance MonadServer SerImplementation where
   {-# INLINE getsServer #-}
