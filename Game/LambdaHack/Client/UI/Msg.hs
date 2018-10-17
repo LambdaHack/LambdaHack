@@ -171,7 +171,7 @@ archiveReport History{newReport=Report newMsgs, ..} !newT =
           History emptyReport newT oldReport oldTime archivedHistory
      else let lU = map attrLineToU $ renderTimeReport oldTime oldReport
           in History emptyReport newT newReportNon0 newTime
-             $ foldl' (flip RB.cons) archivedHistory (reverse lU)
+             $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
