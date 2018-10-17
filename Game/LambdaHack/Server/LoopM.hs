@@ -133,7 +133,7 @@ arenasForLoop = do
                     `swith` factionD) ()
   return $! arenas
 
-handleFidUpd :: (MonadServerAtomic m, MonadServerComm m)
+handleFidUpd :: forall m. (MonadServerAtomic m, MonadServerComm m)
              => (FactionId -> m ()) -> FactionId -> Faction -> m ()
 {-# INLINE handleFidUpd #-}
 handleFidUpd updatePerFid fid fact = do
@@ -150,12 +150,17 @@ handleFidUpd updatePerFid fid fact = do
   -- which is fine, though a bit alarming. So, we update it at the end.
   updatePerFid fid
   -- Move a single actor only. Bail out if immediate loop break requested by UI.
-  let handle [] = return ()
+  let handle :: [LevelId] -> m Bool
+      handle [] = return False
       handle (lid : rest) = do
         breakASAP <- getsServer sbreakASAP
-        unless breakASAP $ do
+        if breakASAP
+        then return False
+        else do
           nonWaitMove <- handleActors lid fid
-          unless nonWaitMove $ handle rest
+          if nonWaitMove
+          then return True
+          else handle rest
   -- Start on arena with leader, if available. This is crucial to ensure
   -- that no actor (even ours) moves before UI declares save(&exit).
   fa <- factionArena fact
@@ -163,11 +168,14 @@ handleFidUpd updatePerFid fid fact = do
   let myArenas = case fa of
         Just myArena -> myArena : delete myArena arenas
         Nothing -> arenas
-  handle myArenas
+  nonWaitMove <- handle myArenas
   -- We update perception at the end, see comment above. This is usually
   -- cheap, and when not, if it's AI faction, it's a waste, but if it's UI,
-  -- that's exactly where it prevent lost attack messages, etc.
-  updatePerFid fid
+  -- that's exactly where it prevents lost attack messages, etc.
+  -- If the move was a wait, perception unchanged, so no need to update,
+  -- unless the actor starts sleeping, in which case his perception
+  -- is reduced a bit later, so no harm done.
+  when nonWaitMove $ updatePerFid fid
 
 -- | Handle a clip (the smallest fraction of a game turn for which a frame may
 -- potentially be generated). Run the leader and other actors moves.
