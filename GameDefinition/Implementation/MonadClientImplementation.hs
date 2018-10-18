@@ -55,22 +55,23 @@ instance MonadStateRead CliImplementation where
 instance MonadStateWrite CliImplementation where
   {-# INLINE modifyState #-}
   modifyState f = CliImplementation $ state $ \cliS ->
-    let !newCliState = f $ cliState cliS
-    in ((), cliS {cliState = newCliState})
+    let !newCliS = cliS {cliState = f $ cliState cliS}
+    in ((), newCliS)
   {-# INLINE putState #-}
-  putState !newCliState = CliImplementation $ state $ \cliS ->
-    ((), cliS {cliState = newCliState})
+  putState newCliState = CliImplementation $ state $ \cliS ->
+    let !newCliS = cliS {cliState = newCliState}
+    in ((), newCliS)
 
 instance MonadClientRead CliImplementation where
   {-# INLINE getsClient #-}
-  getsClient   f = CliImplementation $ gets $ f . cliClient
+  getsClient f = CliImplementation $ gets $ f . cliClient
   liftIO = CliImplementation . IO.liftIO
 
 instance MonadClient CliImplementation where
   {-# INLINE modifyClient #-}
   modifyClient f = CliImplementation $ state $ \cliS ->
-    let !newCliState = f $ cliClient cliS
-    in ((), cliS {cliClient = newCliState})
+    let !newCliS = cliS {cliClient = f $ cliClient cliS}
+    in ((), newCliS)
 
 instance MonadClientSetup CliImplementation where
   saveClient = CliImplementation $ do
@@ -78,7 +79,7 @@ instance MonadClientSetup CliImplementation where
     cli <- gets cliClient
     msess <- gets cliSession
     IO.liftIO $ Save.saveToChan toSave (cli, msess)
-  restartClient  = CliImplementation $ state $ \cliS ->
+  restartClient = CliImplementation $ state $ \cliS ->
     case cliSession cliS of
       Just sess ->
         let !newSess = (emptySessionUI (sUIOptions sess))
@@ -91,16 +92,18 @@ instance MonadClientSetup CliImplementation where
                          , snframes = snframes sess
                          , sallNframes = sallNframes sess
                          }
-        in ((), cliS {cliSession = Just newSess})
+            !newCliS = cliS {cliSession = Just newSess}
+        in ((), newCliS)
       Nothing -> ((), cliS)
 
 instance MonadClientUI CliImplementation where
   {-# INLINE getsSession #-}
-  getsSession   f = CliImplementation $ gets $ f . fromJust . cliSession
+  getsSession f = CliImplementation $ gets $ f . fromJust . cliSession
   {-# INLINE modifySession #-}
   modifySession f = CliImplementation $ state $ \cliS ->
     let !newCliSession = f $ fromJust $ cliSession cliS
-    in ((), cliS {cliSession = Just newCliSession})
+        !newCliS = cliS {cliSession = Just newCliSession}
+    in ((), newCliS)
   updateClientLeader aid = do
     s <- getState
     modifyClient $ updateLeader aid s

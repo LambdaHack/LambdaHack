@@ -64,19 +64,20 @@ instance MonadStateRead SerImplementation where
 instance MonadStateWrite SerImplementation where
   {-# INLINE modifyState #-}
   modifyState f = SerImplementation $ state $ \serS ->
-    let !newSerState = f $ serState serS
-    in ((), serS {serState = newSerState})
+    let !newSerS = serS {serState = f $ serState serS}
+    in ((), newSerS)
   {-# INLINE putState #-}
-  putState !newSerState = SerImplementation $ state $ \serS ->
-    ((), serS {serState = newSerState})
+  putState newSerState = SerImplementation $ state $ \serS ->
+    let !newSerS = serS {serState = newSerState}
+    in ((), newSerS)
 
 instance MonadServer SerImplementation where
   {-# INLINE getsServer #-}
   getsServer   f = SerImplementation $ gets $ f . serServer
   {-# INLINE modifyServer #-}
   modifyServer f = SerImplementation $ state $ \serS ->
-    let !newSerServer = f $ serServer serS
-    in ((), serS {serServer = newSerServer})
+    let !newSerS = serS {serServer = f $ serServer serS}
+    in ((), newSerS)
   chanSaveServer = SerImplementation $ gets serToSave
   liftIO         = SerImplementation . IO.liftIO
 
@@ -85,8 +86,8 @@ instance MonadServerComm SerImplementation where
   getsDict   f = SerImplementation $ gets $ f . serDict
   {-# INLINE modifyDict #-}
   modifyDict f = SerImplementation $ state $ \serS ->
-    let !newSerDict = f $ serDict serS
-    in ((), serS {serDict = newSerDict})
+    let !newSerS = serS {serDict = f $ serDict serS}
+    in ((), newSerS)
   liftIO = SerImplementation . IO.liftIO
 
 instance MonadServerAtomic SerImplementation where
@@ -101,7 +102,7 @@ instance MonadServerAtomic SerImplementation where
                                cliS
     case cliSNewOrE of
       Left AtomicFail{} -> return (False, cliS)
-      Right cliSNew ->
+      Right !cliSNew ->
         -- We know @cliSNew@ differs only in @serState@.
         return (True, cliSNew)
   execUpdAtomicFid fid cmd = SerImplementation $ StateT $ \cliS -> do
@@ -113,7 +114,8 @@ instance MonadServerAtomic SerImplementation where
     let serServerNew = (serServer cliS)
           {sclientStates = EM.insert fid (serState cliSNew)
                            $ sclientStates $ serServer cliS}
-    return $! ((), cliS {serServer = serServerNew})
+        !newCliS = cliS {serServer = serServerNew}
+    return ((), newCliS)
   execUpdAtomicFidCatch fid cmd = SerImplementation $ StateT $ \cliS -> do
     let sFid = sclientStates (serServer cliS) EM.! fid
     cliSNewOrE <- Ex.try
@@ -126,7 +128,8 @@ instance MonadServerAtomic SerImplementation where
         let serServerNew = (serServer cliS)
               {sclientStates = EM.insert fid (serState cliSNew)
                                $ sclientStates $ serServer cliS}
-        return $! (True, cliS {serServer = serServerNew})
+            !newCliS = cliS {serServer = serServerNew}
+        return (True, newCliS)
   execSfxAtomic sfx = do
     ps <- posSfxAtomic sfx
     handleAndBroadcast ps [] (SfxAtomic sfx)
