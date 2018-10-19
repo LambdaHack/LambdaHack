@@ -19,6 +19,8 @@ import           Control.Monad.ST.Strict
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
@@ -145,11 +147,6 @@ drawFrameTerrain drawnLevelId = do
       {-# INLINE dis #-}
       dis pI tile =
         let TK.TileKind{tsymbol, tcolor, tcolor2} = okind cotile tile
-            -- Passing @p0@ as arg in place of @pI@ is much more costly.
-            -- Note that the @PointArray@ encoding of @p0@ is different
-            -- than the @EnumMap@ encoding, so we can't shortcut.
-            p0 :: Point
-            p0 = PointArray.punindex rXmax pI
             -- @smarkSuspect@ can be turned off easily, so let's overlay it
             -- over both visible and remembered tiles.
             fg :: Color.Color
@@ -157,10 +154,13 @@ drawFrameTerrain drawnLevelId = do
                  && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
                | smarkSuspect > 1
                  && Tile.isHideAs coTileSpeedup tile = Color.Magenta
-               | p0 `ES.member` totVisible
+               | -- Converting maps is cheaper than converting points
+                 -- and this function is a bottleneck, so we hack a bit.
+                 pI `IS.member` ES.enumSetToIntSet totVisible
                  -- If all embeds spent, mark it with darker colour.
                  && not (Tile.isEmbed coTileSpeedup tile
-                         && p0 `EM.notMember` lembed) = tcolor
+                         && pI `IM.notMember`
+                              EM.enumMapToIntMap lembed) = tcolor
                | otherwise = tcolor2
         in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> ContentId TileKind -> Color.AttrCharW32)
