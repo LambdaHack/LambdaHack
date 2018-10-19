@@ -326,8 +326,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
-        let (!y, !x) = i `quotRem` rwidth coscreen
-            box = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
+        let Point{..} = PointArray.punindex (rwidth coscreen) i
+            box = SDL.Rectangle (vp (px * boxSize) (py * boxSize))
                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
             width = min boxSize $ fromEnum $ SDL.textureWidth ti
             height = min boxSize $ fromEnum $ SDL.textureHeight ti
@@ -337,12 +337,13 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                                  (Vect.V2 (toEnum width) (toEnum height))
             xtgt = (boxSize - width) `divUp` 2
             ytgt = (boxSize - height) `div` 2
-            tgtR = SDL.Rectangle (vp (x * boxSize + xtgt) (y * boxSize + ytgt))
-                                 (Vect.V2 (toEnum width) (toEnum height))
+            tgtR = SDL.Rectangle
+                     (vp (px * boxSize + xtgt) (py * boxSize + ytgt))
+                     (Vect.V2 (toEnum width) (toEnum height))
         SDL.fillRect srenderer $ Just box
         SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
-        chooseAndDrawHighlight x y bg
+        chooseAndDrawHighlight px py bg
         return $! i + 1
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
