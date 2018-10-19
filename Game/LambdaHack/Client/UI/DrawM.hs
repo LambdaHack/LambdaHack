@@ -143,37 +143,37 @@ drawFrameTerrain drawnLevelId = do
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
-      dis pI tile = case okind cotile tile of
-        TK.TileKind{tsymbol, tcolor, tcolor2} ->
-          -- Passing @p0@ as arg in place of @pI@ is much more costly.
-          let p0 :: Point
-              {-# INLINE p0 #-}
-              p0 = PointArray.punindex rXmax pI
-              -- @smarkSuspect@ can be turned off easily, so let's overlay it
-              -- over both visible and remembered tiles.
-              fg :: Color.Color
-              {-# INLINE fg #-}
-              fg | smarkSuspect > 0
-                   && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
-                 | smarkSuspect > 1
-                   && Tile.isHideAs coTileSpeedup tile = Color.Magenta
-                 | ES.member p0 totVisible
-                   -- If all embeds spent, mark it with darker colour.
-                   && not (Tile.isEmbed coTileSpeedup tile
-                           && p0 `EM.notMember` lembed) = tcolor
-                 | otherwise = tcolor2
-          in Color.attrChar2ToW32 fg tsymbol
+      dis pI tile =
+        let TK.TileKind{tsymbol, tcolor, tcolor2} = okind cotile tile
+            -- Passing @p0@ as arg in place of @pI@ is much more costly.
+            -- Note that the @PointArray@ encoding of @p0@ is different
+            -- than the @EnumMap@ encoding, so we can't shortcut.
+            p0 :: Point
+            p0 = PointArray.punindex rXmax pI
+            -- @smarkSuspect@ can be turned off easily, so let's overlay it
+            -- over both visible and remembered tiles.
+            fg :: Color.Color
+            fg | smarkSuspect > 0
+                 && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
+               | smarkSuspect > 1
+                 && Tile.isHideAs coTileSpeedup tile = Color.Magenta
+               | p0 `ES.member` totVisible
+                 -- If all embeds spent, mark it with darker colour.
+                 && not (Tile.isEmbed coTileSpeedup tile
+                         && p0 `EM.notMember` lembed) = tcolor
+               | otherwise = tcolor2
+        in Color.attrChar2ToW32 fg tsymbol
       mapVT :: forall s. (Int -> ContentId TileKind -> Color.AttrCharW32)
             -> FrameST s
       {-# INLINE mapVT #-}
       mapVT f v = do
         let g :: Int -> Word16 -> ST s ()
+            {-# INLINE g #-}
             g !pI !tile = do
               let w = Color.attrCharW32 $ f pI (ContentId tile)
               VM.write v (pI + rXmax) w
         U.imapM_ g avector
-          -- replacing wtih @U.foldM'_ g 0 avector@ increases allocation
-          -- with no effect on runtime
+          -- replacing wtih @U.foldM'_ g 0 avector@ offers no speedup
       upd :: FrameForall
       upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
   return upd
