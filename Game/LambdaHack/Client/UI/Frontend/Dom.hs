@@ -243,8 +243,9 @@ display :: ClientOptions
 display ClientOptions{scolorIsBold}
         FrontendSession{..}
         !curFrame = flip runDOM undefined $ do
-  let setChar :: Int -> Word32 -> Word32 -> DOM ()
-      setChar !i !w !wPrev = unless (w == wPrev) $ do
+  let setChar :: Int -> (Word32, Word32) -> DOM Int
+      setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
+      setChar i (w, _) = do
         let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             (!cell, !style) = scharCells V.! i
@@ -271,12 +272,13 @@ display ClientOptions{scolorIsBold}
             setProp style "border-color" $ Color.colorToRGB Color.Magenta
           Color.HighlightGreen ->
             setProp style "border-color" $ Color.colorToRGB Color.Green
+        return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.
   callback <- newRequestAnimationFrameCallbackSync $ \_ ->
-    U.izipWithM_ setChar (PointArray.avector $ singleFrame curFrame)
-                         (PointArray.avector $ singleFrame prevFrame)
+    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleFrame curFrame)
+                                (PointArray.avector $ singleFrame prevFrame)
   -- This attempts to ensure no redraws while callback executes
   -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback
