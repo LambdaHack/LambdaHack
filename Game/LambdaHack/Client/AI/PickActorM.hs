@@ -7,7 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import           Data.Ratio
 
@@ -97,13 +96,12 @@ pickActorToMove maidToAvoid = do
               Just ((aid, b), tgt)
             _ -> Nothing
       oursTgtRaw <- mapM refresh ours
-      scondInMelee <- getsClient scondInMelee
       fleeD <- getsClient sfleeD
       let oursTgt = mapMaybe goodGeneric oursTgtRaw
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
-            let condInMelee = scondInMelee LEM.! blid body
-                actorMaxSk = actorMaxSkills EM.! aid
+            condInMelee <- condInMeleeM $ blid body
+            let actorMaxSk = actorMaxSkills EM.! aid
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
@@ -281,7 +279,7 @@ pickActorToMove maidToAvoid = do
           modifyClient $ updateLeader aid s
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
-          let condInMelee = scondInMelee LEM.! blid b
+          condInMelee <- condInMeleeM $ blid b
           when (ftactic (gplayer fact)
                 `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
@@ -296,8 +294,7 @@ setTargetFromTactics oldAid = do
   mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
-  scondInMelee <- getsClient scondInMelee
-  let condInMelee = scondInMelee LEM.! blid oldBody
+  condInMelee <- condInMeleeM $ blid oldBody
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD

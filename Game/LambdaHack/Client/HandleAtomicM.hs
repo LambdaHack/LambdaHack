@@ -5,7 +5,8 @@ module Game.LambdaHack.Client.HandleAtomicM
   , cmdAtomicSemCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs, createActor, destroyActor
+  , invalidateInMelee, wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs
+  , createActor, destroyActor
   , addItemToDiscoBenefit, perception
   , discoverKind, coverKind, discoverAspect, coverAspect
   , killExit
@@ -16,7 +17,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -88,7 +88,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- They are still considered whenever an actor moves himself
     -- and so his whole BFS data is invalidated.
     unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
-    recomputeInMelee (blid b)
+    invalidateInMelee (blid b)
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
@@ -96,7 +96,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
     tb <- getsState $ getActorBody target
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
-    recomputeInMelee (blid b)
+    invalidateInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdQuitFaction fid _ toSt _ -> do
     side <- getsClient sside
@@ -221,8 +221,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , scurChal
                   , snxtChal
                   , snxtScenario
-                  , scondInMelee = LEM.fromAscList $ map (, False)
-                                                   $ EM.keys (sdungeon s)
+                  , scondInMelee = EM.empty
                   , svictories
                   , soptions }
     salter <- getsState createSalter
@@ -240,14 +239,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdWriteSave -> saveClient
   _ -> return ()
 
--- This tweak is only needed in AI client, but it's lazy for each level
+-- This field is only needed in AI client, but it's on-demand for each level
 -- and so fairly cheap.
-recomputeInMelee :: MonadClient m => LevelId -> m ()
-recomputeInMelee lid = do
-  side <- getsClient sside
-  s <- getState
-  modifyClient $ \cli ->
-    cli {scondInMelee = LEM.insert lid (inMelee side lid s) (scondInMelee cli)}
+invalidateInMelee :: MonadClient m => LevelId -> m ()
+invalidateInMelee lid =
+  modifyClient $ \cli -> cli {scondInMelee = EM.delete lid (scondInMelee cli)}
 
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
@@ -272,7 +268,7 @@ createActor aid b ais = do
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
   unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
-  recomputeInMelee (blid b)
+  invalidateInMelee (blid b)
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
@@ -295,7 +291,7 @@ destroyActor aid b destroy = do
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
-  recomputeInMelee (blid b)
+  invalidateInMelee (blid b)
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()
 addItemToDiscoBenefit iid = do

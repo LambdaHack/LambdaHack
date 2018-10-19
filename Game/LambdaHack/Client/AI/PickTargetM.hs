@@ -12,7 +12,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Lazy as LEM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -85,13 +84,12 @@ computeTarget aid = do
     <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
-  scondInMelee <- getsClient scondInMelee
   salter <- getsClient salter
   -- We assume the actor eventually becomes a leader (or has the same
   -- set of skills as the leader, anyway) and set his target accordingly.
   actorMaxSkills <- getsState sactorMaxSkills
+  condInMelee <- condInMeleeM $ blid b
   let lalter = salter EM.! blid b
-      condInMelee = scondInMelee LEM.! blid b
       actorMaxSk = actorMaxSkills EM.! aid
       alterSkill = Ability.getSk Ability.SkAlter actorMaxSk
   lvl <- getLevel $ blid b
