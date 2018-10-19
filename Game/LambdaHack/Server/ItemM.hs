@@ -46,7 +46,7 @@ import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 onlyRegisterItem :: MonadServerAtomic m => ItemKnown -> m ItemId
-onlyRegisterItem itemKnown@(_, arItem, _) = do
+onlyRegisterItem itemKnown@(ItemKnown _ arItem _) = do
   itemRev <- getsServer sitemRev
   case HM.lookup itemKnown itemRev of
     Just iid -> return iid
@@ -64,7 +64,7 @@ registerItem :: MonadServerAtomic m
              => ItemFullKit -> ItemKnown -> Container -> Bool
              -> m ItemId
 registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown@(_, arItem, _) container verbose = do
+             itemKnown@(ItemKnown _ arItem _) container verbose = do
   iid <- onlyRegisterItem itemKnown
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container

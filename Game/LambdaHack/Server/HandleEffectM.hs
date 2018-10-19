@@ -61,6 +61,7 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.ItemRev
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.PeriodicM
 import           Game.LambdaHack.Server.ServerOptions
@@ -1181,8 +1182,8 @@ effectCreateItem jfidRaw mcount target store grp tim = do
              then jfidRaw
              else Nothing
       (itemKnown, itemFull) =
-        let (kindIx, ar, _) = itemKnownRaw
-        in ( (kindIx, ar, jfid)
+        let ItemKnown kindIx ar _ = itemKnownRaw
+        in ( ItemKnown kindIx ar jfid
            , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
       kitNew = case mcount of
         Just itemK -> (itemK, [])

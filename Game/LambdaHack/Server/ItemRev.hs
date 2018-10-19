@@ -1,8 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Creation of items on the server. Types and operations that don't involve
 -- server state nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
-  ( ItemKnown, ItemRev, UniqueSet, buildItem, newItemKind, newItem
+  ( ItemKnown(..), ItemRev, UniqueSet, buildItem, newItemKind, newItem
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -16,8 +16,10 @@ import Game.LambdaHack.Common.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector.Unboxed as U
+import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Color as Color
@@ -40,7 +42,12 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 -- Note: item seed instead of @AspectRecord@ is not enough,
 -- becaused different seeds may result in the same @AspectRecord@
 -- and we don't want such items to be distinct in UI and elsewhere.
-type ItemKnown = (ItemIdentity, IA.AspectRecord, Maybe FactionId)
+data ItemKnown = ItemKnown ItemIdentity IA.AspectRecord (Maybe FactionId)
+  deriving (Show, Eq, Generic)
+
+instance Binary ItemKnown
+
+instance Hashable ItemKnown
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -113,7 +120,7 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
         -- Bonuses on items/actors unaffected by number of spawned actors.
     let itemDisco = ItemDiscoFull {itemAspect = arItem, ..}
         itemFull = ItemFull {..}
-    return $ Just ( (itemIdentity, arItem, jfid itemBase)
+    return $ Just ( ItemKnown itemIdentity arItem (jfid itemBase)
                   , (itemFull, (itemK, itemTimer)) )
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
