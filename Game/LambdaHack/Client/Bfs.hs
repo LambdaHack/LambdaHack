@@ -89,7 +89,7 @@ fillBfs :: PointArray.Array Word8
         -> ()
 {-# INLINE fillBfs #-}
 fillBfs lalter alterSkill source arr@PointArray.Array{..} =
-  let vToI (x, y) = PointArray.pindex axsize (Point x y)
+  let vToI (x, y) = fromEnum (Point x y)
       movesI :: [VectorI]
       movesI = map vToI
         [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
@@ -138,7 +138,7 @@ fillBfs lalter alterSkill source arr@PointArray.Array{..} =
         in if null succK4 || distance == abortedKnownBfs
            then () -- no more dungeon positions to check, or we delved too deep
            else bfs (succ distance) succK4
-  in bfs (succ minKnownBfs) [PointArray.pindex axsize source]
+  in bfs (succ minKnownBfs) [fromEnum source]
 
 data AndPath =
     AndPath { pathSource :: Point  -- never included in @pathList@
@@ -175,22 +175,22 @@ findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (Point -> Bool)
 {-# INLINE findPathBfs #-}
 findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
             arr@PointArray.Array{..} =
-  let !pathGoalI = PointArray.pindex axsize pathGoal
-      !pathSourceI = PointArray.pindex axsize pathSource
+  let !pathGoalI = fromEnum pathGoal
+      !pathSourceI = fromEnum pathSource
       eps = sepsRaw `mod` 4
       (mc1, mc2) = splitAt eps [(0, -1), (1, 0), (0, 1), (-1, 0)]
       (md1, md2) = splitAt eps [(-1, -1), (1, -1), (1, 1), (-1, 1)]
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage.
       prefMoves = mc2 ++ reverse mc1 ++ md2 ++ reverse md1  -- fuzz
-      vToI (x, y) = PointArray.pindex axsize (Point x y)
+      vToI (x, y) = fromEnum (Point x y)
       movesI :: [VectorI]
       movesI = map vToI prefMoves
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix
       track pos oldDist suffix | oldDist == succ minKnownBfs =
-        let !posP = PointArray.punindex axsize pos
+        let !posP = toEnum pos
         in posP : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
         let !dist = pred oldDist
@@ -202,7 +202,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let pP = PointArray.punindex axsize p
+                 else let pP = toEnum p
                           free = dist < actorsAvoidedDist
                                  || pP `EM.notMember` lbig
                           alter | free = lalter `PointArray.accessI` p
@@ -222,7 +222,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
 #ifdef WITH_EXPENSIVE_ASSERTIONS
             !_A = assert (newPos /= pos) ()
 #endif
-            !posP = PointArray.punindex axsize pos
+            !posP = toEnum pos
         in track newPos dist (posP : suffix)
       !goalDist = BfsDistance $ arr `PointArray.accessI` pathGoalI
       pathLen = fromEnum $ goalDist .&. complement minKnownBfs
@@ -258,7 +258,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
           in if sumRes == maxBound
                 || goalDist /= apartBfs && pathLen < sumRes
              then if goalDist /= apartBfs then andPath else NoPath
-             else let pathList2 = track (PointArray.pindex axsize pRes)
+             else let pathList2 = track (fromEnum pRes)
                                         (toEnum dRes .|. minKnownBfs) []
                   in AndPath{pathList = pathList2, pathLen = sumRes, ..}
 

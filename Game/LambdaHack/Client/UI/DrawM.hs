@@ -202,7 +202,7 @@ drawFrameContent drawnLevelId = do
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
-              let pI = PointArray.pindex rXmax p0
+              let pI = fromEnum p0
                   w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + rXmax) w
         mapM_ g l
@@ -276,7 +276,7 @@ drawFramePath drawnLevelId = do
       mapVTL f l v = do
         let g :: Point -> ST s ()
             g !p0 = do
-              let pI = PointArray.pindex rXmax p0
+              let pI = fromEnum p0
                   tile = avector U.! pI
                   w = Color.attrCharW32 $ f p0 (ContentId tile)
               VM.write v (pI + rXmax) w
@@ -334,7 +334,7 @@ drawFrameActor drawnLevelId = do
       mapVAL f l v = do
         let g :: (Point, a) -> ST s ()
             g (!p0, !a0) = do
-              let pI = PointArray.pindex rXmax p0
+              let pI = fromEnum p0
                   w = Color.attrCharW32 $ f p0 a0
               VM.write v (pI + rXmax) w
         mapM_ g l
@@ -363,7 +363,7 @@ drawFrameExtra dm drawnLevelId = do
           Just tgt -> getsState $ aidTgtToPos leader drawnLevelId tgt
   let visionMarks =
         if smarkVision
-        then map (PointArray.pindex rXmax) $ ES.toList totVisible
+        then map fromEnum $ ES.toList totVisible
         else []
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
@@ -393,11 +393,11 @@ drawFrameExtra dm drawnLevelId = do
         case mtgtPos of
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightGrey)
-                          [PointArray.pindex rXmax p] v
+                          [fromEnum p] v
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightYellow)
-                          [PointArray.pindex rXmax p] v
+                          [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
 

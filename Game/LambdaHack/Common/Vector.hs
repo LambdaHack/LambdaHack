@@ -47,7 +47,7 @@ instance Binary Vector where
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.
 instance Enum Vector where
-  fromEnum (Vector vx vy) =
+  fromEnum Vector{..} =
     let xsize = speedupHackXSize
     in vx + vy * xsize
   toEnum n =

@@ -1,7 +1,7 @@
 -- | Rectangular areas of levels and their basic operations.
 module Game.LambdaHack.Common.Area
   ( Area, toArea, fromArea, spanArea, trivialArea, isTrivialArea
-  , inside, shrink, expand, middlePoint, areaInnerBorder, sumAreas
+  , inside, shrink, expand, middlePoint, areaInnerBorder, sumAreas, punindex
   ) where
 
 import Prelude ()
@@ -71,6 +71,11 @@ sumAreas a@(Area x0 y0 x1 y1) a'@(Area x0' y0' x1' y1') =
      | x0 == x1' -> assert (y0 == y0' && y1 == y1' `blame` (a, a')) $
        Area x0' y0' x1 y1'
      | otherwise -> error $ "areas not adjacent" `showFailure` (a, a')
+
+punindex :: X -> Int -> Point
+{-# INLINE punindex #-}
+punindex xsize n = let (py, px) = n `quotRem` xsize
+                   in Point{..}
 
 instance Binary Area where
   put (Area x0 y0 x1 y1) = do

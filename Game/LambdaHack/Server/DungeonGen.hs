@@ -54,7 +54,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                   -> ( ContentId TileKind
                      , (R.StdGen, (Int, [(Point, ContentId TileKind)])) )
       runCdefTile (gen1, (pI, assocs)) =
-        let p = PointArray.punindex rXmax pI
+        let p = toEnum pI
         in if p `inside` darea
            then case assocs of
              (p2, t2) : rest | p2 == p -> (t2, (gen1, (pI + 1, rest)))

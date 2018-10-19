@@ -2,7 +2,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( X, Y, Point(..)
-  , pindex, punindex, chessDist, euclidDistSq, adjacent, bla, fromTo
+  , chessDist, euclidDistSq, adjacent, bla, fromTo
   , originPoint
   , speedupHackXSize
 #ifdef EXPOSE_INTERNAL
@@ -49,9 +49,15 @@ instance Binary Point where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
+-- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
+-- We need to keep it that way, because we want close xs to have close indexes,
+-- e.g., adjacent points in line to have adjacent enumerations,
+-- because some of the screen layout and most of processing is line-by-line.
+-- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
+-- @(1, 7)..(10, 9)@.
 instance Enum Point where
   {-# INLINE fromEnum #-}
-  fromEnum p@Point{..} =
+  fromEnum Point{..} =
     let xsize = speedupHackXSize
     in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -59,25 +65,11 @@ instance Enum Point where
               `blame` "invalid point coordinates"
               `swith` (px, py))
 #endif
-         (pindex xsize p)
+         (px + py * xsize)
   {-# INLINE toEnum #-}
-  toEnum = let xsize = speedupHackXSize
-           in punindex xsize
-
--- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
--- We need to keep it that way, because we want close xs to have close indexes,
--- e.g., adjacent points in line to have adjacent enumerations,
--- because some of the screen layout and most of processing is line-by-line.
--- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
--- @(1, 7)..(10, 9)@.
-pindex :: X -> Point -> Int
-{-# INLINE pindex #-}
-pindex xsize (Point x y) = x + y * xsize
-
-punindex :: X -> Int -> Point
-{-# INLINE punindex #-}
-punindex xsize n = let (py, px) = n `quotRem` xsize
-                   in Point{..}
+  toEnum n = let xsize = speedupHackXSize
+                 (py, px) = n `quotRem` xsize
+             in Point{..}
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int

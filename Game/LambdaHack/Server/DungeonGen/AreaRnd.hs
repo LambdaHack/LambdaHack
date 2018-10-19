@@ -22,13 +22,12 @@ import qualified Data.EnumSet as ES
 import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
-import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Common.Random
-import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Content.PlaceKind
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.ContentData
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.PlaceKind
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
 -- so can't be arbitrarily scaled up.
@@ -51,7 +50,7 @@ pointInArea :: Area -> Rnd Point
 pointInArea area = do
   let (Point x0 y0, xspan, yspan) = spanArea area
   pxy <- randomR (0, xspan * yspan - 1)
-  let Point{..} = PointArray.punindex xspan pxy
+  let Point{..} = punindex xspan pxy
   return $! Point (x0 + px) (y0 + py)
 
 -- | Find a suitable position in the area, based on random points
@@ -66,7 +65,7 @@ findPointInArea area g gnumTries f =
                  -> m (Maybe Point)
       {-# INLINE checkPoint #-}
       checkPoint check fallback pxyRelative =
-        let Point{..} = PointArray.punindex xspan pxyRelative
+        let Point{..} = punindex xspan pxyRelative
             pos = Point (x0 + px) (y0 + py)
         in case check pos of
           Just p -> pure $ Just p

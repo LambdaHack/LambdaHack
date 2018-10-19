@@ -156,7 +156,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         prevFrame <- readIORef spreviousFrame
         writeIORef spreviousFrame (blankSingleFrame coscreen)
           -- to overwrite each char
-        drawFrame coscreen soptions sess prevFrame
+        drawFrame soptions sess prevFrame
       loopSDL :: IO ()
       loopSDL = do
         me <- SDL.pollEvent  -- events take precedence over frames
@@ -173,7 +173,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                   -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                   -- so we need to ensure we draw on the same (bound) OS thread
                   -- that initialized SDL, hence we have to poll frames.
-                  drawFrame coscreen soptions sess fr
+                  drawFrame soptions sess fr
                   -- We can't print screen in @display@ due to thread-unsafety.
                   when sprintEachScreen $ printScreen sess
                 putMVar sframeDrawn ()  -- signal that drawing ended
@@ -268,12 +268,11 @@ display FrontendSession{..} curFrame = do
       -- to avoid exiting via "thread blocked".
       threadDelay 50000
 
-drawFrame :: ScreenContent    -- ^ client screen content
-          -> ClientOptions    -- ^ client options
+drawFrame :: ClientOptions    -- ^ client options
           -> FrontendSession  -- ^ frontend session data
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
-drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
+drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
@@ -326,7 +325,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             return textTexture
           Just textTexture -> return textTexture
         ti <- SDL.queryTexture textTexture
-        let Point{..} = PointArray.punindex (rwidth coscreen) i
+        let Point{..} = toEnum i
             box = SDL.Rectangle (vp (px * boxSize) (py * boxSize))
                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
             width = min boxSize $ fromEnum $ SDL.textureWidth ti

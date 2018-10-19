@@ -223,7 +223,7 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
         let search 0 = accomodate fallback m tl
             search !k = do
               pxyRelative <- randomR (0, xspan * yspan - 1)
-              let Point{..} = PointArray.punindex xspan pxyRelative
+              let Point{..} = punindex xspan pxyRelative
                   pos = Point (x0 + px) (y0 + py)
                   tile = ltile PointArray.! pos
               if m pos tile && hd pos tile

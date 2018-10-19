@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
-  ( UnboxRepClass(..), Array(..), pindex, punindex
+  ( UnboxRepClass(..), Array(..)
   , (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
@@ -81,7 +81,7 @@ toUnboxRep c =
 -- | Array lookup.
 (!) :: UnboxRepClass c => Array c -> Point -> c
 {-# INLINE (!) #-}
-(!) Array{..} p = fromUnboxRep $ avector U.! pindex axsize p
+(!) Array{..} p = fromUnboxRep $ avector U.! fromEnum p
 
 accessI :: UnboxRepClass c => Array c -> Int -> UnboxRep c
 {-# INLINE accessI #-}
@@ -90,21 +90,21 @@ accessI Array{..} p = avector `U.unsafeIndex` p
 -- | Construct an array updated with the association list.
 (//) :: UnboxRepClass c => Array c -> [(Point, c)] -> Array c
 {-# INLINE (//) #-}
-(//) Array{..} l = let v = avector U.// map (pindex axsize *** toUnboxRep) l
+(//) Array{..} l = let v = avector U.// map (fromEnum *** toUnboxRep) l
                    in Array{avector = v, ..}
 
 unsafeUpdateA :: UnboxRepClass c => Array c -> [(Point, c)] -> ()
 {-# INLINE unsafeUpdateA #-}
 unsafeUpdateA Array{..} l = runST $ do
   vThawed <- U.unsafeThaw avector
-  mapM_ (\(p, c) -> VM.write vThawed (pindex axsize p) (toUnboxRep c)) l
+  mapM_ (\(p, c) -> VM.write vThawed (fromEnum p) (toUnboxRep c)) l
   void $ U.unsafeFreeze vThawed
 
 unsafeWriteA :: UnboxRepClass c => Array c -> Point -> c -> ()
 {-# INLINE unsafeWriteA #-}
 unsafeWriteA Array{..} p c = runST $ do
   vThawed <- U.unsafeThaw avector
-  VM.write vThawed (pindex axsize p) (toUnboxRep c)
+  VM.write vThawed (fromEnum p) (toUnboxRep c)
   void $ U.unsafeFreeze vThawed
 
 unsafeWriteManyA :: UnboxRepClass c => Array c -> [Point] -> c -> ()
@@ -112,7 +112,7 @@ unsafeWriteManyA :: UnboxRepClass c => Array c -> [Point] -> c -> ()
 unsafeWriteManyA Array{..} l c = runST $ do
   vThawed <- U.unsafeThaw avector
   let d = toUnboxRep c
-  mapM_ (\p -> VM.write vThawed (pindex axsize p) d) l
+  mapM_ (\p -> VM.write vThawed (fromEnum p) d) l
   void $ U.unsafeFreeze vThawed
 
 -- | Create an array from a replicated element.
@@ -132,7 +132,7 @@ replicateMA axsize aysize m = do
 generateA :: UnboxRepClass c => X -> Y -> (Point -> c) -> Array c
 {-# INLINE generateA #-}
 generateA axsize aysize f =
-  let g n = toUnboxRep $ f $ punindex axsize n
+  let g n = toUnboxRep $ f $ toEnum n
   in Array{avector = U.generate (axsize * aysize) g, ..}
 
 -- | Create an array from a monadic function.
@@ -140,7 +140,7 @@ generateMA :: (Monad m, UnboxRepClass c)
            => X -> Y -> (Point -> m c) -> m (Array c)
 {-# INLINE generateMA #-}
 generateMA axsize aysize fm = do
-  let gm n = liftM toUnboxRep $ fm $ punindex axsize n
+  let gm n = liftM toUnboxRep $ fm $ toEnum n
   v <- U.generateM (axsize * aysize) gm
   return $! Array{avector = v, ..}
 
@@ -179,21 +179,21 @@ foldlA' f z0 Array{..} =
 ifoldlA' :: UnboxRepClass c => (a -> Point -> c -> a) -> a -> Array c -> a
 {-# INLINE ifoldlA' #-}
 ifoldlA' f z0 Array{..} =
-  U.ifoldl' (\a n c -> f a (punindex axsize n) (fromUnboxRep c)) z0 avector
+  U.ifoldl' (\a n c -> f a (toEnum n) (fromUnboxRep c)) z0 avector
 
 -- | Fold right over an array
 -- (function applied to each element and its index).
 ifoldrA :: UnboxRepClass c => (Point -> c -> a -> a) -> a -> Array c -> a
 {-# INLINE ifoldrA #-}
 ifoldrA f z0 Array{..} =
-  U.ifoldr (\n c a -> f (punindex axsize n) (fromUnboxRep c) a) z0 avector
+  U.ifoldr (\n c a -> f (toEnum n) (fromUnboxRep c) a) z0 avector
 
 -- | Fold right strictly over an array
 -- (function applied to each element and its index).
 ifoldrA' :: UnboxRepClass c => (Point -> c -> a -> a) -> a -> Array c -> a
 {-# INLINE ifoldrA' #-}
 ifoldrA' f z0 Array{..} =
-  U.ifoldr' (\n c a -> f (punindex axsize n) (fromUnboxRep c) a) z0 avector
+  U.ifoldr' (\n c a -> f (toEnum n) (fromUnboxRep c) a) z0 avector
 
 -- | Fold monadically strictly over an array.
 foldMA' :: (Monad m, UnboxRepClass c) => (a -> c -> m a) -> a -> Array c -> m a
@@ -207,7 +207,7 @@ ifoldMA' :: (Monad m, UnboxRepClass c)
          => (a -> Point -> c -> m a) -> a -> Array c -> m a
 {-# INLINE ifoldMA' #-}
 ifoldMA' f z0 Array{..} =
-  U.ifoldM' (\a n c -> f a (punindex axsize n) (fromUnboxRep c)) z0 avector
+  U.ifoldM' (\a n c -> f a (toEnum n) (fromUnboxRep c)) z0 avector
 
 -- | Map over an array.
 mapA :: (UnboxRepClass c, UnboxRepClass d) => (c -> d) -> Array c -> Array d
@@ -221,7 +221,7 @@ imapA :: (UnboxRepClass c, UnboxRepClass d)
 {-# INLINE imapA #-}
 imapA f Array{..} =
   let v = U.imap (\n c ->
-                   toUnboxRep $ f (punindex axsize n) (fromUnboxRep c)) avector
+                   toUnboxRep $ f (toEnum n) (fromUnboxRep c)) avector
   in Array{avector = v, ..}
 
 -- | Map monadically over an array (function applied to each element
@@ -229,7 +229,7 @@ imapA f Array{..} =
 imapMA_ :: (Monad m, UnboxRepClass c) => (Point -> c -> m ()) -> Array c -> m ()
 {-# INLINE imapMA_ #-}
 imapMA_ f Array{..} =
-  U.imapM_ (\n c -> f (punindex axsize n) (fromUnboxRep c)) avector
+  U.imapM_ (\n c -> f (toEnum n) (fromUnboxRep c)) avector
 
 -- | Set all elements to the given value, in place.
 unsafeSetA :: UnboxRepClass c => c -> Array c -> Array c
@@ -250,14 +250,14 @@ safeSetA c Array{..} =
 -- The array may not be empty.
 minIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE minIndexA #-}
-minIndexA Array{..} = punindex axsize $ U.minIndex avector
+minIndexA Array{..} = toEnum $ U.minIndex avector
 
 -- | Yield the point coordinates of the last minimum element of the array.
 -- The array may not be empty.
 minLastIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE minLastIndexA #-}
 minLastIndexA Array{..} =
-  punindex axsize
+  toEnum
   $ fst . Bundle.foldl1' imin . Bundle.indexed . G.stream
   $ avector
  where
@@ -271,7 +271,7 @@ minIndexesA Array{..} =
   Bundle.foldr imin [] . Bundle.indexed . G.stream $ avector
  where
   imin (i, x) acc = if x == minE
-                    then let !j = punindex axsize i
+                    then let !j = toEnum i
                          in j : acc
                     else acc
   !minE = U.minimum avector
@@ -280,14 +280,14 @@ minIndexesA Array{..} =
 -- The array may not be empty.
 maxIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxIndexA #-}
-maxIndexA Array{..} = punindex axsize $ U.maxIndex avector
+maxIndexA Array{..} = toEnum $ U.maxIndex avector
 
 -- | Yield the point coordinates of the last maximum element of the array.
 -- The array may not be empty.
 maxLastIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxLastIndexA #-}
 maxLastIndexA Array{..} =
-  punindex axsize
+  toEnum
   $ fst . Bundle.foldl1' imax . Bundle.indexed . G.stream
   $ avector
  where
