@@ -75,17 +75,6 @@ toUnboxRep c =
 #endif
     toUnboxRepUnsafe c
 
--- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
--- We need to keep it that way, because we want close xs to have close indexes.
-pindex :: X -> Point -> Int
-{-# INLINE pindex #-}
-pindex xsize (Point x y) = x + y * xsize
-
-punindex :: X -> Int -> Point
-{-# INLINE punindex #-}
-punindex xsize n = let (y, x) = n `quotRem` xsize
-                   in Point x y
-
 -- Note: there's no point specializing this to @Point@ arguments,
 -- since the extra few additions in @fromPoint@ may be less expensive than
 -- memory or register allocations needed for the extra @Int@ in @Point@.

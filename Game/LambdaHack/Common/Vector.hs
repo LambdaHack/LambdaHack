@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Vector
   , RadianAngle, rotate, towards
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , maxVectorDim, _moveTexts, longMoveTexts, normalize, normalizeVector
+  , _moveTexts, longMoveTexts, normalize, normalizeVector
   , pathToTrajectory
 #endif
   ) where
@@ -47,20 +47,19 @@ instance Binary Vector where
 -- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
 -- to keep it in sync with Point.
 instance Enum Vector where
-  fromEnum (Vector vx vy) = vx + vy * (2 ^ maxLevelDimExponent)
+  fromEnum (Vector vx vy) =
+    let xsize = speedupHackXSize
+    in vx + vy * xsize
   toEnum n =
-    let (y, x) = n `quotRem` (2 ^ maxLevelDimExponent)
-        (vx, vy) | x > maxVectorDim = (x - 2 ^ maxLevelDimExponent, y + 1)
-                 | x < - maxVectorDim = (x + 2 ^ maxLevelDimExponent, y - 1)
+    let xsize = speedupHackXSize
+        xsizeHalf = xsize `div` 2
+        (y, x) = n `quotRem` xsize
+        (vx, vy) | x >= xsizeHalf = (x - xsize, y + 1)
+                 | x <= - xsizeHalf = (x + xsize, y - 1)
                  | otherwise = (x, y)
     in Vector{..}
 
 instance NFData Vector
-
--- | Maximal supported vector X and Y coordinates.
-maxVectorDim :: Int
-{-# INLINE maxVectorDim #-}
-maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
 
 -- | Tells if a vector has length 1 in the chessboard metric.
 isUnit :: Vector -> Bool

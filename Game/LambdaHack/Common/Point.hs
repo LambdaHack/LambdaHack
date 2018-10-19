@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
-  ( X, Y, Point(..), maxLevelDimExponent
-  , chessDist, euclidDistSq, adjacent, bla, fromTo
+  ( X, Y, Point(..)
+  , pindex, punindex, chessDist, euclidDistSq, adjacent, bla, fromTo
   , originPoint
+  , speedupHackXSize
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , maxLevelDim, blaXY, balancedWord
+  , blaXY, balancedWord
 #endif
   ) where
 
@@ -15,9 +16,16 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import Data.Binary
-import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Int (Int32)
 import GHC.Generics (Generic)
+
+-- | This is a hackily hardcoded maximal level width, for speed,
+-- to be replaced by some clever approach, e.g., a common library
+-- on which content depends, on which engine main code depends,
+-- taking the size from rules content. @IORef@ is not clever enough
+-- because reading it allocates too much.
+speedupHackXSize :: Int
+speedupHackXSize = 80
 
 -- | Spacial dimension for points and vectors.
 type X = Int
@@ -41,36 +49,35 @@ instance Binary Point where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
--- This conversion cannot be used for PointArray indexing,
--- because it is not contiguous --- we don't know the horizontal
--- width of the levels nor of the screen.
--- The conversion is implemented mainly for @EnumMap@ and @EnumSet@.
--- Note that the conversion is not monotonic wrt the natural @Ord@ instance,
--- because we want adjacent points in line to have adjacent enumerations,
+instance Enum Point where
+  {-# INLINE fromEnum #-}
+  fromEnum p@Point{..} =
+    let xsize = speedupHackXSize
+    in
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+       assert (px >= 0 && py >= 0 && px < xsize
+              `blame` "invalid point coordinates"
+              `swith` (px, py))
+#endif
+         (pindex xsize p)
+  {-# INLINE toEnum #-}
+  toEnum = let xsize = speedupHackXSize
+           in punindex xsize
+
+-- Note that @Ord@ on @Int@ is not monotonic wrt @Ord@ on @Point@.
+-- We need to keep it that way, because we want close xs to have close indexes,
+-- e.g., adjacent points in line to have adjacent enumerations,
 -- because some of the screen layout and most of processing is line-by-line.
 -- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
 -- @(1, 7)..(10, 9)@.
-instance Enum Point where
-  fromEnum (Point x y) =
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-    assert (x >= 0 && y >= 0 && x <= maxLevelDim && y <= maxLevelDim
-            `blame` "invalid point coordinates"
-            `swith` (x, y))
-#endif
-    (x + unsafeShiftL y maxLevelDimExponent)
-  toEnum n = Point (n .&. maxLevelDim) (unsafeShiftR n maxLevelDimExponent)
+pindex :: X -> Point -> Int
+{-# INLINE pindex #-}
+pindex xsize (Point x y) = x + y * xsize
 
--- | The maximum number of bits for level X and Y dimension (16).
--- The value is chosen to support architectures with 32-bit Ints.
-maxLevelDimExponent :: Int
-{-# INLINE maxLevelDimExponent #-}
-maxLevelDimExponent = 16
-
--- | Maximal supported level X and Y dimension. Not checked anywhere.
--- The value is chosen to support architectures with 32-bit Ints.
-maxLevelDim :: Int
-{-# INLINE maxLevelDim #-}
-maxLevelDim = 2 ^ maxLevelDimExponent - 1
+punindex :: X -> Int -> Point
+{-# INLINE punindex #-}
+punindex xsize n = let (py, px) = n `quotRem` xsize
+                   in Point{..}
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int
