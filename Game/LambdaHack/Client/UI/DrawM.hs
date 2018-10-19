@@ -172,6 +172,8 @@ drawFrameTerrain drawnLevelId = do
               let w = Color.attrCharW32 $ f pI (ContentId tile)
               VM.write v (pI + rXmax) w
         U.imapM_ g avector
+          -- replacing wtih @U.foldM'_ g 0 avector@ increases allocation
+          -- with no effect on runtime
       upd :: FrameForall
       upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
   return upd
