@@ -234,7 +234,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         SDL.QuitEvent -> forceShutdown sess
         SDL.WindowRestoredEvent{} -> redraw
         SDL.WindowExposedEvent{} -> redraw  -- needed on Windows
-        -- Probably not needed, because textures nor their content not lost:
+        -- Probably not needed, because no textures nor their content lost:
         -- SDL.WindowShownEvent{} -> redraw
         _ -> return ()
   loopSDL
