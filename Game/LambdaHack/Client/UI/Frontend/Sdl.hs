@@ -276,12 +276,12 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
-  let vp :: Int -> Int -> Vect.Point Vect.V2 CInt
+  let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
+      vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight !x !y !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
-        let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize))
-                                 (Vect.V2 (toEnum boxSize) (toEnum boxSize))
+        let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
           -- reset back to black
@@ -316,31 +316,34 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
                                          then 7   -- hack
                                          else 8901  -- 0x22c5
                          else acCharRaw
-            textSurface <-
-              TTF.shadedGlyph sfont (colorToRGBA fg)
-                                    (colorToRGBA Color.Black) acChar
+            textSurfaceRaw <- TTF.shadedGlyph sfont (colorToRGBA fg)
+                                              (colorToRGBA Color.Black) acChar
+            Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
+            let width = min boxSize $ fromEnum sw
+                height = min boxSize $ fromEnum sh
+                xsrc = max 0 (fromEnum sw - width) `div` 2
+                ysrc = max 0 (fromEnum sh - height) `div` 2
+                srcR = SDL.Rectangle (vp xsrc ysrc)
+                                     (Vect.V2 (toEnum width) (toEnum height))
+                xtgt = (boxSize - width) `divUp` 2
+                ytgt = (boxSize - height) `div` 2
+                tgtR = vp xtgt ytgt
+            textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
+            SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
+            -- We resize surface rather than texture to set the resulting
+            -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
+            -- which otherwise we wouldn't be able to do.
+            void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
+                                   textSurface (Just tgtR)
+            SDL.freeSurface textSurfaceRaw
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
             writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
             return textTexture
           Just textTexture -> return textTexture
-        ti <- SDL.queryTexture textTexture
         let Point{..} = toEnum i
-            box = SDL.Rectangle (vp (px * boxSize) (py * boxSize))
-                                (Vect.V2 (toEnum boxSize) (toEnum boxSize))
-            width = min boxSize $ fromEnum $ SDL.textureWidth ti
-            height = min boxSize $ fromEnum $ SDL.textureHeight ti
-            xsrc = max 0 (fromEnum (SDL.textureWidth ti) - width) `div` 2
-            ysrc = max 0 (fromEnum (SDL.textureHeight ti) - height) `div` 2
-            srcR = SDL.Rectangle (vp xsrc ysrc)
-                                 (Vect.V2 (toEnum width) (toEnum height))
-            xtgt = (boxSize - width) `divUp` 2
-            ytgt = (boxSize - height) `div` 2
-            tgtR = SDL.Rectangle
-                     (vp (px * boxSize + xtgt) (py * boxSize + ytgt))
-                     (Vect.V2 (toEnum width) (toEnum height))
-        SDL.fillRect srenderer $ Just box
-        SDL.copy srenderer textTexture (Just srcR) (Just tgtR)
+            tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2
+        SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
         chooseAndDrawHighlight px py bg
         return $! i + 1
