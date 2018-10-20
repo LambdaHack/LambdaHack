@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Either (rights)
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
@@ -50,21 +51,22 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable darea ltile = do
   let outerId = ouniqGroup cotile "unknown outer fence"
-      runCdefTile :: (R.StdGen, (Int, [(Point, ContentId TileKind)]))
+      runCdefTile :: (R.StdGen, (Int, [(Int, ContentId TileKind)]))
                   -> ( ContentId TileKind
-                     , (R.StdGen, (Int, [(Point, ContentId TileKind)])) )
+                     , (R.StdGen, (Int, [(Int, ContentId TileKind)])) )
       runCdefTile (gen1, (pI, assocs)) =
         let p = toEnum pI
         in if p `inside` darea
            then case assocs of
-             (p2, t2) : rest | p2 == p -> (t2, (gen1, (pI + 1, rest)))
+             (p2, t2) : rest | p2 == pI -> (t2, (gen1, (pI + 1, rest)))
              _ -> let (tile, gen2) = St.runState cdefTile gen1
                   in (tile, (gen2, (pI + 1, assocs)))
            else (outerId, (gen1, (pI + 1, assocs)))
       runUnfold gen =
         let (gen1, gen2) = R.split gen
-        in (PointArray.unfoldrNA rXmax rYmax runCdefTile
-                                 (gen1, (0, EM.assocs ltile)), gen2)
+        in (PointArray.unfoldrNA
+              rXmax rYmax runCdefTile
+              (gen1, (0, IM.assocs $ EM.enumMapToIntMap ltile)), gen2)
   converted1 <- St.state runUnfold
   case mpickPassable of
     _ | areAllWalkable -> return converted1  -- all walkable; passes OK
