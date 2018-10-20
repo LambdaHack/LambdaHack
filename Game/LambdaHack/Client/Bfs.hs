@@ -26,6 +26,7 @@ import           GHC.Generics (Generic)
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Vector
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
@@ -90,7 +91,7 @@ fillBfs :: PointArray.Array Word8
         -> ()
 {-# INLINE fillBfs #-}
 fillBfs lalter alterSkill source arr@PointArray.Array{..} =
-  let vToI (x, y) = fromEnum (Point x y)
+  let vToI (x, y) = fromEnum (Vector x y)
       movesI :: [VectorI]
       movesI = map vToI
         [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
@@ -184,7 +185,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage.
       prefMoves = mc2 ++ reverse mc1 ++ md2 ++ reverse md1  -- fuzz
-      vToI (x, y) = fromEnum (Point x y)
+      vToI (x, y) = fromEnum (Vector x y)
       movesI :: [VectorI]
       movesI = map vToI prefMoves
       track :: PointI -> BfsDistance -> [Point] -> [Point]
