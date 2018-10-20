@@ -18,6 +18,7 @@ import           Control.Monad.ST.Strict
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           GHC.Generics (Generic)
@@ -93,7 +94,7 @@ fillBfs lalter alterSkill source arr@PointArray.Array{..} =
       movesI :: [VectorI]
       movesI = map vToI
         [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-      unsafeWriteI :: Int -> BfsDistance -> ()
+      unsafeWriteI :: PointI -> BfsDistance -> ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = runST $ do
         vThawed <- U.unsafeThaw avector
@@ -168,7 +169,7 @@ actorsAvoidedDist = BfsDistance 5
 -- avoid displacing and instead perform two separate moves, wasting 1 turn
 -- in total. But in corridors they will still displace and elsewhere
 -- this scenario was quite rare already.
-findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (Point -> Bool)
+findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (PointI -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> AndPath
@@ -202,12 +203,11 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let pP = toEnum p
-                          free = dist < actorsAvoidedDist
-                                 || pP `EM.notMember` lbig
+                 else let free = dist < actorsAvoidedDist
+                                 || p `IM.notMember` EM.enumMapToIntMap lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster
-                          dark = not $ fovLit pP
+                          dark = not $ fovLit p
                       -- Prefer paths without actors and through
                       -- more easily opened tiles and, secondly,
                       -- in the ambient dark (even if light carried,

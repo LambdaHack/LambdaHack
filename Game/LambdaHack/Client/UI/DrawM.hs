@@ -69,6 +69,8 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
+type PointI = Int
+
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
   arena <- getArenaUI
@@ -143,7 +145,7 @@ drawFrameTerrain drawnLevelId = do
   -- Not @ScreenContent@, because indexing in level's data.
   Level{ltile=PointArray.Array{avector}, lembed} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
-  let dis :: Int -> ContentId TileKind -> Color.AttrCharW32
+  let dis :: PointI -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
       dis pI tile =
         let TK.TileKind{tsymbol, tcolor, tcolor2} = okind cotile tile
@@ -163,11 +165,11 @@ drawFrameTerrain drawnLevelId = do
                               EM.enumMapToIntMap lembed) = tcolor
                | otherwise = tcolor2
         in Color.attrChar2ToW32 fg tsymbol
-      mapVT :: forall s. (Int -> ContentId TileKind -> Color.AttrCharW32)
+      mapVT :: forall s. (PointI -> ContentId TileKind -> Color.AttrCharW32)
             -> FrameST s
       {-# INLINE mapVT #-}
       mapVT f v = do
-        let g :: Int -> Word16 -> ST s ()
+        let g :: PointI -> Word16 -> ST s ()
             {-# INLINE g #-}
             g !pI !tile = do
               let w = Color.attrCharW32 $ f pI (ContentId tile)
@@ -189,21 +191,20 @@ drawFrameContent drawnLevelId = do
       viewItemBag _ floorBag = case EM.toDescList floorBag of
         (iid, _kit) : _ -> viewItem $ itemToF iid
         [] -> error $ "lfloor not sparse" `showFailure` ()
-      viewSmell :: Point -> Time -> Color.AttrCharW32
+      viewSmell :: PointI -> Time -> Color.AttrCharW32
       {-# INLINE viewSmell #-}
-      viewSmell p0 sml =
-        let fg = toEnum $ fromEnum p0 `rem` 13 + 2
+      viewSmell pI sml =
+        let fg = toEnum $ pI `rem` 13 + 2
             smlt = smellTimeout `timeDeltaSubtract`
                      (sml `timeDeltaToFrom` ltime)
         in Color.attrChar2ToW32 fg (timeDeltaToDigit smellTimeout smlt)
-      mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
+      mapVAL :: forall a s. (PointI -> a -> Color.AttrCharW32) -> [(PointI, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}
       mapVAL f l v = do
-        let g :: (Point, a) -> ST s ()
-            g (!p0, !a0) = do
-              let pI = fromEnum p0
-                  w = Color.attrCharW32 $ f p0 a0
+        let g :: (PointI, a) -> ST s ()
+            g (!pI, !a0) = do
+              let w = Color.attrCharW32 $ f pI a0
               VM.write v (pI + rXmax) w
         mapM_ g l
       -- We don't usually show embedded items, because normally we don't
@@ -213,9 +214,10 @@ drawFrameContent drawnLevelId = do
       -- UI setting for suspect terrain highlights most tiles with embeds.
       upd :: FrameForall
       upd = FrameForall $ \v -> do
-        mapVAL viewItemBag (EM.assocs lfloor) v
+        mapVAL viewItemBag (IM.assocs $ EM.enumMapToIntMap lfloor) v
         when smarkSmell $
-          mapVAL viewSmell (filter ((> ltime) . snd) $ EM.assocs lsmell) v
+          mapVAL viewSmell (filter ((> ltime) . snd)
+                            $ IM.assocs $ EM.enumMapToIntMap lsmell) v
   return upd
 
 drawFramePath :: forall m. MonadClientUI m => LevelId -> m FrameForall
@@ -297,7 +299,7 @@ drawFrameActor drawnLevelId = do
   mleader <- getsClient sleader
   s <- getState
   let {-# INLINE viewBig #-}
-      viewBig _ aid =
+      viewBig aid =
           let Actor{bhp, bfid, btrunk, bwatch} = getActorBody aid s
               ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               Item{jfid} = getItemBody btrunk s
@@ -321,27 +323,27 @@ drawFrameActor drawnLevelId = do
                    else bcolor
          in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} symbol
       {-# INLINE viewProj #-}
-      viewProj _ as = case as of
+      viewProj as = case as of
         aid : _ ->
           let ActorUI{bsymbol, bcolor} = sactorUI EM.! aid
               bg = Color.HighlightNone
               fg = bcolor
          in Color.attrCharToW32 $ Color.AttrChar Color.Attr{..} bsymbol
         [] -> error $ "lproj not sparse" `showFailure` ()
-      mapVAL :: forall a s. (Point -> a -> Color.AttrCharW32) -> [(Point, a)]
+      mapVAL :: forall a s. (a -> Color.AttrCharW32) -> [(PointI, a)]
              -> FrameST s
       {-# INLINE mapVAL #-}
       mapVAL f l v = do
-        let g :: (Point, a) -> ST s ()
-            g (!p0, !a0) = do
-              let pI = fromEnum p0
-                  w = Color.attrCharW32 $ f p0 a0
+        let g :: (PointI, a) -> ST s ()
+            g (!pI, !a0) = do
+              let w = Color.attrCharW32 $ f a0
               VM.write v (pI + rXmax) w
         mapM_ g l
       upd :: FrameForall
       upd = FrameForall $ \v -> do
-        mapVAL viewProj (EM.assocs lproj) v
-        mapVAL viewBig (EM.assocs lbig) v  -- big actor overlay projectiles
+        mapVAL viewProj (IM.assocs $ EM.enumMapToIntMap lproj) v
+        mapVAL viewBig (IM.assocs $ EM.enumMapToIntMap lbig) v
+          -- big actor overlay projectiles
   return upd
 
 drawFrameExtra :: forall m. MonadClientUI m
@@ -363,7 +365,7 @@ drawFrameExtra dm drawnLevelId = do
           Just tgt -> getsState $ aidTgtToPos leader drawnLevelId tgt
   let visionMarks =
         if smarkVision
-        then map fromEnum $ ES.toList totVisible
+        then IS.toList $ ES.enumSetToIntSet totVisible
         else []
       backlightVision :: Color.AttrChar -> Color.AttrChar
       backlightVision ac = case ac of
@@ -374,10 +376,10 @@ drawFrameExtra dm drawnLevelId = do
                            | otherwise = hi
         in Color.AttrChar (Color.Attr fg hiUnlessLeader) ch
       turnBW (Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
-      mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [Int]
+      mapVL :: forall s. (Color.AttrChar -> Color.AttrChar) -> [PointI]
             -> FrameST s
       mapVL f l v = do
-        let g :: Int -> ST s ()
+        let g :: PointI -> ST s ()
             g !pI = do
               w0 <- VM.read v (pI + rXmax)
               let w = Color.attrCharW32 . Color.attrCharToW32

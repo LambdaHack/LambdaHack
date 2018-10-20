@@ -120,7 +120,8 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
     salter <- getsClient salter
     lvl <- getLevel lid
     let !lalter = salter EM.! lid
-        fovLit p = Tile.isLit coTileSpeedup $ lvl `at` p
+        fovLit p = Tile.isLit coTileSpeedup $ PointArray.fromUnboxRep
+                                            $ ltile lvl `PointArray.accessI` p
         !source = bpos b
         !mpath =
           findPathBfs (EM.delete source $ lbig lvl)  -- don't sidestep oneself
