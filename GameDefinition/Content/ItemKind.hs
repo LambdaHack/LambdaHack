@@ -1010,8 +1010,7 @@ iaspects_necklaceTemplate =
 gorget = necklaceTemplate
   { iname    = "Old Gorget"
   , ifreq    = [("common item", 25), ("treasure", 25)]
-  , iflavour = zipFancy [BrCyan]  -- looks exactly the same as on of necklaces,
-                                  -- but it's OK, it's an artifact
+  , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces
   , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 2

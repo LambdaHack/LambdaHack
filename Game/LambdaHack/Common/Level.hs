@@ -211,6 +211,7 @@ findPosTry2 :: Int                                    -- ^ the number of tries
             -> (Point -> ContentId TileKind -> Bool)  -- ^ good to have pred.
             -> [Point -> ContentId TileKind -> Bool]  -- ^ worst case predicates
             -> Rnd (Maybe Point)
+{-# INLINE findPosTry2 #-}
 findPosTry2 numTries Level{ltile, larea} m0 l g r =
   assert (numTries > 0) $
   let (Point x0 y0, xspan, yspan) = spanArea larea
@@ -218,11 +219,13 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
                  -> (Point -> ContentId TileKind -> Bool)
                  -> [Point -> ContentId TileKind -> Bool]
                  -> Rnd (Maybe Point)
-      accomodate fallback _ [] = fallback  -- fallback needs to be non-strict
+      accomodate fallback _ [] = fallback
       accomodate fallback m (hd : tl) =
         let search 0 = accomodate fallback m tl
             search !k = do
               pxyRelative <- randomR (0, xspan * yspan - 1)
+              -- Here we can't use @fromEnum@ and/or work with the @Int@
+              -- representation, because the span is different than @rXmax@.
               let Point{..} = punindex xspan pxyRelative
                   pos = Point (x0 + px) (y0 + py)
                   tile = ltile PointArray.! pos
@@ -232,7 +235,8 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
         in search numTries
       rAndOnceOnlym0 = r ++ [\_ _ -> True]
   in accomodate (accomodate (return Nothing) m0 rAndOnceOnlym0)
-                -- @pos@ or @tile@ not always needed, so not strict
+                -- @pos@ and @tile@ not always needed, so not strict;
+                -- the function arguments determine that thanks to inlining.
                 (\pos tile -> m0 pos tile && g pos tile)
                 l
 
