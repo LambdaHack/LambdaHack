@@ -1755,7 +1755,7 @@ smokingJacket = ItemKind
   , iaspects = [ Timeout $ (1 `d` 2) * 3
                , AddSkill SkSpeed 5
                , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotArmorMelee ]
+               , EqpSlot EqpSlotSpeed ]
   , ieffects = [Recharging (RefillCalm 1)]
   , idesc    = "Wearing this velvet jacket, anyone would look dashing."
   , ikit     = []
