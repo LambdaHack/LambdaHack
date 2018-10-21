@@ -857,14 +857,20 @@ displaceFoe aid = do
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
-        actorMaxSk <- getsState $ getActorMaxSkills aid2
-        dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
-          -- DisplaceDying, DisplaceBraced, DisplaceImmobile, DisplaceSupported
-        let nFrOld = nFriends body2
-        return $! if walkable (bpos body2) && dEnemy && nFrOld < nFrNew
-                     && notLooping b (bpos body2)
-                  then Just (nFrOld * nFrOld, ReqDisplace aid2)
-                  else Nothing
+        let tpos = bpos body2
+        case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+          [_] -> do
+            actorMaxSk <- getsState $ getActorMaxSkills aid2
+            dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
+              -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
+              -- DisplaceSupported
+            let nFrOld = nFriends body2
+            return $! if walkable (bpos body2)  -- DisplaceAccess
+                         && dEnemy && nFrOld < nFrNew
+                         && notLooping b (bpos body2)
+                      then Just (nFrOld * nFrOld, ReqDisplace aid2)
+                      else Nothing
+          _ -> return Nothing  -- DisplaceProjectiles
   foes <- mapM qualifyActor adjFoes
   return $! liftFrequency $ toFreq "displaceFoe" $ catMaybes foes
 
@@ -1014,12 +1020,11 @@ moveOrRunAid source dir = do
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
-      -- We start by checking actors at the target position,
-      -- which gives a partial information (actors can be invisible),
-      -- as opposed to accessibility (and items) which are always accurate
-      -- (tiles can't be invisible).
-      tgts = maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl
-  case tgts of
+  -- We start by checking actors at the target position,
+  -- which gives a partial information (actors can be invisible),
+  -- as opposed to accessibility (and items) which are always accurate
+  -- (tiles can't be invisible).
+  case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
     [target] | walkable
                && getSk SkDisplace actorSk > 0
                && notLooping sb tpos -> do

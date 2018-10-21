@@ -424,12 +424,10 @@ displaceAid target = do
        lvl <- getLevel lid
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-         case posToBigLvl tpos lvl of
-           Just{} -> return $ Right $ ReqDisplace target
-           Nothing -> case posToProjsLvl tpos lvl of
-             [] -> error $ "" `showFailure` (leader, sb, target, tb)
-             [_] -> return $ Right $ ReqDisplace target
-             _ -> failSer DisplaceProjectiles
+         case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+           [] -> error $ "" `showFailure` (leader, sb, target, tb)
+           [_] -> return $ Right $ ReqDisplace target
+           _ -> failSer DisplaceProjectiles
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.
