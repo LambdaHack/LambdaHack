@@ -312,15 +312,17 @@ findEntryPoss COps{coTileSpeedup}
       dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind !ps !n = do
-        let ds = [ dist ps $ factionDist `div` 2
+        let ds = [ dist ps factionDist
+                 , dist ps $ 2 * factionDist `div` 3
+                 , dist ps $ factionDist `div` 2
                  , dist ps $ factionDist `div` 3
                  , dist ps $ factionDist `div` 4
-                 , dist ps $ factionDist `div` 6
+                 , dist ps $ factionDist `div` 5
                  ]
-        mp <- findPosTry2 1000 lvl  -- try really hard, for skirmish fairness
+        mp <- findPosTry2 500 lvl  -- try really hard, for skirmish fairness
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoActor coTileSpeedup t))
-                ds
+                (take 2 ds)  -- don't pick too close @isOftenActor@ locations
                 (\_ !t -> Tile.isOftenActor coTileSpeedup t)
                 ds
         case mp of
