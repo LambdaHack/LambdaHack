@@ -1753,7 +1753,8 @@ smokingJacket = ItemKind
   , iweight  = 5000
   , idamage  = 0
   , iaspects = [ Timeout $ (1 `d` 2) * 3
-               , AddSkill SkSpeed 5
+               , AddSkill SkSpeed 2 
+               , AddSkill SkOdor 2
                , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotSpeed ]
   , ieffects = [Recharging (RefillCalm 1)]
