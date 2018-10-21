@@ -309,19 +309,19 @@ findEntryPoss COps{coTileSpeedup}
               lid lvl@Level{larea, lstair, lescape} k = do
   let (_, xspan, yspan) = spanArea larea
       factionDist = max xspan yspan - 10
-      dist poss cmin l _ = all (\pos -> chessDist l pos > cmin) poss
+      dist !poss !cmin !l _ = all (\ !pos -> chessDist l pos > cmin) poss
       tryFind _ 0 = return []
-      tryFind ps n = do
+      tryFind !ps !n = do
         let ds = [ dist ps $ factionDist `div` 2
                  , dist ps $ factionDist `div` 3
                  , dist ps $ factionDist `div` 4
                  , dist ps $ factionDist `div` 6
                  ]
         mp <- findPosTry2 1000 lvl  -- try really hard, for skirmish fairness
-                (\_ t -> Tile.isWalkable coTileSpeedup t
-                         && not (Tile.isNoActor coTileSpeedup t))
+                (\_ !t -> Tile.isWalkable coTileSpeedup t
+                          && not (Tile.isNoActor coTileSpeedup t))
                 ds
-                (\_p t -> Tile.isOftenActor coTileSpeedup t)
+                (\_ !t -> Tile.isOftenActor coTileSpeedup t)
                 ds
         case mp of
           Just np -> do

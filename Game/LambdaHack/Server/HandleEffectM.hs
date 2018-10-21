@@ -1101,16 +1101,16 @@ effectTeleport execSfx nDm source target = do
   lvl@Level{ldepth} <- getLevel (blid tb)
   range <- rndToAction $ castDice ldepth totalDepth nDm
   let spos = bpos tb
-      dMinMax delta pos =
+      dMinMax !delta !pos =
         let d = chessDist spos pos
         in d >= range - delta && d <= range + delta
-      dist delta pos _ = dMinMax delta pos
+      dist !delta !pos _ = dMinMax delta pos
   mtpos <- rndToAction $ findPosTry 200 lvl
-    (\p t -> Tile.isWalkable coTileSpeedup t
-             && (not (dMinMax 9 p)  -- don't loop, very rare
-                 || not (Tile.isNoActor coTileSpeedup t)
-                    && not (occupiedBigLvl p lvl))
-                    && not (occupiedProjLvl p lvl))
+    (\p !t -> Tile.isWalkable coTileSpeedup t
+              && (not (dMinMax 9 p)  -- don't loop, very rare
+                  || not (Tile.isNoActor coTileSpeedup t)
+                     && not (occupiedBigLvl p lvl))
+                     && not (occupiedProjLvl p lvl))
     [ dist 1
     , dist $ 1 + range `div` 9
     , dist $ 1 + range `div` 7
