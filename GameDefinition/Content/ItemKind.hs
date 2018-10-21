@@ -1739,3 +1739,24 @@ currency = currencyTemplate
                ++ iaspects currencyTemplate
   , ieffects = [RefillCalm (-1)]
   }
+  
+-- * Clothing
+
+smokingJacket = ItemKind
+  { isymbol  = _symbolClothes
+  , iname    = "smoking jacket"
+  , ifreq    = [("common item", 100), ("misc clothing", 1)]
+  , iflavour = zipPlain [Green]
+  , icount   = 1
+  , irarity  = [(1, 9), (10, 3)]
+  , iverbHit = "stroke"
+  , iweight  = 5000
+  , idamage  = 0
+  , iaspects = [ Timeout $ (1 `d` 2) * 3
+               , AddSkill SkSpeed 5
+               , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
+               , EqpSlot EqpSlotArmorMelee ]
+  , ieffects = [Recharging (RefillCalm 1)]
+  , idesc    = "Wearing this velvet jacket, anyone would look dashing."
+  , ikit     = []
+  }
