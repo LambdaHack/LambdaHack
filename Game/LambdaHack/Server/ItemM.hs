@@ -145,30 +145,20 @@ placeItemsInDungeon alliancePositions = do
   let initialItems (lid, lvl@Level{lkind, ldepth}) = do
         litemNum <- rndToAction $ castDice ldepth totalDepth
                                   (citemNum $ okind cocave lkind)
-        let placeItems :: Int -> m ()
+        let alPos = EM.findWithDefault [] lid alliancePositions
+            placeItems :: Int -> m ()
             placeItems n | n == litemNum = return ()
             placeItems !n = do
               Level{lfloor} <- getLevel lid
-              -- We ensure that there are no big regions without items at all.
-              let distAndVeryOften !p !t = Tile.isVeryOftenItem coTileSpeedup t
-                                           && distant p
-                  distOrVeryOften !p !t = Tile.isVeryOftenItem coTileSpeedup t
-                                          || distant p
-                  distAndCommon !p !t = Tile.isCommonItem coTileSpeedup t
-                                        && distant p
-                  distant !p = let f !k _ b = chessDist p k > 6 && b
-                               in EM.foldrWithKey f True lfloor
-                  alPos = EM.findWithDefault [] lid alliancePositions
-                  -- Don't generate items around initial actors or in bunches.
-                  distAllianceAndNotFloor !p _ =
+              -- Don't generate items around initial actors or in bunches.
+              let distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
               mpos <- rndToAction $ findPosTry2 100 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
-                [ distAndVeryOften
-                , distAndCommon
-                , distOrVeryOften]
+                [ \_ !t -> Tile.isVeryOftenItem coTileSpeedup t
+                , \_ !t -> Tile.isCommonItem coTileSpeedup t ]
                 distAllianceAndNotFloor
                 [distAllianceAndNotFloor]
               case mpos of
