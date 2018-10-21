@@ -170,8 +170,7 @@ opick :: Show a
 opick ContentData{groupFreq} !cgroup !p =
   case M.lookup cgroup groupFreq of
     Just freqRaw ->
-      let freq = toFreq ("opick ('" <> tshow cgroup <> "')")
-                 $ filter (p . snd . snd) freqRaw
+      let freq = toFreq "opick" $ filter (p . snd . snd) freqRaw
       in if nullFreq freq
          then return Nothing
          else Just . fst <$> frequency freq
