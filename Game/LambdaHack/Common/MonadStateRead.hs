@@ -94,7 +94,7 @@ displayTaunt voluntary rndToAction aid = do
       canHear = Ability.getSk Ability.SkHearing actorMaxSk > 0
                 && canBrace
         -- if hears, probably also emits sound vocally
-      canBrace = Ability.getSk Ability.SkWait actorMaxSk > 1
+      canBrace = Ability.getSk Ability.SkWait actorMaxSk >= 2
         -- not an insect, plant, geyser, faucet, fence, etc.
         -- so can emit sound by hitting something with body parts
       braceUneasy = [ (2, ("something", "flail around"))

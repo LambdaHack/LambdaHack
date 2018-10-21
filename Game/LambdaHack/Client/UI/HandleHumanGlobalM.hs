@@ -255,7 +255,7 @@ waitHuman = do
 waitHuman10 :: MonadClientUI m => m (FailOrCmd RequestTimed)
 waitHuman10 = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getSk Ability.SkWait actorSk >= 3 then do
+  if Ability.getSk Ability.SkWait actorSk >= 4 then do
     modifySession $ \sess -> sess {swaitTimes = abs (swaitTimes sess) + 1}
     return $ Right ReqWait10
   else failSer WaitUnskilled

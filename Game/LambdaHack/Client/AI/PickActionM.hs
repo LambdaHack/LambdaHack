@@ -116,8 +116,7 @@ actionStrategy moldLeader aid retry = do
                       && canSleep actorSk
       mayContinueSleep = not condAimEnemyPresent
                          && not (hpFull body actorSk)
-                         && not heavilyDistressed
-                         && not condNotCalmEnough
+                         && not uneasy
                          && not condAnyFoeAdj
                          && anyFriendOnLevelAwake  -- friend guards the sleeper
       dozes = case bwatch body of
@@ -130,7 +129,10 @@ actionStrategy moldLeader aid retry = do
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
+      heavilyDistressed =  -- actor hit by a proj or similarly distressed
+        deltaSerious (bcalmDelta body)
       condNotCalmEnough = not (calmEnough body actorMaxSk)
+      uneasy = heavilyDistressed || condNotCalmEnough
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
@@ -143,8 +145,6 @@ actionStrategy moldLeader aid retry = do
               let ar2 = actorMaxSkills EM.! aid2
               in gearSpeed ar2 > speed1_5)
         threatAdj
-      heavilyDistressed =  -- actor hit by a proj or similarly distressed
-        deltaSerious (bcalmDelta body)
       actorShines = Ability.getSk SkShine actorMaxSk > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
@@ -259,8 +259,7 @@ actionStrategy moldLeader aid retry = do
             $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
-                 || condNotCalmEnough
-                 || heavilyDistressed) )
+                 || uneasy) )
         , ( [SkProject]
           , stratToFreq (if condTgtNonmoving then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
@@ -320,6 +319,8 @@ actionStrategy moldLeader aid retry = do
         [ ( [SkWait]
           , case bwatch body of
               WSleep -> if mayContinueSleep
+                             -- no check of @canSleep@, because sight
+                             -- lowered by sleeping
                         then waitBlockNow
                         else yellNow  -- celebrate wake up with a bang
               _ -> waitBlockNow  -- block, etc.
@@ -356,7 +357,7 @@ actionStrategy moldLeader aid retry = do
   sumFallback <- sumS fallback
   return $! if bwatch body == WSleep
                && mayContinueSleep
-               && Ability.getSk SkWait actorSk >= 2
+                 -- no check of @canSleep@, because sight lowered by sleeping
             then returN "sleep" ReqWait
             else sumPrefix .| comDistant .| sumSuffix .| sumFallback
 

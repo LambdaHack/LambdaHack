@@ -176,7 +176,7 @@ speedupItem coitem =
         let kmMean = meanAspect kind
             kmConst = not $ aspectsRandom (IK.iaspects kind)
         in KindMean{..}
-  in ItemSpeedup $! omapVector coitem f
+  in ItemSpeedup $ omapVector coitem f
 
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)

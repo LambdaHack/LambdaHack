@@ -122,9 +122,10 @@ setBWait cmd aid b = do
   let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
     WSleep ->
-      if not (isJust mwait)  -- not a wait nor lurk
-         || uneasy && mwait /= Just False  -- lurk can't wake up; too fast
-         || not (deltaNotNegative $ bhpDelta b)  -- any HP lost
+      if mwait /= Just False  -- lurk can't wake up regardless; too fast
+         && (not (isJust mwait)  -- not a wait
+             || uneasy  -- spooked
+             || not (deltaNotNegative $ bhpDelta b))  -- any HP lost
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
       else execUpdAtomic $ UpdRefillHP aid 1000
              -- no @xM@, so slow, but each turn HP gauge green;
@@ -134,19 +135,23 @@ setBWait cmd aid b = do
              -- 10-level run, 10HP would be gained, so weak actors would wake up
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
-    WWait 0 -> case cmd of
-      ReqWait -> return ()
+    WWait 0 -> case cmd of  -- actor couldn't brace last time
+      ReqWait -> return ()  -- if he still waits, keep him stuck unbraced
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
     WWait n -> case cmd of
       ReqWait ->  -- only proper wait prevents switching to watchfulness
-        if n >= 100
-           && not uneasy
-           && Ability.getSk Ability.SkWait actorMaxSk >= 3
-        then do
-          nAll <- removeConditionSingle "braced" aid
-          let !_A = assert (nAll == 0) ()
-          addSleep aid
+        if n >= 100 then  -- enough dozing to fall asleep
+          if not uneasy  -- won't wake up at once
+             && canSleep actorMaxSk  -- enough skills
+          then do
+            nAll <- removeConditionSingle "braced" aid
+            let !_A = assert (nAll == 0) ()
+            addSleep aid
+          else
+            -- Start dozing from scratch to prevent hopeless skill checks.
+            execUpdAtomic $ UpdWaitActor aid (WWait n) (WWait 1)
         else
+          -- Doze some more before checking sleep eligibility.
           execUpdAtomic $ UpdWaitActor aid (WWait n) (WWait $ n + 1)
       _ -> do
         nAll <- removeConditionSingle "braced" aid
@@ -154,7 +159,7 @@ setBWait cmd aid b = do
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WWatch ->
       when (mwait == Just True) $  -- only long wait switches to wait state
-        if Ability.getSk Ability.SkWait actorMaxSk >= 1 then do
+        if Ability.getSk Ability.SkWait actorMaxSk >= 2 then do
           addCondition "braced" aid
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
         else
@@ -720,7 +725,7 @@ reqAlterFail voluntary source tpos = do
 
 -- * ReqWait
 
--- | Do nothing.
+-- | Do nothing. Wait skill 1 required. Bracing requires 2, sleep 3, lurking 4.
 --
 -- Something is sometimes done in 'setBWait'.
 reqWait :: MonadServerAtomic m => ActorId -> m ()
@@ -739,7 +744,7 @@ reqWait10 :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait10 #-}
 reqWait10 source = do
   actorSk <- currentSkillsServer source
-  unless (Ability.getSk Ability.SkWait actorSk >= 3) $
+  unless (Ability.getSk Ability.SkWait actorSk >= 4) $
     execFailure source ReqWait10 WaitUnskilled
 
 -- * ReqYell

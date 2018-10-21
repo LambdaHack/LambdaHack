@@ -164,7 +164,7 @@ hpFull b actorMaxSk = xM (Ability.getSk Ability.SkMaxHP actorMaxSk) <= bhp b
 
 -- | Has the skill and can wake up easily, so can sleep safely.
 canSleep :: Ability.Skills -> Bool
-canSleep actorMaxSk = Ability.getSk Ability.SkWait actorMaxSk >= 2
+canSleep actorMaxSk = Ability.getSk Ability.SkWait actorMaxSk >= 3
                       && (Ability.getSk Ability.SkSight actorMaxSk > 0
                           || Ability.getSk Ability.SkHearing actorMaxSk > 0)
                       && Ability.getSk Ability.SkAggression actorMaxSk < 2
