@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Misc
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
     -- * Assorted
   , GroupName
-  , toGroupName, makePhrase, makeSentence, squashedWWandW
+  , toGroupName, fromGroupName, makePhrase, makeSentence, squashedWWandW
   , appDataDir, xM, xD, minusM, minusM1, minusM2, oneM, tenthM
   , workaroundOnMainThreadMVar
   ) where
@@ -101,14 +101,11 @@ instance Binary ItemDialogMode
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
-newtype GroupName a = GroupName Text
-  deriving (Eq, Ord, Hashable, Binary, Generic)
+newtype GroupName a = GroupName {fromGroupName :: Text}
+  deriving (Show, Eq, Ord, Hashable, Binary, Generic)
 
 instance IsString (GroupName a) where
   fromString = GroupName . T.pack
-
-instance Show (GroupName a) where
-  show (GroupName gn) = T.unpack gn
 
 instance NFData (GroupName a)
 

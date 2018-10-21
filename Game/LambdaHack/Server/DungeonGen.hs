@@ -196,15 +196,15 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
           Nothing -> return acc  -- calling again won't change anything
   pstairsSingleDown <- addSingleDown [] remainingStairsDown
   let freqDouble carried =
-        filter (\(gn, _) -> carried `elem` T.words (tshow gn))
+        filter (\(gn, _) -> carried `elem` T.words (fromGroupName gn))
         $ cstairFreq kc ++ cstairAllowed kc
       fixedStairsDouble = map (second freqDouble) lstairsDouble
       freqUp carried =
-        map (first (\gn -> toGroupName $ tshow gn <+> "up"))
+        map (first (\gn -> toGroupName $ fromGroupName gn <+> "up"))
         $ freqDouble carried
       fixedStairsUp = map (second freqUp) lstairsSingleUp
       freqDown =
-        map (first (\gn -> toGroupName $ tshow gn <+> "down"))
+        map (first (\gn -> toGroupName $ fromGroupName gn <+> "down"))
         $ cstairFreq kc
       fixedStairsDown = map (, freqDown) pstairsSingleDown
       pallExits = pallUpAndEscape ++ pstairsSingleDown

@@ -42,7 +42,7 @@ effectToSuffix detailLevel effect =
   case effect of
     Burn d -> wrapInParens (tshow d
                             <+> if Dice.maxDice d > 1 then "burns" else "burn")
-    Explode t -> "of" <+> tshow t <+> "explosion"
+    Explode t -> "of" <+> fromGroupName t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
     RefillHP p -> "of wounding" <+> wrapInParens (affixBonus p)
@@ -56,7 +56,7 @@ effectToSuffix detailLevel effect =
     Summon grp p -> makePhrase
       [ "of summoning"
       , if p <= 1 then "" else MU.Text $ tshow p
-      , MU.Ws $ MU.Text $ tshow grp ]
+      , MU.Ws $ MU.Text $ fromGroupName grp ]
     ApplyPerfume -> "of smell removal"
     Ascend True -> "of ascending"
     Ascend False -> "of descending"
@@ -91,7 +91,7 @@ effectToSuffix detailLevel effect =
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
-      in "(keep" <+> stime <+> tshow grp <> ")"
+      in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"
     DropItem n k store grp ->
       let ntxt = if | n == 1 && k == maxBound -> "one kind of"
@@ -101,7 +101,7 @@ effectToSuffix detailLevel effect =
             if store == COrgan
             then ("nullify", "")
             else ("drop", "from" <+> snd (ppCStore store))
-      in "of" <+> verb <+> ntxt <+> tshow grp <+> fromStore
+      in "of" <+> verb <+> ntxt <+> fromGroupName grp <+> fromStore
     PolyItem -> "of repurpose on the ground"
     RerollItem -> "of deeply reshape on the ground"
     DupItem -> "of multiplication on the ground"

@@ -785,7 +785,8 @@ quitFactionUI fid toSt manalytics = do
           ( Just "achieve victory"
           , msgIfSide "Can it be done better, though?" )
         Just Status{stOutcome=Restart, stNewGame=Just gn} ->
-          ( Just $ MU.Text $ "order mission restart in" <+> tshow gn <+> "mode"
+          ( Just $ MU.Text $ "order mission restart in"
+                             <+> fromGroupName gn <+> "mode"
           , Just $ if fid == side
                    then "This time for real."
                    else "Somebody couldn't stand the heat." )
@@ -934,8 +935,8 @@ ppHearMsg hearMsg = case hearMsg of
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
         object = if p == 1  -- works, because exact number sent, not dice
-                 then MU.Text $ tshow grp
-                 else MU.Ws $ MU.Text $ tshow grp
+                 then MU.Text $ fromGroupName grp
+                 else MU.Ws $ MU.Text $ fromGroupName grp
     return $! makeSentence ["you hear", verb, object]
   HearTaunt t ->
     return $! makeSentence ["you overhear", MU.Text t]
@@ -1063,7 +1064,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- works, because exact number sent, not dice
                         then MU.AW
-                        else MU.Ws) $ MU.Text $ tshow grp
+                        else MU.Ws) $ MU.Text $ fromGroupName grp
           actorVerbMU aid bUI $ MU.Phrase [verb, object]
         IK.Ascend up -> do
           COps{cocave} <- getsState scops

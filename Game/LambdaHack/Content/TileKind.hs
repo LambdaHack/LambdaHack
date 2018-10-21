@@ -257,8 +257,8 @@ hardwiredTileGroups =
 actionFeatures :: Bool -> TileKind -> IS.IntSet
 actionFeatures markSuspect t =
   let stripLight grp = maybe grp toGroupName
-                       $ maybe (T.stripSuffix "Dark" $ tshow grp) Just
-                       $ T.stripSuffix "Lit" $ tshow grp
+                       $ maybe (T.stripSuffix "Dark" $ fromGroupName grp) Just
+                       $ T.stripSuffix "Lit" $ fromGroupName grp
       f feat = case feat of
         Embed{} -> Just feat
         OpenTo grp -> Just $ OpenTo $ stripLight grp

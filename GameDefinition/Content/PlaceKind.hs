@@ -901,7 +901,8 @@ switchStaircaseToUp :: PlaceKind -> PlaceKind
 switchStaircaseToUp s = s
  { psymbol   = '<'
  , pname     = pname s <+> "up"
- , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "up", k)) $ pfreq s
+ , pfreq     = map (\(t, k) -> (toGroupName $ fromGroupName t <+> "up", k))
+               $ pfreq s
  , poverrideDark = ('>', "stair terminal Dark")
                    : filter ((/= '>') . fst) (poverrideDark s)
  , poverrideLit = ('>', "stair terminal Lit")
@@ -912,7 +913,8 @@ switchStaircaseToDown :: PlaceKind -> PlaceKind
 switchStaircaseToDown s = s
  { psymbol   = '>'
  , pname     = pname s <+> "down"
- , pfreq     = map (\(t, k) -> (toGroupName $ tshow t <+> "down", k)) $ pfreq s
+ , pfreq     = map (\(t, k) -> (toGroupName $ fromGroupName t <+> "down", k))
+               $ pfreq s
  , poverrideDark = ('<', "stair terminal Dark")
                    : filter ((/= '<') . fst) (poverrideDark s)
  , poverrideLit = ('<', "stair terminal Lit")
@@ -929,7 +931,8 @@ switchStaircaseToGated :: PlaceKind -> PlaceKind
 switchStaircaseToGated s = s
  { psymbol   = 'g'
  , pname     = T.unwords $ "a gated" : tail (T.words (pname s))
- , pfreq     = map (first (\t -> toGroupName $ "gated" <+> tshow t)) $ pfreq s
+ , pfreq     = map (first (\t -> toGroupName $ "gated" <+> fromGroupName t))
+               $ pfreq s
  , poverrideDark = overrideGated
  , poverrideLit = overrideGated
  }
@@ -944,7 +947,8 @@ switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
 switchStaircaseToOutdoor s = s
  { psymbol   = 'o'
  , pname     = "an outdoor area exit"
- , pfreq     = map (first (\t -> toGroupName $ "outdoor" <+> tshow t)) $ pfreq s
+ , pfreq     = map (first (\t -> toGroupName $ "outdoor" <+> fromGroupName t))
+               $ pfreq s
  , poverrideDark = overrideOutdoor
  , poverrideLit = overrideOutdoor
  }
