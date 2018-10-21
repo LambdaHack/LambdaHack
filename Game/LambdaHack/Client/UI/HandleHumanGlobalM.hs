@@ -1485,7 +1485,7 @@ gameRestartHuman = do
 
 nxtGameMode :: COps -> Int -> ModeKind
 nxtGameMode COps{comode} snxtScenario =
-  let f acc _p _i a = a : acc
+  let f !acc _p _i !a = a : acc
       campaignModes = ofoldlGroup' comode "campaign scenario" f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
 

@@ -304,7 +304,7 @@ placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
 placesFromState coplace ClientOptions{srecallPlaces} =
   let addEntries (es1, ne1, na1, nd1) (es2, ne2, na2, nd2) =
         (ES.union es1 es2, ne1 + ne2, na1 + na2, nd1 + nd2)
-      insertZeros em pk _ = EM.insert pk (ES.empty, 0, 0, 0) em
+      insertZeros !em !pk _ = EM.insert pk (ES.empty, 0, 0, 0) em
       initialPlaces | not srecallPlaces = EM.empty
                     | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
       placesFromLevel :: (LevelId, Level)

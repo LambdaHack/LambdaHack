@@ -136,7 +136,7 @@ serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do
   let ixs = [toEnum 0..toEnum (olength coitem - 1)]
   shuffled <- shuffle ixs
-  let f (!ikMap, !ikRev, ix : rest) kmKind _ =
+  let f (!ikMap, !ikRev, !ix : rest) !kmKind _ =
         (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik  _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)
@@ -166,7 +166,7 @@ rollFlavourMap :: Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                -> ContentId ItemKind -> ItemKind
                -> Rnd ( EM.EnumMap (ContentId ItemKind) Flavour
                       , EM.EnumMap Char (ES.EnumSet Flavour) )
-rollFlavourMap rnd key ik = case IK.iflavour ik of
+rollFlavourMap !rnd !key !ik = case IK.iflavour ik of
   [] -> error "empty iflavour"
   [flavour] -> do
     (!assocs, !availableMap) <- rnd

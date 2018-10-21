@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.ContentData
   , contentIdIndex, validateRarity, validFreqs
   , emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
-  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
+  , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
   ) where
 
@@ -114,7 +114,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
                      | (i, k) <- zip (map ContentId [0..]) content
                      , (cgroup, n) <- getFreq k
                      , n > 0 ]
-            f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
+            f !m (!cgroup, !nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
       cd = ContentData {..}
       -- Catch all kinds of errors in content ASAP, even in unused items.
@@ -176,15 +176,10 @@ opick ContentData{groupFreq} !cgroup !p =
          else Just . fst <$> frequency freq
     _ -> return Nothing
 
--- | Fold over all content elements of @a@.
-ofoldrWithKey :: ContentData a -> (ContentId a -> a -> b -> b) -> b -> b
-ofoldrWithKey ContentData{contentVector} f z =
-  V.ifoldr (\i c a -> f (ContentId $ toEnum i) c a) z contentVector
-
 -- | Fold strictly over all content @a@.
 ofoldlWithKey' :: ContentData a -> (b -> ContentId a -> a -> b) -> b -> b
 ofoldlWithKey' ContentData{contentVector} f z =
-  V.ifoldl' (\a i c -> f a (ContentId $ toEnum i) c) z contentVector
+  V.ifoldl' (\ !a !i !c -> f a (ContentId $ toEnum i) c) z contentVector
 
 -- | Fold over the given group only.
 ofoldlGroup' :: ContentData a
@@ -192,7 +187,7 @@ ofoldlGroup' :: ContentData a
              -> (b -> Int -> ContentId a -> a -> b) -> b -> b
 ofoldlGroup' ContentData{groupFreq} cgroup f z =
   case M.lookup cgroup groupFreq of
-    Just freq -> foldl' (\acc (p, (i, a)) -> f acc p i a) z freq
+    Just freq -> foldl' (\ !acc (!p, (!i, !a)) -> f acc p i a) z freq
     _ -> error $ "no group '" ++ show cgroup
                               ++ "' among content that has groups "
                               ++ show (M.keys groupFreq)

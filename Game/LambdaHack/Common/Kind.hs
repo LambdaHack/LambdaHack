@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.Kind
   ( ContentId, ContentData, COps(..)
   , emptyCOps
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
-  , ofoldrWithKey, ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
+  , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
   ) where
 
