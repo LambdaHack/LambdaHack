@@ -76,7 +76,7 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
 newItemKind :: COps -> UniqueSet -> Freqs ItemKind
             -> Dice.AbsDepth -> Dice.AbsDepth -> Int
             -> Frequency (ContentId IK.ItemKind, ItemKind)
-newItemKind COps{coitem} uniqueSet itemFreq
+newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
             (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth) lvlSpawned =
   -- Effective generation depth of actors (not items) increases with spawns.
   -- Up to 10 spawns, no effect. With 20 spawns, depth + 5, and then
@@ -88,12 +88,14 @@ newItemKind COps{coitem} uniqueSet itemFreq
       f !q !acc !p !ik !kind =
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
-        let ld = if IK.SetFlag Ability.Unique `elem` IK.iaspects kind
+        let ld = if IA.checkFlag Ability.Unique
+                    $ IA.kmMean $ IA.getKindMean ik coItemSpeedup
                  then ldepth
                  else ldSpawned
             rarity = linearInterpolation ld totalDepth (IK.irarity kind)
-        in (q * p * rarity, (ik, kind)) : acc
-      g (itemGroup, q) = ofoldlGroup' coitem itemGroup (f q) []
+            !fr = q * p * rarity
+        in (fr, (ik, kind)) : acc
+      g (!itemGroup, !q) = ofoldlGroup' coitem itemGroup (f q) []
       freqDepth = concatMap g itemFreq
   in toFreq "newItemKind" freqDepth
 

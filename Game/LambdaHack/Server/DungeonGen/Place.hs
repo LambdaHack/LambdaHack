@@ -122,7 +122,8 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
            dsecret r minnerArea mplaceGroup = do
   let f !placeGroup !q !acc !p !pk !kind =
         let rarity = linearInterpolation ldepth tdepth (prarity kind)
-        in (q * p * rarity, ((pk, kind), placeGroup)) : acc
+            !fr = q * p * rarity
+        in (fr, ((pk, kind), placeGroup)) : acc
       g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f placeGroup q) []
       pfreq = case mplaceGroup of
         [] -> cplaceFreq
