@@ -18,6 +18,8 @@ content =
 
 rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
+-- * Underground caves; most of mediocre height and size
+
 rogue = CaveKind
   { csymbol       = 'R'
   , cname         = "A maze of twisty passages"
@@ -232,6 +234,9 @@ outermost = shallowRogue
   , cescapeFreq   = [("escape up", 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
+
+-- * Overground "caves"; no story-wise limits wrt height and size
+
 raid = rogue
   { csymbol       = 'T'
   , cname         = "Typing den"
@@ -454,6 +459,9 @@ ambush = rogue  -- a scenario with strong missiles;
   , cfenceTileW   = "outdoor outer fence"
   , cdesc         = ""
   }
+
+-- * Other caves; testing, easter egg, future work
+
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'B'
   , cname         = "Old battle ground"
