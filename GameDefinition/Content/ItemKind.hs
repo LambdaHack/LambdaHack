@@ -133,7 +133,7 @@ spike2 = spike
                , SetFlag MinorEffects
                , Odds (10 * 1 `dL` 10) [] [toVelocity 70] ]
                    -- at deep levels sometimes even don't limit velocity
-  , idesc    = "A jagged skewer of rusty metal."
+  , idesc    = "A jagged spur of metal."
   }
 slingStone = ItemKind
   { isymbol  = symbolProjectile
@@ -215,7 +215,7 @@ harpoon2 = harpoon
   { ifreq    = [("common item", 2), ("harpoon", 2)]
   , iweight  = 1000
   , idamage  = 10 `d` 1
-  , idesc    = "A barbed, heavy spear for hunting larger game."
+  , idesc    = "A heavy spear, for larger game. The barbed tip breaks off and stays in the victim's flesh."
   }
 net = ItemKind
   { isymbol  = symbolProjectile
@@ -1615,13 +1615,15 @@ halberd = ItemKind
   , ikit     = []
   }
 halberd2 = halberd
-  { ifreq    = [("common item", 3 * 2), ("starting weapon", 1)]
+  { iname    = "halberd"
+  , ifreq    = [("common item", 3 * 2), ("starting weapon", 1)]
   , iweight  = 4000
   , idamage  = 18 `d` 1
   , idesc    = "A long haft with a sharp blade."
   }
 halberd3 = halberd
-  { ifreq    = [("common item", 1 * 2)]  -- compensating for low base rarity
+  { iname    = "bardiche"
+  , ifreq    = [("common item", 1 * 2)]  -- compensating for low base rarity
   , iweight  = 5000
   , idamage  = 24 `d` 1
   , idesc    = "The reach of a spear but the edge of an axe."
