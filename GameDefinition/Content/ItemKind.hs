@@ -212,10 +212,11 @@ harpoon = ItemKind
   , ikit     = []
   }
 harpoon2 = harpoon
-  { ifreq    = [("common item", 2), ("harpoon", 2)]
+  { iname    = "whaling harpoon"
+  , ifreq    = [("common item", 2), ("harpoon", 2)]
   , iweight  = 1000
   , idamage  = 10 `d` 1
-  , idesc    = "A heavy spear, for larger game. The barbed tip breaks off and stays in the victim's flesh."
+  , idesc    = "With a brittle, barbed head and thick cord, this ancient weapon is designed for formidable prey."
   }
 net = ItemKind
   { isymbol  = symbolProjectile
