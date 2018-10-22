@@ -133,7 +133,7 @@ spike2 = spike
                , SetFlag MinorEffects
                , Odds (10 * 1 `dL` 10) [] [toVelocity 70] ]
                    -- at deep levels sometimes even don't limit velocity
-  , idesc    = "A jagged spur of metal."
+  , idesc    = "A jagged skewer of rusty metal."
   }
 slingStone = ItemKind
   { isymbol  = symbolProjectile
