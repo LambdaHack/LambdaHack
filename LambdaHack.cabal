@@ -62,7 +62,7 @@ data-files:    GameDefinition/config.ui.default,
 extra-source-files: GameDefinition/MainMenu.ascii,
                     GameDefinition/PLAYING.md,
                     Makefile
-author:        Andres Loeh, Mikolaj Konarski
+author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
 build-type:    Simple
