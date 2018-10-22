@@ -295,7 +295,7 @@ regenCalmDelta aid body s =
       maxDeltaCalm = xM (Ability.getSk Ability.SkMaxCalm actorMaxSk)
                      - bcalm body
       fact = (EM.! bfid body) . sfactionD $ s
-      -- Worry actor by (even projectile) enemies felt (even if not seen)
+      -- Worry actor by non-projectile enemies felt (even if not seen)
       -- on the level within 3 steps. Even dying, but not hiding in wait.
       isHeardFoe (!p, aid2) =
         let b = getActorBody aid2 s

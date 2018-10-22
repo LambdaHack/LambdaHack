@@ -340,17 +340,18 @@ applyPeriodicLevel :: MonadServerAtomic m => m ()
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
   let arenasSet = ES.fromDistinctAscList arenas
-      applyPeriodicItem _ _ _ (_, (_, [])) = return ()
+      applyPeriodicItem _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
-      applyPeriodicItem aid cstore getStore (iid, _) = do
-        -- Check if the item is still in the bag (previous items act!).
-        bag <- getsState $ getStore . getActorBody aid
-        case iid `EM.lookup` bag of
-          Nothing -> return ()  -- item dropped
-          Just kit -> do
-            itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
-            let arItem = aspectRecordFull itemFull
-            when (IA.checkFlag Ability.Periodic arItem) $
+      applyPeriodicItem aid cstore (iid, _) = do
+        itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
+        let arItem = aspectRecordFull itemFull
+        when (IA.checkFlag Ability.Periodic arItem) $ do
+          -- Check if the item is still in the bag (previous items act!).
+          b2 <- getsState $ getActorBody aid
+          bag <- getsState $ getBodyStoreBag b2 cstore
+          case iid `EM.lookup` bag of
+            Nothing -> return ()  -- item dropped
+            Just kit ->
               -- In periodic activation, consider *only* recharging effects.
               -- Activate even if effects null, to possibly destroy item.
               effectAndDestroyAndAddKill
@@ -359,8 +360,8 @@ applyPeriodicLevel = do
                 (IK.filterRecharging $ IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
-          mapM_ (applyPeriodicItem aid COrgan borgan) $ EM.assocs $ borgan b
-          mapM_ (applyPeriodicItem aid CEqp beqp) $ EM.assocs $ beqp b
+          mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
+          mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
           -- While we are at it, also update his Calm.
           manageCalmAndDomination aid b
   allActors <- getsState sactorD
