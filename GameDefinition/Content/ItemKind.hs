@@ -617,7 +617,7 @@ potion9 = potionTemplate
                : iaspects potionTemplate
   , ieffects = [ toOrganGood "more projecting" (40 + 1 `d` 10)
                , toOrganBad "pacified" (5 + 1 `d` 3)
-                   -- has to be weak, or would be too good when thrown at foes
+                   -- the malus has to be weak, or would be too good when thrown at foes
                , OnSmash (Explode "more projecting dew")
                , OnSmash (Explode "pacified mist") ]
   , idesc    = "Thick, sluggish fluid."
