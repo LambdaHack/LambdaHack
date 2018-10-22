@@ -133,7 +133,7 @@ spike2 = spike
                , SetFlag MinorEffects
                , Odds (10 * 1 `dL` 10) [] [toVelocity 70] ]
                    -- at deep levels sometimes even don't limit velocity
-  -- , idesc    = ""
+  , idesc    = "A jagged spur of metal."
   }
 slingStone = ItemKind
   { isymbol  = symbolProjectile
@@ -215,7 +215,7 @@ harpoon2 = harpoon
   { ifreq    = [("common item", 2), ("harpoon", 2)]
   , iweight  = 1000
   , idamage  = 10 `d` 1
-  -- , idesc    = ""
+  , idesc    = "A barbed, heavy spear for hunting larger game."
   }
 net = ItemKind
   { isymbol  = symbolProjectile
@@ -540,7 +540,7 @@ potion2 = potionTemplate
                , toOrganGood "hasted" (20 + 1 `d` 5)
                , OnSmash (Explode "pheromone")
                , OnSmash (Explode "haste spray") ]
-  -- , idesc    = ""
+  , idesc    = "The liquid fizzes with energy."
   }
 potion3 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -607,7 +607,7 @@ potion8 = potionTemplate
                , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "distressing odor") ]
-  -- , idesc    = ""
+  , idesc    = "Swirls of intense colour draw your eyes."
   }
 potion9 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -619,7 +619,7 @@ potion9 = potionTemplate
                    -- has to be weak, or would be too good when thrown at foes
                , OnSmash (Explode "more projecting dew")
                , OnSmash (Explode "pacified mist") ]
-  -- , idesc    = ""
+  , idesc    = "Thick, sluggish fluid."
   }
 potion10 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -700,7 +700,7 @@ concussionBomb = fragmentationBomb
                , toVelocity 70 ]  -- flappy and so slow
   , ieffects = [ Explode "focused concussion"
                , OnSmash (Explode "violent concussion") ]
-  , idesc    = ""
+  , idesc    = "Avoid sudden movements."
   }
 -- Not flashbang, because powerful bang without fragmentation is harder
 -- to manufacture (requires an oxidizer and steel canister with holes).
@@ -715,7 +715,7 @@ flashBomb = fragmentationBomb
   , iaspects = [ SetFlag Lobable, SetFlag Fragile
                , toVelocity 70 ]  -- bad shape for throwing
   , ieffects = [Explode "focused flash", OnSmash (Explode "violent flash")]
-  , idesc    = ""
+  , idesc    = "For dramatic entrances and urgent exits."
   }
 firecrackerBomb = fragmentationBomb
   { iname = "roll"  -- not fireworks, as they require outdoors
@@ -726,7 +726,7 @@ firecrackerBomb = fragmentationBomb
   , idamage  = 0
   , iaspects = [SetFlag Lobable, SetFlag Fragile]
   , ieffects = [Explode "firecracker", OnSmash (Explode "firecracker")]
-  , idesc = "String and paper, concealing a deadly surprise."
+  , idesc    = "String and paper, concealing a deadly surprise."
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing
@@ -1058,7 +1058,7 @@ necklace2 = necklaceTemplate
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "condition") ]
-  -- , idesc    = ""
+  , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1084,6 +1084,7 @@ necklace5 = necklaceTemplate
   , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
                , Recharging (Detect DetectExit 20)
                , Recharging Yell ]  -- prevent micromanagement
+  , idesc    = "A supple chain that slips through your fingers."
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1103,7 +1104,7 @@ necklace7 = necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 20 + 1 `d` 10)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
                , Recharging (toOrganBad "impatient" 4)]
-  -- , idesc    = ""
+  , idesc    = "A string of beads in various coolours, with no discernable pattern."
   }
 necklace8 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1192,7 +1193,7 @@ ring2 = ringTemplate
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
-  -- , idesc    = ""
+  , idesc    = "Roughly-shaped metal with shallow scratches marking it."
   }
 ring3 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1348,7 +1349,7 @@ hatUshanka = ItemKind
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- flaps and flutters
   , ieffects = [Recharging (RefillCalm 1)]
-  , idesc    = ""
+  , idesc    = "Soft and warm fur. It keeps your ears warm."
   , ikit     = []
   }
 capReinforced = ItemKind
@@ -1367,7 +1368,7 @@ capReinforced = ItemKind
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotProject ]
   , ieffects = []
-  , idesc    = ""
+  , idesc    = "Boiled leather with a wide brim. It might soften a blow."
   , ikit     = []
   }
 helmArmored = ItemKind
@@ -1387,7 +1388,7 @@ helmArmored = ItemKind
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorRanged ]
   , ieffects = []
-  , idesc    = ""
+  , idesc    = "Blocks out everything, including your senses."
   , ikit     = []
   }
 
@@ -1617,13 +1618,13 @@ halberd2 = halberd
   { ifreq    = [("common item", 3 * 2), ("starting weapon", 1)]
   , iweight  = 4000
   , idamage  = 18 `d` 1
-  -- , idesc    = ""
+  , idesc    = "A long haft with a sharp blade."
   }
 halberd3 = halberd
   { ifreq    = [("common item", 1 * 2)]  -- compensating for low base rarity
   , iweight  = 5000
   , idamage  = 24 `d` 1
-  -- , idesc    = ""
+  , idesc    = "The reach of a spear but the edge of an axe."
   }
 halberdPushActor = halberd
   { iname    = "Swiss Halberd"
