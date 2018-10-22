@@ -726,7 +726,7 @@ firecrackerBomb = fragmentationBomb
   , idamage  = 0
   , iaspects = [SetFlag Lobable, SetFlag Fragile]
   , ieffects = [Explode "firecracker", OnSmash (Explode "firecracker")]
-  , idesc = "String and paper, concealing a deadly surprise."
+  , idesc    = "String and paper, concealing a deadly surprise."
   }
 
 -- * Non-exploding consumables, not specifically designed for throwing
@@ -1058,7 +1058,7 @@ necklace2 = necklaceTemplate
                , Recharging (Explode "waste")
                , Recharging Impress
                , Recharging (DropItem 1 maxBound COrgan "condition") ]
-  -- , idesc    = ""
+  , idesc    = "A cord hung with lumps of decaying meat. Its better not to think about the source."
   }
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1348,7 +1348,7 @@ hatUshanka = ItemKind
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- flaps and flutters
   , ieffects = [Recharging (RefillCalm 1)]
-  , idesc    = ""
+  , idesc    = "It keeps your ears warm."
   , ikit     = []
   }
 capReinforced = ItemKind
@@ -1367,7 +1367,7 @@ capReinforced = ItemKind
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotProject ]
   , ieffects = []
-  , idesc    = ""
+  , idesc    = "It might soften a blow."
   , ikit     = []
   }
 helmArmored = ItemKind
@@ -1387,7 +1387,7 @@ helmArmored = ItemKind
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorRanged ]
   , ieffects = []
-  , idesc    = ""
+  , idesc    = "Blocks out everything, including your senses."
   , ikit     = []
   }
 
