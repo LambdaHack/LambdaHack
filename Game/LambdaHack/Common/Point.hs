@@ -56,7 +56,6 @@ instance Binary Point where
 -- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
 -- @(1, 7)..(10, 9)@.
 instance Enum Point where
-  {-# INLINE fromEnum #-}
   fromEnum Point{..} =
     let xsize = speedupHackXSize
     in
@@ -66,7 +65,6 @@ instance Enum Point where
               `swith` (px, py))
 #endif
          (px + py * xsize)
-  {-# INLINE toEnum #-}
   toEnum n = let xsize = speedupHackXSize
                  (py, px) = n `quotRem` xsize
              in Point{..}

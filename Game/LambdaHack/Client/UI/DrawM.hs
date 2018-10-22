@@ -170,7 +170,6 @@ drawFrameTerrain drawnLevelId = do
       {-# INLINE mapVT #-}
       mapVT f v = do
         let g :: PointI -> Word16 -> ST s ()
-            {-# INLINE g #-}
             g !pI !tile = do
               let w = Color.attrCharW32 $ f pI (ContentId tile)
               VM.write v (pI + rXmax) w
