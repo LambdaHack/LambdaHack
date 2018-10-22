@@ -71,12 +71,10 @@ pickActorAndAction maid aid = do
       setTargetFromTactics aid
       return aid
   oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
-  treq <- case maid of
-    Just (aidOld, _) | aidToMove == aidOld ->
-      -- No better leader found, so at least try find a non-waiting action.
-      pickAction mleader aidToMove True
-    _ ->
-      -- A new leader found. Hope (but don't check) that he gets a non-waiting
-      -- actions without desperate measures, such as setting @retry@.
-      pickAction mleader aidToMove False
+  -- Trying harder (@retry@) whenever no better leader found and so at least
+  -- a non-waiting action should be found.
+  -- If a new leader found, there is hope (but we don't check)
+  -- that he gets a non-waiting action without any desperate measures.
+  let retry = maybe False (\(aidOld, _) -> aidToMove == aidOld) maid
+  treq <- pickAction mleader aidToMove retry
   return (aidToMove, treq, oldFlee)
