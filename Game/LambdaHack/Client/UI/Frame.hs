@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( FrameST, FrameForall(..), FrameBase(..), Frame, Frames, writeLine
+  ( FrameST, FrameForall(..), FrameBase(..), Frame, Frames
   , SingleFrame(..)
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL

@@ -25,7 +25,7 @@ import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import           Data.Word (Word16)
+import           Data.Word (Word16, Word32)
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
@@ -34,8 +34,6 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
-import           Game.LambdaHack.Client.UI.Content.Screen
-import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -138,13 +136,14 @@ targetDescXhair = do
   sxhair <- getsSession sxhair
   first fromJust <$> targetDesc (Just sxhair)
 
-drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameForall
+drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameBase
 drawFrameTerrain drawnLevelId = do
   COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
   -- Not @ScreenContent@, because indexing in level's data.
   Level{ltile=PointArray.Array{avector}, lembed} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
+  frameStatus <- drawFrameStatus drawnLevelId
   let dis :: PointI -> ContentId TileKind -> Color.AttrCharW32
       {-# INLINE dis #-}
       dis pI tile =
@@ -165,19 +164,19 @@ drawFrameTerrain drawnLevelId = do
                               EM.enumMapToIntMap lembed) = tcolor
                | otherwise = tcolor2
         in Color.attrChar2ToW32 fg tsymbol
-      mapVT :: forall s. (PointI -> ContentId TileKind -> Color.AttrCharW32)
-            -> FrameST s
-      {-# INLINE mapVT #-}
-      mapVT f v = do
-        let g :: PointI -> Word16 -> ST s ()
-            g !pI !tile = do
-              let w = Color.attrCharW32 $ f pI (ContentId tile)
-              VM.write v (pI + rXmax) w
-        U.imapM_ g avector
-          -- replacing wtih @U.foldM'_ g 0 avector@ offers no speedup
-      upd :: FrameForall
-      upd = FrameForall $ \v -> mapVT dis v  -- should be eta-expanded; lazy
-  return upd
+      g :: PointI -> Word16 -> Word32
+      g !pI !tile = Color.attrCharW32 $ dis pI (ContentId tile)
+      caveVector :: U.Vector Word32
+      caveVector = U.imap g avector
+      messageVector =
+        U.replicate rXmax (Color.attrCharW32 Color.spaceAttrW32)
+      statusVector = U.fromListN rXmax $ map Color.attrCharW32 frameStatus
+  -- The vector package is so smart that the 3 vectors are not allocated
+  -- separately at all, but written to the big vector at once.
+  -- But even with double allocation it would be faster than writing
+  -- to a mutable vector via @FrameForall@.
+  return $ FrameBase
+         $ U.unsafeThaw $ U.concat [messageVector, caveVector, statusVector]
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
@@ -404,7 +403,7 @@ drawFrameExtra dm drawnLevelId = do
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
-  cops <- getsState scops
+  cops@COps{corule=RuleContent{rXmax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
@@ -504,33 +503,28 @@ drawFrameStatus drawnLevelId = do
   let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
                                           - T.length targetText)
       targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
-  return $! arenaStatus <+:> xhairStatus
-            <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
+      status = arenaStatus
+               <+:> xhairStatus
+               <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
                <+:> targetStatus
+  -- Keep it lazy:
+  return $ assert (length status == 2 * rXmax
+                  `blame` map Color.charFromW32 status) status
 
 -- | Draw the whole screen: level map and status area.
 drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m Frame
 drawHudFrame dm drawnLevelId = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  updTerrain <- drawFrameTerrain drawnLevelId
+  baseTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
   updPath <- drawFramePath drawnLevelId
   updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
-  frameStatus <- drawFrameStatus drawnLevelId
-  let !_A = assert (length frameStatus == 2 * rwidth
-                    `blame` map Color.charFromW32 frameStatus) ()
-      upd = FrameForall $ \v -> do
-        unFrameForall updTerrain v
+  let upd = FrameForall $ \v -> do
         unFrameForall updContent v
         unFrameForall updPath v
         unFrameForall updActor v
         unFrameForall updExtra v
-        unFrameForall (writeLine (rwidth * (rheight - 2)) frameStatus) v
-      frameBase = FrameBase $
-        VM.replicate (rwidth * rheight)
-                     (Color.attrCharW32 Color.spaceAttrW32)
-  return (frameBase, upd)
+  return (baseTerrain, upd)
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
