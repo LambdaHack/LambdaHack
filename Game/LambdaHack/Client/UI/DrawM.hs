@@ -170,7 +170,7 @@ drawFrameTerrain drawnLevelId = do
       caveVector = U.imap g avector
       messageVector =
         U.replicate rXmax (Color.attrCharW32 Color.spaceAttrW32)
-      statusVector = U.fromListN rXmax $ map Color.attrCharW32 frameStatus
+      statusVector = U.fromListN (2 * rXmax) $ map Color.attrCharW32 frameStatus
   -- The vector package is so smart that the 3 vectors are not allocated
   -- separately at all, but written to the big vector at once.
   -- But even with double allocation it would be faster than writing
