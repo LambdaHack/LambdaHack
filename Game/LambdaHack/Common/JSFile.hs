@@ -17,9 +17,12 @@ import           GHCJS.DOM.Storage (getItem, removeItem, setItem)
 import           GHCJS.DOM.Types (runDOM)
 import           GHCJS.DOM.Window (getLocalStorage)
 
--- | Serialize and save data with an EOF marker. In JS, compression
--- is probably performed by the browser and we don't have access
--- to the zlib library anyway, so we don't compress here.
+-- | Serialize and save data with an EOF marker. In JS we don't have access
+-- to the zlib library, so we don't compress here. We treat the bytestring
+-- as Latin1 characters and so lose half of the storage space by ignoring
+-- the other half of the JS UTF16 characters, but in this way we ensure
+-- we never run into illegal characters in the aribtrary binary data,
+-- unlike when treating it as UTF16 characters. This is also reasonably fast.
 -- The @OK@ is used as an EOF marker to ensure any apparent problems with
 -- corrupted files are reported to the user ASAP.
 encodeEOF :: Binary a => FilePath -> a -> IO ()

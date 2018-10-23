@@ -511,7 +511,7 @@ drawFrameStatus drawnLevelId = do
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     $ assert (length status == 2 * _rXmax
-             `blame` map Color.charFromW32 status)
+              `blame` map Color.charFromW32 status)
 #endif
         status
 
