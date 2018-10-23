@@ -2,7 +2,7 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
-  ( targetDescLeader, drawBaseFrame
+  ( targetDescLeader, drawHudFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , targetDesc, targetDescXhair, drawFrameTerrain, drawFrameContent
@@ -26,7 +26,6 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word (Word16)
-import           Game.LambdaHack.Client.UI.UIOptions
 import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
@@ -42,6 +41,7 @@ import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -509,8 +509,8 @@ drawFrameStatus drawnLevelId = do
                <+:> targetStatus
 
 -- | Draw the whole screen: level map and status area.
-drawBaseFrame :: MonadClientUI m => ColorMode -> LevelId -> m FrameForall
-drawBaseFrame dm drawnLevelId = do
+drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m Frame
+drawHudFrame dm drawnLevelId = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   updTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId
@@ -527,7 +527,10 @@ drawBaseFrame dm drawnLevelId = do
         unFrameForall updActor v
         unFrameForall updExtra v
         unFrameForall (writeLine (rwidth * (rheight - 2)) frameStatus) v
-  return upd
+      frameBase = FrameBase $
+        VM.replicate (rwidth * rheight)
+                     (Color.attrCharW32 Color.spaceAttrW32)
+  return (frameBase, upd)
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).

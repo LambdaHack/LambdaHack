@@ -24,7 +24,6 @@ import           Control.Monad.ST.Strict
 import           Data.IORef
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
-import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -43,12 +42,12 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 -- by the returned value.
 data FrontReq :: * -> * where
   -- | Show a frame.
-  FrontFrame :: {frontFrame :: FrameForall} -> FrontReq ()
+  FrontFrame :: {frontFrame :: Frame} -> FrontReq ()
   -- | Perform an explicit delay of the given length.
   FrontDelay :: Int -> FrontReq ()
   -- | Flush frames, display a frame and ask for a keypress.
   FrontKey :: { frontKeyKeys  :: [K.KM]
-              , frontKeyFrame :: FrameForall } -> FrontReq KMP
+              , frontKeyFrame :: Frame } -> FrontReq KMP
   -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
   -- | Discard a key in the queue, if any.
@@ -93,7 +92,7 @@ chanFrontendIO coscreen soptions = do
 
 -- Display a frame, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-getKey :: FrontSetup -> RawFrontend -> [K.KM] -> FrameForall -> IO KMP
+getKey :: FrontSetup -> RawFrontend -> [K.KM] -> Frame -> IO KMP
 getKey fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
   if autoYes && (null keys || K.spaceKM `elem` keys) then do
@@ -128,14 +127,13 @@ fchanFrontend fs@FrontSetup{..} rf =
       fshutdown rf
     FrontPrintScreen -> fprintScreen rf
 
-display :: RawFrontend -> FrameForall -> IO ()
+display :: RawFrontend -> Frame -> IO ()
 display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
-        frontFrame = do
+        (m, upd) = do
   let new :: forall s. ST s (G.Mutable U.Vector s Word32)
       new = do
-        v <- VM.replicate (rwidth * rheight)
-                          (Color.attrCharW32 Color.spaceAttrW32)
-        unFrameForall frontFrame v
+        v <- unFrameBase m
+        unFrameForall upd v
         return v
       singleFrame = PointArray.Array rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack

@@ -1,8 +1,8 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( FrameST, FrameForall(..), writeLine
-  , SingleFrame(..), Frames
+  ( FrameST, FrameForall(..), FrameBase(..), Frame, Frames, writeLine
+  , SingleFrame(..)
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -33,6 +33,16 @@ type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 -- is eventually performed, the vector is frozen to become a 'SingleFrame'.
 newtype FrameForall = FrameForall {unFrameForall :: forall s. FrameST s}
 
+-- | Action that results in a base frame, to be modified further.
+newtype FrameBase = FrameBase
+  {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
+
+-- | A frame, that is, a base frame and all its modifications.
+type Frame = (FrameBase, FrameForall)
+
+-- | Sequences of screen frames, including delays.
+type Frames = [Maybe Frame]
+
 -- | Representation of an operation of overwriting a frame with a single line
 -- at the given row.
 writeLine :: Int -> AttrLine -> FrameForall
@@ -53,9 +63,6 @@ writeLine offset l = FrameForall $ \v -> do
 newtype SingleFrame = SingleFrame
   {singleFrame :: PointArray.Array Color.AttrCharW32}
   deriving (Eq, Show)
-
--- | Sequences of screen frames, including delays.
-type Frames = [Maybe FrameForall]
 
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
@@ -94,14 +101,14 @@ truncateAttrLine w xs lenMax =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: IntOverlay -> FrameForall -> FrameForall
-overlayFrame ov ff = FrameForall $ \v -> do
+overlayFrame :: IntOverlay -> Frame -> Frame
+overlayFrame ov (m, ff) = (m, FrameForall $ \v -> do
   unFrameForall ff v
-  mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov
+  mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov)
 
-overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> FrameForall
-                      -> FrameForall
-overlayFrameWithLines coscreen@ScreenContent{rwidth} onBlank l msf =
+overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> Frame
+                      -> Frame
+overlayFrameWithLines coscreen@ScreenContent{rwidth} onBlank l fr =
   let ov = map (\(y, al) -> (y * rwidth, al))
            $ zip [0..] $ truncateLines coscreen onBlank l
-  in overlayFrame ov msf
+  in overlayFrame ov fr

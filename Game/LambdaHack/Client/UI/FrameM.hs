@@ -12,11 +12,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Vector.Unboxed.Mutable as VM
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
@@ -28,6 +30,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
@@ -37,13 +40,17 @@ import           Game.LambdaHack.Common.State
 -- If the overlay is too long, it's truncated.
 -- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m FrameForall
+            => ColorMode -> Bool -> Overlay -> LevelId -> m Frame
 drawOverlay dm onBlank topTrunc lid = do
-  CCUI{coscreen} <- getsSession sccui
-  mbaseFrame <- if onBlank
-                then return $ FrameForall $ \_v -> return ()
-                else drawBaseFrame dm lid
-  return $! overlayFrameWithLines coscreen onBlank topTrunc mbaseFrame
+  CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
+  basicFrame <- if onBlank
+                then do
+                  let m = FrameBase $
+                            VM.replicate (rwidth * rheight)
+                                         (Color.attrCharW32 Color.spaceAttrW32)
+                  return (m, FrameForall $ \_v -> return ())
+                else drawHudFrame dm lid
+  return $! overlayFrameWithLines coscreen onBlank topTrunc basicFrame
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
