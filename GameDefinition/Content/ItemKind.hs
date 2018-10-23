@@ -608,7 +608,7 @@ potion8 = potionTemplate
                , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "distressing odor") ]
-  , idesc    = "Swirls of intense colour draw your eyes."
+  , idesc    = "Perplexing swirls of intense, compelling, colour."
   }
 potion9 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -620,7 +620,7 @@ potion9 = potionTemplate
                    -- the malus has to be weak, or would be too good when thrown at foes
                , OnSmash (Explode "more projecting dew")
                , OnSmash (Explode "pacified mist") ]
-  , idesc    = "Thick, sluggish fluid."
+  , idesc    = "Thick, sluggish fluid with violently-bursting bubbles."
   }
 potion10 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -1620,7 +1620,7 @@ halberd2 = halberd
   , ifreq    = [("common item", 3 * 2), ("starting weapon", 1)]
   , iweight  = 4000
   , idamage  = 18 `d` 1
-  , idesc    = "A long haft with a sharp blade."
+  , idesc    = "A long haft with a sharp blade. Designed and refined for war."
   }
 halberd3 = halberd
   { iname    = "bardiche"
