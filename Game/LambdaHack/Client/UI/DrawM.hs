@@ -403,7 +403,7 @@ drawFrameExtra dm drawnLevelId = do
 
 drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
 drawFrameStatus drawnLevelId = do
-  cops@COps{corule=RuleContent{rXmax}} <- getsState scops
+  cops@COps{corule=RuleContent{rXmax=_rXmax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
@@ -507,9 +507,13 @@ drawFrameStatus drawnLevelId = do
                <+:> xhairStatus
                <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
                <+:> targetStatus
-  -- Keep it lazy:
-  return $ assert (length status == 2 * rXmax
-                  `blame` map Color.charFromW32 status) status
+  -- Keep it at least partially lazy, to avoid allocating the whole list:
+  return
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    $ assert (length status == 2 * _rXmax
+             `blame` map Color.charFromW32 status)
+#endif
+        status
 
 -- | Draw the whole screen: level map and status area.
 drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m Frame
