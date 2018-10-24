@@ -1743,6 +1743,8 @@ currency = currencyTemplate
   , ieffects = [RefillCalm (-1)]
   }
 
+-- LambdaHack-specific
+
 -- * Clothing
 
 smokingJacket = ItemKind
