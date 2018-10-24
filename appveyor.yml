@@ -6,9 +6,9 @@ cache:
 - "C:\\SR"
 
 install:
-  - appveyor-retry choco install ghc --version 8.4.3 | grep -v '^Extracting the last GHC that works on Windows Vista'
+  - appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
   # breaks appveyor-retry: refreshenv
-  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.3\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw64\share
   - cabal --version
@@ -55,9 +55,9 @@ install:
   - cabal %CABOPTS% clean
   - cd ..
 
-  - appveyor-retry choco install --force --forcex86 ghc --version 8.4.3 | grep -v '^Extracting '
+  - appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
   # breaks appveyor-retry: refreshenv
-  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.3\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
   - SET XDG_DATA_DIRS=C:\msys64\mingw32\share
   - cabal --version
