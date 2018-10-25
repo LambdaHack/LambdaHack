@@ -25,6 +25,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int32)
+import qualified Data.IntSet as IS
 
 import GHC.Generics (Generic)
 
@@ -148,18 +149,17 @@ vicinityCardinal rXmax rYmax p =
 vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
 
+-- Ascending list; includes the origin.
+movesSquare :: [Int]
+movesSquare =
+  map (fromEnum . uncurry Vector)
+    [ (-1, -1), (0, -1), (1, -1)
+    , (-1, 0), (0, 0), (1, 0)
+    , (-1, 1), (0, 1), (1, 1) ]
+
 squareUnsafeSet :: Point -> ES.EnumSet Point
-squareUnsafeSet (Point x y) =
-  ES.fromDistinctAscList $ map (uncurry Point)
-    [ (x - 1, y - 1)
-    , (x,     y - 1)
-    , (x + 1, y - 1)
-    , (x - 1, y)
-    , (x,     y)  -- full square, including the origin
-    , (x + 1, y)
-    , (x - 1, y + 1)
-    , (x,     y + 1)
-    , (x + 1, y + 1) ]
+squareUnsafeSet p =
+  ES.intSetToEnumSet $ IS.fromDistinctAscList $ map (fromEnum p +) movesSquare
 
 -- | Translate a point by a vector.
 shift :: Point -> Vector -> Point
