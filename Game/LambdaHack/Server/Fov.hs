@@ -328,22 +328,23 @@ fullscan :: FovClear  -- ^ the array with clear points
          -> Point     -- ^ position of the spectator
          -> ES.EnumSet Point
 fullscan FovClear{fovClear} radius spectatorPos =
-  if | radius <= 0 -> ES.empty
-     | radius == 1 -> ES.singleton spectatorPos
-     | radius == 2 -> inline squareUnsafeSet spectatorPos
-     | otherwise ->
+  if | radius == 2 -> inline squareUnsafeSet spectatorPos
+     | radius > 2 ->
          mapTr (1, 0, 0, -1)   -- quadrant I
        $ mapTr (0, 1, 1, 0)    -- II (counter-clockwise)
        $ mapTr (-1, 0, 0, 1)   -- III
        $ mapTr (0, -1, -1, 0)  -- IV
        $ ES.singleton spectatorPos
- where
+     -- Very rare:
+     | radius == 1 -> ES.singleton spectatorPos
+     | otherwise -> ES.empty
+      where
   mapTr :: Matrix -> ES.EnumSet Point -> ES.EnumSet Point
   mapTr m@(!_, !_, !_, !_) es = scan es (radius - 1) fovClear (trV m)
 
-  -- This function is cheap, so no problem it's called twice
-  -- for some points: once for @isClear@, once in @outside@.
-  trV :: Matrix -> Bump -> Point
+  trV :: Matrix -> Bump -> PointI
   {-# INLINE trV #-}
   trV (x1, y1, x2, y2) B{..} =
-    shift spectatorPos $ Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by)
+    spectatorI + fromEnum (Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by))
+
+  spectatorI = fromEnum spectatorPos
