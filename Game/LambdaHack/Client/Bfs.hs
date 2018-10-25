@@ -71,10 +71,6 @@ abortedKnownBfs = pred maxBfsDistance
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
-type PointI = Int
-
-type VectorI = Int
-
 -- | Fill out the given BFS array.
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated

@@ -273,11 +273,10 @@ clearFromLevel COps{coTileSpeedup} Level{ltile} =
 clearInDungeon :: State -> FovClearLid
 clearInDungeon s = EM.map (clearFromLevel (scops s)) $ sdungeon s
 
-lucidInDungeon :: FovClearLid -> FovLitLid -> State-> FovLucidLid
+lucidInDungeon :: FovClearLid -> FovLitLid -> State -> FovLucidLid
 lucidInDungeon fovClearLid fovLitLid s =
   EM.mapWithKey
-    (\lid lvl -> FovValid $
-       lucidFromLevel fovClearLid fovLitLid s lid lvl)
+    (\lid lvl -> FovValid $ lucidFromLevel fovClearLid fovLitLid s lid lvl)
     $ sdungeon s
 
 -- | Calculate perception of a faction.

@@ -2,7 +2,8 @@
 -- | Basic operations on bounded 2D vectors, with an efficient, but not 1-1
 -- and not monotonic @Enum@ instance.
 module Game.LambdaHack.Common.Vector
-  ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
+  ( Vector(..), VectorI
+  , isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesI, movesCardinal, movesCardinalI, movesDiagonal, movesDiagonalI
   , compassText, vicinityBounded, vicinityUnsafe
   , vicinityCardinal, vicinityCardinalUnsafe, squareUnsafeSet
@@ -62,6 +63,9 @@ instance Enum Vector where
 
 instance NFData Vector
 
+-- | Enumeration representation of @Vector@.
+type VectorI = Int
+
 -- | Tells if a vector has length 1 in the chessboard metric.
 isUnit :: Vector -> Bool
 {-# INLINE isUnit #-}
@@ -97,21 +101,21 @@ moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
-movesI :: [Int]
+movesI :: [VectorI]
 movesI = map fromEnum moves
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]
 movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
 
-movesCardinalI :: [Int]
+movesCardinalI :: [VectorI]
 movesCardinalI = map fromEnum movesCardinal
 
 -- | Vectors of all diagonal direction unit moves, clockwise, starting north.
 movesDiagonal :: [Vector]
 movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 
-movesDiagonalI :: [Int]
+movesDiagonalI :: [VectorI]
 movesDiagonalI = map fromEnum movesDiagonal
 
 -- | Currently unused.
@@ -159,7 +163,7 @@ vicinityCardinalUnsafe :: Point -> [Point]
 vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
 
 -- Ascending list; includes the origin.
-movesSquare :: [Int]
+movesSquare :: [VectorI]
 movesSquare =
   map (fromEnum . uncurry Vector)
     [ (-1, -1), (0, -1), (1, -1)

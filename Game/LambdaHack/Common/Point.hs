@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
-  ( X, Y, Point(..)
+  ( X, Y, Point(..), PointI
   , chessDist, euclidDistSq, adjacent, bla, fromTo
   , originPoint
   , speedupHackXSize
@@ -68,6 +68,9 @@ instance Enum Point where
   toEnum n = let xsize = speedupHackXSize
                  (py, px) = n `quotRem` xsize
              in Point{..}
+
+-- | Enumeration representation of @Point@.
+type PointI = Int
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int

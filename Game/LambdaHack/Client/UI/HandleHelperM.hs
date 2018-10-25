@@ -320,7 +320,7 @@ placesFromState coplace ClientOptions{srecallPlaces} =
         in EM.foldr' f initialPlaces lentry
   in EM.unionsWith addEntries . map placesFromLevel . EM.assocs . sdungeon
 
-placeParts ::  (ES.EnumSet LevelId, Int, Int, Int) -> [MU.Part]
+placeParts :: (ES.EnumSet LevelId, Int, Int, Int) -> [MU.Part]
 placeParts (_, ne, na, nd) =
   ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
