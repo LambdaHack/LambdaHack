@@ -2,7 +2,7 @@
 -- | Representation of dice scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice
+    Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice, minDice, maxDice
   , infsupDice, supDice, infDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
   , DiceXY(..), supDiceXY, infDiceXY, meanDiceXY
@@ -35,6 +35,8 @@ data Dice =
   | DicePlus Dice Dice
   | DiceTimes Dice Dice
   | DiceNegate Dice
+  | DiceMin Dice Dice
+  | DiceMax Dice Dice
   deriving (Eq, Generic)
 
 instance Show Dice where
@@ -63,6 +65,8 @@ showDiceWithParens = sh
     DicePlus d1 d2 -> wrapInParens $ sh d1 ++ "+" ++ sh d2
     DiceTimes d1 d2 -> wrapInParens $ sh d1 ++ "*" ++ sh d2
     DiceNegate d1 -> wrapInParens $ "-" ++ sh d1
+    DiceMin d1 d2 -> wrapInParens $ "min" ++ sh d1 ++ sh d2
+    DiceMax d1 d2 -> wrapInParens $ "max" ++ sh d1 ++ sh d2
 
 wrapInParens :: String -> String
 wrapInParens "" = ""
@@ -133,6 +137,14 @@ castDice randomR (AbsDepth lvlDepth) (AbsDepth maxDepth) dice = do
         DiceNegate d1 -> do
           k <- castD d1
           return $! negate k
+        DiceMin d1 d2 -> do
+          k1 <- castD d1
+          k2 <- castD d2
+          return $! min k1 k2
+        DiceMax d1 d2 -> do
+          k1 <- castD d1
+          k2 <- castD d2
+          return $! max k1 k2
   castD dice
 
 -- | A die, rolled the given number of times. E.g., @1 `d` 2@ rolls 2-sided
@@ -162,6 +174,12 @@ zL n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
 
 intToDice :: Int -> Dice
 intToDice = DiceI
+
+minDice :: Dice -> Dice -> Dice
+minDice = DiceMin
+
+maxDice :: Dice -> Dice -> Dice
+maxDice = DiceMin
 
 -- | Minimal and maximal possible value of the dice.
 --
@@ -194,6 +212,14 @@ infsupDice dice1 = case dice1 of
   DiceNegate d1 ->
     let (infD1, supD1) = infsupDice d1
     in (negate supD1, negate infD1)
+  DiceMin d1 d2 ->
+    let (infD1, supD1) = infsupDice d1
+        (infD2, supD2) = infsupDice d2
+    in (min infD1 infD2, min supD1 supD2)
+  DiceMax d1 d2 ->
+    let (infD1, supD1) = infsupDice d1
+        (infD2, supD2) = infsupDice d2
+    in (max infD1 infD2, max supD1 supD2)
 
 -- | Maximal value of dice. The scaled part taken assuming median level.
 supDice :: Dice -> Int
@@ -214,6 +240,9 @@ meanDice dice1 = case dice1 of
   DicePlus d1 d2 -> meanDice d1 + meanDice d2
   DiceTimes d1 d2 -> meanDice d1 * meanDice d2  -- I hope this is that simple
   DiceNegate d1 -> negate $ meanDice d1
+  DiceMin d1 d2 -> min (meanDice d1) (meanDice d2)
+    -- crude approximation, only exact if the distributions disjoint
+  DiceMax d1 d2 -> max (meanDice d1) (meanDice d2)  -- crude approximation
 
 reduceDice :: Dice -> Maybe Int
 reduceDice d1 =
