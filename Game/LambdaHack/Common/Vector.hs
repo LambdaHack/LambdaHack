@@ -3,9 +3,9 @@
 -- and not monotonic @Enum@ instance.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
-  , moves, movesCardinal, movesDiagonal, compassText
-  , vicinityBounded, vicinityUnsafe, vicinityCardinal, vicinityCardinalUnsafe
-  , squareUnsafeSet
+  , moves, movesI, movesCardinal, movesCardinalI, movesDiagonal, movesDiagonalI
+  , compassText, vicinityBounded, vicinityUnsafe
+  , vicinityCardinal, vicinityCardinalUnsafe, squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
   , vectorToFrom, computeTrajectory
   , RadianAngle, rotate, towards
@@ -97,13 +97,22 @@ moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
+movesI :: [Int]
+movesI = map fromEnum moves
+
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]
 movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
 
+movesCardinalI :: [Int]
+movesCardinalI = map fromEnum movesCardinal
+
 -- | Vectors of all diagonal direction unit moves, clockwise, starting north.
 movesDiagonal :: [Vector]
 movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+
+movesDiagonalI :: [Int]
+movesDiagonalI = map fromEnum movesDiagonal
 
 -- | Currently unused.
 _moveTexts :: [Text]

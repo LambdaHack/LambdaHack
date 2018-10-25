@@ -91,11 +91,7 @@ fillBfs :: PointArray.Array Word8
         -> ()
 {-# INLINE fillBfs #-}
 fillBfs lalter alterSkill source arr@PointArray.Array{..} =
-  let vToI (x, y) = fromEnum (Vector x y)
-      movesI :: [VectorI]
-      movesI = map vToI
-        [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-      unsafeWriteI :: PointI -> BfsDistance -> ()
+  let unsafeWriteI :: PointI -> BfsDistance -> ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = runST $ do
         vThawed <- U.unsafeThaw avector
@@ -180,14 +176,11 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
   let !pathGoalI = fromEnum pathGoal
       !pathSourceI = fromEnum pathSource
       eps = sepsRaw `mod` 4
-      (mc1, mc2) = splitAt eps [(0, -1), (1, 0), (0, 1), (-1, 0)]
-      (md1, md2) = splitAt eps [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+      (mc1, mc2) = splitAt eps movesCardinalI
+      (md1, md2) = splitAt eps movesDiagonalI
       -- Prefer cardinal directions when closer to the target, so that
       -- the enemy can't easily disengage.
       prefMoves = mc2 ++ reverse mc1 ++ md2 ++ reverse md1  -- fuzz
-      vToI (x, y) = fromEnum (Vector x y)
-      movesI :: [VectorI]
-      movesI = map vToI prefMoves
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix
@@ -219,7 +212,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                               minChild p dark alter mvs
                             | otherwise -> minChild minP maxDark minAlter mvs
             -- @maxBound@ means not alterable, so some child will be lower
-            !newPos = minChild pos{-dummy-} False maxBound movesI
+            !newPos = minChild pos{-dummy-} False maxBound prefMoves
 #ifdef WITH_EXPENSIVE_ASSERTIONS
             !_A = assert (newPos /= pos) ()
 #endif
