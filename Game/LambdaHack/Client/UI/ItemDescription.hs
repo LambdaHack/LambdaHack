@@ -239,7 +239,7 @@ partItemWsR side factionD ranged count localTime itemFull kit =
           | unique && count == 1 -> MU.Phrase ["the", name, powers]
           | tmpCondition && count == 1 -> MU.Phrase [name, powers]
           | tmpCondition ->
-              let maxCount = Dice.maxDice $ IK.icount $ itemKind itemFull
+              let maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
                   percent = 100 * count `divUp` maxCount
                   amount = tshow count <> "-strong"
                            <+> "(" <> tshow percent <> "%)"
@@ -344,8 +344,8 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
                  <> "=" <> show64With2 pdeltaHP
                  <+> "ranged damage (min" <+> show64With2 mDeltaHP
                  <> ") with it"
-                 <> if Dice.minDice (IK.idamage itemKind)
-                       == Dice.maxDice (IK.idamage itemKind)
+                 <> if Dice.infDice (IK.idamage itemKind)
+                       == Dice.supDice (IK.idamage itemKind)
                     then "."
                     else "on average."
         in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)

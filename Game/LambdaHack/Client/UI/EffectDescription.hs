@@ -41,7 +41,7 @@ effectToSuffix :: DetailLevel -> Effect -> Text
 effectToSuffix detailLevel effect =
   case effect of
     Burn d -> wrapInParens (tshow d
-                            <+> if Dice.maxDice d > 1 then "burns" else "burn")
+                            <+> if Dice.supDice d > 1 then "burns" else "burn")
     Explode t -> "of" <+> fromGroupName t <+> "explosion"
     RefillHP p | p > 0 -> "of healing" <+> wrapInParens (affixBonus p)
     RefillHP 0 -> error $ "" `showFailure` effect
@@ -86,7 +86,7 @@ effectToSuffix detailLevel effect =
                  then makePhrase [MU.CarWs d "move"]
                  else makePhrase [MU.CarWs p "tenth", "of a move"]
       in "of speed surge for" <+> moves
-    Teleport dice | Dice.maxDice dice <= 9 ->
+    Teleport dice | Dice.supDice dice <= 9 ->
       "of blinking" <+> wrapInParens (tshow dice)
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
     CreateItem COrgan grp tim ->

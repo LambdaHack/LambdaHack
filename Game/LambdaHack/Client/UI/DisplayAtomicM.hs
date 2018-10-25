@@ -1081,7 +1081,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.InsertMove d -> if d >= 10
                            then actorVerbMU aid bUI "act with extreme speed"
                            else actorVerbMU aid bUI "move swiftly"
-        IK.Teleport t | Dice.maxDice t <= 9 -> actorVerbMU aid bUI "blink"
+        IK.Teleport t | Dice.supDice t <= 9 -> actorVerbMU aid bUI "blink"
         IK.Teleport{} -> actorVerbMU aid bUI "teleport"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()

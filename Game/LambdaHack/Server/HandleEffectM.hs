@@ -1048,7 +1048,7 @@ effectParalyzeInWater execSfx nDm source target = do
     actorMaxSk <- getsState $ getActorMaxSkills target
     let swimmingOrFlying = max (Ability.getSk Ability.SkSwimming actorMaxSk)
                                (Ability.getSk Ability.SkFlying actorMaxSk)
-    if Dice.maxDice nDm > swimmingOrFlying
+    if Dice.supDice nDm > swimmingOrFlying
     then paralyze execSfx nDm source target  -- no help at all
     else do  -- fully resisted
       sb <- getsState $ getActorBody source
@@ -1304,7 +1304,7 @@ effectPolyItem execSfx iidId source target = do
     (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
       let arItem = aspectRecordFull itemFull
-          maxCount = Dice.maxDice $ IK.icount itemKind
+          maxCount = Dice.supDice $ IK.icount itemKind
       if | IA.checkFlag Ability.Unique arItem -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
            return UseId

@@ -327,14 +327,14 @@ foldTimer a fgame factor tim = case tim of
 
 toOrganBad :: GroupName ItemKind -> Dice.Dice -> Effect
 toOrganBad grp nDm =
-  assert (Dice.minDice nDm > 0
+  assert (Dice.infDice nDm > 0
           `blame` "dice at organ creation should always roll above zero"
           `swith` (grp, nDm))
   $ CreateItem COrgan grp (TimerGameTurn nDm)
 
 toOrganGood :: GroupName ItemKind -> Dice.Dice -> Effect
 toOrganGood grp nDm =
-  assert (Dice.minDice nDm > 0
+  assert (Dice.infDice nDm > 0
           `blame` "dice at organ creation should always roll above zero"
           `swith` (grp, nDm))
   $ CreateItem COrgan grp (TimerActorTurn nDm)
@@ -346,7 +346,7 @@ toOrganNoTimer grp = CreateItem COrgan grp TimerNone
 validateSingle :: ItemKind -> [Text]
 validateSingle ik@ItemKind{..} =
   [ "iname longer than 23" | T.length iname > 23 ]
-  ++ [ "icount < 0" | Dice.minDice icount < 0 ]
+  ++ [ "icount < 0" | Dice.infDice icount < 0 ]
   ++ validateRarity irarity
   ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.
@@ -424,7 +424,7 @@ validateDups ItemKind{..} feat =
 
 validateDamage :: Dice.Dice -> [Text]
 validateDamage dice = [ "potentially negative dice:" <+> tshow dice
-                      | Dice.minDice dice < 0]
+                      | Dice.infDice dice < 0]
 
 -- | Validate all item kinds.
 validateAll :: [ItemKind] -> ContentData ItemKind -> [Text]

@@ -81,10 +81,10 @@ instance NFData CaveKind
 -- of the cave descriptions to make sure they fit on screen. Etc.
 validateSingle :: CaveKind -> [Text]
 validateSingle CaveKind{..} =
-  let (minCellSizeX, minCellSizeY) = Dice.minDiceXY ccellSize
-      (minMinSizeX, minMinSizeY) = Dice.minDiceXY cminPlaceSize
-      (maxMinSizeX, maxMinSizeY) = Dice.maxDiceXY cminPlaceSize
-      (minMaxSizeX, minMaxSizeY) = Dice.minDiceXY cmaxPlaceSize
+  let (minCellSizeX, minCellSizeY) = Dice.infDiceXY ccellSize
+      (minMinSizeX, minMinSizeY) = Dice.infDiceXY cminPlaceSize
+      (maxMinSizeX, maxMinSizeY) = Dice.supDiceXY cminPlaceSize
+      (minMaxSizeX, minMaxSizeY) = Dice.infDiceXY cmaxPlaceSize
   in [ "cname longer than 25" | T.length cname > 25 ]
      ++ [ "cXminSize < 20" | cXminSize < 20 ]
      ++ [ "cYminSize < 20" | cYminSize < 20 ]
@@ -102,12 +102,12 @@ validateSingle CaveKind{..} =
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cextraStairs < 0" | Dice.minDice cextraStairs < 0 ]
+     ++ [ "cextraStairs < 0" | Dice.infDice cextraStairs < 0 ]
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]
-     ++ [ "citemNum < 0" | Dice.minDice citemNum < 0 ]
+     ++ [ "citemNum < 0" | Dice.infDice citemNum < 0 ]
      ++ [ "stairs suggested, but not defined"
-        | Dice.maxDice cextraStairs > 0 && null cstairFreq ]
+        | Dice.supDice cextraStairs > 0 && null cstairFreq ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants

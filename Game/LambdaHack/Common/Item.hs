@@ -270,7 +270,7 @@ unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
   case itemDisco of
     ItemDiscoMean IA.KindMean{kmConst} ->
-      let unknown x = let (minD, maxD) = Dice.minmaxDice x
+      let unknown x = let (minD, maxD) = Dice.infsupDice x
                       in minD /= maxD
       in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)
     ItemDiscoFull{} -> False  -- all known

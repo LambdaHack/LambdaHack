@@ -3,9 +3,9 @@
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice
-  , minmaxDice, maxDice, minDice, meanDice, reduceDice
+  , infsupDice, supDice, infDice, meanDice, reduceDice
     -- * Dice for rolling a pair of integer parameters representing coordinates.
-  , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
+  , DiceXY(..), supDiceXY, infDiceXY, meanDiceXY
   ) where
 
 import Prelude ()
@@ -24,7 +24,7 @@ import GHC.Generics (Generic)
 -- The simple dice should have positive number of rolls and number of sides.
 --
 -- The @Num@ instance doesn't have @abs@ nor @signum@ defined,
--- because the functions for computing minimum, maximum and mean dice
+-- because the functions for computing infimum, supremum and mean dice
 -- results would be too costly.
 data Dice =
     DiceI Int
@@ -77,8 +77,8 @@ instance Num Dice where
   d1 * d2 = DiceTimes d1 d2
   d1 - d2 = d1 + DiceNegate d2
   negate = DiceNegate
-  abs = undefined
-  signum = undefined
+  abs = undefined  -- very costly to compute mean exactly
+  signum = undefined  -- very costly to compute mean exactly
   fromInteger n = DiceI (fromInteger n)
 
 -- | Absolute depth in the dungeon. When used for the maximum depth
@@ -168,40 +168,40 @@ intToDice = DiceI
 -- @divUp@ in the implementation corresponds to @ceiling@,
 -- applied to results of @meanDice@ elsewhere in the code,
 -- and prevents treating 1d1-power effects (on shallow levels) as null effects.
-minmaxDice :: Dice -> (Int, Int)
-minmaxDice dice1 = case dice1 of
+infsupDice :: Dice -> (Int, Int)
+infsupDice dice1 = case dice1 of
   DiceI k -> (k, k)
   DiceD n k -> (n, n * k)
   DiceDL n k -> (1, n * k)  -- bottom and top level considered
   DiceZ n k -> (0, n * (k - 1))
   DiceZL n k -> (0, n * (k - 1))  -- bottom and top level considered
   DicePlus d1 d2 ->
-    let (minD1, maxD1) = minmaxDice d1
-        (minD2, maxD2) = minmaxDice d2
-    in (minD1 + minD2, maxD1 + maxD2)
+    let (infD1, supD1) = infsupDice d1
+        (infD2, supD2) = infsupDice d2
+    in (infD1 + infD2, supD1 + supD2)
   DiceTimes (DiceI k) d2 ->
-    let (minD2, maxD2) = minmaxDice d2
-    in if k >= 0 then (k * minD2, k * maxD2) else (k * maxD2, k * minD2)
+    let (infD2, supD2) = infsupDice d2
+    in if k >= 0 then (k * infD2, k * supD2) else (k * supD2, k * infD2)
   DiceTimes d1 (DiceI k) ->
-    let (minD1, maxD1) = minmaxDice d1
-    in if k >= 0 then (minD1 * k, maxD1 * k) else (maxD1 * k, minD1 * k)
+    let (infD1, supD1) = infsupDice d1
+    in if k >= 0 then (infD1 * k, supD1 * k) else (supD1 * k, infD1 * k)
   -- Multiplication other than the two cases above is unlikely, but here it is.
   DiceTimes d1 d2 ->
-    let (minD1, maxD1) = minmaxDice d1
-        (minD2, maxD2) = minmaxDice d2
-        options = [minD1 * minD2, minD1 * maxD2, maxD1 * maxD2, maxD1 * minD2]
+    let (infD1, supD1) = infsupDice d1
+        (infD2, supD2) = infsupDice d2
+        options = [infD1 * infD2, infD1 * supD2, supD1 * supD2, supD1 * infD2]
     in (minimum options, maximum options)
   DiceNegate d1 ->
-    let (minD1, maxD1) = minmaxDice d1
-    in (negate maxD1, negate minD1)
+    let (infD1, supD1) = infsupDice d1
+    in (negate supD1, negate infD1)
 
 -- | Maximal value of dice. The scaled part taken assuming median level.
-maxDice :: Dice -> Int
-maxDice = snd . minmaxDice
+supDice :: Dice -> Int
+supDice = snd . infsupDice
 
 -- | Minimal value of dice. The scaled part taken assuming median level.
-minDice :: Dice -> Int
-minDice = fst . minmaxDice
+infDice :: Dice -> Int
+infDice = fst . infsupDice
 
 -- | Mean value of dice. The scaled part taken assuming median level.
 meanDice :: Dice -> Double
@@ -217,8 +217,8 @@ meanDice dice1 = case dice1 of
 
 reduceDice :: Dice -> Maybe Int
 reduceDice d1 =
-  let (minD1, maxD1) = minmaxDice d1
-  in if minD1 == maxD1 then Just minD1 else Nothing
+  let (infD1, supD1) = infsupDice d1
+  in if infD1 == supD1 then Just infD1 else Nothing
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
@@ -230,12 +230,12 @@ instance Binary DiceXY
 instance NFData DiceXY
 
 -- | Maximal value of DiceXY.
-maxDiceXY :: DiceXY -> (Int, Int)
-maxDiceXY (DiceXY x y) = (maxDice x, maxDice y)
+supDiceXY :: DiceXY -> (Int, Int)
+supDiceXY (DiceXY x y) = (supDice x, supDice y)
 
 -- | Minimal value of DiceXY.
-minDiceXY :: DiceXY -> (Int, Int)
-minDiceXY (DiceXY x y) = (minDice x, minDice y)
+infDiceXY :: DiceXY -> (Int, Int)
+infDiceXY (DiceXY x y) = (infDice x, infDice y)
 
 -- | Mean value of DiceXY.
 meanDiceXY :: DiceXY -> (Double, Double)
