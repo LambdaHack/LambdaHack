@@ -35,7 +35,7 @@ data Dice =
   | DicePlus Dice Dice
   | DiceTimes Dice Dice
   | DiceNegate Dice
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Generic)
 
 instance Show Dice where
   show = stripOuterParens . showDiceWithParens

@@ -79,7 +79,7 @@ data Aspect =
   | Odds Dice.Dice [Aspect] [Aspect]
                        -- ^ if level-scaled dice roll > 50,
                        --   pick the former aspects, otherwise the latter
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 -- | Effects of items. Can be invoked by the item wielder to affect
 -- another actor or the wielder himself. Many occurences in the same item

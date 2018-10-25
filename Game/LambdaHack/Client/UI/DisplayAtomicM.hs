@@ -1078,7 +1078,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.ParalyzeInWater{} -> actorVerbMU aid bUI "move with difficulty"
-        IK.InsertMove d -> if d >= 10
+        IK.InsertMove d -> if Dice.supDice d >= 10
                            then actorVerbMU aid bUI "act with extreme speed"
                            else actorVerbMU aid bUI "move swiftly"
         IK.Teleport t | Dice.supDice t <= 9 -> actorVerbMU aid bUI "blink"

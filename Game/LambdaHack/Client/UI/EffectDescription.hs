@@ -53,9 +53,9 @@ effectToSuffix detailLevel effect =
     Impress -> "of impression"
     PutToSleep -> "of sleep"
     Yell -> ""  -- almost never the essential purpose
-    Summon grp p -> makePhrase
+    Summon grp d -> makePhrase
       [ "of summoning"
-      , if p <= 1 then "" else MU.Text $ tshow p
+      , if Dice.supDice d <= 1 then "" else MU.Text $ tshow d
       , MU.Ws $ MU.Text $ fromGroupName grp ]
     ApplyPerfume -> "of smell removal"
     Ascend True -> "of ascending"

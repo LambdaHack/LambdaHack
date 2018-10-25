@@ -114,9 +114,6 @@ textAllPowers detailLevel skipRecharging
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            -- Effects are not being sorted here, because they should fire
-            -- in the order specified in content.
-            restAs = sort aspects
             restEs | secondPass = []
                    | detLev >= DetailHigh
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
@@ -130,8 +127,8 @@ textAllPowers detailLevel skipRecharging
             fragile = IA.checkFlag Ability.Fragile arItem
             noFraDur as = as `notElem` [ IK.SetFlag Ability.Durable
                                        , IK.SetFlag Ability.Fragile ]
-            displayedAs | durable && fragile = filter noFraDur restAs
-                        | otherwise = restAs
+            displayedAs | durable && fragile = filter noFraDur aspects
+                        | otherwise = aspects
             aes = if active
                   then map ppA displayedAs ++ map ppE restEs
                   else map ppE restEs ++ map ppA displayedAs
@@ -157,7 +154,7 @@ textAllPowers detailLevel skipRecharging
             -- Dice needed, not @Int@, so @arItem@ not consulted directly.
             -- If item not known fully and @AbHurtMelee@ under @Odds@,
             -- it's ignored.
-            damage = case find hurtMeleeAspect restAs of
+            damage = case find hurtMeleeAspect aspects of
               _ | secondPass -> ""
               Just (IK.AddSkill Ability.SkHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
