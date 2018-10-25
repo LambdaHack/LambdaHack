@@ -157,10 +157,13 @@ rollSpawnPos COps{coTileSpeedup} visible
         [ distantMiddle 8
         , distantMiddle 16
         , distantMiddle 24
+        , distantMiddle 26
+        , distantMiddle 28
+        , distantMiddle 30
         ]
   -- Not considering TK.OftenActor, because monsters emerge from hidden ducts,
   -- which are easier to hide in crampy corridors that lit halls.
-  findPosTry2 (if mobile then 500 else 100) lvl
+  findPosTry2 (if mobile then 500 else 50) lvl
     ( \p !t -> Tile.isWalkable coTileSpeedup t
                && not (Tile.isNoActor coTileSpeedup t)
                && not (occupiedBigLvl p lvl)
