@@ -152,11 +152,13 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't melee-target inherently nonmoving actors (not due to sleep),
+      -- Don't melee-target inherently nonmoving actors (not due to sleep
+      -- and not if they are particularly aggresive),
       -- unless they attack ours, because nonmoving can't be lured
       -- nor ambushed nor can chase us.
       -- This is especially important for fences, tower defense actors, etc.
-      -- If content gives nonmoving actor loot, this becomes problematic.
+      -- If content gives nonmoving actor loot, this becomes problematic,
+      -- so such actors should be made aggressive.
       -- Human players may also choose not to wake up sleeping actors,
       -- but deciding if they are likely to wake up on their own later on
       -- and if they have decent loot per risk ratio is too difficult for AI.
@@ -181,6 +183,8 @@ computeTarget aid = do
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
                         && bwatch body `notElem` [WSleep, WWake]
                              -- exploit sleep weakness
+                        && Ability.getSk Ability.SkAggression actorMaxSkE < 2
+                             -- react to provocation
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
