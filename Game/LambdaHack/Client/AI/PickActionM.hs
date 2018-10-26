@@ -699,7 +699,7 @@ projectItem aid = do
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2  -- pickup turn saved
               coeff COrgan = error $ "" `showFailure` benList
-              coeff CEqp = 100000  -- must hinder currently
+              coeff CEqp = 100000  -- must hinder currently (or be very potent)
               coeff CInv = 1
               coeff CSha = 1
               fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
@@ -799,20 +799,20 @@ applyItem aid applyGroup = do
             dropsGrps = IK.getDropOrgans itemKind
             dropsBadOrgans =
               not (null myBadGrps)
-              && "condition" `elem` dropsGrps
-                 || not (null (dropsGrps `intersect` myBadGrps))
+              && ("condition" `elem` dropsGrps
+                  || not (null (dropsGrps `intersect` myBadGrps)))
             dropsGoodOrgans =
               not (null myGoodGrps)
-              && "condition" `elem` dropsGrps
-                 || not (null (dropsGrps `intersect` myGoodGrps))
-            wastesDrop = null myBadGrps && not (null dropsGrps)
+              && ("condition" `elem` dropsGrps
+                  || not (null (dropsGrps `intersect` myGoodGrps)))
+            wastesDrop = not dropsBadOrgans && not (null dropsGrps)
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull
             situationalBenApply | dropsBadOrgans = benApply + 20
                                 | wastesDrop = benApply - 10
                                 | otherwise = benApply
             benR = ceiling situationalBenApply
                    * if cstore == CEqp && not durable
-                     then 1000  -- must hinder currently
+                     then 1000  -- must hinder currently (or be very potent)
                      else coeff cstore
             canApply = situationalBenApply > 0 && case applyGroup of
               ApplyFirstAid -> q benAv && heals

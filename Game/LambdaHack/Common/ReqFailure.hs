@@ -207,12 +207,10 @@ permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
 permittedApply localTime skill calmE
                itemFull@ItemFull{itemKind, itemSuspect} kit =
-  if | IK.isymbol itemKind == '?' && skill < 3 -> Left ApplyRead
-     -- ApplyRead has precedence for the case of embedced items that
-     -- can't be applied if they require reading, but can even if actor
-     -- completely unskilled (as long as he is able to alter the tile).
-     | IK.isymbol itemKind /= ',' && skill < 2 -> Left ApplyUnskilled
-     | skill < 1 -> Left ApplyUnskilled
+  if | skill < 1 -> Left ApplyUnskilled
+     | skill < 2 && IK.isymbol itemKind `notElem` [',', '"'] ->
+       Left ApplyUnskilled
+     | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead
      -- We assume if the item has a timeout, all or most of interesting
      -- effects are under Recharging, so no point activating if not recharged.
      -- Note that if client doesn't know the timeout, here we leak the fact

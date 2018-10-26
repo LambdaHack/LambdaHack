@@ -763,9 +763,9 @@ effectSummon grp nDm iid source target periodic = do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
        return UseId
      | nFriends >= 20 -> do
-       -- We assume the actor tries to summon his teammates or allies,
-       -- so as he repeats it he is going to bump into this limit.
-       -- If summons others, see the next condition.
+       -- We assume the actor tries to summon his teammates or allies.
+       -- As he repeats such summoning, he is going to bump into this limit.
+       -- If he summons others, see the next condition.
        unless (bproj sb) $
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyOwn source
        return UseId
