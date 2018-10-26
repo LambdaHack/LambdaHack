@@ -374,12 +374,20 @@ computeTarget aid = do
         _ | condInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint tgoal lid pos -> case tgoal of
-          _ | not $ null nearbyFoes ->
-            pickNewTarget  -- prefer close foes to anything else
           TEnemyPos _ permit  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
             | followingWrong permit -> pickNewTarget
-            | otherwise -> return $ Just tap
+            | otherwise -> do
+              -- Here pick the closer enemy, remembered or seen, to avoid
+              -- loops when approaching new enemy obscures him behind obstacle
+              -- but reveals the previously remembered one, etc.
+              let remainingDist = chessDist (bpos b) pos
+              if any (\(_, b3) -> chessDist (bpos b) (bpos b3) < remainingDist)
+                     nearbyFoes
+              then pickNewTarget
+              else return $ Just tap
+          _ | not $ null nearbyFoes ->
+            pickNewTarget  -- prefer close foes to anything else
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
           -- and only in this case it is invalidated.
