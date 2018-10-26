@@ -196,22 +196,22 @@ condNoEqpWeaponM aid =
 
 -- | Require that the actor can project any items.
 condCanProjectM :: MonadClient m => Int -> ActorId -> m Bool
-{-# INLINE condCanProjectM #-}
 condCanProjectM skill aid =
-  -- Compared to conditions in @projectItem@, range and charge are ignored,
-  -- because they may change by the time the position for the fling is reached.
-  not . null <$> condProjectListM skill aid
+  if skill < 1 then return False else  -- shortcut
+    -- Compared to conditions in @projectItem@, range and charge are ignored,
+    -- because they may change by the time the position for the fling
+    -- is reached.
+    not . null <$> condProjectListM skill aid
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
                  -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
-{-# INLINE condProjectListM #-}
 condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
   getsState $ projectList discoBenefit skill aid
-                         condShineWouldBetray condAimEnemyPresent
+                          condShineWouldBetray condAimEnemyPresent
 
 projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
             -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
