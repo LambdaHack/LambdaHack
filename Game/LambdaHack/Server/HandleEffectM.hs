@@ -1535,7 +1535,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
     return UseDud  -- the impact never manifested
   else if waitedLastTurn tb && isNothing (btrajectory tb) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-    return UseId  -- the message reveals what's going on
+    return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do
    COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
    case bla rXmax rYmax eps (bpos tb) fpos of
