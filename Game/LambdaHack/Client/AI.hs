@@ -34,9 +34,7 @@ queryAI aid = do
   side <- getsClient sside
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   mleaderCli <- getsClient sleader
-  unless (Just aid == mleader || mleader == mleaderCli) $
-    -- @aid@ is not the leader, so he can't change leader
-    modifyClient $ \cli -> cli {_sleader = mleader}
+  let !_A = assert (mleader == mleaderCli) ()
   (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
   (aidToMove2, treq2) <-
     case treq of
@@ -48,7 +46,7 @@ queryAI aid = do
           , sfleeD = case oldFlee of
               Just p -> EM.insert aidToMove p $ sfleeD cli
               Nothing -> EM.delete aidToMove $ sfleeD cli }
-        (a, t, _) <- pickActorAndAction (Just (aidToMove, treq)) aid
+        (a, t, _) <- pickActorAndAction (Just aidToMove) aid
         return (a, t)
       _ -> return (aidToMove, treq)
   return ( ReqAITimed treq2
@@ -57,7 +55,7 @@ queryAI aid = do
 -- | Pick an actor to move and an action for him to perform, given an optional
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
-                   => Maybe (ActorId, RequestTimed) -> ActorId
+                   => Maybe ActorId -> ActorId
                    -> m (ActorId, RequestTimed, Maybe Point)
 -- This inline speeds up execution by 15% and decreases allocation by 15%,
 -- despite probably bloating executable:
@@ -66,7 +64,7 @@ pickActorAndAction maid aid = do
   mleader <- getsClient sleader
   aidToMove <-
     if mleader == Just aid
-    then pickActorToMove (fst <$> maid)
+    then pickActorToMove maid
     else do
       setTargetFromTactics aid
       return aid
@@ -75,6 +73,6 @@ pickActorAndAction maid aid = do
   -- a non-waiting action should be found.
   -- If a new leader found, there is hope (but we don't check)
   -- that he gets a non-waiting action without any desperate measures.
-  let retry = maybe False (\(aidOld, _) -> aidToMove == aidOld) maid
+  let retry = maybe False (aidToMove ==) maid
   treq <- pickAction mleader aidToMove retry
   return (aidToMove, treq, oldFlee)
