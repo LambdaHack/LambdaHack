@@ -131,25 +131,26 @@ pickActorToMove maidToAvoid = do
               -- This is a part of the condition for @flee@ in @PickActionM@.
               not condFastThreatAdj
               && if | condThreat 1 ->
-                        not condCanMelee
-                        || condManyThreatAdj && not condSupport1 && not condSolo
+                      not condCanMelee
+                      || condManyThreatAdj && not condSupport1 && not condSolo
                     | not condInMelee
                       && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                       not condCanMelee
                       || not condSupport3 && not condSolo
                          && not heavilyDistressed
-                    -- not used: | condThreat 5 -> False
-                    -- because actor should be picked anyway, to try to melee
+                    -- Not used: | condThreat 5 ...
+                    -- because actor should be picked anyway, to try to melee.
                     | otherwise ->
                       not condInMelee
                       && heavilyDistressed
+                      -- Different from @PickActionM@:
                       && not (EM.member aid fleeD)
-                      -- Make him a leader even if can't delight, etc.
-                      -- because he may instead take off light or otherwise
-                      -- cope with being pummeled by projectiles.
-                      -- He is still vulnerable, just not necessarily needs
-                      -- to flee, but may cover himself otherwise.
-                      -- && (not condCanProject || canFleeFromLight)
+                        -- Make him a leader even if can't delight, etc.
+                        -- because he may instead take off light or otherwise
+                        -- cope with being pummeled by projectiles.
+                        -- He is still vulnerable, just not necessarily needs
+                        -- to flee, but may cover himself otherwise.
+                        -- && (not condCanProject || canFleeFromLight)
               && condCanFlee
           actorFled ((aid, _), _) = EM.member aid fleeD
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _

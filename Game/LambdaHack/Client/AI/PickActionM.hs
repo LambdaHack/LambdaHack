@@ -197,15 +197,19 @@ actionStrategy moldLeader aid retry = do
             -- can fling at us and we can't well fling at them.
             not condFastThreatAdj
             && if | condThreat 1 ->
-                      not condCanMelee
-                      || condManyThreatAdj && not condSupport1 && not condSolo
+                    -- Here we don't check @condInMelee@ because regardless
+                    -- of whether our team melees (including the fleeing ones),
+                    -- endangered actors should flee from very close foes.
+                    not condCanMelee
+                    || condManyThreatAdj && not condSupport1 && not condSolo
                   | not condInMelee
                     && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport3 && not condSolo && not heavilyDistressed
+                    || not condSupport3 && not condSolo
+                       && not heavilyDistressed
                   | condThreat 5
                     || not condInMelee && condAimEnemyNoMelee && condCanMelee ->
                     -- Too far to flee from melee, too close from ranged,
