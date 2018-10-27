@@ -135,7 +135,7 @@ fillBfs lalter alterSkill source arr@PointArray.Array{..} =
   in bfs (succ minKnownBfs) [fromEnum source]
 
 data AndPath =
-    AndPath { pathSource :: Point  -- never included in @pathList@
+    AndPath { pathSource :: Point    -- never included in @pathList@
             , pathList   :: [Point]
             , pathGoal   :: Point    -- needn't be @last pathList@
             , pathLen    :: Int      -- needn't be @length pathList@
