@@ -157,8 +157,11 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
-                  K.Return | ekm /= Left [K.returnKM] -> case ekm of
-                    Left (km : _) -> interpretKey km
+                  K.Return -> case ekm of
+                    Left (km : _) ->
+                      if K.key km == K.Return && km `elem` keys
+                      then return (Left km, pointer)
+                      else interpretKey km
                     Left [] -> error $ "" `showFailure` ikm
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
