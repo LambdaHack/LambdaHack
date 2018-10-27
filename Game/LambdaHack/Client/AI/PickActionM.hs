@@ -195,19 +195,19 @@ actionStrategy moldLeader aid retry = do
           , -- Flee either from melee, if our melee is bad and enemy close
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them.
-            not condInMelee
-            && not condFastThreatAdj
+            not condFastThreatAdj
             && if | condThreat 1 ->
                       not condCanMelee
                       || condManyThreatAdj && not condSupport1 && not condSolo
-                  | condThreat 2 || condThreat 5 && canFleeFromLight ->
+                  | not condInMelee
+                    && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
                     || not condSupport3 && not condSolo && not heavilyDistressed
                   | condThreat 5
-                    || condAimEnemyNoMelee && condCanMelee ->
+                    || not condInMelee && condAimEnemyNoMelee && condCanMelee ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; advance.
                     -- Or the target enemy doesn't melee and melee enemies
@@ -218,7 +218,8 @@ actionStrategy moldLeader aid retry = do
                     -- even if I can't see them. And probably far away.
                     -- Too far to close in for melee; can't shoot; flee from
                     -- ranged attack and prepare ambush for later on.
-                    heavilyDistressed
+                    not condInMelee
+                    && heavilyDistressed
                     && (not condCanProject || canFleeFromLight) )
         , ( [SkMelee]
           , meleeBlocker aid  -- only melee blocker
