@@ -39,6 +39,7 @@ import           Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -54,6 +55,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Content.RuleKind
 
 -- All conditions are (partially) lazy, because they are not always
 -- used in the strict monadic computations they are in.
@@ -279,25 +281,34 @@ benGroundItems :: MonadClient m
                => ActorId
                -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benGroundItems aid = do
+  cops <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   discoBenefit <- getsClient sdiscoBenefit
   let canEsc = fcanEscape (gplayer fact)
       isDesirable (ben, _, _, itemFull, _) =
-        desirableItem canEsc (benPickup ben)
-                      (aspectRecordFull itemFull)
-                      (itemKind itemFull)
+        desirableItem cops canEsc (benPickup ben)
+                      (aspectRecordFull itemFull) (itemKind itemFull)
+                      99  -- fake, becuase no time is wasted walking to item
   filter isDesirable
     <$> getsState (benAvailableItems discoBenefit aid [CGround])
 
-desirableItem :: Bool -> Double -> IA.AspectRecord -> IK.ItemKind -> Bool
-desirableItem canEsc benPickup arItem itemKind =
-  if canEsc
-  then benPickup > 0
-       || IA.checkFlag Ability.Precious arItem
-  else -- A hack to prevent monsters from picking up treasure meant for heroes.
-       let preciousNotUseful = IA.isHumanTrinket itemKind
-       in benPickup > 0 && not preciousNotUseful
+desirableItem :: COps -> Bool -> Double -> IA.AspectRecord -> IK.ItemKind -> Int
+              -> Bool
+desirableItem COps{corule=RuleContent{rsymbolProjectile}}
+              canEsc benPickup arItem itemKind k =
+  let loneProjectile = IK.isymbol itemKind == rsymbolProjectile
+                       && k == 1
+                       && Dice.infDice (IK.icount itemKind) > 1
+                            -- never generated as lone; usually means weak
+      useful = if canEsc
+               then benPickup > 0
+                    || IA.checkFlag Ability.Precious arItem
+               else -- A hack to prevent monsters from picking up
+                    -- treasure meant for heroes.
+                 let preciousNotUseful = IA.isHumanTrinket itemKind
+                 in benPickup > 0 && not preciousNotUseful
+  in useful && not loneProjectile
 
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}

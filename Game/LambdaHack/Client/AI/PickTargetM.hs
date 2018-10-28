@@ -80,7 +80,7 @@ refreshTarget (aid, body) = do
 computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
 {-# INLINE computeTarget #-}
 computeTarget aid = do
-  COps{corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
+  cops@COps{corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
@@ -205,10 +205,11 @@ computeTarget aid = do
   fleeD <- getsClient sfleeD
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
-  let desirableIid iid =
+  let desirableIid (iid, (k, _)) =
         let Benefit{benPickup} = discoBenefit EM.! iid
-        in desirableItem canEscape benPickup (getArItem iid) (getKind iid)
-      desirableBagFloor bag = any desirableIid $ EM.keys bag
+        in desirableItem cops canEscape benPickup
+                         (getArItem iid) (getKind iid) k
+      desirableBagFloor bag = any desirableIid $ EM.assocs bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = gearSpeed actorMaxSk < speedWalk || condHpTooLow
       couldMoveLastTurn =
