@@ -364,12 +364,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
             "Coming from" <+> whose fid
             <> "." <+> discoFirst
           _ -> discoFirst
-      ikitStrings = map (show . fst) $ filter ((== COrgan) . snd)
-                                     $ IK.ikit itemKind
-      ikitDesc | null ikitStrings = ""
+      ikitNames = map (fromGroupName . fst) $ filter ((== COrgan) . snd)
+                                            $ IK.ikit itemKind
+      ikitDesc | null ikitNames = ""
                | otherwise = makeSentence
         [ "the actor also has organs of this kind:"
-        , MU.String $ intercalate ", " ikitStrings ]
+        , MU.Text $ T.intercalate ", " ikitNames ]
       colorSymbol = viewItem itemFull
       blurb =
         ((" "
