@@ -34,6 +34,7 @@ data RuleContent = RuleContent
   , rnearby           :: Int       -- ^ what distance between actors is 'nearby'
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
+  , rsymbolProjectile :: Char
   }
 
 emptyRuleContent :: RuleContent
@@ -51,6 +52,7 @@ emptyRuleContent = RuleContent
   , rscoresFile = ""
   , rnearby = 0
   , rstairWordCarried = []
+  , rsymbolProjectile = '0'
   }
 
 -- | Catch invalid rule kind definitions.

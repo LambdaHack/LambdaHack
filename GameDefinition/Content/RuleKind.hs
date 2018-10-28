@@ -40,4 +40,5 @@ standardRules = RuleContent
   , rscoresFile = "LambdaHack.scores"
   , rnearby = 20
   , rstairWordCarried = ["staircase"]  -- only one, so inert
+  , rsymbolProjectile = '|'
   }
