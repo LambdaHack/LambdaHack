@@ -2,7 +2,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
-  , pushAndDelay, blinkColorActor, twirlSplash, blockHit, blockMiss, subtleHit
+  , pushAndDelay, twirlSplash, blockHit, blockMiss, subtleHit
   , deathBody, shortDeathBody, actorX, teleport, swapPlaces, fadeout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -68,15 +68,6 @@ mzipPairs coscreen (p1, p2) (mattr1, mattr2) = map (mapPosToOffset coscreen) $
 
 pushAndDelay :: Animation
 pushAndDelay = Animation [[]]
-
-blinkColorActor :: ScreenContent -> Point -> Char -> Color -> Color -> Animation
-blinkColorActor coscreen pos symbol fromCol toCol =
-  Animation $ map (mzipSingleton coscreen pos)
-  [ cSym toCol symbol
-  , cSym toCol symbol
-  , cSym fromCol symbol
-  , cSym fromCol symbol
-  ]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: ScreenContent -> (Point, Point) -> Color -> Color -> Animation
