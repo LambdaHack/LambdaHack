@@ -190,7 +190,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
                  && bhp b - n < xM (Ability.getSk Ability.SkMaxHP
                                                   actorMaxSk)) $ do
-             actorVerbMU aid bUI "recover your health fully"
+             msgAdd "You recover your health fully."
              stopPlayBack
          else when (bfid b == side) $
            markDisplayNeeded (blid b)
