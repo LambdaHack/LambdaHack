@@ -78,7 +78,7 @@ chanFrontendIO :: ScreenContent -> ClientOptions -> IO ChanFrontend
 chanFrontendIO coscreen soptions = do
   let startup | sfrontendNull soptions = nullStartup coscreen
               | sfrontendLazy soptions = lazyStartup coscreen
-              | sfrontendTeletype soptions = Teletype.startup coscreen soptions
+              | sfrontendTeletype soptions = Teletype.startup coscreen
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
       delta = max 1 $ microInSec `div` maxFps

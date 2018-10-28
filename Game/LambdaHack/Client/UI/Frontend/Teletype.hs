@@ -13,7 +13,6 @@ import           Data.Char (chr, ord)
 import qualified Data.Char as Char
 import qualified System.IO as SIO
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
@@ -29,8 +28,8 @@ frontendName :: String
 frontendName = "teletype"
 
 -- | Set up the frontend input and output.
-startup :: ScreenContent -> ClientOptions -> IO RawFrontend
-startup coscreen _soptions = do
+startup :: ScreenContent -> IO RawFrontend
+startup coscreen = do
   rf <- createRawFrontend coscreen (display coscreen) shutdown
   let storeKeys :: IO ()
       storeKeys = do
