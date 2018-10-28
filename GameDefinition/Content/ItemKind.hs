@@ -749,7 +749,7 @@ ediblePlantTemplate = ItemKind
   , iaspects = [ HideAs "edible plant unknown"
                , toVelocity 30 ]  -- low density, often falling apart
   , ieffects = []
-  , idesc    = "Withered but fragrant bits of some colorful plant. Taste tolerably and break down easily, but only eating reveals how digestible they are."
+  , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating reveals the full effects."
   , ikit     = []
   }
 ediblePlant1 = ediblePlantTemplate
