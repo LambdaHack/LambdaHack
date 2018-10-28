@@ -416,7 +416,9 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         / if durable then 1 else durabilityMult
       benMeleeAverage = min 0 $
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-         + if periodic then 0 else sum chargeFoe)
+         + if periodic
+           then 0  -- in case of weapons that periodically do something
+           else sum chargeFoe)
         / if durable then 1 else durabilityMult
       -- Experimenting is fun, but it's better to risk foes' skin than ours,
       -- so we only adjust flinging bonus, not apply bonus. It's also more

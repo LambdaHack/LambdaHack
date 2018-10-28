@@ -904,8 +904,6 @@ discover c iid = do
       unknownName = MU.Phrase $ [MU.Text flav, MU.Text name] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg unknownName "turn out to be", knownName]
-  -- Compare descriptions of all aspects and effects to determine
-  -- if the discovery was meaningful to the player.
   unless (globalTime == timeZero  -- don't spam about initial equipment
           || isOurOrgan) $  -- assume own faction organs known intuitively
     msgAdd msg

@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.HandleAtomicM
   , invalidateInMelee, wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs
   , createActor, destroyActor
   , addItemToDiscoBenefit, perception
-  , discoverKind, coverKind, discoverAspect, coverAspect
+  , discoverKind, discoverKindAndAspect, coverKind, coverAspectAndKind
+  , discoverAspect, coverAspect
   , killExit
 #endif
   ) where
@@ -33,7 +34,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -42,7 +42,6 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 
@@ -193,28 +192,27 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> return ()
   UpdUnAgeGame{} -> return ()
-  UpdDiscover c iid ik arItem -> do
+  UpdDiscover _ iid _ _ -> do
     item <- getsState $ getItemBody iid
-    discoKind <- getsState sdiscoKind
     case jkind item of
-      IdentityObvious _ik -> return ()
-      IdentityCovered ix _ik | ix `EM.notMember` discoKind ->
-        discoverKind c ix ik
-      IdentityCovered _ix _ik -> return ()
-    discoverAspect c iid arItem
-  UpdCover c iid ik arItem -> do
-    coverAspect c iid arItem
+      IdentityObvious _ik -> discoverAspect iid
+      IdentityCovered ix _ik ->
+        if ix `EM.notMember` sdiscoKind oldState
+        then discoverKindAndAspect ix
+        else discoverAspect iid
+  UpdCover _ iid _ _ -> do
     item <- getsState $ getItemBody iid
-    discoKind <- getsState sdiscoKind
+    newState <- getState
     case jkind item of
-      IdentityObvious _ik -> return ()
-      IdentityCovered ix _ik | ix `EM.member` discoKind ->
-        coverKind c ix ik
-      IdentityCovered _ix _ik -> return ()
-  UpdDiscoverKind c ix ik -> discoverKind c ix ik
-  UpdCoverKind c ix ik -> coverKind c ix ik
-  UpdDiscoverAspect c iid arItem -> discoverAspect c iid arItem
-  UpdCoverAspect c iid arItem -> coverAspect c iid arItem
+      IdentityObvious _ik -> coverAspect iid
+      IdentityCovered ix _ik ->
+        if ix `EM.member` sdiscoKind newState
+        then coverAspectAndKind ix
+        else coverAspect iid
+  UpdDiscoverKind _c ix _ik -> discoverKind ix
+  UpdCoverKind _c ix _ik -> coverKind ix
+  UpdDiscoverAspect _c iid _arItem -> discoverAspect iid
+  UpdCoverAspect _c iid _arItem -> coverAspect iid
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
@@ -358,9 +356,11 @@ perception lid outPer inPer = do
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
-discoverKind :: MonadClient m
-             => Container -> ItemKindIx -> ContentId ItemKind -> m ()
-discoverKind _c ix _ik = do
+discoverKind :: MonadClient m => ItemKindIx -> m ()
+discoverKind = discoverKindAndAspect
+
+discoverKindAndAspect :: MonadClient m => ItemKindIx -> m ()
+discoverKindAndAspect ix = do
   cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -368,20 +368,20 @@ discoverKind _c ix _ik = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   itemToF <- getsState $ flip itemToFull
-  let benefit iid =
-        let itemFull = itemToF iid
-        in totalUsefulness cops fact itemFull
+  let benefit iid = totalUsefulness cops fact (itemToF iid)
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   -- Possibly overwrite earlier, provisional benefits.
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid (benefit iid) (sdiscoBenefit cli)}
 
-coverKind :: Container -> ItemKindIx -> ContentId ItemKind -> m ()
-coverKind _c _ix _ik = undefined
+coverKind :: ItemKindIx -> m ()
+coverKind = coverAspectAndKind
 
-discoverAspect :: MonadClient m
-               => Container -> ItemId -> IA.AspectRecord -> m ()
-discoverAspect _c iid _arItem = do
+coverAspectAndKind :: ItemKindIx -> m ()
+coverAspectAndKind _ix = undefined
+
+discoverAspect :: MonadClient m => ItemId -> m ()
+discoverAspect iid = do
   cops <- getsState scops
   -- Wipe out BFS, because the player could potentially learn that his items
   -- affect his actors' skills relevant to BFS.
@@ -394,8 +394,8 @@ discoverAspect _c iid _arItem = do
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
-coverAspect :: Container -> ItemId -> IA.AspectRecord -> m ()
-coverAspect _c _iid _arItem = undefined
+coverAspect :: ItemId -> m ()
+coverAspect _iid = undefined
 
 killExit :: MonadClient m => m ()
 killExit = do
