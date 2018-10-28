@@ -336,7 +336,7 @@ straightPath = ItemKind
   }
 frozenGround = ItemKind
   { isymbol  = '.'
-  , iname    = "frozen ground"
+  , iname    = "shade of ice"
   , ifreq    = [("frozen ground", 1)]
   , iflavour = zipFancy [BrBlue]
   , icount   = 50  -- very thick ice and refreezes
