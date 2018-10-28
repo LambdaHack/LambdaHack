@@ -30,6 +30,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
@@ -518,8 +519,7 @@ createActorUI born aid body = do
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
-  let symbol = IK.isymbol itemKind
-      arItem = aspectRecordFull itemFull
+  let arItem = aspectRecordFull itemFull
   mbUI <- getsSession $ EM.lookup aid . sactorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
@@ -537,9 +537,10 @@ createActorUI born aid body = do
             else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                  $ lookup k uHeroNames
       (n, bsymbol) <-
-        if | bproj body ->
-               return (0, if IA.isBlast arItem then symbol else '*')
-           | baseColor /= Color.BrWhite -> return (0, symbol)
+        if | bproj body -> return (0, if IA.isBlast arItem
+                                      then IK.isymbol itemKind
+                                      else '*')
+           | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
            | otherwise -> do
              sactorUI <- getsSession sactorUI
              let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
@@ -966,13 +967,12 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxReceive aid iid cstore ->
     itemAidVerbMU aid "receive" iid (Left $ Just 1) cstore
   SfxApply aid iid cstore -> do
+    CCUI{coscreen=ScreenContent{rapplyVerbMap}} <- getsSession sccui
     ItemFull{itemKind} <- getsState $ itemToFull iid
-    let action = case IK.isymbol itemKind of
-          '!' -> "imbibe"
-          ',' -> "eat"
-          '?' -> "peruse"
-          _ -> "use"
-    itemAidVerbMU aid action iid (Left $ Just 1) cstore
+    let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
+          Just verb -> MU.Text verb
+          Nothing -> "use"
+    itemAidVerbMU aid actionPart iid (Left $ Just 1) cstore
   SfxCheck aid iid cstore ->
     itemAidVerbMU aid "deapply" iid (Left $ Just 1) cstore
   SfxTrigger aid p -> do

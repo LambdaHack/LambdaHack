@@ -11,16 +11,19 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Point
 
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent
-  { rwidth       :: X         -- ^ screen width
-  , rheight      :: Y         -- ^ screen height
-  , rmainMenuArt :: Text      -- ^ the ASCII art for the main menu
-  , rintroScreen :: [String]  -- ^ the intro screen (first help screen) text
+  { rwidth        :: X         -- ^ screen width
+  , rheight       :: Y         -- ^ screen height
+  , rmainMenuArt  :: Text      -- ^ the ASCII art for the main menu
+  , rintroScreen  :: [String]  -- ^ the intro screen (first help screen) text
+  , rapplyVerbMap :: EM.EnumMap Char T.Text
+                               -- ^ verbs to use for apply actions
   }
 
 -- | Catch invalid rule kind definitions.

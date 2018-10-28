@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.ContentClientUI
 
 import Prelude ()
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 
 import Game.LambdaHack.Client.UI.Content.Input
@@ -23,5 +24,6 @@ emptyCCUI = CCUI
                              , rheight = 0
                              , rmainMenuArt = ""
                              , rintroScreen = []
+                             , rapplyVerbMap = EM.empty
                              }
   }

@@ -8,8 +8,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Language.Haskell.TH.Syntax
-import System.IO
+import qualified Data.EnumMap.Strict as EM
+import           Language.Haskell.TH.Syntax
+import           System.IO
 
 import Game.LambdaHack.Client.UI.Content.Screen
 
@@ -53,4 +54,5 @@ standardLayoutAndFeatures = ScreenContent
               ["", ""] ++ par1 ++ [""] ++ par2 ++ ["", ""]
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
+  , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
   }
