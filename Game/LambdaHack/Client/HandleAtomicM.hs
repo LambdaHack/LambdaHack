@@ -65,6 +65,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateItem iid _ _ _ -> addItemToDiscoBenefit iid
   UpdDestroyItem _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
+  UpdDestroyItem{} -> return ()
   UpdSpotActor aid b ais -> createActor aid b ais
   UpdLoseActor aid b _ -> destroyActor aid b False
   UpdSpotItem _ iid _ _ (CActor aid store) -> do
@@ -73,6 +74,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdSpotItem _ iid _ _ _ -> addItemToDiscoBenefit iid
   UpdLoseItem _ _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
+  UpdLoseItem{} -> return ()
   UpdSpotItemBag (CActor aid store) _bag ais -> do
     wipeBfsIfItemAffectsSkills [store] aid
     mapM_ (addItemToDiscoBenefit . fst) ais
@@ -80,6 +82,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     mapM_ (addItemToDiscoBenefit . fst) ais
   UpdLoseItemBag (CActor aid store) _bag _ais ->
     wipeBfsIfItemAffectsSkills [store] aid
+  UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do
     invalidateBfsAid aid
     b <- getsState $ getActorBody aid
@@ -89,6 +92,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- and so his whole BFS data is invalidated.
     unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
     invalidateInMelee (blid b)
+  UpdWaitActor{} -> return ()
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target
@@ -98,6 +102,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     invalidateInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
+  UpdRefillHP{} -> return ()
+  UpdRefillCalm{} -> return ()
+  UpdTrajectory{} -> return ()
   UpdQuitFaction fid _ toSt _ -> do
     side <- getsClient sside
     when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
@@ -123,9 +130,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
                         `blame` "unexpected leader"
                         `swith` (cmd, mleader)) ()
       modifyClient $ \cli -> cli {_sleader = target}
+  UpdDiplFaction{} -> return ()
   UpdAutoFaction{} ->
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
+  UpdRecordKill{} -> return ()
   UpdTacticFaction{} -> do
     -- Clear all targets except the leader's.
     mleader <- getsClient sleader
@@ -146,6 +155,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
     let !_A = assert (t == fromTile) ()
     when (tileChangeAffectsBfs cops fromTile toTile) $
       invalidateBfsLid lid
+  UpdAlterExplorable{} -> return ()
+  UpdAlterGold{} -> return ()
   UpdSearchTile aid p toTile -> do
     COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
@@ -161,6 +172,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- walkability and changeability.
     when (tileChangeAffectsBfs cops t toTile) $
       invalidateBfsLid lid
+  UpdHideTile{} -> return ()
   UpdSpotTile lid ts -> do
     updateSalter lid ts
     cops <- getsState scops
@@ -173,6 +185,14 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdLoseTile lid ts -> do
     updateSalter lid ts
     invalidateBfsLid lid  -- from known to unknown tiles
+  UpdSpotEntry{} -> return ()
+  UpdLoseEntry{} -> return ()
+  UpdAlterSmell{} -> return ()
+  UpdSpotSmell{} -> return ()
+  UpdLoseSmell{} -> return ()
+  UpdTimeItem{} -> return ()
+  UpdAgeGame{} -> return ()
+  UpdUnAgeGame{} -> return ()
   UpdDiscover c iid ik arItem -> do
     item <- getsState $ getItemBody iid
     discoKind <- getsState sdiscoKind
@@ -195,6 +215,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCoverKind c ix ik -> coverKind c ix ik
   UpdDiscoverAspect c iid arItem -> discoverAspect c iid arItem
   UpdCoverAspect c iid arItem -> coverAspect c iid arItem
+  UpdDiscoverServer{} -> error "server command leaked to client"
+  UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sfper s scurChal soptions -> do
     COps{cocave, comode} <- getsState scops
@@ -227,6 +249,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
     restartClient
+  UpdRestartServer{} -> return ()
   UpdResume _fid sfperNew -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     sfperOld <- getsClient sfper
@@ -235,9 +258,10 @@ cmdAtomicSemCli oldState cmd = case cmd of
     modifyClient $ \cli -> cli {sfper=sfperNew}
     salter <- getsState createSalter
     modifyClient $ \cli -> cli {salter}
+  UpdResumeServer{} -> return ()
   UpdKillExit _fid -> killExit
   UpdWriteSave -> saveClient
-  _ -> return ()
+  UpdHearFid{} -> return ()
 
 -- This field is only needed in AI client, but it's on-demand for each level
 -- and so fairly cheap.
