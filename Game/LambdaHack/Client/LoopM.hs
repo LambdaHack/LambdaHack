@@ -103,9 +103,10 @@ loopCli ccui sUIOptions soptions = do
     _ -> error $ "unexpected command" `showFailure` (side, restored, cmd1)
   handleResponse cmd1
   -- State and client state now valid.
-  debugPossiblyPrint $ "UI client" <+> tshow side <+> "started."
+  let cliendKindText = if not hasUI then "AI" else "UI"
+  debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side <+> "started."
   loop
-  debugPossiblyPrint $ "UI client" <+> tshow side <+> "stopped."
+  debugPossiblyPrint $ cliendKindText <+> "client" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- receiveResponse
