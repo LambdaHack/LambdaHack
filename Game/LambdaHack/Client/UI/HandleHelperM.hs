@@ -450,12 +450,14 @@ lookAtActors p lidV = do
               -- No "a" prefix even if singular and inanimate, to distinguish
               -- from items lying on the floor (and to simplify code).
               (subject, person) = squashedWWandW subjects
-              verb = case bwatch body of
+              resideVerb = case bwatch body of
                 WWatch -> "be here"
                 WWait 0 -> "idle here"
                 WWait _ -> "brace for impact"
                 WSleep -> "sleep here"
                 WWake -> "be waking up"
+              guardVerbs = guardItemVerbs body bfact
+              verbs = resideVerb : guardVerbs
               factDesc = case jfid $ itemBase itemFull of
                 Just tfid | tfid /= bfid body ->
                   let dominatedBy = if bfid body == side
@@ -468,13 +470,29 @@ lookAtActors p lidV = do
                 _ | bproj body -> "Launched by" <+> gname bfact <> "."
                 _ -> "One of" <+> gname bfact <> "."
               idesc = IK.idesc $ itemKind itemFull
-              -- If many different actors (projectiles), only list names.
+              -- If many different actors, only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
               desc = if sameTrunks then factDesc <+> idesc else ""
               -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
-          in makeSentence [MU.SubjectVerb person MU.Yes subject verb] <+> pdesc
+          in makeSentence [MU.SubjectVVxV "and" person MU.Yes subject verbs]
+             <+> pdesc
   return $! actorsBlurb
+
+guardItemVerbs :: Actor -> Faction -> [MU.Part]
+guardItemVerbs body fact =
+  -- In reality, currently the client knows all the items
+  -- in eqp and inv of the foe, but we may remove the knowledge
+  -- in the future and, anyway, it would require a dedicated
+  -- UI mode beyond a couple of items per actor.
+  let itemsSize = EM.size (beqp body) + EM.size (binv body)
+      belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
+                      | itemsSize > 1 = ["guard a hoard"]
+                      | otherwise = []
+  in if bproj body
+     then []
+     else belongingsVerbs
+          ++ ["defend a shared stash" | not $ EM.null $ gsha fact]
 
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m
