@@ -921,11 +921,12 @@ reqGameRestart aid groupName scurChalSer = do
   -- happens only at game conclusion, not at quitting.
   unless isNoConfirms $ revealItems Nothing
   factionAn <- getsServer sfactionAn
+  birthAn <- getsServer sbirthAn
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt
                     (Just $ Status Restart (fromEnum $ blid b) (Just groupName))
-                    (Just factionAn)
+                    (Just (factionAn, birthAn))
 
 -- * ReqGameDropAndExit
 

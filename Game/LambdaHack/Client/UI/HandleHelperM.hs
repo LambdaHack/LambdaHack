@@ -557,7 +557,7 @@ lookAtPosition lidV p = do
   return $! tileBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
 
 displayItemLore :: MonadClientUI m
-                => ItemBag -> Int -> (ItemFull -> Int -> Text) -> Int
+                => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
                 -> SingleItemSlots
                 -> m Bool
 displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
@@ -578,7 +578,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
-  promptAdd0 $ promptFun itemFull2 k
+  promptAdd0 $ promptFun iid2 itemFull2 k
   slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of

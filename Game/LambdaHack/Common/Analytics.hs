@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Per-actor analytics of personal feats.
 module Game.LambdaHack.Common.Analytics
-  ( FactionAnalytics, ActorAnalytics, KillMap, Analytics(..), KillHow(..)
+  ( FactionAnalytics, ActorAnalytics, BirthAnalytics
+  , KillMap, Analytics(..), KillHow(..)
   , emptyAnalytics, addFactionKill, addActorKill
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -26,6 +27,9 @@ type FactionAnalytics = EM.EnumMap FactionId Analytics
 
 -- | Analytics data for each live actor.
 type ActorAnalytics = EM.EnumMap ActorId Analytics
+
+-- | Birth statistics for each actor trunk.
+type BirthAnalytics = EM.EnumMap ItemId Int
 
 -- | Labels of individual kill count analytics.
 data KillHow =

@@ -129,7 +129,9 @@ quitF status fid = do
         -- so the score will get registered.
         registerScore status fid
       factionAn <- getsServer sfactionAn
-      execUpdAtomic $ UpdQuitFaction fid oldSt (Just status) (Just factionAn)
+      birthAn <- getsServer sbirthAn
+      execUpdAtomic $ UpdQuitFaction fid oldSt (Just status)
+                                     (Just (factionAn, birthAn))
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
@@ -426,7 +428,8 @@ addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
   aid <- addActorIid trunkId itemFull False fid pos lid tweakBody
   -- We assume actor is never born pushed.
   modifyServer $ \ser ->
-    ser {sactorTime = updateActorTime fid lid aid time $ sactorTime ser}
+    ser { sactorTime = updateActorTime fid lid aid time $ sactorTime ser
+        , sbirthAn = EM.insertWith (+) trunkId 1 $ sbirthAn ser }
   return aid
 
 addActorIid :: MonadServerAtomic m

@@ -175,7 +175,7 @@ chooseItemDialogMode c = do
                 if IA.looksLikeCondition $ aspectRecordFull itemFull
                 then "condition"
                 else "organ"
-              promptFun itemFull _ =
+              promptFun _ itemFull _ =
                 makeSentence [ partActor bUI, "can't remove"
                              , MU.AW $ blurb itemFull ]
               ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
@@ -205,7 +205,7 @@ chooseItemDialogMode c = do
         MSkills -> error $ "" `showFailure` ggi
         MLore slore -> do
           let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
-              promptFun _ _ =
+              promptFun _ _ _ =
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                              , MU.Text (ppSLore slore), "lore" ]
           go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots

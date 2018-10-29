@@ -752,7 +752,9 @@ moveItemUI iid k aid cstore1 cstore2 = do
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 quitFactionUI :: MonadClientUI m
-              => FactionId -> Maybe Status -> Maybe FactionAnalytics -> m ()
+              => FactionId -> Maybe Status
+              -> Maybe (FactionAnalytics, BirthAnalytics)
+              -> m ()
 quitFactionUI fid toSt manalytics = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
@@ -832,7 +834,7 @@ displayGameOverLoot (itemBag, total) = do
   let currencyName = MU.Text $ IK.iname
                      $ okind coitem $ ouniqGroup coitem "currency"
       lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
-      promptFun itemFull2 k =
+      promptFun _ itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg | worth /= 0 = makeSentence $
               ["this particular loot is worth"]
@@ -855,14 +857,14 @@ displayGameOverLoot (itemBag, total) = do
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
-                         => Maybe FactionAnalytics -> m Bool
+                         => Maybe (FactionAnalytics, BirthAnalytics) -> m Bool
 displayGameOverAnalytics manalytics = case manalytics of
   Nothing -> return True
-  Just analytics -> do
+  Just (factionAn, birthAn) -> do
     side <- getsClient sside
     ItemSlots itemSlots <- getsSession sslots
     let ourAn = akillCounts
-                $ EM.findWithDefault emptyAnalytics side analytics
+                $ EM.findWithDefault emptyAnalytics side factionAn
         foesAn = EM.unionsWith (+)
                  $ concatMap EM.elems $ catMaybes
                  $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
@@ -870,7 +872,11 @@ displayGameOverAnalytics manalytics = case manalytics of
         lSlots = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
         trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                      (EM.elems lSlots)
-        promptFun _ _ = "You recall the adversary:"
+        promptFun :: ItemId -> ItemFull-> Int -> Text
+        promptFun iid _ k =
+          let n = birthAn EM.! iid
+          in "You recall the adversary, which you killed"
+             <+> tshow k <+> "out of" <+> tshow n <+> "born:"
         prompt = "Your team vangished the following adversaries:"
         examItem = displayItemLore trunkBag 0 promptFun
     viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
