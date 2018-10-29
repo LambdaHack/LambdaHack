@@ -57,6 +57,7 @@ data ClientOptions = ClientOptions
   , sstopAfterFrames  :: Maybe Int
   , sprintEachScreen  :: Bool
   , srecallPlaces     :: Bool
+  , srecallItems      :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -88,4 +89,5 @@ defClientOptions = ClientOptions
   , sstopAfterFrames = Nothing
   , sprintEachScreen = False
   , srecallPlaces = False
+  , srecallItems = False
   }

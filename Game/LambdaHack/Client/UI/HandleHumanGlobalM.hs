@@ -370,7 +370,7 @@ meleeAid target = do
     Just wp -> do
       let returnCmd = do
             -- Set personal target to the enemy position,
-            -- to easily him with a ranged attack when he flees.
+            -- to easily hit him with a ranged attack when he flees.
             let f (Just (TEnemy _ b)) = Just $ TEnemy target b
                 f (Just (TPoint (TEnemyPos _ b) _ _)) = Just $ TEnemy target b
                 f _ = Just $ TEnemy target False
@@ -399,7 +399,7 @@ displaceAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
-  let  dozes = bwatch tb `elem` [WSleep, WWake]
+  let dozes = bwatch tb `elem` [WSleep, WWake]
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills target
   dEnemy <- getsState $ dispEnemy leader target actorMaxSk

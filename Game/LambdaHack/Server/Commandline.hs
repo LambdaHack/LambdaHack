@@ -49,6 +49,7 @@ serverOptionsP = do
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
   srecallPlaces     <- recallPlacesP
+  srecallItems      <- recallItemsP
   sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
@@ -117,6 +118,11 @@ recallPlacesP :: Parser Bool
 recallPlacesP =
   switch (  long "recallPlaces"
          <> help "Recall all possible places in the next game" )
+
+recallItemsP :: Parser Bool
+recallItemsP =
+  switch (  long "recallItems"
+         <> help "Recall all possible items in the next game" )
 
 sniffP :: Parser Bool
 sniffP =
