@@ -487,11 +487,15 @@ lookAtActors p lidV = do
   return $! actorsBlurb
 
 guardItemVerbs :: Actor -> Faction -> [MU.Part]
-guardItemVerbs body fact =
+guardItemVerbs body _fact =
   -- In reality, currently the client knows all the items
   -- in eqp and inv of the foe, but we may remove the knowledge
   -- in the future and, anyway, it would require a dedicated
   -- UI mode beyond a couple of items per actor.
+  --
+  -- OTOH, shares stash is currently secret for other factions, so that
+  -- case would never be triggered except for our own actors.
+  -- We may want to relax that secrecy, but there are technical hurdles.
   let itemsSize = EM.size (beqp body) + EM.size (binv body)
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]
@@ -499,7 +503,7 @@ guardItemVerbs body fact =
   in if bproj body
      then []
      else belongingsVerbs
-          ++ ["defend a shared stash" | not $ EM.null $ gsha fact]
+--        ++ ["defend a shared stash" | not $ EM.null $ gsha fact]
 
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m
