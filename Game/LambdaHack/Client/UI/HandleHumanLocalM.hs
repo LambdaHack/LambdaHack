@@ -264,7 +264,7 @@ chooseItemDialogMode c = do
                        , MU.WWandW $ map (MU.Text . tshow) $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
-                          (if srecallPlaces soptions
+                          (if sexposePlaces soptions
                            then [ "", partsPhrase
                                 , "", tshow (PK.pfreq pkind)
                                 , "" ] ++ PK.ptopLeft pkind

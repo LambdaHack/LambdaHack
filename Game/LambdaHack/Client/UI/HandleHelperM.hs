@@ -301,11 +301,11 @@ skillsOverlay aid = do
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
-placesFromState coplace ClientOptions{srecallPlaces} =
+placesFromState coplace ClientOptions{sexposePlaces} =
   let addEntries (es1, ne1, na1, nd1) (es2, ne2, na2, nd2) =
         (ES.union es1 es2, ne1 + ne2, na1 + na2, nd1 + nd2)
       insertZeros !em !pk _ = EM.insert pk (ES.empty, 0, 0, 0) em
-      initialPlaces | not srecallPlaces = EM.empty
+      initialPlaces | not sexposePlaces = EM.empty
                     | otherwise = ofoldlWithKey' coplace insertZeros EM.empty
       placesFromLevel :: (LevelId, Level)
                       -> EM.EnumMap (ContentId PK.PlaceKind)

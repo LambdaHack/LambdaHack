@@ -65,8 +65,8 @@ reinitGame = do
   pers <- getsServer sperFid
   ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer soptions
   -- This state is quite small, fit for transmition to the client.
-  -- The biggest part is content, which needs to be updated
-  -- at this point to keep clients in sync with server improvements.
+  -- The biggest part is content, which needs to be updated in clients
+  -- at this point to keep them in sync with changes on the server.
   s <- getState
   discoS <- getsState sdiscoKind
   -- Thanks to the following, for any item with not hidden identity,

@@ -48,8 +48,8 @@ serverOptionsP = do
   knowMap           <- knowMapP
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
-  srecallPlaces     <- recallPlacesP
-  srecallItems      <- recallItemsP
+  sexposePlaces     <- exposePlacesP
+  sexposeItems      <- exposeItemsP
   sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
@@ -114,15 +114,15 @@ knowItemsP =
   switch (  long "knowItems"
          <> help "Auto-identify all items in the next game (implies --knowEvents)" )
 
-recallPlacesP :: Parser Bool
-recallPlacesP =
-  switch (  long "recallPlaces"
-         <> help "Recall all possible places in the next game" )
+exposePlacesP :: Parser Bool
+exposePlacesP =
+  switch (  long "exposePlaces"
+         <> help "Expose all possible places in the next game" )
 
-recallItemsP :: Parser Bool
-recallItemsP =
-  switch (  long "recallItems"
-         <> help "Recall all possible items in the next game" )
+exposeItemsP :: Parser Bool
+exposeItemsP =
+  switch (  long "exposeItems"
+         <> help "Expose all possible items in the next game" )
 
 sniffP :: Parser Bool
 sniffP =
