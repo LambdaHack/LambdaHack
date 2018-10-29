@@ -571,7 +571,8 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   itemFull2 <- getsState $ itemToFull iid2
   localTime <- getsState $ getLocalTime arena
   factionD <- getsState sfactionD
-  jlid <- getsSession $ (EM.! iid2) . sitemUI
+  -- The hacky level 0 marks items never seen, but sent by server at gameover.
+  jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
       ov = splitAttrLine rwidth attrLine

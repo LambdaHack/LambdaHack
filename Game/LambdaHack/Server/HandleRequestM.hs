@@ -922,11 +922,13 @@ reqGameRestart aid groupName scurChalSer = do
   unless isNoConfirms $ revealItems Nothing
   factionAn <- getsServer sfactionAn
   birthAn <- getsServer sbirthAn
+  itemD <- getsState sitemD
+  let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys birthAn
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt
                     (Just $ Status Restart (fromEnum $ blid b) (Just groupName))
-                    (Just (factionAn, birthAn))
+                    (Just (factionAn, birthAn, ais))
 
 -- * ReqGameDropAndExit
 

@@ -100,7 +100,7 @@ compareItemFull itemFull1 itemFull2 =
         , jflavour, jfid )
   in comparing kindAndAppearance itemFull1 itemFull2
 
-sortSlotMap :: (ItemId -> ItemFull)-> SingleItemSlots -> SingleItemSlots
+sortSlotMap :: (ItemId -> ItemFull) -> SingleItemSlots -> SingleItemSlots
 sortSlotMap itemToF em =
   let f iid = (iid, itemToF iid)
       sortItemIds l = map fst $ sortBy (compareItemFull `on` snd)

@@ -26,6 +26,7 @@ import           GHC.Exts (inline)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
@@ -753,7 +754,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status
-              -> Maybe (FactionAnalytics, BirthAnalytics)
+              -> Maybe (FactionAnalytics, BirthAnalytics, [(ItemId, Item)])
               -> m ()
 quitFactionUI fid toSt manalytics = do
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -857,10 +858,14 @@ displayGameOverLoot (itemBag, total) = do
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
-                         => Maybe (FactionAnalytics, BirthAnalytics) -> m Bool
+                         => Maybe ( FactionAnalytics
+                                  , BirthAnalytics
+                                  , [(ItemId, Item)] )
+                         -> m Bool
 displayGameOverAnalytics manalytics = case manalytics of
   Nothing -> return True
-  Just (factionAn, birthAn) -> do
+  Just (factionAn, birthAn, _) -> do
+    ClientOptions{sexposeActors} <- getsClient soptions
     side <- getsClient sside
     ItemSlots itemSlots <- getsSession sslots
     let ourAn = akillCounts
@@ -869,9 +874,15 @@ displayGameOverAnalytics manalytics = case manalytics of
                  $ concatMap EM.elems $ catMaybes
                  $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
         trunkBagRaw = EM.map (, []) foesAn
-        lSlots = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
-        trunkBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
-                                     (EM.elems lSlots)
+        lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
+        killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
+                                      (EM.elems lSlotsRaw)
+        (trunkBag, lSlots) =
+          if sexposeActors
+          then let bag = killedBag `EM.union` EM.map (const (0, [])) birthAn
+                   slots = EM.fromAscList $ zip allSlots $ EM.keys bag
+               in (bag, slots)
+          else (killedBag, lSlotsRaw)
         promptFun :: ItemId -> ItemFull-> Int -> Text
         promptFun iid _ k =
           let n = birthAn EM.! iid

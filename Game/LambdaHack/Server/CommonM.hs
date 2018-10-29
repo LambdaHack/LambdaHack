@@ -130,8 +130,10 @@ quitF status fid = do
         registerScore status fid
       factionAn <- getsServer sfactionAn
       birthAn <- getsServer sbirthAn
+      itemD <- getsState sitemD
+      let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys birthAn
       execUpdAtomic $ UpdQuitFaction fid oldSt (Just status)
-                                     (Just (factionAn, birthAn))
+                                     (Just (factionAn, birthAn, ais))
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
