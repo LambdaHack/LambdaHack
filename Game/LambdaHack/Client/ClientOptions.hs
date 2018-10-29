@@ -58,6 +58,7 @@ data ClientOptions = ClientOptions
   , sprintEachScreen  :: Bool
   , sexposePlaces     :: Bool
   , sexposeItems      :: Bool
+  , sexposeActors     :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -90,4 +91,5 @@ defClientOptions = ClientOptions
   , sprintEachScreen = False
   , sexposePlaces = False
   , sexposeItems = False
+  , sexposeActors = False
   }
