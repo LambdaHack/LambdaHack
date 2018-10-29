@@ -122,7 +122,7 @@ exposePlacesP =
 exposeItemsP :: Parser Bool
 exposeItemsP =
   switch (  long "exposeItems"
-         <> help "Expose all possible items in the next game" )
+         <> help "Expose all possible items in the next game (WIP)" )
 
 sniffP :: Parser Bool
 sniffP =
