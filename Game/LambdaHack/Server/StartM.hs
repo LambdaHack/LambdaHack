@@ -18,6 +18,7 @@ import qualified Data.IntMap.Strict as IM
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import           Data.Ord
+import qualified Data.Set as S
 import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
@@ -25,6 +26,7 @@ import qualified System.Random as R
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Analytics
 import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -40,6 +42,7 @@ import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Server.CommonM
@@ -86,11 +89,33 @@ reinitGame = do
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
-  modifyServer $ \ser -> ser {sactorTime, strajTime}
+  sbirthAn <- birthAnFromDungeon dungeon
+  modifyServer $ \ser -> ser {sactorTime, strajTime, sbirthAn}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)
   execSfxAtomic SfxSortSlots
+
+birthAnFromDungeon :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
+birthAnFromDungeon dungeon = do
+  COps{cocave, coitem} <- getsState scops
+  let getGroups Level{lkind} = map fst $ CK.cactorFreq $ okind cocave lkind
+      groups = S.elems $ S.fromList $ concatMap getGroups $ EM.elems dungeon
+      addGroupToSet !s0 !grp =
+        ofoldlGroup' coitem grp (\s _ ik _ -> ES.insert ik s) s0
+      trunkKindIds = ES.elems $ foldl' addGroupToSet ES.empty groups
+      minLid = fst $ minimumBy (comparing (ldepth . snd))
+                   $ EM.assocs dungeon
+      cdummy = CTrunk (toEnum 1) minLid originPoint
+      regItem ik = do
+        let freq = pure (ik, okind coitem ik)
+        m2 <- rollItemAspect freq minLid
+        case m2 of
+          Nothing -> error "birthAnFromDungeon: can't create actor trunk"
+          Just (itemKnown, itemFull) ->
+            registerItem itemFull itemKnown cdummy False
+  iids <- mapM regItem trunkKindIds
+  return $! EM.fromAscList $ zip iids $ repeat 0
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
