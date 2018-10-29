@@ -71,7 +71,9 @@ symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle, instrument
 _symbolStaff     = '_'  -- scanner
 symbolFood       = ','  -- also body part; distinct from floor: not middle dot
 
--- * Thrown weapons
+-- * Generic items, for any epoch
+
+-- ** Thrown weapons
 
 sandstoneRock = ItemKind
   { isymbol  = symbolProjectile
@@ -174,7 +176,7 @@ slingBullet = ItemKind
   , ikit     = []
   }
 
--- * Exotic thrown weapons
+-- ** Exotic thrown weapons
 
 -- Identified, because shape (and name) says it all. Detailed aspects id by use.
 -- This is an extremely large value for @Paralyze@. Normally for such values
@@ -239,7 +241,7 @@ net = ItemKind
   , ikit     = []
   }
 
--- * Lights
+-- ** Lights
 
 light1 = ItemKind
   { isymbol  = symbolLight
@@ -320,7 +322,7 @@ blanket = ItemKind
   , ikit     = []
   }
 
--- * Exploding consumables, often intended to be thrown.
+-- ** Exploding consumables, often intended to be thrown.
 
 -- Not identified, because they are perfect for the id-by-use fun,
 -- due to effects. They are fragile and upon hitting the ground explode
@@ -663,7 +665,7 @@ potion12 = potionTemplate
                , OnSmash (Explode "immobile mist") ]
   }
 
--- * Explosives, with the only effect being @Explode@
+-- ** Explosives, with the only effect being @Explode@
 
 fragmentationBomb = ItemKind
   { isymbol  = symbolProjectile
@@ -732,7 +734,7 @@ firecrackerBomb = fragmentationBomb
   , idesc    = "String and paper, concealing a deadly surprise."
   }
 
--- * Non-exploding consumables, not specifically designed for throwing
+-- ** Non-exploding consumables, not specifically designed for throwing
 
 -- Foods require only minimal apply skill to consume. Many animals can eat them.
 
@@ -749,7 +751,7 @@ ediblePlantTemplate = ItemKind
   , iaspects = [ HideAs "edible plant unknown"
                , toVelocity 30 ]  -- low density, often falling apart
   , ieffects = []
-  , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating reveals the full effects."
+  , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating may reveal the full effects."
   , ikit     = []
   }
 ediblePlant1 = ediblePlantTemplate
@@ -925,7 +927,7 @@ scroll17 = scrollTemplate
   , ieffects = [RerollItem]
   }
 
--- * Assorted tools
+-- ** Assorted tools
 
 jumpingPole = ItemKind
   { isymbol  = symbolWand
@@ -1001,7 +1003,7 @@ motionScanner = ItemKind
   , ikit     = []
   }
 
--- * Periodic jewelry
+-- ** Periodic jewelry
 
 -- Morally these are the aspects, but we also need to add a fake @Timeout@,
 -- to let clients know that the not identified item is periodic jewelry.
@@ -1122,7 +1124,7 @@ necklace9 = necklaceTemplate
   , ieffects = [Recharging $ Explode "fragrance"]
   }
 
--- * Non-periodic jewelry
+-- ** Non-periodic jewelry
 
 imageItensifier = ItemKind
   { isymbol  = symbolRing
@@ -1250,7 +1252,7 @@ ring8 = ringTemplate
   , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 
--- * Armor
+-- ** Armor
 
 armorLeather = ItemKind
   { isymbol  = symbolTorsoArmor
@@ -1395,7 +1397,7 @@ helmArmored = ItemKind
   , ikit     = []
   }
 
--- * Shields
+-- ** Shields
 
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
@@ -1455,7 +1457,7 @@ shield3 = shield
   -- , idesc    = ""
   }
 
--- * Weapons
+-- ** Weapons
 
 dagger = ItemKind
   { isymbol  = symbolEdged
@@ -1643,7 +1645,7 @@ halberdPushActor = halberd
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
   }
 
--- * Wands
+-- ** Wands
 
 wandTemplate = ItemKind
   { isymbol  = symbolWand
@@ -1669,7 +1671,7 @@ wand1 = wandTemplate
   , ieffects = []  -- will be: emit a cone of sound shrapnel that makes enemy cover his ears and so drop '|' and '{'
   }
 
--- * Treasure
+-- ** Treasure
 
 gemTemplate = ItemKind
   { isymbol  = symbolGold
@@ -1745,9 +1747,9 @@ currency = currencyTemplate
   , ieffects = [RefillCalm (-1)]
   }
 
--- LambdaHack-specific
+-- * LambdaHack-specific items
 
--- * Clothing
+-- ** Clothing
 
 smokingJacket = ItemKind
   { isymbol  = symbolClothes
