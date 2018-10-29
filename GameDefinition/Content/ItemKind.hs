@@ -235,8 +235,9 @@ net = ItemKind
   , iaspects = [AddSkill SkHurtMelee $ -14 * 5]
   , ieffects = [ toOrganBad "slowed" (3 + 1 `d` 3)
                , DropItem maxBound 1 CEqp "torso armor"
+                   -- only one of each kind is dropped, because no rubbish
+                   -- in this group and so no risk of exploit
                , SendFlying (ThrowMod 100 50 1) ]  -- 1 step; painful
-      -- only one of each kind is dropped, because no rubbish in this group
   , idesc    = "A wide net with weights along the edges. Entangles armor and restricts movement."
   , ikit     = []
   }
@@ -316,7 +317,8 @@ blanket = ItemKind
                , AddSkill SkArmorMelee 1, AddSkill SkMaxCalm 2
                , SetFlag Lobable, SetFlag Equipable ]
                    -- not Fragile; reusable douse implement;
-                   -- douses torch, lamp and lantern in one action
+                   -- douses torch, lamp and lantern in one action,
+                   -- both in equipment and when thrown at the floor
   , ieffects = []
   , idesc    = "Warm, comforting, and concealing, woven from soft wool."
   , ikit     = []
@@ -612,7 +614,7 @@ potion8 = potionTemplate
                , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash (Explode "healing mist 2")
                , OnSmash (Explode "distressing odor") ]
-  , idesc    = "Perplexing swirls of intense, compelling, colour."
+  , idesc    = "Perplexing swirls of intense, compelling colour."
   }
 potion9 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
@@ -621,7 +623,8 @@ potion9 = potionTemplate
                : iaspects potionTemplate
   , ieffects = [ toOrganGood "more projecting" (40 + 1 `d` 10)
                , toOrganBad "pacified" (5 + 1 `d` 3)
-                   -- the malus has to be weak, or would be too good when thrown at foes
+                   -- the malus has to be weak, or would be too good
+                   -- when thrown at foes
                , OnSmash (Explode "more projecting dew")
                , OnSmash (Explode "pacified mist") ]
   , idesc    = "Thick, sluggish fluid with violently-bursting bubbles."
@@ -815,7 +818,7 @@ scrollTemplate = ItemKind
   , ikit     = []
   }
 scroll1 = scrollTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early, often
   , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon"]
@@ -1015,7 +1018,8 @@ iaspects_necklaceTemplate =
 gorget = necklaceTemplate
   { iname    = "Old Gorget"
   , ifreq    = [("common item", 25), ("treasure", 25)]
-  , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces
+  , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces,
+                                  -- but it's OK, it's an artifact
   , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 2
