@@ -475,8 +475,15 @@ lookAtActors p lidV = do
               desc = if sameTrunks then factDesc <+> idesc else ""
               -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
-          in makeSentence [MU.SubjectVVxV "and" person MU.Yes subject verbs]
-             <+> pdesc
+          in if null rest || bwatch body == WWatch && null guardVerbs
+             then makeSentence
+                    [MU.SubjectVVxV "and" person MU.Yes subject verbs]
+                  <+> pdesc
+             else makeSentence [subject, "can be seen"]
+                  <+> if bwatch body == WWatch && null guardVerbs
+                      then ""
+                      else makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
+                                                        (head subjects) verbs]
   return $! actorsBlurb
 
 guardItemVerbs :: Actor -> Faction -> [MU.Part]
