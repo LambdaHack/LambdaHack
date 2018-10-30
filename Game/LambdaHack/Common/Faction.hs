@@ -138,7 +138,7 @@ tgtKindDescription tgt = case tgt of
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = nameOfHorrorFact `elem` fgroups (gplayer fact)
+isHorrorFact fact = horrorGroup `elem` fgroups (gplayer fact)
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be
@@ -216,8 +216,8 @@ possibleActorFactions itemKind factionD =
   let freqNames = map fst $ IK.ifreq itemKind
       f (_, fact) = any (`elem` fgroups (gplayer fact)) freqNames
       fidFactsRaw = filter f $ EM.assocs factionD
-      g (_, fact) = fname (gplayer fact) == fromGroupName nameOfHorrorFact
-      fidFacts = if null fidFactsRaw
-                 then filter g $ EM.assocs factionD -- fall back
-                 else fidFactsRaw
+      fidFacts =
+        if null fidFactsRaw
+        then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
+        else fidFactsRaw
   in map fst fidFacts

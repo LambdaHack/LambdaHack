@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , nameOfHorrorFact
+  , horrorGroup
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -149,8 +149,8 @@ instance Binary AutoLeader
 
 instance NFData AutoLeader
 
-nameOfHorrorFact :: GroupName ItemKind
-nameOfHorrorFact = "horror"
+horrorGroup :: GroupName ItemKind
+horrorGroup = "horror"
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]
@@ -207,7 +207,7 @@ validateAll cocave coitem content comode =
       missingCave = filter (not . omemberGroup cocave)
                     $ concatMap caveGroups content
       f Roster{rosterList} =
-        concatMap (\(p, l) -> delete nameOfHorrorFact (fgroups p)
+        concatMap (\(p, l) -> delete horrorGroup (fgroups p)
                               ++ map (\(_, _, grp) -> grp) l)
                   rosterList
       missingRosterItems = filter (not . omemberGroup coitem)

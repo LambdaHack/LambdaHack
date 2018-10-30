@@ -88,7 +88,7 @@ playerAnimal = Player
 -- should be present or a horror player should be added to host them.
 playerHorror = Player
   { fname = "Horror Den"
-  , fgroups = [nameOfHorrorFact]
+  , fgroups = [horrorGroup]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
