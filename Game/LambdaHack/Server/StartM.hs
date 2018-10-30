@@ -90,9 +90,10 @@ reinitGame = do
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   genOrig <- getsServer srandom
+  uniqueSetOrig <- getsServer suniqueSet
   sbirthAn <- birthAnFromDungeon dungeon
   -- Make sure the debug births don't affect future RNG behaviour.
-  modifyServer $ \ser -> ser {srandom = genOrig}
+  modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
   modifyServer $ \ser -> ser {sactorTime, strajTime, sbirthAn}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
