@@ -98,22 +98,14 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
       debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
       return Nothing
     Just (itemKnownRaw, (itemFullRaw, kit)) -> do
-      let freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
-          f fact = fgroups (gplayer fact)
-          factGroups = concatMap f $ EM.elems factionD
-          fidNames = case freqNames `intersect` factGroups of
-            [] -> [nameOfHorrorFact]  -- fall back
-            l -> l
-      fidName <- rndToAction $ oneOf fidNames
-      let g (_, fact) = fidName `elem` fgroups (gplayer fact)
-          nameFids = map fst $ filter g $ EM.assocs factionD
-          !_A = assert (not (null nameFids) `blame` (factionD, fidName)) ()
-      fid <- rndToAction $ oneOf nameFids
+      fid <- rndToAction $ oneOf $
+               possibleActorFactions (itemKind itemFullRaw) factionD
       pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
           -- Checking skill would be more accurate, but skills can be
           -- inside organs, equipment, tmp organs, created organs, etc.
+          freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
           mobile = "mobile" `elem` freqNames
           aquatic = "aquatic" `elem` freqNames
       mrolledPos <- case mpos of

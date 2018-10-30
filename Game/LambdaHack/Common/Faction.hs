@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Faction
   , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
   , isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
-  , defaultChallenge
+  , defaultChallenge, possibleActorFactions
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , Dipl
@@ -33,6 +33,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- | All factions in the game, indexed by faction identifier.
@@ -209,3 +210,14 @@ defaultChallenge :: Challenge
 defaultChallenge = Challenge { cdiff = difficultyDefault
                              , cwolf = False
                              , cfish = False }
+
+possibleActorFactions :: ItemKind -> FactionDict -> [FactionId]
+possibleActorFactions itemKind factionD =
+  let freqNames = map fst $ IK.ifreq itemKind
+      f (_, fact) = any (`elem` fgroups (gplayer fact)) freqNames
+      fidFactsRaw = filter f $ EM.assocs factionD
+      g (_, fact) = fname (gplayer fact) == fromGroupName nameOfHorrorFact
+      fidFacts = if null fidFactsRaw
+                 then filter g $ EM.assocs factionD -- fall back
+                 else fidFactsRaw
+  in map fst fidFacts
