@@ -120,19 +120,19 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
            levelDepth@(Dice.AbsDepth ldepth)
            totalDepth@(Dice.AbsDepth tdepth)
            dsecret r minnerArea mplaceGroup = do
-  let f !placeGroup !q !acc !p !pk !kind =
+  let f !q !acc !p !pk !kind =
         let rarity = linearInterpolation ldepth tdepth (prarity kind)
             !fr = q * p * rarity
-        in (fr, ((pk, kind), placeGroup)) : acc
-      g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f placeGroup q) []
+        in (fr, (pk, kind)) : acc
+      g (placeGroup, q) = ofoldlGroup' coplace placeGroup (f q) []
       pfreq = case mplaceGroup of
         [] -> cplaceFreq
         _ -> mplaceGroup
       placeFreq = concatMap g pfreq
-      checkedFreq = filter (\(_, ((_, kind), _)) -> placeCheck r kind) placeFreq
+      checkedFreq = filter (\(_, (_, kind)) -> placeCheck r kind) placeFreq
       freq = toFreq "buildPlace" checkedFreq
   let !_A = assert (not (nullFreq freq) `blame` (placeFreq, checkedFreq, r)) ()
-  ((qkind, kr), _) <- frequency freq
+  (qkind, kr) <- frequency freq
   let smallPattern = pcover kr `elem` [CVerbatim, CMirror]
                      && (length (ptopLeft kr) < 10
                          || T.length (head (ptopLeft kr)) < 10)
