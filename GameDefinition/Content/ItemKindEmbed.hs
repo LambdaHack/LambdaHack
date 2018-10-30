@@ -189,7 +189,7 @@ rubble = ItemKind
   , idamage  = 0
   , iaspects = [SetFlag Durable]
   , ieffects = [OneOf [ Explode "focused glass hail"
-                      , Summon "animal" $ 1 `dL` 2
+                      , Summon "mobile animal" $ 1 `dL` 2
                       , toOrganNoTimer "poisoned"
                       , CreateItem CGround "common item" timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
