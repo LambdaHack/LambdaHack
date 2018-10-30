@@ -202,6 +202,7 @@ olegend COps{cotile} cgroup =
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
+            -- Unlikely, but possible that ordinary legend has spice.
             let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
                 k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
             in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
@@ -220,6 +221,7 @@ pover COps{cotile} poverride =
         return $! case mtkSpice of
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
+            -- Very likely that overrides have spice.
             let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
                 k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
             in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)

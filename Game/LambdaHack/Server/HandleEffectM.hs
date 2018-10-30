@@ -156,7 +156,8 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
-  when (kineticPerformed && bhp tb <= 0 && bhp tbOld > 0) $ do
+  when (kineticPerformed  -- speedup
+        && bhp tb <= 0 && bhp tbOld > 0) $ do
     sb <- getsState $ getActorBody source
     arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
     let killHow | not (bproj sb) =
@@ -188,7 +189,7 @@ effectAndDestroyAndAddKill voluntary killer
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
-  when (kineticPerformed && bhp tb <= 0 && bhp tbOld > 0) $ do
+  when (bhp tb <= 0 && bhp tbOld > 0) $ do
     sb <- getsState $ getActorBody source
     arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
     let killHow | not (bproj sb) =
