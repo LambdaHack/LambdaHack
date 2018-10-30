@@ -140,16 +140,17 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   -- An empty inner list signifies some merge is needed,
                   -- but not possible, and then we abort and don't waste space.
                   let (x0, y0, x1, y1) = fromArea ar
-                      d = 3  -- arbitrary, matches common content
+                      dy = 3  -- arbitrary, matches common content
+                      dx = 5  -- arbitrary, matches common content
                       vics :: [[Point]]
                       vics = [ [i {py = py i - 1} | py i - 1 >= 0]  -- possible
-                             | py p - y0 < d ]  -- needed
+                             | py p - y0 < dy ]  -- needed
                              ++ [ [i {py = py i + 1} | py i + 1 < gy]
-                                | y1 - py p < d ]
+                                | y1 - py p < dy ]
                              ++ [ [i {px = px i - 1} | px i - 1 >= 0]
-                                | px p - x0 < d ]
+                                | px p - x0 < dx ]
                              ++ [ [i {px = px i + 1} | px i + 1 < gx]
-                                | x1 - px p < d ]
+                                | x1 - px p < dx ]
                   in case vics of
                     [[p2]] -> mergeSpecial ar p2 (SpecialFixed p placeGroup)
                     _ -> gs0
