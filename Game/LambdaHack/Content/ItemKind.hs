@@ -230,9 +230,9 @@ forApplyEffect eff = case eff of
 
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
-isEffEscape (OneOf l) = any isEffEscapeOrAscend l
-isEffEscape (Recharging eff) = isEffEscapeOrAscend eff
-isEffEscape (Composite l) = any isEffEscapeOrAscend l
+isEffEscape (OneOf l) = any isEffEscape l
+isEffEscape (Recharging eff) = isEffEscape eff
+isEffEscape (Composite l) = any isEffEscape l
 isEffEscape _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
