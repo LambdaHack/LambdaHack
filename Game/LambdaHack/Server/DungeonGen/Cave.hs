@@ -117,15 +117,19 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                   Nothing -> gs0
                   Just hv -> case hv of
                     -- Bias; vertical minimal sizes are smaller.
-                    Vert | py i - 1 >= 0
-                           && mergable (px i) (py i - 1) == Just Vert ->
-                           mergeSpecial ar i{py = py i - 1} SpecialArea
+                    --
+                    -- The commented out cases never happen, because @mergable@
+                    -- is symmetric and we proceed top-left to bottom-right.
+                    --
+                    -- Vert | py i - 1 >= 0
+                    --        && mergable (px i) (py i - 1) == Just Vert ->
+                    --        mergeSpecial ar i{py = py i - 1} SpecialArea
                     Vert | py i + 1 < gy
                            && mergable (px i) (py i + 1) == Just Vert ->
                            mergeSpecial ar i{py = py i + 1} SpecialArea
-                    Horiz | px i - 1 >= 0
-                            && mergable (px i - 1) (py i) == Just Horiz ->
-                            mergeSpecial ar i{px = px i - 1} SpecialArea
+                    -- Horiz | px i - 1 >= 0
+                    --         && mergable (px i - 1) (py i) == Just Horiz ->
+                    --         mergeSpecial ar i{px = px i - 1} SpecialArea
                     Horiz | px i + 1 < gx
                             && mergable (px i + 1) (py i) == Just Horiz ->
                             mergeSpecial ar i{px = px i + 1} SpecialArea
