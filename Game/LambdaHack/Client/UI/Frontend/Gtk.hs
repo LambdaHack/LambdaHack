@@ -10,6 +10,7 @@ import Game.LambdaHack.Common.Prelude hiding (Alt)
 
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
+import           Data.Bits (unsafeShiftL)
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import qualified Data.Text as T
@@ -72,7 +73,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
                       doAttr soptions tt (emulateBox ak)
-                      return (fromEnum ak, tt))
+                      return (fromAttr ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- [minBound..maxBound], bg <- [minBound..maxBound] ]
   -- Text buffer.
@@ -199,6 +200,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
 shutdown :: IO ()
 shutdown = postGUISync mainQuit
 
+fromAttr :: Color.Attr -> Int
+fromAttr Color.Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
+
 doAttr :: ClientOptions -> TextTag -> (Color.Color, Color.Color) -> IO ()
 doAttr soptions tt (fg, bg)
   | fg == Color.defFG && bg == Color.Black = return ()
@@ -234,7 +238,7 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
     textBufferSetText tb gfChar
     ib <- textBufferGetStartIter tb
     ie <- textIterCopy ib
-    let defEnum = fromEnum Color.defAttr
+    let defEnum = fromAttr Color.defAttr
         setTo :: (X, Int) -> Color.AttrCharW32 -> IO (X, Int)
         setTo (!lx, !previous) !w
           | (lx + 1) `mod` (rwidth coscreen + 1) /= 0 = do
