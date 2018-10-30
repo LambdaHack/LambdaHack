@@ -1112,10 +1112,9 @@ effectTeleport execSfx nDm source target = do
       dist !delta !pos _ = dMinMax delta pos
   mtpos <- rndToAction $ findPosTry 200 lvl
     (\p !t -> Tile.isWalkable coTileSpeedup t
-              && (not (dMinMax 9 p)  -- don't loop, very rare
-                  || not (Tile.isNoActor coTileSpeedup t)
-                     && not (occupiedBigLvl p lvl))
-                     && not (occupiedProjLvl p lvl))
+              && not (Tile.isNoActor coTileSpeedup t)
+              && not (occupiedBigLvl p lvl)
+              && not (occupiedProjLvl p lvl))
     [ dist 1
     , dist $ 1 + range `div` 9
     , dist $ 1 + range `div` 7
@@ -1133,9 +1132,6 @@ effectTeleport execSfx nDm source target = do
     Just tpos ->
       if | waitedLastTurn tb -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-           return UseId
-         | not (dMinMax 9 tpos) -> do  -- very rare
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
            return UseId
          | otherwise -> do
            execSfx
