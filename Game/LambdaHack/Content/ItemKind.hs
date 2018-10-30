@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind
-  , isEffEscape, isEffAscend, isEffEscapeOrAscend, damageUsefulness
+  , isEffEscape, isEffEscapeOrAscend, damageUsefulness
   , tmpNoLonger, tmpLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
@@ -234,13 +234,6 @@ isEffEscape (OneOf l) = any isEffEscapeOrAscend l
 isEffEscape (Recharging eff) = isEffEscapeOrAscend eff
 isEffEscape (Composite l) = any isEffEscapeOrAscend l
 isEffEscape _ = False
-
-isEffAscend :: Effect -> Bool
-isEffAscend Ascend{} = True
-isEffAscend (OneOf l) = any isEffEscapeOrAscend l
-isEffAscend (Recharging eff) = isEffEscapeOrAscend eff
-isEffAscend (Composite l) = any isEffEscapeOrAscend l
-isEffAscend _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True

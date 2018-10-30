@@ -135,11 +135,6 @@ data Attr = Attr
   }
   deriving (Show, Eq, Ord)
 
-instance Enum Attr where
-  fromEnum Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
-  toEnum n = Attr (toEnum $ unsafeShiftR n 8)
-                  (toEnum $ n .&. (2 ^ (8 :: Int) - 1))
-
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
 defAttr = Attr defFG HighlightNone

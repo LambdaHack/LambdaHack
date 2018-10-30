@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.ActorState
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
   , storeFromC, aidFromC, lidFromC, posFromC
-  , isStair, anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
+  , anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
   , armorHurtBonus, inMelee
   ) where
 
@@ -415,12 +415,6 @@ posFromC (CFloor _ pos) _ = pos
 posFromC (CEmbed _ pos) _ = pos
 posFromC (CActor aid _) s = bpos $ getActorBody aid s
 posFromC c@CTrunk{} _ = error $ "" `showFailure` c
-
-isStair :: LevelId -> Point -> State -> Bool
-isStair lid p s =
-  let bag = getEmbedBag lid p s
-      ks = map (`getIidKind` s) $ EM.keys bag
-  in any (any IK.isEffAscend . IK.ieffects) ks
 
 -- | Require that any non-dying foe is adjacent. We include even
 -- projectiles that explode when stricken down, because they can be caught

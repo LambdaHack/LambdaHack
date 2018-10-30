@@ -3,7 +3,7 @@
 module Game.LambdaHack.Common.Ability
   ( Skill(..), Skills, Flag(..), Flags(..), Tactic(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
-  , zeroSkills, unitSkills, addSkills, sumScaledSkills
+  , zeroSkills, addSkills, sumScaledSkills
   , nameTactic, describeTactic, tacticSkills
   , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
@@ -172,10 +172,6 @@ skillsToList (Skills sk) = EM.assocs sk
 
 zeroSkills :: Skills
 zeroSkills = Skills EM.empty
-
-unitSkills :: Skills
-unitSkills =
-  Skills $ EM.fromDistinctAscList $ zip [SkMove .. SkApply] (repeat 1)
 
 compactSkills :: EM.EnumMap Skill Int -> EM.EnumMap Skill Int
 compactSkills = EM.filter (/= 0)
