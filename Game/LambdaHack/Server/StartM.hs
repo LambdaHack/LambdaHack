@@ -99,6 +99,7 @@ reinitGame = do
 birthAnFromDungeon :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
 birthAnFromDungeon dungeon = do
   COps{cocave, coitem} <- getsState scops
+  factionD <- getsState sfactionD
   let getGroups Level{lkind} = map fst $ CK.cactorFreq $ okind cocave lkind
       groups = S.elems $ S.fromList $ concatMap getGroups $ EM.elems dungeon
       addGroupToSet !s0 !grp =
@@ -106,16 +107,24 @@ birthAnFromDungeon dungeon = do
       trunkKindIds = ES.elems $ foldl' addGroupToSet ES.empty groups
       minLid = fst $ minimumBy (comparing (ldepth . snd))
                    $ EM.assocs dungeon
-      cdummy = CTrunk (toEnum 1) minLid originPoint
-      regItem ik = do
-        let freq = pure (ik, okind coitem ik)
-        m2 <- rollItemAspect freq minLid
-        case m2 of
-          Nothing -> error "birthAnFromDungeon: can't create actor trunk"
-          Just (itemKnown, itemFull) ->
-            registerItem itemFull itemKnown cdummy False
-  iids <- mapM regItem trunkKindIds
-  return $! EM.fromAscList $ zip iids $ repeat 0
+      regItem itemKindId = do
+        let itemKind = okind coitem itemKindId
+            freq = pure (itemKindId, itemKind)
+        case possibleActorFactions itemKind factionD of
+          [] -> return Nothing
+          fid : _ -> do
+            let c = CTrunk fid minLid originPoint
+                jfid = Just fid
+            m2 <- rollItemAspect freq minLid
+            case m2 of
+              Nothing -> error "birthAnFromDungeon: can't create actor trunk"
+              Just (ItemKnown kindIx ar _, (itemFullRaw, kit)) -> do
+                let itemKnown = ItemKnown kindIx ar jfid
+                    itemFull =
+                      itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
+                Just <$> registerItem (itemFull, kit) itemKnown c False
+  miids <- mapM regItem trunkKindIds
+  return $! EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
