@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.Misc
     FactionId, LevelId, ActorId
     -- * Item containers
   , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
+  , ppSLore, loreFromMode, loreFromContainer
     -- * Assorted
   , GroupName
   , toGroupName, fromGroupName, makePhrase, makeSentence, squashedWWandW
@@ -97,6 +98,33 @@ data ItemDialogMode =
 instance NFData ItemDialogMode
 
 instance Binary ItemDialogMode
+
+ppSLore :: SLore -> Text
+ppSLore SItem = "item"
+ppSLore SOrgan = "organ"
+ppSLore STrunk = "creature"
+ppSLore STmp = "condition"
+ppSLore SBlast = "blast"
+ppSLore SEmbed = "terrain"
+
+loreFromMode :: ItemDialogMode -> SLore
+loreFromMode c = case c of
+  MStore COrgan -> SOrgan
+  MStore _ -> SItem
+  MOrgans -> undefined  -- slots from many lore kinds
+  MOwned -> SItem
+  MSkills -> undefined  -- artificial slots
+  MLore slore -> slore
+  MPlaces -> undefined  -- artificial slots
+
+loreFromContainer :: IA.AspectRecord -> Container -> SLore
+loreFromContainer arItem c = case c of
+  CFloor{} -> SItem
+  CEmbed{} -> SEmbed
+  CActor _ store -> if | IA.isBlast arItem -> SBlast
+                       | IA.looksLikeCondition arItem -> STmp
+                       | otherwise -> loreFromMode $ MStore store
+  CTrunk{} -> if IA.isBlast arItem then SBlast else STrunk
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases

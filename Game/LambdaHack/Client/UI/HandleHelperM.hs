@@ -1,8 +1,7 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
-  , failSer, failMsg, weaveJust
-  , ppSLore, loreFromMode, loreFromContainer, sortSlots
+  , failSer, failMsg, weaveJust, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtItems, lookAtPosition, displayItemLore, viewLoreItems
@@ -91,33 +90,6 @@ failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
-
-ppSLore :: SLore -> Text
-ppSLore SItem = "item"
-ppSLore SOrgan = "organ"
-ppSLore STrunk = "creature"
-ppSLore STmp = "condition"
-ppSLore SBlast = "blast"
-ppSLore SEmbed = "terrain"
-
-loreFromMode :: ItemDialogMode -> SLore
-loreFromMode c = case c of
-  MStore COrgan -> SOrgan
-  MStore _ -> SItem
-  MOrgans -> undefined  -- slots from many lore kinds
-  MOwned -> SItem
-  MSkills -> undefined  -- artificial slots
-  MLore slore -> slore
-  MPlaces -> undefined  -- artificial slots
-
-loreFromContainer :: IA.AspectRecord -> Container -> SLore
-loreFromContainer arItem c = case c of
-  CFloor{} -> SItem
-  CEmbed{} -> SEmbed
-  CActor _ store -> if | IA.isBlast arItem -> SBlast
-                       | IA.looksLikeCondition arItem -> STmp
-                       | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if IA.isBlast arItem then SBlast else STrunk
 
 sortSlots :: MonadClientUI m => m ()
 sortSlots = do
