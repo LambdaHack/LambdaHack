@@ -85,7 +85,7 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
 displayTaunt :: MonadStateRead m
              => Bool -> (Rnd (Text, Text) -> m (Text, Text))
              -> ActorId -> m (Text, Text)
-displayTaunt voluntary rndToAction aid = do
+displayTaunt _voluntary rndToAction aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let canApply = Ability.getSk Ability.SkApply actorMaxSk > 2
@@ -104,7 +104,7 @@ displayTaunt voluntary rndToAction aid = do
                   , (1, ("something", "fidget"))
                   , (1, ("something", "fret")) ]
       uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
-  if bwatch b `elem` [WSleep, WWake] || not voluntary
+  if bwatch b `elem` [WSleep, WWake]
   then rndToAction $ frequency $ toFreq "SfxTaunt" $
     if uneasy
     then if | canApply -> (5, ("somebody", "yell"))
