@@ -132,7 +132,7 @@ quitF status fid = do
       factionAn <- getsServer sfactionAn
       birthAn <- getsServer sbirthAn
       itemD <- getsState sitemD
-      let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys birthAn
+      let ais = EM.assocs itemD
       execUpdAtomic $ UpdQuitFaction fid oldSt (Just status)
                                      (Just (factionAn, birthAn, ais))
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
@@ -431,8 +431,7 @@ addNonProjectile summoned trunkId (itemFull, kit) fid pos lid time = do
   aid <- addActorIid trunkId itemFull False fid pos lid tweakBody
   -- We assume actor is never born pushed.
   modifyServer $ \ser ->
-    ser { sactorTime = updateActorTime fid lid aid time $ sactorTime ser
-        , sbirthAn = EM.insertWith (+) trunkId 1 $ sbirthAn ser }
+    ser {sactorTime = updateActorTime fid lid aid time $ sactorTime ser}
   return aid
 
 addActorIid :: MonadServerAtomic m

@@ -66,6 +66,9 @@ registerItem :: MonadServerAtomic m
 registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
              itemKnown@(ItemKnown _ arItem _) container verbose = do
   iid <- onlyRegisterItem itemKnown
+  let slore = IA.loreFromContainer arItem container
+  modifyServer $ \ser ->
+    ser {sbirthAn = EM.adjust (EM.insertWith (+) iid 1) slore $ sbirthAn ser}
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind

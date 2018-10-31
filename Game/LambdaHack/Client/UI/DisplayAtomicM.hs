@@ -878,15 +878,17 @@ displayGameOverAnalytics manalytics = case manalytics of
         lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
         killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                       (EM.elems lSlotsRaw)
+        birthTrunk = birthAn EM.! STrunk
         (trunkBag, lSlots) =
           if sexposeActors
-          then let bag = killedBag `EM.union` EM.map (const (0, [])) birthAn
+          then let birthBag = EM.map (const (0, [])) birthTrunk
+                   bag = killedBag `EM.union` birthBag
                    slots = EM.fromAscList $ zip allSlots $ EM.keys bag
                in (bag, slots)
           else (killedBag, lSlotsRaw)
         promptFun :: ItemId -> ItemFull-> Int -> Text
         promptFun iid _ k =
-          let n = birthAn EM.! iid
+          let n = birthTrunk EM.! iid
           in "You recall the adversary, which you killed"
              <+> tshow k <+> "out of" <+> tshow n <+> "born:"
         prompt = "Your team vangished the following adversaries:"

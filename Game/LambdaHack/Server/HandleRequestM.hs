@@ -924,7 +924,7 @@ reqGameRestart aid groupName scurChalSer = do
   factionAn <- getsServer sfactionAn
   birthAn <- getsServer sbirthAn
   itemD <- getsState sitemD
-  let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys birthAn
+  let ais = EM.assocs itemD
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt

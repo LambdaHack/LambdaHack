@@ -19,6 +19,7 @@ import qualified Data.EnumMap.Strict as EM
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Container
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 
@@ -29,7 +30,7 @@ type FactionAnalytics = EM.EnumMap FactionId Analytics
 type ActorAnalytics = EM.EnumMap ActorId Analytics
 
 -- | Birth statistics for each actor trunk.
-type BirthAnalytics = EM.EnumMap ItemId Int
+type BirthAnalytics = EM.EnumMap SLore (EM.EnumMap ItemId Int)
 
 -- | Labels of individual kill count analytics.
 data KillHow =

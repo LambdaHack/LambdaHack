@@ -92,7 +92,9 @@ reinitGame = do
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   genOrig <- getsServer srandom
   uniqueSetOrig <- getsServer suniqueSet
-  sbirthAn <- birthAnFromDungeon dungeon
+  birthAnOld <- getsServer sbirthAn
+  birthAnTrunk <- birthAnFromDungeon dungeon
+  let sbirthAn = birthAnTrunk `EM.union` birthAnOld
   -- Make sure the debug births don't affect future RNG behaviour.
   modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
   modifyServer $ \ser -> ser {sactorTime, strajTime, sbirthAn}
@@ -129,7 +131,8 @@ birthAnFromDungeon dungeon = do
                       itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
                 Just <$> registerItem (itemFull, kit) itemKnown c False
   miids <- mapM regItem trunkKindIds
-  return $! EM.fromAscList $ zip (catMaybes miids) $ repeat 0
+  return $! EM.singleton STrunk
+            $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
