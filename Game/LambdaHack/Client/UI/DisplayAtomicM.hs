@@ -809,22 +809,24 @@ quitFactionUI fid toSt manalytics = do
             else displaySpaceEsc ColorFull ""
       when (side == fid) recordHistory
         -- we are going to exit or restart, so record and clear, but only once
-      when go $ do
-        (itemBag, total) <- getsState $ calculateTotal side
-        go3 <- displayGameOverLoot (itemBag, total)
-        when go3 $ do
-          go4 <- displayGameOverAnalytics manalytics
-          when go4 $ do
-            unless isNoConfirms $ do
-              -- Show score for any UI client after any kind of game exit,
-              -- even though it is saved only for human UI clients at game over
-              -- (that is not a noConfirms or benchmark game).
-              scoreSlides <- scoreToSlideshow total status
-              void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-            -- The last prompt stays onscreen during shutdown, etc.
-            promptAdd0 pp
-            partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-            void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+      when go $ case manalytics of
+        Nothing -> return ()
+        Just (factionAn, birthAn, _) -> do
+          (itemBag, total) <- getsState $ calculateTotal side
+          go3 <- displayGameOverLoot (itemBag, total)
+          when go3 $ do
+            go4 <- displayGameOverAnalytics factionAn birthAn
+            when go4 $ do
+              unless isNoConfirms $ do
+                -- Show score for any UI client after any kind of game exit,
+                -- even though it's saved only for human UI clients at game over
+                -- (that is not a noConfirms or benchmark game).
+                scoreSlides <- scoreToSlideshow total status
+                void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+              -- The last prompt stays onscreen during shutdown, etc.
+              promptAdd0 pp
+              partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+              void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
@@ -859,41 +861,37 @@ displayGameOverLoot (itemBag, total) = do
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
-                         => Maybe ( FactionAnalytics
-                                  , BirthAnalytics
-                                  , [(ItemId, Item)] )
+                         => FactionAnalytics -> BirthAnalytics
                          -> m Bool
-displayGameOverAnalytics manalytics = case manalytics of
-  Nothing -> return True
-  Just (factionAn, birthAn, _) -> do
-    ClientOptions{sexposeActors} <- getsClient soptions
-    side <- getsClient sside
-    ItemSlots itemSlots <- getsSession sslots
-    let ourAn = akillCounts
-                $ EM.findWithDefault emptyAnalytics side factionAn
-        foesAn = EM.unionsWith (+)
-                 $ concatMap EM.elems $ catMaybes
-                 $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
-        trunkBagRaw = EM.map (, []) foesAn
-        lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
-        killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
-                                      (EM.elems lSlotsRaw)
-        birthTrunk = birthAn EM.! STrunk
-        (trunkBag, lSlots) =
-          if sexposeActors
-          then let birthBag = EM.map (const (0, [])) birthTrunk
-                   bag = killedBag `EM.union` birthBag
-                   slots = EM.fromAscList $ zip allSlots $ EM.keys bag
-               in (bag, slots)
-          else (killedBag, lSlotsRaw)
-        promptFun :: ItemId -> ItemFull-> Int -> Text
-        promptFun iid _ k =
-          let n = birthTrunk EM.! iid
-          in "You recall the adversary, which you killed"
-             <+> tshow k <+> "out of" <+> tshow n <+> "born:"
-        prompt = "Your team vangished the following adversaries:"
-        examItem = displayItemLore trunkBag 0 promptFun
-    viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
+displayGameOverAnalytics factionAn birthAn = do
+  ClientOptions{sexposeActors} <- getsClient soptions
+  side <- getsClient sside
+  ItemSlots itemSlots <- getsSession sslots
+  let ourAn = akillCounts
+              $ EM.findWithDefault emptyAnalytics side factionAn
+      foesAn = EM.unionsWith (+)
+               $ concatMap EM.elems $ catMaybes
+               $ map (`EM.lookup` ourAn) [KillKineticMelee .. KillOtherPush]
+      trunkBagRaw = EM.map (, []) foesAn
+      lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
+      killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
+                                    (EM.elems lSlotsRaw)
+      birthTrunk = birthAn EM.! STrunk
+      (trunkBag, lSlots) =
+        if sexposeActors
+        then let birthBag = EM.map (const (0, [])) birthTrunk
+                 bag = killedBag `EM.union` birthBag
+                 slots = EM.fromAscList $ zip allSlots $ EM.keys bag
+             in (bag, slots)
+        else (killedBag, lSlotsRaw)
+      promptFun :: ItemId -> ItemFull-> Int -> Text
+      promptFun iid _ k =
+        let n = birthTrunk EM.! iid
+        in "You recall the adversary, which you killed"
+           <+> tshow k <+> "out of" <+> tshow n <+> "born:"
+      prompt = "Your team vangished the following adversaries:"
+      examItem = displayItemLore trunkBag 0 promptFun
+  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
