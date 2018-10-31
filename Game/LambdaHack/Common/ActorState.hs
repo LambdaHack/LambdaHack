@@ -16,8 +16,7 @@ module Game.LambdaHack.Common.ActorState
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
-  , storeFromC, aidFromC, lidFromC, posFromC
-  , anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
+  , lidFromC, posFromC, anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
   , armorHurtBonus, inMelee
   ) where
 
@@ -32,6 +31,7 @@ import           GHC.Exts (inline)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -388,19 +388,6 @@ getItemKindServer item s = okind (coitem $ scops s) $ getItemKindIdServer item s
 
 getIidKindServer :: ItemId -> State -> IK.ItemKind
 getIidKindServer iid s = getItemKindServer (getItemBody iid s) s
-
-storeFromC :: Container -> CStore
-storeFromC c = case c of
-  CFloor{} -> CGround
-  CEmbed{} -> CGround
-  CActor _ cstore -> cstore
-  CTrunk{} -> error $ "" `showFailure` c
-
-aidFromC :: Container -> Maybe ActorId
-aidFromC CFloor{} = Nothing
-aidFromC CEmbed{} = Nothing
-aidFromC (CActor aid _) = Just aid
-aidFromC c@CTrunk{} = error $ "" `showFailure` c
 
 -- | Determine the dungeon level of the container. If the item is in a shared
 -- stash, the level depends on which actor asks.

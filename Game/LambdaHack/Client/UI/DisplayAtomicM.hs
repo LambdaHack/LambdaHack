@@ -51,6 +51,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
 import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour
@@ -394,7 +395,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
-  let slore = loreFromContainer arItem c
+  let slore = IA.loreFromContainer arItem c
       incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
         case EM.lookup l2 m of
           Nothing -> m
@@ -652,7 +653,7 @@ spotItem verbose iid kit c = do
   recordItemLid iid c
   ItemSlots itemSlots <- getsSession sslots
   arItem <- getsState $ aspectRecordFromIid iid
-  let slore = loreFromContainer arItem c
+  let slore = IA.loreFromContainer arItem c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
       void $ updateItemSlot c iid

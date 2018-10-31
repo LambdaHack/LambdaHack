@@ -3,8 +3,7 @@
 module Game.LambdaHack.Client.UI.ActorUI
   ( ActorUI(..), ActorDictUI
   , keySelected, partActor, partPronoun
-  , ppContainer, ppCStore, ppCStoreIn, ppCStoreWownW
-  , ppContainerWownW, verbCStore, tryFindActor, tryFindHeroK
+  , ppCStoreWownW, ppContainerWownW, tryFindActor, tryFindHeroK
   ) where
 
 import Prelude ()
@@ -19,8 +18,8 @@ import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.State
 
 data ActorUI = ActorUI
@@ -48,22 +47,6 @@ partActor b = MU.Text $ bname b
 partPronoun :: ActorUI -> MU.Part
 partPronoun b = MU.Text $ bpronoun b
 
-ppContainer :: Container -> Text
-ppContainer CFloor{} = "nearby"
-ppContainer CEmbed{} = "embedded nearby"
-ppContainer (CActor _ cstore) = ppCStoreIn cstore
-ppContainer c@CTrunk{} = error $ "" `showFailure` c
-
-ppCStore :: CStore -> (Text, Text)
-ppCStore CGround = ("on", "the ground")
-ppCStore COrgan = ("in", "body")
-ppCStore CEqp = ("in", "equipment")
-ppCStore CInv = ("in", "pack")
-ppCStore CSha = ("in", "shared stash")
-
-ppCStoreIn :: CStore -> Text
-ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
-
 ppCStoreWownW :: Bool -> CStore -> MU.Part -> [MU.Part]
 ppCStoreWownW addPrepositions store owner =
   let (preposition, noun) = ppCStore store
@@ -80,13 +63,6 @@ ppContainerWownW ownerFun addPrepositions c = case c of
   CActor aid store -> let owner = ownerFun aid
                       in ppCStoreWownW addPrepositions store owner
   CTrunk{} -> error $ "" `showFailure` c
-
-verbCStore :: CStore -> Text
-verbCStore CGround = "drop"
-verbCStore COrgan = "implant"
-verbCStore CEqp = "equip"
-verbCStore CInv = "pack"
-verbCStore CSha = "stash"
 
 tryFindActor :: State -> (ActorId -> Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p = find (uncurry p) $ EM.assocs $ sactorD s

@@ -16,9 +16,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Common.Ability
 import           Game.LambdaHack.Common.Actor
+import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time

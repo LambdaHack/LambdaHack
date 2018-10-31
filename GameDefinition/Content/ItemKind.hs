@@ -15,9 +15,9 @@ import Content.ItemKindTemporary
 import Content.RuleKind
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.Container
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 

@@ -3,9 +3,6 @@
 module Game.LambdaHack.Common.Misc
   ( -- * Game object identifiers
     FactionId, LevelId, ActorId
-    -- * Item containers
-  , Container(..), CStore(..), SLore(..), ItemDialogMode(..)
-  , ppSLore, loreFromMode, loreFromContainer
     -- * Assorted
   , GroupName
   , toGroupName, fromGroupName, makePhrase, makeSentence, squashedWWandW
@@ -31,8 +28,6 @@ import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
 import           System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Common.Point
-
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int
   deriving (Show, Eq, Ord, Enum, Hashable, Binary)
@@ -48,83 +43,6 @@ instance Enum LevelId where
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
   deriving (Show, Eq, Ord, Enum, Binary)
-
--- | Item container type.
-data Container =
-    CFloor LevelId Point
-  | CEmbed LevelId Point
-  | CActor ActorId CStore
-  | CTrunk FactionId LevelId Point   -- ^ for bootstrapping actor bodies
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary Container
-
--- | Actor's item stores.
-data CStore =
-    CGround
-  | COrgan
-  | CEqp
-  | CInv
-  | CSha
-  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
-
-instance Binary CStore
-
-instance NFData CStore
-
--- | Item slot and lore categories.
-data SLore =
-    SItem
-  | SOrgan
-  | STrunk
-  | STmp
-  | SBlast
-  | SEmbed
-  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
-
-instance Binary SLore
-
-instance NFData SLore
-
-data ItemDialogMode =
-    MStore CStore  -- ^ a leader's store
-  | MOrgans        -- ^ leader's organs
-  | MOwned         -- ^ all party's items
-  | MSkills        -- ^ not items, but determined by leader's items
-  | MLore SLore    -- ^ not party's items, but all known generalized items
-  | MPlaces        -- ^ not items at all, but definitely a lore
-  deriving (Show, Read, Eq, Ord, Generic)
-
-instance NFData ItemDialogMode
-
-instance Binary ItemDialogMode
-
-ppSLore :: SLore -> Text
-ppSLore SItem = "item"
-ppSLore SOrgan = "organ"
-ppSLore STrunk = "creature"
-ppSLore STmp = "condition"
-ppSLore SBlast = "blast"
-ppSLore SEmbed = "terrain"
-
-loreFromMode :: ItemDialogMode -> SLore
-loreFromMode c = case c of
-  MStore COrgan -> SOrgan
-  MStore _ -> SItem
-  MOrgans -> undefined  -- slots from many lore kinds
-  MOwned -> SItem
-  MSkills -> undefined  -- artificial slots
-  MLore slore -> slore
-  MPlaces -> undefined  -- artificial slots
-
-loreFromContainer :: IA.AspectRecord -> Container -> SLore
-loreFromContainer arItem c = case c of
-  CFloor{} -> SItem
-  CEmbed{} -> SEmbed
-  CActor _ store -> if | IA.isBlast arItem -> SBlast
-                       | IA.looksLikeCondition arItem -> STmp
-                       | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if IA.isBlast arItem then SBlast else STrunk
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases

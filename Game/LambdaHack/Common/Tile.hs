@@ -38,7 +38,6 @@ import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
 import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),

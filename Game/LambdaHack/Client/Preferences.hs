@@ -14,6 +14,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Flavour

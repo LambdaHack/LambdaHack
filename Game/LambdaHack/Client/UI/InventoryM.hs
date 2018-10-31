@@ -2,7 +2,6 @@
 module Game.LambdaHack.Client.UI.InventoryM
   ( Suitability(..)
   , getFull, getGroupItem, getStoreItem
-  , ppItemDialogMode, ppItemDialogModeFrom
   ) where
 
 import Prelude ()
@@ -34,8 +33,10 @@ import           Game.LambdaHack.Client.UI.SlideshowM
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.ReqFailure
@@ -43,20 +44,6 @@ import           Game.LambdaHack.Common.State
 
 data ItemDialogState = ISuitable | IAll
   deriving (Show, Eq)
-
-ppItemDialogMode :: ItemDialogMode -> (Text, Text)
-ppItemDialogMode (MStore cstore) = ppCStore cstore
-ppItemDialogMode MOrgans = ("in", "body")
-ppItemDialogMode MOwned = ("in", "our possession")
-ppItemDialogMode MSkills = ("among", "skills")
-ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
-ppItemDialogMode MPlaces = ("among", "place lore")
-
-ppItemDialogModeIn :: ItemDialogMode -> Text
-ppItemDialogModeIn c = let (tIn, t) = ppItemDialogMode c in tIn <+> t
-
-ppItemDialogModeFrom :: ItemDialogMode -> Text
-ppItemDialogModeFrom c = let (_tIn, t) = ppItemDialogMode c in "from" <+> t
 
 accessModeBag :: ActorId -> State -> ItemDialogMode -> ItemBag
 accessModeBag leader s (MStore cstore) = let b = getActorBody leader s
@@ -214,7 +201,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
   case allAssocs of
     [(iid, k)] | null cRest && not askWhenLone -> do
       ItemSlots itemSlots <- getsSession sslots
-      let lSlots = itemSlots EM.! loreFromMode cCur
+      let lSlots = itemSlots EM.! IA.loreFromMode cCur
           slotChar = fromMaybe (error $ "" `showFailure` (iid, lSlots))
                      $ lookup iid $ map swap $ EM.assocs lSlots
       return ( Right ([iid], EM.singleton iid k, EM.singleton slotChar iid)
@@ -277,7 +264,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                           , itemSlots EM.! STmp ]
         MSkills -> EM.empty
         MPlaces -> EM.empty
-        _ -> itemSlots EM.! loreFromMode cCur
+        _ -> itemSlots EM.! IA.loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
       -- is 0, in which case we display all slots, even if they require

@@ -21,7 +21,6 @@ import qualified Data.Text as T
 
 import Control.DeepSeq
 import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Content.TileKind (TileKind)
 import GHC.Generics (Generic)

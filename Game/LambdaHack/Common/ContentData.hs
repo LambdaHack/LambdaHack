@@ -9,7 +9,7 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentId(ContentId), ContentData, Freqs, Rarity
+  ( GroupName, ContentId(ContentId), ContentData, Freqs, Rarity
   , contentIdIndex, validateRarity, validFreqs
   , emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick

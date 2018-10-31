@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ItemAspect
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
   , onlyMinorEffects, itemTrajectory, totalRange
   , isMelee, looksLikeCondition, isBlast, isHumanTrinket
-  , goesIntoEqp, goesIntoInv, goesIntoSha
+  , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice, meanAspect, majorEffect
@@ -28,9 +28,9 @@ import           GHC.Generics (Generic)
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
@@ -226,3 +226,22 @@ goesIntoInv ar = not (checkFlag Ability.Precious ar) && not (goesIntoEqp ar)
 
 goesIntoSha :: AspectRecord -> Bool
 goesIntoSha ar = checkFlag Ability.Precious ar && not (goesIntoEqp ar)
+
+loreFromMode :: ItemDialogMode -> SLore
+loreFromMode c = case c of
+  MStore COrgan -> SOrgan
+  MStore _ -> SItem
+  MOrgans -> undefined  -- slots from many lore kinds
+  MOwned -> SItem
+  MSkills -> undefined  -- artificial slots
+  MLore slore -> slore
+  MPlaces -> undefined  -- artificial slots
+
+loreFromContainer :: AspectRecord -> Container -> SLore
+loreFromContainer arItem c = case c of
+  CFloor{} -> SItem
+  CEmbed{} -> SEmbed
+  CActor _ store -> if | isBlast arItem -> SBlast
+                       | looksLikeCondition arItem -> STmp
+                       | otherwise -> loreFromMode $ MStore store
+  CTrunk{} -> if isBlast arItem then SBlast else STrunk

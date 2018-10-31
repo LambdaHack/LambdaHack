@@ -30,10 +30,10 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
-import           Game.LambdaHack.Common.Misc
 
 -- | Item properties that are fixed for a given kind of items.
 -- Of these, aspects and effects are jointly called item powers.

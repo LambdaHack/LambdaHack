@@ -9,9 +9,8 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Game.LambdaHack.Client.UI.Content.Input
-import           Game.LambdaHack.Client.UI.HandleHelperM (ppSLore)
 import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.

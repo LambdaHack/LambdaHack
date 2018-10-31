@@ -22,10 +22,10 @@ import qualified Data.Char as Char
 import qualified Data.Map.Strict as M
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Client.UI.ActorUI (verbCStore)
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.UIOptions
+import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.
