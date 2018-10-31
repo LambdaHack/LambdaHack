@@ -162,17 +162,7 @@ attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $
   unsafeShiftL (fromEnum fg) 8 + fromEnum bg + unsafeShiftL (Char.ord acChar) 16
 
 attrCharFromW32 :: AttrCharW32 -> AttrChar
-attrCharFromW32 !w =
-  AttrChar (Attr (toEnum $ fromEnum
-                  $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1))
-                 (toEnum $ fromEnum
-                  $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)))
-           (Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16)
-
-{- surprisingly, this is slower:
-attrCharFromW32 :: AttrCharW32 -> AttrChar
 attrCharFromW32 !w = AttrChar (attrFromW32 w) (charFromW32 w)
--}
 
 fgFromW32 :: AttrCharW32 -> Color
 {-# INLINE fgFromW32 #-}
