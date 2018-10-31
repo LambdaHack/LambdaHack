@@ -602,10 +602,17 @@ dominateFidSfx target fid = do
 dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
 dominateFid fid target = do
   tb0 <- getsState $ getActorBody target
-  -- At this point the actor's body exists and his items are not dropped.
   deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
+  -- Drop all items so that domiation is not too nasty, especially
+  -- if the dominated hero runs off or teleports away with gold
+  -- or starts hitting with the most potent artifact weapon in the game.
+  -- Prevent the faction's stash from being lost in case they are
+  -- not spawners. Drop items while still of the original faction
+  -- to mark them on the map for other party members to collect.
+  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
+  dropAllItems target tb0
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
   actorMaxSk <- getsState $ getActorMaxSkills target
@@ -638,18 +645,11 @@ dominateFid fid target = do
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   if gameOver
-  then return True  -- avoid spam identifying items at this point
+  then return True  -- avoid the spam of identifying items at this point
   else do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
                             "impressed" IK.timerNone
-    -- Drop all items so that domiation is not too nasty, especially
-    -- if the dominated hero runs off or teleports away with gold
-    -- or starts hitting with the most potent artifact weapon in the game.
-    -- Prevent the faction's stash from being lost in case they are
-    -- not spawners.
-    when (isNothing $ gleader fact) $ moveStores False target CSha CInv
-    dropAllItems target tb
     -- Identify organs that won't get identified by use.
     getKindId <- getsState $ flip getIidKindIdServer
     let discoverIf (iid, cstore) = do
