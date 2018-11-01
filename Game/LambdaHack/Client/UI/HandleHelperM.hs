@@ -139,10 +139,8 @@ partyAfterLeader :: MonadClientUI m => ActorId -> m [(ActorId, Actor, ActorUI)]
 partyAfterLeader leader = do
   side <- getsState $ bfid . getActorBody leader
   sactorUI <- getsSession sactorUI
-  allA <- getsState $ EM.assocs . sactorD  -- not only on one level
-  let allOurs = filter (\(_, body) ->
-        not (bproj body) && bfid body == side) allA
-      allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
+  allOurs <- getsState $ fidActorNotProjGlobalAssocs side -- not only on level
+  let allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
       hs = sortBy (comparing keySelected) allOursUI
       i = fromMaybe (-1) $ findIndex (\(aid, _, _) -> aid == leader) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)

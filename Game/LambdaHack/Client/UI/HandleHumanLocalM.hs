@@ -532,10 +532,8 @@ pickLeaderHuman k = do
   arena <- getArenaUI
   sactorUI <- getsSession sactorUI
   mhero <- getsState $ tryFindHeroK sactorUI side k
-  allA <- getsState $ EM.assocs . sactorD  -- not only on one level
-  let allOurs = filter (\(_, body) ->
-        not (bproj body) && bfid body == side) allA
-      allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
+  allOurs <- getsState $ fidActorNotProjGlobalAssocs side -- not only on level
+  let allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
       hs = sortBy (comparing keySelected) allOursUI
       mactor = case drop k hs of
                  [] -> Nothing

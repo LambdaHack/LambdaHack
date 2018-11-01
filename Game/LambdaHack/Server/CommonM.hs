@@ -223,11 +223,9 @@ electLeader :: MonadServerAtomic m => FactionId -> LevelId -> ActorId -> m ()
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidDead) $ do
-    actorD <- getsState sactorD
-    let ours (_, b) = bfid b == fid && not (bproj b)
-        party = filter ours $ EM.assocs actorD
-        -- Prefer actors on level and with positive HP.
-        (positive, negative) = partition (\(_, b) -> bhp b > 0) party
+    allOurs <- getsState $ fidActorNotProjGlobalAssocs fid  -- not only on level
+    let -- Prefer actors on level and with positive HP.
+        (positive, negative) = partition (\(_, b) -> bhp b > 0) allOurs
     onLevel <- getsState $ fidActorRegularIds fid lid
     let mleaderNew = case filter (/= aidDead)
                           $ onLevel ++ map fst (positive ++ negative) of

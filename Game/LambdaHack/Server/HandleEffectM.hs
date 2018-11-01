@@ -124,10 +124,10 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   when (bhp tb <= 0 && bhp tbOld > 0) $ do
     mleader <- getsState $ gleader . (EM.! bfid tb) . sfactionD
     when (Just target == mleader) $ do
-      actorD <- getsState sactorD
-      let ours (_, b) = bfid b == bfid tb && not (bproj b) && bhp b > 0
+      allOurs <- getsState $ fidActorNotProjGlobalAssocs (bfid tb)
+      let positiveHP (_, b) = bhp b > 0
           -- Only consider actors with positive HP.
-          positive = filter ours $ EM.assocs actorD
+          positive = filter positiveHP allOurs
       onLevel <- getsState $ fidActorRegularIds (bfid tb) (blid tb)
       case onLevel ++ map fst positive of
         [] -> return ()
