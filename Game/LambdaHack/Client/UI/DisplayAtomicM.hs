@@ -813,7 +813,7 @@ quitFactionUI fid toSt manalytics = do
         Nothing -> return ()
         Just (factionAn, birthAn, _) -> do
           (itemBag, total) <- getsState $ calculateTotal side
-          go3 <- displayGameOverLoot (itemBag, total)
+          go3 <- displayGameOverLoot (itemBag, total) birthAn
           when go3 $ do
             go4 <- displayGameOverAnalytics factionAn birthAn
             when go4 $ do
@@ -831,22 +831,35 @@ quitFactionUI fid toSt manalytics = do
         fadeOutOrIn True
     _ -> return ()
 
-displayGameOverLoot :: MonadClientUI m => (ItemBag, Int) -> m Bool
-displayGameOverLoot (itemBag, total) = do
+displayGameOverLoot :: MonadClientUI m
+                    => (ItemBag, Int) -> BirthAnalytics -> m Bool
+displayGameOverLoot (heldBag, total) birthAn = do
+  ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
   let currencyName = MU.Text $ IK.iname
                      $ okind coitem $ ouniqGroup coitem "currency"
-      lSlots = EM.filter (`EM.member` itemBag) $ itemSlots EM.! SItem
-      promptFun _ itemFull2 k =
+      lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
+      birthItem = birthAn EM.! SItem
+      (itemBag, lSlots) =
+        if sexposeItems
+        then let birthBag = EM.map (const (0, [])) birthItem
+                 bag = heldBag `EM.union` birthBag
+                 slots = EM.fromAscList $ zip allSlots $ EM.keys bag
+             in (bag, slots)
+        else (heldBag, lSlotsRaw)
+      promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
-            lootMsg | worth /= 0 = makeSentence $
-              ["this particular loot is worth"]
-              ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
-              ++ [MU.CarWs worth currencyName]
-                    | otherwise = makeSentence
-              ["this item is not worth any", MU.Ws currencyName]
-        in lootMsg
+            lootMsg = if worth == 0 then "" else
+              makeSentence $
+                ["this treasure specimen is worth"]
+                ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
+                ++ [MU.CarWs worth currencyName]
+            holdsMsg =
+              let n = birthItem EM.! iid
+              in "You hold"
+                 <+> tshow k <+> "pieces out of" <+> tshow n <+> "scattered:"
+        in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let prompt = if | dungeonTotal == 0 ->
                       "All your spoils are of the practical kind."
@@ -888,7 +901,7 @@ displayGameOverAnalytics factionAn birthAn = do
       promptFun iid _ k =
         let n = birthTrunk EM.! iid
         in "You recall the adversary, which you killed"
-           <+> tshow k <+> "out of" <+> tshow n <+> "born:"
+           <+> tshow k <+> "out of" <+> tshow n <+> "roaming:"
       prompt = "Your team vangished the following adversaries:"
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
