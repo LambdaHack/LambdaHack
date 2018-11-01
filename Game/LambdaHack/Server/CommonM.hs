@@ -52,8 +52,8 @@ import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
-revealItems :: MonadServerAtomic m => Maybe FactionId -> m ()
-revealItems mfid = do
+revealItems :: MonadServerAtomic m => FactionId -> m ()
+revealItems fid = do
   COps{coitem} <- getsState scops
   let discover aid store iid _ = do
         discoAspect <- getsState sdiscoAspect
@@ -63,17 +63,13 @@ revealItems mfid = do
             itemKind = okind coitem itemKindId
         unless (IA.isHumanTrinket itemKind) $  -- a hack
           execUpdAtomic $ UpdDiscover c iid itemKindId arItem
-      f aid = do
-        b <- getsState $ getActorBody aid
-        let ourSide = maybe True (== bfid b) mfid
-        -- Don't ID projectiles, because client may not see them.
-        when (not (bproj b) && ourSide) $
-          -- CSha is IDed for each actor of each faction, which is OK,
-          -- even though it may introduce a slight lag.
-          -- AI clients being sent this is a bigger waste anyway.
-          join $ getsState $ mapActorItems_ (discover aid) b
-  as <- getsState $ EM.keys . sactorD
-  mapM_ f as
+      f (aid, b) = do
+        -- CSha is IDed for each actor of each faction, which is fine,
+        -- even though it may introduce a slight lag at gameover.
+        join $ getsState $ mapActorItems_ (discover aid) b
+  -- Don't ID projectiles, their items are not really owned by the party.
+  aids <- getsState $ fidActorNotProjGlobalAssocs fid
+  mapM_ f aids
 
 moveStores :: MonadServerAtomic m
            => Bool -> ActorId -> CStore -> CStore -> m ()
@@ -125,7 +121,7 @@ quitF status fid = do
               && fleaderMode (gplayer fact) /= LeaderNull
               && not keepAutomated) $
           execUpdAtomic $ UpdAutoFaction fid False
-        revealItems (Just fid)
+        revealItems fid
         -- Likely, by this time UI faction is no longer AI-controlled,
         -- so the score will get registered.
         registerScore status fid

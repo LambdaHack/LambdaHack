@@ -920,7 +920,10 @@ reqGameRestart aid groupName scurChalSer = do
   isNoConfirms <- isNoConfirmsGame
   -- This call to `revealItems` is really needed, because the other
   -- happens only at game conclusion, not at quitting.
-  unless isNoConfirms $ revealItems Nothing
+  factionD <- getsState sfactionD
+  let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
+                                (EM.assocs factionD)
+  unless isNoConfirms $ mapM_ revealItems fidsUI
   factionAn <- getsServer sfactionAn
   generationAn <- getsServer sgenerationAn
   itemD <- getsState sitemD
