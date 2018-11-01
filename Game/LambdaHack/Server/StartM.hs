@@ -68,7 +68,8 @@ reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
   COps{coitem} <- getsState scops
   pers <- getsServer sperFid
-  ServerOptions{scurChalSer, sknowMap, sclientOptions} <- getsServer soptions
+  ServerOptions{scurChalSer, sknowMap, sshowItemSamples, sclientOptions}
+    <- getsServer soptions
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which needs to be updated in clients
   -- at this point to keep them in sync with changes on the server.
@@ -91,15 +92,17 @@ reinitGame = do
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
-  genOrig <- getsServer srandom
-  uniqueSetOrig <- getsServer suniqueSet
-  genOld <- getsServer sgenerationAn
-  genSampleTrunks <- sampleTrunks dungeon
-  genSampleItems <- sampleItems dungeon
-  let sgenerationAn = EM.unions [genSampleTrunks, genSampleItems, genOld]
-  -- Make sure the debug generations don't affect future RNG behaviour.
-  modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
-  modifyServer $ \ser -> ser {sactorTime, strajTime, sgenerationAn}
+  modifyServer $ \ser -> ser {sactorTime, strajTime}
+  when sshowItemSamples $ do
+    genOrig <- getsServer srandom
+    uniqueSetOrig <- getsServer suniqueSet
+    genOld <- getsServer sgenerationAn
+    genSampleTrunks <- sampleTrunks dungeon
+    genSampleItems <- sampleItems dungeon
+    let sgenerationAn = EM.unions [genSampleTrunks, genSampleItems, genOld]
+    modifyServer $ \ser -> ser {sgenerationAn}
+    -- Make sure the debug generations don't affect future RNG behaviour.
+    modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)
