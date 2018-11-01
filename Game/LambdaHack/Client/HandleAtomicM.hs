@@ -104,7 +104,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdRefillHP{} -> return ()
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()
-  UpdQuitFaction fid _ toSt _ -> do
+  UpdQuitFaction fid _ toSt manalytics -> do
     side <- getsClient sside
     when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
       let won = case toSt of
@@ -118,6 +118,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
             f = M.unionWith (+)
             g = EM.insertWith f gameModeId sing
         modifyClient $ \cli -> cli {svictories = g $ svictories cli}
+    maybe (return ()) (\(_, _, ais) ->
+                         mapM_ (addItemToDiscoBenefit . fst) ais) manalytics
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do

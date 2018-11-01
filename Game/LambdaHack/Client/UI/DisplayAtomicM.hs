@@ -817,16 +817,30 @@ quitFactionUI fid toSt manalytics = do
           when go3 $ do
             go4 <- displayGameOverAnalytics factionAn generationAn
             when go4 $ do
-              unless isNoConfirms $ do
-                -- Show score for any UI client after any kind of game exit,
-                -- even though it's saved only for human UI clients at game over
-                -- (that is not a noConfirms or benchmark game).
-                scoreSlides <- scoreToSlideshow total status
-                void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-              -- The last prompt stays onscreen during shutdown, etc.
-              promptAdd0 pp
-              partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-              void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+              go5 <- displayGameOverLore SEmbed generationAn
+              when go5 $ do
+                go6 <- displayGameOverLore SOrgan generationAn
+                when go6 $ do
+                  go7 <- displayGameOverLore STmp generationAn
+                  when go7 $ do
+                    go8 <- displayGameOverLore SBlast generationAn
+                    when go8 $ do
+                      unless isNoConfirms $ do
+                        -- Show score for any UI client after
+                        -- any kind of game exit,
+                        -- even though it's saved only
+                        -- for human UI clients at game over
+                        -- (that is not a noConfirms or benchmark game).
+                        scoreSlides <- scoreToSlideshow total status
+                        void $ getConfirms ColorFull
+                                           [K.spaceKM, K.escKM]
+                                           scoreSlides
+                      -- The last prompt stays onscreen during shutdown, etc.
+                      promptAdd0 pp
+                      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+                      void $ getConfirms ColorFull
+                                         [K.spaceKM, K.escKM]
+                                         partingSlide
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
@@ -915,6 +929,21 @@ displayGameOverAnalytics factionAn generationAn = do
                <> ":"
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
+
+displayGameOverLore :: MonadClientUI m => SLore -> GenerationAnalytics -> m Bool
+displayGameOverLore slore generationAn = do
+  let generationLore = generationAn EM.! slore
+      generationBag = EM.map (, []) generationLore
+      slots = EM.fromAscList $ zip allSlots $ EM.keys generationBag
+      promptFun :: ItemId -> ItemFull-> Int -> Text
+      promptFun _ _ k =
+        makeSentence
+          [ "this", MU.Text (ppSLore slore), "manifested during your quest"
+          , if k /= 1 then MU.CarWs k "time" else "one time" ]
+      prompt = makeSentence [ "you experienced the following mass of"
+                            , MU.Ws $ MU.Text (headingSLore slore) ]
+      examItem = displayItemLore generationBag 0 promptFun
+  viewLoreItems "GameOverLore" slots generationBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do

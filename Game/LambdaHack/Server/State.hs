@@ -37,7 +37,7 @@ data StateServer = StateServer
                                     -- ^ various past events data for factions
   , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
   , sgenerationAn :: GenerationAnalytics
-                                    -- ^ actor creation statistics
+                                    -- ^ item creation statistics, by item lore
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
