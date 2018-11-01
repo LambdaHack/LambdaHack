@@ -51,6 +51,7 @@ serverOptionsP = do
   sexposePlaces     <- exposePlacesP
   sexposeItems      <- exposeItemsP
   sexposeActors     <- exposeActorsP
+  sshowItemSamples  <- showItemSamplesP
   sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
@@ -129,6 +130,11 @@ exposeActorsP :: Parser Bool
 exposeActorsP =
   switch (  long "exposeActors"
          <> help "Expose all killable actors in the next game" )
+
+showItemSamplesP :: Parser Bool
+showItemSamplesP =
+  switch (  long "showItemSamples"
+         <> help "At game over show samples of all items that could be generated" )
 
 sniffP :: Parser Bool
 sniffP =

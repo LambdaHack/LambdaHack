@@ -33,6 +33,7 @@ data ServerOptions = ServerOptions
   , sdumpInitRngs    :: Bool
   , ssavePrefixSer   :: String
   , sdbgMsgSer       :: Bool
+  , sshowItemSamples :: Bool
   , sclientOptions   :: ClientOptions
       -- The client debug inside server debug only holds the client commandline
       -- options and is never updated with config options, etc.
@@ -66,6 +67,7 @@ instance Binary ServerOptions where
     put scurChalSer
     put ssavePrefixSer
     put sdbgMsgSer
+    put sshowItemSamples
     put sclientOptions
   get = do
     sknowMap <- get
@@ -80,6 +82,7 @@ instance Binary ServerOptions where
     scurChalSer <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
+    sshowItemSamples <- get
     sclientOptions <- get
     let sdungeonRng = Nothing
         smainRng = Nothing
@@ -122,5 +125,6 @@ defServerOptions = ServerOptions
 #endif
   , ssavePrefixSer = ""
   , sdbgMsgSer = False
+  , sshowItemSamples = False
   , sclientOptions = defClientOptions
   }
