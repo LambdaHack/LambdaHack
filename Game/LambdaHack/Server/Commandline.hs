@@ -48,10 +48,10 @@ serverOptionsP = do
   knowMap           <- knowMapP
   knowEvents        <- knowEventsP
   knowItems         <- knowItemsP
+  showItemSamples   <- showItemSamplesP
   sexposePlaces     <- exposePlacesP
   sexposeItems      <- exposeItemsP
   sexposeActors     <- exposeActorsP
-  sshowItemSamples  <- showItemSamplesP
   sniff             <- sniffP
   sallClear         <- allClearP
   sboostRandomItem  <- boostRandItemP
@@ -94,6 +94,7 @@ serverOptionsP = do
     , sknowMap = knowMap || knowEvents || knowItems
     , sknowEvents = knowEvents || knowItems
     , sknowItems = knowItems
+    , sshowItemSamples = not knowItems && showItemSamples
     , ..
     }
  where
@@ -134,7 +135,7 @@ exposeActorsP =
 showItemSamplesP :: Parser Bool
 showItemSamplesP =
   switch (  long "showItemSamples"
-         <> help "At game over show samples of all items that could be generated" )
+         <> help "At game over show samples of all items (--knowItems disables this)" )
 
 sniffP :: Parser Bool
 sniffP =
