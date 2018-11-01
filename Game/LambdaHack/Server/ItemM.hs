@@ -68,7 +68,8 @@ registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
   iid <- onlyRegisterItem itemKnown
   let slore = IA.loreFromContainer arItem container
   modifyServer $ \ser ->
-    ser {sbirthAn = EM.adjust (EM.insertWith (+) iid 1) slore $ sbirthAn ser}
+    ser {sbirthAn = EM.adjust (EM.insertWith (+) iid (fst kit)) slore
+                              (sbirthAn ser)}
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
