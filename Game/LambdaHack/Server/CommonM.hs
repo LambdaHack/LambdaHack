@@ -130,11 +130,11 @@ quitF status fid = do
         -- so the score will get registered.
         registerScore status fid
       factionAn <- getsServer sfactionAn
-      birthAn <- getsServer sbirthAn
+      generationAn <- getsServer sgenerationAn
       itemD <- getsState sitemD
       let ais = EM.assocs itemD
       execUpdAtomic $ UpdQuitFaction fid oldSt (Just status)
-                                     (Just (factionAn, birthAn, ais))
+                                     (Just (factionAn, generationAn, ais))
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'

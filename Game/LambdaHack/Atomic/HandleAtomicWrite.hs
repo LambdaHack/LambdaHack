@@ -375,7 +375,9 @@ updTrajectory aid fromT toT = assert (fromT /= toT) $ do
 
 updQuitFaction :: MonadStateWrite m
                => FactionId -> Maybe Status -> Maybe Status
-               -> (Maybe (FactionAnalytics, BirthAnalytics, [(ItemId, Item)]))
+               -> (Maybe ( FactionAnalytics
+                         , GenerationAnalytics
+                         , [(ItemId, Item)] ))
                -> m ()
 updQuitFaction fid fromSt toSt manalytics = do
   let !_A = assert (fromSt /= toSt `blame` (fid, fromSt, toSt)) ()

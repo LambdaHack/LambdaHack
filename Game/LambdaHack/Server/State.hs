@@ -36,7 +36,8 @@ data StateServer = StateServer
   , sfactionAn    :: FactionAnalytics
                                     -- ^ various past events data for factions
   , sactorAn      :: ActorAnalytics -- ^ various past events data for actors
-  , sbirthAn      :: BirthAnalytics -- ^ actor creation statistics
+  , sgenerationAn :: GenerationAnalytics
+                                    -- ^ actor creation statistics
   , sactorStasis  :: ES.EnumSet ActorId
                                     -- ^ actors currently in time stasis,
                                     --   invulnerable to time warps until move
@@ -86,7 +87,7 @@ emptyStateServer =
     , strajPushedBy = EM.empty
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
-    , sbirthAn = EM.fromAscList $ zip [minBound..maxBound] (repeat EM.empty)
+    , sgenerationAn = EM.fromAscList $ zip [minBound..maxBound] (repeat EM.empty)
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
@@ -139,7 +140,7 @@ instance Binary StateServer where
     put strajPushedBy
     put sfactionAn
     put sactorAn
-    put sbirthAn
+    put sgenerationAn
     put sactorStasis
     put sdiscoKindRev
     put suniqueSet
@@ -158,7 +159,7 @@ instance Binary StateServer where
     strajPushedBy <- get
     sfactionAn <- get
     sactorAn <- get
-    sbirthAn <- get
+    sgenerationAn <- get
     sactorStasis <- get
     sdiscoKindRev <- get
     suniqueSet <- get

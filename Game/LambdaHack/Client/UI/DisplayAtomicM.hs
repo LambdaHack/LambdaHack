@@ -755,7 +755,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status
-              -> Maybe (FactionAnalytics, BirthAnalytics, [(ItemId, Item)])
+              -> Maybe (FactionAnalytics, GenerationAnalytics, [(ItemId, Item)])
               -> m ()
 quitFactionUI fid toSt manalytics = do
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -811,11 +811,11 @@ quitFactionUI fid toSt manalytics = do
         -- we are going to exit or restart, so record and clear, but only once
       when go $ case manalytics of
         Nothing -> return ()
-        Just (factionAn, birthAn, _) -> do
+        Just (factionAn, generationAn, _) -> do
           (itemBag, total) <- getsState $ calculateTotal side
-          go3 <- displayGameOverLoot (itemBag, total) birthAn
+          go3 <- displayGameOverLoot (itemBag, total) generationAn
           when go3 $ do
-            go4 <- displayGameOverAnalytics factionAn birthAn
+            go4 <- displayGameOverAnalytics factionAn generationAn
             when go4 $ do
               unless isNoConfirms $ do
                 -- Show score for any UI client after any kind of game exit,
@@ -832,19 +832,19 @@ quitFactionUI fid toSt manalytics = do
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
-                    => (ItemBag, Int) -> BirthAnalytics -> m Bool
-displayGameOverLoot (heldBag, total) birthAn = do
+                    => (ItemBag, Int) -> GenerationAnalytics -> m Bool
+displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
   let currencyName = MU.Text $ IK.iname
                      $ okind coitem $ ouniqGroup coitem "currency"
       lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
-      birthItem = birthAn EM.! SItem
+      generationItem = generationAn EM.! SItem
       (itemBag, lSlots) =
         if sexposeItems
-        then let birthBag = EM.map (const (0, [])) birthItem
-                 bag = heldBag `EM.union` birthBag
+        then let generationBag = EM.map (const (0, [])) generationItem
+                 bag = heldBag `EM.union` generationBag
                  slots = EM.fromAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
         else (heldBag, lSlotsRaw)
@@ -856,7 +856,7 @@ displayGameOverLoot (heldBag, total) birthAn = do
                 ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
                 ++ [MU.CarWs worth currencyName]
             holdsMsg =
-              let n = birthItem EM.! iid
+              let n = generationItem EM.! iid
               in "You hold"
                  <+> tshow k <+> "pieces out of" <+> tshow n <+> "scattered:"
         in lootMsg <+> holdsMsg
@@ -874,9 +874,9 @@ displayGameOverLoot (heldBag, total) birthAn = do
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
-                         => FactionAnalytics -> BirthAnalytics
+                         => FactionAnalytics -> GenerationAnalytics
                          -> m Bool
-displayGameOverAnalytics factionAn birthAn = do
+displayGameOverAnalytics factionAn generationAn = do
   ClientOptions{sexposeActors} <- getsClient soptions
   side <- getsClient sside
   ItemSlots itemSlots <- getsSession sslots
@@ -889,17 +889,17 @@ displayGameOverAnalytics factionAn birthAn = do
       lSlotsRaw = EM.filter (`EM.member` trunkBagRaw) $ itemSlots EM.! STrunk
       killedBag = EM.fromList $ map (\iid -> (iid, trunkBagRaw EM.! iid))
                                     (EM.elems lSlotsRaw)
-      birthTrunk = birthAn EM.! STrunk
+      generationTrunk = generationAn EM.! STrunk
       (trunkBag, lSlots) =
         if sexposeActors
-        then let birthBag = EM.map (const (0, [])) birthTrunk
-                 bag = killedBag `EM.union` birthBag
+        then let generationBag = EM.map (const (0, [])) generationTrunk
+                 bag = killedBag `EM.union` generationBag
                  slots = EM.fromAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
         else (killedBag, lSlotsRaw)
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun iid _ k =
-        let n = birthTrunk EM.! iid
+        let n = generationTrunk EM.! iid
         in "You recall the adversary, which you killed"
            <+> tshow k <+> "out of" <+> tshow n <+> "roaming:"
       prompt = "Your team vangished the following adversaries:"

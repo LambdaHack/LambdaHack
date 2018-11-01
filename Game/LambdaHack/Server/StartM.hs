@@ -93,19 +93,19 @@ reinitGame = do
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
   genOrig <- getsServer srandom
   uniqueSetOrig <- getsServer suniqueSet
-  birthAnOld <- getsServer sbirthAn
-  birthSampleTrunks <- sampleTrunks dungeon
-  birthSampleItems <- sampleItems dungeon
-  let sbirthAn = EM.unions [birthSampleTrunks, birthSampleItems, birthAnOld]
-  -- Make sure the debug births don't affect future RNG behaviour.
+  genOld <- getsServer sgenerationAn
+  genSampleTrunks <- sampleTrunks dungeon
+  genSampleItems <- sampleItems dungeon
+  let sgenerationAn = EM.unions [genSampleTrunks, genSampleItems, genOld]
+  -- Make sure the debug generations don't affect future RNG behaviour.
   modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
-  modifyServer $ \ser -> ser {sactorTime, strajTime, sbirthAn}
+  modifyServer $ \ser -> ser {sactorTime, strajTime, sgenerationAn}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)
   execSfxAtomic SfxSortSlots
 
-sampleTrunks :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
+sampleTrunks :: MonadServerAtomic m => Dungeon -> m GenerationAnalytics
 sampleTrunks dungeon = do
   COps{cocave, coitem} <- getsState scops
   factionD <- getsState sfactionD
@@ -136,7 +136,7 @@ sampleTrunks dungeon = do
   return $! EM.singleton STrunk
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
-sampleItems :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
+sampleItems :: MonadServerAtomic m => Dungeon -> m GenerationAnalytics
 sampleItems dungeon = do
   COps{cocave, coitem} <- getsState scops
   let getGroups Level{lkind} = map fst $ CK.citemFreq $ okind cocave lkind
