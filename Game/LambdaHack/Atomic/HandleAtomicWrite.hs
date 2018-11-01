@@ -207,11 +207,12 @@ updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
 updCreateItem iid item kit@(k, _) c = do
   addAis [(iid, item)]
-  insertItemContainer iid kit c
-  case c of
-    CActor aid store -> when (store `elem` [CEqp, COrgan])
-                        $ addItemToActorMaxSkills iid item k aid
-    _ -> return ()
+  when (k > 0) $ do
+    insertItemContainer iid kit c
+    case c of
+      CActor aid store -> when (store `elem` [CEqp, COrgan])
+                          $ addItemToActorMaxSkills iid item k aid
+      _ -> return ()
 
 -- Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadStateWrite m
