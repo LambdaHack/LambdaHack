@@ -169,7 +169,8 @@ mine = noise
   , cfreq         = [("caveMine", 1)]
   , cnightOdds    = 51  -- easier variant, but looks sinister
   , citemNum      = 10 `d` 4  -- an incentive to explore the final labyrinth
-  , citemFreq     = [("common item", 20), ("valuable", 20)]
+  , citemFreq     = [("common item", 20), ("gem", 20)]
+                      -- can't be "valuable" or template items generated
   , cplaceFreq    = [("noise", 1), ("mine", 99)]
   , cdefTile      = "powerSetDark"
   , cstairFreq    = [ ("gated closed staircase", 50)
