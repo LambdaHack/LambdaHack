@@ -2,7 +2,7 @@
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.Container
   ( CStore(..), Container(..), SLore(..), ItemDialogMode(..)
-  , ppCStore, ppCStoreIn, verbCStore, ppContainer, ppSLore
+  , ppCStore, ppCStoreIn, verbCStore, ppContainer, ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
   ) where
 
@@ -97,6 +97,14 @@ ppSLore STrunk = "creature"
 ppSLore STmp = "condition"
 ppSLore SBlast = "blast"
 ppSLore SEmbed = "terrain"
+
+headingSLore :: SLore -> Text
+headingSLore SItem = "miscellaneous item"
+headingSLore SOrgan = "vital anatomic organ"
+headingSLore STrunk = "living creature"
+headingSLore STmp = "momentary bodily condition"
+headingSLore SBlast = "explosion blast particle"
+headingSLore SEmbed = "landmark feature"
 
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore

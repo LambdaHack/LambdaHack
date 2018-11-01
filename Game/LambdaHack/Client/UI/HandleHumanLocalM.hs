@@ -208,7 +208,7 @@ chooseItemDialogMode c = do
           let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
               promptFun _ _ _ =
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
-                             , MU.Text (ppSLore slore), "lore" ]
+                             , MU.AW $ MU.Text (headingSLore slore) ]
           go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MPlaces -> error $ "" `showFailure` ggi
