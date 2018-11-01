@@ -20,8 +20,10 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
+import           Game.LambdaHack.Client (ClientOptions (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -55,8 +57,9 @@ import           Game.LambdaHack.Server.State
 revealItems :: MonadServerAtomic m => FactionId -> m ()
 revealItems fid = do
   COps{coitem} <- getsState scops
+  ServerOptions{sclientOptions} <- getsServer soptions
+  discoAspect <- getsState sdiscoAspect
   let discover aid store iid _ = do
-        discoAspect <- getsState sdiscoAspect
         itemKindId <- getsState $ getIidKindIdServer iid
         let arItem = discoAspect EM.! iid
             c = CActor aid store
@@ -70,6 +73,22 @@ revealItems fid = do
   -- Don't ID projectiles, their items are not really owned by the party.
   aids <- getsState $ fidActorNotProjGlobalAssocs fid
   mapM_ f aids
+  dungeon <- getsState sdungeon
+  let minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+                   $ EM.assocs dungeon
+      discoverSample iid = do
+        itemKindId <- getsState $ getIidKindIdServer iid
+        let arItem = discoAspect EM.! iid
+            cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
+            itemKind = okind coitem itemKindId
+        unless (IA.isHumanTrinket itemKind) $  -- a hack
+          execUpdAtomic $ UpdDiscover cdummy iid itemKindId arItem
+  generationAn <- getsServer sgenerationAn
+  when (sexposeActors sclientOptions) $
+    -- Few, if any, need ID, but we can't rule out unusual content.
+    mapM_ discoverSample $ EM.keys $ generationAn EM.! STrunk
+  when (sexposeItems sclientOptions) $
+    mapM_ discoverSample $ EM.keys $ generationAn EM.! SItem
 
 moveStores :: MonadServerAtomic m
            => Bool -> ActorId -> CStore -> CStore -> m ()

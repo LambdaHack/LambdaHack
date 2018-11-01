@@ -236,7 +236,7 @@ getContainerBag c s = case c of
   CEmbed lid p -> getEmbedBag lid p s
   CActor aid cstore -> let b = getActorBody aid s
                        in getBodyStoreBag b cstore s
-  CTrunk{} -> error $ "" `showFailure` c
+  CTrunk{} -> EM.empty  -- for dummy/test/analytics cases
 
 getFloorBag :: LevelId -> Point -> State -> ItemBag
 getFloorBag lid p s = EM.findWithDefault EM.empty p
