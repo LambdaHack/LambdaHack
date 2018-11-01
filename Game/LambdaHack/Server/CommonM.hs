@@ -84,11 +84,22 @@ revealItems fid = do
         unless (IA.isHumanTrinket itemKind) $  -- a hack
           execUpdAtomic $ UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
+  getKindId <- getsState $ flip getIidKindIdServer
+  let kindsEqual iid iid2 = getKindId iid == getKindId iid2 && iid /= iid2
+      nonDupSample em iid 0 = not $ any (kindsEqual iid) $ EM.keys em
+      nonDupSample _ _ _ = True
+      nonDupGen = EM.map (\em -> EM.filterWithKey (nonDupSample em) em)
+                         generationAn
+  -- Remove samples that are supplanted by real items.
+  -- If there are mutliple UI factions, the second run will be vacuus,
+  -- but it's important to do that before the first try to identify things
+  -- to prevent spam from identifying samples that are not needed.
+  modifyServer $ \ser -> ser {sgenerationAn = nonDupGen}
   when (sexposeActors sclientOptions) $
     -- Few, if any, need ID, but we can't rule out unusual content.
-    mapM_ discoverSample $ EM.keys $ generationAn EM.! STrunk
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! STrunk
   when (sexposeItems sclientOptions) $
-    mapM_ discoverSample $ EM.keys $ generationAn EM.! SItem
+    mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SItem
 
 moveStores :: MonadServerAtomic m
            => Bool -> ActorId -> CStore -> CStore -> m ()
