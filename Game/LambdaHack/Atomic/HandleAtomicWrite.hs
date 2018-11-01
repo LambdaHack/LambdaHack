@@ -200,9 +200,12 @@ updDestroyActor aid body ais = do
 
 -- Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
+--
+-- Number of copies may be zero, when the item is only created as a sample
+-- to let the player know what can potentially be genereated in the dungeon.
 updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
-updCreateItem iid item kit@(k, _) c = assert (k > 0) $ do
+updCreateItem iid item kit@(k, _) c = do
   addAis [(iid, item)]
   insertItemContainer iid kit c
   case c of

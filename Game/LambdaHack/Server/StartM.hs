@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.StartM
   ( initPer, reinitGame, gameReset, applyDebug
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , sampleTrunks, sampleItems
   , mapFromFuns, resetFactions, populateDungeon, findEntryPoss
 #endif
   ) where
@@ -93,8 +94,9 @@ reinitGame = do
   genOrig <- getsServer srandom
   uniqueSetOrig <- getsServer suniqueSet
   birthAnOld <- getsServer sbirthAn
-  birthAnTrunk <- birthAnFromDungeon dungeon
-  let sbirthAn = birthAnTrunk `EM.union` birthAnOld
+  birthSampleTrunks <- sampleTrunks dungeon
+  birthSampleItems <- sampleItems dungeon
+  let sbirthAn = EM.unions [birthSampleTrunks, birthSampleItems, birthAnOld]
   -- Make sure the debug births don't affect future RNG behaviour.
   modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
   modifyServer $ \ser -> ser {sactorTime, strajTime, sbirthAn}
@@ -103,8 +105,8 @@ reinitGame = do
         (EM.keys factionD)
   execSfxAtomic SfxSortSlots
 
-birthAnFromDungeon :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
-birthAnFromDungeon dungeon = do
+sampleTrunks :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
+sampleTrunks dungeon = do
   COps{cocave, coitem} <- getsState scops
   factionD <- getsState sfactionD
   let getGroups Level{lkind} = map fst $ CK.cactorFreq $ okind cocave lkind
@@ -124,7 +126,7 @@ birthAnFromDungeon dungeon = do
                 jfid = Just fid
             m2 <- rollItemAspect freq minLid
             case m2 of
-              Nothing -> error "birthAnFromDungeon: can't create actor trunk"
+              Nothing -> error "sampleTrunks: can't create actor trunk"
               Just (ItemKnown kindIx ar _, (itemFullRaw, kit)) -> do
                 let itemKnown = ItemKnown kindIx ar jfid
                     itemFull =
@@ -132,6 +134,29 @@ birthAnFromDungeon dungeon = do
                 Just <$> registerItem (itemFull, kit) itemKnown c False
   miids <- mapM regItem trunkKindIds
   return $! EM.singleton STrunk
+            $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
+
+sampleItems :: MonadServerAtomic m => Dungeon -> m BirthAnalytics
+sampleItems dungeon = do
+  COps{cocave, coitem} <- getsState scops
+  let getGroups Level{lkind} = map fst $ CK.citemFreq $ okind cocave lkind
+      groups = S.elems $ S.fromList $ concatMap getGroups $ EM.elems dungeon
+      addGroupToSet !s0 !grp =
+        ofoldlGroup' coitem grp (\s _ ik _ -> ES.insert ik s) s0
+      itemKindIds = ES.elems $ foldl' addGroupToSet ES.empty groups
+      minLid = fst $ minimumBy (comparing (ldepth . snd))
+                   $ EM.assocs dungeon
+      regItem itemKindId = do
+        let itemKind = okind coitem itemKindId
+            freq = pure (itemKindId, itemKind)
+            c = CFloor minLid originPoint
+        m2 <- rollItemAspect freq minLid
+        case m2 of
+          Nothing -> error "sampleItems: can't create sample item"
+          Just (itemKnown, (itemFull, _kit)) -> do
+            Just <$> registerItem (itemFull, (0, [])) itemKnown c False
+  miids <- mapM regItem itemKindIds
+  return $! EM.singleton SItem
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
