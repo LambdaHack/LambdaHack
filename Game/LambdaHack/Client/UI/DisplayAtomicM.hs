@@ -843,7 +843,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
       generationItem = generationAn EM.! SItem
       (itemBag, lSlots) =
         if sexposeItems
-        then let generationBag = EM.map (const (0, [])) generationItem
+        then let generationBag = EM.map (\k -> (-k, [])) generationItem
                  bag = heldBag `EM.union` generationBag
                  slots = EM.fromAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
@@ -858,18 +858,23 @@ displayGameOverLoot (heldBag, total) generationAn = do
             holdsMsg =
               let n = generationItem EM.! iid
               in "You hold"
-                 <+> tshow k <+> "pieces out of" <+> tshow n <+> "scattered:"
+                 <+> tshow (max 0 k) <+> "pieces out of"
+                 <+> tshow n <+> "scattered:"
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
-  let prompt = if | dungeonTotal == 0 ->
-                      "All your spoils are of the practical kind."
-                  | total == 0 ->
-                      "You haven't found any genuine treasure."
-                  | otherwise -> makeSentence
-                      [ "your spoils are worth"
-                      , MU.CarWs total currencyName
-                      , "out of the rumoured total"
-                      , MU.CarWs dungeonTotal currencyName ]
+  let promptGold = if | dungeonTotal == 0 ->
+                          "All your spoils are of the practical kind."
+                      | total == 0 ->
+                          "You haven't found any genuine treasure."
+                      | otherwise -> makeSentence
+                         [ "your spoils are worth"
+                          , MU.CarWs total currencyName
+                          , "out of the rumoured total"
+                          , MU.CarWs dungeonTotal currencyName ]
+      prompt = promptGold
+               <+> (if sexposeItems
+                    then "Non-positive count means none held but this many generated."
+                    else "")
       examItem = displayItemLore itemBag 0 promptFun
   viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
@@ -892,7 +897,7 @@ displayGameOverAnalytics factionAn generationAn = do
       generationTrunk = generationAn EM.! STrunk
       (trunkBag, lSlots) =
         if sexposeActors
-        then let generationBag = EM.map (const (0, [])) generationTrunk
+        then let generationBag = EM.map (\k -> (-k, [])) generationTrunk
                  bag = killedBag `EM.union` generationBag
                  slots = EM.fromAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
@@ -901,8 +906,13 @@ displayGameOverAnalytics factionAn generationAn = do
       promptFun iid _ k =
         let n = generationTrunk EM.! iid
         in "You recall the adversary, which you killed"
-           <+> tshow k <+> "out of" <+> tshow n <+> "roaming:"
-      prompt = "Your team vangished the following adversaries:"
+           <+> tshow (max 0 k) <+> "out of"
+           <+> tshow n <+> "reported:"
+      prompt = "Your team vangished the following adversaries"
+               <+> (if sexposeActors
+                    then "(non-positive count means none killed but this many reported)"
+                    else "")
+               <> ":"
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
 
