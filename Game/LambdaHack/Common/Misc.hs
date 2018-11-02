@@ -20,6 +20,7 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           Data.Hashable
 import           Data.Int (Int64)
+import qualified Data.Map as M
 import           Data.String (IsString (..))
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
@@ -62,8 +63,12 @@ toGroupName = GroupName
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.
 makePhrase, makeSentence :: [MU.Part] -> Text
-makePhrase = MU.makePhrase MU.defIrregular
-makeSentence = MU.makeSentence MU.defIrregular
+makePhrase = MU.makePhrase irregular
+makeSentence = MU.makeSentence irregular
+
+irregular :: MU.Irregular
+irregular = ( M.insert "whiff" "whiffs" $ fst MU.defIrregular
+            , snd MU.defIrregular )
 
 -- | Apply the @WWandW@ constructor, first representing repetitions
 -- as @CardinalWs@.
