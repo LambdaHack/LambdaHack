@@ -758,6 +758,7 @@ quitFactionUI :: MonadClientUI m
               -> Maybe (FactionAnalytics, GenerationAnalytics, [(ItemId, Item)])
               -> m ()
 quitFactionUI fid toSt manalytics = do
+  ClientOptions{sexposeItems} <- getsClient soptions
   fact <- getsState $ (EM.! fid) . sfactionD
   let fidName = MU.Text $ gname fact
       person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
@@ -817,13 +818,13 @@ quitFactionUI fid toSt manalytics = do
           when go3 $ do
             go4 <- displayGameOverAnalytics factionAn generationAn
             when go4 $ do
-              go5 <- displayGameOverLore SEmbed generationAn
+              go5 <- displayGameOverLore SEmbed True generationAn
               when go5 $ do
-                go6 <- displayGameOverLore SOrgan generationAn
+                go6 <- displayGameOverLore SOrgan True generationAn
                 when go6 $ do
-                  go7 <- displayGameOverLore STmp generationAn
+                  go7 <- displayGameOverLore STmp sexposeItems generationAn
                   when go7 $ do
-                    go8 <- displayGameOverLore SBlast generationAn
+                    go8 <- displayGameOverLore SBlast True generationAn
                     when go8 $ do
                       unless isNoConfirms $ do
                         -- Show score for any UI client after
@@ -930,10 +931,12 @@ displayGameOverAnalytics factionAn generationAn = do
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
 
-displayGameOverLore :: MonadClientUI m => SLore -> GenerationAnalytics -> m Bool
-displayGameOverLore slore generationAn = do
+displayGameOverLore :: MonadClientUI m
+                    => SLore -> Bool -> GenerationAnalytics -> m Bool
+displayGameOverLore slore exposeCount generationAn = do
   let generationLore = generationAn EM.! slore
-      generationBag = EM.map (, []) generationLore
+      generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
+                             generationLore
       slots = EM.fromAscList $ zip allSlots $ EM.keys generationBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun _ _ k =
