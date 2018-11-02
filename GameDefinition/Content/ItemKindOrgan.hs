@@ -395,7 +395,7 @@ speedGland n = armoredSkin
   , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
   , iverbHit = "spit at"
   , iaspects = [ AddSkill SkSpeed $ intToDice n
-               , Timeout $ intToDice (100 `div` n) + 1 `d` 3
+               , Timeout $ intToDice (100 `div` n)
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP 1)]
   , idesc    = ""
