@@ -67,7 +67,10 @@ makePhrase = MU.makePhrase irregular
 makeSentence = MU.makeSentence irregular
 
 irregular :: MU.Irregular
-irregular = ( M.insert "whiff" "whiffs" $ fst MU.defIrregular
+irregular = ( fst MU.defIrregular
+              `M.union`
+              M.fromList [ ("whiff", "whiffs")
+                         , ("graffiti", "graffiti") ]
             , snd MU.defIrregular )
 
 -- | Apply the @WWandW@ constructor, first representing repetitions
