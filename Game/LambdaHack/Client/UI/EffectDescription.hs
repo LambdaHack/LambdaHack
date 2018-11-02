@@ -52,7 +52,7 @@ effectToSuffix detailLevel effect =
     Dominate -> "of domination"
     Impress -> "of impression"
     PutToSleep -> "of sleep"
-    Yell -> ""  -- almost never the essential purpose
+    Yell -> "of alarm"  -- minor, but if under timeout, differentiates items
     Summon grp d -> makePhrase
       [ "of summoning"
       , if Dice.supDice d <= 1 then "" else MU.Text $ tshow d
