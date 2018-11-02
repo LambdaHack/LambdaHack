@@ -564,36 +564,37 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
 viewLoreItems :: MonadClientUI m
               => String -> SingleItemSlots -> ItemBag -> Text
               -> (Int -> SingleItemSlots -> m Bool)
-              -> m Bool
-viewLoreItems menuName lSlots trunkBag prompt examItem =
-  if EM.null lSlots then return True else do
-    CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-    arena <- getArenaUI
-    revCmd <- revCmdMap
-    let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
-                          HumanCmd.SortSlots
-        keysPre = [K.spaceKM, caretKey, K.escKM]
-    promptAdd0 prompt
-    io <- itemOverlay lSlots arena trunkBag
-    itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
-    let keyOfEKM (Left km) = km
-        keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
-        allOKX = concatMap snd $ slideshow itemSlides
-        keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
-    ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
-    case ekm of
-      Left km | km == K.spaceKM -> return True
-      Left km | km == caretKey -> do
-        -- Here, unlike for inventory items, slots are not sorted persistently
-        -- and only for the single slot category.
-        itemToF <- getsState $ flip itemToFull
-        let newSlots = sortSlotMap itemToF lSlots
-        viewLoreItems menuName newSlots trunkBag prompt examItem
-      Left km | km == K.escKM -> return False
-      Left _ -> error $ "" `showFailure` ekm
-      Right slot -> do
-        let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-        go2 <- examItem ix0 lSlots
-        if go2
-        then viewLoreItems menuName lSlots trunkBag prompt examItem
-        else return True
+              -> m K.KM
+viewLoreItems menuName lSlots trunkBag prompt examItem = do
+  CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
+  arena <- getArenaUI
+  revCmd <- revCmdMap
+  let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
+                        HumanCmd.SortSlots
+      keysPre = [K.spaceKM, K.mkChar '/', caretKey, K.escKM]
+  promptAdd0 $
+    prompt <+> if EM.null lSlots then "(Strangely empty this time.)" else ""
+  io <- itemOverlay lSlots arena trunkBag
+  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+  let keyOfEKM (Left km) = km
+      keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
+      allOKX = concatMap snd $ slideshow itemSlides
+      keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+  case ekm of
+    Left km | km == K.spaceKM -> return km
+    Left km | km == K.mkChar '/' -> return km
+    Left km | km == caretKey -> do
+      -- Here, unlike for inventory items, slots are not sorted persistently
+      -- and only for the single slot category.
+      itemToF <- getsState $ flip itemToFull
+      let newSlots = sortSlotMap itemToF lSlots
+      viewLoreItems menuName newSlots trunkBag prompt examItem
+    Left km | km == K.escKM -> return km
+    Left _ -> error $ "" `showFailure` ekm
+    Right slot -> do
+      let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+      go2 <- examItem ix0 lSlots
+      if go2
+      then viewLoreItems menuName lSlots trunkBag prompt examItem
+      else return K.escKM

@@ -814,40 +814,40 @@ quitFactionUI fid toSt manalytics = do
         Nothing -> return ()
         Just (factionAn, generationAn, _) -> do
           (itemBag, total) <- getsState $ calculateTotal side
-          go3 <- displayGameOverLoot (itemBag, total) generationAn
-          when go3 $ do
-            go4 <- displayGameOverAnalytics factionAn generationAn
-            when go4 $ do
-              go5 <- displayGameOverLore SEmbed True generationAn
-              when go5 $ do
-                go6 <- displayGameOverLore SOrgan True generationAn
-                when go6 $ do
-                  go7 <- displayGameOverLore STmp sexposeItems generationAn
-                  when go7 $ do
-                    go8 <- displayGameOverLore SBlast True generationAn
-                    when go8 $ do
-                      unless isNoConfirms $ do
-                        -- Show score for any UI client after
-                        -- any kind of game exit,
-                        -- even though it's saved only
-                        -- for human UI clients at game over
-                        -- (that is not a noConfirms or benchmark game).
-                        scoreSlides <- scoreToSlideshow total status
-                        void $ getConfirms ColorFull
-                                           [K.spaceKM, K.escKM]
-                                           scoreSlides
-                      -- The last prompt stays onscreen during shutdown, etc.
-                      promptAdd0 pp
-                      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-                      void $ getConfirms ColorFull
-                                         [K.spaceKM, K.escKM]
-                                         partingSlide
+          cycleLore []
+            [ displayGameOverLoot (itemBag, total) generationAn
+            , displayGameOverAnalytics factionAn generationAn
+            , displayGameOverLore SEmbed True generationAn
+            , displayGameOverLore SOrgan True generationAn
+            , displayGameOverLore STmp sexposeItems generationAn
+            , displayGameOverLore SBlast True generationAn ]
+          unless isNoConfirms $ do
+            -- Show score for any UI client after any kind of game exit,
+            -- even though it's saved only for human UI clients at game over
+            -- (that is not a noConfirms or benchmark game).
+            scoreSlides <- scoreToSlideshow total status
+            void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+          -- The last prompt stays onscreen during shutdown, etc.
+          promptAdd0 pp
+          partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+          void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
 
+cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
+cycleLore _ [] = return ()
+cycleLore seen (m : rest) = do
+  km <- m
+  if | km == K.spaceKM -> cycleLore (m : seen) rest
+     | km == K.mkChar '/' -> if null rest
+                             then cycleLore [] (reverse $ m : seen)
+                             else cycleLore (m : seen) rest
+     | km == K.escKM -> return ()
+     | otherwise -> error "cycleLore: unexpected key"
+
 displayGameOverLoot :: MonadClientUI m
-                    => (ItemBag, Int) -> GenerationAnalytics -> m Bool
+                    => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
 displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
@@ -895,7 +895,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
-                         -> m Bool
+                         -> m K.KM
 displayGameOverAnalytics factionAn generationAn = do
   ClientOptions{sexposeActors} <- getsClient soptions
   side <- getsClient sside
@@ -932,7 +932,7 @@ displayGameOverAnalytics factionAn generationAn = do
   viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
 
 displayGameOverLore :: MonadClientUI m
-                    => SLore -> Bool -> GenerationAnalytics -> m Bool
+                    => SLore -> Bool -> GenerationAnalytics -> m K.KM
 displayGameOverLore slore exposeCount generationAn = do
   let generationLore = generationAn EM.! slore
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
