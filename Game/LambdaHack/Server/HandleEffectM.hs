@@ -33,6 +33,7 @@ import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
 import           Data.Key (mapWithKeyM_)
 import qualified Data.Ord as Ord
+import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -413,12 +414,10 @@ effectExplode execSfx cgroup source target = do
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
-  let (iid, (ItemFull{itemBase}, (itemK, _))) =
+  let (iid, (ItemFull{itemBase, itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
-      semirandom = case jkind itemBase of
-        IdentityObvious ik -> fromEnum ik
-        IdentityCovered ix _ -> fromEnum ix
+      semirandom = T.length (IK.idesc itemKind)
       projectN k100 (n, _) = do
         -- We pick a point at the border, not inside, to have a uniform
         -- distribution for the points the line goes through at each distance

@@ -102,6 +102,9 @@ reinitGame = do
     let sgenerationAn = EM.unions [genSampleTrunks, genSampleItems, genOld]
     modifyServer $ \ser -> ser {sgenerationAn}
     -- Make sure the debug generations don't affect future RNG behaviour.
+    -- However, in the long run, AI behaviour is affected anyway,
+    -- because the items randomly chosen for AI actions are ordered by their
+    -- @ItemId@, which is affected by the sample item generation.
     modifyServer $ \ser -> ser {srandom = genOrig, suniqueSet = uniqueSetOrig}
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
