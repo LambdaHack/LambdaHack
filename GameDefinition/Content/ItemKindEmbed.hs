@@ -230,7 +230,7 @@ doorwayTrap3 = doorwayTrapTemplate
   }
 stairsUp = ItemKind
   { isymbol  = '<'
-  , iname    = "flight of steps"
+  , iname    = "flight"
   , ifreq    = [("staircase up", 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
@@ -239,14 +239,13 @@ stairsUp = ItemKind
                         -- not when it's applied otherwise, e.g., from tile
   , iweight  = 100000
   , idamage  = 0
-  , iaspects = [SetFlag Durable]
+  , iaspects = [ELabel "of steps", SetFlag Durable]
   , ieffects = [Ascend True]
   , idesc    = "Stairs that rise towards escape."
   , ikit     = []
   }
 stairsDown = stairsUp
   { isymbol  = '>'
-  , iname    = "flight of steps"
   , ifreq    = [("staircase down", 1)]
   , ieffects = [Ascend False]
   , idesc    = ""
@@ -256,6 +255,7 @@ escape = stairsUp
   , iname    = "way"
   , ifreq    = [("escape", 1)]
   , iflavour = zipPlain [BrYellow]
+  , iaspects = [SetFlag Durable]
   , ieffects = [Escape]
   , idesc    = ""
   }
@@ -336,7 +336,7 @@ straightPath = ItemKind
   }
 frozenGround = ItemKind
   { isymbol  = '.'
-  , iname    = "shade of ice"
+  , iname    = "shade"
   , ifreq    = [("frozen ground", 1)]
   , iflavour = zipFancy [BrBlue]
   , icount   = 50  -- very thick ice and refreezes
@@ -344,7 +344,8 @@ frozenGround = ItemKind
   , iverbHit = "betray"
   , iweight  = 10000
   , idamage  = 0
-  , iaspects = []  -- no Durable or some items would be impossible to pick up
+  , iaspects = [ELabel "of ice"]
+                 -- no Durable or some items would be impossible to pick up
   , ieffects = [PushActor (ThrowMod 400 10 1)]
                   -- the high speed represents gliding rather than flying
                   -- and so no need to lift actor's weight off the ground;
