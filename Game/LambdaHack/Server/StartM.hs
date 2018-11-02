@@ -111,6 +111,8 @@ reinitGame = do
         (EM.keys factionD)
   execSfxAtomic SfxSortSlots
 
+-- For simplicity only spawnable actors are taken into account, not starting
+-- actors of any faction nor summonable actors.
 sampleTrunks :: MonadServerAtomic m => Dungeon -> m GenerationAnalytics
 sampleTrunks dungeon = do
   COps{cocave, coitem} <- getsState scops
@@ -142,6 +144,9 @@ sampleTrunks dungeon = do
   return $! EM.singleton STrunk
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
+-- For simplicity, only actors generated on the ground are taken into account.
+-- not starting items of any actors nor items that can be create by effects
+-- occuring in the game.
 sampleItems :: MonadServerAtomic m => Dungeon -> m GenerationAnalytics
 sampleItems dungeon = do
   COps{cocave, coitem} <- getsState scops
