@@ -257,6 +257,10 @@ chooseItemDialogMode c = do
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
                     , MU.Text $ PK.pname pkind ]
+                  freqsText = "Frequencies:" <+> T.intercalate " "
+                    (map (\(grp, n) -> "(" <> fromGroupName grp
+                                       <> ", " <> tshow n <> ")")
+                     $ PK.pfreq pkind)
                   onLevels | ES.null es = []
                            | otherwise =
                     [makeSentence
@@ -267,7 +271,7 @@ chooseItemDialogMode c = do
                   ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
                           (if sexposePlaces soptions
                            then [ "", partsPhrase
-                                , "", tshow (PK.pfreq pkind)
+                                , "", freqsText
                                 , "" ] ++ PK.ptopLeft pkind
                            else [])
                           ++ [""] ++ onLevels
