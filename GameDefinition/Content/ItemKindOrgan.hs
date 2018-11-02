@@ -352,7 +352,7 @@ rattleOrgan = armoredSkin
   { iname    = "rattle"
   , ifreq    = [("rattle", 100)]
   , iverbHit = "announce"
-  , iaspects = [ Timeout $ 10 + (1 `d` 2) * 10 + 1 `d` 3
+  , iaspects = [ Timeout $ 10 + (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging Yell, RefillCalm 5]
   , idesc    = ""
@@ -361,7 +361,7 @@ insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
-  , iaspects = [ Timeout $ 30 + (1 `d` 2) * 10 + 1 `d` 3
+  , iaspects = [ Timeout $ 30 + (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP (-1)), Recharging Yell]
   , idesc    = ""
@@ -410,7 +410,7 @@ scentGland = armoredSkin
   , ifreq    = [("scent gland", 100)]
   , icount   = 2 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
-  , iaspects = [ Timeout $ (1 `d` 3) * 10 + 1 `d` 3
+  , iaspects = [ Timeout $ (1 `d` 3) * 10
                , SetFlag Periodic ]  -- not Durable
   , ieffects = [ Recharging (Temporary "look spent")
                , Recharging (Explode "distressing odor")
@@ -422,7 +422,7 @@ boilingVent = armoredSkin
   , ifreq    = [("boiling vent", 100)]
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
+  , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "boiling water")
                , Recharging (RefillHP 2) ]
@@ -433,7 +433,7 @@ arsenicVent = armoredSkin
   , ifreq    = [("arsenic vent", 100)]
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
+  , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "sparse shower")
                , Recharging (RefillHP 2) ]
@@ -444,7 +444,7 @@ sulfurVent = armoredSkin
   , ifreq    = [("sulfur vent", 100)]
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
-  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 5 + 1 `d` 3
+  , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [ Recharging (Explode "dense shower")
                , Recharging (RefillHP 2) ]
