@@ -156,14 +156,19 @@ quitF status fid = do
                 && fleaderMode (gplayer fact) /= LeaderNull
                 && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
+          itemD <- getsState sitemD
+          dungeon <- getsState sdungeon
+          let ais = EM.assocs itemD
+              minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+                           $ EM.assocs dungeon
+          execUpdAtomic $ UpdSpotItemBag (CTrunk fid minLid originPoint)
+                                         EM.empty ais
           revealItems fid
           -- Likely, by this time UI faction is no longer AI-controlled,
           -- so the score will get registered.
           registerScore status fid
           factionAn <- getsServer sfactionAn
           generationAn <- getsServer sgenerationAn
-          itemD <- getsState sitemD
-          let ais = EM.assocs itemD
           return $ Just (factionAn, generationAn, ais)
         else return Nothing
       execUpdAtomic $ UpdQuitFaction fid oldSt (Just status) manalytics

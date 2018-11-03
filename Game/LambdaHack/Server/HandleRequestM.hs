@@ -26,6 +26,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Ord as Ord
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
@@ -918,14 +919,21 @@ reqGameRestart aid groupName scurChalSer = do
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
-  unless isNoConfirms $ mapM_ revealItems fidsUI
+  itemD <- getsState sitemD
+  dungeon <- getsState sdungeon
+  let ais = EM.assocs itemD
+      minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+                   $ EM.assocs dungeon
+  unless isNoConfirms $
+    mapM_ (\fid -> do
+      execUpdAtomic $ UpdSpotItemBag (CTrunk fid minLid originPoint)
+                                     EM.empty ais
+      revealItems fid) fidsUI
   -- Announcing end of game, we send lore, because game is over.
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   factionAn <- getsServer sfactionAn
   generationAn <- getsServer sgenerationAn
-  itemD <- getsState sitemD
-  let ais = EM.assocs itemD
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt

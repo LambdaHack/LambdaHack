@@ -238,16 +238,18 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
 
 updSpotItemBag :: MonadStateWrite m
                => Container -> ItemBag -> [(ItemId, Item)] -> m ()
-updSpotItemBag c bag ais = assert (EM.size bag > 0
-                                   && EM.size bag == length ais) $ do
+updSpotItemBag c bag ais = do
   addAis ais
-  insertBagContainer bag c
-  case c of
-    CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $
-        forM_ ais $ \(iid, item) ->
-                      addItemToActorMaxSkills iid item (fst $ bag EM.! iid) aid
-    _ -> return ()
+  -- The case of empty bag is for a hack to help identifying sample items.
+  when (not $ EM.null bag) $ do
+    let !_A = assert (EM.size bag == length ais) ()
+    insertBagContainer bag c
+    case c of
+      CActor aid store ->
+        when (store `elem` [CEqp, COrgan]) $
+          forM_ ais $ \(iid, item) ->
+            addItemToActorMaxSkills iid item (fst $ bag EM.! iid) aid
+      _ -> return ()
 
 updLoseItemBag :: MonadStateWrite m
                => Container -> ItemBag -> [(ItemId, Item)] -> m ()
