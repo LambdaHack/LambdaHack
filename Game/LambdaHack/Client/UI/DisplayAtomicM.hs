@@ -946,7 +946,8 @@ displayGameOverLore slore exposeCount generationAn = do
       prompt = makeSentence [ "you experienced the following mass of"
                             , MU.Ws $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
-  viewLoreItems "GameOverLore" slots generationBag prompt examItem
+  viewLoreItems ("GameOverLore" ++ show slore)
+                slots generationBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
