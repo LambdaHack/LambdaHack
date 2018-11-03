@@ -912,18 +912,16 @@ reqGameRestart :: MonadServerAtomic m
                => ActorId -> GroupName ModeKind -> Challenge
                -> m ()
 reqGameRestart aid groupName scurChalSer = do
-  modifyServer $ \ser -> ser {soptionsNxt = (soptionsNxt ser) {scurChalSer}}
-  b <- getsState $ getActorBody aid
-  oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
-  -- We don't save game and don't wait for clips end. ASAP.
-  modifyServer $ \ser -> ser {sbreakASAP = True}
-  isNoConfirms <- isNoConfirmsGame
   -- This call to `revealItems` is really needed, because the other
-  -- happens only at game conclusion, not at quitting.
+  -- happens only at natural game conclusion, not at forced quitting.
+  isNoConfirms <- isNoConfirmsGame
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
   unless isNoConfirms $ mapM_ revealItems fidsUI
+  -- Announcing end of game, we send lore, because game is over.
+  b <- getsState $ getActorBody aid
+  oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   factionAn <- getsServer sfactionAn
   generationAn <- getsServer sgenerationAn
   itemD <- getsState sitemD
@@ -933,6 +931,9 @@ reqGameRestart aid groupName scurChalSer = do
                     oldSt
                     (Just $ Status Restart (fromEnum $ blid b) (Just groupName))
                     (Just (factionAn, generationAn, ais))
+  -- We don't save game and don't wait for clips end. ASAP.
+  modifyServer $ \ser -> ser { sbreakASAP = True
+                             , soptionsNxt = (soptionsNxt ser) {scurChalSer} }
 
 -- * ReqGameDropAndExit
 
@@ -942,12 +943,12 @@ reqGameDropAndExit :: MonadServerAtomic m => ActorId -> m ()
 reqGameDropAndExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
-  modifyServer $ \ser -> ser {sbreakLoop = True}
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt
                     (Just $ Status Camping (fromEnum $ blid b) Nothing)
                     Nothing
+  modifyServer $ \ser -> ser {sbreakLoop = True}
 
 -- * ReqGameSaveAndExit
 
@@ -957,12 +958,12 @@ reqGameSaveAndExit :: MonadServerAtomic m => ActorId -> m ()
 reqGameSaveAndExit aid = do
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
-  modifyServer $ \ser -> ser { sbreakASAP = True
-                             , swriteSave = True }
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt
                     (Just $ Status Camping (fromEnum $ blid b) Nothing) Nothing
+  modifyServer $ \ser -> ser { sbreakASAP = True
+                             , swriteSave = True }
 
 -- * ReqGameSave
 

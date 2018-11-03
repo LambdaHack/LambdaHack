@@ -148,23 +148,25 @@ quitF status fid = do
     Just Escape -> return ()
     _ -> do
       -- This runs regardless of the _new_ status.
-      when (fhasUI $ gplayer fact) $ do
-        keepAutomated <- getsServer $ skeepAutomated . soptions
-        -- Try to remove AI control of the UI faction, to show endgame info.
-        when (isAIFact fact
-              && fleaderMode (gplayer fact) /= LeaderNull
-              && not keepAutomated) $
-          execUpdAtomic $ UpdAutoFaction fid False
-        revealItems fid
-        -- Likely, by this time UI faction is no longer AI-controlled,
-        -- so the score will get registered.
-        registerScore status fid
-      factionAn <- getsServer sfactionAn
-      generationAn <- getsServer sgenerationAn
-      itemD <- getsState sitemD
-      let ais = EM.assocs itemD
-      execUpdAtomic $ UpdQuitFaction fid oldSt (Just status)
-                                     (Just (factionAn, generationAn, ais))
+      manalytics <-
+        if fhasUI $ gplayer fact then do
+          keepAutomated <- getsServer $ skeepAutomated . soptions
+          -- Try to remove AI control of the UI faction, to show endgame info.
+          when (isAIFact fact
+                && fleaderMode (gplayer fact) /= LeaderNull
+                && not keepAutomated) $
+            execUpdAtomic $ UpdAutoFaction fid False
+          revealItems fid
+          -- Likely, by this time UI faction is no longer AI-controlled,
+          -- so the score will get registered.
+          registerScore status fid
+          factionAn <- getsServer sfactionAn
+          generationAn <- getsServer sgenerationAn
+          itemD <- getsState sitemD
+          let ais = EM.assocs itemD
+          return $ Just (factionAn, generationAn, ais)
+        else return Nothing
+      execUpdAtomic $ UpdQuitFaction fid oldSt (Just status) manalytics
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
 
 -- Send any UpdQuitFaction actions that can be deduced from factions'
