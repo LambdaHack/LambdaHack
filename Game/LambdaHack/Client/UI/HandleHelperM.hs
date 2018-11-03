@@ -562,16 +562,23 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
     _ -> error $ "" `showFailure` km
 
 viewLoreItems :: MonadClientUI m
-              => String -> SingleItemSlots -> ItemBag -> Text
+              => Bool -> String -> SingleItemSlots -> ItemBag -> Text
               -> (Int -> SingleItemSlots -> m Bool)
               -> m K.KM
-viewLoreItems menuName lSlots trunkBag prompt examItem = do
+viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   arena <- getArenaUI
   revCmd <- revCmdMap
+  itemToF <- getsState $ flip itemToFull
   let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
                         HumanCmd.SortSlots
-      keysPre = [K.spaceKM, K.mkChar '/', caretKey, K.escKM]
+      keysPre = [K.spaceKM, K.mkChar '/', K.escKM]
+                ++ [caretKey | enableSorting]
+      -- Here, unlike for inventory items, slots are not sorted persistently
+      -- and only for the single slot category.
+      lSlots = if enableSorting
+               then lSlotsRaw
+               else sortSlotMap itemToF lSlotsRaw
   promptAdd0 $
     prompt <+> if EM.null lSlots then "(Strangely empty this time.)" else ""
   io <- itemOverlay lSlots arena trunkBag
@@ -584,17 +591,14 @@ viewLoreItems menuName lSlots trunkBag prompt examItem = do
   case ekm of
     Left km | km == K.spaceKM -> return km
     Left km | km == K.mkChar '/' -> return km
-    Left km | km == caretKey -> do
-      -- Here, unlike for inventory items, slots are not sorted persistently
-      -- and only for the single slot category.
-      itemToF <- getsState $ flip itemToFull
-      let newSlots = sortSlotMap itemToF lSlots
-      viewLoreItems menuName newSlots trunkBag prompt examItem
+    Left km | km == caretKey ->
+      viewLoreItems False menuName (sortSlotMap itemToF lSlotsRaw)
+                    trunkBag prompt examItem
     Left km | km == K.escKM -> return km
     Left _ -> error $ "" `showFailure` ekm
     Right slot -> do
       let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
       go2 <- examItem ix0 lSlots
       if go2
-      then viewLoreItems menuName lSlots trunkBag prompt examItem
+      then viewLoreItems enableSorting menuName lSlots trunkBag prompt examItem
       else return K.escKM

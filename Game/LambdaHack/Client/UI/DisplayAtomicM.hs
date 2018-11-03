@@ -891,7 +891,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
                     then "Non-positive count means none held but this many generated."
                     else "")
       examItem = displayItemLore itemBag 0 promptFun
-  viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
+  viewLoreItems False "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -929,7 +929,7 @@ displayGameOverAnalytics factionAn generationAn = do
                     else "")
                <> ":"
       examItem = displayItemLore trunkBag 0 promptFun
-  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
+  viewLoreItems False "GameOverAnalytics" lSlots trunkBag prompt examItem
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -946,7 +946,7 @@ displayGameOverLore slore exposeCount generationAn = do
       prompt = makeSentence [ "you experienced the following mass of"
                             , MU.Ws $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
-  viewLoreItems ("GameOverLore" ++ show slore)
+  viewLoreItems False ("GameOverLore" ++ show slore)
                 slots generationBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
