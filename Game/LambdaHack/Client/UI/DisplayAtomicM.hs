@@ -755,7 +755,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status
-              -> Maybe (FactionAnalytics, GenerationAnalytics, [(ItemId, Item)])
+              -> Maybe (FactionAnalytics, GenerationAnalytics)
               -> m ()
 quitFactionUI fid toSt manalytics = do
   ClientOptions{sexposeItems} <- getsClient soptions
@@ -812,7 +812,7 @@ quitFactionUI fid toSt manalytics = do
         -- we are going to exit or restart, so record and clear, but only once
       when go $ case manalytics of
         Nothing -> return ()
-        Just (factionAn, generationAn, _) -> do
+        Just (factionAn, generationAn) -> do
           (itemBag, total) <- getsState $ calculateTotal side
           cycleLore []
             [ displayGameOverLoot (itemBag, total) generationAn

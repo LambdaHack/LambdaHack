@@ -86,9 +86,8 @@ data UpdAtomic =
   | UpdRefillCalm ActorId Int64
   | UpdTrajectory ActorId (Maybe ([Vector], Speed)) (Maybe ([Vector], Speed))
   -- Change faction attributes.
-  | UpdQuitFaction
-      FactionId (Maybe Status) (Maybe Status)
-      (Maybe (FactionAnalytics, GenerationAnalytics, [(ItemId, Item)]))
+  | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
+                   (Maybe (FactionAnalytics, GenerationAnalytics))
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
   | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic

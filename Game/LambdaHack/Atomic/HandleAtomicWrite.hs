@@ -35,7 +35,6 @@ import           Game.LambdaHack.Atomic.MonadStateWrite
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Analytics
 import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
@@ -89,8 +88,7 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
-  UpdQuitFaction fid fromSt toSt manalytics ->
-    updQuitFaction fid fromSt toSt manalytics
+  UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
@@ -378,11 +376,8 @@ updTrajectory aid fromT toT = assert (fromT /= toT) $ do
 
 updQuitFaction :: MonadStateWrite m
                => FactionId -> Maybe Status -> Maybe Status
-               -> (Maybe ( FactionAnalytics
-                         , GenerationAnalytics
-                         , [(ItemId, Item)] ))
                -> m ()
-updQuitFaction fid fromSt toSt manalytics = do
+updQuitFaction fid fromSt toSt = do
   let !_A = assert (fromSt /= toSt `blame` (fid, fromSt, toSt)) ()
   fact <- getsState $ (EM.! fid) . sfactionD
   let !_A = assert (fromSt == gquit fact
@@ -390,7 +385,6 @@ updQuitFaction fid fromSt toSt manalytics = do
                     `swith` (fid, fromSt, toSt, fact)) ()
   let adj fa = fa {gquit = toSt}
   updateFaction fid adj
-  maybe (return ()) (\(_, _, ais) -> addAis ais) manalytics
 
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadStateWrite m

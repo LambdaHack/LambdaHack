@@ -938,7 +938,7 @@ reqGameRestart aid groupName scurChalSer = do
                     (bfid b)
                     oldSt
                     (Just $ Status Restart (fromEnum $ blid b) (Just groupName))
-                    (Just (factionAn, generationAn, ais))
+                    (Just (factionAn, generationAn))
   -- We don't save game and don't wait for clips end. ASAP.
   modifyServer $ \ser -> ser { sbreakASAP = True
                              , soptionsNxt = (soptionsNxt ser) {scurChalSer} }

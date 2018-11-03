@@ -169,7 +169,7 @@ quitF status fid = do
           registerScore status fid
           factionAn <- getsServer sfactionAn
           generationAn <- getsServer sgenerationAn
-          return $ Just (factionAn, generationAn, ais)
+          return $ Just (factionAn, generationAn)
         else return Nothing
       execUpdAtomic $ UpdQuitFaction fid oldSt (Just status) manalytics
       modifyServer $ \ser -> ser {sbreakLoop = True}  -- check game over
