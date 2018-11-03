@@ -68,6 +68,7 @@ data SessionUI = SessionUI
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
   , shintMode      :: HintMode      -- ^ how to show keys hints when no messages
   , sreportNull    :: Bool          -- ^ whether no report created last UI turn
+                                    --   or the report wiped out from screen
   , sstart         :: POSIXTime     -- ^ this session start time
   , sgstart        :: POSIXTime     -- ^ this game start time
   , sallTime       :: Time          -- ^ clips from start of session

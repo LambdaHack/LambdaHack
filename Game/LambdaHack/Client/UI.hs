@@ -140,6 +140,8 @@ humanCommand = do
             else do
               -- Show, one by one, all slides, awaiting confirmation for each.
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw
+              -- Indicate that report wiped out.
+              modifySession $ \sess -> sess {sreportNull = True}
               -- Display base frame at the end.
               return []
         LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
