@@ -872,9 +872,11 @@ displayGameOverLoot (heldBag, total) generationAn = do
                 ++ [MU.CarWs worth currencyName]
             holdsMsg =
               let n = generationItem EM.! iid
-              in "You hold"
-                 <+> tshow (max 0 k) <+> "pieces out of"
-                 <+> tshow n <+> "scattered:"
+              in makePhrase
+                   [ "You hold"
+                   , MU.CarWs (max 0 k) "piece out of"
+                   , MU.Cardinal n
+                   , "scattered:" ]
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let promptGold = if | dungeonTotal == 0 ->
@@ -885,7 +887,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
                          [ "your spoils are worth"
                           , MU.CarWs total currencyName
                           , "out of the rumoured total"
-                          , MU.CarWs dungeonTotal currencyName ]
+                          , MU.Cardinal dungeonTotal ]
       prompt = promptGold
                <+> (if sexposeItems
                     then "Non-positive count means none held but this many generated."
@@ -923,11 +925,10 @@ displayGameOverAnalytics factionAn generationAn = do
         in "You recall the adversary, which you killed"
            <+> tshow (max 0 k) <+> "out of"
            <+> tshow n <+> "reported:"
-      prompt = "Your team vangished the following adversaries"
+      prompt = "Your team vangished the following adversaries."
                <+> (if sexposeActors
-                    then "(non-positive count means none killed but this many reported)"
+                    then "Non-positive count means none killed but this many reported."
                     else "")
-               <> ":"
       examItem = displayItemLore trunkBag 0 promptFun
   viewLoreItems False "GameOverAnalytics" lSlots trunkBag prompt examItem
 
@@ -943,7 +944,7 @@ displayGameOverLore slore exposeCount generationAn = do
         makeSentence
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
           , if k /= 1 then MU.CarWs k "time" else "one time" ]
-      prompt = makeSentence [ "you experienced the following mass of"
+      prompt = makeSentence [ "you experienced the following variety of"
                             , MU.Ws $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
   viewLoreItems False ("GameOverLore" ++ show slore)
