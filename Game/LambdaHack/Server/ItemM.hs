@@ -158,13 +158,14 @@ placeItemsInDungeon alliancePositions = do
               let distAllianceAndNotFloor !p _ =
                     let f !k b = chessDist p k > 4 && b
                     in p `EM.notMember` lfloor && foldr f True alPos
-              mpos <- rndToAction $ findPosTry2 100 lvl
+              mpos <- rndToAction $ findPosTry2 20 lvl
                 (\_ !t -> Tile.isWalkable coTileSpeedup t
                           && not (Tile.isNoItem coTileSpeedup t))
                 [ \_ !t -> Tile.isVeryOftenItem coTileSpeedup t
                 , \_ !t -> Tile.isCommonItem coTileSpeedup t ]
                 distAllianceAndNotFloor
-                [distAllianceAndNotFloor]
+                [ distAllianceAndNotFloor
+                , distAllianceAndNotFloor ]
               case mpos of
                 Just pos -> do
                   createLevelItem pos lid
