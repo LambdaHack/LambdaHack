@@ -94,7 +94,7 @@ serverOptionsP = do
     , sknowMap = knowMap || knowEvents || knowItems
     , sknowEvents = knowEvents || knowItems
     , sknowItems = knowItems
-    , sshowItemSamples = not knowItems && showItemSamples
+    , sshowItemSamples = not (knowEvents || knowItems) && showItemSamples
     , ..
     }
  where
@@ -135,7 +135,7 @@ exposeActorsP =
 showItemSamplesP :: Parser Bool
 showItemSamplesP =
   switch (  long "showItemSamples"
-         <> help "At game over show samples of all items (--knowItems disables this)" )
+         <> help "At game over show samples of all items (--sknowEvents disables this)" )
 
 sniffP :: Parser Bool
 sniffP =
