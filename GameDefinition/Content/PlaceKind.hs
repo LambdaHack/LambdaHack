@@ -236,7 +236,15 @@ pillar = PlaceKind
   , poverrideLit = []
   }
 pillar2 = pillar
-  { pfreq    = [("rogue", 7500), ("laboratory", 15000)]
+  { pfreq    = [("rogue", 60), ("laboratory", 200)]
+  , ptopLeft = [ "----"
+               , "|O··"
+               , "|···"
+               , "|···"
+               ]
+  }
+pillar3 = pillar
+  { pfreq    = [("rogue", 8000), ("laboratory", 25000)]
   , ptopLeft = [ "-----"
                , "|O···"
                , "|····"
@@ -244,18 +252,9 @@ pillar2 = pillar
                , "|····"
                ]
   }
-pillar3 = pillar
-  { pfreq    = [("rogue", 15000), ("laboratory", 30000)]
-  , ptopLeft = [ "-----"
-               , "|O···"
-               , "|····"
-               , "|····"
-               , "|····"
-               ]
-  }
 pillar4 = pillar
   { pname    = "an exquisite hall"
-  , pfreq    = [("rogue", 1500), ("laboratory", 50000)]
+  , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
@@ -267,7 +266,7 @@ pillar4 = pillar
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
-  , pfreq    = [("rogue", 1500), ("laboratory", 50000)]
+  , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
   , ptopLeft = [ "-----"
                , "|&·O·"
                , "|····"
