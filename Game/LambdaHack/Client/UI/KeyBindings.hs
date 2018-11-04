@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RankNTypes, TupleSections #-}
 -- | Verifying, aggregating and displaying binding of keys to commands.
 module Game.LambdaHack.Client.UI.KeyBindings
   ( keyHelp, okxsN
@@ -80,21 +80,18 @@ keyHelp COps{corule}
       , "Press SPACE to see the next page of command descriptions."
       ]
     mouseBasicsBlurb =
-      [ "Screen area and UI mode (aiming/exploration) determine mouse click effects."
+      [ "Screen area and UI mode (exploration/aiming) determine mouse click effects."
       , "First, we give an overview of effects of each button over the game map area."
       , "The list includes not only left and right buttons, but also the optional"
       , "middle mouse button (MMB) and the mouse wheel, which is also used over menus,"
       , "to page-scroll them. (For mice without RMB, one can use Control key with LMB.)"
-      , "Next we show button effects in aiming and exploration modes, per screen area."
+      , "Next we show button effects per screen area, in exploration mode and"
+      , "(if different) in aiming mode."
       , ""
       ]
     mouseBasicsEnding =
       [ ""
-      , "Press SPACE to see mouse commands in aiming mode."
-      ]
-    mouseAimingModeEnding =
-      [ ""
-      , "Press SPACE to see mouse commands in explorations mode."
+      , "Press SPACE to see mouse commands in exploration and aiming modes."
       ]
     lastHelpEnding =
       [ ""
@@ -117,7 +114,6 @@ keyHelp COps{corule}
     categoryEnd = map fmts categoryEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
     mouseBasicsEnd = map fmts mouseBasicsEnding
-    mouseAimingModeEnd = map fmts mouseAimingModeEnding
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
@@ -135,16 +131,15 @@ keyHelp COps{corule}
                   else b
     fmm a b c = fmt keyM a $ fmt keyB (truncatem b) (" " <> truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
-    keySel :: ((HumanCmd, HumanCmd) -> HumanCmd) -> K.KM
+    keySel :: (forall a. (a, a) -> a) -> K.KM
            -> [(CmdArea, Either K.KM SlotChar, Text)]
     keySel sel key =
       let cmd = case M.lookup key bcmdMap of
             Just (_, _, cmd2) -> cmd2
             Nothing -> error $ "" `showFailure` key
           caCmds = case cmd of
-            ByAimMode{..} -> case sel (exploration, aiming) of
-              ByArea l -> sort l
-              _ -> error $ "" `showFailure` cmd
+            ByAimMode{exploration=ByArea lexp, aiming=ByArea laim} ->
+              sort $ sel (lexp, laim \\ lexp)
             _ -> error $ "" `showFailure` cmd
           caMakeChoice (ca, cmd2) =
             let (km, desc) = case M.lookup cmd2 brevMap of
@@ -159,7 +154,7 @@ keyHelp COps{corule}
                   Nothing -> (key, "(not described:" <+> tshow cmd2 <> ")")
             in (ca, Left km, desc)
       in map caMakeChoice caCmds
-    okm :: ((HumanCmd, HumanCmd) -> HumanCmd)
+    okm :: (forall a. (a, a) -> a)
         -> K.KM -> K.KM -> [Text] -> [Text]
         -> OKX
     okm sel key1 key2 header footer =
@@ -221,12 +216,12 @@ keyHelp COps{corule}
                                (mouseBasicsText ++ [keyCaption])
                                mouseBasicsEnd
             in (ls, []) )  -- don't capture mouse wheel, etc.
-        , ( "Mouse in aiming mode."
-          , okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                [areaCaption "area"] mouseAimingModeEnd )
-        , ( "Mouse in exploration mode."
-          , okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-               [areaCaption "area"] categoryEnd ) ]
+        , ( "Mouse in exploration and aiming modes."
+          , mergeOKX
+               (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                    [areaCaption "exploration"] [])
+               (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                    [areaCaption "aiming mode"] categoryEnd) ) ]
       else
         [ ( "Mouse commands."
           , let (ls, _) = okxs CmdMouse
@@ -236,11 +231,10 @@ keyHelp COps{corule}
             in mergeOKX
                  (mergeOKX
                     okx0
-                    (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "aiming mode"] []))
-                 (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "exploration"]
-                      categoryEnd) ) ]
+                    (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                         [areaCaption "exploration"] []))
+                 (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                      [areaCaption "aiming mode"] categoryEnd) ) ]
     , [ ( categoryDescription CmdMeta <> "."
         , okxs CmdMeta [keyCaption] lastHelpEnd ) ]
     ]
