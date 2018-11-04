@@ -572,7 +572,7 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
   itemToF <- getsState $ flip itemToFull
   let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
                         HumanCmd.SortSlots
-      keysPre = [K.spaceKM, K.mkChar '/', K.escKM]
+      keysPre = [K.spaceKM, K.mkChar '/', K.mkChar '?', K.escKM]
                 ++ [caretKey | enableSorting]
       -- Here, unlike for inventory items, slots are not sorted persistently
       -- and only for the single slot category.
@@ -591,6 +591,7 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
   case ekm of
     Left km | km == K.spaceKM -> return km
     Left km | km == K.mkChar '/' -> return km
+    Left km | km == K.mkChar '?' -> return km
     Left km | km == caretKey ->
       viewLoreItems False menuName (sortSlotMap itemToF lSlotsRaw)
                     trunkBag prompt examItem

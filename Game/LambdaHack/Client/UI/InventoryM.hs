@@ -292,8 +292,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
         [ let km = K.mkChar '/'
-          in (km, changeContainerDef $ Right km)
-        , (K.mkKP '/', changeContainerDef $ Left "")
+          in (km, changeContainerDef True $ Right km)
+        , (K.mkKP '/', changeContainerDef True $ Left "")
+        , let km = K.mkChar '?'
+          in (km, changeContainerDef False $ Right km)
+        , (K.mkKP '?', changeContainerDef False $ Left "")
         , let km = K.mkChar '+'
           in (km, DefItemKey
            { defLabel = Right km
@@ -330,14 +333,14 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
            , defCond = maySwitchLeader cCur && not (null hs)
-           , defAction = \_unused -> do
+           , defAction = \ekm -> do
                merror <- pickLeaderWithPointer
                case merror of
                  Nothing -> do
                    (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                    recCall numPrefix cCurUpd cRestUpd itemDialogState
-                 Just{} ->  -- don't inspect the error, it's expected
-                   defAction (changeContainerDef $ Left "") _unused
+                 Just{} -> return (Left "not a teammate", (cCur, ekm))
+                             -- don't inspect the error, it's expected
            })
         , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
           in (km, DefItemKey
@@ -356,18 +359,26 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            })
         ]
         ++ numberPrefixes
-      changeContainerDef defLabel = DefItemKey
+      changeContainerDef forward defLabel = DefItemKey
         { defLabel
         , defCond = True  -- even if single screen, just reset it
         , defAction = \_ -> do
             let calmE = calmEnough body actorMaxSk
                 mcCur = filter (`elem` cLegal) [cCur]
-                (cCurAfterCalm, cRestAfterCalm) = case cRest ++ mcCur of
-                  c1@(MStore CSha) : c2 : rest | not calmE ->
-                    (c2, c1 : rest)
-                  [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
-                  c1 : rest -> (c1, rest)
-                  [] -> error $ "" `showFailure` cRest
+                (cCurAfterCalm, cRestAfterCalm) =
+                  if forward
+                  then case cRest ++ mcCur of
+                    c1@(MStore CSha) : c2 : rest | not calmE ->
+                      (c2, c1 : rest)
+                    [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
+                    c1 : rest -> (c1, rest)
+                    [] -> error $ "" `showFailure` cRest
+                  else case (reverse $ mcCur ++ cRest) of
+                    c1@(MStore CSha) : c2 : rest | not calmE ->
+                      (c2, reverse $ c1 : rest)
+                    [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
+                    c1 : rest -> (c1, reverse rest)
+                    [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
         }
       useMultipleDef defLabel = DefItemKey

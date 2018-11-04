@@ -454,7 +454,8 @@ keyTranslate shiftPressed n = case n of
   KeycodeInsert     -> K.Insert
   KeycodeDelete     -> K.Delete
   KeycodePrintScreen -> K.PrintScreen
-  KeycodeKPDivide   -> K.KP '/'
+  KeycodeKPDivide   -> if shiftPressed then K.Char '?' else K.Char '/'
+                         -- KP and normal are merged here
   KeycodeKPMultiply -> K.KP '*'
   KeycodeKPMinus    -> K.Char '-'  -- KP and normal are merged here
   KeycodeKPPlus     -> K.Char '+'  -- KP and normal are merged here
