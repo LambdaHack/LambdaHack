@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust, sortSlots
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
-  , pickNumber, lookAtItems, lookAtPosition, displayItemLore, viewLoreItems
+  , pickNumber, lookAtItems, lookAtPosition
+  , displayItemLore, viewLoreItems, cycleLore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , lookAtTile, lookAtActors
@@ -603,3 +604,19 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
       if go2
       then viewLoreItems enableSorting menuName lSlots trunkBag prompt examItem
       else return K.escKM
+
+cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
+cycleLore _ [] = return ()
+cycleLore seen (m : rest) = do  -- @seen@ is needed for SPACE to end cycling
+  km <- m
+  if | km == K.spaceKM -> cycleLore (m : seen) rest
+     | km == K.mkChar '/' -> if null rest
+                             then cycleLore [] (reverse $ m : seen)
+                             else cycleLore (m : seen) rest
+     | km == K.mkChar '?' -> case seen of
+                               prev : ps -> cycleLore ps (prev : m : rest)
+                               [] -> case reverse (m : rest) of
+                                 prev : ps -> cycleLore ps [prev]
+                                 [] -> error "cycleLore: screens disappeared"
+     | km == K.escKM -> return ()
+     | otherwise -> error "cycleLore: unexpected key"

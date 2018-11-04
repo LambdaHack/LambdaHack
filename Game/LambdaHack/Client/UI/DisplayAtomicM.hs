@@ -835,22 +835,6 @@ quitFactionUI fid toSt manalytics = do
         fadeOutOrIn True
     _ -> return ()
 
-cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
-cycleLore _ [] = return ()
-cycleLore seen (m : rest) = do  -- @seen@ is needed for SPACE to end cycling
-  km <- m
-  if | km == K.spaceKM -> cycleLore (m : seen) rest
-     | km == K.mkChar '/' -> if null rest
-                             then cycleLore [] (reverse $ m : seen)
-                             else cycleLore (m : seen) rest
-     | km == K.mkChar '?' -> case seen of
-                               prev : ps -> cycleLore ps (prev : m : rest)
-                               [] -> case reverse (m : rest) of
-                                 prev : ps -> cycleLore ps [prev]
-                                 [] -> error "cycleLore: screens disappeared"
-     | km == K.escKM -> return ()
-     | otherwise -> error "cycleLore: unexpected key"
-
 displayGameOverLoot :: MonadClientUI m
                     => (ItemBag, Int) -> GenerationAnalytics -> m K.KM
 displayGameOverLoot (heldBag, total) generationAn = do
