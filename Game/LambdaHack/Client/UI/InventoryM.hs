@@ -294,7 +294,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         [ let km = K.mkChar '/'
           in (km, changeContainerDef $ Right km)
         , (K.mkKP '/', changeContainerDef $ Left "")
-        , let km = K.mkChar '?'
+        , let km = K.mkChar '+'
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = bag /= bagSuit

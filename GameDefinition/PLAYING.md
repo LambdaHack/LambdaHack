@@ -258,7 +258,7 @@ in melee, using itself as the weapon, with the usual dice and damage bonus.
 This time, the ranged armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
-(by default you are offered only the appropriate items; press `?`to cycle
+(by default you are offered only the appropriate items; press `+` to cycle
 item menu modes). Only items of a few kinds inflict any damage, but some
 have other effects, beneficial, detrimental or mixed.
 
