@@ -185,7 +185,7 @@ keyHelp COps{corule}
                  (movText ++ ["", ""] ++ minimalText ++ [keyCaption])
                  casualEnd ) ]
     , if catLength CmdItemMenu + catLength CmdItem
-         + 5 > rheight then
+         + 9 > rheight then
         [ ( categoryDescription CmdItemMenu <> "."
           , okxs CmdItemMenu [keyCaption] categoryEnd )
         , ( categoryDescription CmdItem <> "."
@@ -198,7 +198,7 @@ keyHelp COps{corule}
                     [categoryDescription CmdItem <> ".", "", keyCaption]
                     categoryEnd) ) ]
     , if catLength CmdMove + catLength CmdAim
-         + 6 > rheight then
+         + 9 > rheight then
         [ ( "All terrain exploration and alteration commands."
           , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
         , ( categoryDescription CmdAim <> "."
