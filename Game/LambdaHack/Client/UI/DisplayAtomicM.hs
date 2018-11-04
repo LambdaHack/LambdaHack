@@ -807,30 +807,33 @@ quitFactionUI fid toSt manalytics = do
       isNoConfirms <- isNoConfirmsGame
       go <- if isNoConfirms && fmap stOutcome toSt /= Just Camping
             then return False
-            else displaySpaceEsc ColorFull ""
+            else do
+              void $ displaySpaceEsc ColorFull ""
+              return True
       when (side == fid) recordHistory
         -- we are going to exit or restart, so record and clear, but only once
-      when go $ case manalytics of
-        Nothing -> return ()
-        Just (factionAn, generationAn) -> do
-          (itemBag, total) <- getsState $ calculateTotal side
-          cycleLore []
-            [ displayGameOverLoot (itemBag, total) generationAn
-            , displayGameOverAnalytics factionAn generationAn
-            , displayGameOverLore SEmbed True generationAn
-            , displayGameOverLore SOrgan True generationAn
-            , displayGameOverLore STmp sexposeItems generationAn
-            , displayGameOverLore SBlast True generationAn ]
-          unless isNoConfirms $ do
-            -- Show score for any UI client after any kind of game exit,
-            -- even though it's saved only for human UI clients at game over
-            -- (that is not a noConfirms or benchmark game).
-            scoreSlides <- scoreToSlideshow total status
-            void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-          -- The last prompt stays onscreen during shutdown, etc.
-          promptAdd0 pp
-          partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-          void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+      when go $ do
+        (itemBag, total) <- getsState $ calculateTotal side
+        case manalytics of
+          Nothing -> return ()
+          Just (factionAn, generationAn) -> do
+            cycleLore []
+              [ displayGameOverLoot (itemBag, total) generationAn
+              , displayGameOverAnalytics factionAn generationAn
+              , displayGameOverLore SEmbed True generationAn
+              , displayGameOverLore SOrgan True generationAn
+              , displayGameOverLore STmp sexposeItems generationAn
+              , displayGameOverLore SBlast True generationAn ]
+        unless isNoConfirms $ do
+          -- Show score for any UI client after any kind of game exit,
+          -- even though it's saved only for human UI clients at game over
+          -- (that is not a noConfirms or benchmark game).
+          scoreSlides <- scoreToSlideshow total status
+          void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+        -- The last prompt stays onscreen during shutdown, etc.
+        promptAdd0 pp
+        partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+        void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
       unless (fmap stOutcome toSt == Just Camping) $
         fadeOutOrIn True
     _ -> return ()
