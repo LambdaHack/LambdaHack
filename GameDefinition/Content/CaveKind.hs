@@ -41,7 +41,7 @@ rogue = CaveKind
   , chidden       = 7
   , cactorCoeff   = 65  -- the maze requires time to explore
   , cactorFreq    = [("monster", 60), ("animal", 40)]
-  , citemNum      = 6 `d` 5 - 4 `dL` 1  -- deeper down quality over quantity
+  , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1  -- deep down quality over quantity
   , citemFreq     = [("common item", 40), ("treasure", 60)]
   , cplaceFreq    = [("rogue", 1)]
   , cpassable     = False
@@ -194,7 +194,7 @@ empty = rogue
   , cdoorChance   = 0
   , copenChance   = 0
   , chidden       = 0
-  , cactorCoeff   = 7
+  , cactorCoeff   = 6
   , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
       -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
       -- cascading failure, if the particular starting conditions were
