@@ -8,9 +8,11 @@ of the same name. Playing the game involves exploring spooky dungeons,
 alone or in a party of fearless explorers, avoiding and setting up ambushes,
 hiding in shadows from the gaze of unspeakable horrors, discovering
 secret passages and gorgeous magical treasure and making creative use
-of it all. The madness-inspiring abominations that multiply in the depths
-perform the same feats, due to their aberrant, abstract hyper-intelligence,
-while tirelessly chasing the elusive heroes by sight, sound and smell.
+of it all.
+
+The madness-inspiring abominations that multiply in the depths perform
+the same feats, due to their aberrant, abstract hyper-intelligence,
+Count on them to tirelessly chase the elusive heroes by sight, sound and smell.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
