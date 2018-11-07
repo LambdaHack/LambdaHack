@@ -47,7 +47,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
-  , mdesc   = "Your engineering team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep your party together, or the opposing team might be tempted to gang upon a solitary disputant."
+  , mdesc   = "Your engineering team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep your party together, or the opposing team might be tempted to gang upon a solitary disputant. Take heed of your surroundings."
   }
 
 -- The trajectory tip is important because of tactics of scout looking from
@@ -91,7 +91,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be prevented from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
+  , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
   }
 
 -- The tactic is to sneak in the dark, highlight enemy with thrown torches
