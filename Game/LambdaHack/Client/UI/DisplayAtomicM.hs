@@ -1353,6 +1353,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
+        sleepy = if bwatch tb `elem` [WSleep, WWake] then "a sleepy" else ""
         subtly = if IK.idamage itemKind == 0 && not (bproj sb)
                  then "delicately"
                  else ""
@@ -1361,7 +1362,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
               || bproj sb && bproj tb  -- too much spam when explosions collide
               || IK.idamage itemKind == 0 =
               makeSentence $
-                [MU.SubjectVerbSg spart verb, tpart, subtly]
+                [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
                 ++ if bproj sb
                    then []
                    else ["with", partItemChoice itemFull kit]
@@ -1371,10 +1372,12 @@ strike catch source target iid cstore = assert (source /= target) $ do
           -- If/when death blow instead sets HP to 1 and only the next below 1,
           -- we can check here for HP==1; also perhaps actors with HP 1 should
           -- not be able to block.
-          let sActs = if bproj sb
-                      then [ MU.SubjectVerbSg spart "connect" ]
-                      else [ MU.SubjectVerbSg spart verb, tpart
-                           , "with", partItemChoice itemFull kit ]
+          let sActs = MU.Phrase $
+                if bproj sb
+                then [ MU.SubjectVerbSg spart "connect" ]
+                else [ MU.SubjectVerbSg spart verb, sleepy, tpart
+                     , "with", partItemChoice itemFull kit ]
+              butEvenThough = if catch then ", even though" else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
@@ -1382,20 +1385,24 @@ strike catch source target iid cstore = assert (source /= target) $ do
                        then "deflect it"
                        else "fend it off"  -- ward it off
                   else if waitedLastTurn tb
-                       then "block"  -- parry
-                       else "dodge"  -- evade
-              butEvenThough = if catch then ", even though" else ", but"
+                       then "block"
+                       else "parry"
+              howWell =
+                if | hurtMult >= 50 ->  -- braced or big bonuses
+                     "partly"
+                   | hurtMult > 1 ->  -- braced and/or huge bonuses
+                     if waitedLastTurn tb then "doggedly" else "nonchalantly"
+                   | otherwise ->         -- 1% got through, which can
+                     "almost completely"  -- still be deadly, if fast missile
+              withWhat = ""
           in makeSentence
-               [ MU.Phrase sActs <> butEvenThough
+               [ sActs <> butEvenThough
                , actionPhrase
-               , if | hurtMult >= 50 ->  -- braced or big bonuses
-                      "partly"
-                    | hurtMult > 1 ->  -- braced and/or huge bonuses
-                      if waitedLastTurn tb then "doggedly" else "nonchalantly"
-                    | otherwise ->         -- 1% got through, which can
-                      "almost completely"  -- still be deadly, if fast missile
+               , howWell
+               , withWhat
                ]
-    msgAdd msg
+        tmpInfluence = ""
+    msgAdd $ msg <+> tmpInfluence
     return ((bpos tb, bpos sb), hurtMult, IK.idamage itemKind)
    else return ((bpos tb, bpos tb), 100, 1)
   let anim | dmg == 0 = subtleHit coscreen $ snd ps
