@@ -26,7 +26,6 @@ import           Data.Binary
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
-import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
@@ -45,7 +44,7 @@ data ItemKind = ItemKind
   , iflavour :: [Flavour]       -- ^ possible flavours
   , icount   :: Dice.Dice       -- ^ created in that quantity
   , irarity  :: Rarity          -- ^ rarity on given depths
-  , iverbHit :: MU.Part         -- ^ the verb for hitting
+  , iverbHit :: Text            -- ^ the verb for hitting
   , iweight  :: Int             -- ^ weight in grams
   , idamage  :: Dice.Dice       -- ^ basic kinetic damage
   , iaspects :: [Aspect]        -- ^ affect the actor continuously

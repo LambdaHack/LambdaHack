@@ -999,7 +999,7 @@ ppHearMsg hearMsg = case hearMsg of
   HearStrike ik -> do
     COps{coitem} <- getsState scops
     let verb = IK.iverbHit $ okind coitem ik
-        msg = makeSentence [ "you hear something", verb, "someone"]
+        msg = makeSentence [ "you hear something", MU.Text verb, "someone"]
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
@@ -1364,19 +1364,25 @@ strike catch source target iid cstore = assert (source /= target) $ do
             , itemKind itemFull2 ) )
         eqpAndOrgArmor = map rateArmor $ filter notCond eqpOrgKit
         condArmor = map rateArmor $ filter isOrdinaryCond orgKit
-        verb = if catch then "catch" else IK.iverbHit $ itemKind itemFullWeapon
+        verb | catch = "catch"
+             | otherwise = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
         sleepy = if bwatch tb `elem` [WSleep, WWake] then "a sleepy" else ""
-        subtly = if IK.idamage (itemKind itemFullWeapon) == 0 && not (bproj sb)
-                 then "delicately"
-                 else ""
+        -- In the case of forceful hit, we mention neither attacker's bonuses
+        -- nor victim's maluses. The player may indeed be left guessing.
+        subtly = if IK.idamage (itemKind itemFullWeapon) == 0
+                 then if not (bproj sb) then "delicately" else ""
+                 else if hurtMult >= 120 then "forcefully" else ""
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || bproj sb && bproj tb  -- too much spam when explosions collide
               || IK.idamage (itemKind itemFullWeapon) == 0 =
+              -- In this case either no items increase armor enough,
+              -- or the bonuses and maluses cancel out, so it would be
+              -- a lot of talk about a negligible total effect.
               makeSentence $
                 [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
                 ++ if bproj sb
