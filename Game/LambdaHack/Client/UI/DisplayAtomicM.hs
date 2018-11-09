@@ -1353,13 +1353,17 @@ strike catch source target iid cstore = assert (source /= target) $ do
     side <- getsClient sside
     factionD <- getsState sfactionD
     eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
+    orgKit <- getsState $ kitAssocs target [COrgan]
     let notCond (_, (itemFull2, _)) =
           not $ IA.looksLikeCondition $ aspectRecordFull itemFull2
-        rateArmor (iidEqpOrg, (itemFull2, (k, _))) =
+        isOrdinaryCond (_, (itemFull2, _)) =
+          isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFull2
+        rateArmor (iidArmor, (itemFull2, (k, _))) =
           ( k * IA.getSkill Ability.SkArmorMelee (aspectRecordFull itemFull2)
-          , ( iidEqpOrg
+          , ( iidArmor
             , itemKind itemFull2 ) )
-        eqpAndOrg = map rateArmor $ filter notCond eqpOrgKit
+        eqpAndOrgArmor = map rateArmor $ filter notCond eqpOrgKit
+        condArmor = map rateArmor $ filter isOrdinaryCond orgKit
         verb = if catch then "catch" else IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1406,22 +1410,30 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      if waitedLastTurn tb then "doggedly" else "nonchalantly"
                    | otherwise ->         -- 1% got through, which can
                      "almost completely"  -- still be deadly, if fast missile
-              withWhat | null eqpAndOrg = []
+              withWhat | null eqpAndOrgArmor = []
                        | otherwise =
-                let (armor, (iidEqpOrg, itemKind)) =
-                      maximumBy (Ord.comparing fst) eqpAndOrg
+                let (armor, (iidArmor, itemKind)) =
+                      maximumBy (Ord.comparing fst) eqpAndOrgArmor
                 in if armor >= 15
-                   then let name | iidEqpOrg == btrunk tb = "trunk"
+                   then let name | iidArmor == btrunk tb = "trunk"
                                  | otherwise = MU.Text $ IK.iname itemKind
                         in [ "with", MU.WownW tpronoun name ]
                    else []
-         in makeSentence $
-               [ sActs <> butEvenThough
-               , actionPhrase
-               , howWell ]
-               ++ withWhat
-        tmpInfluence = ""
-    msgAdd $ msg <+> tmpInfluence
+              tmpInfluenceDot | null condArmor = "."
+                              | otherwise =
+                let (armor, (_, itemKind)) =
+                      maximumBy (Ord.comparing $ abs . fst) condArmor
+                    name = IK.iname itemKind
+                in if | armor >= 15 -> ", thanks to being" <+> name <> "."
+                      | armor <= -15 -> ", despite being" <+> name <> "."
+                      | otherwise -> "."
+          in makePhrase
+               ([ MU.Capitalize sActs <> butEvenThough
+                , actionPhrase
+                , howWell ]
+                ++ withWhat)
+             <> tmpInfluenceDot
+    msgAdd msg
     return ((bpos tb, bpos sb), hurtMult, IK.idamage (itemKind itemFullWeapon))
    else return ((bpos tb, bpos tb), 100, 1)
   let anim | dmg == 0 = subtleHit coscreen $ snd ps
