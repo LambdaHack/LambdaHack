@@ -20,6 +20,7 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
+import qualified Data.Ord as Ord
 import qualified Data.Text as T
 import           Data.Tuple
 import           GHC.Exts (inline)
@@ -528,7 +529,9 @@ createActorUI born aid body = do
     Nothing -> do
       UIOptions{uHeroNames} <- getsSession sUIOptions
       let baseColor = flavourToColor $ jflavour itemBase
-          basePronoun | not (bproj body) && fhasGender (gplayer fact) = "he"
+          basePronoun | not (bproj body)
+                        && IK.isymbol itemKind == '@'
+                        && fhasGender (gplayer fact) = "he"
                       | otherwise = "it"
           nameFromNumber fn k = if k == 0
                                 then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
@@ -1337,35 +1340,44 @@ strike catch source target iid cstore = assert (source /= target) $ do
   (ps, hurtMult, dmg) <-
    if sourceSeen then do
     hurtMult <- getsState $ armorHurtBonus source target
-    itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
     tpart <- partActorLeader target tbUI
     spronoun <- partPronounLeader source sbUI
+    tpronoun <- partPronounLeader target tbUI
     localTime <- getsState $ getLocalTime (blid tb)
     bag <- getsState $ getBodyStoreBag sb cstore
+    itemFullWeapon <- getsState $ itemToFull iid
+    let kitWeapon = EM.findWithDefault (1, []) iid bag
     side <- getsClient sside
     factionD <- getsState sfactionD
-    let kit = EM.findWithDefault (1, []) iid bag
-        verb = if catch then "catch" else IK.iverbHit itemKind
+    eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
+    let notCond (_, (itemFull2, _)) =
+          not $ IA.looksLikeCondition $ aspectRecordFull itemFull2
+        rateArmor (iidEqpOrg, (itemFull2, (k, _))) =
+          ( k * IA.getSkill Ability.SkArmorMelee (aspectRecordFull itemFull2)
+          , ( iidEqpOrg
+            , itemKind itemFull2 ) )
+        eqpAndOrg = map rateArmor $ filter notCond eqpOrgKit
+        verb = if catch then "catch" else IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
         sleepy = if bwatch tb `elem` [WSleep, WWake] then "a sleepy" else ""
-        subtly = if IK.idamage itemKind == 0 && not (bproj sb)
+        subtly = if IK.idamage (itemKind itemFullWeapon) == 0 && not (bproj sb)
                  then "delicately"
                  else ""
         msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || bproj sb && bproj tb  -- too much spam when explosions collide
-              || IK.idamage itemKind == 0 =
+              || IK.idamage (itemKind itemFullWeapon) == 0 =
               makeSentence $
                 [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
                 ++ if bproj sb
                    then []
-                   else ["with", partItemChoice itemFull kit]
+                   else ["with", partItemChoice itemFullWeapon kitWeapon]
             | otherwise =
           -- This sounds funny when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
@@ -1376,7 +1388,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                 if bproj sb
                 then [ MU.SubjectVerbSg spart "connect" ]
                 else [ MU.SubjectVerbSg spart verb, sleepy, tpart
-                     , "with", partItemChoice itemFull kit ]
+                     , "with", partItemChoice itemFullWeapon kitWeapon ]
               butEvenThough = if catch then ", even though" else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
@@ -1394,16 +1406,23 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      if waitedLastTurn tb then "doggedly" else "nonchalantly"
                    | otherwise ->         -- 1% got through, which can
                      "almost completely"  -- still be deadly, if fast missile
-              withWhat = ""
-          in makeSentence
+              withWhat | null eqpAndOrg = []
+                       | otherwise =
+                let (armor, (iidEqpOrg, itemKind)) =
+                      maximumBy (Ord.comparing fst) eqpAndOrg
+                in if armor >= 15
+                   then let name | iidEqpOrg == btrunk tb = "trunk"
+                                 | otherwise = MU.Text $ IK.iname itemKind
+                        in [ "with", MU.WownW tpronoun name ]
+                   else []
+         in makeSentence $
                [ sActs <> butEvenThough
                , actionPhrase
-               , howWell
-               , withWhat
-               ]
+               , howWell ]
+               ++ withWhat
         tmpInfluence = ""
     msgAdd $ msg <+> tmpInfluence
-    return ((bpos tb, bpos sb), hurtMult, IK.idamage itemKind)
+    return ((bpos tb, bpos sb), hurtMult, IK.idamage (itemKind itemFullWeapon))
    else return ((bpos tb, bpos tb), 100, 1)
   let anim | dmg == 0 = subtleHit coscreen $ snd ps
            | hurtMult > 90 = twirlSplash coscreen ps Color.BrRed Color.Red

@@ -43,7 +43,7 @@ keySelected (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
 partActor :: ActorUI -> MU.Part
 partActor b = MU.Text $ bname b
 
--- | The part of speech containing the actor pronoun.
+-- | The part of speech containing the actor's pronoun.
 partPronoun :: ActorUI -> MU.Part
 partPronoun b = MU.Text $ bpronoun b
 
