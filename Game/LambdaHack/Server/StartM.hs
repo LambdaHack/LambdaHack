@@ -312,7 +312,7 @@ populateDungeon = do
       -- Players that escape go first to be started over stairs, if possible.
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
-      needInitialCrew = sortBy (comparing $ valuePlayer . gplayer . snd)
+      needInitialCrew = sortOn (valuePlayer . gplayer . snd)
                         $ filter (not . null . ginitialWolf . snd)
                         $ EM.assocs factionD
       boundLid (ln, _, _) = max minD . min maxD . toEnum $ ln

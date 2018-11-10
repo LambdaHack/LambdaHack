@@ -23,7 +23,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Ord
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
@@ -181,7 +180,7 @@ tryTurning aid = do
   case dirsSimilar of
     [] -> return $ Left "dead end"
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
-      case sortBy (comparing $ euclidDistSqVector dirLast)
+      case sortOn (euclidDistSqVector dirLast)
            $ filter (enterableDir cops lvl posHere) $ d1 : ds of
         [] ->
           return $ Left "blocked and all similar directions are closed doors"

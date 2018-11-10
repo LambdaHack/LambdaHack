@@ -21,7 +21,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
-import           Data.Ord
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -692,5 +691,5 @@ drawSelected drawnLevelId width selected = do
                  char = if len > maxViewed then '$' else '*'
              in Color.attrChar2ToW32 fg char
       viewed = map viewOurs $ take maxViewed
-               $ sortBy (comparing keySelected) oursUI
+               $ sortOn keySelected oursUI
   return (min width (len + 2), [star] ++ viewed ++ [Color.spaceAttrW32])

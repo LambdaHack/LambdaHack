@@ -538,7 +538,7 @@ pickLeaderHuman k = do
   mhero <- getsState $ tryFindHeroK sactorUI side k
   allOurs <- getsState $ fidActorNotProjGlobalAssocs side -- not only on level
   let allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
-      hs = sortBy (comparing keySelected) allOursUI
+      hs = sortOn keySelected allOursUI
       mactor = case drop k hs of
                  [] -> Nothing
                  (aid, b, _) : _ -> Just (aid, b)
@@ -621,7 +621,7 @@ selectWithPointerHuman = do
                       . actorAssocs (== side) lidV
   sactorUI <- getsSession sactorUI
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
-      viewed = sortBy (comparing keySelected) oursUI
+      viewed = sortOn keySelected oursUI
   Point{..} <- getsSession spointer
   -- Select even if no space in status line for the actor's symbol.
   if | py == rYmax + 2 && px == 0 -> selectNoneHuman >> return Nothing
@@ -900,7 +900,7 @@ aimEnemyHuman = do
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
   let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
-      dbs = sortBy (comparing ordPos) bsAll
+      dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the actor under xhair, if any
         let i = fromMaybe (-1)
                 $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
@@ -942,7 +942,7 @@ aimItemHuman = do
   saimMode <- getsSession saimMode
   bsAll <- getsState $ EM.keys . lfloor . (EM.! lidV) . sdungeon
   let ordPos p = (chessDist lpos p, p)
-      dbs = sortBy (comparing ordPos) bsAll
+      dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the item under xhair, if any
         let i = fromMaybe (-1)
                 $ findIndex ((== xhairPos) . Just) dbs

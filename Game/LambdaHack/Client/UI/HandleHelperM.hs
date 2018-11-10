@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -142,7 +141,7 @@ partyAfterLeader leader = do
   sactorUI <- getsSession sactorUI
   allOurs <- getsState $ fidActorNotProjGlobalAssocs side -- not only on level
   let allOursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) allOurs
-      hs = sortBy (comparing keySelected) allOursUI
+      hs = sortOn keySelected allOursUI
       i = fromMaybe (-1) $ findIndex (\(aid, _, _) -> aid == leader) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $! gt ++ lt
@@ -186,7 +185,7 @@ pickLeaderWithPointer = do
   ours <- getsState $ filter (not . bproj . snd)
                       . actorAssocs (== side) lidV
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
-      viewed = sortBy (comparing keySelected) oursUI
+      viewed = sortOn keySelected oursUI
       (autoDun, _) = autoDungeonLevel fact
       pick (aid, b) =
         if | blid b /= arena && autoDun ->

@@ -17,7 +17,6 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Ord as Ord
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ReqUI (..))
@@ -372,8 +371,7 @@ handleTrajectories :: MonadServerAtomic m => LevelId -> FactionId -> m ()
 handleTrajectories lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . strajTime
-  let l = map fst
-          $ sortBy (Ord.comparing fst)
+  let l = sort $ map fst
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The @strajTime@ map may be outdated before @hTrajectories@
   -- call (due to other actors following their trajectories),
@@ -504,8 +502,7 @@ handleActors :: (MonadServerAtomic m, MonadServerComm m)
 handleActors lid fid = do
   localTime <- getsState $ getLocalTime lid
   levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
-  let l = map fst
-          $ sortBy (Ord.comparing fst)
+  let l = sort $ map fst
           $ filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
   -- The @sactorTime@ map may be outdated before @hActors@
   -- call (due to other actors on the list acting),
@@ -552,7 +549,7 @@ hActors as@(aid : rest) = do
       ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
       _ -> error $ "" `showFailure` cmdS
   breakASAP <- getsServer sbreakASAP
-  -- If breaking out of the game lopp, pretend there was a non-wait move.
+  -- If breaking out of the game loop, pretend there was a non-wait move.
   if breakASAP then return True else do
     let mswitchLeader :: Maybe ActorId -> m ActorId
         {-# NOINLINE mswitchLeader #-}

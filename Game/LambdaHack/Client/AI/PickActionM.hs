@@ -20,6 +20,7 @@ import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Function
+import           Data.Ord (comparing)
 import           Data.Ratio
 
 import           Game.LambdaHack.Client.AI.ConditionM
@@ -1005,7 +1006,7 @@ moveTowards aid target goal relaxed = do
                                        && enterableHere p
         sensible = [ ((goesBack p, chessDist p goal), v)
                    | v <- moves, let p = source `shift` v, isSensible p ]
-        sorted = sortOn fst sensible
+        sorted = sortBy (comparing fst) sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs
