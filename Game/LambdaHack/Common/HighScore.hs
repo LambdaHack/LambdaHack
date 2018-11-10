@@ -87,7 +87,9 @@ register table total dungeonTotal time status@Status{stOutcome}
         HiConst -> c
         HiLoot | dungeonTotal == 0 -> c  -- a fluke; no gold generated
         HiLoot -> c * fromIntegral total / fromIntegral dungeonTotal
-        HiBlitz -> -- Up to 1000000/c turns matter.
+        HiSprint -> -- Up to -c turns matter.
+                    max 0 (-c - turnsSpent)
+        HiBlitz -> -- Up to 1000000/-c turns matter.
                    sqrt $ max 0 (1000000 + c * turnsSpent)
         HiSurvival -> -- Up to 1000000/c turns matter.
                       sqrt $ max 0 (min 1000000 $ c * turnsSpent)

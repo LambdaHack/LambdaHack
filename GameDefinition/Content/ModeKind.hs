@@ -288,10 +288,10 @@ screensaverSafari = safari
 rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, rosterAmbush, rosterCrawl, rosterCrawlEmpty, rosterCrawlSurvival, rosterSafari, rosterSafariSurvival, rosterBattle, rosterBattleDefense, rosterBattleSurvival, rosterDefense, rosterDefenseEmpty :: Roster
 
 rosterRaid = Roster
-  { rosterList = [ ( playerHero {fhiCondPoly = hiRaid}
+  { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
                    , [(-2, 1, "hero")] )
                  , ( playerAntiHero { fname = "Indigo Founder"
-                                    , fhiCondPoly = hiRaid }
+                                    , fhiCondPoly = hiHeroShort }
                    , [(-2, 1, "hero")] )
                  , ( playerAnimal  -- starting over escape
                    , [(-2, 2, "animal")] )
@@ -304,11 +304,11 @@ rosterRaid = Roster
 
 rosterBrawl = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroMedium }
                    , [(-3, 3, "hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
-                                    , fhiCondPoly = hiDweller }
+                                    , fhiCondPoly = hiHeroMedium }
                    , [(-3, 3, "hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
@@ -322,11 +322,11 @@ rosterBrawl = Roster
 -- scout to counter the stealthy advance.
 rosterShootout = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroMedium }
                    , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
-                                    , fhiCondPoly = hiDweller }
+                                    , fhiCondPoly = hiHeroMedium }
                    , [(-5, 1, "scout hero"), (-5, 2, "ranger hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
@@ -336,11 +336,11 @@ rosterShootout = Roster
 
 rosterHunt = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroMedium }
                    , [(-5, 10, "soldier hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
-                                    , fhiCondPoly = hiDweller }
+                                    , fhiCondPoly = hiHeroMedium }
                    , [(-5, 1, "scout hero"), (-5, 5, "ambusher hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
@@ -349,12 +349,12 @@ rosterHunt = Roster
   , rosterAlly = [] }
 
 rosterEscape = Roster
-  { rosterList = [ ( playerHero {fhiCondPoly = hiEscapist}
+  { rosterList = [ ( playerHero {fhiCondPoly = hiHeroMedium}
                    , [(-7, 1, "scout hero"), (-7, 2, "escapist hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False  -- start on escape
                                     , fneverEmpty = False  -- loot after killing
-                                    , fhiCondPoly = hiDweller }
+                                    , fhiCondPoly = hiHeroMedium }
                    , [(-7, 1, "scout hero"), (-7, 7, "ambusher hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
@@ -364,7 +364,7 @@ rosterEscape = Roster
 
 rosterZoo = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroLong }
                    , [(-8, 5, "soldier hero")] )
                  , ( playerAnimal {fneverEmpty = True}
                    , [(-8, 100, "mobile animal")] )
@@ -375,11 +375,11 @@ rosterZoo = Roster
 
 rosterAmbush = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroMedium }
                    , [(-9, 1, "scout hero"), (-9, 5, "ambusher hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
-                                    , fhiCondPoly = hiDweller }
+                                    , fhiCondPoly = hiHeroMedium }
                    , [(-9, 12, "soldier hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
@@ -404,14 +404,12 @@ rosterCrawl = Roster
 rosterCrawlEmpty = Roster
   { rosterList = [ ( playerHero
                    , [(-1, 1, "hero")] )
-                 , (playerHorror, []) ]  -- for summoned monsters
+                 , (playerHorror, []) ]  -- for spawned and summoned monsters
   , rosterEnemy = []
   , rosterAlly = [] }
 
 rosterCrawlSurvival = rosterCrawl
-  { rosterList = [ ( playerHero { fleaderMode =
-                                    LeaderAI $ AutoLeader True False
-                                , fhasUI = False }
+  { rosterList = [ ( playerAntiHero
                    , [(-1, 3, "hero")] )
                  , ( playerMonster
                    , [(-4, 1, "scout monster"), (-4, 3, "monster")] )
@@ -459,7 +457,7 @@ rosterSafariSurvival = rosterSafari
 
 rosterBattle = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller }
+                                , fhiCondPoly = hiHeroLong }
                    , [(-5, 5, "soldier hero")] )
                  , ( playerMonster {fneverEmpty = True}
                    , [(-5, 35, "mobile monster")] )
@@ -471,7 +469,7 @@ rosterBattle = Roster
 
 rosterBattleDefense = rosterBattle
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller
+                                , fhiCondPoly = hiHeroLong
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
@@ -484,7 +482,7 @@ rosterBattleDefense = rosterBattle
 
 rosterBattleSurvival = rosterBattle
   { rosterList = [ ( playerHero { fcanEscape = False
-                                , fhiCondPoly = hiDweller
+                                , fhiCondPoly = hiHeroLong
                                 , fleaderMode =
                                     LeaderAI $ AutoLeader False False
                                 , fhasUI = False }
@@ -507,7 +505,7 @@ rosterDefense = rosterCrawl
 rosterDefenseEmpty = rosterCrawl
   { rosterList = [ ( playerAntiMonster {fneverEmpty = True}
                    , [(-4, 1, "scout monster")] )
-                 , (playerHorror, []) ]  -- for summoned animals
+                 , (playerHorror, []) ]  -- for spawned and summoned animals
   , rosterEnemy = []
   , rosterAlly = [] }
 

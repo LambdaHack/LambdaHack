@@ -77,7 +77,14 @@ type HiSummand = (HiPolynomial, [Outcome])
 
 type HiPolynomial = [(HiIndeterminant, Double)]
 
-data HiIndeterminant = HiConst | HiLoot | HiBlitz | HiSurvival | HiKill | HiLoss
+data HiIndeterminant =
+    HiConst
+  | HiLoot
+  | HiSprint
+  | HiBlitz
+  | HiSurvival
+  | HiKill
+  | HiLoss
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary HiIndeterminant
