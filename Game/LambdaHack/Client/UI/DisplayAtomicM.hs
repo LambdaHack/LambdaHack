@@ -920,7 +920,7 @@ displayGameOverAnalytics factionAn generationAn = do
         in "You recall the adversary, which you killed"
            <+> tshow (max 0 k) <+> "out of"
            <+> tshow n <+> "reported:"
-      prompt = "Your team vangished the following adversaries."
+      prompt = "Your team vanquished the following adversaries."
                <+> (if sexposeActors
                     then "Non-positive count means none killed but this many reported."
                     else "")
