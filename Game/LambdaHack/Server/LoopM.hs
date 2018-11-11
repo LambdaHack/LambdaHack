@@ -150,6 +150,7 @@ handleFidUpd updatePerFid fid fact = do
   -- which is fine, though a bit alarming. So, we update it at the end.
   updatePerFid fid
   -- Move a single actor only. Bail out if immediate loop break requested by UI.
+  -- No check for @sbreakLoop@ needed, for the same reasons as in @handleActors@.
   let handle :: [LevelId] -> m Bool
       handle [] = return False
       handle (lid : rest) = do
@@ -383,7 +384,10 @@ handleTrajectories lid fid = do
   -- to the faction, it is nevertheless processed without a problem.
   -- We are guaranteed the actor still exists.
   mapM_ hTrajectories l
-  unless (null l) $ handleTrajectories lid fid  -- for speeds > tile/clip
+  -- Avoid frames between fadeout and fadein.
+  breakLoop <- getsServer sbreakLoop
+  unless (null l || breakLoop) $
+    handleTrajectories lid fid  -- for speeds > tile/clip
 
 hTrajectories :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE hTrajectories #-}
@@ -403,8 +407,9 @@ hTrajectories aid = do
         -- to @handleTrajectories@.
         assert (not $ bproj b)
         $ execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-  if actorDying b1
-  then dieSer aid b1
+  breakLoop <- getsServer sbreakLoop
+  if breakLoop then return ()  -- don't move if game over via pushing
+  else if actorDying b1 then dieSer aid b1
   else case btrajectory b1 of
     Nothing -> removePushed b1
     Just ([], _) -> removeTrajectory b1 >> removePushed b1
@@ -550,6 +555,8 @@ hActors as@(aid : rest) = do
       _ -> error $ "" `showFailure` cmdS
   breakASAP <- getsServer sbreakASAP
   -- If breaking out of the game loop, pretend there was a non-wait move.
+  -- we don't need additionally to check @sbreakLoop@, because it occurs alone
+  -- only via action of an actor and at most one action is performed here.
   if breakASAP then return True else do
     let mswitchLeader :: Maybe ActorId -> m ActorId
         {-# NOINLINE mswitchLeader #-}
