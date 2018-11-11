@@ -32,11 +32,11 @@ newtype Animation = Animation [IntOverlay]
 -- | Render animations on top of a screen frame.
 --
 -- Located in this module to keep @Animation@ abstract.
-renderAnim :: Frame -> Animation -> Frames
+renderAnim :: PreFrame -> Animation -> PreFrames
 renderAnim basicFrame (Animation anim) =
-  let modifyFrame :: IntOverlay -> Frame
+  let modifyFrame :: IntOverlay -> PreFrame
       modifyFrame am = overlayFrame am basicFrame
-      modifyFrames :: (IntOverlay, IntOverlay) -> Maybe Frame
+      modifyFrames :: (IntOverlay, IntOverlay) -> Maybe PreFrame
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim ([] : anim))

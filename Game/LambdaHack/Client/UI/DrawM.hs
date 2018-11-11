@@ -134,7 +134,7 @@ targetDescXhair = do
   sxhair <- getsSession sxhair
   first fromJust <$> targetDesc (Just sxhair)
 
-drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m FrameBase
+drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
   COps{corule=RuleContent{rXmax}, cotile, coTileSpeedup} <- getsState scops
   StateClient{smarkSuspect} <- getClient
@@ -173,8 +173,7 @@ drawFrameTerrain drawnLevelId = do
   -- separately at all, but written to the big vector at once.
   -- But even with double allocation it would be faster than writing
   -- to a mutable vector via @FrameForall@.
-  return $ FrameBase
-         $ U.unsafeThaw $ U.concat [messageVector, caveVector, statusVector]
+  return $ U.concat [messageVector, caveVector, statusVector]
 
 drawFrameContent :: forall m. MonadClientUI m => LevelId -> m FrameForall
 drawFrameContent drawnLevelId = do
@@ -514,7 +513,7 @@ drawFrameStatus drawnLevelId = do
         status
 
 -- | Draw the whole screen: level map and status area.
-drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m Frame
+drawHudFrame :: MonadClientUI m => ColorMode -> LevelId -> m PreFrame
 drawHudFrame dm drawnLevelId = do
   baseTerrain <- drawFrameTerrain drawnLevelId
   updContent <- drawFrameContent drawnLevelId

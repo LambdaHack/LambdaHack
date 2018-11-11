@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( FrameST, FrameForall(..), FrameBase(..), Frame, Frames
+  ( FrameST, FrameForall(..), FrameBase(..), Frame, PreFrame, PreFrames
   , SingleFrame(..)
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL
@@ -40,8 +40,13 @@ newtype FrameBase = FrameBase
 -- | A frame, that is, a base frame and all its modifications.
 type Frame = (FrameBase, FrameForall)
 
--- | Sequences of screen frames, including delays.
-type Frames = [Maybe Frame]
+-- | Components of a frame, before it's decided if the first can be overwritten
+-- in-place or needs to be copied.
+type PreFrame = (U.Vector Word32, FrameForall)
+
+-- | Sequence of screen frames, including delays. Potentially based on a single
+-- base frame.
+type PreFrames = [Maybe PreFrame]
 
 -- | Representation of an operation of overwriting a frame with a single line
 -- at the given row.
@@ -101,13 +106,13 @@ truncateAttrLine w xs lenMax =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: IntOverlay -> Frame -> Frame
+overlayFrame :: IntOverlay -> PreFrame -> PreFrame
 overlayFrame ov (m, ff) = (m, FrameForall $ \v -> do
   unFrameForall ff v
   mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov)
 
-overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> Frame
-                      -> Frame
+overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> PreFrame
+                      -> PreFrame
 overlayFrameWithLines coscreen@ScreenContent{rwidth} onBlank l fr =
   let ov = map (\(y, al) -> (y * rwidth, al))
            $ zip [0..] $ truncateLines coscreen onBlank l

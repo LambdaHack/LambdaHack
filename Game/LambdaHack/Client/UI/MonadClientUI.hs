@@ -35,6 +35,7 @@ import qualified Data.Text.IO as T
 import           Data.Time.Clock
 import           Data.Time.Clock.POSIX
 import           Data.Time.LocalTime
+import qualified Data.Vector.Unboxed as U
 import qualified NLP.Miniutter.English as MU
 import           System.FilePath
 import           System.IO (hFlush, stdout)
@@ -118,9 +119,16 @@ displayFrame mf = do
 
 -- | Push frames or delays to the frame queue. The frames depict
 -- the @lid@ level.
-displayFrames :: MonadClientUI m => LevelId -> Frames -> m ()
+displayFrames :: MonadClientUI m => LevelId -> PreFrames -> m ()
 displayFrames lid frs = do
-  mapM_ displayFrame frs
+  let frames = case frs of
+        [] -> []
+        [Just (bfr, ffr)] -> [Just (FrameBase $ U.unsafeThaw bfr, ffr)]
+        _ ->
+          -- Due to the frames coming from the same base frame,
+          -- we have to copy it to avoid picture corruption.
+          map (fmap $ \(bfr, ffr) -> (FrameBase $ U.thaw bfr, ffr)) frs
+  mapM_ displayFrame frames
   -- Can be different than @blid b@, e.g., when our actor is attacked
   -- on a remote level.
   lidV <- viewedLevelUI
@@ -129,8 +137,9 @@ displayFrames lid frs = do
 
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
-connFrontendFrontKey :: MonadClientUI m => [K.KM] -> Frame -> m K.KM
-connFrontendFrontKey frontKeyKeys frontKeyFrame = do
+connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame -> m K.KM
+connFrontendFrontKey frontKeyKeys (bfr, ffr) = do
+  let frontKeyFrame = (FrameBase $ U.unsafeThaw bfr, ffr)
   kmp <- connFrontend FrontKey{..}
   modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
   return $! K.kmpKeyMod kmp

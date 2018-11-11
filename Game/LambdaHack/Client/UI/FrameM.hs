@@ -12,7 +12,7 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Vector.Unboxed.Mutable as VM
+import qualified Data.Vector.Unboxed as U
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
@@ -40,14 +40,13 @@ import           Game.LambdaHack.Common.State
 -- If the overlay is too long, it's truncated.
 -- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m Frame
+            => ColorMode -> Bool -> Overlay -> LevelId -> m PreFrame
 drawOverlay dm onBlank topTrunc lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
   basicFrame <- if onBlank
                 then do
-                  let m = FrameBase $
-                            VM.replicate (rwidth * rheight)
-                                         (Color.attrCharW32 Color.spaceAttrW32)
+                  let m = U.replicate (rwidth * rheight)
+                                      (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
   return $! overlayFrameWithLines coscreen onBlank topTrunc basicFrame
@@ -129,7 +128,7 @@ stopPlayBack = do
       modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.
-renderFrames :: MonadClientUI m => LevelId -> Animation -> m Frames
+renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames
 renderFrames arena anim = do
   report <- getReportUI
   let truncRep = [renderReport report]
