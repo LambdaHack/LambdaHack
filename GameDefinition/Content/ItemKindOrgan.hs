@@ -408,7 +408,7 @@ speedGland10 = speedGland 10
 scentGland = armoredSkin
   { iname    = "scent gland"
   , ifreq    = [("scent gland", 100)]
-  , icount   = 2 + 1 `d` 3  -- runs out
+  , icount   = 10 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
                , SetFlag Periodic ]  -- not Durable
