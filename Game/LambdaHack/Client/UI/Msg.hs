@@ -153,24 +153,24 @@ scrapRepetition History{ newReport = Report newMsgs
 
 -- | Add a message to the new report of history, eliminating a possible
 -- duplicate and noting its existence in the result.
-addToReport :: History -> Msg -> Int -> (History, Bool)
-addToReport History{..} msg n =
-  let newH = History{newReport = snocReport newReport msg n, ..}
+addToReport :: History -> Msg -> Int -> Time -> (History, Bool)
+addToReport History{..} msg n time =
+  let newH = History{newReport = snocReport newReport msg n, newTime = time, ..}
   in case scrapRepetition newH of
     Just scrappedH -> (scrappedH, True)
     Nothing -> (newH, False)
 
 -- | Archive old report to history, filtering out prompts.
 -- Set up new report with a new timestamp.
-archiveReport :: History -> Time -> History
-archiveReport History{newReport=Report newMsgs, ..} !newT =
+archiveReport :: History -> History
+archiveReport History{newReport=Report newMsgs, ..} =
   let f (RepMsgN _ n) = n > 0
       newReportNon0 = Report $ filter f newMsgs
   in if nullReport newReportNon0
-     then -- Drop empty new report. Start a new one with the new timestamp.
-          History emptyReport newT oldReport oldTime archivedHistory
+     then -- Drop empty new report.
+          History emptyReport timeZero oldReport oldTime archivedHistory
      else let lU = map attrLineToU $ renderTimeReport oldTime oldReport
-          in History emptyReport newT newReportNon0 newTime
+          in History emptyReport timeZero newReportNon0 newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrLine]

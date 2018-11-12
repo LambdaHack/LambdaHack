@@ -22,8 +22,10 @@ import           Game.LambdaHack.Common.State
 -- | Add a message to the current report.
 msgAddDuplicate :: MonadClientUI m => Text -> m Bool
 msgAddDuplicate msg = do
+  time <- getsState stime
   history <- getsSession shistory
-  let (nhistory, duplicate) = addToReport history (toMsg $ textToAL msg) 1
+  let (nhistory, duplicate) =
+        addToReport history (toMsg $ textToAL msg) 1 time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
@@ -34,8 +36,10 @@ msgAdd = void <$> msgAddDuplicate
 -- | Add a prompt to the current report.
 promptAddDuplicate :: MonadClientUI m => Text -> Int -> m Bool
 promptAddDuplicate msg n = do
+  time <- getsState stime
   history <- getsSession shistory
-  let (nhistory, duplicate) = addToReport history (toPrompt $ textToAL msg) n
+  let (nhistory, duplicate) =
+        addToReport history (toPrompt $ textToAL msg) n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
@@ -71,7 +75,5 @@ promptMainKeys = do
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()
-recordHistory = do
-  time <- getsState stime
-  history <- getsSession shistory
-  modifySession $ \sess -> sess {shistory = archiveReport history time}
+recordHistory =
+  modifySession $ \sess -> sess {shistory = archiveReport $ shistory sess}
