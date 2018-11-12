@@ -23,6 +23,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
+import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -142,12 +143,19 @@ hearUpdAtomic as cmd = do
     UpdDestroyActor _ body _ | not $ bproj body -> do
       aids <- filterHear (bpos body) as
       return $ Just aids  -- profound
-    UpdCreateItem _ _ _ (CActor aid cstore) | cstore /= COrgan -> do
-      body <- getsState $ getActorBody aid
-      aids <- filterHear (bpos body) as
-      return $ Just aids  -- profound
+    UpdCreateItem iid item _ (CActor aid cstore) -> do
+      -- Kinetic damage implies the explosion is loud enough to cause noise.
+      itemKind <- getsState $ getItemKindServer item
+      discoAspect <- getsState sdiscoAspect
+      let arItem = discoAspect EM.! iid
+      if cstore /= COrgan
+         || IA.isBlast arItem && Dice.supDice (IK.idamage itemKind) > 0 then do
+        body <- getsState $ getActorBody aid
+        aids <- filterHear (bpos body) as
+        return $ Just aids  -- profound
+      else return Nothing
     UpdTrajectory aid (Just (l, _)) Nothing | not (null l) -> do
-      -- Non-blast projectile hits a non-walkable tile.
+      -- Non-blast actor hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
@@ -172,9 +180,12 @@ hearSfxAtomic as cmd =
     SfxStrike aid _ iid _ -> do
       -- Only the attacker position considered, for simplicity.
       b <- getsState $ getActorBody aid
+      discoAspect <- getsState sdiscoAspect
+      let arItem = discoAspect EM.! iid
       aids <- filterHear (bpos b) as
       itemKindId <- getsState $ getIidKindIdServer iid
-      return $! if null aids
+      -- Loud explosions cause enough noise, so ignoring particle hit spam.
+      return $! if IA.isBlast arItem || null aids
                 then Nothing
                 else Just (HearStrike itemKindId, aids)
     SfxEffect _ aid (IK.Summon grp p) _ -> do
