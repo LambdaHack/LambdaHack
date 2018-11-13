@@ -1065,10 +1065,10 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (Summon "mobile animal" $ 1 `d` 2)
-               , Recharging (Explode "waste")
-               , Recharging Impress
-               , Recharging (DropItem 1 maxBound COrgan "condition") ]
+  , ieffects = [ Recharging Impress
+               , Recharging (DropItem 1 maxBound COrgan "condition")
+               , Recharging (Summon "mobile animal" $ 1 `d` 2)
+               , Recharging (Explode "waste") ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
 necklace3 = necklaceTemplate

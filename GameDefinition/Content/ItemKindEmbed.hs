@@ -155,8 +155,9 @@ fireBig = fireSmall
   { isymbol  = 'O'
   , iname    = "big fire"
   , ifreq    = [("big fire", 1)]
-  , ieffects = [ Burn 2, Explode "spark"
-               , CreateItem CInv "wooden torch" timerNone ]
+  , ieffects = [ Burn 2
+               , CreateItem CInv "wooden torch" timerNone
+               , Explode "spark" ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
   }
