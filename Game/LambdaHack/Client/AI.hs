@@ -30,11 +30,14 @@ import Game.LambdaHack.Common.State
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
   -- @sleader@ may be different from @gleader@ due to @stopPlayBack@,
-  -- but only leaders may change faction leader, so we fix that:
+  -- but only leaders may change faction leader, so we fix that beforehand:
   side <- getsClient sside
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   mleaderCli <- getsClient sleader
-  let !_A = assert (mleader == mleaderCli) ()
+  unless (Just aid == mleader || mleader == mleaderCli) $
+    -- @aid@ is not the leader, so he can't change leader later on,
+    -- so we match the leaders here
+    modifyClient $ \cli -> cli {_sleader = mleader}
   (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
   (aidToMove2, treq2) <-
     case treq of
