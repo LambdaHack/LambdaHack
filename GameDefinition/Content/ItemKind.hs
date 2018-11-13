@@ -1115,6 +1115,8 @@ necklace7 = necklaceTemplate
   , ieffects = [ Recharging (InsertMove $ 20 + 1 `d` 10)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
                , Recharging (toOrganBad "impatient" 4)]
+                 -- The same duration as timeout, to avoid spurious messages
+                 -- as well as unlimited accumulation of the duration.
   , idesc    = "A string of beads in various coolours, with no discernable pattern."
   }
 necklace8 = necklaceTemplate

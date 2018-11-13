@@ -361,8 +361,10 @@ applyPeriodicLevel = do
                 (IK.filterRecharging $ IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
-          mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
+          -- Equipment goes first, to refresh organs before they expire,
+          -- to avoid the message that organ expired.
           mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
+          mapM_ (applyPeriodicItem aid COrgan) $ EM.assocs $ borgan b
           -- While we are at it, also update his Calm.
           manageCalmAndDomination aid b
   allActors <- getsState sactorD
