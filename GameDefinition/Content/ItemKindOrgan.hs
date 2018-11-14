@@ -361,7 +361,8 @@ insectMortality = armoredSkin
   { iname    = "insect mortality"
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
-  , iaspects = [ Timeout $ 30 + (1 `d` 3) * 10
+  , iaspects = [ AddSkill SkAggression 2  -- try to attack before you die
+               , Timeout $ 30 + (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Recharging (RefillHP (-1)), Recharging Yell]
   , idesc    = ""
