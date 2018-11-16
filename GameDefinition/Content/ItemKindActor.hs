@@ -62,7 +62,7 @@ warrior2 = warrior
 warrior3 = warrior
   { iname    = "blacksmith"
   -- , idesc    = ""
-   }
+  }
 warrior4 = warrior
   { iname    = "forester"
   -- , idesc    = ""
