@@ -847,8 +847,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
-  let currencyName = MU.Text $ IK.iname
-                     $ okind coitem $ ouniqGroup coitem "currency"
+  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem "currency"
       lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
       (itemBag, lSlots) =
@@ -864,7 +863,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
               makeSentence $
                 ["this treasure specimen is worth"]
                 ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
-                ++ [MU.CarWs worth currencyName]
+                ++ [MU.CarWs worth $ MU.Text currencyName]
             holdsMsg =
               let n = generationItem EM.! iid
               in makePhrase
@@ -874,15 +873,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
                    , "scattered:" ]
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
-  let promptGold = if | dungeonTotal == 0 ->
-                          "All your spoils are of the practical kind."
-                      | total == 0 ->
-                          "You haven't found any genuine treasure."
-                      | otherwise -> makeSentence
-                         [ "your spoils are worth"
-                          , MU.CarWs total currencyName
-                          , "out of the rumoured total"
-                          , MU.Cardinal dungeonTotal ]
+  let promptGold = spoilsBlurb currencyName total dungeonTotal
       prompt = promptGold
                <+> (if sexposeItems
                     then "Non-positive count means none held but this many generated."

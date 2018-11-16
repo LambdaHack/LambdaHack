@@ -112,7 +112,12 @@ chooseItemDialogMode :: MonadClientUI m
                      => ItemDialogMode -> m (FailOrCmd ItemDialogMode)
 chooseItemDialogMode c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  let verbSha body actorMaxSk = if calmEnough body actorMaxSk
+  COps{coitem} <- getsState scops
+  side <- getsClient sside
+  dungeonTotal <- getsState sgold
+  (_, total) <- getsState $ calculateTotal side
+  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem "currency"
+      verbSha body actorMaxSk = if calmEnough body actorMaxSk
                                 then "notice"
                                 else "paw distractedly"
       prompt body bodyUI actorMaxSk c2 =
@@ -126,7 +131,8 @@ chooseItemDialogMode c = do
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CSha ->
           makePhrase
-            [ MU.Capitalize
+            [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
+            , MU.Capitalize
               $ MU.SubjectVerbSg subject (verbSha body actorMaxSk)
             , MU.Text tIn
             , MU.Text t ]
@@ -163,7 +169,6 @@ chooseItemDialogMode c = do
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let meleeSkill = Ability.getSk Ability.SkHurtMelee actorMaxSk
   bUI <- getsSession $ getActorUI leader
-  side <- getsClient sside
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) ->
       case c2 of

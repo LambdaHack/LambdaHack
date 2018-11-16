@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtItems, lookAtPosition
-  , displayItemLore, viewLoreItems, cycleLore
+  , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , lookAtTile, lookAtActors
@@ -619,3 +619,13 @@ cycleLore seen (m : rest) = do  -- @seen@ is needed for SPACE to end cycling
                                  [] -> error "cycleLore: screens disappeared"
      | km == K.escKM -> return ()
      | otherwise -> error "cycleLore: unexpected key"
+
+spoilsBlurb :: Text -> Int -> Int -> Text
+spoilsBlurb currencyName total dungeonTotal =
+  if | dungeonTotal == 0 ->  "All your spoils are of the practical kind."
+     | total == 0 -> "You haven't found any genuine treasure."
+     | otherwise -> makeSentence
+         [ "your spoils are worth"
+         , MU.CarWs total $ MU.Text currencyName
+         , "out of the rumoured total"
+         , MU.Cardinal dungeonTotal ]
