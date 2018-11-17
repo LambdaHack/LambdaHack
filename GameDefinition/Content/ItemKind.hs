@@ -1112,7 +1112,7 @@ necklace7 = necklaceTemplate
                , AddSkill SkMaxHP 15
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (InsertMove $ 20 + 1 `d` 10)  -- unpredictable
+  , ieffects = [ Recharging (InsertMove $ 9 + 1 `d` 11)  -- unpredictable
                , Recharging (RefillCalm (-1))  -- fake "hears something" :)
                , Recharging (toOrganBad "impatient" 4)]
                  -- The same duration as timeout, to avoid spurious messages
