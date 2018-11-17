@@ -1356,7 +1356,7 @@ hatUshanka = ItemKind
   , iverbHit = "tickle"
   , iweight  = 500
   , idamage  = 0
-  , iaspects = [ Timeout $ (1 `d` 2) * 3
+  , iaspects = [ Timeout $ (2 + 1 `d` 2) * 3
                , AddSkill SkArmorMelee 5, AddSkill SkHearing (-10)
                , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorMelee
