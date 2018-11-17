@@ -450,6 +450,7 @@ moveSearchAlter run dir = do
   localTime <- getsState $ getLocalTime (blid sb)
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
+  blurb <- lookAtPosition (blid sb) tpos
   let t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
@@ -469,7 +470,7 @@ moveSearchAlter run dir = do
            else failSer MoveUnskilled
        -- Not walkable, so search and/or alter the tile.
        | run -> do
-           blurb <- lookAtPosition (blid sb) tpos
+           -- Explicit request to examine the terrain.
            promptAdd1 blurb
            failWith $ if alterable
                       then "potentially alterable"
@@ -484,11 +485,17 @@ moveSearchAlter run dir = do
        | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t)
          && not underFeet
-         && alterSkill < alterMinSkill -> failSer AlterUnwalked
-       | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds ->
+         && alterSkill < alterMinSkill -> do
+           -- Rather rare (requires high skill), so describe the tile.
+           promptAdd1 blurb
+           failSer AlterUnwalked
+       | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds -> do
+           -- Rather rare (charging embeds), so describe the tile.
+           promptAdd1 blurb
            failWith "unable to exploit the terrain"
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
        | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
+           -- Don't mislead describing terrain, if other actor is to blame.
            failSer AlterBlockActor
        | otherwise -> do  -- promising
            verAlters <- verifyAlters (blid sb) tpos
