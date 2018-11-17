@@ -120,7 +120,8 @@ cmdAction cmd = case cmd of
   SelectWithPointer -> Left <$> selectWithPointerHuman
   Repeat n -> addNoError $ repeatHuman n
   Record -> addNoError recordHuman
-  History -> addNoError historyHuman
+  AllHistory -> addNoError allHistoryHuman
+  LastHistory -> addNoError lastHistoryHuman
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction

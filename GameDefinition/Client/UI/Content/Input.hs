@@ -51,7 +51,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                            , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history"
-              , ExecuteIfClear History ))
+              , ExecuteIfClear LastHistory ))
       -- not necessary, because messages available from dashboard
   , ("BackTab", ( [CmdMinimal, CmdMove]
               , "cycle among all party members"
@@ -193,7 +193,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 
   -- Dashboard, in addition to commands marked above
   , ("safeD100", ([CmdInternal, CmdDashboard], "display help", Help))
-  , ("safeD101", ([CmdInternal, CmdDashboard], "display history", History))
+  , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))
 
   -- Mouse
   , ("LeftButtonRelease", mouseLMB)

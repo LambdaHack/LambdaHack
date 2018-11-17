@@ -149,7 +149,8 @@ data HumanCmd =
   | SelectWithPointer
   | Repeat Int
   | Record
-  | History
+  | AllHistory
+  | LastHistory
   | MarkVision
   | MarkSmell
   | MarkSuspect

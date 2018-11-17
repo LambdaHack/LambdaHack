@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
-  , repeatHuman, recordHuman, historyHuman
+  , repeatHuman, recordHuman, allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , permittedProjectClient, projectCheck, xhairLegalEps, posFromXhair
-  , selectAid, endAiming, endAimingMsg, doLook, flashAiming
+  , selectAid, eitherHistory, endAiming, endAimingMsg, doLook, flashAiming
   , xhairPointerFloor, xhairPointerEnemy
 #endif
   ) where
@@ -678,10 +678,13 @@ recordHuman = do
         promptAdd0 $ "Macro recording stopped after"
                      <+> tshow (maxK - k - 1) <+> "actions."
 
--- * History
+-- * AllHistory
 
-historyHuman :: forall m. MonadClientUI m => m ()
-historyHuman = do
+allHistoryHuman :: MonadClientUI m => m ()
+allHistoryHuman = eitherHistory True
+
+eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
+eitherHistory showAll = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   history <- getsSession shistory
   arena <- getArenaUI
@@ -731,7 +734,12 @@ historyHuman = do
           K.Down -> displayOneReport $ histSlot + 1
           K.Esc -> promptAdd0 "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
-  displayAllHistory
+  if showAll then displayAllHistory else displayOneReport (length rh - 1)
+
+-- * LastHistory
+
+lastHistoryHuman :: MonadClientUI m => m ()
+lastHistoryHuman = eitherHistory False
 
 -- * MarkVision
 

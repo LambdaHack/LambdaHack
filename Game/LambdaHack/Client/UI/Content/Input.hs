@@ -135,7 +135,7 @@ mouseLMB =
           , (CaPercentSeen, XhairStair True) ] } )
  where
   common =
-    [ (CaMessage, ExecuteIfClear History)
+    [ (CaMessage, ExecuteIfClear LastHistory)
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
