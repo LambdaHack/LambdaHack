@@ -93,10 +93,13 @@ displayTaunt _voluntary rndToAction aid = do
         -- if applies complex items, probably intelligent and can speak
       canHear = Ability.getSk Ability.SkHearing actorMaxSk > 0
                 && canBrace
-        -- if hears, probably also emits sound vocally
+        -- if hears, probably also emits sound vocally;
+        -- disabled even by ushanka and rightly so
       canBrace = Ability.getSk Ability.SkWait actorMaxSk >= 2
         -- not an insect, plant, geyser, faucet, fence, etc.
         -- so can emit sound by hitting something with body parts
+                 || Ability.getSk Ability.SkApply actorMaxSk > 2
+                      -- and neither an impatient intelligent actor
       braceUneasy = [ (2, ("something", "flail around"))
                     , (1, ("something", "toss blindly"))
                     , (1, ("something", "squirm dizzily")) ]
