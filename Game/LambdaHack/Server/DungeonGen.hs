@@ -177,8 +177,12 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
   fixedEscape <- case cescapeFreq kc of
     [] -> return []
     escapeFreq -> do
-      -- Escapes don't extent to other levels, so corners not harmful
-      -- and also escapes should not fail to generate, if possible.
+      -- Escapes don't extend to other levels, so corners not harmful
+      -- (actually neither are the other restrictions inherited from stairs
+      -- placement, but we respect them to keep a uniform visual layout).
+      -- Allowing corners and generating before stars, because they are more
+      -- important that stairs (except the first stairs, but they are guaranteed
+      -- unless the level has no incoming stairs, but if so, plenty of space).
       mepos <- placeDownStairs "escape" True serverOptions ln
                                kc darea pallUpStairs boot
       case mepos of
