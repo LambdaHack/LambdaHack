@@ -72,8 +72,8 @@ getGroupItem :: MonadClientUI m
 getGroupItem psuit prompt promptGeneric
              cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
-                 (\_ _ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegalAfterCalm True False
   case soc of
     Left err -> return $ Left err
@@ -85,8 +85,8 @@ getGroupItem psuit prompt promptGeneric
 -- or switch to any other store.
 -- Used, e.g., for viewing inventory and item descriptions.
 getStoreItem :: MonadClientUI m
-             => (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-                                 -- ^ how to describe suitable items
+             => (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+                 -> Text)        -- ^ how to describe suitable items
              -> ItemDialogMode   -- ^ initial mode
              -> m ( Either Text (ItemId, ItemBag, SingleItemSlots)
                   , (ItemDialogMode, Either K.KM SlotChar) )
@@ -114,10 +114,10 @@ getStoreItem prompt cInitial = do
 -- Start with a non-empty store.
 getFull :: MonadClientUI m
         => m Suitability    -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-                            -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-                            -- ^ generic prompt
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+            -> Text)        -- ^ specific prompt for only suitable items
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+            -> Text)        -- ^ generic prompt
         -> [CStore]         -- ^ initial legal modes
         -> [CStore]         -- ^ legal modes with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
@@ -180,10 +180,10 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 getItem :: MonadClientUI m
         => m Suitability
                             -- ^ which items to consider suitable
-        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-                            -- ^ specific prompt for only suitable items
-        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-                            -- ^ generic prompt
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+            -> Text)        -- ^ specific prompt for only suitable items
+        -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+            -> Text)        -- ^ generic prompt
         -> ItemDialogMode   -- ^ first mode, legal or not
         -> [ItemDialogMode] -- ^ the (rest of) legal modes
         -> Bool             -- ^ whether to ask, when the only item
@@ -224,8 +224,10 @@ data Suitability =
 
 transition :: forall m. MonadClientUI m
            => m Suitability
-           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
-           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> Text)
+           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+               -> Text)
+           -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+               -> Text)
            -> Bool
            -> [ItemDialogMode]
            -> Int
@@ -412,10 +414,10 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                  `showFailure` (slot, bagItemSlots)
               Just iid -> return $! getResult (Right slot) [iid]
         }
-      (bagFiltered, promptChosen) =
-        case itemDialogState of
-          ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur <> ":")
-          IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur <> ":")
+  (bagFiltered, promptChosen) <- getsState $ \s ->
+    case itemDialogState of
+      ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur s <> ":")
+      IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur s <> ":")
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader

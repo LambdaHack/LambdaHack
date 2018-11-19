@@ -114,28 +114,46 @@ chooseItemDialogMode c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   COps{coitem} <- getsState scops
   side <- getsClient sside
-  dungeonTotal <- getsState sgold
-  (_, total) <- getsState $ calculateTotal side
-  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem "currency"
-      verbSha body actorMaxSk = if calmEnough body actorMaxSk
-                                then "notice"
-                                else "paw distractedly"
-      prompt body bodyUI actorMaxSk c2 =
+  let prompt :: Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
+             -> Text
+      prompt body bodyUI actorMaxSk c2 s =
         let (tIn, t) = ppItemDialogMode c2
             subject = partActor bodyUI
+            f (k, _) acc = k + acc
+            countItems store = EM.foldr' f 0 $ getBodyStoreBag body store s
         in case c2 of
         MStore CGround ->
-          makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
-            , MU.Text "at"
-            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
+          let n = countItems CGround
+              nItems = case n of
+                0 -> "no items"
+                _ -> MU.CarWs n "item"
+          in makePhrase
+               [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
+               , nItems, "at"
+               , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CSha ->
-          makePhrase
-            [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-            , MU.Capitalize
-              $ MU.SubjectVerbSg subject (verbSha body actorMaxSk)
-            , MU.Text tIn
-            , MU.Text t ]
+          let currencyName = IK.iname $ okind coitem
+                             $ ouniqGroup coitem "currency"
+              dungeonTotal = sgold s
+              (_, total) = calculateTotal side s
+              n = countItems CSha
+              verbSha = if | n == 0 -> "find nothing"
+                           | calmEnough body actorMaxSk -> "notice"
+                           | otherwise -> "paw distractedly"
+          in makePhrase
+               [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
+               , MU.Capitalize $ MU.SubjectVerbSg subject verbSha
+               , MU.Text tIn
+               , MU.Text t ]
+        MStore cstore ->
+          let n = countItems cstore
+              nItems = case n of
+                0 -> "no items"
+                _ -> MU.CarWs n "item"
+          in makePhrase
+               [ MU.Capitalize $ MU.SubjectVerbSg subject "see"
+               , nItems, MU.Text tIn
+               , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MOrgans ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
@@ -158,11 +176,6 @@ chooseItemDialogMode c = do
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
             , MU.Text t ]
-        _ ->
-          makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "see"
-            , MU.Text tIn
-            , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI

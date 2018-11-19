@@ -751,8 +751,8 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
                IA.goesIntoEqp $ aspectRecordFull itemFull)
         else (prompt, return SuitsEverything)
   ggi <- getFull psuit
-                 (\_ _ _ cCur -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ _ cCur -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
+                 (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
                  cLegalRaw cLegal (not auto) True
   case ggi of
     Right (l, (MStore fromCStore, _)) -> do
