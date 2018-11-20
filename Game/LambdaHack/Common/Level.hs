@@ -69,30 +69,28 @@ ascendInBranch dungeon up lid =
 -- after a level change.
 --
 -- We assume there is never a staircase up and down at the same position.
-whereTo :: LevelId    -- ^ level of the stairs
-        -> Point      -- ^ position of the stairs
-        -> Maybe Bool -- ^ optional forced direction
-        -> Dungeon    -- ^ current game dungeon
-        -> (LevelId, Point)
-                      -- ^ destination level and the pos of its receiving stairs
-whereTo lid pos mup dungeon =
+whereTo :: LevelId             -- ^ level of the stairs
+        -> Point               -- ^ position of the stairs
+        -> Bool                -- ^ optional forced direction
+        -> Dungeon             -- ^ current game dungeon
+        -> [(LevelId, Point)]  -- ^ possible destinations
+whereTo lid pos up dungeon =
   let lvl = dungeon EM.! lid
-      (up, i) = case elemIndex pos $ fst $ lstair lvl of
-        Just ifst -> (True, ifst)
+      li = case elemIndex pos $ fst $ lstair lvl of
+        Just ifst -> assert up  [ifst]
         Nothing -> case elemIndex pos $ snd $ lstair lvl of
-          Just isnd -> (False, isnd)
-          Nothing -> case mup of
-            Just forcedUp -> (forcedUp, 0)  -- for ascending via, e.g., spells
-            Nothing -> error $ "no stairs at" `showFailure` (lid, pos)
-      !_A = assert (maybe True (== up) mup) ()
+          Just isnd -> assert (not up) [isnd]
+          Nothing ->
+            let forcedPoss = (if up then fst else snd) (lstair lvl)
+            in [0 .. length forcedPoss - 1]  -- for ascending via, e.g., spells
   in case ascendInBranch dungeon up lid of
-    [] | isJust mup -> (lid, pos)  -- spell fizzles
-    [] -> error $ "no dungeon level to go to" `showFailure` (lid, pos)
+    [] -> []  -- spell fizzles
     ln : _ -> let lvlDest = dungeon EM.! ln
                   stairsDest = (if up then snd else fst) (lstair lvlDest)
-              in if length stairsDest < i + 1
-                 then error $ "no stairs at index" `showFailure` (lid, pos)
-                 else (ln, stairsDest !! i)
+                  posAtIndex i = case drop i stairsDest of
+                    [] -> error $ "not enough stairs:" `showFailure` (ln, i + 1)
+                    p : _ -> (ln, p)
+              in map posAtIndex li
 
 -- | Items located on map tiles.
 type ItemFloor = EM.EnumMap Point ItemBag

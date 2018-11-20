@@ -1130,10 +1130,13 @@ displayRespSfxAtomicUI sfx = case sfx of
           actorVerbMU aid bUI $ MU.Text $
             "find a way" <+> if up then "upstairs" else "downstairs"
           when isOurLeader $ do
-            (lid, _) <- getsState $ whereTo (blid b) (bpos b) (Just up)
-                                    . sdungeon
-            lvl <- getLevel lid
-            msgAdd $ cdesc $ okind cocave $ lkind lvl
+            destinations <- getsState $ whereTo (blid b) (bpos b) up
+                                        . sdungeon
+            case destinations of
+              (lid, _) : _ -> do  -- only works until different levels possible
+                lvl <- getLevel lid
+                msgAdd $ cdesc $ okind cocave $ lkind lvl
+              [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.ParalyzeInWater{} -> actorVerbMU aid bUI "move with difficulty"

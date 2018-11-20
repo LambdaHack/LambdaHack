@@ -817,16 +817,17 @@ effectAscend :: MonadServerAtomic m
 effectAscend recursiveCall execSfx up source target pos = do
   b1 <- getsState $ getActorBody target
   let lid1 = blid b1
-  (lid2, pos2) <- getsState $ whereTo lid1 pos (Just up) . sdungeon
+  destinations <- getsState $ whereTo lid1 pos up . sdungeon
   sb <- getsState $ getActorBody source
   if | waitedLastTurn b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return UseId
-     | lid2 == lid1 && pos2 == pos -> do
+     | null destinations -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelNoMore
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
+       (lid2, pos2) <- rndToAction $ oneOf destinations
        execSfx
        mbtime_bOld <-
          getsServer $ lookupActorTime (bfid b1) lid1 target . sactorTime
