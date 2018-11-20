@@ -468,11 +468,27 @@ advanceTrajectory aid b = do
            when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
              killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
              addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
-           -- Non-projectiles displace, to make pushing in crowds less lethal
-           -- and chaotic and to avoid hitting harpoons when pulled by them.
-           case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
-             [target] | not (bproj b) -> reqDisplaceGeneric False aid target
-             _ -> reqMoveGeneric False True aid d
+           let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
+               reqMoveHit = reqMoveGeneric False True aid d
+               reqDisp target = reqDisplaceGeneric False aid target
+           if | bproj b ->
+                -- Projectiles always hit; then can't tell friend from foe.
+                reqMoveHit
+              | occupied ->
+                -- Non-projectiles displace, unless they can hit big enemy.
+                -- Hitting projectiles would stop a possibly important flight.
+                case (posToBigLvl tpos lvl, posToProjsLvl tpos lvl) of
+                  (Nothing, []) -> error "advanceTrajectory: not occupied"
+                  (Nothing, [target]) -> reqDisp target
+                  (Nothing, _) -> reqMoveHit  -- can't displace multiple
+                  (Just target, []) -> do
+                    b2 <- getsState $ getActorBody target
+                    fact <- getsState $ (EM.! bfid b) . sfactionD
+                    if isFoe (bfid b) fact (bfid b2)
+                    then reqMoveHit
+                    else reqDisp target
+                  (Just _, _) -> reqMoveHit  -- can't displace multiple
+              | otherwise -> reqMoveHit  -- if not occupied, just move
          | bproj b -> do
            -- @Nothing@ trajectory of a projectile signals an obstacle hit.
            -- Second call of @actorDying@ above will catch the dead projectile.
