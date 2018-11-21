@@ -409,6 +409,7 @@ lookAtActors p lidV = do
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
   itemToF <- getsState $ flip itemToFull
   factionD <- getsState sfactionD
+  localTime <- getsState $ getLocalTime lidV
   let actorsBlurb = case inhabitants of
         [] -> ""
         (_, body) : rest ->
@@ -428,6 +429,14 @@ lookAtActors p lidV = do
                 WWake -> "be waking up"
               guardVerbs = guardItemVerbs body bfact
               verbs = resideVerb : guardVerbs
+              projDesc | not $ bproj body = ""
+                       | otherwise =
+                let kit = beqp body EM.! btrunk body
+                    ps = [partItemMediumAW side factionD localTime itemFull kit]
+                    tailWords = tail . T.words . makePhrase
+                in if tailWords ps == tailWords subjects
+                   then ""
+                   else makeSentence $ "this is" : ps
               factDesc = case jfid $ itemBase itemFull of
                 Just tfid | tfid /= bfid body ->
                   let dominatedBy = if bfid body == side
@@ -442,7 +451,7 @@ lookAtActors p lidV = do
               idesc = IK.idesc $ itemKind itemFull
               -- If many different actors, only list names.
               sameTrunks = all (\(_, b) -> btrunk b == btrunk body) rest
-              desc = if sameTrunks then factDesc <+> idesc else ""
+              desc = if sameTrunks then projDesc <+> factDesc <+> idesc else ""
               -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
           in if null rest || bwatch body == WWatch && null guardVerbs
