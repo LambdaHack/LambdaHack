@@ -561,8 +561,8 @@ createActorUI born aid body = do
                        _ -> "flying"
                      -- Not much detail about a fast flying item.
                      (_, _, object1, object2) =
-                       partItemShortest (bfid body) factionD localTime
-                                        itemFull (1, [])
+                       partItemActor (bfid body) factionD localTime
+                                      itemFull (1, [])
                  in ( makePhrase [adj, object1, object2]
                     , basePronoun )
                | baseColor /= Color.BrWhite ->
