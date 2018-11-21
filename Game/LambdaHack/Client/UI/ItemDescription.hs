@@ -58,10 +58,10 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer
       lenCh = length it1
-      timer | lenCh == 0 || temporary = ""
-            | itemK == 1 && lenCh == 1 = "(charging)"
-            | itemK == lenCh = "(all charging)"
-            | otherwise = "(" <> tshow lenCh <+> "charging)"
+      charges | lenCh == 0 || temporary = ""
+              | itemK == 1 && lenCh == 1 = "(charging)"
+              | itemK == lenCh = "(all charging)"
+              | otherwise = "(" <> tshow lenCh <+> "charging)"
       skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
       (powerTsRaw, rangedDamage) =
         textAllPowers detailLevel skipRecharging itemFull
@@ -74,8 +74,8 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
         _ -> []
       ts = lsource
            ++ take maxWordsToShow powerTs
-           ++ ["(...)" | length powerTs > maxWordsToShow && maxWordsToShow > 1]
-           ++ [timer | maxWordsToShow > 1]
+           ++ ["(...)" | length powerTs > maxWordsToShow && maxWordsToShow > 0]
+           ++ [charges | maxWordsToShow > 1]
       unique = IA.checkFlag Ability.Unique arItem
       name | temporary = "temporarily" <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
