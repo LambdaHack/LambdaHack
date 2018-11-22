@@ -307,7 +307,7 @@ regenCalmDelta aid body s =
       isHeardFoe (!p, aid2) =
         let b = getActorBody aid2 s
         in inline chessDist p (bpos body) <= 3
-           && not (waitedLastTurn b)  -- uncommon
+           && not (waitedOrSleptLastTurn b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
   in if any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body
      then minusM1  -- even if all calmness spent, keep informing the client

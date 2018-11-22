@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltaSerious, deltaMild, deltaNotNegative, actorCanMelee
-  , gearSpeed, actorTemplate, waitedLastTurn, actorDying
+  , gearSpeed, actorTemplate, waitedLastTurn, waitedOrSleptLastTurn, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
@@ -139,6 +139,13 @@ waitedLastTurn :: Actor -> Bool
 {-# INLINE waitedLastTurn #-}
 waitedLastTurn b = case bwatch b of
   WWait{} -> True
+  _ -> False
+
+waitedOrSleptLastTurn :: Actor -> Bool
+{-# INLINE waitedOrSleptLastTurn #-}
+waitedOrSleptLastTurn b = case bwatch b of
+  WWait{} -> True
+  WSleep -> True
   _ -> False
 
 actorDying :: Actor -> Bool

@@ -202,15 +202,17 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     body <- getsState $ getActorBody aid
     when (bfid body == side) $
       if | calmDelta > 0 ->  -- regeneration or effect
-             markDisplayNeeded (blid body)
+           markDisplayNeeded (blid body)
          | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
-           let closeFoe !b =  -- mimics isHeardFoe
-                         blid b == blid body
-                         && inline chessDist (bpos b) (bpos body) <= 3
-                         && not (waitedLastTurn b)  -- uncommon
-                         && inline isFoe side fact (bfid b)  -- costly
-           anyCloseFoes <- getsState $ any closeFoe . EM.elems . sactorD
+           s <- getState
+           let closeFoe (!p, aid2) =  -- mimics isHeardFoe
+                 let b = getActorBody aid2 s
+                 in inline chessDist p (bpos body) <= 3
+                    && not (waitedOrSleptLastTurn b)  -- uncommon
+                    && inline isFoe side fact (bfid b)  -- costly
+               anyCloseFoes = any closeFoe $ EM.assocs $ lbig
+                                           $ sdungeon s EM.! blid body
            unless anyCloseFoes $ do  -- obvious where the feeling comes from
              duplicated <- aidVerbDuplicateMU aid "hear something"
              unless duplicated stopPlayBack
