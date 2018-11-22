@@ -287,8 +287,7 @@ computeTarget aid = do
                         oldpos = fromMaybe (bpos b) (boldpos b)
                         vOld = bpos b `vectorToFrom` oldpos
                         pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                    if slackTactic && not isStuck
-                       && isUnit vOld && bpos b /= pNew
+                    if slackTactic && not isStuck && bpos b /= pNew
                        && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
                     then vToTgt vOld
                     else do
