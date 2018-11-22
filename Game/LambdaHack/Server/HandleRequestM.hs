@@ -127,7 +127,7 @@ setBWait cmd aid b = do
       if mwait /= Just False  -- lurk can't wake up regardless; too fast
          && (not (isJust mwait)  -- not a wait
              || uneasy  -- spooked
-             || not (deltaNotNegative $ bhpDelta b))  -- any HP lost
+             || not (deltaBenign $ bhpDelta b))  -- any HP lost
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
       else execUpdAtomic $ UpdRefillHP aid 1000
              -- no @xM@, so slow, but each turn HP gauge green;

@@ -88,7 +88,7 @@ handleAndBroadcast ps atomicBroken atomic = do
             -- sleeping actors.
             let drainCalmOnce aid = do
                   b <- getsState $ getActorBody aid
-                  when (deltaNotNegative $ bcalmDelta b) $
+                  when (deltaBenign $ bcalmDelta b) $
                     execUpdAtomic $ UpdRefillCalm aid minusM
             -- Projectiles never hear, for speed and simplicity,
             -- even though they sometimes see. There are flying cameras,

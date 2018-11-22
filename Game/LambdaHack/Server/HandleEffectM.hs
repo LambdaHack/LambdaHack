@@ -726,7 +726,7 @@ effectYell execSfx target = do
   else do
     execSfx
     execSfxAtomic $ SfxTaunt False target
-    when (deltaNotNegative $ bcalmDelta tb) $
+    when (deltaBenign $ bcalmDelta tb) $
       execUpdAtomic $ UpdRefillCalm target minusM
     return UseUp
 
