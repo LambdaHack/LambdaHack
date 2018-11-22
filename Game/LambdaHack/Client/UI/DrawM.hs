@@ -225,9 +225,9 @@ drawFramePath drawnLevelId = do
   Level{ltile=PointArray.Array{avector}} <- getLevel drawnLevelId
   totVisible <- totalVisible <$> getPerFid drawnLevelId
   mleader <- getsClient sleader
+  mpos <- getsState $ \s -> bpos . (`getActorBody` s) <$> mleader
   xhairPosRaw <- xhairToPos
-  let xhairPos = fromMaybe originPoint xhairPosRaw
-  s <- getState
+  let xhairPos = fromMaybe (fromMaybe originPoint mpos) xhairPosRaw
   bline <- case mleader of
     Just leader -> do
       Actor{bpos, blid} <- getsState $ getActorBody leader
@@ -241,6 +241,7 @@ drawFramePath drawnLevelId = do
       Just TgtAndPath{tapPath=tapPath@AndPath{pathGoal}}
         | pathGoal == xhairPos -> return tapPath
       _ -> getCachePath aid xhairPos) mleader
+  s <- getState
   let lpath = if null bline then []
               else maybe [] (\case
                 NoPath -> []

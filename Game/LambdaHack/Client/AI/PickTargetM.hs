@@ -284,7 +284,7 @@ computeTarget aid = do
                               , tapPath = if pathLen == 0
                                           then NoPath
                                           else AndPath{..} }
-                        oldpos = fromMaybe originPoint (boldpos b)
+                        oldpos = fromMaybe (bpos b) (boldpos b)
                         vOld = bpos b `vectorToFrom` oldpos
                         pNew = shiftBounded rXmax rYmax (bpos b) vOld
                     if slackTactic && not isStuck
