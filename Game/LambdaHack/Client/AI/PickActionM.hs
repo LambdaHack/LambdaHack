@@ -249,8 +249,9 @@ actionStrategy moldLeader aid retry = do
           , condAnyFoeAdj )
         ]
       -- Order doesn't matter, scaling does.
-      -- These are flattened (taking only the best variant) and then summed,
-      -- so if any of these can fire, it will fire. If none, @suffix@ is tried.
+      -- These are flattened in @stratToFreq@ (taking only the best variant)
+      -- and then summed, so if any of these can fire, it will.
+      -- If none can, @suffix@ is tried.
       -- Only the best variant of @chase@ is taken, but it's almost always
       -- good, and if not, the @chase@ in @suffix@ may fix that.
       -- The scaling values for @stratToFreq@ need to be so low-resolution

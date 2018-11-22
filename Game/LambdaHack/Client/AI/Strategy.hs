@@ -18,6 +18,12 @@ import Game.LambdaHack.Common.Frequency as Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.
+--
+-- Currently, the way we use it, the list could have at most one element
+-- (we filter out void frequencies early and only ever access the first).
+-- except for the argument of @mapStrategyM@, which may even be process
+-- to the end of the list, if no earlier strategies can be transformed
+-- into non-null ones.
 newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
   deriving (Show, Foldable, Traversable)
 
