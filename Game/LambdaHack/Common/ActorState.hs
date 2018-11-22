@@ -7,7 +7,8 @@ module Game.LambdaHack.Common.ActorState
   , foeRegularAssocs, foeRegularList, friendRegularAssocs, friendRegularList
   , bagAssocs, bagAssocsK, posToBig, posToBigAssoc, posToProjs, posToProjAssocs
   , calculateTotal, itemPrice, mergeItemQuant, findIid
-  , combinedInv, combinedEqp, combinedOrgan, combinedItems, combinedFromLore
+  , combinedGround, combinedOrgan, combinedEqp, combinedInv
+  , combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag
@@ -147,21 +148,27 @@ findIid leader fid iid s =
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
 
-combinedInv :: FactionId -> State -> ItemBag
-combinedInv fid s =
+combinedGround :: FactionId -> State -> ItemBag
+combinedGround fid s =
   let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
-
-combinedEqp :: FactionId -> State -> ItemBag
-combinedEqp fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
+  in EM.unionsWith mergeItemQuant
+     $ map (\(_, b) -> getFloorBag (blid b) (bpos b) s) bs
 
 -- Trunk not considered (if stolen).
 combinedOrgan :: FactionId -> State -> ItemBag
 combinedOrgan fid s =
   let bs = inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map (borgan . snd) bs
+
+combinedEqp :: FactionId -> State -> ItemBag
+combinedEqp fid s =
+  let bs = inline fidActorNotProjGlobalAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
+
+combinedInv :: FactionId -> State -> ItemBag
+combinedInv fid s =
+  let bs = inline fidActorNotProjGlobalAssocs fid s
+  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
 
 -- Trunk not considered (if stolen).
 combinedItems :: FactionId -> State -> ItemBag
