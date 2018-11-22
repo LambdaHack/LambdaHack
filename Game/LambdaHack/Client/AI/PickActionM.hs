@@ -754,16 +754,20 @@ applyItem aid applyGroup = do
       permittedActor itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE itemFull kit
-      -- Both effects tweak items, which is only situationally beneficial
+      disqualify :: Bool -> IK.Effect -> Bool
+      -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
-      getTweak IK.PolyItem = True
-      getTweak IK.RerollItem = True
-      getTweak IK.DupItem = True
-      getTweak IK.Identify = True
-      getTweak (IK.OneOf l) = any getTweak l
-      getTweak (IK.Recharging eff) = getTweak eff
-      getTweak (IK.Composite l) = any getTweak l
-      getTweak _ = False
+      disqualify _ IK.PolyItem = True
+      disqualify _ IK.RerollItem = True
+      disqualify _ IK.DupItem = True
+      disqualify _ IK.Identify = True
+      -- This is usually the main effect of item and it's useless without Calm.
+      disqualify durable IK.Summon{} =
+        durable && (bcalm b < xM 30 || condNotCalmEnough)
+      disqualify durable (IK.OneOf l) = any (disqualify durable) l
+      disqualify durable (IK.Recharging eff) = disqualify durable eff
+      disqualify durable (IK.Composite l) = any (disqualify durable) l
+      disqualify _ _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
         let arItem = aspectRecordFull itemFull
             durable = IA.checkFlag Durable arItem
@@ -772,7 +776,7 @@ applyItem aid applyGroup = do
             || not (IA.isMelee arItem)  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
-           && not (any getTweak $ IK.ieffects itemKind)
+           && not (any (disqualify durable) $ IK.ieffects itemKind)
            && not (IA.isHumanTrinket itemKind)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
