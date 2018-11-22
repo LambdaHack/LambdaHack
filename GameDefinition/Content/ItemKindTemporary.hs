@@ -39,8 +39,8 @@ tmpAspects name aspects = ItemKind
                aspects
                ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Durable]
                     -- hack: destroy on drop
-  , ieffects = [ Recharging $ tmpLess name
-               , OnSmash $ tmpLess name ]
+  , ieffects = [ Recharging $ tmpNoLonger name
+               , OnSmash $ tmpNoLonger name ]
   , idesc    = ""  -- no description needed; powers are enough
   , ikit     = []
   }
@@ -110,7 +110,7 @@ tmpBonusSkAlter =
 tmpBonusSkWait =
   tmpAspects "more patient" [AddSkill SkWait 5]
 tmpBonusSkMoveItem =
-  tmpAspects "tidier" [AddSkill SkMoveItem 5]
+  tmpAspects "more tidy" [AddSkill SkMoveItem 5]
 tmpBonusSkProject =
   tmpAspects "more projecting" [AddSkill SkProject 11]
 tmpBonusSkApply =

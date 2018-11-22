@@ -7,8 +7,7 @@ module Game.LambdaHack.Content.ItemKind
   , filterRecharging, stripRecharging, stripOnSmash
   , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind
   , isEffEscape, isEffEscapeOrAscend, damageUsefulness
-  , tmpNoLonger, tmpLess, toVelocity, toLinger
-  , timerNone, isTimerNone, foldTimer
+  , tmpNoLonger, toVelocity, toLinger, timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -295,9 +294,6 @@ damageUsefulness itemKind =
 
 tmpNoLonger :: Text -> Effect
 tmpNoLonger name = Temporary $ "be no longer" <+> name
-
-tmpLess :: Text -> Effect
-tmpLess name = Temporary $ "become less" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
