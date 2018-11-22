@@ -425,13 +425,13 @@ xhairLegalEps = do
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
-      else error $ "" `showFailure` (xhair, body, lidV)
+      else return $ Left "can't fling at an enemy on remote level"
     TPoint TEnemyPos{} _ _ ->
       return $ Left "selected opponent not visible"
     TPoint _ lid pos ->
       if lid == lidV
       then findNewEps False pos
-      else error $ "" `showFailure` (xhair, lidV)
+      else return $ Left "can't fling at a target on remote level"
     TVector v -> do
       -- Not @ScreenContent@, because not drawing here.
       COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
@@ -467,7 +467,7 @@ psuitReq = do
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   if lidV /= blid b
-  then return $ Left "can't project on remote levels"
+  then return $ Left "can't fling on remote level"
   else do
     mpos <- posFromXhair
     p <- permittedProjectClient
