@@ -454,12 +454,29 @@ lookAtActors p lidV = do
               desc = if sameTrunks then projDesc <+> factDesc <+> idesc else ""
               -- Both description and faction blurb may be empty.
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
-          in if null rest || bwatch body == WWatch && null guardVerbs
-             then makeSentence
+              onlyIs = bwatch body == WWatch && null guardVerbs
+          in if | bhp body <= 0 && not (bproj body) ->
+                  makeSentence
+                    ([MU.SubjectVerbSg (head subjects) "lie here"]
+                     ++ if null guardVerbs
+                        then []
+                        else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
+                                              "and" guardVerbs
+                             , "any more" ])
+                  <+> case subjects of
+                        _ : projs@(_ : _) ->
+                          let (subjectProjs, personProjs) = squashedWWandW projs
+                          in makeSentence
+                               [MU.SubjectVerb personProjs MU.Yes
+                                               subjectProjs "can be seen"]
+                        _ -> ""
+                | null rest || onlyIs ->
+                  makeSentence
                     [MU.SubjectVVxV "and" person MU.Yes subject verbs]
                   <+> pdesc
-             else makeSentence [subject, "can be seen"]
-                  <+> if bwatch body == WWatch && null guardVerbs
+                | otherwise ->
+                  makeSentence [subject, "can be seen"]
+                  <+> if onlyIs
                       then ""
                       else makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
                                                         (head subjects) verbs]
