@@ -190,10 +190,10 @@ managePerRequest aid = do
   b <- getsState $ getActorBody aid
   let clearMark = 0
   unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
-    -- Clear delta for the next player turn.
+    -- Clear delta for the next actor move.
     execUpdAtomic $ UpdRefillCalm aid clearMark
   unless (bhpDelta b == ResDelta (0, 0) (0, 0)) $
-    -- Clear delta for the next player turn.
+    -- Clear delta for the next actor move.
     execUpdAtomic $ UpdRefillHP aid clearMark
 
 handleRequestTimedCases :: MonadServerAtomic m

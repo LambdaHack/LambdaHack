@@ -80,10 +80,13 @@ handleAndBroadcast ps atomicBroken atomic = do
         case psBroken of
           _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
           [] -> do  -- hear only here; broken commands are never loud
-            -- At most @minusM@ applied total to avoid
-            -- "you hear something" or even distress as if wounded.
-            -- This may accumulate to eventually wake up sleeping actors.
-            let f aid = do
+            -- At most @minusM@ applied total over a single actor move,
+            -- to avoid distress as if wounded (which is measured via deltas).
+            -- So, if faction hits an enemy and it yells, hearnig yell will
+            -- not decrease calm over the decrease from hearing strike.
+            -- This may accumulate over time, though, to eventually wake up
+            -- sleeping actors.
+            let drainCalmOnce aid = do
                   b <- getsState $ getActorBody aid
                   when (deltaNotNegative $ bcalmDelta b) $
                     execUpdAtomic $ UpdRefillCalm aid minusM
@@ -99,14 +102,14 @@ handleAndBroadcast ps atomicBroken atomic = do
                   Just aids -> do
                     sendUpdate fid $ UpdHearFid fid
                                    $ HearUpd (not $ null aids) cmd
-                    mapM_ f aids
+                    mapM_ drainCalmOnce aids
               SfxAtomic cmd -> do
                 mhear <- hearSfxAtomic as cmd
                 case mhear of
                   Nothing -> return ()
                   Just (hearMsg, aids) -> do
                     sendUpdate fid $ UpdHearFid fid hearMsg
-                    mapM_ f aids
+                    mapM_ drainCalmOnce aids
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome

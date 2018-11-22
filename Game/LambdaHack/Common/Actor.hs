@@ -77,10 +77,14 @@ data Actor = Actor
 
 instance Binary Actor
 
--- The resource changes in the tuple are negative and positive, respectively.
+-- | Representation of recent changes to HP of Calm of an actor.
+-- This is reset every time the actor perfoms an action, so this is
+-- aggregated over actor turn (move), not time turn.
+-- The resource changes recorded in the tuple are, respectively,
+-- negative and positive.
 data ResDelta = ResDelta
-  { resCurrentTurn  :: (Int64, Int64)  -- ^ resource change this player turn
-  , resPreviousTurn :: (Int64, Int64)  -- ^ resource change last player turn
+  { resCurrentTurn  :: (Int64, Int64)  -- ^ resource change this move
+  , resPreviousTurn :: (Int64, Int64)  -- ^ resource change previous move
   }
   deriving (Show, Eq, Generic)
 
