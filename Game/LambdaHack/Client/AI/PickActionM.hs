@@ -981,9 +981,7 @@ moveTowards aid target goal relaxed = do
   actorSk <- currentSkillsClient aid
   let source = bpos b
       alterSkill = getSk SkAlter actorSk
-      !_A = assert (source == bpos b
-                    `blame` (source, bpos b, aid, b, goal)) ()
-      !_B = assert (adjacent source target
+      !_A = assert (adjacent source target
                     `blame` (source, target, aid, b, goal)) ()
   fact <- getsState $ (EM.! bfid b) . sfactionD
   salter <- getsClient salter

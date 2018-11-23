@@ -289,6 +289,8 @@ computeTarget aid = do
                         pNew = shiftBounded rXmax rYmax (bpos b) vOld
                     if slackTactic && not isStuck
                        && isUnit vOld && bpos b /= pNew
+                            -- both are needed, e.g., when just teleported
+                            -- or when the shift bounded by level borders
                        && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
                     then vToTgt vOld
                     else do
