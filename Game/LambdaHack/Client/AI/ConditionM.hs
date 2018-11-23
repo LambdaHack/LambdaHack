@@ -339,7 +339,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
                                   && actorCanMelee actorMaxSkills aid2 b2
       friends = friendRegularAssocs (bfid b) (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
-  in not $ n > 0 && null (drop (n - 1) closeAndStrongFriends)
+  in n <= 0 || not (null (drop (n - 1) closeAndStrongFriends))
        -- optimized: length closeAndStrongFriends >= n
 
 condSoloM :: MonadClient m => ActorId -> m Bool
