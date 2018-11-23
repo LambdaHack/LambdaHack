@@ -449,9 +449,9 @@ effectExplode execSfx cgroup source target = do
               , flip Point (y + 12) $ x + fuzz
               , flip Point (y - 12) $ x - fuzz
               , flip Point (y + 12) $ x - fuzz ]
-            semireverse = if semirandom `mod` 2 == 0 then id else reverse
+            randomReverse = if veryrandom `mod` 2 == 0 then id else reverse
             ps = take k $ concat $
-              semireverse
+              randomReverse
                 [ zip (repeat True)  -- diagonal particles don't reach that far
                   $ take 4 (drop ((k100 + itemK + fuzz) `mod` 4) $ cycle psDir4)
                 , zip (repeat False)  -- only some cardinal reach far
