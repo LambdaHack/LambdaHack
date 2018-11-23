@@ -454,6 +454,8 @@ computeTarget aid = do
             then pickNewTarget  -- others unconcerned
             else return $ Just tap
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
+        _ | not $ null nearbyFoes ->
+          pickNewTarget  -- prefer close foes to any vector
         TVector{} -> if pathLen > 1
                      then return $ Just tap
                      else pickNewTarget
