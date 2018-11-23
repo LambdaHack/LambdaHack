@@ -163,8 +163,8 @@ pickActorToMove maidToAvoid = do
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ foeRegularList side (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-                mildlyDistressed = deltaMild (bcalmDelta b)
-            return $! mildlyDistressed  -- e.g., actor hears an enemy
+                actorHears = deltaHears (bcalmDelta b)
+            return $! actorHears  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
