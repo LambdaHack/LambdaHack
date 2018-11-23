@@ -817,7 +817,9 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     itemFull <- getsState $ itemToFull iid
     when (fromCStore == CGround) $  -- pick up
       discoverIfMinorEffects toC iid (itemKindId itemFull)
-    -- Reset timeout for equipped periodic items and also for items
+    -- The first recharging period after pick up is random,
+    -- between 1 and 2 standard timeouts of the item.
+    -- We reset timeout for equipped periodic items and also for items
     -- moved out of the shared stash, in which timeouts are not consistently
     -- wrt some local time, because actors from many levels put items there
     -- all the time (and don't rebase it to any common clock).
@@ -829,27 +831,32 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]
           || fromCStore == CSha) $ do
-      localTime <- getsState $ getLocalTime (blid b)
-      -- The first recharging period after pick up is random,
-      -- between 1 and 2 standard timeouts of the item.
-      mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
-      -- The moved item set (not the whole stack) has its timeout
-      -- reset to a random value between timeout and twice timeout.
-      -- This prevents micromanagement via swapping items in and out of eqp
-      -- and via exact prediction of first timeout after equip.
-      case mrndTimeout of
-        Just rndT -> do
-          bagAfter <- getsState $ getContainerBag toC
-          let afterIt = case iid `EM.lookup` bagAfter of
-                Nothing -> error $ "" `showFailure` (iid, bagAfter, toC)
-                Just (_, it2) -> it2
-              resetIt = beforeIt ++ replicate k rndT
-          when (afterIt /= resetIt) $
-            execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
-        Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
+      randomResetTimeout k iid itemFull (blid b) beforeIt toC
+
+randomResetTimeout :: MonadServerAtomic m
+                   => Int -> ItemId -> ItemFull -> LevelId -> [Time]
+                   -> Container
+                   -> m ()
+randomResetTimeout k iid itemFull lid beforeIt toC = do
+  localTime <- getsState $ getLocalTime lid
+  mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
+  -- The created or moved item set (not the whole stack) has its timeout
+  -- reset to a random value between timeout and twice timeout.
+  -- This prevents micromanagement via swapping items in and out of eqp
+  -- and via exact prediction of first timeout after equip.
+  case mrndTimeout of
+    Just rndT -> do
+      bagAfter <- getsState $ getContainerBag toC
+      let afterIt = case iid `EM.lookup` bagAfter of
+            Nothing -> error $ "" `showFailure` (iid, bagAfter, toC)
+            Just (_, it2) -> it2
+          resetIt = beforeIt ++ replicate k rndT
+      when (afterIt /= resetIt) $
+        execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
+    Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
 
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime itemFull@ItemFull{itemDisco} = do
