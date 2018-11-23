@@ -629,37 +629,41 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
 drawLeaderDamage width = do
   mleader <- getsClient sleader
-  (tdice, tbonus, cbonus) <- case mleader of
+  (tdice, tbonus, cDice, cbonus) <- case mleader of
     Just leader -> do
+      b <- getsState $ getActorBody leader
       kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
       actorSk <- leaderSkillsClientUI
       actorMaxSkills <- getsState sactorMaxSkills
+      localTime <- getsState $ getLocalTime (blid b)
       let kitAssOnlyWeapons =
             filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
       strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
-      let damage = case strongest of
-            [] -> ("0", "", Color.White)
-            (_, (_, (itemFull, _))) : _ ->
-              let tdice = show $ IK.idamage $ itemKind itemFull
-                  bonusRaw = Ability.getSk Ability.SkHurtMelee
-                             $ actorMaxSkills EM.! leader
-                  bonus = min 200 $ max (-200) bonusRaw
-                  unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
-                  tbonus = if bonus == 0
-                           then if unknownBonus then "+?" else ""
-                           else (if bonus > 0 then "+" else "")
-                                <> show bonus
-                                <> (if bonus /= bonusRaw then "$" else "")
-                                <> if unknownBonus then "%?" else "%"
-                  tmpBonus = tmpMeleeBonus $ map snd kitAssRaw
-                  cbonus = case compare tmpBonus 0 of
-                    EQ -> Color.White
-                    GT -> Color.Green
-                    LT -> Color.Red
-             in (tdice, tbonus, cbonus)
-      return $! damage
-    Nothing -> return ("", "", Color.White)
-  let addColorDice = map (Color.attrChar2ToW32 Color.BrCyan)
+      return $! case strongest of
+        [] -> ("0", "", Color.BrCyan, Color.White)
+        (_, (_, (itemFull, kit))) : _ ->
+          let tdice = show $ IK.idamage $ itemKind itemFull
+              bonusRaw = Ability.getSk Ability.SkHurtMelee
+                         $ actorMaxSkills EM.! leader
+              bonus = min 200 $ max (-200) bonusRaw
+              unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
+              tbonus = if bonus == 0
+                       then if unknownBonus then "+?" else ""
+                       else (if bonus > 0 then "+" else "")
+                            <> show bonus
+                            <> (if bonus /= bonusRaw then "$" else "")
+                            <> if unknownBonus then "%?" else "%"
+              tmpBonus = tmpMeleeBonus $ map snd kitAssRaw
+              cDice = if hasCharge localTime itemFull kit
+                      then Color.BrCyan
+                      else Color.Cyan
+              cbonus = case compare tmpBonus 0 of
+                EQ -> Color.White
+                GT -> Color.Green
+                LT -> Color.Red
+          in (tdice, tbonus, cDice, cbonus)
+    Nothing -> return ("", "", Color.BrCyan, Color.White)
+  let addColorDice = map (Color.attrChar2ToW32 cDice)
       addColorBonus = map (Color.attrChar2ToW32 cbonus)
   return $! if null tdice || length tdice + length tbonus >= width then []
             else addColorDice tdice ++ addColorBonus tbonus
