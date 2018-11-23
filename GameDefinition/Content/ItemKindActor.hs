@@ -433,6 +433,7 @@ komodoDragon = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 30, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
+               , AddSkill SkAggression 1  -- match the description
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds at its lesser cousins."
