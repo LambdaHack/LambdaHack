@@ -1369,7 +1369,8 @@ effectDupItem :: MonadServerAtomic m
               => m () -> ItemId -> ActorId -> ActorId -> m UseResult
 effectDupItem execSfx iidId source target = do
   sb <- getsState $ getActorBody source
-  let cstore = CGround
+  let cstore = CGround  -- beware of other options, e.g., creating in eqp
+                        -- and not setting timeout to a random value
   kitAss <- getsState $ kitAssocs target [cstore]
   case filter ((/= iidId) . fst) kitAss of
     [] -> do

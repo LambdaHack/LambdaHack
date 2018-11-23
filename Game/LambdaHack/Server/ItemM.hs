@@ -1,11 +1,11 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( registerItem, embedItem, prepareItemKind, rollItemAspect
+  ( registerItem, randomResetTimeout, embedItem, prepareItemKind, rollItemAspect
   , rollAndRegisterItem
   , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , onlyRegisterItem, createLevelItem
+  , onlyRegisterItem, computeRndTimeout, createLevelItem
 #endif
   ) where
 
@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.CaveKind (citemFreq, citemNum)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -63,7 +64,7 @@ onlyRegisterItem itemKnown@(ItemKnown _ arItem _) = do
 registerItem :: MonadServerAtomic m
              => ItemFullKit -> ItemKnown -> Container -> Bool
              -> m ItemId
-registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
+registerItem (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
              itemKnown@(ItemKnown _ arItem _) container verbose = do
   iid <- onlyRegisterItem itemKnown
   let slore = IA.loreFromContainer arItem container
@@ -78,7 +79,46 @@ registerItem (ItemFull{itemBase, itemKindId, itemKind}, kit)
   when knowItems $ case container of
     CTrunk{} -> return ()
     _ -> execUpdAtomic $ UpdDiscover container iid itemKindId arItem
+  -- The first recharging period after creation is random,
+  -- between 1 and 2 standard timeouts of the item.
+  -- In this way we avoid many rattlesnakes rattling in unison.
+  case container of
+    CActor _ cstore | cstore `elem` [CEqp, COrgan] ->
+      randomResetTimeout (fst kit) iid itemFull [] container
+    _ -> return ()
   return iid
+
+randomResetTimeout :: MonadServerAtomic m
+                   => Int -> ItemId -> ItemFull -> [Time] -> Container
+                   -> m ()
+randomResetTimeout k iid itemFull beforeIt toC = do
+  lid <- getsState $ lidFromC toC
+  localTime <- getsState $ getLocalTime lid
+  mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
+  -- The created or moved item set (not the whole stack) has its timeout
+  -- reset to a random value between timeout and twice timeout.
+  -- This prevents micromanagement via swapping items in and out of eqp
+  -- and via exact prediction of first timeout after equip.
+  case mrndTimeout of
+    Just rndT -> do
+      bagAfter <- getsState $ getContainerBag toC
+      let afterIt = case iid `EM.lookup` bagAfter of
+            Nothing -> error $ "" `showFailure` (iid, bagAfter, toC)
+            Just (_, it2) -> it2
+          resetIt = beforeIt ++ replicate k rndT
+      when (afterIt /= resetIt) $
+        execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
+    Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
+
+computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
+computeRndTimeout localTime itemFull@ItemFull{itemDisco} = do
+  let arItem = aspectRecordFull itemFull
+  case IA.aTimeout $ itemAspect itemDisco of
+    t | t /= 0 && IA.checkFlag Ability.Periodic arItem -> do
+      rndT <- randomR (0, t)
+      let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
+      return $ Just $ timeShift localTime rndTurns
+    _ -> return Nothing
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createLevelItem pos lid = do

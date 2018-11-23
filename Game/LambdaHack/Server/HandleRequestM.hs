@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.HandleRequestM
     -- * Internal operations
   , execFailure, setBWait, managePerRequest, handleRequestTimedCases
   , affectSmell, reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
-  , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, computeRndTimeout
+  , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem
   , reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
@@ -46,7 +46,6 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -834,39 +833,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
-      randomResetTimeout k iid itemFull (blid b) beforeIt toC
-
-randomResetTimeout :: MonadServerAtomic m
-                   => Int -> ItemId -> ItemFull -> LevelId -> [Time]
-                   -> Container
-                   -> m ()
-randomResetTimeout k iid itemFull lid beforeIt toC = do
-  localTime <- getsState $ getLocalTime lid
-  mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
-  -- The created or moved item set (not the whole stack) has its timeout
-  -- reset to a random value between timeout and twice timeout.
-  -- This prevents micromanagement via swapping items in and out of eqp
-  -- and via exact prediction of first timeout after equip.
-  case mrndTimeout of
-    Just rndT -> do
-      bagAfter <- getsState $ getContainerBag toC
-      let afterIt = case iid `EM.lookup` bagAfter of
-            Nothing -> error $ "" `showFailure` (iid, bagAfter, toC)
-            Just (_, it2) -> it2
-          resetIt = beforeIt ++ replicate k rndT
-      when (afterIt /= resetIt) $
-        execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
-    Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
-
-computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime itemFull@ItemFull{itemDisco} = do
-  let arItem = aspectRecordFull itemFull
-  case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0 && IA.checkFlag Ability.Periodic arItem -> do
-      rndT <- randomR (0, t)
-      let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
-      return $ Just $ timeShift localTime rndTurns
-    _ -> return Nothing
+      randomResetTimeout k iid itemFull beforeIt toC
 
 -- * ReqProject
 
