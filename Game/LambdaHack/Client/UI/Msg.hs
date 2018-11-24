@@ -119,8 +119,10 @@ instance Binary History
 
 -- | Empty history of the given maximal length.
 emptyHistory :: Int -> History
-emptyHistory size = History emptyReport timeZero emptyReport timeZero
-                    $ RB.empty size U.empty
+emptyHistory size =
+  let ringBufferSize = size - 1  -- a report resides outside the buffer
+  in History emptyReport timeZero emptyReport timeZero
+             (RB.empty ringBufferSize U.empty)
 
 scrapRepetition :: History -> Maybe History
 scrapRepetition History{ newReport = Report newMsgs
@@ -183,7 +185,9 @@ renderTimeReport !t (Report r') =
 
 lengthHistory :: History -> Int
 lengthHistory History{oldReport, archivedHistory} =
-  RB.length archivedHistory + if nullReport oldReport then 0 else 1
+  RB.length archivedHistory
+  + length (renderTimeReport timeZero oldReport)
+      -- matches @renderHistory@
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
