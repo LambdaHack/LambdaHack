@@ -337,11 +337,11 @@ rosterShootout = Roster
 rosterHunt = Roster
   { rosterList = [ ( playerHero { fcanEscape = False
                                 , fhiCondPoly = hiHeroMedium }
-                   , [(-5, 10, "soldier hero")] )
+                   , [(-6, 10, "soldier hero")] )
                  , ( playerAntiHero { fname = "Indigo Researcher"
                                     , fcanEscape = False
                                     , fhiCondPoly = hiHeroMedium }
-                   , [(-5, 1, "scout hero"), (-5, 5, "ambusher hero")] )
+                   , [(-6, 1, "scout hero"), (-6, 5, "ambusher hero")] )
                  , (playerHorror, []) ]
   , rosterEnemy = [ ("Explorer", "Indigo Researcher")
                   , ("Explorer", "Horror Den")
@@ -517,7 +517,7 @@ cavesBrawl = [([-3], ["caveBrawl"])]
 
 cavesShootout = [([-5], ["caveShootout"])]
 
-cavesHunt = [([-5], ["caveHunt"])]
+cavesHunt = [([-6], ["caveHunt"])]
 
 cavesEscape = [([-7], ["caveEscape"])]
 
