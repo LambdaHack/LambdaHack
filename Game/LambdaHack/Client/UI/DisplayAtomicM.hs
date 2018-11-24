@@ -1153,12 +1153,14 @@ displayRespSfxAtomicUI sfx = case sfx of
           subject <- partActorLeader aid bUI
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd $ makeSentence
-            [MU.SubjectVerbSg subject "repurpose", "what lies", ppstore]
+            [ MU.SubjectVerbSg subject "repurpose", "what lies", ppstore
+            , "to a common item of the current level" ]
         IK.RerollItem -> do
           subject <- partActorLeader aid bUI
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd $ makeSentence
-            [MU.SubjectVerbSg subject "reshape", "what lies", ppstore]
+            [ MU.SubjectVerbSg subject "reshape", "what lies", ppstore
+            , "striving for the highest possible standards" ]
         IK.DupItem -> do
           subject <- partActorLeader aid bUI
           let ppstore = MU.Text $ ppCStoreIn CGround

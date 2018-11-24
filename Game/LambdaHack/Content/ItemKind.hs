@@ -111,7 +111,8 @@ data Effect =
       --   not dropping all, or cluttering store with rubbish becomes beneficial
   | PolyItem
       -- ^ get a suitable (i.e., numerous enough) non-unique common item
-      --   on the floor and polymorph it randomly
+      --   on the floor and polymorph it to a random common item,
+      --   with current depth coefficient
   | RerollItem
       -- ^ get a suitable (i.e., with any random aspects) stack of items
       --   (even unique) on the floor and change the random bonuses
