@@ -154,7 +154,7 @@ hiHeroMedium =
 hiHeroLong =
   [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
     , [minBound..maxBound] )
-  , ( [(HiSprint, -5000)]  -- speedrun bonus, if below 5000 turns
+  , ( [(HiSprint, -10000)]  -- speedrun bonus, if below this number of turns
     , victoryOutcomes )
   , ( [(HiBlitz, -100)]  -- speed matters always
     , victoryOutcomes )
@@ -168,7 +168,7 @@ hiDweller = [ ( [(HiConst, 1000)]  -- no loot, so big win reward
               , victoryOutcomes )
             , ( [(HiConst, 1000), (HiLoss, -10)]
               , victoryOutcomes )
-            , ( [(HiSprint, -1000)]  -- speedrun bonus, if below 1000 turns
+            , ( [(HiSprint, -1000)]  -- speedrun bonus, if below
               , victoryOutcomes )
             , ( [(HiBlitz, -100)]  -- speed matters
               , victoryOutcomes )
