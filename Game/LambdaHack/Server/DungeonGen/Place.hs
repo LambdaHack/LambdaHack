@@ -115,7 +115,8 @@ buildPlace :: COps                -- ^ the game content
            -> Maybe Area          -- ^ whole inner area of the grid cell
            -> Freqs PlaceKind     -- ^ optional fixed place freq
            -> Rnd Place
-buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
+buildPlace cops@COps{coplace, coTileSpeedup}
+           kc@CaveKind{..} dnight darkCorTile litCorTile
            levelDepth@(Dice.AbsDepth ldepth)
            totalDepth@(Dice.AbsDepth tdepth)
            dsecret r minnerArea mplaceGroup = do
@@ -139,8 +140,11 @@ buildPlace cops@COps{coplace} kc@CaveKind{..} dnight darkCorTile litCorTile
   -- in the place that are adjacent to floor tiles of the cave and so both
   -- should have the same lit condition.
   -- A false positive is walled staircases in LambdaHack, but it's OK.
-  dark <- if cpassable && (pfence kr `elem` [FFloor, FGround]
-                           || pfence kr == FNone && smallPattern)
+  dark <- if cpassable
+             && not (dnight && Tile.isLit coTileSpeedup darkCorTile)
+                  -- the collonade can be illuminated just as the trail is
+             && (pfence kr `elem` [FFloor, FGround]
+                 || pfence kr == FNone && smallPattern)
           then return dnight
           else oddsDice levelDepth totalDepth cdarkOdds
   let qlegend = if dark then clegendDarkTile else clegendLitTile
