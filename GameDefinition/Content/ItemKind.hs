@@ -360,7 +360,8 @@ flaskTemplate = ItemKind
   }
 flask1 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , irarity  = [(10, 5)]
+  , icount   = 1 `dL` 5
+  , irarity  = [(10, 7)]
   , iaspects = ELabel "of strength renewal brew"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "strengthened" (20 + 1 `d` 5)
@@ -782,7 +783,8 @@ ediblePlant4 = ediblePlantTemplate
 ediblePlant5 = ediblePlantTemplate
   { iname    = "fragrant herb"
   , ifreq    = [("common item", 100), ("edible plant", 100)]
-  , irarity  = [(1, 12), (10, 2)]
+  , icount   = 1 `dL` 9
+  , irarity  = [(1, 12), (10, 3)]
   , iaspects = ELabel "of lethargy"
                : iaspects ediblePlantTemplate
   , ieffects = [ toOrganBad "slowed" (20 + 1 `d` 5)
@@ -1233,10 +1235,10 @@ ring5 = ringTemplate
                , EqpSlot EqpSlotHurtMelee ]
                ++ iaspects ringTemplate
   }
-ring6 = ringTemplate  -- by the time it's found, probably no space in eqp
+ring6 = ringTemplate  -- weak skill per eqp slot, so can be without drawbacks
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 0), (10, 4)]
-  , iaspects = [ AddSkill SkShine $ 1 `d` 2
+  , irarity  = [(10, 4)]
+  , iaspects = [ AddSkill SkShine 1
                , EqpSlot EqpSlotShine ]
                ++ iaspects ringTemplate
   , idesc    = "A sturdy ring with a large, shining stone."
@@ -1352,7 +1354,7 @@ hatUshanka = ItemKind
   , ifreq    = [("common item", 100), ("misc armor", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 9), (10, 3)]
+  , irarity  = [(1, 6), (10, 2)]
   , iverbHit = "tickle"
   , iweight  = 500
   , idamage  = 0
