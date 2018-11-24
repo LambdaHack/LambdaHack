@@ -193,7 +193,7 @@ data SfxMsg =
   | SfxDupUnique
   | SfxDupValuable
   | SfxColdFish
-  | SfxTimerExtended LevelId ActorId ItemId CStore
+  | SfxTimerExtended LevelId ActorId ItemId CStore (Delta Time)
   | SfxCollideActor LevelId ActorId ActorId
   deriving (Show, Eq, Generic)
 

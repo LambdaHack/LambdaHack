@@ -1295,7 +1295,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxDupUnique -> return "Unique items can't be multiplied."
   SfxDupValuable -> return "Valuable items can't be multiplied."
   SfxColdFish -> return "Healing attempt from another faction is thwarted by your cold fish attitude."
-  SfxTimerExtended lid aid iid cstore -> do
+  SfxTimerExtended lid aid iid cstore delta -> do
     aidSeen <- getsState $ memActor aid lid
     if aidSeen then do
       b <- getsState $ getActorBody aid
@@ -1304,14 +1304,23 @@ ppSfxMsg sfxMsg = case sfxMsg of
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
+      bagAfter <- getsState $ getBodyStoreBag b cstore
       let kit = (1, [])
           (_, _, name, powers) =
             partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
                  | IA.looksLikeCondition $ aspectRecordFull itemFull ]
+          oldDelta = case iid `EM.lookup` bagAfter of
+            Just (_, timerAfter : _) ->
+              let totalDelta = timeDeltaToFrom timerAfter localTime
+              in timeDeltaSubtract totalDelta delta
+            _ -> Delta timeZero
       return $! makeSentence $
         ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last longer"]
+        ++ [ MU.Text $ "(" <> tshow (timeDeltaInSeconds oldDelta) <> "s + "
+                       <> tshow (timeDeltaInSeconds delta) <> "s)"
+           | oldDelta /= Delta timeZero ]
     else return ""
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid
