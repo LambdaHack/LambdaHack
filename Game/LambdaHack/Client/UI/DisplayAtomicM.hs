@@ -439,7 +439,7 @@ lookAtMove aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
   adjProjAssocs <- getsState $ adjacentProjAssocs body
-  if not (bproj body) && side == bfid body then do
+  if not (bproj body) && bfid body == side then do
     let foe (_, b2) = isFoe (bfid body) fact (bfid b2)
         adjFoes = filter foe $ adjBigAssocs ++ adjProjAssocs
     unless (null adjFoes) stopPlayBack
@@ -600,7 +600,7 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifySession $ \sess -> sess {sxhair = TEnemy aid False}
+      modifySession $ \sess -> sess {sxhair = TEnemy aid}
     stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
@@ -619,14 +619,14 @@ destroyActorUI destroy aid b = do
   unless (baseColor == Color.BrWhite) $  -- keep setup for heroes, etc.
     modifySession $ \sess -> sess {sactorUI = EM.delete aid $ sactorUI sess}
   let affect tgt = case tgt of
-        TEnemy a permit | a == aid ->
+        TEnemy a | a == aid ->
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
             TPoint TAny (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
-            TPoint (TEnemyPos a permit) (blid b) (bpos b)
+            TPoint (TEnemyPos a) (blid b) (bpos b)
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
   unless (bproj b) $

@@ -72,20 +72,22 @@ targetDesc mtarget = do
   arena <- getArenaUI
   lidV <- viewedLevelUI
   mleader <- getsClient sleader
+  let describeActorTarget aid = do
+        side <- getsClient sside
+        b <- getsState $ getActorBody aid
+        bUI <- getsSession $ getActorUI aid
+        actorMaxSk <- getsState $ getActorMaxSkills aid
+        let percentage =
+             100 * bhp b
+              `div` xM (max 5 $ Ability.getSk Ability.SkMaxHP actorMaxSk)
+            chs n = "[" <> T.replicate n "*"
+                        <> T.replicate (4 - n) "_" <> "]"
+            stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
+            hpIndicator = if bfid b == side then Nothing else Just stars
+        return (Just $ bname bUI, hpIndicator)
   case mtarget of
-    Just (TEnemy aid _) -> do
-      side <- getsClient sside
-      b <- getsState $ getActorBody aid
-      bUI <- getsSession $ getActorUI aid
-      actorMaxSk <- getsState $ getActorMaxSkills aid
-      let percentage =
-            100 * bhp b
-            `div` xM (max 5 $ Ability.getSk Ability.SkMaxHP actorMaxSk)
-          chs n = "[" <> T.replicate n "*"
-                      <> T.replicate (4 - n) "_" <> "]"
-          stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
-          hpIndicator = if bfid b == side then Nothing else Just stars
-      return (Just $ bname bUI, hpIndicator)
+    Just (TEnemy aid) -> describeActorTarget aid
+    Just (TNonEnemy aid) -> describeActorTarget aid
     Just (TPoint tgoal lid p) -> case tgoal of
       TEnemyPos{} -> do
         let hotText = if lid == lidV && arena == lidV

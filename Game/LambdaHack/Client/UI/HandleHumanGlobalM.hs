@@ -372,10 +372,7 @@ meleeAid target = do
       let returnCmd = do
             -- Set personal target to the enemy position,
             -- to easily hit him with a ranged attack when he flees.
-            let f (Just (TEnemy _ b)) = Just $ TEnemy target b
-                f (Just (TPoint (TEnemyPos _ b) _ _)) = Just $ TEnemy target b
-                f _ = Just $ TEnemy target False
-            modifyClient $ updateTarget leader f
+            modifyClient $ updateTarget leader $ const $ Just $ TEnemy target
             return $ Right wp
           res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
               | isFriend (bfid sb) sfact (bfid tb) = do

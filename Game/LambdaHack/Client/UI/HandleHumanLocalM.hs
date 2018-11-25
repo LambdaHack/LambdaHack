@@ -420,12 +420,18 @@ xhairLegalEps = do
                             else "aiming line blocked somewhere"
   xhair <- getsSession sxhair
   case xhair of
-    TEnemy a _ -> do
+    TEnemy a -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
       else return $ Left "can't fling at an enemy on remote level"
+    TNonEnemy a -> do
+      body <- getsState $ getActorBody a
+      let pos = bpos body
+      if blid body == lidV
+      then findNewEps False pos
+      else return $ Left "can't fling at a non-enemy on remote level"
     TPoint TEnemyPos{} _ _ ->
       return $ Left "selected opponent not visible"
     TPoint _ lid pos ->
@@ -894,19 +900,23 @@ aimFloorHuman = do
   sxhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ actorAssocs (const True) lidV
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   let xhair = fromMaybe lpos xhairPos
       tgt = case sxhair of
         _ | isNothing saimMode ->  -- first key press: keep target
           sxhair
-        TEnemy a True -> TEnemy a False
         TEnemy{} -> TPoint TAny lidV xhair
+        TNonEnemy{} -> TPoint TAny lidV xhair
         TPoint{} -> TVector $ xhair `vectorToFrom` lpos
         TVector{} ->
-          -- For projectiles, we pick here the first that would be picked
+          -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
-          -- without any intervening actors from other tiles.
-          case find (\(_, m) -> Just (bpos m) == xhairPos) bsAll of
-            Just (im, _) -> TEnemy im True
+          -- when pressing "*", without any intervening actors from other tiles.
+          case find (\(_, b) -> Just (bpos b) == xhairPos) bsAll of
+            Just (aid, b) -> if isFoe side fact (bfid b)
+                             then TEnemy aid
+                             else TNonEnemy aid
             Nothing -> TPoint TAny lidV xhair
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   modifySession $ \sess -> sess {sxhair = tgt}
@@ -928,28 +938,25 @@ aimEnemyHuman = do
   let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
       dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the actor under xhair, if any
-        let i = fromMaybe (-1)
-                $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
-        in splitAt i dbs
-      (permitAnyActor, (lt, gt)) = case sxhair of
-        TEnemy a permit | isJust saimMode ->  -- pick next enemy
-          let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-          in (permit, splitAt (i + 1) dbs)
-        TEnemy a permit ->  -- first key press, retarget old enemy
-          let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-          in (permit, splitAt i dbs)
-        TPoint (TEnemyPos _ permit) _ _ -> (permit, pickUnderXhair)
-        _ -> (False, pickUnderXhair)  -- the sensible default is only-foes
-      gtlt = gt ++ lt
+        fromMaybe (-1) $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
+      (pickEnemies, i) = case sxhair of
+        TEnemy a | isJust saimMode ->  -- pick next enemy
+          (True, 1 + fromMaybe (-1) (findIndex ((== a) . fst) dbs))
+        TEnemy a ->  -- first key press, retarget old enemy
+          (True, fromMaybe (-1) $ findIndex ((== a) . fst) dbs)
+        TNonEnemy a | isJust saimMode ->  -- pick next non-enemy
+          (False, 1 + fromMaybe (-1) (findIndex ((== a) . fst) dbs))
+        TNonEnemy a ->  -- first key press, retarget old non-enemy
+          (False, fromMaybe (-1) $ findIndex ((== a) . fst) dbs)
+        _ -> (True, pickUnderXhair)
+      (lt, gt) = splitAt i dbs
       isEnemy b = isFoe side fact (bfid b)
                   && not (bproj b)
                   && bhp b > 0
-      lf = filter (isEnemy . snd) gtlt
-      tgt | permitAnyActor = case gtlt of
-        (a, _) : _ -> TEnemy a True
-        [] -> sxhair  -- no actors in sight, stick to last target
-          | otherwise = case lf of
-        (a, _) : _ -> TEnemy a False
+      cond = if pickEnemies then isEnemy else not . isEnemy
+      lf = filter (cond . snd) $ gt ++ lt
+      tgt = case lf of
+        (a, _) : _ -> if pickEnemies then TEnemy a else TNonEnemy a
         [] -> sxhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
@@ -1128,10 +1135,14 @@ xhairPointerEnemy verbose = do
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair
+    side <- getsClient sside
+    fact <- getsState $ (EM.! side) . sfactionD
     let newPos = Point px (py - mapStartY)
         sxhair =
-          case find (\(_, m) -> bpos m == newPos) bsAll of
-            Just (im, _) -> TEnemy im True
+          case find (\(_, b) -> bpos b == newPos) bsAll of
+            Just (aid, b) -> if isFoe side fact (bfid b)
+                             then TEnemy aid
+                             else TNonEnemy aid
             Nothing -> TPoint TAny lidV newPos
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->

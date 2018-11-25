@@ -175,12 +175,11 @@ pickActorToMove maidToAvoid = do
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorMaxSkills aid body
-          targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _ permit}) =
-            not permit
+          targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _}) = True
           targetTEnemy
             ( (_, b)
-            , TgtAndPath{tapTgt=TPoint (TEnemyPos _ permit) lid _} ) =
-              lid == blid b && not permit
+            , TgtAndPath{tapTgt=TPoint (TEnemyPos _) lid _} ) =
+              lid == blid b
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
             threatDistL <- getsState $ meleeThreatDistList aid
@@ -323,7 +322,7 @@ setTargetFromTactics oldAid = do
             -- Copy over the leader's target, if any, or follow his bpos.
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
-            let enemyPath = Just TgtAndPath{ tapTgt = TEnemy leader True
+            let enemyPath = Just TgtAndPath{ tapTgt = TNonEnemy leader
                                            , tapPath = NoPath }
             unless tgtPathSet $ do
                enemyPathSet <- setPath enemyPath

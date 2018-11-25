@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condAimEnemyNoMeleeM
   , condInMeleeM
   , condAimCrucialM
-  , condTgtNonmovingM
+  , condTgtNonmovingEnemyM
   , condAnyFoeAdjM
   , condAdjTriggerableM
   , meleeThreatDistList
@@ -65,7 +65,7 @@ condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
 condAimEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
-    Just (TEnemy _ permit) -> not permit
+    Just (TEnemy _) -> True
     _ -> False
 
 -- | Require that the target enemy is remembered on the actor's level.
@@ -74,7 +74,7 @@ condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
-    Just (TPoint (TEnemyPos _ permit) lid _) -> lid == blid b && not permit
+    Just (TPoint (TEnemyPos _) lid _) -> lid == blid b
     _ -> False
 
 -- | Require that the target enemy is visible by the party and doesn't melee.
@@ -82,10 +82,10 @@ condAimEnemyNoMeleeM :: MonadClient m => ActorId -> m Bool
 condAimEnemyNoMeleeM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
-    Just (TEnemy aid2 permit) -> do
+    Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
       actorMaxSkills <- getsState sactorMaxSkills
-      return $ not permit && actorCanMelee actorMaxSkills aid2 b2
+      return $ actorCanMelee actorMaxSkills aid2 b2
     _ -> return False
 
 condInMeleeM :: MonadClient m => LevelId -> m Bool
@@ -107,7 +107,7 @@ condAimCrucialM aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   return $ case mtgtMPath of
-    Just TgtAndPath{tapTgt=TEnemy _ permit} -> not permit
+    Just TgtAndPath{tapTgt=TEnemy _} -> True
     Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath=AndPath{pathLen}} ->
       lid == blid b
       && (pathLen < 10  -- close enough to get there first
@@ -118,12 +118,12 @@ condAimCrucialM aid = do
                    -- prevent animals from sleep close to cave edges
     _ -> False  -- includes the case of target with no path
 
--- | Check if the target is nonmoving.
-condTgtNonmovingM :: MonadClient m => ActorId -> m Bool
-condTgtNonmovingM aid = do
+-- | Check if the target is a nonmoving enemy.
+condTgtNonmovingEnemyM :: MonadClient m => ActorId -> m Bool
+condTgtNonmovingEnemyM aid = do
   btarget <- getsClient $ getTarget aid
   case btarget of
-    Just (TEnemy enemy _) -> do
+    Just (TEnemy enemy) -> do
       actorMaxSk <- getsState $ getActorMaxSkills enemy
       return $ Ability.getSk Ability.SkMove actorMaxSk <= 0
     _ -> return False

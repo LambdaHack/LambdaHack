@@ -84,22 +84,20 @@ instance Binary Status
 
 -- | The type of na actor target.
 data Target =
-    TEnemy ActorId Bool
-    -- ^ target an actor; cycle only trough seen foes, unless the flag is set
+    TEnemy ActorId              -- ^ target an enemy
+  | TNonEnemy ActorId           -- ^ target a friend or neutral
   | TPoint TGoal LevelId Point  -- ^ target a concrete spot
-  | TVector Vector         -- ^ target position relative to actor
+  | TVector Vector              -- ^ target position relative to actor
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Target
 
 -- | The goal of an actor.
 data TGoal =
-    TEnemyPos ActorId Bool
-    -- ^ last seen position of the targeted actor
-  | TEmbed ItemBag Point
-    -- ^ embedded item that can be triggered;
-    -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is embbedded in @p@
-    -- and @q@ is an adjacent open tile
+    TEnemyPos ActorId  -- ^ last seen position of the targeted actor
+  | TEmbed ItemBag Point  -- ^ embedded item that can be triggered;
+                          -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is
+                          -- embbedded in @p@ and @q@ is an adjacent open tile
   | TItem ItemBag  -- ^ item lying on the ground
   | TSmell  -- ^ smell potentially left by enemies
   | TBlock  -- ^ a blocking tile to be approached (and, e.g., revealed
@@ -125,8 +123,8 @@ gleader = _gleader
 
 tgtKindDescription :: Target -> Text
 tgtKindDescription tgt = case tgt of
-  TEnemy _ True -> "at actor"
-  TEnemy _ False -> "at enemy"
+  TEnemy _ -> "at enemy"
+  TNonEnemy _ -> "at non-enemy"
   TPoint{} -> "at position"
   TVector{} -> "with a vector"
 

@@ -45,7 +45,10 @@ getPerFid lid = do
 -- | Calculate the position of an actor's target.
 aidTgtToPos :: ActorId -> LevelId -> Target -> State -> Maybe Point
 aidTgtToPos aid lidV tgt s = case tgt of
-  TEnemy a _ ->
+  TEnemy a ->
+    let body = getActorBody a s
+    in if blid body == lidV then Just (bpos body) else Nothing
+  TNonEnemy a ->
     let body = getActorBody a s
     in if blid body == lidV then Just (bpos body) else Nothing
   TPoint _ lid p ->
@@ -101,7 +104,7 @@ currentSkillsClient aid = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   -- Newest Leader in sleader, not yet in sfactionD.
-  mleader <- if side == bfid body
+  mleader <- if bfid body == side
              then getsClient sleader
              else do
                fact <- getsState $ (EM.! bfid body) . sfactionD

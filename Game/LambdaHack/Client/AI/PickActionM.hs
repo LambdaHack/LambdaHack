@@ -106,7 +106,7 @@ actionStrategy moldLeader aid retry = do
   condEnoughGear <- condEnoughGearM aid
   condFloorWeapon <- condFloorWeaponM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
-  condTgtNonmoving <- condTgtNonmovingM aid
+  condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
   explored <- getsClient sexplored
   actorMaxSkills <- getsState sactorMaxSkills
   friends <- getsState $ friendRegularList (bfid body) (blid body)
@@ -269,7 +269,7 @@ actionStrategy moldLeader aid retry = do
                  || condDesirableFloorItem
                  || uneasy) )
         , ( [SkProject]
-          , stratToFreq (if condTgtNonmoving then 20 else 3)
+          , stratToFreq (if condTgtNonmovingEnemy then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyPresent && not condInMelee )
@@ -652,7 +652,7 @@ meleeAny aid = do
       adjFoes = map fst $ filter foe adjBigAssocs
   btarget <- getsClient $ getTarget aid
   mtargets <- case btarget of
-    Just (TEnemy aid2 _) -> do
+    Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
       return $! if adjacent (bpos b2) (bpos b) && foe (aid2, b2)
                 then Just [aid2]
@@ -894,11 +894,11 @@ displaceBlocker aid retry = do
   let condCanMelee = actorCanMelee actorMaxSkills aid b
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
-    Just TgtAndPath{ tapTgt=TEnemy _ permit
+    Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal  -- not a real blocker but goal; only displace if can't
                        -- melee (e.g., followed leader) and desperate
-        && not (retry && not permit && condCanMelee) ->
+        && not (retry && condCanMelee) ->
         return reject
     Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target too much

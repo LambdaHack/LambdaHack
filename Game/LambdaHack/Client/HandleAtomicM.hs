@@ -282,10 +282,12 @@ tileChangeAffectsBfs COps{coTileSpeedup} fromTile toTile =
 createActor :: MonadClient m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActor aid b ais = do
   side <- getsClient sside
-  let newPermit = bfid b == side
-      affect3 tap@TgtAndPath{..} = case tapTgt of
-        TPoint (TEnemyPos a _) _ _ | a == aid ->
-          TgtAndPath (TEnemy a newPermit) NoPath
+  fact <- getsState $ (EM.! side) . sfactionD
+  let affect3 tap@TgtAndPath{..} = case tapTgt of
+        TPoint (TEnemyPos a) _ _ | a == aid ->
+          let tgt | isFoe side fact (bfid b) = TEnemy a  -- still a foe
+                  | otherwise = TPoint TAny (blid b) (bpos b)
+          in TgtAndPath tgt NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
@@ -297,14 +299,15 @@ destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
-        TEnemy a permit | a == aid ->
+        TEnemy a | a == aid ->
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
             TPoint TAny (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
-            TPoint (TEnemyPos a permit) (blid b) (bpos b)
+            TPoint (TEnemyPos a) (blid b) (bpos b)
+        TNonEnemy a | a == aid -> TPoint TAny (blid b) (bpos b)
         _ -> tgt
       affect3 TgtAndPath{..} =
         let newMPath = case tapPath of

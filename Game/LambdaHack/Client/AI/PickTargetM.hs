@@ -245,7 +245,7 @@ computeTarget aid = do
             notIgnoredFoes = maybe nearbyFoes f maidToIgnore
         cfoes <- closestFoes notIgnoredFoes aid
         case cfoes of
-          (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
+          (_, (aid2, _)) : _ -> setPath $ TEnemy aid2
           [] | condInMelee -> return Nothing  -- don't slow down fighters
             -- this looks a bit strange, because teammates stop in their tracks
             -- all around the map (unless very close to the combatant),
@@ -309,7 +309,7 @@ computeTarget aid = do
                             case afoes of
                               (_, (aid2, _)) : _ ->
                                 -- All stones turned, time to win or die.
-                                setPath $ TEnemy aid2 False
+                                setPath $ TEnemy aid2
                               [] -> do
                                 furthest <- furthestKnown aid
                                 setPath $ TPoint TKnown (blid b) furthest
@@ -330,15 +330,12 @@ computeTarget aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      followingWrong permit =
-        permit && (condInMelee  -- in melee, stop following
-                   || mleader == Just aid)  -- a leader, never follow
       updateTgt :: TgtAndPath -> m (Maybe TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
       updateTgt _ | EM.member aid fleeD = pickNewTarget
         -- forget enemy positions to prevent attacking them again soon
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
-        TEnemy a permit -> do
+        TEnemy a -> do
           body <- getsState $ getActorBody a
           if | (condInMelee  -- fight close foes or nobody at all
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
@@ -346,7 +343,6 @@ computeTarget aid = do
                || blid body /= blid b  -- wrong level
                || actorDying body -> -- foe already dying
                pickNewTarget
-             | followingWrong permit -> pickNewTarget
              | otherwise -> do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
@@ -372,14 +368,13 @@ computeTarget aid = do
                                          && not (occupiedProjLvl q lvl)
                    then return $ Just tap{tapPath=mpath}
                    else pickNewTargetIgnore (Just a)
-          -- In this case, need to retarget, to focus on foes that melee ours
-          -- and not, e.g., on remembered foes or items.
+        -- In this case, need to retarget, to focus on foes that melee ours
+        -- and not, e.g., on remembered foes or items.
         _ | condInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint tgoal lid pos -> case tgoal of
-          TEnemyPos _ permit  -- chase last position even if foe hides
+          TEnemyPos _  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
-            | followingWrong permit -> pickNewTarget
             | otherwise -> do
               -- Here pick the closer enemy, remembered or seen, to avoid
               -- loops when approaching new enemy obscures him behind obstacle
@@ -456,6 +451,16 @@ computeTarget aid = do
           TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to any vector
+        TNonEnemy _ | mleader == Just aid ->  -- a leader, never follow
+          pickNewTarget
+        TNonEnemy a -> do
+          body <- getsState $ getActorBody a
+          -- Update path. If impossible, pick another target.
+          mpath <- getCachePath aid $ bpos body
+          case mpath of
+            NoPath -> pickNewTarget
+            AndPath{pathList=[]} -> pickNewTarget
+            _ -> return $ Just tap{tapPath=mpath}
         TVector{} -> if pathLen > 1
                      then return $ Just tap
                      else pickNewTarget
