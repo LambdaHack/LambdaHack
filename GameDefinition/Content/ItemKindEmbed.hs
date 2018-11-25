@@ -118,7 +118,7 @@ treasureCacheTrap = ItemKind
 signboardExit = ItemKind
   { isymbol  = '?'
   , iname    = "inscription"
-  , ifreq    = [("signboard", 80)]
+  , ifreq    = [("signboard", 50)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -132,7 +132,7 @@ signboardExit = ItemKind
   }
 signboardEmbed = signboardExit
   { iname    = "notice"
-  , ifreq    = [("signboard", 20)]
+  , ifreq    = [("signboard", 50)]
   , ieffects = [Detect DetectEmbed 12]
   , idesc    = "The battered poster is untitled and unsigned."
   }
