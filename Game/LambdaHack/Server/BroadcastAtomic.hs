@@ -339,8 +339,7 @@ atomicRemember lid inPer sClient s =
       inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
       atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
       -- Actors come last to report the environment they land on.
-      inAssocs = concatMap (\p -> maybeToList (posToBigAssoc p lid s)
-                                  ++ posToProjAssocs p lid s) inFov
+      inAssocs = concatMap (\p -> posToAidAssocs p lid s) inFov
       -- Here, the actor may be already visible, e.g., when teleporting,
       -- so the exception is caught in @sendUpdate@ above.
       fActor (aid, b) = let ais = getCarriedAssocsAndTrunk b s

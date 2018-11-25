@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.Level
   , updateFloor, updateEmbed, updateBigMap, updateProjMap
   , updateTile, updateEntry, updateSmell
     -- * Level query
-  , posToBigLvl, occupiedBigLvl, posToProjsLvl, occupiedProjLvl
+  , posToBigLvl, occupiedBigLvl, posToProjsLvl, occupiedProjLvl, posToAidsLvl
   , at, findPosTry, findPosTry2, nearbyFreePoints
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -189,6 +189,11 @@ occupiedProjLvl :: Point -> Level -> Bool
 {-# INLINE occupiedProjLvl #-}
 occupiedProjLvl pos lvl = pos `EM.member` lproj lvl
 
+posToAidsLvl :: Point -> Level -> [ActorId]
+{-# INLINE posToAidsLvl #-}
+posToAidsLvl pos lvl = maybeToList (posToBigLvl pos lvl)
+                       ++ posToProjsLvl pos lvl
+
 -- | Try to find a random position on the map satisfying
 -- conjunction of the mandatory and an optional predicate.
 -- If the permitted number of attempts is not enough,
@@ -271,7 +276,7 @@ nearbyFreePoints :: COps -> Level -> (ContentId TileKind -> Bool) -> Point
 nearbyFreePoints cops lvl f start =
   let good p = f (lvl `at` p)
                && Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
-               && null (posToProjsLvl p lvl) && isNothing (posToBigLvl p lvl)
+               && null (posToAidsLvl p lvl)
   in filter good $ nearbyPassablePoints cops lvl start
 
 instance Binary Level where

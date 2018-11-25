@@ -316,8 +316,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgts <- getsState $ \s -> maybeToList (posToBigAssoc tpos arena s)
-                            ++ posToProjAssocs tpos arena s
+  tgts <- getsState $ posToAidAssocs tpos arena
   case tgts of
     [] -> do  -- move or search or alter
       runStopOrCmd <- moveSearchAlter run dir
@@ -422,7 +421,7 @@ displaceAid target = do
        lvl <- getLevel lid
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-         case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+         case posToAidsLvl tpos lvl of
            [] -> error $ "" `showFailure` (leader, sb, target, tb)
            [_] -> return $ Right $ ReqDisplace target
            _ -> failSer DisplaceProjectiles
@@ -629,8 +628,7 @@ multiActorGoTo arena c paramOld =
           AndPath{pathList = p1 : _} -> do
             let finalGoal = p1 == c
                 dir = towards (bpos b) p1
-            tgts <- getsState $ \s -> maybeToList (posToBig p1 arena s)
-                                      ++ posToProjs p1 arena s
+            tgts <- getsState $ posToAids p1 arena
             case tgts of
               [] -> do
                 modifySession $ \sess -> sess {srunning = Just paramNew}

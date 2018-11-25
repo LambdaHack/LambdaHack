@@ -2,10 +2,11 @@
 -- | Operations on the 'Actor' type, and related, that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
-  ( fidActorNotProjGlobalAssocs, actorAssocs
-  , fidActorRegularAssocs, fidActorRegularIds
-  , foeRegularAssocs, foeRegularList, friendRegularAssocs, friendRegularList
-  , bagAssocs, bagAssocsK, posToBig, posToBigAssoc, posToProjs, posToProjAssocs
+  ( fidActorNotProjGlobalAssocs, actorAssocs, fidActorRegularAssocs
+  , fidActorRegularIds, foeRegularAssocs, foeRegularList
+  , friendRegularAssocs, friendRegularList, bagAssocs, bagAssocsK
+  , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
+  , posToAids, posToAidAssocs
   , calculateTotal, itemPrice, mergeItemQuant, findIid
   , combinedGround, combinedOrgan, combinedEqp, combinedInv
   , combinedItems, combinedFromLore
@@ -116,6 +117,14 @@ posToProjs pos lid s = posToProjsLvl pos $ sdungeon s EM.! lid
 posToProjAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
 posToProjAssocs pos lid s =
   let l = posToProjsLvl pos $ sdungeon s EM.! lid
+  in map (\aid -> (aid, getActorBody aid s)) l
+
+posToAids :: Point -> LevelId -> State -> [ActorId]
+posToAids pos lid s = posToAidsLvl pos $ sdungeon s EM.! lid
+
+posToAidAssocs :: Point -> LevelId -> State -> [(ActorId, Actor)]
+posToAidAssocs pos lid s =
+  let l = posToAidsLvl pos $ sdungeon s EM.! lid
   in map (\aid -> (aid, getActorBody aid s)) l
 
 -- | Calculate loot's worth for a given faction.

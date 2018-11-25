@@ -327,8 +327,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
        && (sbursting && (tdamaging || tbursting)
            || (tbursting && (sdamaging || sbursting)))
   -- We start by checking actors at the target position.
-  tgt <- getsState $ \s -> maybeToList (posToBigAssoc tpos lid s)
-                           ++ posToProjAssocs tpos lid s
+  tgt <- getsState $ posToAidAssocs tpos lid
   case tgt of
     (target, tb) : _ | mayAttack && (not (bproj sb)
                                      || not (bproj tb)
@@ -531,7 +530,7 @@ reqDisplaceGeneric voluntary source target = do
        lvl <- getLevel lid
        -- Displacing requires full access.
        if Tile.isWalkable coTileSpeedup $ lvl `at` tpos then
-         case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+         case posToAidsLvl tpos lvl of
            [] -> error $ "" `showFailure` (source, sb, target, tb)
            [_] -> do
              execUpdAtomic $ UpdDisplaceActor source target

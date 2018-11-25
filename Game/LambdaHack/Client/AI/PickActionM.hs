@@ -615,8 +615,7 @@ meleeBlocker aid = do
                | otherwise = Nothing  -- MeleeDistant
           lBlocker = case maim of
             Nothing -> []
-            Just aim -> maybeToList (posToBigLvl aim lvl)
-                        ++ posToProjsLvl aim lvl
+            Just aim -> posToAidsLvl aim lvl
       case lBlocker of
         aid2 : _ -> do
           body2 <- getsState $ getActorBody aid2
@@ -871,7 +870,7 @@ displaceFoe aid = do
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
         let tpos = bpos body2
-        case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+        case posToAidsLvl tpos lvl of
           [_] -> do
             actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
@@ -918,7 +917,7 @@ displaceTgt source tpos retry = do
         boldpos body /= Just p || waitedLastTurn body
   if walkable tpos && notLooping b tpos then do
     mleader <- getsClient sleader
-    case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+    case posToAidsLvl tpos lvl of
       [] -> return reject
       [aid2] | Just aid2 /= mleader -> do
         b2 <- getsState $ getActorBody aid2
@@ -987,8 +986,7 @@ moveTowards aid target goal relaxed = do
   salter <- getsClient salter
   noFriends <- getsState $ \s p ->
     all (isFoe (bfid b) fact . bfid . snd)
-        (maybeToList (posToBigAssoc p (blid b) s)
-         ++ posToProjAssocs p (blid b) s)  -- don't kill own projectiles
+        (posToAidAssocs p (blid b) s)  -- don't kill own projectiles
   let lalter = salter EM.! blid b
       -- Only actors with SkAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
@@ -1035,7 +1033,7 @@ moveOrRunAid source dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  case maybeToList (posToBigLvl tpos lvl) ++ posToProjsLvl tpos lvl of
+  case posToAidsLvl tpos lvl of
     [target] | walkable
                && getSk SkDisplace actorSk > 0
                && notLooping sb tpos -> do

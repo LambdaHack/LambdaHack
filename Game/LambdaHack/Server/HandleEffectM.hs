@@ -844,8 +844,7 @@ effectAscend recursiveCall execSfx up source target pos = do
                            mbtime_bOld mbtimeTraj_bOld mlead
        -- The actor will be added to the new level,
        -- but there can be other actors at his new position.
-       inhabitants <- getsState $ \s -> maybeToList (posToBigAssoc pos3 lid2 s)
-                                        ++ posToProjAssocs pos3 lid2 s
+       inhabitants <- getsState $ posToAidAssocs pos3 lid2
        case inhabitants of
          [] -> do
            switch1
@@ -890,8 +889,7 @@ findStairExit side moveUp lid pos = do
       ps = filter (Tile.isWalkable coTileSpeedup . (lvl `at`))
            $ map (shift pos) mvs
       posOcc :: State -> Int -> Point -> Bool
-      posOcc s k p = case maybeToList (posToBigAssoc p lid s)
-                          ++ posToProjAssocs p lid s of
+      posOcc s k p = case posToAidAssocs p lid s of
         [] -> k == 0
         (_, b) : _ | bproj b -> k == 3
         (_, b) : _ | isFoe side fact (bfid b) -> k == 1  -- non-proj foe

@@ -407,8 +407,7 @@ lookAtActors :: MonadClientUI m
              -> m Text
 lookAtActors p lidV = do
   side <- getsClient sside
-  inhabitants <- getsState $ \s -> maybeToList (posToBigAssoc p lidV s)
-                                   ++ posToProjAssocs p lidV s
+  inhabitants <- getsState $ \s -> posToAidAssocs p lidV s
   sactorUI <- getsSession sactorUI
   let inhabitantsUI =
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
