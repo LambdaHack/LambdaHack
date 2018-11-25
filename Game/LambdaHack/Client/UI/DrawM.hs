@@ -243,15 +243,13 @@ drawFramePath drawnLevelId = do
       Just TgtAndPath{tapPath=tapPath@AndPath{pathGoal}}
         | pathGoal == xhairPos -> return tapPath
       _ -> getCachePath aid xhairPos) mleader
-  s <- getState
+  assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
   let lpath = if null bline then []
               else maybe [] (\case
                 NoPath -> []
                 AndPath {pathList} -> pathList) mpath
-      xhairHere = find (\(_, m) -> xhairPos == bpos m)
-                       (inline actorAssocs (const True) drawnLevelId s)
-      shiftedBTrajectory = case xhairHere of
-        Just (_, Actor{btrajectory = Just p, bpos = prPos}) ->
+      shiftedBTrajectory = case assocsAtxhair of
+        (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
           trajectoryToPath prPos (fst p)
         _ -> []
       shiftedLine = if null shiftedBTrajectory

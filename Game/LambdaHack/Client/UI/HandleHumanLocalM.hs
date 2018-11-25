@@ -913,6 +913,7 @@ aimFloorHuman = do
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- when pressing "*", without any intervening actors from other tiles.
+          -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
           case find (\(_, b) -> Just (bpos b) == xhairPos) bsAll of
             Just (aid, b) -> if isFoe side fact (bfid b)
                              then TEnemy aid
@@ -935,7 +936,8 @@ aimEnemyHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
-  let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
+  let -- On the same position, big actors come before projectiles.
+      ordPos (_, b) = (chessDist lpos $ bpos b, bpos b, bproj b)
       dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the actor under xhair, if any
         fromMaybe (-1) $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
@@ -1139,6 +1141,10 @@ xhairPointerEnemy verbose = do
     fact <- getsState $ (EM.! side) . sfactionD
     let newPos = Point px (py - mapStartY)
         sxhair =
+          -- If many actors, we pick here the first that would be picked
+          -- by '*', so that all other projectiles on the tile come next,
+          -- when pressing "*", without any intervening actors from other tiles.
+          -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
           case find (\(_, b) -> bpos b == newPos) bsAll of
             Just (aid, b) -> if isFoe side fact (bfid b)
                              then TEnemy aid
