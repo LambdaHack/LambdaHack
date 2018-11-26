@@ -46,7 +46,8 @@ pickActorToMove maidToAvoid = do
   let pickOld = do
         void $ refreshTarget (oldAid, oldBody)
         return oldAid
-  case ours of
+      oursNotSleeping = filter (\(_, b) -> bwatch b /= WSleep) ours
+  case oursNotSleeping of
     _ | -- Keep the leader: faction discourages client leader change on level,
         -- so will only be changed if waits (maidToAvoid)
         -- to avoid wasting his higher mobility.
@@ -56,10 +57,13 @@ pickActorToMove maidToAvoid = do
         -- And we are guaranteed that only the two classes of actors are
         -- not waiting, with some exceptions (urgent unequip, flee via starts,
         -- melee-less trying to flee, first aid, etc.).
-        snd (autoDungeonLevel fact) && isNothing maidToAvoid
-      -> pickOld
-    [] -> error $ "" `showFailure` (oldAid, oldBody)
-    [_] -> pickOld  -- Keep the leader: he is alone on the level.
+        snd (autoDungeonLevel fact) && isNothing maidToAvoid -> pickOld
+    [] -> pickOld
+    [(aidNotSleeping, bNotSleeping)] -> do
+      -- Target of asleep actors won't change unless foe adjacent,
+      -- which is caught without recourse to targeting.
+      void $ refreshTarget (aidNotSleeping, bNotSleeping)
+      return aidNotSleeping
     _ -> do
       -- At this point we almost forget who the old leader was
       -- and treat all party actors the same, eliminating candidates
@@ -69,7 +73,9 @@ pickActorToMove maidToAvoid = do
       let refresh aidBody = do
             mtgt <- refreshTarget aidBody
             return (aidBody, mtgt)
-          goodGeneric (_, Nothing) = Nothing
+      oursTgtRaw <- mapM refresh oursNotSleeping
+      fleeD <- getsClient sfleeD
+      let goodGeneric (_, Nothing) = Nothing
           goodGeneric (_, Just TgtAndPath{tapPath=NoPath}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
             -- will never flee if melee is happening; but this is rare;
@@ -95,9 +101,7 @@ pickActorToMove maidToAvoid = do
               -- Not an attempted leader stuck this turn.
               Just ((aid, b), tgt)
             _ -> Nothing
-      oursTgtRaw <- mapM refresh ours
-      fleeD <- getsClient sfleeD
-      let oursTgt = mapMaybe goodGeneric oursTgtRaw
+          oursTgt = mapMaybe goodGeneric oursTgtRaw
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             condInMelee <- condInMeleeM $ blid body
@@ -236,9 +240,11 @@ pickActorToMove maidToAvoid = do
             -- Note that right now, while we set targets separately for each
             -- hero, perhaps on opposite borders of the map,
             -- we can't help that sometimes heroes are separated.
-            let maxSpread = 3 + length ours
-                pDist p = minimum [ chessDist (bpos b2) p
-                                  | (aid2, b2) <- ours, aid2 /= aid]
+            let maxSpread = 3 + length oursNotSleeping
+                lDist p = [ chessDist (bpos b2) p
+                          | (aid2, b2) <- oursNotSleeping, aid2 /= aid]
+                pDist p = let ld = lDist p
+                          in assert (not $ null ld) $ minimum ld
                 aidDist = pDist (bpos b)
                 -- Negative, if the goal gets us closer to the party.
                 diffDist = pDist pathGoal - aidDist
