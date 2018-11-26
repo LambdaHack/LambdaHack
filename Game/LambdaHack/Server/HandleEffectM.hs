@@ -1238,10 +1238,32 @@ effectDropItem :: MonadServerAtomic m
                -> m UseResult
 effectDropItem execSfx iidId ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
+  fact <- getsState $ (EM.! bfid tb) . sfactionD
   isRaw <- allGroupItems store grp target
   let is = filter ((/= iidId) . fst) isRaw
   if bproj tb || null is
   then return UseDud
+  else if fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
+          && ngroup == maxBound && kcopy == maxBound
+          && store `elem` [CEqp, CInv, CSha]
+  then
+{-
+a hardwired hack, because AI heroes don't cope with Allure's decontamination
+chamber:
+- they don't switch leader to the hero past laboratory to equip
+weapons from stash between the in-lab hero picks up the loot pile
+and himself enters the decontamination chamber
+- all consumables always end up in a pack and the whole pack
+is always left behind, because consumables are not shared among
+actors via shared stash (yet); we could pack consumables to stash
+by default, but it's too confusing and risky for beginner players
+and doesn't work for heroes that have not enough Calm ATM and AI
+would still need to learn to spread consumables from stash to packs afterwards
+- the items of the last actor would be lost anyway, unless AI
+is taught the foolproof solution of this puzzle, which is yet a bit more
+specific than the two general abilities described as desirable above
+-}
+    return UseUp
   else do
     unless (store == COrgan) execSfx
     mapM_ (uncurry (dropCStoreItem True store target tb kcopy)) $ take ngroup is
