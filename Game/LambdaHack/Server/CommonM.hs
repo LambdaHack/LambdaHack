@@ -477,7 +477,8 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj fid pos lid tweakBody = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let arItem = itemAspect itemDisco
-      hp = xM (max 2 $ IA.getSkill Ability.SkMaxHP arItem) `div` 2
+      trunkMaxHP = IA.getSkill Ability.SkMaxHP arItem
+      hp = xM $ max 1 $ trunkMaxHP `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
       calm = xM (max 0 $ IA.getSkill Ability.SkMaxCalm arItem)
@@ -499,13 +500,14 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
                      else any (hasUIorEscapes . snd)
                               (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
-      diffHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
-                           then xM 999 - hp -- as much as UI can stand
-                           else hp * 2 ^ abs diffBonusCoeff
-             | otherwise = hp
-      bonusHP = fromEnum $ (diffHP - hp) `divUp` oneM
-      healthOrgans = [(Just bonusHP, ("bonus HP", COrgan)) | bonusHP /= 0]
-      b = actorTemplate trunkId diffHP calm pos lid fid bproj
+      finalHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
+                            then xM 900  -- almost as much as UI can stand
+                            else hp * 2 ^ abs diffBonusCoeff
+              | otherwise = hp
+      bonusHP = min 999 (fromEnum (2 * finalHP `div` oneM)) - trunkMaxHP
+      healthOrgans = [ (Just bonusHP, ("bonus HP", COrgan))
+                     | bonusHP /= 0 && not bproj ]
+      b = actorTemplate trunkId finalHP calm pos lid fid bproj
       withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
       bodyTweaked = tweakBody withTrunk
   aid <- getsServer sacounter
