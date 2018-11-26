@@ -366,7 +366,7 @@ lookAtTile :: MonadClientUI m
            -> LevelId    -- ^ level the position is at
            -> m Text
 lookAtTile canSee p aid lidV = do
-  COps{cotile, coplace} <- getsState scops
+  cops@COps{cotile, coplace} <- getsState scops
   side <- getsClient sside
   factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
@@ -376,8 +376,10 @@ lookAtTile canSee p aid lidV = do
   seps <- getsClient seps
   mnewEps <- makeLine False b p seps
   localTime <- getsState $ getLocalTime lidV
+  getKind <- getsState $ flip getIidKind
   let aims = isJust mnewEps
-      tile = okind cotile $ lvl `at` p
+      tkid = lvl `at` p
+      tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
           | not canSee = "you remember"
           | not aims = "you are aware of"
@@ -397,7 +399,8 @@ lookAtTile canSee p aid lidV = do
             ik = itemKind itemFull
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
-      ilooks = T.intercalate " " $ map itemLook $ EM.assocs embeds
+      ilooks = T.intercalate " " $ map itemLook
+                                 $ sortEmbeds cops getKind tkid embeds
   return $! makeSentence [vis, tilePart] <+> elooks <+> ilooks
 
 -- | Produces a textual description of actors at a position.

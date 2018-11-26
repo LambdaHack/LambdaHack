@@ -559,7 +559,7 @@ reqAlter source tpos = do
 reqAlterFail :: MonadServerAtomic m
              => Bool -> ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail voluntary source tpos = do
-  COps{cotile, coTileSpeedup} <- getsState scops
+  cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough sb actorMaxSk
@@ -572,6 +572,7 @@ reqAlterFail voluntary source tpos = do
       applySkill = Ability.getSk Ability.SkApply actorSk
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
+  getKind <- getsState $ flip getIidKindServer
   let serverTile = lvl `at` tpos
       lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
@@ -580,7 +581,8 @@ reqAlterFail voluntary source tpos = do
         s <- getState
         let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
-      tryApplyEmbeds = mapM_ tryApplyEmbed $ EM.assocs embeds
+      tryApplyEmbeds = mapM_ tryApplyEmbed
+                             (sortEmbeds cops getKind serverTile embeds)
       tryApplyEmbed (iid, kit) = do
         let itemFull@ItemFull{itemKind} = itemToF iid
             legal = permittedApply localTime applySkill calmE itemFull kit

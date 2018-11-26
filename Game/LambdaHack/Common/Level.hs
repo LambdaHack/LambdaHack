@@ -11,8 +11,11 @@ module Game.LambdaHack.Common.Level
   , updateFloor, updateEmbed, updateBigMap, updateProjMap
   , updateTile, updateEntry, updateSmell
     -- * Level query
+  , at
   , posToBigLvl, occupiedBigLvl, posToProjsLvl, occupiedProjLvl, posToAidsLvl
-  , at, findPosTry, findPosTry2, nearbyFreePoints
+  , findPosTry, findPosTry2, nearbyFreePoints
+    -- * Misc
+  , sortEmbeds
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , nearbyPassablePoints, assertSparseItems, assertSparseProjectiles
@@ -40,6 +43,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
@@ -278,6 +282,18 @@ nearbyFreePoints cops lvl f start =
                && Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
                && null (posToAidsLvl p lvl)
   in filter good $ nearbyPassablePoints cops lvl start
+
+-- We assume there are no stray embeds, not mentioned in the tile kind.
+-- OTOH, some of those mentioned may be used up and so not in the bag
+-- and it's OK.
+sortEmbeds :: COps -> (ItemId -> IK.ItemKind) -> ContentId TileKind -> ItemBag
+           -> [(ItemId, ItemQuant)]
+sortEmbeds COps{cotile} getKind tk embedBag =
+  let itemKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
+                         (EM.assocs embedBag)
+      grpList = Tile.embeddedItems cotile tk
+      f grp (itemKind, _) = fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
+  in map snd $ mapMaybe (\grp -> find (f grp) itemKindList) grpList
 
 instance Binary Level where
   put Level{..} = do
