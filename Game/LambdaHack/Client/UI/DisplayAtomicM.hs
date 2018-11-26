@@ -1395,15 +1395,18 @@ strike catch source target iid cstore = assert (source /= target) $ do
                    then []
                    else ["with", partItemChoice itemFullWeapon kitWeapon]
             | otherwise =
-          -- This sounds funny when the victim falls down immediately,
+          -- This sounds goofy when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
           -- If/when death blow instead sets HP to 1 and only the next below 1,
           -- we can check here for HP==1; also perhaps actors with HP 1 should
           -- not be able to block.
           let sActs = MU.Phrase $
-                if bproj sb
-                then [ MU.SubjectVerbSg spart "connect" ]
-                else [ MU.SubjectVerbSg spart verb, sleepy, tpart
+                if | bproj sb && hurtMult >= 70 ->  -- strong, for a projectile
+                     [MU.SubjectVerbSg spart verb, sleepy, tpart]
+                   | bproj sb ->
+                     [MU.SubjectVerbSg spart "connect"]
+                   | otherwise ->
+                     [ MU.SubjectVerbSg spart verb, sleepy, tpart
                      , "with", partItemChoice itemFullWeapon kitWeapon ]
               butEvenThough = if catch then ", even though" else ", but"
               actionPhrase =
@@ -1417,7 +1420,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                        else "parry"
               howWell =
                 if | hurtMult >= 50 ->  -- braced or big bonuses
-                     "partly"
+                     if bproj sb then "clumsily" else "partly"
                    | hurtMult > 1 ->  -- braced and/or huge bonuses
                      if waitedLastTurn tb then "doggedly" else "nonchalantly"
                    | otherwise ->         -- 1% got through, which can
