@@ -888,14 +888,16 @@ applyItem :: MonadClientUI m
 applyItem (fromCStore, (iid, (itemFull, kit))) = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  localTime <- getsState $ getLocalTime (blid b)
   actorMaxSk <- getsState $ getActorMaxSkills leader
-  let calmE = calmEnough b actorMaxSk
-  if not calmE && fromCStore == CSha then failSer ItemNotCalm
-  else do
-    p <- permittedApplyClient
-    case p itemFull kit of
-      Left reqFail -> failSer reqFail
-      Right _ -> return $ Right $ ReqApply iid fromCStore
+  actorSk <- leaderSkillsClientUI
+  let skill = Ability.getSk Ability.SkApply actorSk
+      calmE = calmEnough b actorMaxSk
+  if not calmE && fromCStore == CSha
+  then failSer ItemNotCalm
+  else case permittedApply localTime skill calmE itemFull kit of
+    Left reqFail -> failSer reqFail
+    Right _ -> return $ Right $ ReqApply iid fromCStore
 
 -- * AlterDir
 

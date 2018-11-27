@@ -8,8 +8,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
     -- * Local commands
   , sortSlotsHuman, chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
-  , psuitReq, triggerSymbols, permittedApplyClient
-  , pickLeaderHuman, pickLeaderWithPointerHuman
+  , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, recordHuman, allHistoryHuman, lastHistoryHuman
@@ -24,8 +23,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , permittedProjectClient, projectCheck, xhairLegalEps, posFromXhair
-  , selectAid, eitherHistory, endAiming, endAimingMsg, doLook, flashAiming
-  , xhairPointerFloor, xhairPointerEnemy
+  , permittedApplyClient, selectAid, eitherHistory, endAiming, endAimingMsg
+  , doLook, flashAiming, xhairPointerFloor, xhairPointerEnemy
 #endif
   ) where
 
