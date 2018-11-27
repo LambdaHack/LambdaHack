@@ -230,22 +230,23 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK
-      it2 = if timeout /= 0 && recharged
-            then if periodic && not permanent  -- copies are spares only
-                 then replicate (itemK - length it1) localTime ++ it1
-                 else localTime : it1  -- copies all fire, in turn
-            else itemTimer
-      !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
-  -- We use up the charge even if eventualy every effect fizzles. Tough luck.
-  -- At least we don't destroy the item in such case. Also, we ID it regardless.
-  unless (itemTimer == it2) $
-    execUpdAtomic $ UpdTimeItem iid container itemTimer it2
   -- If the activation is periodic, but item has no charges,
-  -- speed up by shortcutting early, unless the item was kinetically hit with,
-  -- in which case let it get destroyed, if perishable,
+  -- we speed up by shortcutting early. Note that if the item was kinetically
+  -- hit with, the activation is not periodic, so we enter the code below
+  -- and make it possible for the item to get destroyed, if perishable,
   -- and let it get identified, even if no effect was eventually triggered.
-  -- Otherwise don't even id the item --- no risk of destruction, no id.
-  when (not periodic || recharged || kineticPerformed) $ do
+  when (not periodic || recharged) $ do
+    let it2 = if timeout /= 0 && recharged
+              then if periodic && not permanent  -- copies are spares only
+                   then replicate (itemK - length it1) localTime ++ it1
+                   else localTime : it1  -- copies all fire, in turn
+              else itemTimer
+        !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
+    -- We use up the charge even if eventualy every effect fizzles. Tough luck.
+    -- At least we don't destroy the item in such case.
+    -- Also, we ID it regardless.
+    unless (itemTimer == it2) $
+      execUpdAtomic $ UpdTimeItem iid container itemTimer it2
     -- We have to destroy the item before the effect affects the item
     -- or the actor holding it or standing on it (later on we could
     -- lose track of the item and wouldn't be able to destroy it) .
@@ -256,23 +257,26 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
           imperishableKit permanent periodic it2 itemFull kit
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
-    triggered <- if not recharged then return UseDud else do
-      -- At this point, the item is potentially no longer in container @c@,
-      -- so we don't pass @c@ along.
-      triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                         recharged periodic effs
-      let trig = if kineticPerformed then UseUp else triggeredEffect
-      sb <- getsState $ getActorBody source
-      -- Announce no effect, which is rare and wastes time, so noteworthy.
-      unless (trig == UseUp  -- effects triggered; feedback comes from them
-              || periodic  -- don't spam via fizzled periodic effects
-              || bproj sb  -- don't spam, projectiles can be very numerous
-              ) $
-        execSfxAtomic $ SfxMsgFid (bfid sb) $
-          if any IK.forApplyEffect effs
-          then SfxFizzles  -- something didn't work, despite promising effects
-          else SfxNothingHappens  -- fully expected
-      return trig
+    triggered <-
+      if not recharged
+      then return $ if kineticPerformed then UseUp else UseDud
+      else do
+        -- At this point, the item is potentially no longer in container @c@,
+        -- so we don't pass @c@ along.
+        triggeredEffect <- itemEffectDisco source target iid itemKind container
+                                           recharged periodic effs
+        let trig = if kineticPerformed then UseUp else triggeredEffect
+        sb <- getsState $ getActorBody source
+        -- Announce no effect, which is rare and wastes time, so noteworthy.
+        unless (trig == UseUp  -- effects triggered; feedback comes from them
+                || periodic  -- don't spam via fizzled periodic effects
+                || bproj sb  -- don't spam, projectiles can be very numerous
+                ) $
+          execSfxAtomic $ SfxMsgFid (bfid sb) $
+            if any IK.forApplyEffect effs
+            then SfxFizzles  -- something didn't work, despite promising effects
+            else SfxNothingHappens  -- fully expected
+        return trig
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
