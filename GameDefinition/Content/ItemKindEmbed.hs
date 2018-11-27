@@ -72,8 +72,7 @@ subtleFresco = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ Temporary "feel refreshed by the subtle fresco"
-               , RefillCalm 2
+  , ieffects = [ Recharging $ Temporary "feel refreshed by the subtle fresco"
                , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
                , Recharging $ toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
                  -- hearing gets a boost through bracing, so no need here
