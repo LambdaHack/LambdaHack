@@ -353,12 +353,12 @@ applyPeriodicLevel = do
           case iid `EM.lookup` bag of
             Nothing -> return ()  -- item dropped
             Just kit ->
-              -- In periodic activation, consider *only* recharging effects.
-              -- Activate even if effects null, to possibly destroy item.
+              -- Activate even if effects null or vacuous, to possibly
+              -- destroy the item.
               effectAndDestroyAndAddKill
                 True aid
                 False aid aid iid (CActor aid cstore) True
-                (IK.filterRecharging $ IK.ieffects itemKind) (itemFull, kit)
+                (IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
           -- Equipment goes first, to refresh organs before they expire,

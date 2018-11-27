@@ -240,10 +240,9 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
   -- At least we don't destroy the item in such case. Also, we ID it regardless.
   unless (itemTimer == it2) $
     execUpdAtomic $ UpdTimeItem iid container itemTimer it2
-  -- If the activation is not periodic, trigger at least the effects
-  -- that are not recharging and so don't depend on @recharged@.
-  -- Also, if the item was kinetically hit with,
-  -- let it get destroyed, if perishable,
+  -- If the activation is periodic, but item has no charges,
+  -- speed up by shortcutting early, unless the item was kinetically hit with,
+  -- in which case let it get destroyed, if perishable,
   -- and let it get identified, even if no effect was eventually triggered.
   -- Otherwise don't even id the item --- no risk of destruction, no id.
   when (not periodic || recharged || kineticPerformed) $ do
