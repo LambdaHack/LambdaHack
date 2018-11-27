@@ -146,7 +146,7 @@ data Effect =
 data DetectKind =
     DetectAll
   | DetectActor
-  | DetectItem
+  | DetectLoot
   | DetectExit
   | DetectHidden
   | DetectEmbed

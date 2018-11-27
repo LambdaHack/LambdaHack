@@ -834,7 +834,7 @@ scroll2 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , iaspects = ELabel "of greed"
                : iaspects scrollTemplate
-  , ieffects = [Detect DetectItem 20, Teleport 20, RefillCalm (-50)]
+  , ieffects = [Detect DetectLoot 20, Teleport 20, RefillCalm (-50)]
   }
 scroll3 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
@@ -847,7 +847,7 @@ scroll4 = scrollTemplate
   , icount   = 3 `dL` 1
   , irarity  = [(1, 14)]
   , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 30
-                      , Detect DetectEmbed 12, Detect DetectItem 20 ]]
+                      , Detect DetectEmbed 12, Detect DetectLoot 20 ]]
   }
 scroll5 = scrollTemplate
   -- needs to be common to show at least a portion of effects

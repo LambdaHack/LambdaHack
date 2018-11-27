@@ -1466,10 +1466,33 @@ effectDetect execSfx d radius target pos = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
-  let (predicate, action) = case d of
+  s <- getState
+  let lootPredicate p =
+        p `EM.member` lfloor lvl
+        || (case posToBigAssoc p (blid b) s of
+              Nothing -> False
+              Just (_, body) ->
+                not (EM.null (beqp body) && EM.null (binv body)))
+                  -- shared stash ignored, because hard to get
+        || any embedHasLoot (EM.keys $ getEmbedBag (blid b) p s)
+      embedHasLoot iid =
+        let itemFull = itemToFull iid s
+            IK.ItemKind{IK.ieffects} = itemKind itemFull
+        in any effectHasLoot ieffects
+      effectHasLoot (IK.CreateItem cstore _ _) =
+        cstore `elem` [CGround, CEqp, CInv, CSha]
+      effectHasLoot IK.PolyItem = True
+      effectHasLoot IK.RerollItem = True
+      effectHasLoot IK.DupItem = True
+      effectHasLoot (IK.OneOf l) = any effectHasLoot l
+      effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
+      effectHasLoot (IK.Recharging eff) = effectHasLoot eff
+      effectHasLoot (IK.Composite l) = any effectHasLoot l
+      effectHasLoot _ = False
+      (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
         IK.DetectActor -> ((`EM.member` lbig lvl), const $ return False)
-        IK.DetectItem -> ((`EM.member` lfloor lvl), const $ return False)
+        IK.DetectLoot -> (lootPredicate, const $ return False)
         IK.DetectExit ->
           let (ls1, ls2) = lstair lvl
           in ((`elem` ls1 ++ ls2 ++ lescape lvl), const $ return False)
@@ -1478,7 +1501,6 @@ effectDetect execSfx d radius target pos = do
               revealEmbed p = do
                 embeds <- getsState $ getEmbedBag (blid b) p
                 unless (EM.null embeds) $ do
-                  s <- getState
                   let ais = map (\iid -> (iid, getItemBody iid s))
                                 (EM.keys embeds)
                   execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais
