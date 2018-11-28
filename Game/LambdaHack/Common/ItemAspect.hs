@@ -189,7 +189,6 @@ onlyMinorEffects ar kind =
 majorEffect :: IK.Effect -> Bool
 majorEffect eff = case eff of
   IK.OnSmash{} -> False
-  IK.Recharging eff2 -> majorEffect eff2
   IK.Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
   _ -> True
 

@@ -40,14 +40,15 @@ import           Game.LambdaHack.Content.ModeKind
 -- so in case when turn is not spent, e.g, periodic or conditions,
 -- the difference in value is only slight.
 effectToBenefit :: COps -> Faction -> Bool -> IK.Effect -> (Double, Double)
-effectToBenefit cops fact insideRecharging eff =
+effectToBenefit cops fact underTimeoutOrPeriodic eff =
   let delta x = (x, x)
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode _ | insideRecharging ->
-      -- It's too hard to analyze, so we assume, explosion inside recharging
-      -- is never a cruel and cheap one-time trap, damaging HP of the actor
+    IK.Explode _ | underTimeoutOrPeriodic ->
+      -- It's too hard to analyze, so we assume, explosion in an item
+      -- with timeout or a periodic item is never a cruel
+      -- and cheap one-time trap, damaging HP of the actor
       -- before he identifies the item and stops wearing it or meleeing with it.
       -- So the explosion is either both focused and beneficial to self
       -- or is not focused and so not affecting self. In either case
@@ -58,9 +59,10 @@ effectToBenefit cops fact insideRecharging eff =
       , -1 )  -- hit with it or throw, but beware of harming friends
     IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
     IK.Explode _ ->
-      -- We know this explosion is not wrapped with @Recharging@ nor @OnSmash@
-      -- so we assume it's focused and very harmful and so only safe
-      -- for projecting at foes. Due to this assumption healing explosives
+      -- We know this explosion is not in a periodic or timeout item
+      -- nor is wrapped in @OnSmash@, so we assume
+      -- it's focused and very harmful and so only
+      -- safe for projecting at foes. Due to this assumption healing explosives
       -- should be wrapped to avoid throwing them at foes.
       delta (-100)
     IK.RefillHP p ->
@@ -154,16 +156,16 @@ effectToBenefit cops fact insideRecharging eff =
     IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
-      let bs = map (effectToBenefit cops fact insideRecharging) efs
+      let bs = map (effectToBenefit cops fact underTimeoutOrPeriodic) efs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
-    IK.Recharging _ -> delta 0  -- taken into account separately
     IK.Temporary _ -> delta 0  -- assumed for created organs only
     IK.Composite [] -> delta 0
-    IK.Composite (eff1 : _) -> effectToBenefit cops fact insideRecharging eff1
+    IK.Composite (eff1 : _) ->
+      effectToBenefit cops fact underTimeoutOrPeriodic eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
@@ -213,10 +215,10 @@ avgItemLife = 30
 durabilityMult :: Double
 durabilityMult = avgItemLife / avgItemDelay
 
--- We assume the organ is temporary (@Temporary@, @Periodic@, @Timeout 0@)
+-- We assume the organ is temporary (@Temporary@, @Periodic@ and @Timeout 0@)
 -- and also that it doesn't provide any functionality, e.g., detection
--- or burning or raw damage. However, we take into account recharging
--- effects, knowing in some temporary organs, e.g., poison or regeneration,
+-- or burning or raw damage. However, we take into account effects
+-- knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
 -- hence we take the self component of valuation. We multiply by the count
 -- of created/dropped organs, because for conditions it determines
@@ -254,8 +256,7 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
                           * fst (effectToBenefit cops fact False eff)
         in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
-                       + sum (map peffect
-                              $ IK.stripRecharging $ IK.ieffects kind))
+                       + sum (map peffect $ IK.ieffects kind))
                   - averageTurnValue / turnTimer
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
@@ -350,31 +351,9 @@ recordToBenefit arItem =
 -- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
 totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
-  let effects = IK.ieffects itemKind
-      arItem = aspectRecordFull itemFull
-      effPairs = map (effectToBenefit cops fact False) effects
-      effDice = - IK.damageUsefulness itemKind
-      f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
-      (effSelf, effFoe) = foldr f (0, 0) effPairs
-      -- Timeout between 0 and 1 means item usable each turn, so we consider
-      -- it equivalent to a permanent item --- without timeout restriction.
-      -- Timeout 2 means two such items are needed to use the effect each turn,
-      -- so a single such item may be worth half of the permanent value.
-      -- Hence, we multiply item value by the proportion of the average desired
-      -- delay between item uses @avgItemDelay@ and the actual timeout.
-      -- For simplicity and for speed we consider timeout less or equal
-      -- to @avgItemDelay@ as not reducing the value of the item.
-      timeout = IA.aTimeout arItem
-      (chargeSelf, chargeFoe) =
-        let scaleChargeBens bens
-              | fromIntegral timeout <= avgItemDelay = bens  -- speedup
-              | otherwise = map (\eff ->
-                  eff * avgItemDelay / fromIntegral timeout) bens
-            (cself, cfoe) = unzip $ map (effectToBenefit cops fact True)
-                                        (IK.stripRecharging effects)
-        in (scaleChargeBens cself, scaleChargeBens cfoe)
-      -- If the item is periodic, we add charging effects to equipment benefit,
-      -- but we don't assign periodic bonus or malus, because periodic items
+  let arItem = aspectRecordFull itemFull
+      -- If the item is periodic, we add effects to equipment benefit,
+      -- but we don't assign a special bonus or malus, because periodic items
       -- are bad in that one can't activate them at will and they take
       -- equipment space, and good in that one saves a turn, not having
       -- to manually activate them. Additionally, no weapon can be periodic,
@@ -386,7 +365,32 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- or harmful explosion is worse. But the rule is not strict and also
       -- dependent on gameplay context of the moment, hence no numerical value.
       periodic = IA.checkFlag Ability.Periodic arItem
-      -- Durability doesn't have any numerical impact to @eqpSum,
+      -- Timeout between 0 and 1 means item usable each turn, so we consider
+      -- it equivalent to a permanent item --- without timeout restriction.
+      -- Timeout 2 means two such items are needed to use the effect each turn,
+      -- so a single such item may be worth half of the permanent value.
+      -- Hence, we multiply item value by the proportion of the average desired
+      -- delay between item uses @avgItemDelay@ and the actual timeout.
+      -- For simplicity and for speed we consider timeout less or equal
+      -- to @avgItemDelay@ as not reducing the value of the item.
+      timeout = IA.aTimeout arItem
+      timeoutOrPeriodic = timeout /= 0 || periodic
+      effects = IK.ieffects itemKind
+      (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
+                        | otherwise =
+        let effPairs = map (effectToBenefit cops fact False) effects
+            f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
+        in foldr f (0, 0) effPairs
+      (chargeSelf, chargeFoe) =
+        let scaleChargeBens bens
+              | fromIntegral timeout <= avgItemDelay = bens  -- speedup
+              | otherwise = map (\eff ->
+                  eff * avgItemDelay / fromIntegral timeout) bens
+            (cself, cfoe) | not timeoutOrPeriodic = ([], [])
+                          | otherwise =
+              unzip $ map (effectToBenefit cops fact True) effects
+        in (scaleChargeBens cself, scaleChargeBens cfoe)
+      -- Durability doesn't have any numerical impact on @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again
       -- in the same skirmish and also enemy can pick up and fling back.
@@ -400,10 +404,12 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
       durable = IA.checkFlag Ability.Durable arItem
-      -- If recharging effects not periodic, we add the self part,
-      -- because they are applied to self. If they are periodic we can't
+      -- If item with timeout, but not periodic, we add the self part,
+      -- because the effects are applied to self. If they are periodic we can't
       -- effectively apply them, because they are never recharged,
-      -- because they activate as soon as recharged.
+      -- because they activate as soon as recharged. (We ignore the
+      -- rare case of applying an effect with no charges, destroying the item.)
+      effDice = - IK.damageUsefulness itemKind
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying
          + if periodic then 0 else sum chargeSelf)
@@ -427,7 +433,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       benFling = min benFlingRaw $ if itemSuspect then -10 else 0
       -- The periodic effects, if any, are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
-      -- However, if item is not periodic, the recharging effects
+      -- However, if item is not periodic, all the effects
       -- are activated at projectile impact, hence their value is added.
       benFlingRaw = min 0 $
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
@@ -445,8 +451,9 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
-      -- For equipment benefit, we take into account only the self
-      -- value of the recharging effects, because they applied to self.
+      -- For equipment benefit, we take into account only the self value
+      -- of effects in case item has timeout, because then they are
+      -- applied to self.
       -- We don't add a bonus @averageTurnValue@ to the value of periodic
       -- effects, even though they save a turn, by being auto-applied,
       -- because on the flip side, player is not in control of the precise

@@ -53,11 +53,10 @@ obscenePictogram = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ Recharging $ Temporary "enter destructive rage at the sight of an obscene pictogram"
-               , Recharging $ RefillCalm (-20)
-               , Recharging $ OneOf
-                   [ toOrganGood "strengthened" (3 + 1 `d` 2)
-                   , CreateItem CInv "sandstone rock" timerNone ] ]
+  , ieffects = [ Temporary "enter destructive rage at the sight of an obscene pictogram"
+               , RefillCalm (-20)
+               , OneOf [ toOrganGood "strengthened" (3 + 1 `d` 2)
+                       , CreateItem CInv "sandstone rock" timerNone ] ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -72,9 +71,9 @@ subtleFresco = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ Recharging $ Temporary "feel refreshed by the subtle fresco"
-               , Recharging $ toOrganGood "far-sighted" (3 + 1 `d` 2)
-               , Recharging $ toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
+  , ieffects = [ Temporary "feel refreshed by the subtle fresco"
+               , toOrganGood "far-sighted" (3 + 1 `d` 2)
+               , toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
                  -- hearing gets a boost through bracing, so no need here
   , idesc    = "Expensive yet tasteful."
   , ikit     = []

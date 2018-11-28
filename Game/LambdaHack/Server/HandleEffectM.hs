@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
-  , effectRecharging, effectTemporary, effectComposite
+  , effectTemporary, effectComposite
 #endif
   ) where
 
@@ -219,7 +219,6 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
   let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
-                      tmpEffect (IK.Recharging IK.Temporary{}) = True
                       tmpEffect (IK.OnSmash IK.Temporary{}) = True
                       tmpEffect _ = False
                   in not $ any tmpEffect effs
@@ -264,7 +263,7 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
         -- At this point, the item is potentially no longer in container @c@,
         -- so we don't pass @c@ along.
         triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                           recharged periodic effs
+                                           periodic effs
         let trig = if kineticPerformed then UseUp else triggeredEffect
         sb <- getsState $ getActorBody source
         -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -317,10 +316,10 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
 -- sticky armor that can't be easily taken off (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
                 => ActorId -> ActorId -> ItemId -> ItemKind -> Container
-                -> Bool -> Bool -> [IK.Effect]
+                -> Bool -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco source target iid itemKind c recharged periodic effs = do
-  urs <- mapM (effectSem source target iid c recharged periodic) effs
+itemEffectDisco source target iid itemKind c periodic effs = do
+  urs <- mapM (effectSem source target iid c periodic) effs
   discoAspect <- getsState sdiscoAspect
   let arItem = discoAspect EM.! iid
       ur = case urs of
@@ -338,11 +337,11 @@ itemEffectDisco source target iid itemKind c recharged periodic effs = do
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: MonadServerAtomic m
-          => ActorId -> ActorId -> ItemId -> Container -> Bool -> Bool
+          => ActorId -> ActorId -> ItemId -> Container -> Bool
           -> IK.Effect
           -> m UseResult
-effectSem source target iid c recharged periodic effect = do
-  let recursiveCall = effectSem source target iid c recharged periodic
+effectSem source target iid c periodic effect = do
+  let recursiveCall = effectSem source target iid c periodic
   sb <- getsState $ getActorBody source
   pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
@@ -383,7 +382,6 @@ effectSem source target iid c recharged periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.Recharging e -> effectRecharging recursiveCall e recharged
     IK.Temporary _ -> effectTemporary execSfx source iid c
     IK.Composite l -> effectComposite recursiveCall l
 
@@ -1491,7 +1489,6 @@ effectDetect execSfx d radius target pos = do
       effectHasLoot IK.DupItem = True
       effectHasLoot (IK.OneOf l) = any effectHasLoot l
       effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
-      effectHasLoot (IK.Recharging eff) = effectHasLoot eff
       effectHasLoot (IK.Composite l) = any effectHasLoot l
       effectHasLoot _ = False
       (predicate, action) = case d of
@@ -1744,16 +1741,6 @@ effectOneOf recursiveCall l = do
         if ur == UseDud then result else return ur
   foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
-
--- ** Recharging
-
-effectRecharging :: MonadServerAtomic m
-                 => (IK.Effect -> m UseResult) -> IK.Effect -> Bool
-                 -> m UseResult
-effectRecharging recursiveCall e recharged =
-  if recharged
-  then recursiveCall e
-  else return UseDud
 
 -- ** Temporary
 

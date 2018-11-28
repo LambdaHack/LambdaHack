@@ -948,7 +948,7 @@ jumpingPole = ItemKind
   , idamage  = 0
   , iaspects = [ Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 5
                , SetFlag Durable ]
-  , ieffects = [Recharging (toOrganGood "hasted" 1)]
+  , ieffects = [toOrganGood "hasted" 1]
                  -- safe for AI, because it speeds up, so when AI applies it
                  -- again and again, it gets its time back and is not stuck;
                  -- in total, the explorations speed is unchanged,
@@ -986,8 +986,7 @@ seeingItem = ItemKind
   , iaspects = [ Timeout 3
                , AddSkill SkSight 10, AddSkill SkMaxCalm 30, AddSkill SkShine 2
                , SetFlag Periodic ]
-  , ieffects = [ Recharging (toOrganNoTimer "poisoned")
-               , Recharging (Summon "mobile monster" 1) ]
+  , ieffects = [toOrganNoTimer "poisoned", Summon "mobile monster" 1]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
@@ -1030,7 +1029,7 @@ gorget = necklaceTemplate
                , AddSkill SkArmorMelee 3, AddSkill SkArmorRanged 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [Recharging (RefillCalm 1)]
+  , ieffects = [RefillCalm 1]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   }
 -- Not idenfified, because id by use, e.g., via periodic activations. Fun.
@@ -1056,7 +1055,7 @@ necklace1 = necklaceTemplate
                , Timeout $ (1 `d` 2) * 20
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [Recharging (RefillHP 1)]
+  , ieffects = [RefillHP 1]
   , idesc    = "A cord of freshly dried herbs and healing berries."
   }
 necklace2 = necklaceTemplate
@@ -1067,10 +1066,10 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging Impress
-               , Recharging (DropItem 1 maxBound COrgan "condition")
-               , Recharging (Summon "mobile animal" $ 1 `d` 2)
-               , Recharging (Explode "waste") ]
+  , ieffects = [ Impress
+               , DropItem 1 maxBound COrgan "condition"
+               , Summon "mobile animal" $ 1 `d` 2
+               , Explode "waste" ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
 necklace3 = necklaceTemplate
@@ -1079,24 +1078,23 @@ necklace3 = necklaceTemplate
                , Timeout ((1 `d` 2) * 20)
                , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (Detect DetectActor 10)
-               , Recharging (RefillCalm (-20)) ]
+  , ieffects = [Detect DetectActor 10, RefillCalm (-20)]
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(10, 1)]  -- annoying when AI uses it; hassle when UI alternates
   , iaspects = Timeout ((3 + 1 `d` 3 - 1 `dL` 3) * 2)
                : iaspects_necklaceTemplate
-  , ieffects = [Recharging (Teleport $ 3 `d` 2)]
+  , ieffects = [Teleport $ 3 `d` 2]
   }
 necklace5 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ ELabel "of escape"
                , Timeout $ (7 - 1 `dL` 5) * 10 ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (Teleport $ 14 + 3 `d` 3)
-               , Recharging (Detect DetectExit 20)
-               , Recharging Yell ]  -- prevent micromanagement
+  , ieffects = [ Teleport $ 14 + 3 `d` 3
+               , Detect DetectExit 20
+               , Yell ]  -- prevent micromanagement
   , idesc    = "A supple chain that slips through your fingers."
   }
 necklace6 = necklaceTemplate
@@ -1104,7 +1102,7 @@ necklace6 = necklaceTemplate
   , irarity  = [(10, 1)]  -- annoying when AI uses it
   , iaspects = Timeout (1 + (1 `d` 3) * 2)
                : iaspects_necklaceTemplate
-  , ieffects = [Recharging (PushActor (ThrowMod 100 50 1))]  -- 1 step, slow
+  , ieffects = [PushActor (ThrowMod 100 50 1)]  -- 1 step, slow
                   -- the @50@ is only for the case of very light actor, etc.
   }
 necklace7 = necklaceTemplate
@@ -1114,9 +1112,9 @@ necklace7 = necklaceTemplate
                , AddSkill SkMaxHP 15
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Recharging (InsertMove $ 9 + 1 `d` 11)  -- unpredictable
-               , Recharging (RefillCalm (-1))  -- fake "hears something" :)
-               , Recharging (toOrganBad "impatient" 4)]
+  , ieffects = [ InsertMove $ 9 + 1 `d` 11  -- unpredictable
+               , RefillCalm (-1)  -- fake "hears something" :)
+               , toOrganBad "impatient" 4]
                  -- The same duration as timeout, to avoid spurious messages
                  -- as well as unlimited accumulation of the duration.
   , idesc    = "A string of beads in various coolours, with no discernable pattern."
@@ -1125,13 +1123,13 @@ necklace8 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = Timeout ((1 + 1 `d` 3) * 5)
                : iaspects_necklaceTemplate
-  , ieffects = [Recharging $ Explode "spark"]
+  , ieffects = [Explode "spark"]
   }
 necklace9 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = Timeout ((1 + 1 `d` 3) * 5)
                : iaspects_necklaceTemplate
-  , ieffects = [Recharging $ Explode "fragrance"]
+  , ieffects = [Explode "fragrance"]
   }
 
 -- ** Non-periodic jewelry
@@ -1363,7 +1361,7 @@ hatUshanka = ItemKind
                , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- flaps and flutters
-  , ieffects = [Recharging (RefillCalm 1)]
+  , ieffects = [RefillCalm 1]
   , idesc    = "Soft and warm fur. It keeps your ears warm."
   , ikit     = []
   }
@@ -1433,7 +1431,7 @@ buckler = ItemKind
                , SetFlag MinorEffects, SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- unwieldy to throw
-  , ieffects = [Recharging (PushActor (ThrowMod 100 50 1))]  -- 1 step, slow
+  , ieffects = [PushActor (ThrowMod 100 50 1)]  -- 1 step, slow
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
   , ikit     = []
   }
@@ -1451,7 +1449,7 @@ shield = buckler
                , SetFlag MinorEffects, SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- unwieldy to throw
-  , ieffects = [Recharging (PushActor (ThrowMod 400 50 1))]  -- 2 steps, fast
+  , ieffects = [PushActor (ThrowMod 400 50 1)]  -- 2 steps, fast
   , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
   }
 shield2 = shield
@@ -1507,8 +1505,7 @@ daggerDropBestWeapon = dagger
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 20 - 16 ]
                ++ iaspects dagger
-  , ieffects = [ Recharging DropBestWeapon
-               , Recharging Yell ]
+  , ieffects = [DropBestWeapon, Yell]
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade occasionally."
   }
 hammer = ItemKind
@@ -1553,7 +1550,7 @@ hammerParalyze = hammer
   , iaspects = [ SetFlag Unique
                , Timeout 7 ]
                ++ iaspects hammer
-  , ieffects = [Recharging $ Paralyze 10]
+  , ieffects = [Paralyze 10]
   , idesc    = "A huge shapeless lump of steel on a long pole. Nobody remains standing after this hammer connects."
   }
 hammerSpark = hammer
@@ -1565,7 +1562,7 @@ hammerSpark = hammer
                , Timeout 10
                , AddSkill SkShine 3]
                ++ iaspects hammer
-  , ieffects = [Recharging $ Explode "spark"]
+  , ieffects = [Explode "spark"]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
   , idesc    = "Smiths of old wielded this hammer and its sparks christened many a potent blade."
@@ -1594,7 +1591,7 @@ swordImpress = sword
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 40 - 30 ]
                ++ iaspects sword
-  , ieffects = [Recharging Impress]
+  , ieffects = [Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
 swordNullify = sword
@@ -1604,9 +1601,9 @@ swordNullify = sword
   , iaspects = [ SetFlag Unique
                , Timeout 10 ]
                ++ iaspects sword
-  , ieffects = [ Recharging $ DropItem 1 maxBound COrgan "condition"
-               , Recharging $ RefillCalm (-10)
-               , Recharging Yell ]
+  , ieffects = [ DropItem 1 maxBound COrgan "condition"
+               , RefillCalm (-10)
+               , Yell ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
   }
 halberd = ItemKind
@@ -1651,7 +1648,7 @@ halberdPushActor = halberd
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 10 ]
                ++ iaspects halberd
-  , ieffects = [Recharging (PushActor (ThrowMod 200 100 1))]  -- 2 steps, slow
+  , ieffects = [PushActor (ThrowMod 200 100 1)]  -- 2 steps, slow
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
   }
 
@@ -1776,7 +1773,7 @@ smokingJacket = ItemKind
                , AddSkill SkOdor 2
                , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotSpeed ]
-  , ieffects = [Recharging (RefillCalm 1)]
+  , ieffects = [RefillCalm 1]
   , idesc    = "Wearing this velvet jacket, anyone would look dashing."
   , ikit     = []
   }

@@ -4,9 +4,8 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
-  , filterRecharging, stripRecharging, stripOnSmash
-  , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind
-  , isEffEscape, isEffEscapeOrAscend, damageUsefulness
+  , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind, isEffEscape
+  , isEffEscapeOrAscend, timeoutAspect, onSmashEffect, damageUsefulness
   , tmpNoLonger, toVelocity, toLinger, timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
@@ -134,7 +133,6 @@ data Effect =
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
-  | Recharging Effect     -- ^ this effect inactive until timeout passes
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
   | Temporary Text
       -- ^ the item is temporary, vanishes at even void Periodic activation,
@@ -222,7 +220,6 @@ boostItemKind i =
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
-  Recharging eff2 -> forApplyEffect eff2
   Composite effs -> any forApplyEffect effs
   Temporary{} -> False
   _ -> True
@@ -230,7 +227,6 @@ forApplyEffect eff = case eff of
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
 isEffEscape (OneOf l) = any isEffEscape l
-isEffEscape (Recharging eff) = isEffEscape eff
 isEffEscape (Composite l) = any isEffEscape l
 isEffEscape _ = False
 
@@ -238,30 +234,16 @@ isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True
 isEffEscapeOrAscend Escape{} = True
 isEffEscapeOrAscend (OneOf l) = any isEffEscapeOrAscend l
-isEffEscapeOrAscend (Recharging eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (Composite l) = any isEffEscapeOrAscend l
 isEffEscapeOrAscend _ = False
 
-filterRecharging :: [Effect] -> [Effect]
-filterRecharging effs =
-  let getRechargingEffect :: Effect -> Maybe Effect
-      getRechargingEffect e@Recharging{} = Just e
-      getRechargingEffect _ = Nothing
-  in mapMaybe getRechargingEffect effs
+timeoutAspect :: Aspect -> Bool
+timeoutAspect Timeout{} = True
+timeoutAspect _ = False
 
-stripRecharging :: [Effect] -> [Effect]
-stripRecharging effs =
-  let getRechargingEffect :: Effect -> Maybe Effect
-      getRechargingEffect (Recharging e) = Just e
-      getRechargingEffect _ = Nothing
-  in mapMaybe getRechargingEffect effs
-
-stripOnSmash :: [Effect] -> [Effect]
-stripOnSmash effs =
-  let getOnSmashEffect :: Effect -> Maybe Effect
-      getOnSmashEffect (OnSmash e) = Just e
-      getOnSmashEffect _ = Nothing
-  in mapMaybe getOnSmashEffect effs
+onSmashEffect :: Effect -> Bool
+onSmashEffect OnSmash{} = True
+onSmashEffect _ = False
 
 strengthOnSmash :: ItemKind -> [Effect]
 strengthOnSmash =
@@ -274,7 +256,6 @@ getDropOrgans =
   let f (DropItem _ _ COrgan grp) = [grp]
       f Impress = ["impressed"]
       f (OneOf l) = concatMap f l
-      f (Recharging eff) = f eff
       f (Composite l) = concatMap f l
       f _ = []
   in concatMap f . ieffects
@@ -339,10 +320,7 @@ validateSingle ik@ItemKind{..} =
   ++ validateRarity irarity
   ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.
-  ++ (let timeoutAspect :: Aspect -> Bool
-          timeoutAspect Timeout{} = True
-          timeoutAspect _ = False
-          ts = filter timeoutAspect iaspects
+  ++ (let ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])
   ++ (let f :: Aspect -> Bool
           f EqpSlot{} = True
@@ -354,14 +332,8 @@ validateSingle ik@ItemKind{..} =
   ++ ["Redundant Equipable or Meleeable"
      | SetFlag Ability.Equipable `elem` iaspects
        && SetFlag Ability.Meleeable `elem` iaspects]
-  ++ (let f :: Effect -> Bool
-          f OnSmash{} = True
-          f _ = False
-      in validateNotNested ieffects "OnSmash" f)  -- duplicates permitted
-  ++ (let f :: Effect -> Bool
-          f Recharging{} = True
-          f _ = False
-      in validateNotNested ieffects "Recharging" f)  -- duplicates permitted
+  ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
+       -- duplicates permitted
   ++ (let f :: Effect -> Bool
           f Temporary{} = True
           f _ = False
@@ -399,7 +371,6 @@ validateNotNested :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
 validateNotNested effs t f =
   let g (OneOf l) = any f l || any g l
       g (OnSmash effect) = f effect || g effect
-      g (Recharging effect) = f effect || g effect
       g (Composite l) = any f l || any g l
       g _ = False
       ts = filter g effs

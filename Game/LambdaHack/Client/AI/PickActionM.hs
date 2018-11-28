@@ -765,7 +765,6 @@ applyItem aid applyGroup = do
       disqualify durable IK.Summon{} =
         durable && (bcalm b < xM 30 || condNotCalmEnough)
       disqualify durable (IK.OneOf l) = any (disqualify durable) l
-      disqualify durable (IK.Recharging eff) = disqualify durable eff
       disqualify durable (IK.Composite l) = any (disqualify durable) l
       disqualify _ _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
@@ -803,7 +802,6 @@ applyItem aid applyGroup = do
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             -- Don't include @OneOf@ because other effects may kill you.
             getHP (IK.RefillHP p) | p > 0 = True
-            getHP (IK.Recharging eff) = getHP eff
             getHP (IK.Composite l) = any getHP l
             getHP _ = False
             heals = any getHP $ IK.ieffects itemKind

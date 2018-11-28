@@ -62,7 +62,7 @@ hookedClaw = fist
   , idamage  = 2 `d` 1
   , iaspects = Timeout (12 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [Recharging (toOrganBad "slowed" 2)]
+  , ieffects = [toOrganBad "slowed" 2]
   , idesc    = "A curved talon."
   }
 smallClaw = fist
@@ -113,7 +113,7 @@ antler = fist
   , iaspects = [ Timeout $ 3 + (1 `d` 3) * 3
                , AddSkill SkArmorMelee 10 ]  -- bonus doubled
                ++ iaspects fist
-  , ieffects = [Recharging (PushActor (ThrowMod 100 50 1))]  -- 1 step, slow
+  , ieffects = [PushActor (ThrowMod 100 50 1)]  -- 1 step, slow
   , idesc    = ""
   }
 horn = fist
@@ -135,8 +135,7 @@ rhinoHorn = fist
   , idamage  = 5 `d` 1
   , iaspects = [Timeout 7, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [Recharging Impress, Recharging Yell]
-                 -- the owner is a mid-boss, after all
+  , ieffects = [Impress, Yell]  -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
   }
 tentacle = fist
@@ -203,7 +202,7 @@ sting = fist
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
-  , ieffects = [Recharging (toOrganBad "retaining" (10 + 1 `d` 10))]
+  , ieffects = [toOrganBad "retaining" (10 + 1 `d` 10)]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
@@ -214,7 +213,7 @@ venomTooth = fist
   , idamage  = 1 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
+  , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
   , idesc    = "A chilling numbness spreads from its bite."
   }
 venomFang = fist
@@ -225,7 +224,7 @@ venomFang = fist
   , idamage  = 0
   , iaspects = Timeout (10 - 1 `dL` 4)
                : iaspects fist
-  , ieffects = [Recharging (toOrganNoTimer "poisoned")]
+  , ieffects = [toOrganNoTimer "poisoned"]
   , idesc    = "Dripping with deadly venom."
   }
 screechingBeak = fist
@@ -236,7 +235,7 @@ screechingBeak = fist
   , idamage  = 2 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [Recharging $ Summon "scavenger" $ 1 `dL` 3]
+  , ieffects = [Summon "scavenger" $ 1 `dL` 3]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 largeTail = fist
@@ -248,7 +247,7 @@ largeTail = fist
   , iaspects = [Timeout $ 2 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
                  -- timeout higher, lest they regain push before closing again
-  , ieffects = [Recharging (PushActor (ThrowMod 200 50 1))]  -- 1 step, fast
+  , ieffects = [PushActor (ThrowMod 200 50 1)]  -- 1 step, fast
   , idesc    = "Almost as long as the trunk."
   }
 hugeTail = largeTail
@@ -257,7 +256,7 @@ hugeTail = largeTail
   , iaspects = [Timeout $ 3 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
                  -- timeout higher, lest they regain push before closing again
-  , ieffects = [Recharging (PushActor (ThrowMod 400 50 1))]  -- 2 steps, fast
+  , ieffects = [PushActor (ThrowMod 400 50 1)]  -- 2 steps, fast
   , idesc    = "Slow but immensely heavy."
   }
 
@@ -354,7 +353,7 @@ rattleOrgan = armoredSkin
   , iverbHit = "announce"
   , iaspects = [ Timeout $ 10 + (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging Yell, RefillCalm 5]
+  , ieffects = [Yell, RefillCalm 5]
   , idesc    = ""
   }
 insectMortality = armoredSkin
@@ -364,7 +363,7 @@ insectMortality = armoredSkin
   , iaspects = [ AddSkill SkAggression 2  -- try to attack before you die
                , Timeout $ 30 + (1 `d` 3) * 10
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging (RefillHP (-1)), Recharging Yell]
+  , ieffects = [RefillHP (-1), Yell]
   , idesc    = ""
   }
 sapientBrain = armoredSkin
@@ -398,7 +397,7 @@ speedGland n = armoredSkin
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice (100 `div` n)
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [Recharging (RefillHP 1)]
+  , ieffects = [RefillHP 1]
   , idesc    = ""
   }
 speedGland2 = speedGland 2
@@ -413,9 +412,9 @@ scentGland = armoredSkin
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
                , SetFlag Periodic ]  -- not Durable
-  , ieffects = [ Recharging (Temporary "look spent")
-               , Recharging ApplyPerfume
-               , Recharging (Explode "distressing odor") ]
+  , ieffects = [ Temporary "look spent"
+               , ApplyPerfume
+               , Explode "distressing odor" ]
                    -- keep explosion at the end to avoid the ambiguity of
                    -- "of ([foo explosion] of [bar])"
   , idesc    = ""
@@ -427,8 +426,7 @@ boilingVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [ Recharging (RefillHP 2)
-               , Recharging (Explode "boiling water") ]
+  , ieffects = [RefillHP 2, Explode "boiling water"]
   , idesc    = ""
   }
 arsenicVent = armoredSkin
@@ -438,8 +436,7 @@ arsenicVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [ Recharging (RefillHP 2)
-               , Recharging (Explode "sparse shower") ]
+  , ieffects = [RefillHP 2, Explode "sparse shower"]
   , idesc    = ""
   }
 sulfurVent = armoredSkin
@@ -449,8 +446,7 @@ sulfurVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [ Recharging (RefillHP 2)
-               , Recharging (Explode "dense shower") ]
+  , ieffects = [RefillHP 2, Explode "dense shower"]
   , idesc    = ""
   }
 
@@ -545,7 +541,7 @@ lip = fist
   , idamage  = 1 `d` 1
   , iaspects = Timeout (3 + 1 `d` 2)
                : iaspects fist
-  , ieffects = [Recharging (toOrganBad "weakened" (2 + 1 `dL` 3))]
+  , ieffects = [toOrganBad "weakened" (2 + 1 `dL` 3)]
   , idesc    = ""
   }
 torsionRight = fist
@@ -556,7 +552,7 @@ torsionRight = fist
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [Recharging (toOrganBad "slowed" (3 + 1 `d` 3))]
+  , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
   , idesc    = ""
   }
 torsionLeft = fist
@@ -567,7 +563,7 @@ torsionLeft = fist
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [Recharging (toOrganBad "weakened" (3 + 1 `d` 3))]
+  , ieffects = [toOrganBad "weakened" (3 + 1 `d` 3)]
   , idesc    = ""
   }
 pupil = fist
@@ -578,8 +574,6 @@ pupil = fist
   , idamage  = 1 `d` 1
   , iaspects = [AddSkill SkSight 12, Timeout 12]
                ++ iaspects fist
-  , ieffects = [ Recharging (DropItem 1 maxBound COrgan "condition")
-               , Recharging $ RefillCalm (-10)
-               ]
+  , ieffects = [DropItem 1 maxBound COrgan "condition", RefillCalm (-10)]
   , idesc    = ""
   }

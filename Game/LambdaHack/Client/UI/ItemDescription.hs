@@ -98,12 +98,9 @@ textAllPowers detailLevel skipRecharging
           -- doesn't completely lose the @Odds@ case, so better than
           -- the above, even if does not collate multiple skill bonuses
         ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
-      timeoutAspect :: IK.Aspect -> Bool
-      timeoutAspect IK.Timeout{} = True
-      timeoutAspect _ = False
       -- Dice needed, not @Int@, so @arItem@ not consulted directly.
       -- If item not known fully and timeout under @Odds@, it's ignored.
-      mtimeout = find timeoutAspect aspectsFull
+      mtimeout = find IK.timeoutAspect aspectsFull
       elab = IA.aELabel arItem
       periodic = IA.checkFlag Ability.Periodic arItem
       hurtMeleeAspect :: IK.Aspect -> Bool
@@ -120,10 +117,15 @@ textAllPowers detailLevel skipRecharging
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
                    | otherwise = []
-            rechargingTs = T.intercalate " " $ filter (not . T.null)
-                           $ map ppE $ IK.stripRecharging restEs
+            (smashEffs, noSmashEffs) = partition IK.onSmashEffect restEs
             onSmashTs = T.intercalate " " $ filter (not . T.null)
-                        $ map ppE $ IK.stripOnSmash restEs
+                        $ map ppE smashEffs
+            (rechargingTs, ppERestEs) =
+                if isJust mtimeout || periodic
+                then ( T.intercalate " " $ filter (not . T.null)
+                       $ map ppE noSmashEffs
+                     , [] )
+                else ( "", map ppE noSmashEffs )
             durable = IA.checkFlag Ability.Durable arItem
             fragile = IA.checkFlag Ability.Fragile arItem
             noFraDur as = as `notElem` [ IK.SetFlag Ability.Durable
@@ -131,9 +133,9 @@ textAllPowers detailLevel skipRecharging
             displayedAs | durable && fragile = filter noFraDur aspects
                         | otherwise = aspects
             aes = if active
-                  then map ppA displayedAs ++ map ppE restEs
-                  else map ppE restEs ++ map ppA displayedAs
-            periodicOrTimeout =
+                  then map ppA displayedAs ++ ppERestEs
+                  else ppERestEs ++ map ppA displayedAs
+            timeoutOrPeriodic =
               if | skipRecharging || secondPass || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
                      Nothing | durable && not fragile ->
@@ -167,7 +169,7 @@ textAllPowers detailLevel skipRecharging
                    else tshow (IK.idamage itemKind)
         in if detLev >= DetailHigh
               || detLev >= DetailMedium && T.null elab
-           then [periodicOrTimeout] ++ [damage] ++ aes
+           then [timeoutOrPeriodic] ++ [damage] ++ aes
                 ++ [onSmash | detLev >= DetailAll]
            else [damage]
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem

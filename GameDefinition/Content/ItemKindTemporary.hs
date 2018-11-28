@@ -39,7 +39,7 @@ tmpAspects name aspects = ItemKind
                aspects
                ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Durable]
                     -- hack: destroy on drop
-  , ieffects = [ Recharging $ tmpNoLonger name
+  , ieffects = [ tmpNoLonger name
                , OnSmash $ tmpNoLonger name ]
   , idesc    = ""  -- no description needed; powers are enough
   , ikit     = []
@@ -50,7 +50,7 @@ tmpEffects name icount effects =
   let tmp = tmpAspects name []
   in tmp { icount
          , ieffects = effects
-                      ++ [ Recharging $ tmpNoLonger name
+                      ++ [ tmpNoLonger name
                          , OnSmash $ tmpNoLonger name ]
          }
 
@@ -117,12 +117,12 @@ tmpBonusSkApply =
   tmpAspects "more practical" [AddSkill SkApply 5]
 
 tmpRegenerating =
-  tmpEffects "regenerating" (4 + 1 `d` 2) [Recharging (RefillHP 1)]
+  tmpEffects "regenerating" (4 + 1 `d` 2) [RefillHP 1]
 tmpPoisoned =
-  tmpEffects "poisoned" (4 + 1 `d` 2) [Recharging (RefillHP (-1))]
+  tmpEffects "poisoned" (4 + 1 `d` 2) [RefillHP (-1)]
 tmpSlow10Resistant =
   tmpEffects "slow resistant" (8 + 1 `d` 4)
-             [Recharging (DropItem 1 1 COrgan "slowed")]
+             [DropItem 1 1 COrgan "slowed"]
 tmpPoisonResistant =
   tmpEffects "poison resistant" (8 + 1 `d` 4)
-             [Recharging (DropItem 1 maxBound COrgan "poisoned")]
+             [DropItem 1 maxBound COrgan "poisoned"]
