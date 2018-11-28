@@ -219,7 +219,6 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
   let timeout = IA.aTimeout $ itemAspect itemDisco
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
-                      tmpEffect (IK.OnSmash IK.Temporary{}) = True
                       tmpEffect _ = False
                   in not $ any tmpEffect effs
   lid <- getsState $ lidFromC container
@@ -1276,6 +1275,10 @@ specific than the two general abilities described as desirable above
 -- at most one explodes to avoid excessive carnage and UI clutter
 -- (let's say, the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
+--
+-- If the item is discharged, no @OnSmash@ effects will be produced,
+-- but the item will still get destroyed if the conditions are right
+-- and if there is, in fact, any @OnSmash@ effect.
 dropCStoreItem :: MonadServerAtomic m
                => Bool -> CStore -> ActorId -> Actor -> Int
                -> ItemId -> ItemQuant
@@ -1290,11 +1293,12 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
                     || fragile && durable  -- hack for tmp organs
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
-    -- Activate even if effects null, to destroy the item.
-    -- We don't know if it's voluntary, so we conservatively assume it is
-    -- and we blame @aid@.
-    effectAndDestroyAndAddKill True aid
-                               False aid aid iid c False effs (itemFull, kit)
+        -- Activate even if effects null, to destroy the item, if needed.
+        -- We don't know if it's voluntary, so we conservatively assume it is
+        -- and we blame @aid@.
+        voluntary = True
+    effectAndDestroyAndAddKill
+      voluntary aid False aid aid iid c False effs (itemFull, kit)
   else do
     cDrop <- pickDroppable aid b
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop

@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.ItemAspect
   , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ceilingMeanDice, meanAspect, majorEffect
+  , ceilingMeanDice, meanAspect
 #endif
   ) where
 
@@ -184,13 +184,8 @@ meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =
   checkFlag Ability.MinorEffects ar  -- override
-  || not (any majorEffect $ IK.ieffects kind)  -- exhibits no major effects
-
-majorEffect :: IK.Effect -> Bool
-majorEffect eff = case eff of
-  IK.OnSmash{} -> False
-  IK.Composite (eff1 : _) -> majorEffect eff1  -- the rest may never fire
-  _ -> True
+  || not (any (not . IK.onSmashEffect) $ IK.ieffects kind)
+       -- exhibits no major effects
 
 itemTrajectory :: AspectRecord -> IK.ItemKind -> [Point]
                -> ([Vector], (Speed, Int))
