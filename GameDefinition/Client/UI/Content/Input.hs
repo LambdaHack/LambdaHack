@@ -140,10 +140,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safeD0", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
   ]
   ++
-  map (\(k,  slore) -> ("safeD" ++ show (k :: Int)
-                       , ( [CmdInternal, CmdDashboard]
-                         , "display" <+> ppSLore slore <+> "lore"
-                         , ChooseItemMenu (MLore slore) )))
+  map (\(k, slore) -> ("safeD" ++ show (k :: Int)
+                      , ( [CmdInternal, CmdDashboard]
+                        , "display" <+> ppSLore slore <+> "lore"
+                        , ChooseItemMenu (MLore slore) )))
       (zip [1..] [minBound..maxBound])
   ++
   [ ("safeD98", ( [CmdInternal, CmdDashboard]

@@ -81,7 +81,7 @@ whereTo :: LevelId             -- ^ level of the stairs
 whereTo lid pos up dungeon =
   let lvl = dungeon EM.! lid
       li = case elemIndex pos $ fst $ lstair lvl of
-        Just ifst -> assert up  [ifst]
+        Just ifst -> assert up [ifst]
         Nothing -> case elemIndex pos $ snd $ lstair lvl of
           Just isnd -> assert (not up) [isnd]
           Nothing ->

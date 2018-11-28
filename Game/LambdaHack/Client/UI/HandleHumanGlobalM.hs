@@ -932,7 +932,7 @@ alterDirHuman ts = do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       Point x y <- getsSession spointer
-      let dir = Point x (y -  mapStartY) `vectorToFrom` bpos b
+      let dir = Point x (y - mapStartY) `vectorToFrom` bpos b
       if isUnit dir
       then alterTile ts dir
       else failWith "never mind"

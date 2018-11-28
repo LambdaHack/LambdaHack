@@ -250,7 +250,7 @@ perFidInDungeon :: State -> ( FovLitLid, FovClearLid, FovLucidLid
 perFidInDungeon s =
   let fovLitLid = litInDungeon s
       fovClearLid = clearInDungeon s
-      fovLucidLid = lucidInDungeon  fovClearLid fovLitLid s
+      fovLucidLid = lucidInDungeon fovClearLid fovLitLid s
       perValidLid = EM.map (const True) (sdungeon s)
       perValidFid = EM.map (const perValidLid) (sfactionD s)
       f fid _ = perLidFromFaction fovLucidLid fovClearLid fid s

@@ -688,7 +688,7 @@ reqAlterFail voluntary source tpos = do
               TK.ChangeTo tgroup -> Just tgroup
               _ -> Nothing
           groupsToAlterTo | underFeet = []  -- don't autoclose doors under actor
-                          | otherwise =  mapMaybe toAlter feats
+                          | otherwise = mapMaybe toAlter feats
       if null groupsToAlterTo && EM.null embeds then
         return $ Just AlterNothing  -- no altering possible; silly client
       else

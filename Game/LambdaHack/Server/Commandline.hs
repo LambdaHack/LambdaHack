@@ -32,14 +32,14 @@ import Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server options from commandline arguments.
 serverOptionsPI :: ParserInfo ServerOptions
-serverOptionsPI =  info (serverOptionsP <**> helper <**> version)
-               $  fullDesc
-               <> progDesc "Configure debug options here, gameplay options in configuration file."
+serverOptionsPI = info (serverOptionsP <**> helper <**> version)
+                  $ fullDesc
+                    <> progDesc "Configure debug options here, gameplay options in configuration file."
 
 version :: Parser (a -> a)
 version = infoOption (showVersion Self.version)
-  (  long "version"
-  <> help "Print engine version information" )
+  (long "version"
+   <> help "Print engine version information")
 
 serverOptionsP :: Parser ServerOptions
 serverOptionsP = do
@@ -100,7 +100,7 @@ serverOptionsP = do
  where
    serToChallenge :: Maybe Int -> (Bool, Challenge)
    serToChallenge Nothing      = (False, defaultChallenge)
-   serToChallenge (Just cdiff) = (True,  defaultChallenge {cdiff})
+   serToChallenge (Just cdiff) = (True, defaultChallenge {cdiff})
 
 knowMapP :: Parser Bool
 knowMapP =

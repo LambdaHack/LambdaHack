@@ -198,7 +198,7 @@ instance Binary TriggerItem
 -- | Description of how tile altering is triggered and communicated
 -- to the player.
 data TriggerTile =
-  TriggerTile  {ttverb :: MU.Part, ttobject :: MU.Part, ttfeature :: TK.Feature}
+  TriggerTile {ttverb :: MU.Part, ttobject :: MU.Part, ttfeature :: TK.Feature}
   deriving (Show, Eq, Ord, Generic)
 
 instance Read TriggerTile where

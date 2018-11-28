@@ -269,7 +269,7 @@ atomicRemember lid inPer sClient s =
               (Just bag, Nothing) ->  -- common, client unaware
                 let ais = map (\iid -> (iid, getItemBody iid s))
                               (EM.keys bag)
-                in  [UpdSpotItemBag (fc lid p) bag ais | allow p]
+                in [UpdSpotItemBag (fc lid p) bag ais | allow p]
               (Nothing, Just bagClient) ->  -- uncommon, all items vanished
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to notice.

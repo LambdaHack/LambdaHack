@@ -43,7 +43,7 @@ putClient s = modifyClient (const s)
 debugPossiblyPrint :: MonadClient m => Text -> m ()
 debugPossiblyPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . soptions
-  when sdbgMsgCli $ liftIO $  do
+  when sdbgMsgCli $ liftIO $ do
     T.hPutStrLn stdout t
     hFlush stdout
 

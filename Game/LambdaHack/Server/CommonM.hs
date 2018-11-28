@@ -136,7 +136,7 @@ containerMoveItem verbose iid k c1 c2 = do
       return [ UpdLoseItem verbose iid item (k, take k it) c1
              , UpdSpotItem verbose iid item (k, take k it) c2 ]
 
-quitF :: MonadServerAtomic m =>  Status -> FactionId -> m ()
+quitF :: MonadServerAtomic m => Status -> FactionId -> m ()
 quitF status fid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   let oldSt = gquit fact

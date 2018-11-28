@@ -363,7 +363,7 @@ validateSingle ik@ItemKind{..} =
 -- it may presumably be duplicated inside the nesting as well.
 validateOnlyOne :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
 validateOnlyOne effs t f =
-  let  ts = filter f effs
+  let ts = filter f effs
   in ["more than one" <+> t <+> "specification" | length ts > 1]
 
 -- We check it's not nested one nor more levels.

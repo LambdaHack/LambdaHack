@@ -153,7 +153,7 @@ actorsAvoidedDist = BfsDistance 5
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north. The path tries hard to avoid actors and tries to avoid
 -- tiles that need altering and ambient light. Actors are avoided only close
--- to the start of the path, because  elsewhere they are likely to move
+-- to the start of the path, because elsewhere they are likely to move
 -- before they are reached. Even projectiles are avoided,
 -- which sometimes has the effect of choosing a safer route
 -- (regardless if the projectiles are friendly fire or not).

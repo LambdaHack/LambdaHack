@@ -72,8 +72,8 @@ instance MonadPlus Frequency where
   mplus (Frequency xs xname) (Frequency ys yname) =
     let name = case (xs, ys) of
           ([], []) -> "[]"
-          ([], _ ) -> yname
-          (_,  []) -> xname
+          ([], _) -> yname
+          (_, []) -> xname
           _ -> "(" <> xname <> ") ++ (" <> yname <> ")"
     in Frequency (xs ++ ys) name
   mzero = Frequency [] "[]"

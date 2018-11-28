@@ -140,7 +140,7 @@ serverDiscos COps{coitem} = do
   shuffled <- shuffle ixs
   let f (!ikMap, !ikRev, !ix : rest) !kmKind _ =
         (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
-      f (ikMap, _, []) ik  _ =
+      f (ikMap, _, []) ik _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)
       (discoS, discoRev, _) =
         ofoldlWithKey' coitem f (EM.empty, EM.empty, shuffled)
