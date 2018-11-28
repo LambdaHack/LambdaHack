@@ -241,30 +241,31 @@ strongestMelee :: Maybe DiscoveryBenefit -> Time
                -> [(Double, (ItemId, ItemFullKit))]
 strongestMelee _ _ [] = []
 strongestMelee mdiscoBenefit localTime kitAss =
-  -- For simplicity we assume, if weapon not recharged, all important effects,
-  -- good and bad, are disabled and only raw damage remains.
+  -- For fighting, as opposed to equipping, we value weapon only for
+  -- its raw damage and harming effects and at this very moment only,
+  -- not in the future. Hehce, we exclude discharged weapons.
   let f (iid, (itemFull, kit)) =
-        let rawDmg = (IK.damageUsefulness
-                      $ itemKind itemFull, (iid, (itemFull, kit)))
+        let rawDmg = IK.damageUsefulness $ itemKind itemFull
             knownOrConstantAspects = case itemDisco itemFull of
               ItemDiscoMean IA.KindMean{kmConst} -> kmConst
               ItemDiscoFull{} -> True
-            unIDedBonus | knownOrConstantAspects = 0
-                        | otherwise = 1000  -- exceptionally strong weapon
-        in case mdiscoBenefit of
-          Just discoBenefit ->
-            let Benefit{benMelee} = discoBenefit EM.! iid
-            -- For fighting, as opposed to equipping, we value weapon
-            -- only for its raw damage and harming effects.
-                dmg = if hasCharge localTime itemFull kit
-                      then (- benMelee, (iid, (itemFull, kit)))
-                      else rawDmg
-            in first (+ unIDedBonus) dmg
-          Nothing -> rawDmg  -- not interested about ID
+            unIDedBonus | knownOrConstantAspects
+                          || isNothing mdiscoBenefit = 0
+                        | otherwise = 1000  -- == exceptionally strong weapon
+            totalValue = case mdiscoBenefit of
+              Just discoBenefit ->
+                let Benefit{benMelee} = discoBenefit EM.! iid
+                in - benMelee + unIDedBonus
+              Nothing -> rawDmg  -- special case: not interested about ID
+        in ( if hasCharge localTime itemFull kit
+             then totalValue
+             else -100000
+           , (iid, (itemFull, kit)) )
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortBy (flip $ Ord.comparing fst) $ map f kitAss
+  in sortBy (flip $ Ord.comparing fst)
+     $ filter ((> -100000) . fst) $ map f kitAss
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
