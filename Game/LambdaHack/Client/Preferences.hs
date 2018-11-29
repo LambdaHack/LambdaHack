@@ -407,8 +407,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- If item with timeout, but not periodic, we add the self part,
       -- because the effects are applied to self. If they are periodic we can't
       -- effectively apply them, because they are never recharged,
-      -- because they activate as soon as recharged. (We ignore the
-      -- rare case of applying an effect with no charges, destroying the item.)
+      -- because they activate as soon as recharged.
       effDice = - IK.damageUsefulness itemKind
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying

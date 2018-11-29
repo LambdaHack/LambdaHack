@@ -235,12 +235,13 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK
-  -- If the activation is periodic, but item has no charges,
-  -- we speed up by shortcutting early. Note that if the item was kinetically
-  -- hit with, the activation is not periodic, so we enter the code below
-  -- and make it possible for the item to get destroyed, if perishable,
-  -- and let it get identified, even if no effect was eventually triggered.
-  when (not periodic || recharged) $ do
+  -- If the item has no charges and no kinetic hit was performed,
+  -- we speed up by shortcutting early. If the item was used kinetically,
+  -- we enter the code below and make it possible for the item to get destroyed,
+  -- if perishable, and let it get identified, even if no effect
+  -- was eventually triggered (but kinetic hit is not enough for identification,
+  -- if the item has no potential effects at all, see above).
+  when (kineticPerformed || recharged) $ do
     let it2 = if timeout /= 0 && recharged
               then if periodic && not permanent  -- copies are spares only
                    then replicate (itemK - length it1) localTime ++ it1
