@@ -238,12 +238,9 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape. In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.
 
-In melee combat, the best equipped weapon (or the best fighting organ)
-of each opponent is taken into account for determining the damage
-and any extra effects of the blow. Since an item needs to be recharged
-in order to have its full effect, weapons on timeout are only considered
-according to their raw damage dice (the same as displayed at bottommost
-status line).
+In melee combat, the best recharged equipped weapon (or the best fighting
+organ that has any charges left) of each opponent is taken into account
+for determining the damage and any extra effects of the blow.
 
 To determine the damage dealt, the outcome of the weapon's damage dice roll
 is multiplied by a percentage bonus. The bonus is calculated by taking

@@ -710,8 +710,8 @@ projectItem aid = do
               coeff CInv = 1
               coeff CSha = 1
               fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
-                -- We assume if the item has a timeout, most effects are under
-                -- Recharging, so no point projecting if not recharged.
+                -- If the item is discharged, neither the kinetic hit nor
+                -- any effects activate, so no point projecting.
                 -- This changes in time, so recharging is not included
                 -- in @condProjectListM@, but checked here, just before fling.
                 let recharged = hasCharge localTime itemFull kit

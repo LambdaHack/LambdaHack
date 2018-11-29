@@ -211,12 +211,12 @@ permittedApply localTime skill calmE
      | skill < 2 && IK.isymbol itemKind `notElem` [',', '"'] ->
        Left ApplyUnskilled
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead
-     -- We assume if the item has a timeout, all or most of interesting
-     -- effects are under Recharging, so no point activating if not recharged.
-     -- Note that if client doesn't know the timeout, here we leak the fact
+     -- If the item is discharged, neither the kinetic hit nor
+     -- any effects activate, so there's no point applying.
+     -- Note that if client doesn't know the timeout, here we may leak the fact
      -- that the item is still charging, but the client risks destruction
      -- if the item is, in fact, recharged and is not durable
-     -- (very likely in case of jewellery), so it's OK (the message may be
+     -- (likely in case of jewellery). So it's OK (the message may be
      -- somewhat alarming though).
      | not $ hasCharge localTime itemFull kit -> Left ApplyCharging
      | otherwise ->
