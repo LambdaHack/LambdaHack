@@ -58,8 +58,13 @@ data ItemKind = ItemKind
 -- The others affect only the item in question, not the actor carrying it,
 -- and so are not additive in any sense.
 data Aspect =
-    Timeout Dice.Dice  -- ^ some effects disabled until item recharges;
-                       --   expressed in game turns
+    Timeout Dice.Dice   -- ^ specifies the cooldown before an item may be
+                        --   applied again; if an item is applied manually
+                        --   and not via periodic activation,
+                        --   all effects on a single copy of the item are
+                        --   disabled until the copy recharges for the given
+                        --   time expressed in game turns; all copies
+                        --   recharge concurrently
   | AddSkill Ability.Skill Dice.Dice
                        -- ^ bonus to a skill; in content, avoid boosting
                        --   skills such as SkApply via permanent equipment,
@@ -315,16 +320,16 @@ toOrganNoTimer grp = CreateItem COrgan grp TimerNone
 -- | Catch invalid item kind definitions.
 validateSingle :: ItemKind -> [Text]
 validateSingle ik@ItemKind{..} =
-  [ "iname longer than 23" | T.length iname > 23 ]
-  ++ [ "icount < 0" | Dice.infDice icount < 0 ]
+  ["iname longer than 23" | T.length iname > 23]
+  ++ ["icount < 0" | Dice.infDice icount < 0]
   ++ validateRarity irarity
   ++ validateDamage idamage
   -- Reject duplicate Timeout, because it's not additive.
   ++ (let ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])
-  ++ ["Conflicting Fragile and Durable"
+  ++ [ "Conflicting Fragile and Durable"
      | SetFlag Ability.Fragile `elem` iaspects
-       && SetFlag Ability.Durable `elem` iaspects]
+       && SetFlag Ability.Durable `elem` iaspects ]
   ++ (let f :: Aspect -> Bool
           f EqpSlot{} = True
           f _ = False
@@ -332,18 +337,18 @@ validateSingle ik@ItemKind{..} =
       in [ "EqpSlot specified but not Equipable nor Meleeable"
          | length ts > 0 && SetFlag Ability.Equipable `notElem` iaspects
                          && SetFlag Ability.Meleeable `notElem` iaspects ])
-  ++ ["Redundant Equipable or Meleeable"
+  ++ [ "Redundant Equipable or Meleeable"
      | SetFlag Ability.Equipable `elem` iaspects
-       && SetFlag Ability.Meleeable `elem` iaspects]
-  ++ ["Conflicting Durable and Blast"
+       && SetFlag Ability.Meleeable `elem` iaspects ]
+  ++ [ "Conflicting Durable and Blast"
      | SetFlag Ability.Durable `elem` iaspects
-       && SetFlag Ability.Blast `elem` iaspects]
-  ++ ["Conflicting Durable and Condition"
+       && SetFlag Ability.Blast `elem` iaspects ]
+  ++ [ "Conflicting Durable and Condition"
      | SetFlag Ability.Durable `elem` iaspects
-       && SetFlag Ability.Condition `elem` iaspects]
-  ++ ["Conflicting Blast and Condition"
+       && SetFlag Ability.Condition `elem` iaspects ]
+  ++ [ "Conflicting Blast and Condition"
      | SetFlag Ability.Blast `elem` iaspects
-       && SetFlag Ability.Condition `elem` iaspects]
+       && SetFlag Ability.Condition `elem` iaspects ]
   ++ (let f :: Aspect -> Bool
           f ELabel{} = True
           f _ = False

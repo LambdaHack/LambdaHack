@@ -83,7 +83,10 @@ data Flag =
                   --   which doesn't guarantee display as a condition,
                   --   but governs removal by items that drop @condition@
   | Unique        -- ^ at most one copy can ever be generated
-  | Periodic      -- ^ in eqp, triggered as often as @Timeout@ permits
+  | Periodic      -- ^ only one of all copies of the item activates, but all
+                  --   copies then require a cooldown specified in @Timeout@,
+                  --   never destroying the item, even if not durable
+                  --   only effective if item in equipment or an organ
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up
