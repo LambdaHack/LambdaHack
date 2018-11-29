@@ -134,10 +134,11 @@ data Effect =
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
-  | Temporary Text
-      -- ^ the item is temporary, vanishes at even void periodic activation,
-      --   unless durable, and shows message with this verb at the last
-      --   copy activation, if a condition, or at each activation, otherwise
+  | Verb Text
+      -- ^ an actor activating this effect utters a sentence with the given
+      --   text as his verb; if effect under @OnSmash@, the message appears
+      --   at each item copy destruction or, if the item is an organ,
+      --   only at the last copy's destruction; no spam if a projectile
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -220,7 +221,7 @@ forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
   Composite effs -> any forApplyEffect effs
-  Temporary{} -> False
+  Verb{} -> False
   _ -> True
 
 isEffEscape :: Effect -> Bool
@@ -274,7 +275,7 @@ damageUsefulness itemKind =
   in assert (v >= 0) v
 
 tmpNoLonger :: Text -> Effect
-tmpNoLonger name = Temporary $ "be no longer" <+> name
+tmpNoLonger name = Verb $ "be no longer" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
@@ -360,9 +361,9 @@ validateSingle ik@ItemKind{..} =
       in ["more than one HideAs specification" | length ts > 1])
   ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
   ++ (let f :: Effect -> Bool
-          f Temporary{} = True
+          f Verb{} = True
           f _ = False
-      in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
+      in validateOnlyOne ieffects "Verb" f)  -- may be duplicated if nested
   ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
        -- duplicates permitted
 

@@ -122,7 +122,7 @@ effectToSuffix detailLevel effect =
          then header <+> "[" <> marvels <> "]"
          else header
     OnSmash _ -> ""  -- printed inside a separate section
-    Temporary _ -> ""  -- only printed on destruction
+    Verb _ -> ""  -- no description for an effect that prints a description
     Composite effs -> T.intercalate " and then "
                     $ filter (/= "") $ map (effectToSuffix detailLevel) effs
 

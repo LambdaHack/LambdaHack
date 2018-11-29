@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
-  , effectTemporary, effectComposite
+  , effectVerb, effectComposite
 #endif
   ) where
 
@@ -225,7 +225,7 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
   let arItem = itemAspect itemDisco
       timeout = IA.aTimeout arItem
       permanent = let tmpEffect :: IK.Effect -> Bool
-                      tmpEffect IK.Temporary{} = True
+                      tmpEffect IK.Verb{} = True  -- TODO: replace
                       tmpEffect _ = False
                   in not $ any tmpEffect effs
   lid <- getsState $ lidFromC container
@@ -394,7 +394,7 @@ effectSem source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.Temporary _ -> effectTemporary execSfx source iid c
+    IK.Verb _ -> effectVerb execSfx source iid c
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1760,20 +1760,20 @@ effectOneOf recursiveCall l = do
   foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
 
--- ** Temporary
+-- ** Verb
 
-effectTemporary :: MonadServerAtomic m
-                => m () -> ActorId -> ItemId -> Container -> m UseResult
-effectTemporary execSfx source iid c = do
+effectVerb :: MonadServerAtomic m
+           => m () -> ActorId -> ItemId -> Container -> m UseResult
+effectVerb execSfx source iid c = do
   b <- getsState $ getActorBody source
-  case c of
-    CActor _ COrgan -> do
-      case iid `EM.lookup` borgan b of
-        Just _ -> return ()  -- still some copies left of a multi-copy tmp organ
-        Nothing -> execSfx  -- last copy just destroyed
-    _ ->
-      unless (bproj b) execSfx  -- don't spam when projectiles activate
-  return UseUp  -- temporary, so usually used up just by sitting there
+  unless (bproj b) $ do  -- don't spam when projectiles activate
+    case c of
+      CActor _ COrgan -> do
+        case iid `EM.lookup` borgan b of
+          Just _ -> return ()  -- still some copies left of a multi-copy organ
+          Nothing -> execSfx  -- last copy just destroyed
+      _ -> execSfx
+  return UseDud  -- blabbing takes no effort, so item not used up
 
 -- ** Composite
 
