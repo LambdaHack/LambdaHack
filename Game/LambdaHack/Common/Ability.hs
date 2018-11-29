@@ -74,7 +74,8 @@ data Flag =
                   --   have 'EqpSlot', e.g., if the benefit is periodic)
   | Meleeable     -- ^ AI and UI flag: consider meleeing with
   | Precious      -- ^ AI and UI flag: don't risk identifying by use;
-                  --   also, can't throw or apply if not calm enough
+                  --   also, can't throw or apply if not calm enough;
+                  --   also may be used for UI flavour or AI hints
   | Blast         -- ^ the item is an explosion blast particle
   | Condition     -- ^ item is a temporary condition of an actor
                   --   and is displayed as such;

@@ -321,6 +321,9 @@ validateSingle ik@ItemKind{..} =
   -- Reject duplicate Timeout, because it's not additive.
   ++ (let ts = filter timeoutAspect iaspects
       in ["more than one Timeout specification" | length ts > 1])
+  ++ ["Conflicting Fragile and Durable"
+     | SetFlag Ability.Fragile `elem` iaspects
+       && SetFlag Ability.Durable `elem` iaspects]
   ++ (let f :: Aspect -> Bool
           f EqpSlot{} = True
           f _ = False
@@ -331,12 +334,15 @@ validateSingle ik@ItemKind{..} =
   ++ ["Redundant Equipable or Meleeable"
      | SetFlag Ability.Equipable `elem` iaspects
        && SetFlag Ability.Meleeable `elem` iaspects]
-  ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
-       -- duplicates permitted
-  ++ (let f :: Effect -> Bool
-          f Temporary{} = True
-          f _ = False
-      in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
+  ++ ["Conflicting Durable and Blast"
+     | SetFlag Ability.Durable `elem` iaspects
+       && SetFlag Ability.Blast `elem` iaspects]
+  ++ ["Conflicting Durable and Condition"
+     | SetFlag Ability.Durable `elem` iaspects
+       && SetFlag Ability.Condition `elem` iaspects]
+  ++ ["Conflicting Blast and Condition"
+     | SetFlag Ability.Blast `elem` iaspects
+       && SetFlag Ability.Condition `elem` iaspects]
   ++ (let f :: Aspect -> Bool
           f ELabel{} = True
           f _ = False
@@ -353,6 +359,12 @@ validateSingle ik@ItemKind{..} =
           ts = filter f iaspects
       in ["more than one HideAs specification" | length ts > 1])
   ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
+  ++ (let f :: Effect -> Bool
+          f Temporary{} = True
+          f _ = False
+      in validateOnlyOne ieffects "Temporary" f)  -- may be duplicated if nested
+  ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
+       -- duplicates permitted
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
