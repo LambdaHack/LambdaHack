@@ -126,22 +126,16 @@ textAllPowers detailLevel skipRecharging
                        $ map ppE noSmashEffs
                      , [] )
                 else ( "", map ppE noSmashEffs )
-            durable = IA.checkFlag Ability.Durable arItem
-            fragile = IA.checkFlag Ability.Fragile arItem
-            noFraDur as = as `notElem` [ IK.SetFlag Ability.Durable
-                                       , IK.SetFlag Ability.Fragile ]
-            displayedAs | durable && fragile = filter noFraDur aspects
-                        | otherwise = aspects
             aes = if active
-                  then map ppA displayedAs ++ ppERestEs
-                  else ppERestEs ++ map ppA displayedAs
+                  then map ppA aspects ++ ppERestEs
+                  else ppERestEs ++ map ppA aspects
             timeoutOrPeriodic =
               if | skipRecharging || secondPass || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
-                     Nothing | durable && not fragile ->
-                       "(each turn:" <+> rechargingTs <> ")"
-                     Nothing ->
+                     Nothing | IA.checkFlag Ability.Condition arItem ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
+                     Nothing ->
+                       "(each turn:" <+> rechargingTs <> ")"
                      Just (IK.Timeout t) ->
                        "(every" <+> reduce_a t <> ":"
                        <+> rechargingTs <> ")"

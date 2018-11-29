@@ -67,7 +67,7 @@ newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
 
 -- | Item flag aspects.
 data Flag =
-    Fragile       -- ^ drop and break at target tile, even if no hit
+    Fragile       -- ^ break at target tile, even if no hit
   | Lobable       -- ^ drop at target tile, even if no hit
   | Durable       -- ^ don't break even when hitting or applying
   | Equipable     -- ^ AI and UI flag: consider equipping (may or may not
@@ -76,12 +76,17 @@ data Flag =
   | Precious      -- ^ AI and UI flag: don't risk identifying by use;
                   --   also, can't throw or apply if not calm enough
   | Blast         -- ^ the item is an explosion blast particle
+  | Condition     -- ^ item is a temporary condition of an actor
+                  --   and is displayed as such;
+                  --   this differs from belonging to the @condition@ group,
+                  --   which doesn't guarantee display as a condition,
+                  --   but governs removal by items that drop @condition@
   | Unique        -- ^ at most one copy can ever be generated
   | Periodic      -- ^ in eqp, triggered as often as @Timeout@ permits
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up
-  deriving (Show, Eq, Ord, Generic, Enum)
+  deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)

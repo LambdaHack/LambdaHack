@@ -335,6 +335,7 @@ kindAspectToSuffix aspect =
     SetFlag Meleeable -> ""
     SetFlag Precious -> ""
     SetFlag Blast -> ""
+    SetFlag Condition -> ""
     SetFlag Unique -> ""  -- marked by capital letters in name
     SetFlag Periodic -> ""  -- printed specially
     SetFlag MinorEffects -> ""  -- cryptic override
@@ -357,6 +358,7 @@ aspectToSentence feat =
       Just "It is considered for melee strikes by default."
     SetFlag Precious -> Just "It seems precious."
     SetFlag Blast -> Nothing
+    SetFlag Condition -> Nothing
     SetFlag Unique -> Nothing
     SetFlag Periodic -> Nothing
     SetFlag MinorEffects -> Nothing

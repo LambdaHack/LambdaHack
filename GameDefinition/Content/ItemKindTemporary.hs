@@ -36,9 +36,7 @@ tmpAspects name aspects = ItemKind
   , idamage  = 0
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
-               aspects
-               ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Durable]
-                    -- hack: destroy on drop
+               aspects ++ [SetFlag Periodic, SetFlag Condition]
   , ieffects = [ tmpNoLonger name
                , OnSmash $ tmpNoLonger name ]
   , idesc    = ""  -- no description needed; powers are enough
@@ -49,9 +47,7 @@ tmpEffects :: Text -> Dice -> [Effect] -> ItemKind
 tmpEffects name icount effects =
   let tmp = tmpAspects name []
   in tmp { icount
-         , ieffects = effects
-                      ++ [ tmpNoLonger name
-                         , OnSmash $ tmpNoLonger name ]
+         , ieffects = effects ++ ieffects tmp
          }
 
 tmpStrengthened = tmpAspects "strengthened" [AddSkill SkHurtMelee 20]

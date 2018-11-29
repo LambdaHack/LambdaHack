@@ -299,9 +299,8 @@ imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull -> ItemQuant
                 -> (Bool, ItemQuant)
 imperishableKit permanent periodic it2 itemFull (itemK, _) =
   let arItem = aspectRecordFull itemFull
-      fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
-      imperishable = durable && not fragile || periodic && permanent
+      imperishable = durable || periodic && permanent
       kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
   in (imperishable, kit)
 
@@ -1304,7 +1303,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
-                    || fragile && durable  -- hack for tmp organs
+                    || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
         -- Activate even if effects null, to destroy the item, if needed.

@@ -200,8 +200,7 @@ isMelee :: AspectRecord -> Bool
 isMelee = checkFlag Ability.Meleeable
 
 looksLikeCondition :: AspectRecord -> Bool
-looksLikeCondition ar = checkFlag Ability.Fragile ar
-                        && checkFlag Ability.Durable ar
+looksLikeCondition ar = checkFlag Ability.Condition ar
 
 isBlast :: AspectRecord -> Bool
 isBlast = checkFlag Ability.Blast

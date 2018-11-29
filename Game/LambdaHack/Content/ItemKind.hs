@@ -135,10 +135,9 @@ data Effect =
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
   | Temporary Text
-      -- ^ the item is temporary, vanishes at even void Periodic activation,
-      --   unless Durable and not Fragile, and shows message with
-      --   this verb at last copy activation or at each activation
-      --   unless Durable and Fragile
+      -- ^ the item is temporary, vanishes at even void periodic activation,
+      --   unless durable, and shows message with this verb at the last
+      --   copy activation, if a condition, or at each activation, otherwise
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -353,11 +352,7 @@ validateSingle ik@ItemKind{..} =
           f _ = False
           ts = filter f iaspects
       in ["more than one HideAs specification" | length ts > 1])
-  ++ concatMap (validateDups ik)
-       (map SetFlag
-          [ Ability.Fragile, Ability.Lobable, Ability.Durable
-          , Ability.Equipable, Ability.Meleeable, Ability.Precious
-          , Ability.Blast, Ability.Unique, Ability.Periodic ])
+  ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
