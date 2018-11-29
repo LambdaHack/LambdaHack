@@ -893,11 +893,21 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
   actorSk <- leaderSkillsClientUI
   let skill = Ability.getSk Ability.SkApply actorSk
       calmE = calmEnough b actorMaxSk
+      arItem = aspectRecordFull itemFull
   if not calmE && fromCStore == CSha
   then failSer ItemNotCalm
   else case permittedApply localTime skill calmE itemFull kit of
     Left reqFail -> failSer reqFail
-    Right _ -> return $ Right $ ReqApply iid fromCStore
+    Right _ -> do
+      -- No warning if item durable, because activation weak, but price low.
+      go <- if IA.checkFlag Ability.Durable arItem
+               || not (IA.checkFlag Ability.Periodic arItem)
+            then return True
+            else displayYesNo ColorFull
+                              "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+      if go
+      then return $ Right $ ReqApply iid fromCStore
+      else failWith "never mind"
 
 -- * AlterDir
 
