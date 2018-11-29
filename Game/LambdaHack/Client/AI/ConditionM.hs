@@ -187,13 +187,13 @@ condBlocksFriendsM aid = do
 -- | Require the actor stands over a weapon that would be auto-equipped.
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid =
-  any (IA.isMelee . aspectRecordFull . snd) <$>
+  any (IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
     getsState (fullAssocs aid [CGround])
 
 -- | Check whether the actor has no weapon in equipment.
 condNoEqpWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoEqpWeaponM aid =
-  all (not . IA.isMelee . aspectRecordFull . snd) <$>
+  all (not . IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
     getsState (fullAssocs aid [CEqp])
 
 -- | Require that the actor can project any items.
@@ -232,7 +232,8 @@ projectList discoBenefit skill aid
         let arItem = aspectRecordFull itemFull
         in benFling < 0
            && (not benInEqp  -- can't wear, so OK to risk losing or breaking
-               || not (IA.isMelee arItem)  -- anything else expendable
+               || not (IA.checkFlag Ability.Meleeable arItem)
+                    -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedProjectAI skill calmE itemFull
       stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
@@ -268,7 +269,8 @@ hinders condShineWouldBetray condAimEnemyPresent
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || gearSpeed actorMaxSk > speedWalk
-        && not (IA.isMelee arItem)  -- in case it's the only weapon
+        && not (IA.checkFlag Ability.Meleeable arItem)
+             -- in case it's the only weapon
         && 0 > IA.getSkill Ability.SkHurtMelee arItem
 
 -- | Require that the actor stands over a desirable item.

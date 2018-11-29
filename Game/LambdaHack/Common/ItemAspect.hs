@@ -5,8 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , aspectRecordToList, rollAspectRecord
   , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
-  , onlyMinorEffects, itemTrajectory, totalRange
-  , isMelee, looksLikeCondition, isBlast, isHumanTrinket
+  , onlyMinorEffects, itemTrajectory, totalRange, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -196,15 +195,6 @@ itemTrajectory ar itemKind path =
 totalRange :: AspectRecord -> IK.ItemKind -> Int
 totalRange ar itemKind = snd $ snd $ itemTrajectory ar itemKind []
 
-isMelee :: AspectRecord -> Bool
-isMelee = checkFlag Ability.Meleeable
-
-looksLikeCondition :: AspectRecord -> Bool
-looksLikeCondition ar = checkFlag Ability.Condition ar
-
-isBlast :: AspectRecord -> Bool
-isBlast = checkFlag Ability.Blast
-
 isHumanTrinket :: IK.ItemKind -> Bool
 isHumanTrinket itemKind =
   maybe False (> 0) $ lookup "valuable" $ IK.ifreq itemKind
@@ -234,7 +224,7 @@ loreFromContainer :: AspectRecord -> Container -> SLore
 loreFromContainer arItem c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
-  CActor _ store -> if | isBlast arItem -> SBlast
-                       | looksLikeCondition arItem -> STmp
+  CActor _ store -> if | checkFlag Ability.Blast arItem -> SBlast
+                       | checkFlag Ability.Condition arItem -> STmp
                        | otherwise -> loreFromMode $ MStore store
-  CTrunk{} -> if isBlast arItem then SBlast else STrunk
+  CTrunk{} -> if checkFlag Ability.Blast arItem then SBlast else STrunk

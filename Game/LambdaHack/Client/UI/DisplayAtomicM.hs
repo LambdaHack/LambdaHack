@@ -94,7 +94,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
-            if IA.looksLikeCondition arItem then do
+            if IA.checkFlag Ability.Condition arItem then do
               bag <- getsState $ getContainerBag c
               let more = case EM.lookup iid bag of
                     Nothing -> False
@@ -544,7 +544,7 @@ createActorUI born aid body = do
             else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
                  $ lookup k uHeroNames
       (n, bsymbol) <-
-        if | bproj body -> return (0, if IA.isBlast arItem
+        if | bproj body -> return (0, if IA.checkFlag Ability.Blast arItem
                                       then IK.isymbol itemKind
                                       else '*')
            | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
@@ -571,8 +571,9 @@ createActorUI born aid body = do
                          | otherwise = ""
                  in (the <+> IK.iname itemKind, basePronoun)
                | otherwise -> heroNamePronoun n
-          bcolor | bproj body =
-                     if IA.isBlast arItem then baseColor else Color.BrWhite
+          bcolor | bproj body = if IA.checkFlag Ability.Blast arItem
+                                then baseColor
+                                else Color.BrWhite
                  | baseColor == Color.BrWhite = gcolor fact
                  | otherwise = baseColor
           bUI = ActorUI{..}
@@ -1311,7 +1312,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
-                 | IA.looksLikeCondition $ aspectRecordFull itemFull ]
+                 | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
           oldDelta = case iid `EM.lookup` bagAfter of
             Just (_, timerAfter : _) ->
               let totalDelta = timeDeltaToFrom timerAfter localTime
@@ -1360,7 +1361,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
     eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
     orgKit <- getsState $ kitAssocs target [COrgan]
     let notCond (_, (itemFull2, _)) =
-          not $ IA.looksLikeCondition $ aspectRecordFull itemFull2
+          not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFull2
         isOrdinaryCond (_, (itemFull2, _)) =
           isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFull2
         rateArmor (iidArmor, (itemFull2, (k, _))) =

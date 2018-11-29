@@ -138,7 +138,8 @@ pickWeaponClient source target = do
   bodyAssocs <- getsState $ kitAssocs source [COrgan]
   actorSk <- currentSkillsClient source
   let kitAssRaw = eqpAssocs ++ bodyAssocs
-      kitAss = filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
+      kitAss = filter (IA.checkFlag Ability.Meleeable
+                       . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- pickWeaponM (Just discoBenefit) kitAss actorSk source
   case strongest of

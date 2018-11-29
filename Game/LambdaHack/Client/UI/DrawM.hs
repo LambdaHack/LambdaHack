@@ -637,7 +637,8 @@ drawLeaderDamage width = do
       actorMaxSkills <- getsState sactorMaxSkills
       localTime <- getsState $ getLocalTime (blid b)
       let kitAssOnlyWeapons =
-            filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
+            filter (IA.checkFlag Ability.Meleeable
+                    . aspectRecordFull . fst . snd) kitAssRaw
       strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
       return $! case strongest of
         [] -> ("0", "", Color.BrCyan, Color.White)

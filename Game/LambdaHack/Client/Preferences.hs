@@ -473,7 +473,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- (but can be equipped anyway). If it harms wearer too much,
       -- won't be worn but still may be flung, etc.
       (benInEqp, benPickupRaw)
-        | IA.isMelee arItem  -- probably known even if not identified
+        | IA.checkFlag Ability.Meleeable arItem
+            -- probably known even if not identified
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
           ( True  -- equip, melee crucial and only weapons in eqp can be used

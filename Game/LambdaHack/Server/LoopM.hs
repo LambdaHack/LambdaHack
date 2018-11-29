@@ -465,7 +465,8 @@ advanceTrajectory aid b = do
            -- Hit will clear trajectories in @reqMelee@,
            -- so no need to do that here.
            execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
-           when (null lv && bproj b && not (IA.isBlast arTrunk)) $ do
+           when (null lv && bproj b
+                 && not (IA.checkFlag Ability.Blast arTrunk)) $ do
              killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
              addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
            let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
@@ -494,7 +495,7 @@ advanceTrajectory aid b = do
            -- Second call of @actorDying@ above will catch the dead projectile.
            execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
            -- Kill counts for each blast particle is TMI.
-           when (not (IA.isBlast arTrunk)) $ do
+           when (not (IA.checkFlag Ability.Blast arTrunk)) $ do
              killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
              addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
            -- Losing HP due to hitting an obstacle not needed, because

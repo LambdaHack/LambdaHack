@@ -152,7 +152,8 @@ hearUpdAtomic as cmd = do
       discoAspect <- getsState sdiscoAspect
       let arItem = discoAspect EM.! iid
       if cstore /= COrgan
-         || IA.isBlast arItem && Dice.supDice (IK.idamage itemKind) > 0 then do
+         || IA.checkFlag Ability.Blast arItem
+            && Dice.supDice (IK.idamage itemKind) > 0 then do
         body <- getsState $ getActorBody aid
         aids <- filterHear (bpos body) as
         return $ Just aids  -- profound
@@ -163,7 +164,7 @@ hearUpdAtomic as cmd = do
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
       aids <- filterHear (bpos b) as
-      return $! if bproj b && IA.isBlast arTrunk || null aids
+      return $! if bproj b && IA.checkFlag Ability.Blast arTrunk || null aids
                 then Nothing
                 else Just aids
     UpdAlterTile _ p _ toTile -> do
@@ -188,7 +189,7 @@ hearSfxAtomic as cmd =
       aids <- filterHear (bpos b) as
       itemKindId <- getsState $ getIidKindIdServer iid
       -- Loud explosions cause enough noise, so ignoring particle hit spam.
-      return $! if IA.isBlast arItem || null aids
+      return $! if IA.checkFlag Ability.Blast arItem || null aids
                 then Nothing
                 else Just (HearStrike itemKindId, aids)
     SfxEffect _ aid (IK.Summon grp p) _ -> do

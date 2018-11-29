@@ -193,7 +193,9 @@ insertItemOrgan iid kit aid = do
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { borgan = upd (borgan b)
-      , bweapon = if IA.isMelee arItem then bweapon b + 1 else bweapon b }
+      , bweapon = if IA.checkFlag Ability.Meleeable arItem
+                  then bweapon b + 1
+                  else bweapon b }
 
 insertItemEqp :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
@@ -203,7 +205,9 @@ insertItemEqp iid kit aid = do
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { beqp = upd (beqp b)
-      , bweapon = if IA.isMelee arItem then bweapon b + 1 else bweapon b }
+      , bweapon = if IA.checkFlag Ability.Meleeable arItem
+                  then bweapon b + 1
+                  else bweapon b }
 
 insertItemInv :: MonadStateWrite m
               => ItemId -> ItemQuant -> ActorId -> m ()
@@ -283,14 +287,18 @@ deleteItemOrgan iid kit aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { borgan = rmFromBag kit iid (borgan b)
-      , bweapon = if IA.isMelee arItem then bweapon b - 1 else bweapon b }
+      , bweapon = if IA.checkFlag Ability.Meleeable arItem
+                  then bweapon b - 1
+                  else bweapon b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemEqp iid kit aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { beqp = rmFromBag kit iid (beqp b)
-      , bweapon = if IA.isMelee arItem then bweapon b - 1 else bweapon b }
+      , bweapon = if IA.checkFlag Ability.Meleeable arItem
+                  then bweapon b - 1
+                  else bweapon b }
 
 deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemInv iid kit aid =

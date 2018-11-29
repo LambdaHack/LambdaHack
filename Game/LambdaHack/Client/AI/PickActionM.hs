@@ -388,7 +388,8 @@ pickup aid onlyWeapon = do
   -- e.g., making all rings identified)
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
-      isWeapon (_, _, _, itemFull, _) = IA.isMelee $ aspectRecordFull itemFull
+      isWeapon (_, _, _, itemFull, _) =
+        IA.checkFlag Ability.Meleeable $ aspectRecordFull itemFull
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4)
@@ -772,7 +773,8 @@ applyItem aid applyGroup = do
             durable = IA.checkFlag Durable arItem
         in (not benInEqp  -- can't wear, so OK to break
             || durable  -- can wear, but can't break, even better
-            || not (IA.isMelee arItem)  -- anything else expendable
+            || not (IA.checkFlag Ability.Meleeable arItem)
+                 -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor itemFull kit
            && not (any (disqualify durable) $ IK.ieffects itemKind)

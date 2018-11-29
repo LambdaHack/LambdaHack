@@ -320,7 +320,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
         sdamaging = damaging sitemKind
         tdamaging = damaging titemKind
         -- Avoid explosion extinguishing itself via its own particles colliding.
-        sameBlast = IA.isBlast sar
+        sameBlast = IA.checkFlag Ability.Blast sar
                     && getIidKindIdServer (btrunk sb) s
                        == getIidKindIdServer (btrunk tb) s
     in not sameBlast
@@ -404,12 +404,13 @@ reqMeleeChecked voluntary source target iid cstore = do
           btra@(Just (l, speed)) | not $ null l -> do
             execUpdAtomic $ UpdTrajectory aid btra $ Just ([], speed)
             let arTrunkAid = discoAspect EM.! btrunk b
-            when (bproj b && not (IA.isBlast arTrunkAid)) $
+            when (bproj b && not (IA.checkFlag Ability.Blast arTrunkAid)) $
               addKillToAnalytics killer killHow (bfid b) (btrunk b)
           _ -> return ()
     -- Only catch if braced. Never steal trunk from an already caught
     -- projectile or one with many items inside.
-    if bproj tb && EM.size (beqp tb) == 1 && not (IA.isBlast arTrunk)
+    if bproj tb && EM.size (beqp tb) == 1
+       && not (IA.checkFlag Ability.Blast arTrunk)
        && waitedLastTurn sb then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
@@ -446,7 +447,7 @@ reqMeleeChecked voluntary source target iid cstore = do
         when (bhp tb <= oneM) $ do
           -- If projectile has too low HP to pierce, terminate its flight.
           let arWeapon = discoAspect EM.! iid
-              killHow | IA.isBlast arWeapon = KillKineticBlast
+              killHow | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           haltTrajectory killHow target tb
       else do

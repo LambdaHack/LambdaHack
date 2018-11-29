@@ -289,7 +289,7 @@ tmpMeleeBonus :: [ItemFullKit] -> Int
 tmpMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
         let arItem = aspectRecordFull itemFull
-        in if IA.looksLikeCondition arItem
+        in if IA.checkFlag Ability.Condition arItem
            then k + itemK * IA.getSkill Ability.SkHurtMelee arItem
            else k
   in foldr f 0 kitAss

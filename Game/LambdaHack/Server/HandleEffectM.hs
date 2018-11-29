@@ -175,7 +175,7 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
           arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
           let killHow | not (bproj sb) =
                         if voluntary then KillKineticMelee else KillKineticPush
-                      | IA.isBlast arWeapon = KillKineticBlast
+                      | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         let IK.ItemKind{IK.ieffects} = itemKind itemFull
@@ -202,7 +202,7 @@ effectAndDestroyAndAddKill voluntary killer
     arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
     let killHow | not (bproj sb) =
                   if voluntary then KillOtherMelee else KillOtherPush
-                | IA.isBlast arWeapon = KillOtherBlast
+                | IA.checkFlag Ability.Blast arWeapon = KillOtherBlast
                 | otherwise = KillOtherRanged
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
 
@@ -1681,8 +1681,9 @@ effectDropBestWeapon execSfx iidId target = do
   if bproj tb then return UseDud else do
     localTime <- getsState $ getLocalTime (blid tb)
     kitAssRaw <- getsState $ kitAssocs target [CEqp]
-    let kitAss = filter (\(iid, (i, _)) -> IA.isMelee (aspectRecordFull i)
-                                           && iid /= iidId) kitAssRaw
+    let kitAss = filter (\(iid, (i, _)) ->
+                          IA.checkFlag Ability.Meleeable (aspectRecordFull i)
+                          && iid /= iidId) kitAssRaw
     case strongestMelee Nothing localTime kitAss of
       (_, (iid, _)) : _ -> do
         execSfx

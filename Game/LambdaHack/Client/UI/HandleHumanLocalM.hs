@@ -190,7 +190,7 @@ chooseItemDialogMode c = do
           return $ Right c2
         MOrgans -> do
           let blurb itemFull =
-                if IA.looksLikeCondition $ aspectRecordFull itemFull
+                if IA.checkFlag Ability.Condition $ aspectRecordFull itemFull
                 then "condition"
                 else "organ"
               promptFun _ itemFull _ =

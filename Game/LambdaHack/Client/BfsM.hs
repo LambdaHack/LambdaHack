@@ -438,7 +438,8 @@ condEnoughGearM aid = do
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy
-           && (any (IA.isMelee . aspectRecordFull . snd) eqpAssocs
+           && (any (IA.checkFlag Ability.Meleeable
+                    . aspectRecordFull . snd) eqpAssocs
                || length eqpAssocs + length invAssocs >= 5)
 
 unexploredDepth :: MonadClientRead m => Bool -> LevelId -> m Bool

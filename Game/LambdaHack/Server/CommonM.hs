@@ -508,7 +508,8 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
       healthOrgans = [ (Just bonusHP, ("bonus HP", COrgan))
                      | bonusHP /= 0 && not bproj ]
       b = actorTemplate trunkId finalHP calm pos lid fid bproj
-      withTrunk = b {bweapon = if IA.isMelee arItem then 1 else 0}
+      withTrunk =
+        b {bweapon = if IA.checkFlag Ability.Meleeable arItem then 1 else 0}
       bodyTweaked = tweakBody withTrunk
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
@@ -549,7 +550,8 @@ pickWeaponServer source = do
       forced = bproj sb
       kitAss | forced = kitAssRaw  -- for projectiles, anything is weapon
              | otherwise =
-                 filter (IA.isMelee . aspectRecordFull . fst . snd) kitAssRaw
+                 filter (IA.checkFlag Ability.Meleeable
+                         . aspectRecordFull . fst . snd) kitAssRaw
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.
