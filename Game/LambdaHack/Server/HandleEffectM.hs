@@ -256,21 +256,23 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
           imperishableKit permanent periodic it2 itemFull kit
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
-    -- At this point, the item is potentially no longer in container @c@,
-    -- so we don't pass @c@ along.
-    triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                       recharged periodic effs
-    let triggered = if kineticPerformed then UseUp else triggeredEffect
-    sb <- getsState $ getActorBody source
-    -- Announce no effect, which is rare and wastes time, so noteworthy.
-    unless (triggered == UseUp  -- effects triggered; feedback comes from them
-            || periodic  -- don't spam via fizzled periodic effects
-            || bproj sb  -- don't spam, projectiles can be very numerous
-           ) $
-      execSfxAtomic $ SfxMsgFid (bfid sb) $
-        if any IK.forApplyEffect effs
-        then SfxFizzles  -- something didn't work, despite promising effects
-        else SfxNothingHappens  -- fully expected
+    triggered <- if not recharged then return UseDud else do
+      -- At this point, the item is potentially no longer in container @c@,
+      -- so we don't pass @c@ along.
+      triggeredEffect <- itemEffectDisco source target iid itemKind container
+                                         recharged periodic effs
+      let trig = if kineticPerformed then UseUp else triggeredEffect
+      sb <- getsState $ getActorBody source
+      -- Announce no effect, which is rare and wastes time, so noteworthy.
+      unless (trig == UseUp  -- effects triggered; feedback comes from them
+              || periodic  -- don't spam via fizzled periodic effects
+              || bproj sb  -- don't spam, projectiles can be very numerous
+              ) $
+        execSfxAtomic $ SfxMsgFid (bfid sb) $
+          if any IK.forApplyEffect effs
+          then SfxFizzles  -- something didn't work, despite promising effects
+          else SfxNothingHappens  -- fully expected
+      return trig
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
