@@ -216,7 +216,8 @@ effectAndDestroy kineticPerformed _ _ iid container periodic []
 effectAndDestroy kineticPerformed source target iid container periodic effs
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , kit@(itemK, itemTimer) ) = do
-  let timeout = IA.aTimeout $ itemAspect itemDisco
+  let arItem = itemAspect itemDisco
+      timeout = IA.aTimeout arItem
       permanent = let tmpEffect :: IK.Effect -> Bool
                       tmpEffect IK.Temporary{} = True
                       tmpEffect _ = False
@@ -255,14 +256,21 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
           imperishableKit permanent periodic it2 itemFull kit
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
+    -- At this point, the item is potentially no longer in container
+    -- @container@, so beware of assuming so in the code below.
     triggered <-
       if not recharged
       then return $ if kineticPerformed then UseUp else UseDud
       else do
-        -- At this point, the item is potentially no longer in container @c@,
-        -- so we don't pass @c@ along.
+        -- If the item is periodic, but activation is not periodic,
+        -- only the first effect gets activated (and the item may be destroyed,
+        -- unlike with periodic activations).
+        let effsAfterCharge =
+              if not periodic && IA.checkFlag Ability.Periodic arItem
+              then effs
+              else [head effs]
         triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                           periodic effs
+                                           periodic effsAfterCharge
         let trig = if kineticPerformed then UseUp else triggeredEffect
         sb <- getsState $ getActorBody source
         -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -271,7 +279,7 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
                 || bproj sb  -- don't spam, projectiles can be very numerous
                 ) $
           execSfxAtomic $ SfxMsgFid (bfid sb) $
-            if any IK.forApplyEffect effs
+            if any IK.forApplyEffect effsAfterCharge
             then SfxFizzles  -- something didn't work, despite promising effects
             else SfxNothingHappens  -- fully expected
         return trig
