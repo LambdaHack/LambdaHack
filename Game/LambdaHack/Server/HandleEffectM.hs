@@ -153,29 +153,35 @@ kineticEffectAndDestroy :: MonadServerAtomic m
                         -> ItemId -> Container
                         -> m ()
 kineticEffectAndDestroy voluntary killer source target iid c = do
-  tbOld <- getsState $ getActorBody target
-  kineticPerformed <- applyKineticDamage source target iid
-  tb <- getsState $ getActorBody target
-  -- Sometimes victim heals just after we registered it as killed,
-  -- but that's OK, an actor killed two times is similar enough to two killed.
-  when (kineticPerformed  -- speedup
-        && bhp tb <= 0 && bhp tbOld > 0) $ do
-    sb <- getsState $ getActorBody source
-    arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
-    let killHow | not (bproj sb) =
-                  if voluntary then KillKineticMelee else KillKineticPush
-                | IA.isBlast arWeapon = KillKineticBlast
-                | otherwise = KillKineticRanged
-    addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
     Just kit -> do
       itemFull <- getsState $ itemToFull iid
-      let IK.ItemKind{IK.ieffects} = itemKind itemFull
-      effectAndDestroyAndAddKill voluntary killer
-                                 kineticPerformed source target iid c
-                                 False ieffects (itemFull, kit)
+      tbOld <- getsState $ getActorBody target
+      localTime <- getsState $ getLocalTime (blid tbOld)
+      let recharged = hasCharge localTime itemFull kit
+      -- If neither kinetic hit nor any effect is activated, there's no chance
+      -- the items can be destroyed or even timeout changes, so we abort early.
+      when recharged $ do
+        kineticPerformed <- applyKineticDamage source target iid
+        tb <- getsState $ getActorBody target
+        -- Sometimes victim heals just after we registered it as killed,
+        -- but that's OK, an actor killed two times is similar enough
+        -- to two killed.
+        when (kineticPerformed  -- speedup
+              && bhp tb <= 0 && bhp tbOld > 0) $ do
+          sb <- getsState $ getActorBody source
+          arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
+          let killHow | not (bproj sb) =
+                        if voluntary then KillKineticMelee else KillKineticPush
+                      | IA.isBlast arWeapon = KillKineticBlast
+                      | otherwise = KillKineticRanged
+          addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
+        let IK.ItemKind{IK.ieffects} = itemKind itemFull
+        effectAndDestroyAndAddKill voluntary killer
+                                   kineticPerformed source target iid c
+                                   False ieffects (itemFull, kit)
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId
