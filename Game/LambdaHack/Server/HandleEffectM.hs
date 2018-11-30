@@ -267,13 +267,13 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
       if not recharged
       then return $ if kineticPerformed then UseUp else UseDud
       else do
-        -- If the item is periodic, but activation is not periodic,
+        -- If the item activation is not periodic, but the item itself is,
         -- only the first effect gets activated (and the item may be destroyed,
         -- unlike with periodic activations).
         let effsAfterCharge =
               if not periodic && IA.checkFlag Ability.Periodic arItem
-              then effs
-              else [head effs]
+              then [head effs]
+              else effs
         triggeredEffect <- itemEffectDisco source target iid itemKind container
                                            periodic effsAfterCharge
         let trig = if kineticPerformed then UseUp else triggeredEffect
@@ -1773,7 +1773,7 @@ effectVerbMsg execSfx source iid c = do
         Just _ -> return ()  -- still some copies left
         Nothing -> execSfx  -- last copy just destroyed
     else execSfx
-  return UseDud  -- blabbing takes no effort, so item not used up
+  return UseUp  -- speaking always successful; also needed to destroy conditions
 
 -- ** Composite
 
