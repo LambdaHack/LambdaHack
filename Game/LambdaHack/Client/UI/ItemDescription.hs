@@ -46,7 +46,7 @@ show64With2 n =
 -- of effects/aspects to show.
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull -> ItemQuant
-          -> (Bool, Bool, MU.Part, MU.Part)
+          -> (MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel maxWordsToShow localTime
           itemFull@ItemFull{itemBase, itemKind, itemSuspect}
           (itemK, itemTimer) =
@@ -54,7 +54,8 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
       arItem = aspectRecordFull itemFull
       timeout = IA.aTimeout arItem
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-      temporary = not (null itemTimer) && timeout == 0
+      temporary = IA.checkFlag Ability.Fragile arItem
+                  && IA.checkFlag Ability.Periodic arItem
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer
       lenCh = length it1
@@ -76,15 +77,13 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
            ++ take maxWordsToShow powerTs
            ++ ["(...)" | length powerTs > maxWordsToShow && maxWordsToShow > 0]
            ++ [charges | maxWordsToShow > 1]
-      unique = IA.checkFlag Ability.Unique arItem
       name | temporary = "temporarily" <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
-      capName = if unique
+      capName = if IA.checkFlag Ability.Unique arItem
                 then MU.Capitalize $ MU.Text name
                 else MU.Text name
-  in ( not (null lsource) || temporary
-     , unique, capName, MU.Phrase $ map MU.Text ts )
+  in (capName, MU.Phrase $ map MU.Text ts)
 
 -- TODO: simplify the code a lot
 textAllPowers :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
@@ -206,68 +205,70 @@ textAllPowers detailLevel skipRecharging
 
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-         -> (Bool, Bool, MU.Part, MU.Part)
+         -> (MU.Part, MU.Part)
 partItem side factionD = partItemN side factionD False DetailMedium 4
 
 partItemShort :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-              -> (Bool, Bool, MU.Part, MU.Part)
+              -> (MU.Part, MU.Part)
 partItemShort side factionD = partItemN side factionD False DetailLow 4
 
 partItemActor :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-              -> (Bool, Bool, MU.Part, MU.Part)
+              -> (MU.Part, MU.Part)
 partItemActor side factionD = partItemN side factionD False DetailLow 0
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-             -> (Bool, Bool, MU.Part, MU.Part)
+             -> (MU.Part, MU.Part)
 partItemHigh side factionD = partItemN side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
 partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
             -> ItemQuant
-            -> (Bool, MU.Part)
+            -> MU.Part
 partItemWsR side factionD ranged count localTime itemFull kit =
-  let (temporary, unique, name, powers) =
+  let (name, powers) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
       tmpCondition = IA.checkFlag Ability.Condition arItem
-  in ( temporary
-     , if | temporary && count == 1 -> MU.Phrase [name, powers]
-          | temporary ->
-              MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
-          | unique && count == 1 -> MU.Phrase ["the", name, powers]
-          | tmpCondition && count == 1 -> MU.Phrase [name, powers]
-          | tmpCondition ->
-              let maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
-                  percent = 100 * count `divUp` maxCount
-                  amount = tshow count <> "-strong"
-                           <+> "(" <> tshow percent <> "%)"
-              in MU.Phrase [MU.Text amount, name, powers]
-          | otherwise -> MU.Phrase [MU.CarWs count name, powers] )
+  in if | tmpCondition && count == 1 -> MU.Phrase [name, powers]
+        | tmpCondition ->
+            MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
+        | IA.checkFlag Ability.Unique arItem && count == 1 ->
+            MU.Phrase ["the", name, powers]
+        | tmpCondition && count == 1 -> MU.Phrase [name, powers]
+        | tmpCondition ->
+            let maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
+                percent = 100 * count `divUp` maxCount
+                amount = tshow count <> "-strong"
+                         <+> "(" <> tshow percent <> "%)"
+            in MU.Phrase [MU.Text amount, name, powers]
+        | otherwise -> MU.Phrase [MU.CarWs count name, powers]
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
-           -> (Bool, MU.Part)
+           -> MU.Part
 partItemWs side factionD = partItemWsR side factionD False
 
 partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
                  -> ItemQuant
-                 -> (Bool, MU.Part)
+                 -> MU.Part
 partItemWsRanged side factionD = partItemWsR side factionD True
 
 partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                 -> MU.Part
 partItemShortAW side factionD localTime itemFull kit =
-  let (_, unique, name, _) = partItemShort side factionD localTime itemFull kit
-  in if unique
+  let (name, _) = partItemShort side factionD localTime itemFull kit
+      arItem = aspectRecordFull itemFull
+  in if IA.checkFlag Ability.Unique arItem
      then MU.Phrase ["the", name]
      else MU.AW name
 
 partItemMediumAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                  -> MU.Part
 partItemMediumAW side factionD localTime itemFull kit =
-  let (_, unique, name, powers) =
+  let (name, powers) =
         partItemN side factionD False DetailMedium 100 localTime itemFull kit
-  in if unique
+      arItem = aspectRecordFull itemFull
+  in if IA.checkFlag Ability.Unique arItem
      then MU.Phrase ["the", name, powers]
      else MU.AW $ MU.Phrase [name, powers]
 
@@ -275,7 +276,7 @@ partItemShortWownW :: FactionId -> FactionDict -> MU.Part -> Time -> ItemFull
                    -> ItemQuant
                    -> MU.Part
 partItemShortWownW side factionD partA localTime itemFull kit =
-  let (_, _, name, _) = partItemShort side factionD localTime itemFull kit
+  let (name, _) = partItemShort side factionD localTime itemFull kit
   in MU.WownW partA name
 
 viewItem :: ItemFull -> Color.AttrCharW32
@@ -289,8 +290,7 @@ itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time -> LevelId
          -> AttrLine
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
          itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect} kit =
-  let (_, unique, name, powers) =
-        partItemHigh side factionD localTime itemFull kit
+  let (name, powers) = partItemHigh side factionD localTime itemFull kit
       arItem = aspectRecordFull itemFull
       npowers = makePhrase [name, powers]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
@@ -355,7 +355,9 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
           (tshow $ fromIntegral weight / (1000 :: Double), "kg")
         | otherwise = (tshow weight, "g")
       onLevel = "on level" <+> tshow (abs $ fromEnum jlid) <> "."
-      discoFirst = (if unique then "Discovered" else "First seen")
+      discoFirst = (if IA.checkFlag Ability.Unique arItem
+                    then "Discovered"
+                    else "First seen")
                    <+> onLevel
       whose fid = gname (factionD EM.! fid)
       sourceDesc =

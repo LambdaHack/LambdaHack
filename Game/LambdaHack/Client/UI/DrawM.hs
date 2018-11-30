@@ -107,7 +107,7 @@ targetDesc mtarget = do
                 itemFull <- getsState $ itemToFull iid
                 side <- getsClient sside
                 factionD <- getsState sfactionD
-                let (_, _, name, powers) =
+                let (name, powers) =
                       partItem side factionD localTime itemFull kit
                 return $! makePhrase
                           $ if k == 1
@@ -488,7 +488,7 @@ drawFrameStatus drawnLevelId = do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemFull <- getsState $ itemToFull iid
                 factionD <- getsState sfactionD
-                let (_, _, name, powers) =
+                let (name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase
                         $ if k == 1

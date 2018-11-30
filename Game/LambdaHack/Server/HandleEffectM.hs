@@ -1179,7 +1179,7 @@ effectCreateItem jfidRaw mcount target store grp tim = do
   let (itemKnownRaw, (itemFullRaw, kitRaw)) =
         fromMaybe (error $ "" `showFailure` (blid tb, freq, c)) m2
       -- Avoid too many different item identifiers (one for each faction)
-      -- for blasts or common item generating tiles. Temporary organs are
+      -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
       -- (perpetrator). However, if timer is none, they are not duplicated
       -- to make sure that, e.g., poisons stack with each other regardless

@@ -47,6 +47,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
@@ -244,8 +245,7 @@ itemOverlay lSlots lid bag = do
                                                (IK.isymbol $ itemKind itemFull)
                   else viewItem itemFull
                 phrase = makePhrase
-                  [snd $ partItemWsRanged side factionD k
-                                          localTime itemFull kit]
+                  [partItemWsRanged side factionD k localTime itemFull kit]
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
@@ -394,8 +394,11 @@ lookAtTile canSee p aid lidV = do
         Just (PK.PEnd pk) -> entrySentence pk "it ends"
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
-            (temporary, nWs) = partItemWs side factionD k localTime itemFull kit
-            verb = if k == 1 || temporary then "is" else "are"
+            arItem = aspectRecordFull itemFull
+            nWs = partItemWs side factionD k localTime itemFull kit
+            verb = if k == 1 || IA.checkFlag Ability.Condition arItem
+                   then "is"
+                   else "are"
             ik = itemKind itemFull
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
@@ -536,7 +539,7 @@ lookAtItems canSee p aid = do
   -- to distinguish from a stack of items at a single position.
   return $! if EM.null is then ""
             else makeSentence [ MU.SubjectVerbSg subject verb
-                              , MU.WWandW $ map (snd . nWs) $ EM.assocs is]
+                              , MU.WWandW $ map nWs $ EM.assocs is]
 
 -- | Produces a textual description of everything at the requested
 -- level's position.

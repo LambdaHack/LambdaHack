@@ -79,7 +79,7 @@ data Flag =
                   --   also, can't throw or apply if not calm enough;
                   --   also may be used for UI flavour or AI hints
   | Blast         -- ^ the item is an explosion blast particle
-  | Condition     -- ^ item is a temporary condition of an actor
+  | Condition     -- ^ item is a condition (buff or de-buff) of an actor
                   --   and is displayed as such;
                   --   this differs from belonging to the @condition@ group,
                   --   which doesn't guarantee display as a condition,

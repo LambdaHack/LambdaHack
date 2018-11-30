@@ -337,7 +337,7 @@ blanket = ItemKind
 -- Flasks are often not natural; maths, magic, distillery.
 -- In reality, they just cover all conditions, except those for stats.
 --
--- There is no flask nor temporary organ of Calm depletion,
+-- There is no flask nor condition of Calm depletion,
 -- because Calm reduced often via combat, etc..
 
 flaskTemplate = ItemKind

@@ -1,4 +1,4 @@
--- | Temporary aspect pseudo-item definitions.
+-- | Temporary pseudo-organ (condition) definitions.
 module Content.ItemKindTemporary
   ( temporaries
   ) where
@@ -37,8 +37,8 @@ tmpAspects name aspects = ItemKind
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
                aspects ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Condition]
-  , ieffects = [ tmpNoLonger name
-               , OnSmash $ tmpNoLonger name ]
+  , ieffects = [ verbMsgNoLonger name
+               , OnSmash $ verbMsgNoLonger name ]
                    -- needed also under @OnSmash@ to display when item removed
                    -- via @DropItem@ and not via activating all copies in turn
   , idesc    = ""  -- no description needed; powers are enough

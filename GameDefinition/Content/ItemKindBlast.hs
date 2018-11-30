@@ -260,7 +260,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   , ieffects = [OnSmash $ Explode "glass hail"]
   }
 
--- * Assorted non-temporary condition blasts
+-- * Assorted blasts don't induce conditions or not mainly so
 
 fragrance = ItemKind
   { isymbol  = '`'
@@ -510,7 +510,7 @@ mistSleep = ItemKind
   , ikit     = []
   }
 
--- * Temporary condition blasts
+-- * Condition-inducing blasts
 
 -- Almost all have @toLinger 10@, that travels 2 steps in 1 turn.
 -- These are very fast projectiles, not getting into the way of big

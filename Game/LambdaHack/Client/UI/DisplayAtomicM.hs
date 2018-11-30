@@ -472,9 +472,9 @@ itemVerbMU iid kit@(k, _) verb c = assert (k > 0) $ do
   itemFull <- getsState $ itemToFull iid
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let (temporary, subject) =
-        partItemWs side factionD k localTime itemFull kit
-      msg | k > 1 && not temporary =
+  let arItem = aspectRecordFull itemFull
+      subject = partItemWs side factionD k localTime itemFull kit
+      msg | k > 1 && not (IA.checkFlag Ability.Condition arItem) =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
@@ -501,14 +501,14 @@ itemAidVerbMU aid verb iid ek cstore = do
       let object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ snd $ partItemWs side factionD n localTime itemFull kit
+              $ partItemWs side factionD n localTime itemFull kit
             Left Nothing ->
-              let (_, _, name, powers) =
+              let (name, powers) =
                     partItem side factionD localTime itemFull kit
               in MU.Phrase [name, powers]
             Right n ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ let (_, _, name1, powers) =
+              $ let (name1, powers) =
                       partItemShort side factionD localTime itemFull kit
                     name = if n == 1 then name1 else MU.CarWs n name1
                 in MU.Phrase ["the", name, powers]
@@ -562,7 +562,7 @@ createActorUI born aid body = do
                        Just (tra, _) | length tra < 5 -> "falling"
                        _ -> "flying"
                      -- Not much detail about a fast flying item.
-                     (_, _, object1, object2) =
+                     (object1, object2) =
                        partItemActor (bfid body) factionD localTime
                                      itemFull (1, [])
                  in (makePhrase [adj, object1, object2], basePronoun)
@@ -1308,8 +1308,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       itemFull <- getsState $ itemToFull iid
       bagAfter <- getsState $ getBodyStoreBag b cstore
       let kit = (1, [])
-          (_, _, name, powers) =
-            partItem (bfid b) factionD localTime itemFull kit
+          (name, powers) = partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]

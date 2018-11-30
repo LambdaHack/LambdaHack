@@ -216,8 +216,8 @@ durabilityMult :: Double
 durabilityMult = avgItemLife / avgItemDelay
 
 -- We assume the organ is temporary (@Fragile@ and @Periodic@)
--- and also that it doesn't provide any functionality, e.g., detection
--- or burning or raw damage. However, we take into account effects
+-- and also that it doesn't provide any functionality,
+-- e.g., detection or raw damage. However, we take into account effects
 -- knowing in some temporary organs, e.g., poison or regeneration,
 -- they are triggered at each item copy destruction. They are applied to self,
 -- hence we take the self component of valuation. We multiply by the count

@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect
   , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind, isEffEscape
   , isEffEscapeOrAscend, timeoutAspect, onSmashEffect, damageUsefulness
-  , tmpNoLonger, toVelocity, toLinger, timerNone, isTimerNone, foldTimer
+  , verbMsgNoLonger, toVelocity, toLinger, timerNone, isTimerNone, foldTimer
   , toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -278,8 +278,8 @@ damageUsefulness itemKind =
   let v = min 1000 (10 * Dice.meanDice (idamage itemKind))
   in assert (v >= 0) v
 
-tmpNoLonger :: Text -> Effect
-tmpNoLonger name = VerbMsg $ "be no longer" <+> name
+verbMsgNoLonger :: Text -> Effect
+verbMsgNoLonger name = VerbMsg $ "be no longer" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
