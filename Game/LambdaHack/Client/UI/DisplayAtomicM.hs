@@ -827,7 +827,7 @@ quitFactionUI fid toSt manalytics = do
               , displayGameOverAnalytics factionAn generationAn
               , displayGameOverLore SEmbed True generationAn
               , displayGameOverLore SOrgan True generationAn
-              , displayGameOverLore STmp sexposeItems generationAn
+              , displayGameOverLore SCondition sexposeItems generationAn
               , displayGameOverLore SBlast True generationAn ]
         unless isNoConfirms $ do
           -- Show score for any UI client after any kind of game exit,

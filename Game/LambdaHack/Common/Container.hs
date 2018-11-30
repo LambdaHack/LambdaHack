@@ -45,7 +45,7 @@ data SLore =
     SItem
   | SOrgan
   | STrunk
-  | STmp
+  | SCondition
   | SBlast
   | SEmbed
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
@@ -94,7 +94,7 @@ ppSLore :: SLore -> Text
 ppSLore SItem = "item"
 ppSLore SOrgan = "organ"
 ppSLore STrunk = "creature"
-ppSLore STmp = "condition"
+ppSLore SCondition = "condition"
 ppSLore SBlast = "blast"
 ppSLore SEmbed = "terrain"
 
@@ -102,7 +102,7 @@ headingSLore :: SLore -> Text
 headingSLore SItem = "miscellaneous item"
 headingSLore SOrgan = "vital anatomic organ"
 headingSLore STrunk = "living creature"
-headingSLore STmp = "momentary bodily condition"
+headingSLore SCondition = "momentary bodily condition"
 headingSLore SBlast = "explosion blast particle"
 headingSLore SEmbed = "landmark feature"
 

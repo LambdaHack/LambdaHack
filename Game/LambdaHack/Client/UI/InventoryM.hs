@@ -263,7 +263,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       lSlots = case cCur of
         MOrgans -> mergeItemSlots itemToF [ itemSlots EM.! SOrgan
                                           , itemSlots EM.! STrunk
-                                          , itemSlots EM.! STmp ]
+                                          , itemSlots EM.! SCondition ]
         MSkills -> EM.empty
         MPlaces -> EM.empty
         _ -> itemSlots EM.! IA.loreFromMode cCur

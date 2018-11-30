@@ -102,7 +102,7 @@ revealItems fid = do
     mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SItem
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SEmbed
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SOrgan
-  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! STmp
+  mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SCondition
   mapM_ discoverSample $ EM.keys $ nonDupGen EM.! SBlast
 
 moveStores :: MonadServerAtomic m

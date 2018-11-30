@@ -225,6 +225,6 @@ loreFromContainer arItem c = case c of
   CFloor{} -> SItem
   CEmbed{} -> SEmbed
   CActor _ store -> if | checkFlag Ability.Blast arItem -> SBlast
-                       | checkFlag Ability.Condition arItem -> STmp
+                       | checkFlag Ability.Condition arItem -> SCondition
                        | otherwise -> loreFromMode $ MStore store
   CTrunk{} -> if checkFlag Ability.Blast arItem then SBlast else STrunk
