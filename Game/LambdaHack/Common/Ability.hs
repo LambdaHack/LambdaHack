@@ -89,9 +89,9 @@ data Flag =
                   --   activates each turn; the cooldown required after
                   --   activation is specified in @Timeout@ (or is zero);
                   --   the initial cooldown can also be specified
-                  --   as @TimerDice@ in @CreateItem@ effect;
+                  --   as @TimerDice@ in @CreateItem@ effect; uniquely, this
                   --   activation never destroys a copy, unless item is fragile;
-                  --   activation only occurs if item in equipment or an organ
+                  --   all this happens only for items in equipment or organs
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up
