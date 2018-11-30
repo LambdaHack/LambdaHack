@@ -229,14 +229,14 @@ partItemWsR side factionD ranged count localTime itemFull kit =
   let (name, powers) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
-      tmpCondition = IA.checkFlag Ability.Condition arItem
-  in if | tmpCondition && count == 1 -> MU.Phrase [name, powers]
-        | tmpCondition ->
+      condition = IA.checkFlag Ability.Condition arItem
+  in if | condition && count == 1 -> MU.Phrase [name, powers]
+        | condition ->
             MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
         | IA.checkFlag Ability.Unique arItem && count == 1 ->
             MU.Phrase ["the", name, powers]
-        | tmpCondition && count == 1 -> MU.Phrase [name, powers]
-        | tmpCondition ->
+        | condition && count == 1 -> MU.Phrase [name, powers]
+        | condition ->
             let maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
                 percent = 100 * count `divUp` maxCount
                 amount = tshow count <> "-strong"

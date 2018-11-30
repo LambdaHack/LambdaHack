@@ -104,7 +104,7 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
           -- Checking skill would be more accurate, but skills can be
-          -- inside organs, equipment, tmp organs, created organs, etc.
+          -- inside organs, equipment, condition organs, created organs, etc.
           freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
           mobile = "mobile" `elem` freqNames
           aquatic = "aquatic" `elem` freqNames

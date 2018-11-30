@@ -654,11 +654,10 @@ drawLeaderDamage width = do
                             <> show bonus
                             <> (if bonus /= bonusRaw then "$" else "")
                             <> if unknownBonus then "%?" else "%"
-              tmpBonus = tmpMeleeBonus $ map snd kitAssRaw
               cDice = if hasCharge localTime itemFull kit
                       then Color.BrCyan
                       else Color.Cyan
-              cbonus = case compare tmpBonus 0 of
+              cbonus = case compare (meleeBonus $ map snd kitAssRaw) 0 of
                 EQ -> Color.White
                 GT -> Color.Green
                 LT -> Color.Red
