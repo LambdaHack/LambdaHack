@@ -3,7 +3,7 @@
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
   ( applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
-  , itemEffectEmbedded, dropCStoreItem, highestImpression, dominateFidSfx
+  , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllItems, pickDroppable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -14,7 +14,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
   , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
-  , effectDropItem, effectPolyItem, effectIdentify, identifyIid
+  , effectDropItem, dropCStoreItem, effectPolyItem, effectIdentify, identifyIid
   , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
@@ -1299,7 +1299,8 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
-                    || IA.checkFlag Ability.Condition arItem
+                    || store == COrgan && fragile
+                         -- potions dropped from pack at death do not break
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
         -- Activate even if effects null, to destroy the item, if needed.

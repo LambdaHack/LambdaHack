@@ -91,6 +91,11 @@ textAllPowers :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
 textAllPowers detailLevel skipRecharging
               itemFull@ItemFull{itemKind, itemDisco} =
   let arItem = aspectRecordFull itemFull
+      -- To handle both the cases of item identified and not, we represent
+      -- aspects as a list, with dice, not integers from @arItem@.
+      -- If item fully known, the dice will be trivial and will display
+      -- the same as integers would, so nothing is lost.
+      -- If item not known fully and timeout under @Odds@, it's ignored.
       aspectsFull = case itemDisco of
         ItemDiscoMean IA.KindMean{..} | kmConst ->
           IA.aspectRecordToList kmMean  -- exact and collated
@@ -98,8 +103,6 @@ textAllPowers detailLevel skipRecharging
           -- doesn't completely lose the @Odds@ case, so better than
           -- the above, even if does not collate multiple skill bonuses
         ItemDiscoFull iAspect -> IA.aspectRecordToList iAspect
-      -- Dice needed, not @Int@, so @arItem@ not consulted directly.
-      -- If item not known fully and timeout under @Odds@, it's ignored.
       mtimeout = find IK.timeoutAspect aspectsFull
       elab = IA.aELabel arItem
       periodic = IA.checkFlag Ability.Periodic arItem
@@ -132,19 +135,21 @@ textAllPowers detailLevel skipRecharging
             timeoutOrPeriodic =
               if | skipRecharging || secondPass || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
-                     Nothing | IA.checkFlag Ability.Condition arItem ->
+                     Nothing | IA.checkFlag Ability.Fragile arItem ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
                      Nothing ->
                        "(each turn:" <+> rechargingTs <> ")"
+                         -- timeout 0, so it just fires each turn and it's not
+                         -- fragile, so a copy is not destroyed each turn
                      Just (IK.Timeout t) ->
-                       "(every" <+> reduce_a t <> ":"
-                       <+> rechargingTs <> ")"
+                       "(every" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
+                         -- if also fragile, eventually runs out, but TMI
                      _ -> error $ "" `showFailure` mtimeout
                  | otherwise -> case mtimeout of
                      Nothing -> ""
                      Just (IK.Timeout t) ->
-                       "(timeout" <+> reduce_a t <> ":"
-                       <+> rechargingTs <> ")"
+                       "(cooldown" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
+                         -- timeout is called "cooldown" in UI
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
