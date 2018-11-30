@@ -37,7 +37,7 @@ scratchOnWall = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [ Verb "start making sense of the scratches"
+  , ieffects = [ VerbMsg "start making sense of the scratches"
                , Detect DetectHidden 3 ]
   , idesc    = "A seemingly random series of scratches, carved deep into the wall."
   , ikit     = []
@@ -53,7 +53,7 @@ obscenePictogram = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ Verb "enter destructive rage at the sight of an obscene pictogram"
+  , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , OneOf [ toOrganGood "strengthened" (3 + 1 `d` 2)
                        , CreateItem CInv "sandstone rock" timerNone ] ]
@@ -71,7 +71,7 @@ subtleFresco = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
-  , ieffects = [ Verb "feel refreshed by the subtle fresco"
+  , ieffects = [ VerbMsg "feel refreshed by the subtle fresco"
                , toOrganGood "far-sighted" (3 + 1 `d` 2)
                , toOrganGood "keen-smelling" (3 + 1 `d` 2) ]
                  -- hearing gets a boost through bracing, so no need here
@@ -269,7 +269,7 @@ staircaseTrapUp = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [ Verb "be caught in an updraft"
+  , ieffects = [ VerbMsg "be caught in an updraft"
                , Teleport $ 3 + 1 `dL` 10 ]
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
@@ -280,7 +280,7 @@ staircaseTrapUp = ItemKind
 staircaseTrapDown = staircaseTrapUp
   { ifreq    = [("staircase trap down", 1)]
   , iverbHit = "open up under"
-  , ieffects = [ Verb "tumble down the stairwell"
+  , ieffects = [ VerbMsg "tumble down the stairwell"
                , toOrganGood "drunk" (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }

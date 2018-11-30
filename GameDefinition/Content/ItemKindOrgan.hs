@@ -411,8 +411,8 @@ scentGland = armoredSkin
   , icount   = 10 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
-               , SetFlag Periodic ]  -- not Durable
-  , ieffects = [ Verb "look spent"
+               , SetFlag Periodic, SetFlag Fragile ]  -- not Durable
+  , ieffects = [ VerbMsg "look spent"
                , ApplyPerfume
                , Explode "distressing odor" ]
                    -- keep explosion at the end to avoid the ambiguity of

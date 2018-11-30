@@ -36,9 +36,11 @@ tmpAspects name aspects = ItemKind
   , idamage  = 0
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
-               aspects ++ [SetFlag Periodic, SetFlag Condition]
+               aspects ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Condition]
   , ieffects = [ tmpNoLonger name
                , OnSmash $ tmpNoLonger name ]
+                   -- needed also under @OnSmash@ to display when item removed
+                   -- via @DropItem@ and not via activating all copies in turn
   , idesc    = ""  -- no description needed; powers are enough
   , ikit     = []
   }

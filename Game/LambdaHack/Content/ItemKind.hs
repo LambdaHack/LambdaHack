@@ -59,8 +59,8 @@ data ItemKind = ItemKind
 -- and so are not additive in any sense.
 data Aspect =
     Timeout Dice.Dice   -- ^ specifies the cooldown before an item may be
-                        --   applied again; if an item is applied manually
-                        --   and not via periodic activation,
+                        --   applied again; if a copy of an item is applied
+                        --   manually (not via periodic activation),
                         --   all effects on a single copy of the item are
                         --   disabled until the copy recharges for the given
                         --   time expressed in game turns; all copies
@@ -139,11 +139,10 @@ data Effect =
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
-  | Verb Text
+  | VerbMsg Text
       -- ^ an actor activating this effect utters a sentence with the given
-      --   text as his verb; if effect under @OnSmash@, the message appears
-      --   at each item copy destruction or, if the item is an organ,
-      --   only at the last copy's destruction; no spam if a projectile
+      --   text as his verb; if the item is fragile, the message appears
+      --   only at the last copy's activation; no spam if a projectile
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -226,7 +225,7 @@ forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
   Composite effs -> any forApplyEffect effs
-  Verb{} -> False
+  VerbMsg{} -> False
   _ -> True
 
 isEffEscape :: Effect -> Bool
@@ -280,7 +279,7 @@ damageUsefulness itemKind =
   in assert (v >= 0) v
 
 tmpNoLonger :: Text -> Effect
-tmpNoLonger name = Verb $ "be no longer" <+> name
+tmpNoLonger name = VerbMsg $ "be no longer" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
@@ -366,9 +365,9 @@ validateSingle ik@ItemKind{..} =
       in ["more than one HideAs specification" | length ts > 1])
   ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
   ++ (let f :: Effect -> Bool
-          f Verb{} = True
+          f VerbMsg{} = True
           f _ = False
-      in validateOnlyOne ieffects "Verb" f)  -- may be duplicated if nested
+      in validateOnlyOne ieffects "VerbMsg" f)  -- may be duplicated if nested
   ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
        -- duplicates permitted
 

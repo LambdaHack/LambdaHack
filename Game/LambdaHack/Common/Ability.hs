@@ -67,7 +67,9 @@ newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
 
 -- | Item flag aspects.
 data Flag =
-    Fragile       -- ^ break at target tile, even if no hit
+    Fragile       -- ^ break at target tile, even if no hit; also, at each
+                  --   periodic activation a copy is destroyed and all other
+                  --   copies require full cooldown
   | Lobable       -- ^ drop at target tile, even if no hit
   | Durable       -- ^ don't break even when hitting or applying
   | Equipable     -- ^ AI and UI flag: consider equipping (may or may not
@@ -83,10 +85,11 @@ data Flag =
                   --   which doesn't guarantee display as a condition,
                   --   but governs removal by items that drop @condition@
   | Unique        -- ^ at most one copy can ever be generated
-  | Periodic      -- ^ only one of all copies of the item activates, but all
-                  --   copies then require a cooldown specified in @Timeout@,
-                  --   never destroying the item, even if not durable
-                  --   only effective if item in equipment or an organ
+  | Periodic      -- ^ at most one of any copies without cooldown
+                  --   activates each turn; the cooldown required after
+                  --   activation is specified in @Timeout@ (or zero);
+                  --   never destroys the copy, unless item is fragile;
+                  --   activation only occurs if item in equipment or an organ
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up

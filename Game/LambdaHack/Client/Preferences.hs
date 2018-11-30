@@ -162,7 +162,7 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
-    IK.Verb{} -> delta 0  -- flavour only, no benefit
+    IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.Composite [] -> delta 0
     IK.Composite (eff1 : _) ->
       effectToBenefit cops fact underTimeoutOrPeriodic eff1
@@ -215,7 +215,7 @@ avgItemLife = 30
 durabilityMult :: Double
 durabilityMult = avgItemLife / avgItemDelay
 
--- We assume the organ is temporary (@Verb@, @Periodic@ and @Timeout 0@)
+-- We assume the organ is temporary (@Fragile@ and @Periodic@)
 -- and also that it doesn't provide any functionality, e.g., detection
 -- or burning or raw damage. However, we take into account effects
 -- knowing in some temporary organs, e.g., poison or regeneration,

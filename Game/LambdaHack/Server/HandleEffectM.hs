@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDetect, effectDetectX
   , effectSendFlying, sendFlyingVector, effectDropBestWeapon
   , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
-  , effectVerb, effectComposite
+  , effectVerbMsg, effectComposite
 #endif
   ) where
 
@@ -211,23 +211,19 @@ effectAndDestroy :: MonadServerAtomic m
                  -> [IK.Effect] -> ItemFullKit
                  -> m ()
 effectAndDestroy kineticPerformed _ _ iid container periodic []
-                 (itemFull@ItemFull{itemBase}, kit@(_, itemTimer)) =
+                 (itemFull@ItemFull{itemBase}, (_, itemTimer)) =
   -- No identification occurs if effects are null. This case is also a speedup.
   if kineticPerformed then do  -- kinetic may cause item destruction
-    let (imperishable, kit2) =
-          imperishableKit True periodic itemTimer itemFull kit
+    let kit2 = (1, take 1 itemTimer)
+        imperishable = imperishableKit periodic itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
   else return ()
 effectAndDestroy kineticPerformed source target iid container periodic effs
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
-                 , kit@(itemK, itemTimer) ) = do
+                 , (itemK, itemTimer) ) = do
   let arItem = itemAspect itemDisco
       timeout = IA.aTimeout arItem
-      permanent = let tmpEffect :: IK.Effect -> Bool
-                      tmpEffect IK.Verb{} = True  -- TODO: replace
-                      tmpEffect _ = False
-                  in not $ any tmpEffect effs
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
   let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
@@ -243,10 +239,13 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
   -- if the item has no potential effects at all, see above).
   when (kineticPerformed || recharged) $ do
     let it2 = if timeout /= 0 && recharged
-              then if periodic && not permanent  -- copies are spares only
+              then if periodic && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) localTime ++ it1
-                   else localTime : it1  -- copies all fire, in turn
+                           -- copies are spares only; one fires, all discharge
+                   else localTime : it1
+                           -- copies all fire, turn by turn; one discharges
               else itemTimer
+        kit2 = (1, take 1 it2)
         !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
     -- We use up the charge even if eventualy every effect fizzles. Tough luck.
     -- At least we don't destroy the item in such case.
@@ -259,8 +258,7 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let (imperishable, kit2) =
-          imperishableKit permanent periodic it2 itemFull kit
+    let imperishable = imperishableKit periodic itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
     -- At this point, the item is potentially no longer in container
@@ -293,17 +291,14 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
     -- If none of item's effects was performed, we try to recreate the item.
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
-    unless (triggered == UseUp || imperishable) $
+    unless (imperishable || triggered == UseUp) $
       execUpdAtomic $ UpdSpotItem False iid itemBase kit2 container
 
-imperishableKit :: Bool -> Bool -> ItemTimer -> ItemFull -> ItemQuant
-                -> (Bool, ItemQuant)
-imperishableKit permanent periodic it2 itemFull (itemK, _) =
+imperishableKit :: Bool -> ItemFull -> Bool
+imperishableKit periodic itemFull =
   let arItem = aspectRecordFull itemFull
-      durable = IA.checkFlag Ability.Durable arItem
-      imperishable = durable || periodic && permanent
-      kit = if permanent || periodic then (1, take 1 it2) else (itemK, it2)
-  in (imperishable, kit)
+  in IA.checkFlag Ability.Durable arItem
+     || periodic && not (IA.checkFlag Ability.Fragile arItem)
 
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
@@ -395,7 +390,7 @@ effectSem source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.Verb _ -> effectVerb execSfx source iid c
+    IK.VerbMsg _ -> effectVerbMsg execSfx source iid c
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1761,19 +1756,23 @@ effectOneOf recursiveCall l = do
   foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
 
--- ** Verb
+-- ** VerbMsg
 
-effectVerb :: MonadServerAtomic m
-           => m () -> ActorId -> ItemId -> Container -> m UseResult
-effectVerb execSfx source iid c = do
+effectVerbMsg :: MonadServerAtomic m
+              => m () -> ActorId -> ItemId -> Container -> m UseResult
+effectVerbMsg execSfx source iid c = do
   b <- getsState $ getActorBody source
+  itemFull <- getsState $ itemToFull iid
+  let arItem = aspectRecordFull itemFull
+      fragile = IA.checkFlag Ability.Fragile arItem
   unless (bproj b) $ do  -- don't spam when projectiles activate
-    case c of
-      CActor _ COrgan -> do
-        case iid `EM.lookup` borgan b of
-          Just _ -> return ()  -- still some copies left of a multi-copy organ
-          Nothing -> execSfx  -- last copy just destroyed
-      _ -> execSfx
+    if fragile
+    then do
+      bag <- getsState $ getContainerBag c
+      case iid `EM.lookup` bag of
+        Just _ -> return ()  -- still some copies left
+        Nothing -> execSfx  -- last copy just destroyed
+    else execSfx
   return UseDud  -- blabbing takes no effort, so item not used up
 
 -- ** Composite
