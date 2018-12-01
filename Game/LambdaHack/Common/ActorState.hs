@@ -462,15 +462,9 @@ adjacentProjAssocs body s =
 armorHurtBonus :: ActorId -> ActorId -> State -> Int
 armorHurtBonus source target s =
   let sb = getActorBody source s
-      trim200 n = min 200 $ max (-200) n
       sMaxSk = getActorMaxSkills source s
       tMaxSk = getActorMaxSkills target s
-      itemBonus =
-        trim200 (Ability.getSk Ability.SkHurtMelee sMaxSk)
-        - if bproj sb
-          then trim200 (Ability.getSk Ability.SkArmorRanged tMaxSk)
-          else trim200 (Ability.getSk Ability.SkArmorMelee tMaxSk)
-  in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
+  in armorHurtCalculation (bproj sb) sMaxSk tMaxSk
 
 -- | Check if any non-dying foe (projectile or not) is adjacent
 -- to any of our normal actors (whether they can melee or just need to flee,

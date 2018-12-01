@@ -5,8 +5,8 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , itemToFull6, aspectRecordFull
-  , strongestSlot, hasCharge, strongestMelee, unknownMeleeBonus, meleeBonus
+  , itemToFull6, aspectRecordFull, strongestSlot, hasCharge, strongestMelee
+  , unknownMeleeBonus, meleeBonus, armorHurtCalculation
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -293,3 +293,13 @@ meleeBonus kitAss =
            then k + itemK * IA.getSkill Ability.SkHurtMelee arItem
            else k
   in foldr f 0 kitAss
+
+armorHurtCalculation :: Bool -> Ability.Skills -> Ability.Skills -> Int
+armorHurtCalculation proj sMaxSk tMaxSk =
+  let trim200 n = min 200 $ max (-200) n
+      itemBonus =
+        trim200 (Ability.getSk Ability.SkHurtMelee sMaxSk)
+        - if proj
+          then trim200 (Ability.getSk Ability.SkArmorRanged tMaxSk)
+          else trim200 (Ability.getSk Ability.SkArmorMelee tMaxSk)
+  in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through

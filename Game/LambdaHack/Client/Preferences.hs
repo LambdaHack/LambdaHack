@@ -421,9 +421,9 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
-        hurtMult =
-          100 + min 99 (max (-99) (IA.getSkill Ability.SkHurtMelee arItem))
-            -- assumes no enemy armor and no block
+        hurtMult = armorHurtCalculation True (IA.aSkills arItem)
+                                             Ability.zeroSkills
+          -- we assume victim completely unbuffed and not blocking
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
