@@ -364,20 +364,16 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- delay between item uses @avgItemDelay@ and the actual timeout.
       timeout = IA.aTimeout arItem
       timeoutOrPeriodic = timeout /= 0 || periodic
-      (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
-                        | otherwise =
-        let effPairs = map (effectToBenefit cops fact)
-                           (IK.ieffects itemKind)
+      (rawSelf, rawFoe) =
+        let effPairs = map (effectToBenefit cops fact) (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
-      (chargeSelf, chargeFoe) =
-        let scaleChargeBens bens = map (\eff ->
-                  eff * avgItemDelay / fromIntegral timeout) bens
-            (cself, cfoe) | not timeoutOrPeriodic = ([], [])
-                          | otherwise =
-              unzip $ map (effectToBenefit cops fact)
-                          (IK.ieffects itemKind)
-        in (scaleChargeBens cself, scaleChargeBens cfoe)
+      (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
+                        | otherwise = (rawSelf, rawFoe)
+      scaleChargeBens value = value * avgItemDelay / fromIntegral timeout
+      (chargeSelf, chargeFoe)
+        | timeoutOrPeriodic = (scaleChargeBens rawSelf, scaleChargeBens rawFoe)
+        | otherwise = (0, 0)
       -- Durability doesn't have any numerical impact on @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again
@@ -401,7 +397,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- to be applied manually.
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying
-         + if periodic then 0 else sum chargeSelf)
+         + if periodic then 0 else chargeSelf)
         / if durable then 1 else durabilityMult
       effDice = - IK.damageUsefulness itemKind
       -- For melee, we add the foe part.
@@ -409,13 +405,13 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
          + if periodic
            then 0
-           else sum chargeFoe * fromIntegral timeout / avgItemDelay)
+           else chargeFoe * fromIntegral timeout / avgItemDelay)  -- reversed
         / if durable then 1 else durabilityMult
       benMeleeAverage = min 0 $
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
          + if periodic
            then 0  -- in case of weapons that periodically do something
-           else sum chargeFoe)
+           else chargeFoe)
         / if durable then 1 else durabilityMult
       -- Experimenting is fun, but it's better to risk foes' skin than ours,
       -- so we only adjust flinging bonus, not apply bonus. It's also more
@@ -427,7 +423,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- are activated at projectile impact, hence their value is added.
       benFlingRaw = min 0 $
         effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
-        + if periodic then 0 else sum chargeFoe
+        + if periodic then 0 else chargeFoe
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
@@ -452,7 +448,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- activations don't consume the item, whether it's durable or not.
       aspectBenefits = aspectRecordToBenefit arItem
       eqpBens = aspectBenefits
-                ++ if periodic then chargeSelf else []
+                ++ if periodic then [chargeSelf] else []
       sumBens = sum eqpBens
       -- Equipped items may incur crippling maluses via aspects (but rather
       -- not via periodic effects). Examples of crippling maluses are zeroing
