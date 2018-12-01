@@ -39,29 +39,19 @@ import           Game.LambdaHack.Content.ModeKind
 -- So there is less than @averageTurnValue@ included in each benefit,
 -- so in case when turn is not spent, e.g, periodic activation or conditions,
 -- the difference in value is only slight.
-effectToBenefit :: COps -> Faction -> Bool -> IK.Effect -> (Double, Double)
-effectToBenefit cops fact underTimeoutOrPeriodic eff =
+effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
+effectToBenefit cops fact eff =
   let delta x = (x, x)
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode _ | underTimeoutOrPeriodic ->
-      -- It's too hard to analyze, so we assume, explosion in an item
-      -- with timeout or a periodic item is never a cruel and cheap
-      -- one-time trap, damaging HP of the actor before he identifies
-      -- the item and stops wearing it or meleeing with it.
-      -- So the explosion is either both focused and beneficial to self
-      -- or is not focused and so not affecting self. In either case
-      -- it can be good or bad for nearby friends and foes and, regardless,
-      -- AI chooses to equip that item, for fun and to challenge human player
-      -- with varied situations.
-      ( 1     -- equip, but not too greedily, in case it mostly harms friends
-      , -1 )  -- hit with it or throw, but beware of harming friends
     IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
+    IK.Explode "fragrance" -> (1, -5)  -- hardwired; situational
     IK.Explode _ ->
-      -- We know this explosion is not in a periodic or timeout item
-      -- nor is wrapped in @OnSmash@, so we assume it's focused
-      -- and very harmful and so only safe for projecting at foes.
+      -- There is a risk the explosion is both focused and harmful to self
+      -- or not focused and beneficial to nearby foes.
+      -- It's too costly to analyze, so we assume this explosion can be
+      -- very harmful when applied and so is only safe for projecting at foes.
       -- Due to this assumption healing explosives should be wrapped
       -- in @OnSmash@ to avoid the incentive for throwing them at foes.
       delta (-100)
@@ -156,7 +146,7 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
     IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
-      let bs = map (effectToBenefit cops fact underTimeoutOrPeriodic) efs
+      let bs = map (effectToBenefit cops fact) efs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
@@ -164,8 +154,7 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.Composite [] -> delta 0
-    IK.Composite (eff1 : _) ->
-      effectToBenefit cops fact underTimeoutOrPeriodic eff1
+    IK.Composite (eff1 : _) -> effectToBenefit cops fact eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
@@ -253,7 +242,7 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
         let paspect asp = fromIntegral p * aspectToBenefit asp
             peffect eff = fromIntegral p
-                          * fst (effectToBenefit cops fact False eff)
+                          * fst (effectToBenefit cops fact eff)
         in ( sacc + Dice.meanDice (IK.icount kind)
                     * (sum (map paspect $ IK.iaspects kind)
                        + sum (map peffect $ IK.ieffects kind))
@@ -379,7 +368,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       timeoutOrPeriodic = timeout /= 0 || periodic
       (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
                         | otherwise =
-        let effPairs = map (effectToBenefit cops fact False)
+        let effPairs = map (effectToBenefit cops fact)
                            (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
@@ -390,7 +379,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                   eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) | not timeoutOrPeriodic = ([], [])
                           | otherwise =
-              unzip $ map (effectToBenefit cops fact True)
+              unzip $ map (effectToBenefit cops fact)
                           (IK.ieffects itemKind)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
       -- Durability doesn't have any numerical impact on @eqpSum,
