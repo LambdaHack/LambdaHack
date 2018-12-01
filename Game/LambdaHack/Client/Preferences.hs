@@ -37,7 +37,7 @@ import           Game.LambdaHack.Content.ModeKind
 -- nothing better to do than to melee, or when the actor is stuck or idle
 -- or laying in wait or luring an enemy from a safe distance.
 -- So there is less than @averageTurnValue@ included in each benefit,
--- so in case when turn is not spent, e.g, periodic or conditions,
+-- so in case when turn is not spent, e.g, periodic activation or conditions,
 -- the difference in value is only slight.
 effectToBenefit :: COps -> Faction -> Bool -> IK.Effect -> (Double, Double)
 effectToBenefit cops fact underTimeoutOrPeriodic eff =
@@ -47,9 +47,9 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode _ | underTimeoutOrPeriodic ->
       -- It's too hard to analyze, so we assume, explosion in an item
-      -- with timeout or a periodic item is never a cruel
-      -- and cheap one-time trap, damaging HP of the actor
-      -- before he identifies the item and stops wearing it or meleeing with it.
+      -- with timeout or a periodic item is never a cruel and cheap
+      -- one-time trap, damaging HP of the actor before he identifies
+      -- the item and stops wearing it or meleeing with it.
       -- So the explosion is either both focused and beneficial to self
       -- or is not focused and so not affecting self. In either case
       -- it can be good or bad for nearby friends and foes and, regardless,
@@ -60,10 +60,10 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
     IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
     IK.Explode _ ->
       -- We know this explosion is not in a periodic or timeout item
-      -- nor is wrapped in @OnSmash@, so we assume
-      -- it's focused and very harmful and so only
-      -- safe for projecting at foes. Due to this assumption healing explosives
-      -- should be wrapped to avoid throwing them at foes.
+      -- nor is wrapped in @OnSmash@, so we assume it's focused
+      -- and very harmful and so only safe for projecting at foes.
+      -- Due to this assumption healing explosives should be wrapped
+      -- in @OnSmash@ to avoid the incentive for throwing them at foes.
       delta (-100)
     IK.RefillHP p ->
       delta $ if p > 0
@@ -87,10 +87,10 @@ effectToBenefit cops fact underTimeoutOrPeriodic eff =
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
       in if grp `elem` fgroups (gplayer fact) then (ben, -1) else (-ben, 1)
         -- prefer applying to flinging summoning items; further, but more robust
-    IK.Ascend{} -> (-99, 99)  -- note the reversed values:
-                              -- only change levels sensibly, in teams,
-                              -- and don't remove enemy too far, he may be
-                              -- easy to kill and may have loot
+    IK.Ascend{} -> (-99, 99)
+      -- note the reversed values: only change levels sensibly, in teams,
+      -- and don't remove enemy too far, he may be easy to kill
+      -- and may have loot
     IK.Escape{} -> (-9999, 9999)  -- even if can escape, loots first and then
                                   -- handles escape as a special case
     -- The following two are expensive, because they ofen activate
@@ -244,7 +244,7 @@ durabilityMult = avgItemLife / avgItemDelay
 -- because, similarly as for periodic items, we don't control when they
 -- are applied and we can't stop/restart them.
 --
--- We assume, only one of timer and count mechanisms is present at once.
+-- We assume, only one of the timer and count mechanisms is present at once.
 -- We assume no organ has effect that drops its group or creates its group;
 -- otherwise we'd loop.
 organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
@@ -298,10 +298,10 @@ fakeItem kindId kind km =
 --
 -- Anyway, that suggests that the current scaling of effect vs aspect values
 -- is reasonable. What is even more important is consistency among aspects
--- so that, e.g., a shield or a torch is neven equipped, but oil lamp is.
+-- so that, e.g., a shield or a torch is never equipped by AI, but oil lamp is.
 -- Valuation of effects, and more precisely, more the signs than absolute
--- values, ensures that both shield and torch get picked up so that
--- the (human) actor can nevertheless equip them in very special cases.
+-- values, ensures that both shield and torch get auto-picked up so that
+-- the human player can nevertheless equip them in very special cases.
 aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
@@ -324,7 +324,7 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkMaxCalm p -> Dice.meanDice p / 5
     IK.AddSkill Ability.SkSpeed p -> Dice.meanDice p * 25
       -- 1 speed ~ 5% melee; times 5 for no caps, escape, pillar-dancing, etc.;
-      -- also, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
+      -- OTOH, it's 1 extra turn each 20 turns, so 100/20, so 5; figures
     IK.AddSkill Ability.SkSight p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkSmell p -> Dice.meanDice p
     IK.AddSkill Ability.SkShine p -> Dice.meanDice p * 2
@@ -338,7 +338,7 @@ aspectToBenefit asp =
     IK.ToThrow{} -> 0  -- counted elsewhere
     IK.HideAs{} -> 0
     IK.EqpSlot{} -> 0
-    IK.Odds{} -> 0  -- should be already rolled; if not, can't tell
+    IK.Odds{} -> 0  -- should be already rolled; if not, can't tell easily
 
 recordToBenefit :: IA.AspectRecord -> [Double]
 recordToBenefit arItem =
@@ -353,20 +353,22 @@ totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
 totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
   let arItem = aspectRecordFull itemFull
       -- If the item is periodic, we add effects to equipment benefit,
-      -- but we don't assign a special bonus or malus, because periodic items
-      -- are bad in that one can't activate them at will and they take
-      -- equipment space, and good in that one saves a turn, not having
+      -- but we don't assign a special bonus or malus due to being periodic,
+      -- because periodic items are bad in that one can't
+      -- activate them at will and they take equipment space,
+      -- and good in that one saves a turn, not having
       -- to manually activate them. Additionally, no weapon can be periodic,
       -- because damage would be applied to the fighter, so a large class
       -- of items with timeout is excluded from the consideration.
       -- Generally, periodic seems more helpful on items with low timeout
       -- and obviously beneficial effects, e.g., frequent periodic healing
       -- or nearby detection is better, but infrequent periodic teleportation
-      -- or harmful explosion is worse. But the rule is not strict and also
-      -- dependent on gameplay context of the moment, hence no numerical value.
+      -- or harmful outward explosion is worse. But the rule is not strict
+      -- and also dependent on gameplay context of the moment,
+      -- hence no numerical value.
       periodic = IA.checkFlag Ability.Periodic arItem
       -- Timeout between 0 and 1 means item usable each turn, so we consider
-      -- it equivalent to a permanent item --- without timeout restriction.
+      -- it equivalent to a permanent item --- one without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
       -- so a single such item may be worth half of the permanent value.
       -- Hence, we multiply item value by the proportion of the average desired
@@ -375,10 +377,10 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- to @avgItemDelay@ as not reducing the value of the item.
       timeout = IA.aTimeout arItem
       timeoutOrPeriodic = timeout /= 0 || periodic
-      effects = IK.ieffects itemKind
       (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
                         | otherwise =
-        let effPairs = map (effectToBenefit cops fact False) effects
+        let effPairs = map (effectToBenefit cops fact False)
+                           (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
       (chargeSelf, chargeFoe) =
@@ -388,7 +390,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                   eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) | not timeoutOrPeriodic = ([], [])
                           | otherwise =
-              unzip $ map (effectToBenefit cops fact True) effects
+              unzip $ map (effectToBenefit cops fact True)
+                          (IK.ieffects itemKind)
         in (scaleChargeBens cself, scaleChargeBens cfoe)
       -- Durability doesn't have any numerical impact on @eqpSum,
       -- because item is never consumed by just being stored in equipment.
@@ -404,15 +407,18 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
       durable = IA.checkFlag Ability.Durable arItem
-      -- If item with timeout, but not periodic, we add the self part,
-      -- because the effects are applied to self. If they are periodic we can't
-      -- effectively apply them, because they are never recharged,
-      -- because they activate as soon as recharged.
-      effDice = - IK.damageUsefulness itemKind
+      -- If item has a timeout, but is not periodic, we add the self part
+      -- when applying, because the effects are applied to self.
+      -- If it is periodic, we assume it's in equipment and then
+      -- we can't effectively apply it, because it's never recharged,
+      -- because it activates as soon as recharged.
+      -- We ignore the rare case of a periodic item kept in backpack
+      -- to be applied manually.
       benApply = max 0 $  -- because optional; I don't need to apply
         (effSelf + effDice  -- hits self with dice too, when applying
          + if periodic then 0 else sum chargeSelf)
         / if durable then 1 else durabilityMult
+      effDice = - IK.damageUsefulness itemKind
       -- For melee, we add the foe part.
       benMelee = min 0 $
         (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
