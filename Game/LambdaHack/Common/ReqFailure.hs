@@ -185,14 +185,15 @@ permittedProject forced skill calmE itemFull =
        | not forced
          && IA.checkFlag Ability.Lobable arItem
          && skill < 3 -> Left ProjectLobable
-       | otherwise ->
-           let badSlot = case IA.aEqpSlot arItem of
-                 Just Ability.EqpSlotShine -> False
-                 Just _ -> True
-                 Nothing -> IA.goesIntoEqp arItem
-           in if badSlot
-              then Right False
-              else permittedPrecious forced calmE itemFull
+       | otherwise -> case permittedPrecious forced calmE itemFull of
+           Left failure -> Left failure
+           Right False -> Right False
+           Right True -> Right $
+             let badSlot = case IA.aEqpSlot arItem of
+                   Just Ability.EqpSlotShine -> False
+                   Just _ -> True
+                   Nothing -> IA.goesIntoEqp arItem
+             in not badSlot
 
 -- Simplified, faster and more permissive version, for inner AI loop.
 permittedProjectAI :: Int -> Bool -> ItemFull -> Bool
