@@ -1381,7 +1381,17 @@ strike catch source target iid cstore = assert (source /= target) $ do
         subtly = if IK.idamage (itemKind itemFullWeapon) == 0
                  then if not (bproj sb) then "delicately" else ""
                  else if hurtMult >= 120 then "forcefully" else ""
-        msg | bhp tb <= 0  -- incapacitated, so doesn't actively block
+        msg | not $ hasCharge localTime itemFullWeapon kitWeapon =
+              -- Should never happen with sensible content, unless some
+              -- rare effect, e.g., disables the use of all organs.
+              if bproj sb
+              then makePhrase [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
+                   <> ", but it's completely discharged."
+              else makePhrase [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
+                              , "to", verb, tpart, "with"
+                              , partItemChoice itemFullWeapon kitWeapon ]
+                   <> ", but it's not readied yet."
+            | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || bproj sb && bproj tb  -- too much spam when explosions collide
               || IK.idamage (itemKind itemFullWeapon) == 0 =
