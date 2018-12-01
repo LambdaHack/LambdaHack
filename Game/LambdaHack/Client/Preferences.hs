@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.Preferences
     -- * Internal operations
   , effectToBenefit
   , averageTurnValue, avgItemDelay, avgItemLife, durabilityMult
-  , organBenefit, recBenefit, fakeItem, aspectToBenefit, recordToBenefit
+  , organBenefit, recBenefit, fakeItem, aspectToBenefit, aspectRecordToBenefit
 #endif
   ) where
 
@@ -329,8 +329,8 @@ aspectToBenefit asp =
     IK.EqpSlot{} -> 0
     IK.Odds{} -> 0  -- should be already rolled; if not, can't tell easily
 
-recordToBenefit :: IA.AspectRecord -> [Double]
-recordToBenefit arItem =
+aspectRecordToBenefit :: IA.AspectRecord -> [Double]
+aspectRecordToBenefit arItem =
   map aspectToBenefit $ IA.aspectRecordToList arItem
 
 -- | Compute the whole 'Benefit' structure, containing various facets
@@ -454,14 +454,16 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- timing of their activation and also occasionally needs to spend a turn
       -- unequipping them to prevent activation. Note also that periodic
       -- activations don't consume the item, whether it's durable or not.
-      eqpBens = recordToBenefit arItem
+      aspectBenefits = aspectRecordToBenefit arItem
+      eqpBens = aspectBenefits
                 ++ if periodic then chargeSelf else []
       sumBens = sum eqpBens
-      -- Equipped items may incur crippling maluses via aspects and periodic
-      -- effects. Examples of crippling maluses are, e.g., such that make melee
-      -- impossible or moving impossible. AI can't live with those and can't
-      -- value those competently against bonuses the item provides.
-      cripplingDrawback = not (null eqpBens) && minimum eqpBens < -20
+      -- Equipped items may incur crippling maluses via aspects (but rather
+      -- not via periodic effects). Examples of crippling maluses are zeroing
+      -- melee or move skills. AI can't live with those and can't
+      -- value those competently against any giant bonuses the item
+      -- might provide.
+      cripplingDrawback = not (null eqpBens) && minimum aspectBenefits < -20
       eqpSum = sumBens - if cripplingDrawback then 100 else 0
       -- If a weapon heals enemy at impact, it won't be used for melee
       -- (but can be equipped anyway). If it harms wearer too much,
