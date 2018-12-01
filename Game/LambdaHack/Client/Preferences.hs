@@ -362,8 +362,6 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- so a single such item may be worth half of the permanent value.
       -- Hence, we multiply item value by the proportion of the average desired
       -- delay between item uses @avgItemDelay@ and the actual timeout.
-      -- For simplicity and for speed we consider timeout less or equal
-      -- to @avgItemDelay@ as not reducing the value of the item.
       timeout = IA.aTimeout arItem
       timeoutOrPeriodic = timeout /= 0 || periodic
       (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
@@ -373,9 +371,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
       (chargeSelf, chargeFoe) =
-        let scaleChargeBens bens
-              | fromIntegral timeout <= avgItemDelay = bens  -- speedup
-              | otherwise = map (\eff ->
+        let scaleChargeBens bens = map (\eff ->
                   eff * avgItemDelay / fromIntegral timeout) bens
             (cself, cfoe) | not timeoutOrPeriodic = ([], [])
                           | otherwise =
