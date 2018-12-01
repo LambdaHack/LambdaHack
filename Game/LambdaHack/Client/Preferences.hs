@@ -341,8 +341,14 @@ aspectRecordToBenefit arItem =
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
 totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
   let arItem = aspectRecordFull itemFull
-      -- If the item is periodic, we add effects to equipment benefit,
-      -- but we don't assign a special bonus or malus due to being periodic,
+      -- If the item is periodic, we only add effects to equipment benefit,
+      -- because we assume it's in equipment and then
+      -- we can't effectively apply it, because it's never recharged,
+      -- because it activates as soon as recharged.
+      -- We ignore the rare case of a periodic item kept in backpack
+      -- to be applied manually. AI is too silly to choose it and we
+      -- certainly don't want AI to destroy periodic items out of silliness.
+      -- We don't assign a special bonus or malus due to being periodic,
       -- because periodic items are bad in that one can't
       -- activate them at will and they take equipment space,
       -- and good in that one saves a turn, not having
@@ -360,20 +366,17 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- it equivalent to a permanent item --- one without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
       -- so a single such item may be worth half of the permanent value.
-      -- Hence, we multiply item value by the proportion of the average desired
-      -- delay between item uses @avgItemDelay@ and the actual timeout.
+      -- With non-periodic items, when we need to expend a turn to apply
+      -- or we lose opportunity to use another weapon if we hit with this one,
+      -- the loss of value due to timeout is lower.
       timeout = IA.aTimeout arItem
-      timeoutOrPeriodic = timeout /= 0 || periodic
-      (rawSelf, rawFoe) =
+      scalePeriodic value = value / max 1 (fromIntegral timeout)
+      scaleTimeout v | fromIntegral timeout <= avgItemDelay = v
+                     | otherwise = v * avgItemDelay / fromIntegral timeout
+      (effSelf, effFoe) =
         let effPairs = map (effectToBenefit cops fact) (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
-      (effSelf, effFoe) | timeoutOrPeriodic = (0, 0)
-                        | otherwise = (rawSelf, rawFoe)
-      scaleChargeBens value = value * avgItemDelay / fromIntegral timeout
-      (chargeSelf, chargeFoe)
-        | timeoutOrPeriodic = (scaleChargeBens rawSelf, scaleChargeBens rawFoe)
-        | otherwise = (0, 0)
       -- Durability doesn't have any numerical impact on @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again
@@ -388,42 +391,33 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
       durable = IA.checkFlag Ability.Durable arItem
-      -- If item has a timeout, but is not periodic, we add the self part
-      -- when applying, because the effects are applied to self.
-      -- If it is periodic, we assume it's in equipment and then
-      -- we can't effectively apply it, because it's never recharged,
-      -- because it activates as soon as recharged.
-      -- We ignore the rare case of a periodic item kept in backpack
-      -- to be applied manually.
+      -- For applying, we add the self part when applying, because the effects
+      -- are applied to self.
       benApply = max 0 $  -- because optional; I don't need to apply
-        (effSelf + effDice  -- hits self with dice too, when applying
-         + if periodic then 0 else chargeSelf)
-        / if durable then 1 else durabilityMult
+        if periodic
+        then 0  -- because always in eqp and so never recharged
+        else scaleTimeout (effSelf + effDice)
+               -- hits self with kintetic dice too, when applying
+             / if durable then 1 else durabilityMult
       effDice = - IK.damageUsefulness itemKind
       -- For melee, we add the foe part.
-      benMelee = min 0 $
-        (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-         + if periodic
-           then 0
-           else chargeFoe * fromIntegral timeout / avgItemDelay)  -- reversed
-        / if durable then 1 else durabilityMult
-      benMeleeAverage = min 0 $
-        (effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
-         + if periodic
-           then 0  -- in case of weapons that periodically do something
-           else chargeFoe)
-        / if durable then 1 else durabilityMult
+      benMelee = min 0 $  -- because optional; I don't need to hit with it
+        if periodic
+        then 0  -- because never recharged, so never ready for melee
+        else scaleTimeout (effFoe + effDice)
+               -- @AddHurtMelee@ already in @eqpSum@
+             / if durable then 1 else durabilityMult
       -- Experimenting is fun, but it's better to risk foes' skin than ours,
       -- so we only adjust flinging bonus, not apply bonus. It's also more
       -- fun gameplay-wise when enemies throw at us rather than using items.
       benFling = min benFlingRaw $ if itemSuspect then -10 else 0
-      -- The periodic effects, if any, are activated when projectile flies,
+      -- If periodic, effects are activated when projectile flies,
       -- but not when it hits, so they are not added to @benFling@.
-      -- However, if item is not periodic, all the effects
-      -- are activated at projectile impact, hence their value is added.
+      -- However, if item is not periodic, all the effects are usually
+      -- activated at projectile impact, regardless of timeout,
+      -- hence their full value is added.
       benFlingRaw = min 0 $
-        effFoe + benFlingDice -- nothing in @eqpSum@; normally not worn
-        + if periodic then 0 else chargeFoe
+        if periodic then 0 else effFoe + benFlingDice
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
@@ -437,39 +431,36 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
         speed = speedFromWeight (IK.iweight itemKind) throwVelocity
         v = - fromIntegral (modifyDamageBySpeed rawDeltaHP speed) * 10 / xD 1
           -- 1 damage valued at 10, just as in @damageUsefulness@
-      -- For equipment benefit, we take into account only the self value
-      -- of effects in case item has timeout, because then they are
-      -- applied to self.
-      -- We don't add a bonus @averageTurnValue@ to the value of periodic
+      -- If item is periodic, we factor in the self value of effects,
+      -- because they are applied to self, whether the actor wants it or not.
+      -- We don't add a bonus of @averageTurnValue@ to the value of periodic
       -- effects, even though they save a turn, by being auto-applied,
       -- because on the flip side, player is not in control of the precise
       -- timing of their activation and also occasionally needs to spend a turn
       -- unequipping them to prevent activation. Note also that periodic
       -- activations don't consume the item, whether it's durable or not.
       aspectBenefits = aspectRecordToBenefit arItem
-      eqpBens = aspectBenefits
-                ++ if periodic then [chargeSelf] else []
-      sumBens = sum eqpBens
+      eqpBens =
+        sum $ aspectBenefits
+              ++ if periodic then [scalePeriodic (effSelf + effDice)] else []
       -- Equipped items may incur crippling maluses via aspects (but rather
       -- not via periodic effects). Examples of crippling maluses are zeroing
       -- melee or move skills. AI can't live with those and can't
       -- value those competently against any giant bonuses the item
       -- might provide.
-      cripplingDrawback = not (null eqpBens) && minimum aspectBenefits < -20
-      eqpSum = sumBens - if cripplingDrawback then 100 else 0
-      -- If a weapon heals enemy at impact, it won't be used for melee
-      -- (but can be equipped anyway). If it harms wearer too much,
-      -- won't be worn but still may be flung, etc.
+      cripplingDrawback = not (null aspectBenefits)
+                          && minimum aspectBenefits < -20
+      eqpSum = eqpBens - if cripplingDrawback then 100 else 0
+      -- If a weapon heals enemy at impact, given choice, it won't be used
+      -- for melee, but can be equipped anyway, for beneficial apsects.
+      -- If it harms wearer too much, won't be worn but still may be flung.
       (benInEqp, benPickupRaw)
         | IA.checkFlag Ability.Meleeable arItem
-            -- probably known even if not identified
+            -- the flag probably known even if item not identified
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
           ( True  -- equip, melee crucial and only weapons in eqp can be used
-          , if durable
-            then eqpSum
-                 + max benApply (- benMeleeAverage)  -- apply or melee or not
-            else - benMeleeAverage)  -- melee is predominant
+          , eqpSum + max benApply (- benMelee) )  -- apply or melee or not
         | (IA.goesIntoEqp arItem
           || isJust (lookup "condition" $ IK.ifreq itemKind))
                -- hack to record benefit, to use it in calculations later on
