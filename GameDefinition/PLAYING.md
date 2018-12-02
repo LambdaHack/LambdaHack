@@ -42,8 +42,8 @@ with keyboard's keypad or `LMB` (left mouse button). If more heroes
 are selected, e.g., by clicking on the list with `RMB` (right mouse button),
 they run together whenever `:` or `RMB` over map area is pressed.
 
-Next on the status line is the damage of the currently best melee weapon
-the leader can use, then his current and maximum Calm (morale, composure,
+Next on the status line is the damage of the best melee weapon the leader
+can use at this moment, then his current and maximum Calm (morale, composure,
 focus, attentiveness), then his current and maximum HP (hit points, health).
 At the end, the personal target of the leader is described, in this case
 a basilisk monster, with hit points drawn as a bar. Additionally,
@@ -117,9 +117,8 @@ staircase down and rubble that obscures one of the corners.
 Basic Commands
 --------------
 
-This section is a copy of the first two screens of in-game help
-and a screen introducing mouse commands. The help pages are
-automatically generated based on a game's keybinding content and
+This section is a copy of the few basic screens of in-game help. The help
+pages are automatically generated based on a game's keybinding content and
 on overrides in the player's config file. The remaining in-game help screens,
 not shown here, list all game commands grouped by categories, in detail.
 A text snapshot of the complete in-game help is in
@@ -143,7 +142,8 @@ which reduces any damage taken and prevents displacement by foes. Press
 You displace enemies by running into them with Shift/Control or RMB. Search,
 open, descend and attack by bumping into walls, doors, stairs and enemies.
 The best item to attack with is automatically chosen from among weapons
-in your personal equipment and your body parts.
+in your personal equipment and your body parts (items on cooldown
+are excluded, since they would have no effect).
 
 The following commands, joined with the basic set above, let you accomplish
 anything in the game, though not necessarily with the fewest keystrokes.
@@ -239,7 +239,7 @@ or aid escape. In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.
 
 In melee combat, the best recharged equipped weapon (or the best fighting
-organ that has any charges left) of each opponent is taken into account
+organ that is not on cooldown) of each opponent is taken into account
 for determining the damage and any extra effects of the blow.
 
 To determine the damage dealt, the outcome of the weapon's damage dice roll
