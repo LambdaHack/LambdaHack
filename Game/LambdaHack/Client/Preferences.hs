@@ -48,12 +48,13 @@ effectToBenefit cops fact eff =
     IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
     IK.Explode "fragrance" -> (1, -5)  -- hardwired; situational
     IK.Explode _ ->
-      -- There is a risk the explosion is both focused and harmful to self
-      -- or not focused and beneficial to nearby foes.
-      -- It's too costly to analyze, so we assume this explosion can be
-      -- very harmful when applied and so is only safe for projecting at foes.
-      -- Due to this assumption healing explosives should be wrapped
-      -- in @OnSmash@ to avoid the incentive for throwing them at foes.
+      -- There is a risk the explosion is focused and harmful to self
+      -- or not focused and beneficial to nearby foes, but not to self.
+      -- It's too costly to analyze, so we assume applying an exploding
+      -- item is a bad idea and it's better to project it at foes.
+      -- Due to this assumption, healing explosives should be wrapped
+      -- in @OnSmash@, or else they are counted as an incentive for throwing
+      -- an item at foes, which in that case is counterproductive.
       delta (-100)
     IK.RefillHP p ->
       delta $ if p > 0
@@ -391,8 +392,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- when both items have timeouts, starting with durable is beneficial,
       -- because it recharges while the non-durable is prepared and used.
       durable = IA.checkFlag Ability.Durable arItem
-      -- For applying, we add the self part when applying, because the effects
-      -- are applied to self.
+      -- For applying, we add the self part only.
       benApply = max 0 $  -- because optional; I don't need to apply
         if periodic
         then 0  -- because always in eqp and so never recharged
@@ -400,30 +400,34 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
                -- hits self with kintetic dice too, when applying
              / if durable then 1 else durabilityMult
       effDice = - IK.damageUsefulness itemKind
-      -- For melee, we add the foe part.
-      benMelee = min 0 $  -- because optional; I don't need to hit with it
+      -- For melee, we add the foe part only.
+      benMelee = min 0 $  -- optional; usually I don't need to hit with it
         if periodic
         then 0  -- because never recharged, so never ready for melee
         else scaleTimeout (effFoe + effDice)
                -- @AddHurtMelee@ already in @eqpSum@
              / if durable then 1 else durabilityMult
       -- Experimenting is fun, but it's better to risk foes' skin than ours,
-      -- so we only adjust flinging bonus, not apply bonus. It's also more
-      -- fun gameplay-wise when enemies throw at us rather than using items.
+      -- so we only buff flinging, not applying, when item not identified.
+      -- It's also more gameplay fun when enemies throw at us rather than
+      -- when they use items on themselves.
       benFling = min benFlingRaw $ if itemSuspect then -10 else 0
-      -- If periodic, effects are activated when projectile flies,
-      -- but not when it hits, so they are not added to @benFling@.
-      -- However, if item is not periodic, all the effects are usually
-      -- activated at projectile impact, regardless of timeout,
-      -- hence their full value is added.
+      -- If periodic, we assume the item was in equipment, so effects
+      -- were activated before flinging, so when projectile hits,
+      -- it's discharged, so no kintetic damage value nor effect benefit
+      -- is added to @benFling@.
+      -- However, if item is not periodic, we assume the item was recharged,
+      -- and so all the effects are activated at projectile impact,
+      -- hence their full value is added to the kinetic damage value.
       benFlingRaw = min 0 $
         if periodic then 0 else effFoe + benFlingDice
       benFlingDice | IK.idamage itemKind == 0 = 0  -- speedup
                    | otherwise = assert (v <= 0) v
        where
+        -- We assume victim completely unbuffed and not blocking. If not,
+        -- let's hope the actor is similarly buffed to compensate.
         hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                              Ability.zeroSkills
-          -- we assume victim completely unbuffed and not blocking
         dmg = Dice.meanDice $ IK.idamage itemKind
         rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
         -- For simplicity, we ignore range bonus/malus and @Lobable@.
@@ -446,14 +450,15 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- Equipped items may incur crippling maluses via aspects (but rather
       -- not via periodic effects). Examples of crippling maluses are zeroing
       -- melee or move skills. AI can't live with those and can't
-      -- value those competently against any giant bonuses the item
-      -- might provide.
+      -- value those competently against any equally enormous bonuses
+      -- the item might provide to compensate and so be even considered.
       cripplingDrawback = not (null aspectBenefits)
                           && minimum aspectBenefits < -20
       eqpSum = eqpBens - if cripplingDrawback then 100 else 0
       -- If a weapon heals enemy at impact, given choice, it won't be used
-      -- for melee, but can be equipped anyway, for beneficial apsects.
-      -- If it harms wearer too much, won't be worn but still may be flung.
+      -- for melee, but can be equipped anyway, for beneficial aspects.
+      -- OTOH, cif it harms wearer too much, it won't be worn
+      -- but still may be flung and so may be worth picking up.
       (benInEqp, benPickupRaw)
         | IA.checkFlag Ability.Meleeable arItem
             -- the flag probably known even if item not identified
