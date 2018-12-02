@@ -328,7 +328,12 @@ aspectToBenefit asp =
     IK.ToThrow{} -> 0  -- counted elsewhere
     IK.HideAs{} -> 0
     IK.EqpSlot{} -> 0
-    IK.Odds{} -> 0  -- should be already rolled; if not, can't tell easily
+    IK.Odds{} -> 0
+      -- Should be already rolled; if not, can't tell easily.
+      -- In particular, any timeouts there or @Periodic@ flags
+      -- would be ignored, so they should be avoided under @Odds@
+      -- in not fully-identified items, because they are so crucial
+      -- for evaluation.
 
 aspectRecordToBenefit :: IA.AspectRecord -> [Double]
 aspectRecordToBenefit arItem =

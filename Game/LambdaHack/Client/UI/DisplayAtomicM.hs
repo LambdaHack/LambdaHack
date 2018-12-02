@@ -1382,8 +1382,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
                  then if not (bproj sb) then "delicately" else ""
                  else if hurtMult >= 120 then "forcefully" else ""
         msg | not $ hasCharge localTime itemFullWeapon kitWeapon =
-              -- Should never happen with sensible content, unless some
-              -- rare effect, e.g., disables the use of all organs.
+              -- Can easily happen with a thrown discharged item.
+              -- Much less plausible with a wielded weapon.
               if bproj sb
               then makePhrase [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
                    <> ", but it's completely discharged."

@@ -91,10 +91,12 @@ textAllPowers detailLevel skipRecharging
               itemFull@ItemFull{itemKind, itemDisco} =
   let arItem = aspectRecordFull itemFull
       -- To handle both the cases of item identified and not, we represent
-      -- aspects as a list, with dice, not integers from @arItem@.
+      -- aspects as a list with dice, not a record of integers as in @arItem@.
       -- If item fully known, the dice will be trivial and will display
       -- the same as integers would, so nothing is lost.
-      -- If item not known fully and timeout under @Odds@, it's ignored.
+      -- If item not known fully and timeouts or any crucial flags
+      -- are under @Odds@, they are ignored, so they should be avoided
+      -- under @Odds@ in not fully-identified items.
       aspectsFull = case itemDisco of
         ItemDiscoMean IA.KindMean{..} | kmConst ->
           IA.aspectRecordToList kmMean  -- exact and collated
@@ -230,18 +232,17 @@ partItemWsR side factionD ranged count localTime itemFull kit =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
       condition = IA.checkFlag Ability.Condition arItem
+      maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
   in if | condition && count == 1 -> MU.Phrase [name, powers]
+        | condition && maxCount > 1 ->
+            let percent = 100 * count `divUp` maxCount
+                amount = tshow count <> "-strong"
+                         <+> "(" <> tshow percent <> "%)"
+            in MU.Phrase [MU.Text amount, name, powers]
         | condition ->
             MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
         | IA.checkFlag Ability.Unique arItem && count == 1 ->
             MU.Phrase ["the", name, powers]
-        | condition && count == 1 -> MU.Phrase [name, powers]
-        | condition ->
-            let maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
-                percent = 100 * count `divUp` maxCount
-                amount = tshow count <> "-strong"
-                         <+> "(" <> tshow percent <> "%)"
-            in MU.Phrase [MU.Text amount, name, powers]
         | otherwise -> MU.Phrase [MU.CarWs count name, powers]
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
