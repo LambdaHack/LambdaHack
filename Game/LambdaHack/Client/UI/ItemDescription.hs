@@ -127,14 +127,8 @@ textAllPowers detailLevel skipRecharging
                         $ map (ppE . unSmash) smashEffs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
                            $ map ppE noSmashEffs
-            ppERestEs = if isJust mtimeout || periodic
-                        then []
-                        else map ppE noSmashEffs
-            aes = if active
-                  then map ppA aspects ++ ppERestEs
-                  else ppERestEs ++ map ppA aspects
             timeoutOrPeriodic =
-              if | skipRecharging -> ""
+              if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
                      Nothing | IA.checkFlag Ability.Fragile arItem ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
@@ -152,6 +146,12 @@ textAllPowers detailLevel skipRecharging
                        "(cooldown" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
                          -- timeout is called "cooldown" in UI
                      _ -> error $ "" `showFailure` mtimeout
+            ppERestEs = if isJust mtimeout || periodic
+                        then [timeoutOrPeriodic]
+                        else map ppE noSmashEffs
+            aes = if active
+                  then map ppA aspects ++ ppERestEs
+                  else ppERestEs ++ map ppA aspects
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
             -- Either exact value or dice of @SkHurtMelee@ needed,
@@ -167,11 +167,11 @@ textAllPowers detailLevel skipRecharging
               _ -> if IK.idamage itemKind == 0
                    then ""
                    else tshow (IK.idamage itemKind)
-        in if detLev >= DetailHigh
-              || detLev >= DetailMedium && T.null elab
-           then [timeoutOrPeriodic] ++ [damage] ++ aes
-                ++ [onSmash | detLev >= DetailAll]
-           else [damage]
+        in [damage]
+           ++ if detLev >= DetailHigh
+                 || detLev >= DetailMedium && T.null elab
+              then aes ++ [onSmash | detLev >= DetailAll]
+              else []
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
