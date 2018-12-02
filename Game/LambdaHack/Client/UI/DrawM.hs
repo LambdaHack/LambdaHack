@@ -631,18 +631,16 @@ drawLeaderDamage width = do
   mleader <- getsClient sleader
   (tdice, tbonus, cDice, cbonus) <- case mleader of
     Just leader -> do
-      b <- getsState $ getActorBody leader
       kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
       actorSk <- leaderSkillsClientUI
       actorMaxSkills <- getsState sactorMaxSkills
-      localTime <- getsState $ getLocalTime (blid b)
       let kitAssOnlyWeapons =
             filter (IA.checkFlag Ability.Meleeable
                     . aspectRecordFull . fst . snd) kitAssRaw
       strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
       return $! case strongest of
         [] -> ("0", "", Color.BrCyan, Color.White)
-        (_, (_, (itemFull, kit))) : _ ->
+        (_, (_, (itemFull, _))) : _ ->
           let tdice = show $ IK.idamage $ itemKind itemFull
               bonusRaw = Ability.getSk Ability.SkHurtMelee
                          $ actorMaxSkills EM.! leader
@@ -654,9 +652,9 @@ drawLeaderDamage width = do
                             <> show bonus
                             <> (if bonus /= bonusRaw then "$" else "")
                             <> if unknownBonus then "%?" else "%"
-              cDice = if hasCharge localTime itemFull kit
-                      then Color.BrCyan
-                      else Color.Cyan
+              arItem = aspectRecordFull itemFull
+              timeout = IA.aTimeout arItem
+              cDice = if timeout > 0 then Color.BrCyan else Color.Cyan
               cbonus = case compare (meleeBonus $ map snd kitAssRaw) 0 of
                 EQ -> Color.White
                 GT -> Color.Green
