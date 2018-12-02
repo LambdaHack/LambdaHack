@@ -44,7 +44,7 @@ warrior = ItemKind
                , AddSkill SkSpeed 20
                , AddSkill SkNocto 2
                , AddSkill SkProject 2
-               , AddSkill SkApply 1
+               , AddSkill SkApply 2  -- can apply periodic items
                , AddSkill SkAlter 2
                , AddSkill SkOdor 1
                , SetFlag Durable ]

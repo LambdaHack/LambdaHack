@@ -49,7 +49,9 @@ data ReqFailure =
   | EqpOverfull
   | EqpStackFull
   | ApplyUnskilled
+  | ApplyFood
   | ApplyRead
+  | ApplyPeriodic
   | ApplyOutOfReach
   | ApplyCharging
   | ApplyNoEffects
@@ -95,7 +97,9 @@ impossibleReqFailure reqFailure = case reqFailure of
   EqpOverfull -> True
   EqpStackFull -> True
   ApplyUnskilled -> False  -- unidentified skill items
+  ApplyFood -> False  -- unidentified skill items
   ApplyRead -> False  -- unidentified skill items
+  ApplyPeriodic -> False  -- unidentified skill items
   ApplyOutOfReach -> True
   ApplyCharging -> False  -- if aspect record unknown, charging unknown
   ApplyNoEffects -> False  -- if effects unknown, can't prevent it
@@ -120,12 +124,12 @@ showReqFailure reqFailure = case reqFailure of
   MeleeDistant -> "trying to melee a distant foe"
   DisplaceUnskilled -> "unskilled actors cannot displace"
   DisplaceDistant -> "trying to displace a distant actor"
-  DisplaceAccess -> "switching places without access"
+  DisplaceAccess -> "trying to switch places without access"
   DisplaceProjectiles -> "trying to displace multiple actors"
   DisplaceDying -> "trying to displace a dying foe"
   DisplaceBraced -> "trying to displace a braced foe"
   DisplaceImmobile -> "trying to displace an immobile foe"
-  DisplaceSupported -> "trying to displace a supported foe"
+  DisplaceSupported -> "trying to displace a foe supported by teammates"
   AlterUnskilled -> "unskilled actors cannot alter tiles"
   AlterUnwalked -> "unskilled actors cannot enter tiles"
   AlterDistant -> "trying to alter a distant tile"
@@ -138,10 +142,12 @@ showReqFailure reqFailure = case reqFailure of
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
   ApplyUnskilled -> "unskilled actors cannot apply items"
-  ApplyRead -> "activating this kind of items requires apply stat 2"
+  ApplyFood -> "eating food requires apply stat 2"
+  ApplyRead -> "activating cultural artifacts requires apply stat 3"
+  ApplyPeriodic -> "manually activating periodic items requires apply stat 4"
   ApplyOutOfReach -> "cannot apply an item out of reach"
   ApplyCharging -> "cannot apply an item that is still charging"
-  ApplyNoEffects -> "cannot apply an item that produces no effects"
+  ApplyNoEffects -> "cannot apply an item that produces no effect"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to use the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
@@ -149,7 +155,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectLobable -> "lobbing an item requires fling stat 3"
+  ProjectLobable -> "lobbing an item at a specific spot requires fling stat 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
@@ -209,9 +215,11 @@ permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
 permittedApply localTime skill calmE
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | skill < 1 -> Left ApplyUnskilled
-     | skill < 2 && IK.isymbol itemKind `notElem` [',', '"'] ->
-       Left ApplyUnskilled
+     | skill < 2 && IK.isymbol itemKind `notElem` [',', '"'] -> Left ApplyFood
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead
+     | skill < 4
+       && let arItem = aspectRecordFull itemFull
+          in IA.checkFlag Ability.Periodic arItem -> Left ApplyPeriodic
      -- If the item is discharged, neither the kinetic hit nor
      -- any effects activate, so there's no point applying.
      -- Note that if client doesn't know the timeout, here we may leak the fact
