@@ -102,6 +102,8 @@ largeJaw = fist
   , icount   = 1
   , iverbHit = "crush"
   , idamage  = 10 `d` 1
+  , iaspects = [Timeout $ 2 + 1 `d` 2]  -- no effect, but limit raw damage
+               ++ iaspects fist
   , idesc    = "Enough to swallow anything in a single gulp."
   }
 antler = fist
@@ -129,11 +131,11 @@ horn = fist
   }
 rhinoHorn = fist
   { iname    = "ugly horn"  -- made of keratin, unlike real horns
-  , ifreq    = [("rhino horn", 20)]
+  , ifreq    = [("rhino horn", 100)]
   , icount   = 1  -- single, unlike real horns
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
-  , iaspects = [Timeout 7, AddSkill SkHurtMelee 20]
+  , iaspects = [Timeout 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
   , ieffects = [Impress, Yell]  -- the owner is a mid-boss, after all
   , idesc    = "Very solid, considering it has the same composition as fingernails."
@@ -222,7 +224,7 @@ venomFang = fist
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = 0
-  , iaspects = Timeout (10 - 1 `dL` 4)
+  , iaspects = Timeout (10 - 1 `dL` 5)
                : iaspects fist
   , ieffects = [toOrganNoTimer "poisoned"]
   , idesc    = "Dripping with deadly venom."
@@ -232,7 +234,7 @@ screechingBeak = fist
   , ifreq    = [("screeching beak", 100)]
   , icount   = 1
   , iverbHit = "peck"
-  , idamage  = 2 `d` 1
+  , idamage  = 3 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
                : iaspects fist
   , ieffects = [Summon "scavenger" $ 1 `dL` 3]

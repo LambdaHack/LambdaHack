@@ -167,7 +167,7 @@ eye = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
-  , ikit     = [ ("lash", COrgan), ("pupil", COrgan)
+  , ikit     = [ ("lash", COrgan), ("pupil", COrgan)  -- at least one non-timed
                , ("sapient brain", COrgan) ]  -- no hearing, it's all eyes
   }
 fastEye = ItemKind
@@ -188,8 +188,9 @@ fastEye = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
-  , ikit     = [ ("tooth", COrgan), ("speed gland 10", COrgan)
-               , ("lip", COrgan), ("vision 6", COrgan), ("ear 4", COrgan)
+  , ikit     = [ ("tooth", COrgan), ("lip", COrgan)
+               , ("speed gland 10", COrgan)
+               , ("vision 6", COrgan), ("ear 4", COrgan)
                , ("sapient brain", COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
@@ -209,7 +210,8 @@ nose = ItemKind  -- depends solely on smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
-  , ikit     = [ ("nostril", COrgan), ("nose tip", COrgan), ("lip", COrgan)
+  , ikit     = [ ("nose tip", COrgan), ("lip", COrgan)
+               , ("nostril", COrgan)
                , ("sapient brain", COrgan) ]  -- no sight nor hearing
   }
 elbow = ItemKind
@@ -248,7 +250,7 @@ torsor = ItemKind
   , idamage  = 0
   , iaspects = [ SetFlag Unique
                , AddSkill SkMaxHP 300, AddSkill SkMaxCalm 100
-               , AddSkill SkSpeed 10, AddSkill SkNocto 2
+               , AddSkill SkSpeed 15, AddSkill SkNocto 2
                , AddSkill SkAggression 3
                , AddSkill SkProject 2, AddSkill SkApply 1
                , AddSkill SkAlter 1  -- can't exit the gated level, the boss
@@ -256,7 +258,8 @@ torsor = ItemKind
   , ieffects = []
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
-               , ("pupil", COrgan), ("ear 9", COrgan)
+               , ("pupil", COrgan), ("tentacle", COrgan)
+               , ("ear 9", COrgan)
                , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv)
                , ("sapient brain", COrgan) ]
   }
@@ -335,8 +338,8 @@ skunk = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Its only defence is the terrible stench."
-  , ikit     = [ ("scent gland", COrgan)
-               , ("small claw", COrgan), ("snout", COrgan)
+  , ikit     = [ ("small claw", COrgan), ("snout", COrgan)
+               , ("scent gland", COrgan)
                , ("eye 3", COrgan), ("ear 7", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -397,7 +400,8 @@ rattlesnake = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
-  , ikit     = [ ("venom fang", COrgan), ("rattle", COrgan)
+  , ikit     = [ ("venom fang", COrgan)  -- when on cooldown, it's weaponless
+               , ("rattle", COrgan)
                , ("eye 4", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -438,8 +442,8 @@ komodoDragon = ItemKind
   , ieffects = []
   , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds at its lesser cousins."
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
-               , ("hooked claw", COrgan), ("speed gland 4", COrgan)
-               , ("armored skin", COrgan)
+               , ("hooked claw", COrgan)
+               , ("speed gland 4", COrgan), ("armored skin", COrgan)
                , ("eye 3", COrgan), ("nostril", COrgan), ("ear 4", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -460,7 +464,8 @@ alligator = ItemKind
   , ieffects = []
   , idesc    = "An armored predator from the dawn of time. You better not get within its reach."
   , ikit     = [ ("huge tail", COrgan), ("large jaw", COrgan)
-               , ("small claw", COrgan), ("armored skin", COrgan)
+               , ("small claw", COrgan)
+               , ("armored skin", COrgan)
                , ("eye 6", COrgan), ("ear 9", COrgan)
                , ("animal brain", COrgan) ]
   }
@@ -482,9 +487,9 @@ rhinoceros = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
-  , ikit     = [ ("armored skin", COrgan)
+  , ikit     = [ ("rhino horn", COrgan), ("snout", COrgan)
+               , ("armored skin", COrgan)
                , ("eye 2", COrgan), ("ear 7", COrgan)
-               , ("rhino horn", COrgan), ("snout", COrgan)
                , ("animal brain", COrgan) ]
   }
 
@@ -508,7 +513,8 @@ beeSwarm = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Every bee would die for the queen."
-  , ikit     = [ ("bee sting", COrgan), ("vision 6", COrgan), ("ear 6", COrgan)
+  , ikit     = [ ("bee sting", COrgan)  -- weaponless when it's used up
+               , ("vision 6", COrgan), ("ear 6", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 hornetSwarm = ItemKind
@@ -530,7 +536,8 @@ hornetSwarm = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
-  , ikit     = [ ("sting", COrgan), ("vision 8", COrgan), ("ear 7", COrgan)
+  , ikit     = [ ("sting", COrgan)  -- when on cooldown, it's weaponless
+               , ("vision 8", COrgan), ("ear 7", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 thornbush = ItemKind
@@ -549,7 +556,8 @@ thornbush = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Each branch bears long, curved thorns."
-  , ikit     = [("thorn", COrgan), ("armored skin", COrgan)]
+  , ikit     = [ ("thorn", COrgan)  -- after all run out, it's weaponless
+               , ("armored skin", COrgan) ]
   }
 geyserBoiling = ItemKind
   { isymbol  = 'g'
