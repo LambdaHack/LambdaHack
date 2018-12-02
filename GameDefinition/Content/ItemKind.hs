@@ -544,8 +544,8 @@ potion2 = potionTemplate
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
   , iaspects = [ SetFlag Unique, ELabel "of Attraction"
-               , SetFlag Lobable, SetFlag Fragile  -- identified
-               , toVelocity 50 ]
+               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
+               , toVelocity 50 ]  -- identified
   , ieffects = [ Dominate
                , toOrganGood "hasted" (20 + 1 `d` 5)
                , OnSmash (Explode "pheromone")
@@ -611,8 +611,8 @@ potion8 = potionTemplate
   , icount   = 1
   , irarity  = [(10, 5)]
   , iaspects = [ SetFlag Unique, ELabel "of Love"
-               , SetFlag Lobable, SetFlag Fragile  -- identified
-               , toVelocity 50 ]
+               , SetFlag Precious, SetFlag Lobable, SetFlag Fragile
+               , toVelocity 50 ]  -- identified
   , ieffects = [ RefillHP 60, RefillCalm (-60)
                , toOrganGood "rose-smelling" (80 + 1 `d` 20)
                , OnSmash (Explode "healing mist 2")
@@ -825,7 +825,7 @@ scroll1 = scrollTemplate
   { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early, often
-  , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon"]
+  , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon", SetFlag Precious]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2)]
   , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
@@ -886,15 +886,16 @@ scroll9 = scrollTemplate
 scroll10 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]  -- at endgame a crucial item may be missing
-  , iaspects = ELabel "of transmutation"
-               : iaspects scrollTemplate
+  , iaspects = [ELabel "of transmutation", SetFlag Precious]
+               ++ iaspects scrollTemplate
   , ieffects = [Composite [PolyItem, Explode "firecracker"]]
   }
 scroll11 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
-  , iaspects = [SetFlag Unique, ELabel "of Rescue Proclamation"]
+  , iaspects = [ SetFlag Unique, ELabel "of Rescue Proclamation"
+               , SetFlag Precious ]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1]
   , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
@@ -922,15 +923,15 @@ scroll15 = scrollTemplate
 scroll16 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
-  , iaspects = ELabel "of similarity"
-               : iaspects scrollTemplate
+  , iaspects = [ELabel "of similarity", SetFlag Precious]
+               ++ iaspects scrollTemplate
   , ieffects = [DupItem]
   }
 scroll17 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
-  , iaspects = ELabel "of transfiguration"
-               : iaspects scrollTemplate
+  , iaspects = [ELabel "of transfiguration", SetFlag Precious]
+               ++ iaspects scrollTemplate
   , ieffects = [RerollItem]
   }
 
@@ -1066,8 +1067,8 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Impress
-               , DropItem 1 maxBound COrgan "condition"
+  , ieffects = [ DropItem 1 3 COrgan "condition"  -- mildly useful for applying
+               , Impress
                , Summon "mobile animal" $ 1 `d` 2
                , Explode "waste" ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
@@ -1078,7 +1079,8 @@ necklace3 = necklaceTemplate
                , Timeout ((1 `d` 2) * 20)
                , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [Detect DetectActor 10, RefillCalm (-20)]
+  , ieffects = [ Detect DetectActor 10  -- can be applied; destroys the item
+               , RefillCalm (-20) ]
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1092,9 +1094,9 @@ necklace5 = necklaceTemplate
   , iaspects = [ ELabel "of escape"
                , Timeout $ (7 - 1 `dL` 5) * 10 ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ Teleport $ 14 + 3 `d` 3
+  , ieffects = [ Teleport $ 14 + 3 `d` 3  -- can be applied; destroys the item
                , Detect DetectExit 20
-               , Yell ]  -- prevent micromanagement
+               , Yell ]  -- drawback when used for quick exploring
   , idesc    = "A supple chain that slips through your fingers."
   }
 necklace6 = necklaceTemplate
@@ -1146,7 +1148,7 @@ imageItensifier = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkNocto 1, AddSkill SkSight (-1)
                , AddSkill SkArmorMelee $ (1 `dL` 3) * 3
-               , SetFlag Precious, SetFlag Durable, SetFlag Equipable
+               , SetFlag Precious, SetFlag Equipable
                , EqpSlot EqpSlotMiscBonus ]
   , ieffects = []
   , idesc    = "Contraption of lenses and mirrors on a polished brass headband for capturing and strengthening light in dark environment. Hampers vision in daylight. Stackable."
@@ -1195,7 +1197,6 @@ ring1 = ringTemplate
   , iaspects = [ AddSkill SkSpeed $ 1 `d` 3, AddSkill SkMaxHP (-15)
                , EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
-  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 ring2 = ringTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
@@ -1205,7 +1206,6 @@ ring2 = ringTemplate
                , AddSkill SkMaxCalm (-40), AddSkill SkMaxHP (-20)
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
-  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   , idesc    = "Roughly-shaped metal with shallow scratches marking it."
   }
 ring3 = ringTemplate
@@ -1248,7 +1248,6 @@ ring7 = ringTemplate
                , AddSkill SkProject 8
                , EqpSlot EqpSlotProject ]
                ++ iaspects ringTemplate
-  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 ring8 = ringTemplate
   { ifreq    = [("ring of opportunity grenadier", 1) ]  -- only for scenarios
@@ -1257,7 +1256,6 @@ ring8 = ringTemplate
                , AddSkill SkProject 11
                , EqpSlot EqpSlotProject ]
                ++ iaspects ringTemplate
-  , ieffects = [OnSmash (Explode "distortion")]  -- high power
   }
 
 -- ** Armor
@@ -1477,37 +1475,33 @@ dagger = ItemKind
   , iverbHit = "stab"
   , iweight  = 800
   , idamage  = 6 `d` 1
-  , iaspects = [ AddSkill SkHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3
+  , iaspects = [ Timeout 2
+               , AddSkill SkHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3
                , AddSkill SkArmorMelee $ (1 `d` 2) * 5
                    -- very common, so don't make too random
                , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotWeapon
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
-  , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is hard to block. Especially useful in conjunction with a larger weapon."
+  , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is quick to move and hard to block. Especially useful in conjunction with a larger weapon."
   , ikit     = []
   }
 daggerDropBestWeapon = dagger
   { iname    = "Double Dagger"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(1, 5), (10, 3)]
-  -- Here timeout has to be small, if the player is to count on the effect
-  -- occuring consistently in any longer fight. Otherwise, the effect will be
-  -- absent in some important fights, leading to the feeling of bad luck,
-  -- but will manifest sometimes in fights where it doesn't matter,
-  -- leading to the feeling of wasted power.
-  -- If the effect is very powerful and so the timeout has to be significant,
-  -- let's make it really large, for the effect to occur only once in a fight:
-  -- as soon as the item is equipped, or just on the first strike.
-  -- Here the timeout is either very small or very large, randomly.
-  -- In the latter case the weapon is best swapped for a stronger one
-  -- later on in the game, but provides some variety at the start.
-  , iaspects = [ SetFlag Unique
-               , Timeout $ (1 `d` 2) * 20 - 16 ]
+  , iaspects = [SetFlag Unique]
                ++ iaspects dagger
-  , ieffects = [DropBestWeapon, Yell]
-  , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade occasionally."
+  , ieffects = [DropBestWeapon, Yell]  -- powerful and low timeout, but makes
+                                       -- noise and useless against stupid foes
+  , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade."
   }
+iaspects_hammerTemplate :: [Aspect]
+iaspects_hammerTemplate =
+  [ HideAs "hammer unknown"
+  , SetFlag Durable, SetFlag Meleeable
+  , EqpSlot EqpSlotWeapon
+  , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
 hammer = ItemKind
   { isymbol  = symbolHafted
   , iname    = "war hammer"
@@ -1521,47 +1515,47 @@ hammer = ItemKind
   , idamage  = 8 `d` 1  -- we are lying about the dice here, but the dungeon
                         -- is too small and the extra-dice hammers too rare
                         -- to subdivide this identification class by dice
-  , iaspects = [ HideAs "hammer unknown"
-               , AddSkill SkHurtMelee $ (-1 + 1 `d` 2 + 1 `dL` 2) * 3
-               , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeapon
-               , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
+  , iaspects = [Timeout 5]
+               ++ iaspects_hammerTemplate
   , ieffects = []
-  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does."
+  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."
   , ikit     = []
   }
 hammer2 = hammer
-  { ifreq    = [("common item", 3), ("starting weapon", 1)]
-  , iweight  = 2000
-  , idamage  = 12 `d` 1
-  , idesc    = "Upon closer inspection, this hammer turns out particularly deadly, with one thick and sturdy and two long and sharp points."
+  { ifreq    = [("common item", 10), ("starting weapon", 1)]
+  , iweight  = 1000
+  , iaspects = [Timeout 3]
+               ++ iaspects_hammerTemplate
+  , idesc    = "Upon closer inspection, this hammer turns out particularly handy and well balanced, with one thick and sturdy and two long and sharp points compensating the modest heft."
   }
 hammer3 = hammer
-  { ifreq    = [("common item", 1)]
+  { ifreq    = [("common item", 3)]
   , iweight  = 2400
-  , idamage  = 16 `d` 1
-  , idesc    = "This hammer sports a long metal handle that increases durability and momentum of the sharpened head's swing."
+  , idamage  = 12 `d` 1
+  , iaspects = [Timeout 7]
+               ++ iaspects_hammerTemplate
+  , idesc    = "This hammer sports a long metal handle that increases durability and momentum of the sharpened head's swing, at the cost of longer recovery."
   }
 hammerParalyze = hammer
-  { iname    = "Concussion Hammer"
+  { iname    = "Brute Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(4, 1), (8, 10)]
-  , idamage  = 8 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout 7 ]
-               ++ iaspects hammer
+               ++ iaspects_hammerTemplate
   , ieffects = [Paralyze 10]
-  , idesc    = "A huge shapeless lump of steel on a long pole. Nobody remains standing after this hammer connects."
+  , idesc    = "A huge shapeless lump of steel on a sturdy pole. Nobody remains standing when this head connects."
   }
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(4, 1), (8, 10)]
+  , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout 10
                , AddSkill SkShine 3]
-               ++ iaspects hammer
+               ++ iaspects_hammerTemplate
   , ieffects = [Explode "spark"]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
@@ -1577,7 +1571,8 @@ sword = ItemKind
   , iverbHit = "slash"
   , iweight  = 2000
   , idamage  = 10 `d` 1
-  , iaspects = [ SetFlag Durable, SetFlag Meleeable
+  , iaspects = [ Timeout 5
+               , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotWeapon
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
@@ -1588,8 +1583,7 @@ swordImpress = sword
   { iname    = "Master's Sword"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(4, 1), (8, 10)]
-  , iaspects = [ SetFlag Unique
-               , Timeout $ (1 `d` 2) * 40 - 30 ]
+  , iaspects = [SetFlag Unique]
                ++ iaspects sword
   , ieffects = [Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
@@ -1598,8 +1592,7 @@ swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(4, 1), (8, 10)]
-  , iaspects = [ SetFlag Unique
-               , Timeout 10 ]
+  , iaspects = [SetFlag Unique]
                ++ iaspects sword
   , ieffects = [ DropItem 1 maxBound COrgan "condition"
                , RefillCalm (-10)
@@ -1616,14 +1609,15 @@ halberd = ItemKind
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = 12 `d` 1
-  , iaspects = [ AddSkill SkHurtMelee (-20)
+  , iaspects = [ Timeout 12
+               , AddSkill SkHurtMelee (-20)
                    -- useless against armor at game start
-               , AddSkill SkArmorMelee $ (1 `dL` 4) * 5
+               , AddSkill SkArmorMelee $ (1 + 1 `dL` 4) * 5
                , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotWeapon
                , toVelocity 20 ]  -- not balanced
   , ieffects = []
-  , idesc    = "An improvised but deadly weapon made of a blade from a scythe attached to a long pole."
+  , idesc    = "An improvised weapon made of scythe's blade attached to a long pole. Not often one succeeds in making enough space to swing it freely, but even when stuck between terrain obstacles it blocks approaches effectively."
   , ikit     = []
   }
 halberd2 = halberd
@@ -1644,9 +1638,7 @@ halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(6, 1), (8, 15)]
-  , idamage  = 12 `d` 1
-  , iaspects = [ SetFlag Unique
-               , Timeout $ (1 `d` 2) * 10 ]
+  , iaspects = [SetFlag Unique]
                ++ iaspects halberd
   , ieffects = [PushActor (ThrowMod 200 100 1)]  -- 2 steps, slow
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
