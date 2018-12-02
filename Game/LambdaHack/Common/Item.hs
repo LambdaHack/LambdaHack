@@ -276,7 +276,7 @@ unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =
       in itemSuspect || not kmConst && or (concatMap (map unknown . f) iaspects)
     ItemDiscoFull{} -> False  -- all known
 
--- We assume @AbHurtMelee@ never appears inside @Odds@. If it does,
+-- We assume @SkHurtMelee@ never appears inside @Odds@. If it does,
 -- not much harm.
 unknownMeleeBonus :: [ItemFull] -> Bool
 unknownMeleeBonus =

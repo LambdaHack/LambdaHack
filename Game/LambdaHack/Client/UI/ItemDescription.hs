@@ -111,30 +111,30 @@ textAllPowers detailLevel skipRecharging
       hurtMeleeAspect (IK.AddSkill Ability.SkHurtMelee _) = True
       hurtMeleeAspect _ = False
       active = IA.goesIntoEqp arItem
-      splitA :: Bool -> DetailLevel -> [IK.Aspect] -> [Text]
-      splitA secondPass detLev aspects =
+      splitA :: DetailLevel -> [IK.Aspect] -> [Text]
+      splitA detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
             reduce_a = maybe "?" tshow . Dice.reduceDice
-            restEs | secondPass = []
-                   | detLev >= DetailHigh
+            restEs | detLev >= DetailHigh
                      || not (IA.checkFlag Ability.MinorEffects arItem) =
                      IK.ieffects itemKind
                    | otherwise = []
             (smashEffs, noSmashEffs) = partition IK.onSmashEffect restEs
+            unSmash (IK.OnSmash eff) = eff
+            unSmash eff = eff
             onSmashTs = T.intercalate " " $ filter (not . T.null)
-                        $ map ppE smashEffs
-            (rechargingTs, ppERestEs) =
-                if isJust mtimeout || periodic
-                then ( T.intercalate " " $ filter (not . T.null)
-                       $ map ppE noSmashEffs
-                     , [] )
-                else ( "", map ppE noSmashEffs )
+                        $ map (ppE . unSmash) smashEffs
+            rechargingTs = T.intercalate " " $ filter (not . T.null)
+                           $ map ppE noSmashEffs
+            ppERestEs = if isJust mtimeout || periodic
+                        then []
+                        else map ppE noSmashEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
                   else ppERestEs ++ map ppA aspects
             timeoutOrPeriodic =
-              if | skipRecharging || secondPass || T.null rechargingTs -> ""
+              if | skipRecharging -> ""
                  | periodic -> case mtimeout of
                      Nothing | IA.checkFlag Ability.Fragile arItem ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
@@ -154,11 +154,11 @@ textAllPowers detailLevel skipRecharging
                      _ -> error $ "" `showFailure` mtimeout
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
-            -- Dice needed, not @Int@, so @arItem@ not consulted directly.
-            -- If item not known fully and @AbHurtMelee@ under @Odds@,
+            -- Either exact value or dice of @SkHurtMelee@ needed,
+            -- never the average, so @arItem@ not consulted directly.
+            -- If item not known fully and @SkHurtMelee@ under @Odds@,
             -- it's ignored.
             damage = case find hurtMeleeAspect aspects of
-              _ | secondPass -> ""
               Just (IK.AddSkill Ability.SkHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
@@ -186,9 +186,8 @@ textAllPowers detailLevel skipRecharging
         -- Note that avg melee damage would be too complex to display here,
         -- because in case of @MOwned@ the owner is different than leader,
         -- so the value would be different than when viewing the item.
-      splitTry secondPass ass =
-        let splits = map (\det -> splitA secondPass det ass)
-                         [minBound..maxBound]
+      splitTry ass =
+        let splits = map (\det -> splitA det ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
         in case filter (/= []) splitsToTry of
              detNonEmpty : _ -> detNonEmpty
@@ -199,9 +198,9 @@ textAllPowers detailLevel skipRecharging
             (aspectsMain, aspectsAux) = partition aMain aspectsFull
         in filter (/= "")
            $ elab
-             : splitTry False aspectsMain
+             : splitTry aspectsMain
              ++ if detailLevel >= DetailAll
-                then splitTry True aspectsAux
+                then map kindAspectToSuffix aspectsAux
                 else []
   in (aspectDescs, rangedDamageDesc)
 

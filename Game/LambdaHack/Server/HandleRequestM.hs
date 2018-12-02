@@ -340,7 +340,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
       case mweapon of
         Just (wp, cstore) | abInSkill Ability.SkMelee ->
           reqMeleeChecked voluntary source target wp cstore
-        _ -> return ()  -- waiting, even if no @AbWait@ skill
+        _ -> return ()  -- waiting, even if no @SkWait@ skill
       -- Movement of projectiles only happens after melee and a check
       -- if they survive, so that if they don't, they explode in front
       -- of enemy, not under him, so that already first explosion blasts
@@ -525,7 +525,7 @@ reqDisplaceGeneric voluntary source target = do
        case mweapon of
          Just (wp, cstore) | abInSkill Ability.SkMelee ->
            reqMeleeChecked voluntary source target wp cstore
-         _ -> return ()  -- waiting, even if no @AbWait@ skill
+         _ -> return ()  -- waiting, even if no @SkWait@ skill
      | otherwise -> do
        let lid = blid sb
        lvl <- getLevel lid
@@ -600,7 +600,7 @@ reqAlterFail voluntary source tpos = do
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
-    -- Only actors with AbAlter > 1 can search for hidden doors, etc.
+    -- Only actors with SkAlter > 1 can search for hidden doors, etc.
     if not underFeet && alterSkill <= 1
     then return $ Just AlterUnskilled  -- don't leak about searching
     else do
