@@ -126,8 +126,8 @@ textAllPowers detailLevel skipRecharging
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map (ppE . unSmash) smashEffs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
-                           $ map ppE noSmashEffs
-            timeoutOrPeriodic =
+                           $ damageText : map ppE noSmashEffs
+            periodicText =
               if | skipRecharging || T.null rechargingTs -> ""
                  | periodic -> case mtimeout of
                      Nothing | IA.checkFlag Ability.Fragile arItem ->
@@ -140,15 +140,8 @@ textAllPowers detailLevel skipRecharging
                        "(every" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
                          -- if also fragile, eventually runs out, but TMI
                      _ -> error $ "" `showFailure` mtimeout
-                 | otherwise -> case mtimeout of
-                     Nothing -> ""
-                     Just (IK.Timeout t) ->
-                       "(cooldown" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
-                         -- timeout is called "cooldown" in UI
-                     _ -> error $ "" `showFailure` mtimeout
-            ppERestEs = if isJust mtimeout || periodic
-                        then [timeoutOrPeriodic]
-                        else map ppE noSmashEffs
+                 | otherwise -> ""
+            ppERestEs = if periodic then [periodicText] else map ppE noSmashEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
                   else ppERestEs ++ map ppA aspects
@@ -158,7 +151,7 @@ textAllPowers detailLevel skipRecharging
             -- never the average, so @arItem@ not consulted directly.
             -- If item not known fully and @SkHurtMelee@ under @Odds@,
             -- it's ignored.
-            damage = case find hurtMeleeAspect aspects of
+            damageText = case find hurtMeleeAspect aspects of
               Just (IK.AddSkill Ability.SkHurtMelee hurtMelee) ->
                 (if IK.idamage itemKind == 0
                  then "0d0"
@@ -167,7 +160,12 @@ textAllPowers detailLevel skipRecharging
               _ -> if IK.idamage itemKind == 0
                    then ""
                    else tshow (IK.idamage itemKind)
-        in [damage]
+            timeoutText = case mtimeout of
+              Nothing -> ""
+              Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
+                                       -- timeout is called "cooldown" in UI
+              _ -> error $ "" `showFailure` mtimeout
+       in if periodic then [] else [damageText, timeoutText]
            ++ if detLev >= DetailHigh
                  || detLev >= DetailMedium && T.null elab
               then aes ++ [onSmash | detLev >= DetailAll]
