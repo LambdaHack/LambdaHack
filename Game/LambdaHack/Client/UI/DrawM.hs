@@ -655,7 +655,8 @@ drawLeaderDamage width = do
               arItem = aspectRecordFull itemFull
               timeout = IA.aTimeout arItem
               cDice = if timeout > 0 then Color.BrCyan else Color.Cyan
-              cbonus = case compare (meleeBonus $ map snd kitAssRaw) 0 of
+              conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
+              cbonus = case compare conditionBonus 0 of
                 EQ -> Color.White
                 GT -> Color.Green
                 LT -> Color.Red

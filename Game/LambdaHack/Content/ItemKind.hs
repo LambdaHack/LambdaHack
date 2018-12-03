@@ -58,13 +58,13 @@ data ItemKind = ItemKind
 -- The others affect only the item in question, not the actor carrying it,
 -- and so are not additive in any sense.
 data Aspect =
-    Timeout Dice.Dice   -- ^ specifies the cooldown before an item may be
-                        --   applied again; if a copy of an item is applied
-                        --   manually (not via periodic activation),
-                        --   all effects on a single copy of the item are
-                        --   disabled until the copy recharges for the given
-                        --   time expressed in game turns; all copies
-                        --   recharge concurrently
+    Timeout Dice.Dice  -- ^ specifies the cooldown before an item may be
+                       --   applied again; if a copy of an item is applied
+                       --   manually (not via periodic activation),
+                       --   all effects on a single copy of the item are
+                       --   disabled until the copy recharges for the given
+                       --   time expressed in game turns; all copies
+                       --   recharge concurrently
   | AddSkill Ability.Skill Dice.Dice
                        -- ^ bonus to a skill; in content, avoid boosting
                        --   skills such as SkApply via permanent equipment,

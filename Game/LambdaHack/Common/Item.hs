@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Item
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   , itemToFull6, aspectRecordFull, strongestSlot, hasCharge, strongestMelee
-  , unknownMeleeBonus, meleeBonus, armorHurtCalculation
+  , unknownMeleeBonus, conditionMeleeBonus, armorHurtCalculation
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -285,8 +285,8 @@ unknownMeleeBonus =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
-meleeBonus :: [ItemFullKit] -> Int
-meleeBonus kitAss =
+conditionMeleeBonus :: [ItemFullKit] -> Int
+conditionMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
         let arItem = aspectRecordFull itemFull
         in if IA.checkFlag Ability.Condition arItem

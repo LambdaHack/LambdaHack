@@ -360,7 +360,7 @@ applyPeriodicLevel = do
                 False aid aid iid (CActor aid cstore) True
                 (IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
-        -- While it's fun when projetiles flash or speed up mid-air,
+        -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds
         -- of projectiles exist due to ongoing explosions.
         when (not (bproj b) && blid b `ES.member` arenasSet) $ do
