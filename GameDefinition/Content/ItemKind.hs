@@ -29,9 +29,9 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, scroll14, scroll15, scroll16, scroll17, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket]
 
-sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, scroll14, scroll15, scroll16, scroll17, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket :: ItemKind
+sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket :: ItemKind
 
 -- Keep the dice rolls and sides in aspects small so that not too many
 -- distinct items are generated (for display in item lore and for narrative
@@ -832,16 +832,10 @@ scroll1 = scrollTemplate
   }
 scroll2 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , iaspects = ELabel "of greed"
-               : iaspects scrollTemplate
-  , ieffects = [Detect DetectLoot 20, Teleport 20, RefillCalm (-50)]
-  }
-scroll3 = scrollTemplate
-  { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(1, 4), (10, 2)]
   , ieffects = [Ascend False]
   }
-scroll4 = scrollTemplate
+scroll3 = scrollTemplate
   -- needs to be common to show at least a portion of effects
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
@@ -849,7 +843,7 @@ scroll4 = scrollTemplate
   , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 30
                       , Detect DetectEmbed 12, Detect DetectLoot 20 ]]
   }
-scroll5 = scrollTemplate
+scroll4 = scrollTemplate
   -- needs to be common to show at least a portion of effects
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
@@ -860,21 +854,13 @@ scroll5 = scrollTemplate
                        , Detect DetectAll 40
                        , CreateItem CGround "common item" timerNone ] ]
   }
-scroll6 = scrollTemplate
-  { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , ieffects = [Teleport 5]
-  }
-scroll7 = scrollTemplate
-  { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , ieffects = [Teleport 20]
-  }
-scroll8 = scrollTemplate
+scroll5 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 1  -- too poweful en masse
   , irarity  = [(10, 4)]
   , ieffects = [InsertMove $ 20 + 1 `dL` 20]
   }
-scroll9 = scrollTemplate
+scroll6 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
   , irarity  = [(1, 14)]  -- uncommon deep down, where all is known
@@ -883,14 +869,14 @@ scroll9 = scrollTemplate
   , ieffects = [Composite [Identify, RefillCalm 10]]
   , idesc    = "The most pressing existential concerns are met with a deeply satisfying scientific answer."
   }
-scroll10 = scrollTemplate
+scroll7 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]  -- at endgame a crucial item may be missing
   , iaspects = [ELabel "of transmutation", SetFlag Precious]
                ++ iaspects scrollTemplate
   , ieffects = [Composite [PolyItem, Explode "firecracker"]]
   }
-scroll11 = scrollTemplate
+scroll8 = scrollTemplate
   { ifreq    = [("treasure", 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
@@ -900,34 +886,29 @@ scroll11 = scrollTemplate
   , ieffects = [Summon "hero" 1]
   , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
   }
-scroll12 = scrollTemplate
+scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(1, 9), (10, 4)]
   , ieffects = [Detect DetectHidden 20]
   }
-scroll13 = scrollTemplate
+scroll10 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , iaspects = ELabel "of acute hearing"
+  , iaspects = ELabel "of cue interpretation"
                : iaspects scrollTemplate
   , ieffects = [Detect DetectActor 20]
   }
-scroll14 = scrollTemplate
-  { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , ieffects = [PushActor (ThrowMod 400 100 1)]  -- 4 steps, 2 turns
-  }
-scroll15 = scrollTemplate
+scroll11 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 11)]
   , ieffects = [PushActor (ThrowMod 400 200 1)]  -- 8 steps, 4 turns
   }
-scroll16 = scrollTemplate
+scroll12 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
   , iaspects = [ELabel "of similarity", SetFlag Precious]
                ++ iaspects scrollTemplate
   , ieffects = [DupItem]
   }
-scroll17 = scrollTemplate
+scroll13 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
   , iaspects = [ELabel "of transfiguration", SetFlag Precious]
@@ -1024,7 +1005,6 @@ gorget = necklaceTemplate
   , ifreq    = [("common item", 25), ("treasure", 25)]
   , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces,
                                   -- but it's OK, it's an artifact
-  , irarity  = [(4, 3), (10, 3)]  -- weak, shallow
   , iaspects = [ SetFlag Unique
                , Timeout $ (1 `d` 2) * 2
                , AddSkill SkArmorMelee 3, AddSkill SkArmorRanged 2
@@ -1040,7 +1020,7 @@ necklaceTemplate = ItemKind
   , ifreq    = [("necklace unknown", 1)]
   , iflavour = zipFancy stdCol ++ zipPlain brightCol
   , icount   = 1
-  , irarity  = [(10, 3)]
+  , irarity  = [(4, 3), (10, 4)]
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
@@ -1052,6 +1032,7 @@ necklaceTemplate = ItemKind
   }
 necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
+  , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
                , Timeout $ (1 `d` 2) * 20
                , SetFlag Durable ]
@@ -1062,6 +1043,7 @@ necklace1 = necklaceTemplate
 necklace2 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
       -- too nasty to call it just a "common item"
+  , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Live Bait"
                , Timeout 30
                , AddSkill SkOdor 2
@@ -1076,7 +1058,7 @@ necklace2 = necklaceTemplate
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ ELabel "of fearful listening"
-               , Timeout ((1 `d` 2) * 20)
+               , Timeout ((1 + 1 `d` 3) * 10)
                , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectActor 10  -- can be applied; destroys the item
@@ -1084,7 +1066,6 @@ necklace3 = necklaceTemplate
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 1)]  -- annoying when AI uses it; hassle when UI alternates
   , iaspects = Timeout ((3 + 1 `d` 3 - 1 `dL` 3) * 2)
                : iaspects_necklaceTemplate
   , ieffects = [Teleport $ 3 `d` 2]
@@ -1101,7 +1082,6 @@ necklace5 = necklaceTemplate
   }
 necklace6 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 1)]  -- annoying when AI uses it
   , iaspects = Timeout (1 + (1 `d` 3) * 2)
                : iaspects_necklaceTemplate
   , ieffects = [PushActor (ThrowMod 100 50 1)]  -- 1 step, slow
@@ -1109,13 +1089,13 @@ necklace6 = necklaceTemplate
   }
 necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
+  , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
                , AddSkill SkMaxHP 15
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ InsertMove $ 9 + 1 `d` 11  -- unpredictable
-               , RefillCalm (-1)  -- fake "hears something" :)
                , toOrganBad "impatient" 4]
                  -- The same duration as timeout, to avoid spurious messages
                  -- as well as unlimited accumulation of the duration.
@@ -1132,6 +1112,13 @@ necklace9 = necklaceTemplate
   , iaspects = Timeout ((1 + 1 `d` 3) * 5)
                : iaspects_necklaceTemplate
   , ieffects = [Explode "fragrance"]
+  }
+necklace10 = necklaceTemplate
+  { ifreq    = [("common item", 100), ("any jewelry", 100)]
+  , iaspects = [ ELabel "of greed"
+               , Timeout ((3 + 1 `d` 2) * 10) ]
+               ++ iaspects_necklaceTemplate
+  , ieffects = [Detect DetectLoot 20, Teleport 20]
   }
 
 -- ** Non-periodic jewelry
@@ -1420,7 +1407,7 @@ buckler = ItemKind
   , irarity  = [(4, 5)]
   , iverbHit = "bash"
   , iweight  = 2000
-  , idamage  = 2 `d` 1
+  , idamage  = 0  -- safe to be used on self
   , iaspects = [ Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 2
                , AddSkill SkArmorMelee 40
                    -- not enough to compensate; won't be in eqp
@@ -1429,8 +1416,8 @@ buckler = ItemKind
                , SetFlag MinorEffects, SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- unwieldy to throw
-  , ieffects = [PushActor (ThrowMod 100 50 1)]  -- 1 step, slow
-  , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with."
+  , ieffects = [PushActor (ThrowMod 200 50 1)]  -- 1 step, fast
+  , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with. May serve as a counterweight to suddenly push forth."
   , ikit     = []
   }
 shield = buckler
@@ -1438,7 +1425,7 @@ shield = buckler
   , irarity  = [(8, 4)]  -- the stronger variants add to total probability
   , iflavour = zipPlain [Green]
   , iweight  = 4000
-  , idamage  = 4 `d` 1
+  , idamage  = 3 `d` 1
   , iaspects = [ Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 4
                , AddSkill SkArmorMelee 80
                    -- not enough to compensate; won't be in eqp
@@ -1448,12 +1435,12 @@ shield = buckler
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- unwieldy to throw
   , ieffects = [PushActor (ThrowMod 400 50 1)]  -- 2 steps, fast
-  , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with."
+  , idesc    = "Large and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too heavy to intercept projectiles with. Useful to push foes out of the way."
   }
 shield2 = shield
   { ifreq    = [("common item", 3 * 3)]  -- very low base rarity
   , iweight  = 5000
-  , idamage  = 8 `d` 1
+  , idamage  = 6 `d` 1
   -- , idesc    = "" e.g., "this kind has a spike protruding from the center"
   }
 shield3 = shield

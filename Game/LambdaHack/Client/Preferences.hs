@@ -94,7 +94,7 @@ effectToBenefit cops fact eff =
     IK.ParalyzeInWater d -> delta $ -10 * Dice.meanDice d  -- clips; resistable
     IK.InsertMove d -> delta $ 10 * Dice.meanDice d  -- turns
     IK.Teleport d -> if Dice.meanDice d <= 8
-                     then (1, 0)     -- blink to shoot at foes
+                     then (0, 0)    -- annoying either way
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
     IK.CreateItem COrgan "condition" _ ->
@@ -139,9 +139,9 @@ effectToBenefit cops fact eff =
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)
-    IK.SendFlying _ -> (1, -100)  -- very context dependent, but it's better
-    IK.PushActor _ -> (1, -100)   -- to be the one that decides whether to fly;
-    IK.PullActor _ -> (1, -100)   -- pushing others may crush them against wall
+    IK.SendFlying _ -> (0, -100)  -- very context dependent, but lack of control
+    IK.PushActor _ -> (0, -100)   -- is deadly on some maps, leading to harm;
+    IK.PullActor _ -> (0, -100)   -- pushing others may crush them against wall
     IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
     IK.ActivateInv ' ' -> delta $ -200  -- brutal and deadly
     IK.ActivateInv _ -> delta $ -50  -- depends on the items
