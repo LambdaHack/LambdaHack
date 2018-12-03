@@ -172,14 +172,13 @@ textAllPowers detailLevel skipRecharging
                  || detLev >= DetailMedium && T.null elab
               then aes ++ [onSmash | detLev >= DetailAll]
               else []
+      hurtMult = armorHurtCalculation True (IA.aSkills arItem)
+                                           Ability.zeroSkills
+      dmg = Dice.meanDice $ IK.idamage itemKind
+      rawDeltaHP = ceiling $ fromIntegral hurtMult * xD dmg / 100
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
-      meanDmg = ceiling $ Dice.meanDice (IK.idamage itemKind)
-      minDeltaHP = xM meanDmg `divUp` 100
-      aHurtMeleeOfItem = IA.getSkill Ability.SkHurtMelee arItem
-      pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
-      prawDeltaHP = fromIntegral pmult * minDeltaHP
-      pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+      pdeltaHP = modifyDamageBySpeed rawDeltaHP speed
       rangedDamageDesc = if pdeltaHP == 0
                          then []
                          else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
