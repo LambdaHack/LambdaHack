@@ -228,13 +228,13 @@ elbow = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 80
-               , AddSkill SkSpeed 21, AddSkill SkNocto 2
+               , AddSkill SkSpeed 20, AddSkill SkNocto 2
                , AddSkill SkProject 2, AddSkill SkApply 1
                , AddSkill SkAlter 2, AddSkill SkMelee (-1)
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
-  , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
+  , ikit     = [ ("speed gland 5", COrgan), ("armored skin", COrgan)
                , ("vision 12", COrgan), ("ear 8", COrgan)
                    -- too powerful to get stronger sight
                , ("sapient brain", COrgan)
@@ -442,14 +442,14 @@ komodoDragon = ItemKind
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 40, AddSkill SkMaxCalm 60
-               , AddSkill SkSpeed 18, AddSkill SkNocto 2
+               , AddSkill SkSpeed 17, AddSkill SkNocto 2
                , AddSkill SkAggression 1  -- match the description
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds at its lesser cousins."
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
                , ("hooked claw", COrgan)
-               , ("speed gland 4", COrgan), ("armored skin", COrgan)
+               , ("speed gland 5", COrgan), ("armored skin", COrgan)
                , ("eye 3", COrgan), ("nostril", COrgan), ("ear 3", COrgan)
                , ("animal brain", COrgan) ]
   }
