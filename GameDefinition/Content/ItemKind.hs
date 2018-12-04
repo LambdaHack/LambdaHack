@@ -824,7 +824,7 @@ scroll1 = scrollTemplate
   { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so found early for a unique
-  , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon", SetFlag Precious]
+  , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon"]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2)]
   , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
@@ -871,16 +871,15 @@ scroll6 = scrollTemplate
 scroll7 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]  -- at endgame a crucial item may be missing
-  , iaspects = [ELabel "of transmutation", SetFlag Precious]
-               ++ iaspects scrollTemplate
+  , iaspects = ELabel "of transmutation"
+               : iaspects scrollTemplate
   , ieffects = [Composite [PolyItem, Explode "firecracker"]]
   }
 scroll8 = scrollTemplate
   { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
   , irarity  = [(10, 12)]
-  , iaspects = [ SetFlag Unique, ELabel "of Rescue Proclamation"
-               , SetFlag Precious ]
+  , iaspects = [SetFlag Unique, ELabel "of Rescue Proclamation"]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1]
   , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
@@ -904,15 +903,15 @@ scroll11 = scrollTemplate
 scroll12 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
-  , iaspects = [ELabel "of similarity", SetFlag Precious]
-               ++ iaspects scrollTemplate
+  , iaspects = ELabel "of similarity"
+               : iaspects scrollTemplate
   , ieffects = [DupItem]
   }
 scroll13 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , irarity  = [(10, 20)]
-  , iaspects = [ELabel "of transfiguration", SetFlag Precious]
-               ++ iaspects scrollTemplate
+  , iaspects = ELabel "of transfiguration"
+               : iaspects scrollTemplate
   , ieffects = [RerollItem]
   }
 
