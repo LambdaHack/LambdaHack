@@ -227,7 +227,7 @@ actorCurrentSkills mleader aid s =
 -- another actor all the time. Completely immovable actors
 -- e.g., an impregnable surveillance camera in a crowded corridor,
 -- are less of a problem due to micromanagment, but more due to
--- the constant disturbing of other actor's running, etc..
+-- the constant disturbing of other actor's running, etc.
 canTraverse :: ActorId -> State -> Bool
 canTraverse aid s =
   let actorMaxSk = getActorMaxSkills aid s

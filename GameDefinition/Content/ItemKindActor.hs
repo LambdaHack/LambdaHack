@@ -25,7 +25,9 @@ geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- Note that the actors that appear in the crawl scenario should
 -- be generated with at most ordinary ammo. Otherwise, farming them
--- may be rational though boring endeavour.
+-- may be rational though boring endeavour. Any exceptions to that
+-- should be well thought of. E.g., unique guaranteed items on bosses
+-- are safe, just as restricted kinds of weak items.
 
 -- * Hunams
 
@@ -52,7 +54,7 @@ warrior = ItemKind
   , idesc    = ""
   -- , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan)
-               , ("eye 6", COrgan), ("ear 4", COrgan)
+               , ("eye 6", COrgan), ("ear 3", COrgan)
                , ("sapient brain", COrgan) ]
   }
 warrior2 = warrior
@@ -190,7 +192,7 @@ fastEye = ItemKind
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ ("tooth", COrgan), ("lip", COrgan)
                , ("speed gland 10", COrgan)
-               , ("vision 6", COrgan), ("ear 4", COrgan)
+               , ("vision 6", COrgan), ("ear 3", COrgan)
                , ("sapient brain", COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
@@ -233,10 +235,11 @@ elbow = ItemKind
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
   , ikit     = [ ("speed gland 4", COrgan), ("armored skin", COrgan)
-               , ("vision 16", COrgan), ("ear 10", COrgan)
+               , ("vision 12", COrgan), ("ear 8", COrgan)
+                   -- too powerful to get stronger sight
+               , ("sapient brain", COrgan)
                , ("any arrow", CSha), ("any arrow", CInv)
-               , ("weak arrow", CInv), ("weak arrow", CInv)
-               , ("sapient brain", COrgan) ]
+               , ("weak arrow", CInv), ("weak arrow", CInv) ]
   }
 torsor = ItemKind
   { isymbol  = 'T'
@@ -259,9 +262,9 @@ torsor = ItemKind
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
                , ("pupil", COrgan), ("tentacle", COrgan)
-               , ("ear 9", COrgan)
-               , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv)
-               , ("sapient brain", COrgan) ]
+               , ("ear 8", COrgan)
+               , ("sapient brain", COrgan)
+               , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv) ]
   }
 -- "ground x" --- for immovable monster that can only tele or prob travel
 -- pullback
@@ -281,17 +284,17 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
                , ("scavenger", 50) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(1, 4)]
+  , irarity  = [(1, 4), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 12, AddSkill SkMaxCalm 70
+  , iaspects = [ AddSkill SkMaxHP 15, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 24, AddSkill SkNocto 2
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An opportunistic predator, feeding on carrion and the weak."
   , ikit     = [ ("small jaw", COrgan)
-               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 9", COrgan)
+               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 8", COrgan)
                , ("animal brain", COrgan) ]
   }
 griffonVulture = ItemKind
@@ -305,20 +308,23 @@ griffonVulture = ItemKind
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 12, AddSkill SkMaxCalm 80
+  , iaspects = [ AddSkill SkMaxHP 15, AddSkill SkMaxCalm 80
+                   -- enough Calm to summon twice only if not attacked at all;
+                   -- loses a lot of sight after summoning
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
-      -- Animals don't have leader, usually, so even if only one of level,
+      -- Animals don't have leader, usually, so even if only one on level,
       -- it pays the communication overhead, so the speed is higher to get
-      -- them on par with human leaders moving solo. Random double moves,
-      -- on either side, are just too frustrating.
+      -- them on par with human leaders moving solo. Common random double moves,
+      -- on either side, are just too bothersome.
   , ieffects = []
   , idesc    = "It soars high above, searching for vulnerable prey."
   , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
                , ("small claw", COrgan)
-               , ("eye 7", COrgan), ("ear 10", COrgan)
+               , ("eye 8", COrgan), ("ear 8", COrgan)
+                   -- can't shoot, so strong sight is OK
                , ("animal brain", COrgan) ]
   }
 skunk = ItemKind
@@ -331,16 +337,16 @@ skunk = ItemKind
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 10, AddSkill SkMaxCalm 30
+  , iaspects = [ AddSkill SkMaxHP 13, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , AddSkill SkOdor 5  -- and no smell skill, to let it leave smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Its only defence is the terrible stench."
-  , ikit     = [ ("small claw", COrgan), ("snout", COrgan)
-               , ("scent gland", COrgan)
-               , ("eye 3", COrgan), ("ear 7", COrgan)
+  , ikit     = [ ("scent gland", COrgan)
+               , ("small claw", COrgan), ("snout", COrgan)
+               , ("eye 3", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
 armadillo = ItemKind
@@ -353,7 +359,7 @@ armadillo = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 10, AddSkill SkMaxCalm 30
+  , iaspects = [ AddSkill SkMaxHP 13, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , SetFlag Durable ]
@@ -370,18 +376,18 @@ gilaMonster = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [Magenta]
   , icount   = 1
-  , irarity  = [(2, 5), (10, 3)]
+  , irarity  = [(2, 5), (10, 2)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 12, AddSkill SkMaxCalm 50
+  , iaspects = [ AddSkill SkMaxHP 15, AddSkill SkMaxCalm 50
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
   , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 5", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
 rattlesnake = ItemKind
@@ -390,11 +396,11 @@ rattlesnake = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(6, 1), (10, 10)]
+  , irarity  = [(6, 1), (10, 9)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 25, AddSkill SkMaxCalm 60
+  , iaspects = [ AddSkill SkMaxHP 28, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 16, AddSkill SkNocto 2
                , AddSkill SkAlter (-2)  -- can't use stairs nor doors
                , SetFlag Durable ]
@@ -402,7 +408,7 @@ rattlesnake = ItemKind
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
   , ikit     = [ ("venom fang", COrgan)  -- when on cooldown, it's weaponless
                , ("rattle", COrgan)
-               , ("eye 4", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
                , ("animal brain", COrgan) ]
   }
 hyena = ItemKind
@@ -412,17 +418,17 @@ hyena = ItemKind
                , ("scavenger", 20) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(4, 1), (10, 6)]
+  , irarity  = [(4, 1), (10, 4)]  -- gets summoned often, so low base rarity
   , iverbHit = "thud"
   , iweight  = 60000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 20, AddSkill SkMaxCalm 70
+  , iaspects = [ AddSkill SkMaxHP 23, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 32, AddSkill SkNocto 2
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Skulking in the shadows, waiting for easy prey."
   , ikit     = [ ("jaw", COrgan)
-               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 9", COrgan)
+               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 8", COrgan)
                , ("animal brain", COrgan) ]
   }
 komodoDragon = ItemKind
@@ -431,11 +437,11 @@ komodoDragon = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [BrRed]  -- speedy, so bright red
   , icount   = 1
-  , irarity  = [(9, 0), (10, 12)]
+  , irarity  = [(9, 0), (10, 11)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 30, AddSkill SkMaxCalm 60
+  , iaspects = [ AddSkill SkMaxHP 40, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
                , AddSkill SkAggression 1  -- match the description
                , SetFlag Durable ]
@@ -444,7 +450,7 @@ komodoDragon = ItemKind
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
                , ("hooked claw", COrgan)
                , ("speed gland 4", COrgan), ("armored skin", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 4", COrgan)
+               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 3", COrgan)
                , ("animal brain", COrgan) ]
   }
 alligator = ItemKind
@@ -457,7 +463,7 @@ alligator = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 45, AddSkill SkMaxCalm 70
+  , iaspects = [ AddSkill SkMaxHP 55, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
                , AddSkill SkSwimming 100  -- swims better than walks
                , SetFlag Durable ]
@@ -466,7 +472,7 @@ alligator = ItemKind
   , ikit     = [ ("huge tail", COrgan), ("large jaw", COrgan)
                , ("small claw", COrgan)
                , ("armored skin", COrgan)
-               , ("eye 6", COrgan), ("ear 9", COrgan)
+               , ("eye 6", COrgan), ("ear 8", COrgan)
                , ("animal brain", COrgan) ]
   }
 rhinoceros = ItemKind
@@ -483,13 +489,14 @@ rhinoceros = ItemKind
                , AddSkill SkMaxHP 90, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 27, AddSkill SkNocto 2
                , AddSkill SkAggression 2
-               , AddSkill SkAlter (-1)  -- can't switch levels, a miniboss
+               , AddSkill SkAlter (-1)  -- can't switch levels, a miniboss;
+                                        -- also easy to contain with doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ ("rhino horn", COrgan), ("snout", COrgan)
                , ("armored skin", COrgan)
-               , ("eye 2", COrgan), ("ear 7", COrgan)
+               , ("eye 3", COrgan), ("ear 8", COrgan)
                , ("animal brain", COrgan) ]
   }
 
@@ -502,7 +509,7 @@ beeSwarm = ItemKind
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 2), (10, 4)]
-  , iverbHit = "thud"
+  , iverbHit = "buzz"
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 60
@@ -524,7 +531,7 @@ hornetSwarm = ItemKind
   , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(5, 1), (10, 4)]  -- should be many, because die after a time
-  , iverbHit = "thud"
+  , iverbHit = "buzz"
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [ AddSkill SkArmorMelee 80, AddSkill SkArmorRanged 40
@@ -537,7 +544,7 @@ hornetSwarm = ItemKind
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
   , ikit     = [ ("sting", COrgan)  -- when on cooldown, it's weaponless
-               , ("vision 8", COrgan), ("ear 7", COrgan)
+               , ("vision 6", COrgan), ("ear 6", COrgan)
                , ("insect mortality", COrgan), ("animal brain", COrgan) ]
   }
 thornbush = ItemKind
@@ -547,7 +554,7 @@ thornbush = ItemKind
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 14)]
-  , iverbHit = "thud"
+  , iverbHit = "scrape"
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 20, AddSkill SkMaxCalm 999

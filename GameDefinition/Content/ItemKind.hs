@@ -98,7 +98,7 @@ dart = ItemKind
   , ifreq    = [("common item", 100), ("any arrow", 50), ("weak arrow", 50)]
   , iflavour = zipPlain [BrRed]
   , icount   = 1 + 4 `dL` 5
-  , irarity  = [(1, 20), (10, 10)]
+  , irarity  = [(1, 15), (10, 10)]
   , iverbHit = "prick"
   , iweight  = 40
   , idamage  = 1 `d` 1
@@ -273,7 +273,7 @@ light2 = ItemKind
   , ifreq    = [("common item", 100), ("light source", 100)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1 `dL` 2
-  , irarity  = [(6, 8)]
+  , irarity  = [(6, 10)]
   , iverbHit = "burn"
   , iweight  = 1500
   , idamage  = 1 `d` 1
@@ -311,12 +311,12 @@ blanket = ItemKind
   , ifreq    = [("common item", 100), ("light source", 100), ("blanket", 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 1
-  , irarity  = [(1, 3)]
+  , irarity  = [(1, 1)]  -- not every playthrough needs one
   , iverbHit = "swoosh"
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [ AddSkill SkShine (-10)
-               , AddSkill SkArmorMelee 1, AddSkill SkMaxCalm 2
+               , AddSkill SkArmorMelee 2, AddSkill SkMaxCalm 5
                , SetFlag Lobable, SetFlag Equipable ]
                    -- not Fragile; reusable douse implement;
                    -- douses torch, lamp and lantern in one action,
@@ -335,10 +335,10 @@ blanket = ItemKind
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
--- In reality, they just cover all conditions, except those for stats.
+-- In fact, they just cover all conditions, except those for stats.
 --
 -- There is no flask nor condition of Calm depletion,
--- because Calm reduced often via combat, etc..
+-- because Calm reduced often via combat, etc.
 
 flaskTemplate = ItemKind
   { isymbol  = symbolFlask
@@ -348,14 +348,14 @@ flaskTemplate = ItemKind
                ++ zipLiquid darkCol
                  -- ++ zipPlain darkCol ++ zipFancy darkCol
   , icount   = 1 `dL` 3
-  , irarity  = [(1, 6), (10, 3)]
+  , irarity  = [(1, 7), (10, 3)]
   , iverbHit = "splash"
   , iweight  = 500
   , idamage  = 0
   , iaspects = [ HideAs "flask unknown", SetFlag Lobable, SetFlag Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , ieffects = []
-  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside."
+  , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside. Double dose causes twice longer effect."
   , ikit     = []
   }
 flask1 = flaskTemplate
@@ -400,11 +400,10 @@ flask5 = flaskTemplate
   }
 flask6 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , irarity  = [(10, 7)]
+  , irarity  = [(1, 1)]  -- not every playthrough needs one
   , iaspects = ELabel "of resolution"
                : iaspects flaskTemplate
-  , ieffects = [ toOrganGood "resolute" (200 + 1 `d` 50)
-                   -- long, for scouting and has to recharge
+  , ieffects = [ toOrganGood "resolute" (500 + 1 `d` 200)  -- long, for scouting
                , RefillCalm 60  -- not to make it a drawback, via @calmEnough@
                , OnSmash (Explode "resolution dust") ]
   }
@@ -429,7 +428,7 @@ flask9 = flaskTemplate
   , iaspects = ELabel "of smelly concoction"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "keen-smelling" (40 + 1 `d` 10)
-               , Detect DetectActor 10
+               , Detect DetectActor 10  -- make it at least slightly useful
                , OnSmash (Explode "smelly droplet") ]
   }
 flask10 = flaskTemplate
@@ -456,7 +455,7 @@ flask12 = flaskTemplate
   , iaspects = ELabel "of bait cocktail"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "drunk" (20 + 1 `d` 5)
-               , Burn 1, RefillHP 3
+               , Burn 1, RefillHP 3  -- mild exploit possible, good
                , Summon "mobile animal" 1
                , OnSmash (Summon "mobile animal" 1)
                , OnSmash Impress
@@ -520,7 +519,7 @@ potionTemplate = ItemKind
   , ifreq    = [("potion unknown", 1)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
   , icount   = 1 `dL` 3
-  , irarity  = [(1, 8), (10, 4)]
+  , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "splash"
   , iweight  = 200
   , idamage  = 0
@@ -540,7 +539,7 @@ potion1 = potionTemplate
                , OnSmash ApplyPerfume, OnSmash (Explode "fragrance") ]
   }
 potion2 = potionTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any vial", 100)]
   , icount   = 1
   , irarity  = [(5, 8), (10, 8)]
   , iaspects = [ SetFlag Unique, ELabel "of Attraction"
@@ -607,7 +606,7 @@ potion7 = potionTemplate
       -- not fragmentation nor glass hail, because not enough glass
   }
 potion8 = potionTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any vial", 100)]
   , icount   = 1
   , irarity  = [(10, 5)]
   , iaspects = [ SetFlag Unique, ELabel "of Love"
@@ -634,7 +633,7 @@ potion9 = potionTemplate
   }
 potion10 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
-  , irarity  = [(10, 10)]
+  , irarity  = [(10, 8)]
   , iaspects = ELabel "of frenzy"
                : iaspects potionTemplate
   , ieffects = [ Yell
@@ -647,7 +646,7 @@ potion10 = potionTemplate
   }
 potion11 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
-  , irarity  = [(10, 10)]
+  , irarity  = [(10, 8)]
   , iaspects = ELabel "of panic"
                : iaspects potionTemplate
   , ieffects = [ RefillCalm (-30)
@@ -682,7 +681,7 @@ fragmentationBomb = ItemKind
       -- required not to burn harmlessly; improvised short fuze
   , ifreq    = [("common item", 100), ("explosive", 200)]
   , iflavour = zipPlain [Red]
-  , icount   = 1 `dL` 4  -- many, because not very intricate
+  , icount   = 1 `dL` 5  -- many, because not very intricate
   , irarity  = [(5, 7), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 3000  -- low velocity due to weight
@@ -731,7 +730,7 @@ flashBomb = fragmentationBomb
 firecrackerBomb = fragmentationBomb
   { iname = "roll"  -- not fireworks, as they require outdoors
   , iflavour = zipPlain [BrMagenta]
-  , irarity  = [(1, 5), (5, 5)]  -- a toy, if deadly
+  , irarity  = [(1, 5), (5, 6)]  -- a toy, if deadly
   , iverbHit = "crack"  -- a pun, matches the verb from "ItemKindBlast"
   , iweight  = 1000
   , idamage  = 0
@@ -750,7 +749,7 @@ ediblePlantTemplate = ItemKind
   , ifreq    = [("edible plant unknown", 1)]
   , iflavour = zipPlain stdCol
   , icount   = 1 `dL` 5
-  , irarity  = [(1, 8), (10, 2)]
+  , irarity  = [(1, 12), (10, 6)]  -- let's feed the animals
   , iverbHit = "thump"
   , iweight  = 50
   , idamage  = 0
@@ -811,7 +810,7 @@ scrollTemplate = ItemKind
   , ifreq    = [("scroll unknown", 1)]
   , iflavour = zipFancy stdCol ++ zipPlain stdCol
   , icount   = 1 `dL` 3
-  , irarity  = [(1, 10), (10, 5)]
+  , irarity  = [(1, 14), (10, 7)]
   , iverbHit = "thump"
   , iweight  = 50
   , idamage  = 0
@@ -824,7 +823,7 @@ scrollTemplate = ItemKind
 scroll1 = scrollTemplate
   { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
-  , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so available early, often
+  , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so found early for a unique
   , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon", SetFlag Precious]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2)]
@@ -832,7 +831,7 @@ scroll1 = scrollTemplate
   }
 scroll2 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(1, 4), (10, 2)]
+  , irarity  = [(1, 6), (10, 2)]
   , ieffects = [Ascend False]
   }
 scroll3 = scrollTemplate
@@ -841,7 +840,7 @@ scroll3 = scrollTemplate
   , icount   = 3 `dL` 1
   , irarity  = [(1, 14)]
   , ieffects = [OneOf [ Teleport 5, Paralyze 10, InsertMove 30
-                      , Detect DetectEmbed 12, Detect DetectLoot 20 ]]
+                      , Detect DetectEmbed 12, Detect DetectHidden 20 ]]
   }
 scroll4 = scrollTemplate
   -- needs to be common to show at least a portion of effects
@@ -851,19 +850,19 @@ scroll4 = scrollTemplate
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
-                       , Detect DetectAll 40
+                       , Detect DetectLoot 20  -- the most useful of detections
                        , CreateItem CGround "common item" timerNone ] ]
   }
 scroll5 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 1  -- too poweful en masse
-  , irarity  = [(10, 4)]
+  , irarity  = [(10, 6)]
   , ieffects = [InsertMove $ 20 + 1 `dL` 20]
   }
 scroll6 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
-  , irarity  = [(1, 14)]  -- uncommon deep down, where all is known
+  , irarity  = [(1, 20)]  -- uncommon deep down, where all is known
   , iaspects = ELabel "of scientific explanation"
                : iaspects scrollTemplate
   , ieffects = [Composite [Identify, RefillCalm 10]]
@@ -877,9 +876,9 @@ scroll7 = scrollTemplate
   , ieffects = [Composite [PolyItem, Explode "firecracker"]]
   }
 scroll8 = scrollTemplate
-  { ifreq    = [("treasure", 100)]
+  { ifreq    = [("treasure", 100), ("any scroll", 100)]
   , icount   = 1
-  , irarity  = [(5, 8), (10, 8)]
+  , irarity  = [(10, 12)]
   , iaspects = [ SetFlag Unique, ELabel "of Rescue Proclamation"
                , SetFlag Precious ]
                ++ iaspects scrollTemplate
@@ -888,7 +887,8 @@ scroll8 = scrollTemplate
   }
 scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , ieffects = [Detect DetectHidden 20]
+  , irarity  = [(1, 9)]  -- powerful, even if not ideal
+  , ieffects = [Detect DetectAll 20]
   }
 scroll10 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
@@ -1089,20 +1089,21 @@ necklace6 = necklaceTemplate
   }
 necklace7 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 1)]  -- different gameplay for the actor that wears it
   , iaspects = [ SetFlag Unique, ELabel "of Overdrive"
                , Timeout 4
-               , AddSkill SkMaxHP 15
+               , AddSkill SkMaxHP 25  -- give incentive to cope with impatience
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ InsertMove $ 9 + 1 `d` 11  -- unpredictable
                , toOrganBad "impatient" 4]
                  -- The same duration as timeout, to avoid spurious messages
                  -- as well as unlimited accumulation of the duration.
-  , idesc    = "A string of beads in various coolours, with no discernable pattern."
+  , idesc    = "A string of beads in various colours, with no discernable pattern."
   }
 necklace8 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
+  , irarity  = [(4, 3)]  -- entirely optional
   , iaspects = Timeout ((1 + 1 `d` 3) * 5)
                : iaspects_necklaceTemplate
   , ieffects = [Explode "spark"]
@@ -1143,11 +1144,11 @@ imageItensifier = ItemKind
   }
 sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
   { iname    = "sharp monocle"
-  , ifreq    = [("treasure", 10), ("add sight", 1)]
+  , ifreq    = [("treasure", 20), ("add sight", 1)]
       -- it's has to be very rare, because it's powerful and not unique,
       -- and also because it looks exactly as one of necklaces, so it would
       -- be misleading when seen on the map
-  , irarity  = [(7, 1), (10, 5)]  -- low @ifreq@
+  , irarity  = [(7, 1), (10, 12)]  -- low @ifreq@
   , iweight  = 50  -- heavier that it looks, due to glass
   , iaspects = [ AddSkill SkSight $ 1 + 1 `d` 2
                , AddSkill SkHurtMelee $ (1 `d` 2) * 3
@@ -1205,7 +1206,7 @@ ring3 = ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 1), (10, 14)]  -- needed after other rings drop Calm
+  , irarity  = [(5, 1), (10, 12)]  -- needed after other rings drop Calm
   , iaspects = [ AddSkill SkMaxCalm $ 25 + (1 `dL` 4) * 5
                , EqpSlot EqpSlotMiscBonus ]
                ++ iaspects ringTemplate
@@ -1425,7 +1426,7 @@ shield = buckler
   , irarity  = [(8, 4)]  -- the stronger variants add to total probability
   , iflavour = zipPlain [Green]
   , iweight  = 4000
-  , idamage  = 3 `d` 1
+  , idamage  = 4 `d` 1
   , iaspects = [ Timeout $ (3 + 1 `d` 3 - 1 `dL` 3) * 4
                , AddSkill SkArmorMelee 80
                    -- not enough to compensate; won't be in eqp
@@ -1440,7 +1441,7 @@ shield = buckler
 shield2 = shield
   { ifreq    = [("common item", 3 * 3)]  -- very low base rarity
   , iweight  = 5000
-  , idamage  = 6 `d` 1
+  , idamage  = 8 `d` 1
   -- , idesc    = "" e.g., "this kind has a spike protruding from the center"
   }
 shield3 = shield
@@ -1476,7 +1477,7 @@ dagger = ItemKind
 daggerDropBestWeapon = dagger
   { iname    = "Double Dagger"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(1, 5), (10, 3)]
+  , irarity  = [(1, 3), (10, 3)]
   , iaspects = [SetFlag Unique]
                ++ iaspects dagger
   , ieffects = [DropBestWeapon, Yell]  -- powerful and low timeout, but makes
@@ -1505,7 +1506,7 @@ hammer = ItemKind
   , iaspects = [Timeout 5]
                ++ iaspects_hammerTemplate
   , ieffects = []
-  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."
+  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
   , ikit     = []
   }
 hammer2 = hammer
@@ -1526,7 +1527,7 @@ hammer3 = hammer
 hammerParalyze = hammer
   { iname    = "Brute Hammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(4, 1), (8, 10)]
+  , irarity  = [(5, 1), (8, 6)]
   , iaspects = [ SetFlag Unique
                , Timeout 7 ]
                ++ iaspects_hammerTemplate
@@ -1536,7 +1537,7 @@ hammerParalyze = hammer
 hammerSpark = hammer
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(4, 1), (8, 10)]
+  , irarity  = [(5, 1), (8, 6)]
   , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
@@ -1554,7 +1555,7 @@ sword = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 10)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 1
-  , irarity  = [(4, 1), (5, 15)]
+  , irarity  = [(3, 1), (5, 15)]
   , iverbHit = "slash"
   , iweight  = 2000
   , idamage  = 10 `d` 1
@@ -1569,7 +1570,7 @@ sword = ItemKind
 swordImpress = sword
   { iname    = "Master's Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(4, 1), (8, 10)]
+  , irarity  = [(5, 1), (8, 6)]
   , iaspects = [SetFlag Unique]
                ++ iaspects sword
   , ieffects = [Impress]
@@ -1578,7 +1579,7 @@ swordImpress = sword
 swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(4, 1), (8, 10)]
+  , irarity  = [(5, 1), (8, 6)]
   , iaspects = [SetFlag Unique]
                ++ iaspects sword
   , ieffects = [ DropItem 1 maxBound COrgan "condition"
@@ -1592,7 +1593,7 @@ halberd = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 20)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(6, 1), (8, 20)]
+  , irarity  = [(5, 0), (8, 15)]
   , iverbHit = "impale"
   , iweight  = 3000
   , idamage  = 12 `d` 1
@@ -1624,7 +1625,7 @@ halberd3 = halberd
 halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [("treasure", 20)]
-  , irarity  = [(6, 1), (8, 15)]
+  , irarity  = [(7, 0), (9, 15)]
   , iaspects = [SetFlag Unique]
                ++ iaspects halberd
   , ieffects = [PushActor (ThrowMod 200 100 1)]  -- 2 steps, slow
@@ -1677,7 +1678,7 @@ gemTemplate = ItemKind
 gem1 = gemTemplate
   { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
-  , irarity  = [(3, 0), (10, 24)]
+  , irarity  = [(3, 0), (6, 12), (10, 8)]
   , iaspects = [AddSkill SkShine 1, AddSkill SkSpeed (-1)]
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
@@ -1687,17 +1688,17 @@ gem1 = gemTemplate
 gem2 = gem1
   { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
-  , irarity  = [(5, 0), (10, 28)]
+  , irarity  = [(5, 0), (7, 25), (10, 8)]
   }
 gem3 = gem1
   { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
-  , irarity  = [(7, 0), (10, 32)]
+  , irarity  = [(7, 0), (8, 20), (10, 8)]
   }
 gem4 = gem1
   { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
                , ("valuable", 100) ]
-  , irarity  = [(9, 0), (10, 100)]
+  , irarity  = [(9, 0), (10, 70)]
   }
 gem5 = gem1
   { isymbol  = symbolSpecial
@@ -1705,7 +1706,7 @@ gem5 = gem1
   , ifreq    = [ ("treasure", 100), ("gem", 25), ("any jewelry", 25)
                , ("valuable", 100) ]
   , iflavour = zipPlain [BrYellow]
-  , irarity  = [(1, 40), (10, 40)]
+  , irarity  = [(1, 40), (10, 10)]
   , iaspects = [ ELabel "of youth", SetFlag Precious  -- not hidden
                , AddSkill SkOdor (-1) ]
   , ieffects = [RefillCalm 10, RefillHP 40]

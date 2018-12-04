@@ -16,9 +16,9 @@ import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, signboardMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround]
 
-scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, signboardMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround :: ItemKind
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
@@ -107,9 +107,7 @@ treasureCacheTrap = ItemKind
   , ieffects = [OneOf [ toOrganBad "blind" (40 + 1 `d` 10)
                       , RefillCalm (-99)
                       , Explode "focused concussion"
-                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
-                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
-                      , RefillCalm (-1) ]]
+                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , idesc    = "It's a trap!"
   , ikit     = []
   }
@@ -133,6 +131,12 @@ signboardEmbed = signboardExit
   , ifreq    = [("signboard", 50)]
   , ieffects = [Detect DetectEmbed 12]
   , idesc    = "The battered poster is untitled and unsigned."
+  }
+signboardMerchandise = signboardExit
+  { iname    = "treasure map"
+  , ifreq    = [("signboard", 50)]
+  , ieffects = [Detect DetectLoot 20]
+  , idesc    = "Equally cryptic and promising."
   }
 fireSmall = ItemKind
   { isymbol  = '%'
@@ -172,7 +176,7 @@ frost = ItemKind
   , iaspects = [SetFlag Durable]
   , ieffects = [ Burn 1  -- sensory ambiguity between hot and cold
                , RefillCalm 20  -- cold reason
-               , PushActor (ThrowMod 100 50 1) ]  -- slippery ice, 1 step, slow
+               , PushActor (ThrowMod 400 10 1) ]  -- slippery ice
   , idesc    = "Intricate patterns of shining ice."
   , ikit     = []
   }
