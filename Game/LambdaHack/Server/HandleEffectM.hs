@@ -1299,8 +1299,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
-                    || store == COrgan && fragile
-                         -- potions dropped from pack at death do not break
+                    || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
         -- Activate even if effects null, to destroy the item, if needed.
