@@ -37,7 +37,8 @@ data ModeKind = ModeKind
   , mroster :: Roster          -- ^ players taking part in the game
   , mcaves  :: Caves           -- ^ arena of the game
   , mendMsg :: EM.EnumMap Outcome Text
-                               -- ^ messages displayed at particular game ends
+                               -- ^ messages displayed at particular game ends;
+                               --   if no message, the screen is skipped
   , mdesc   :: Text            -- ^ description
   }
   deriving (Show, Generic)
@@ -163,11 +164,11 @@ horrorGroup = "horror"
 
 genericEndMessages :: EM.EnumMap Outcome Text
 genericEndMessages = EM.fromList
-  [ (Killed, "Let's hope another party can save the day!" )
+  [ (Killed, "Let's hope another try will save the day!" )
   , (Defeated, "Let's hope your new overlords let you live." )
   , (Camping, "See you soon, stronger and braver!" )
   , (Conquer, "Can it be done in a better style, though?" )
-  , (Escape, "Can it be done more swiftly, though?" )
+  , (Escape, "Can it be done more efficiently, though?" )
   , (Restart, "This time for real." ) ]
 
 -- | Catch invalid game mode kind definitions.
