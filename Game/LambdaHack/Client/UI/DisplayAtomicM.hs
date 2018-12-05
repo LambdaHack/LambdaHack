@@ -786,9 +786,13 @@ quitFactionUI fid toSt manalytics = do
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
           error $ "" `showFailure` (fid, toSt)
         Nothing -> Nothing  -- server wipes out Camping for savefile
-      partingPart = case toSt of
+      middlePart = case toSt of
         _ | fid /= side -> Nothing
         Just Status{stOutcome} -> EM.lookup stOutcome $ mendMsg mode
+        Nothing -> Nothing
+      partingPart = case toSt of
+        _ | fid /= side -> Nothing
+        Just Status{stOutcome} -> EM.lookup stOutcome genericEndMessages
         Nothing -> Nothing
   case startingPart of
     Nothing -> return ()
@@ -801,9 +805,14 @@ quitFactionUI fid toSt manalytics = do
             else do
               void $ displaySpaceEsc ColorFull ""
               return True
-      when (side == fid) recordHistory
+      recordHistory
         -- we are going to exit or restart, so record and clear, but only once
       when go $ do
+        case middlePart of
+          Nothing -> return ()
+          Just sp -> do
+            msgAdd sp
+            void $ displaySpaceEsc ColorFull ""
         (itemBag, total) <- getsState $ calculateTotal side
         case manalytics of
           Nothing -> return ()
