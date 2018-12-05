@@ -417,13 +417,13 @@ lookAtActors p lidV = do
   sactorUI <- getsSession sactorUI
   let inhabitantsUI =
         map (\(aid2, b2) -> (aid2, b2, sactorUI EM.! aid2)) inhabitants
-  itemToF <- getsState $ flip itemToFull
   factionD <- getsState sfactionD
   localTime <- getsState $ getLocalTime lidV
+  s <- getState
   let actorsBlurb = case inhabitants of
         [] -> ""
         (_, body) : rest ->
-          let itemFull = itemToF (btrunk body)
+          let itemFull = itemToFull (btrunk body) s
               bfact = factionD EM.! bfid body
               -- Even if it's the leader, give his proper name, not 'you'.
               subjects = map (\(_, _, bUI) -> partActor bUI)
@@ -437,7 +437,7 @@ lookAtActors p lidV = do
                 WWait _ -> "brace for impact"
                 WSleep -> "sleep here"
                 WWake -> "be waking up"
-              guardVerbs = guardItemVerbs body bfact
+              guardVerbs = guardItemVerbs body bfact s
               verbs = resideVerb : guardVerbs
               projDesc | not $ bproj body = ""
                        | otherwise =
@@ -492,8 +492,8 @@ lookAtActors p lidV = do
                                                         (head subjects) verbs]
   return $! actorsBlurb
 
-guardItemVerbs :: Actor -> Faction -> [MU.Part]
-guardItemVerbs body _fact =
+guardItemVerbs :: Actor -> Faction -> State -> [MU.Part]
+guardItemVerbs body _fact s =
   -- In reality, currently the client knows all the items
   -- in eqp and inv of the foe, but we may remove the knowledge
   -- in the future and, anyway, it would require a dedicated
@@ -502,7 +502,11 @@ guardItemVerbs body _fact =
   -- OTOH, shares stash is currently secret for other factions, so that
   -- case would never be triggered except for our own actors.
   -- We may want to relax that secrecy, but there are technical hurdles.
-  let itemsSize = EM.size (beqp body) + EM.size (binv body)
+  let toReport iid =
+        let itemKind = getIidKind iid s
+        in fromMaybe 0 (lookup "unreported inventory" (IK.ifreq itemKind)) <= 0
+      itemsSize = length $ filter toReport
+                  $ EM.keys (beqp body) ++ EM.keys (binv body)
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]
                       | otherwise = []
