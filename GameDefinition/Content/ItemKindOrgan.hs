@@ -340,7 +340,7 @@ rattleOrgan = armoredSkin
   { iname    = "rattle"
   , ifreq    = [("rattle", 100)]
   , iverbHit = "announce"
-  , iaspects = [ Timeout $ 10 + (1 `d` 3) * 10
+  , iaspects = [ Timeout $ 10 + (1 `d` 3) * 10  -- long, to limit spam
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [Yell, RefillCalm 5]
   , idesc    = ""
@@ -350,7 +350,7 @@ insectMortality = armoredSkin
   , ifreq    = [("insect mortality", 100)]
   , iverbHit = "age"
   , iaspects = [ AddSkill SkAggression 2  -- try to attack before you die
-               , Timeout $ 30 + (1 `d` 3) * 10
+               , Timeout $ 30 + (1 `d` 3) * 10  -- die very slowly
                , SetFlag Periodic, SetFlag Durable ]
   , ieffects = [RefillHP (-1), Yell]
   , idesc    = ""

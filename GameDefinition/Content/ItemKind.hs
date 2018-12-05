@@ -78,7 +78,8 @@ symbolFood       = ','  -- also body part; distinct from floor: not middle dot
 sandstoneRock = ItemKind
   { isymbol  = symbolProjectile
   , iname    = "sandstone rock"
-  , ifreq    = [("sandstone rock", 1)]
+  , ifreq    = [ ("sandstone rock", 1)
+               , ("unreported inventory", 1) ]  -- too weak to spam
   , iflavour = zipPlain [Green]
   , icount   = 1 + 1 `d` 2  -- > 1, to let AI ignore sole pieces
   , irarity  = [(1, 50), (10, 1)]
@@ -956,8 +957,8 @@ sharpeningTool = ItemKind
   }
 seeingItem = ItemKind
   { isymbol  = symbolFood
-  , iname    = "pupil"
-  , ifreq    = [("common item", 30)]  -- spooky and wierd, so rare
+  , iname    = "giant pupil"
+  , ifreq    = [("common item", 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -965,9 +966,13 @@ seeingItem = ItemKind
   , iweight  = 100
   , idamage  = 0
   , iaspects = [ Timeout 3
-               , AddSkill SkSight 10, AddSkill SkMaxCalm 30, AddSkill SkShine 2
+               , AddSkill SkSight 10  -- a spyglass for quick wields
+               , AddSkill SkMaxCalm 30  -- to diminish clipping sight by Calm
+               , AddSkill SkShine 2  -- to lit corridors when flying
                , SetFlag Periodic ]
-  , ieffects = [toOrganNoTimer "poisoned", Summon "mobile monster" 1]
+  , ieffects = [ Detect DetectActor 20  -- rare enough
+               , toOrganNoTimer "poisoned"  -- really can't be worn
+               , Summon "mobile monster" 1 ]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
@@ -1033,7 +1038,7 @@ necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
-               , Timeout $ (1 `d` 2) * 20
+               , Timeout $ (1 `d` 2) * 20  -- priceless, so worth the long wait
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [RefillHP 1]
@@ -1057,7 +1062,7 @@ necklace2 = necklaceTemplate
 necklace3 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ ELabel "of fearful listening"
-               , Timeout ((1 + 1 `d` 3) * 10)
+               , Timeout ((1 + 1 `d` 2) * 10)
                , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectActor 10  -- can be applied; destroys the item
