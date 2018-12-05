@@ -5,7 +5,7 @@ module Game.LambdaHack.Content.ModeKind
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , horrorGroup
+  , horrorGroup, genericEndMessages
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -35,6 +36,8 @@ data ModeKind = ModeKind
   , mfreq   :: Freqs ModeKind  -- ^ frequency within groups
   , mroster :: Roster          -- ^ players taking part in the game
   , mcaves  :: Caves           -- ^ arena of the game
+  , mendMsg :: EM.EnumMap Outcome Text
+                               -- ^ messages displayed at particular game ends
   , mdesc   :: Text            -- ^ description
   }
   deriving (Show, Generic)
@@ -157,6 +160,15 @@ instance NFData AutoLeader
 
 horrorGroup :: GroupName ItemKind
 horrorGroup = "horror"
+
+genericEndMessages :: EM.EnumMap Outcome Text
+genericEndMessages = EM.fromList
+  [ (Killed, "Let's hope another party can save the day!" )
+  , (Defeated, "Let's hope your new overlords let you live." )
+  , (Camping, "See you soon, stronger and braver!" )
+  , (Conquer, "Can it be done in a better style, though?" )
+  , (Escape, "Can it be done more swiftly, though?" )
+  , (Restart, "This time for real." ) ]
 
 -- | Catch invalid game mode kind definitions.
 validateSingle :: ModeKind -> [Text]

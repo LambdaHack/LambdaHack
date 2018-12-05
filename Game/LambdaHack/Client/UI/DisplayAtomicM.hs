@@ -772,38 +772,24 @@ quitFactionUI fid toSt manalytics = do
   when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
     tellGameClipPS
     resetGameStart
-  let msgIfSide _ | fid /= side = Nothing
-      msgIfSide s = Just s
-      (startingPart, partingPart) = case toSt of
-        _ | horror ->
-          -- Ignore summoned actors' factions.
-          (Nothing, Nothing)
-        Just Status{stOutcome=Killed} ->
-          ( Just "be eliminated"
-          , msgIfSide "Let's hope another party can save the day!" )
-        Just Status{stOutcome=Defeated} ->
-          ( Just "be decisively defeated"
-          , msgIfSide "Let's hope your new overlords let you live." )
-        Just Status{stOutcome=Camping} ->
-          ( Just "order save and exit"
-          , Just $ if fid == side
-                   then "See you soon, stronger and braver!"
-                   else "See you soon, stalwart warrior!" )
-        Just Status{stOutcome=Conquer} ->
-          ( Just "vanquish all foes"
-          , msgIfSide "Can it be done in a better style, though?" )
-        Just Status{stOutcome=Escape} ->
-          ( Just "achieve victory"
-          , msgIfSide "Can it be done better, though?" )
+  mode <- getGameMode
+  let startingPart = case toSt of
+        _ | horror -> Nothing  -- Ignore summoned actors' factions.
+        Just Status{stOutcome=Killed} -> Just "be eliminated"
+        Just Status{stOutcome=Defeated} -> Just "be decisively defeated"
+        Just Status{stOutcome=Camping} -> Just "order save and exit"
+        Just Status{stOutcome=Conquer} -> Just "vanquish all foes"
+        Just Status{stOutcome=Escape} -> Just "achieve victory"
         Just Status{stOutcome=Restart, stNewGame=Just gn} ->
-          ( Just $ MU.Text $ "order mission restart in"
-                             <+> fromGroupName gn <+> "mode"
-          , Just $ if fid == side
-                   then "This time for real."
-                   else "Somebody couldn't stand the heat." )
+          Just $ MU.Text $ "order mission restart in"
+                           <+> fromGroupName gn <+> "mode"
         Just Status{stOutcome=Restart, stNewGame=Nothing} ->
           error $ "" `showFailure` (fid, toSt)
-        Nothing -> (Nothing, Nothing)  -- server wipes out Camping for savefile
+        Nothing -> Nothing  -- server wipes out Camping for savefile
+      partingPart = case toSt of
+        _ | fid /= side -> Nothing
+        Just Status{stOutcome} -> EM.lookup stOutcome $ mendMsg mode
+        Nothing -> Nothing
   case startingPart of
     Nothing -> return ()
     Just sp -> msgAdd $ makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
