@@ -455,10 +455,10 @@ flask12 = flaskTemplate
   , iaspects = ELabel "of bait cocktail"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "drunk" (20 + 1 `d` 5)
-               , Burn 1, RefillHP 3  -- mild exploit possible, good
+               , Burn 1, RefillHP 3  -- risky exploit possible, good
                , Summon "mobile animal" 1
                , OnSmash (Summon "mobile animal" 1)
-               , OnSmash Impress
+               , OnSmash Impress  -- mildly useful when thrown
                , OnSmash (Explode "waste") ]
   }
 -- The player has full control over throwing the flask at his party,
@@ -1048,9 +1048,9 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ DropItem 1 3 COrgan "condition"  -- mildly useful for applying
+  , ieffects = [ DropItem 1 3 COrgan "condition"  -- mildly useful when applied
                , Impress
-               , Summon "mobile animal" $ 1 `d` 2
+               , Summon "mobile animal" $ 1 `dL` 2
                , Explode "waste" ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
