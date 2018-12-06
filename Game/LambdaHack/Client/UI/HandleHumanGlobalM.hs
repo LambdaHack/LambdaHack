@@ -409,7 +409,7 @@ displaceAid target = do
        && actorDying tb ->
        failSer DisplaceDying
      | not (bproj tb) && atWar
-       && waitedLastTurn tb ->
+       && actorWaits tb ->
        failSer DisplaceBraced
      | not (bproj tb) && atWar
        && immobile && not dozes ->  -- roots weak if the tree sleeps

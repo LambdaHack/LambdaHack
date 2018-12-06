@@ -865,7 +865,7 @@ displaceFoe aid = do
       walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
-        boldpos body /= Just p || waitedLastTurn body
+        boldpos body /= Just p || actorWaits body
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
       qualifyActor (aid2, body2) = do
@@ -914,7 +914,7 @@ displaceTgt source tpos retry = do
   let walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
       notLooping body p =  -- avoid displace loops
-        boldpos body /= Just p || waitedLastTurn body
+        boldpos body /= Just p || actorWaits body
   if walkable tpos && notLooping b tpos then do
     mleader <- getsClient sleader
     case posToAidsLvl tpos lvl of
@@ -932,7 +932,7 @@ displaceTgt source tpos retry = do
               || bwatch b2 `elem` [WSleep, WWake]  -- friend sleeps, not cares
               || retry  -- desperate
                  && not (boldpos b == Just tpos  -- and no displace loop
-                         && not (waitedLastTurn b))
+                         && not (actorWaits b))
               || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) ->
                  -- he doesn't have Enemy target and I have, so push him aside,
                  -- because, for heroes, he will never be a leader, so he can't
@@ -1025,7 +1025,7 @@ moveOrRunAid source dir = do
   let walkable =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` tpos)
       notLooping body p =  -- avoid displace loops
-        boldpos body /= Just p || waitedLastTurn body
+        boldpos body /= Just p || actorWaits body
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos

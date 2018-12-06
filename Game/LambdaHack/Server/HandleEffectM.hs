@@ -830,7 +830,7 @@ effectAscend recursiveCall execSfx up source target pos = do
   let lid1 = blid b1
   destinations <- getsState $ whereTo lid1 pos up . sdungeon
   sb <- getsState $ getActorBody source
-  if | waitedLastTurn b1 -> do
+  if | actorWaits b1 -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
        return UseId
      | null destinations -> do
@@ -1140,7 +1140,7 @@ effectTeleport execSfx nDm source target = do
       execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
       return UseId
     Just tpos ->
-      if | waitedLastTurn tb -> do
+      if | actorWaits tb -> do
            execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
            return UseId
          | otherwise -> do
@@ -1593,7 +1593,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
   if bhp tb <= 0  -- avoid dragging around corpses
      || bproj tb && isEmbed then  -- fyling projectiles can't slip on the floor
     return UseDud  -- the impact never manifested
-  else if waitedLastTurn tb && isNothing (btrajectory tb) then do
+  else if actorWaits tb && isNothing (btrajectory tb) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
     return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do

@@ -316,7 +316,7 @@ regenCalmDelta aid body s =
       isHeardFoe (!p, aid2) =
         let b = getActorBody aid2 s
         in inline chessDist p (bpos body) <= 3
-           && not (waitedOrSleptLastTurn b)  -- uncommon
+           && not (actorWaitsOrSleeps b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
       actorMildlyDistressed = not $ deltaBenign $ bcalmDelta body
   in if | any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body ->
@@ -355,7 +355,7 @@ dispEnemy source target actorMaxSk s =
       dozes = bwatch tb `elem` [WSleep, WWake]
   in bproj tb
      || not (actorDying tb
-             || waitedLastTurn tb
+             || actorWaits tb
              || Ability.getSk Ability.SkMove actorMaxSk <= 0
                 && not dozes  -- roots weak if the tree sleeps
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible

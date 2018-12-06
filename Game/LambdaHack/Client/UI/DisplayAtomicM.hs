@@ -209,7 +209,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
            let closeFoe (!p, aid2) =  -- mimics isHeardFoe
                  let b = getActorBody aid2 s
                  in inline chessDist p (bpos body) <= 3
-                    && not (waitedOrSleptLastTurn b)  -- uncommon
+                    && not (actorWaitsOrSleeps b)  -- uncommon
                     && inline isFoe side fact (bfid b)  -- costly
                anyCloseFoes = any closeFoe $ EM.assocs $ lbig
                                            $ sdungeon s EM.! blid body
@@ -1411,17 +1411,17 @@ strike catch source target iid cstore = assert (source /= target) $ do
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
-                  then if waitedLastTurn tb
+                  then if actorWaits tb
                        then "deflect it"
                        else "fend it off"  -- ward it off
-                  else if waitedLastTurn tb
+                  else if actorWaits tb
                        then "block"
                        else "parry"
               howWell =
                 if | hurtMult >= 50 ->  -- braced or big bonuses
                      if bproj sb then "clumsily" else "partly"
                    | hurtMult > 1 ->  -- braced and/or huge bonuses
-                     if waitedLastTurn tb then "doggedly" else "nonchalantly"
+                     if actorWaits tb then "doggedly" else "nonchalantly"
                    | otherwise ->         -- 1% got through, which can
                      "almost completely"  -- still be deadly, if fast missile
               withWhat | null eqpAndOrgArmor = []

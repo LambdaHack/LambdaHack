@@ -409,9 +409,10 @@ reqMeleeChecked voluntary source target iid cstore = do
           _ -> return ()
     -- Only catch if braced. Never steal trunk from an already caught
     -- projectile or one with many items inside.
-    if bproj tb && EM.size (beqp tb) == 1
+    if bproj tb
+       && EM.size (beqp tb) == 1
        && not (IA.checkFlag Ability.Blast arTrunk)
-       && waitedLastTurn sb then do
+       && actorWaits sb then do  -- TODO: this is wrong
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
       -- and the weapon (organ) is never destroyed, even if not durable.

@@ -294,7 +294,7 @@ leadLevelSwitch = do
             body <- getsState $ getActorBody leader
             let !_A = assert (fid == bfid body) ()
             s <- getsServer $ (EM.! fid) . sclientStates
-            let leaderStuck = waitedLastTurn body
+            let leaderStuck = actorWaits body
                 oursRaw =
                   [ (lid, (allSeen, as))
                   | (lid, lvl) <- EM.assocs $ sdungeon s

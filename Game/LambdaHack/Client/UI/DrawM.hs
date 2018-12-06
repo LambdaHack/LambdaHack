@@ -605,7 +605,7 @@ drawLeaderStatus waitT = do
                      <> (if bdark then slashPick else "/")
                      <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxCalm
                                                          actorMaxSk)
-          bracePick | waitedLastTurn b = "}"
+          bracePick | actorWaits b = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick

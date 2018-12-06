@@ -93,7 +93,7 @@ pickActorToMove maidToAvoid = do
             -- but it's also a rather fun exploit and a straightforward
             -- consequence of the game mechanics, so it's OK for now
           goodGeneric ((aid, b), Just tgt) = case maidToAvoid of
-            Nothing | not (aid == oldAid && waitedLastTurn b) ->
+            Nothing | not (aid == oldAid && actorWaits b) ->
               -- Not the old leader that was stuck last turn
               -- because he is likely to be still stuck.
               Just ((aid, b), tgt)

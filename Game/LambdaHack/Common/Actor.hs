@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltaSerious, deltaHears, deltaBenign, actorCanMelee
-  , gearSpeed, actorTemplate, waitedLastTurn, waitedOrSleptLastTurn, actorDying
+  , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
     -- * Assorted
@@ -130,24 +130,24 @@ actorTemplate :: ItemId -> Int64 -> Int64 -> Point -> LevelId -> FactionId
 actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
   let btrajectory = Nothing
       boldpos = Nothing
-      borgan  = EM.empty
-      beqp    = EM.empty
-      binv    = EM.empty
+      borgan = EM.empty
+      beqp = EM.empty
+      binv = EM.empty
       bweapon = 0
-      bwatch  = WWatch  -- overriden elsewhere, sometimes
+      bwatch = WWatch  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
   in Actor{..}
 
-waitedLastTurn :: Actor -> Bool
-{-# INLINE waitedLastTurn #-}
-waitedLastTurn b = case bwatch b of
+actorWaits :: Actor -> Bool
+{-# INLINE actorWaits #-}
+actorWaits b = case bwatch b of
   WWait{} -> True
   _ -> False
 
-waitedOrSleptLastTurn :: Actor -> Bool
-{-# INLINE waitedOrSleptLastTurn #-}
-waitedOrSleptLastTurn b = case bwatch b of
+actorWaitsOrSleeps :: Actor -> Bool
+{-# INLINE actorWaitsOrSleeps #-}
+actorWaitsOrSleeps b = case bwatch b of
   WWait{} -> True
   WSleep -> True
   _ -> False

@@ -212,10 +212,10 @@ computeTarget aid = do
       desirableBagFloor bag = any desirableIid $ EM.assocs bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
       focused = gearSpeed actorMaxSk < speedWalk || condHpTooLow
-      couldMoveLastTurn =
+      couldMoveLastTurn =  -- approximated; could have changed
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in Ability.getSk Ability.SkMove actorSk > 0
-      isStuck = waitedLastTurn b && couldMoveLastTurn
+      isStuck = actorWaits b && couldMoveLastTurn
       slackTactic =
         ftactic (gplayer fact)
           `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
