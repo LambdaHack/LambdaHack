@@ -29,9 +29,9 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket]
 
-sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammer, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket :: ItemKind
+sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, sharpeningTool, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, dagger, daggerDropBestWeapon, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, wandTemplate, wand1, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket :: ItemKind
 
 -- Keep the dice rolls and sides in aspects small so that not too many
 -- distinct items are generated (for display in item lore and for narrative
@@ -1028,7 +1028,7 @@ necklaceTemplate = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
-  , iaspects = Timeout 1  -- fake, but won't be displayed
+  , iaspects = Timeout 1  -- fake, but won't be displayed thanks to periodic
                : iaspects_necklaceTemplate
   , ieffects = []
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
@@ -1285,7 +1285,7 @@ armorMail = armorLeather
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorRanged ]
   , ieffects = []
-  , idesc    = "A long shirt with tiny iron rings sewn into it. Discourages foes from attacking your torso, especially with ranged weapons, which can't pierce the rings and nor aim between them. The thick fabric is hard to wash, though."
+  , idesc    = "A long shirt with tiny iron rings sewn into it. Discourages foes from attacking your torso, especially with ranged weapons, which can't pierce the rings nor aim between them. The stiff fabric is hard to wash, though."
   }
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
@@ -1488,17 +1488,10 @@ daggerDropBestWeapon = dagger
                                        -- noise and useless against stupid foes
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade."
   }
-iaspects_hammerTemplate :: [Aspect]
-iaspects_hammerTemplate =
-  [ HideAs "hammer unknown"
-  , SetFlag Durable, SetFlag Meleeable
-  , EqpSlot EqpSlotWeapon
-  , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
-hammer = ItemKind
+hammerTemplate = ItemKind
   { isymbol  = symbolHafted
   , iname    = "war hammer"
-  , ifreq    = [ ("common item", 100), ("starting weapon", 100)
-               , ("hammer unknown", 1) ]
+  , ifreq    = [("hammer unknown", 1)]
   , iflavour = zipFancy [BrMagenta]  -- avoid "pink"
   , icount   = 1
   , irarity  = [(5, 20), (8, 1)]
@@ -1507,38 +1500,45 @@ hammer = ItemKind
   , idamage  = 8 `d` 1  -- we are lying about the dice here, but the dungeon
                         -- is too small and the extra-dice hammers too rare
                         -- to subdivide this identification class by dice
-  , iaspects = [Timeout 5]
-               ++ iaspects_hammerTemplate
+  , iaspects = [ HideAs "hammer unknown"
+               , SetFlag Durable, SetFlag Meleeable
+               , EqpSlot EqpSlotWeapon
+               , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
   , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
   , ikit     = []
   }
-hammer2 = hammer
+hammer1 = hammerTemplate
+  { ifreq    = [("common item", 100), ("starting weapon", 100)]
+  , iaspects = [Timeout 5]
+               ++ iaspects hammerTemplate
+  }
+hammer2 = hammerTemplate
   { ifreq    = [("common item", 10), ("starting weapon", 1)]
   , iweight  = 1000
   , iaspects = [Timeout 3]
-               ++ iaspects_hammerTemplate
+               ++ iaspects hammerTemplate
   , idesc    = "Upon closer inspection, this hammer turns out particularly handy and well balanced, with one thick and sturdy and two long and sharp points compensating the modest heft."
   }
-hammer3 = hammer
-  { ifreq    = [("common item", 3)]
+hammer3 = hammerTemplate
+  { ifreq    = [("common item", 3), ("starting weapon", 1)]
   , iweight  = 2400
   , idamage  = 12 `d` 1
   , iaspects = [Timeout 7]
-               ++ iaspects_hammerTemplate
+               ++ iaspects hammerTemplate
   , idesc    = "This hammer sports a long metal handle that increases durability and momentum of the sharpened head's swing, at the cost of longer recovery."
   }
-hammerParalyze = hammer
+hammerParalyze = hammerTemplate
   { iname    = "Brute Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [ SetFlag Unique
                , Timeout 7 ]
-               ++ iaspects_hammerTemplate
+               ++ iaspects hammerTemplate
   , ieffects = [Paralyze 10]
   , idesc    = "A huge shapeless lump of steel on a sturdy pole. Nobody remains standing when this head connects."
   }
-hammerSpark = hammer
+hammerSpark = hammerTemplate
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
@@ -1547,7 +1547,7 @@ hammerSpark = hammer
   , iaspects = [ SetFlag Unique
                , Timeout 10
                , AddSkill SkShine 3]
-               ++ iaspects_hammerTemplate
+               ++ iaspects hammerTemplate
   , ieffects = [Explode "spark"]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
