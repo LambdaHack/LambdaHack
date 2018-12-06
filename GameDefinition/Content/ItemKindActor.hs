@@ -234,7 +234,7 @@ elbow = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
-  , ikit     = [ ("speed gland 5", COrgan), ("armored skin", COrgan)
+  , ikit     = [ ("speed gland 5", COrgan), ("bark", COrgan)
                , ("vision 12", COrgan), ("ear 8", COrgan)
                    -- too powerful to get stronger sight
                , ("sapient brain", COrgan)
@@ -564,7 +564,7 @@ thornbush = ItemKind
   , ieffects = []
   , idesc    = "Each branch bears long, curved thorns."
   , ikit     = [ ("thorn", COrgan)  -- after all run out, it's weaponless
-               , ("armored skin", COrgan) ]
+               , ("bark", COrgan) ]
   }
 geyserBoiling = ItemKind
   { isymbol  = 'g'
