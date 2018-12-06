@@ -477,8 +477,8 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
             bproj fid pos lid tweakBody = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let arItem = itemAspect itemDisco
-      trunkMaxHP = IA.getSkill Ability.SkMaxHP arItem
-      hp = xM $ max 1 $ trunkMaxHP `div` 2
+      trunkMaxHP = max 2 $ IA.getSkill Ability.SkMaxHP arItem
+      hp = xM trunkMaxHP `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
       calm = xM (max 0 $ IA.getSkill Ability.SkMaxCalm arItem)
