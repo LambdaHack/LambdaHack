@@ -809,7 +809,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   let fromC = CActor aid fromCStore
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
   toC <- case toCStore of
-    CGround -> pickDroppable aid b
+    CGround -> pickDroppable False aid b  -- drop over fog, etc.
     _ -> return $! CActor aid toCStore
   bagBefore <- getsState $ getContainerBag toC
   if

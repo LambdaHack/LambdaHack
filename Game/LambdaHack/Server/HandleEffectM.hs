@@ -1309,15 +1309,15 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
     effectAndDestroyAndAddKill
       voluntary aid False aid aid iid c False effs (itemFull, kit)
   else do
-    cDrop <- pickDroppable aid b
+    cDrop <- pickDroppable False aid b  -- drop over fog, etc.
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
 
-pickDroppable :: MonadStateRead m => ActorId -> Actor -> m Container
-pickDroppable aid b = do
+pickDroppable :: MonadStateRead m => Bool -> ActorId -> Actor -> m Container
+pickDroppable respectNoItem aid b = do
   cops@COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel (blid b)
-  let validTile t = not $ Tile.isNoItem coTileSpeedup t
+  let validTile t = not (respectNoItem && Tile.isNoItem coTileSpeedup t)
   if validTile $ lvl `at` bpos b
   then return $! CActor aid CGround
   else do
