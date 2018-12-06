@@ -943,14 +943,18 @@ discover c iid = do
   bag <- getsState $ getContainerBag c
   side <- getsClient sside
   factionD <- getsState sfactionD
-  (isOurOrgan, nameWhere) <- case c of
+  (noMsg, nameWhere) <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
       bOwnerUI <- getsSession $ getActorUI aidOwner
       let name = if bproj bOwner || bfid bOwner == side
                  then []
                  else ppCStoreWownW True storeOwner (partActor bOwnerUI)
-      return (bfid bOwner == side && storeOwner == COrgan, name)
+          isOurOrgan = bfid bOwner == side && storeOwner == COrgan
+            -- assume own faction organs known intuitively
+      return (isOurOrgan, name)
+    CTrunk _ _ p | p == originPoint -> return (True, [])
+      -- the special reveal at game over, using fake @CTrunk@; don't spam
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       knownName = partItemMediumAW side factionD localTime itemFull kit
@@ -962,8 +966,7 @@ discover c iid = do
       unknownName = MU.Phrase $ [MU.Text flav, MU.Text name] ++ nameWhere
       msg = makeSentence
         ["the", MU.SubjectVerbSg unknownName "turn out to be", knownName]
-  unless (globalTime == timeZero  -- don't spam about initial equipment
-          || isOurOrgan) $  -- assume own faction organs known intuitively
+  unless (noMsg || globalTime == timeZero) $  -- no spam about initial equipment
     msgAdd msg
 
 ppHearMsg :: MonadClientUI m => HearMsg -> m Text
