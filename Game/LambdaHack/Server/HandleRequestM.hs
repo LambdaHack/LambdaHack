@@ -13,10 +13,10 @@ module Game.LambdaHack.Server.HandleRequestM
   , reqGameDropAndExit, reqGameSaveAndExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , execFailure, setBWait, managePerRequest, handleRequestTimedCases
-  , affectSmell, reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
-  , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem
-  , reqProject, reqApply
+  , execFailure, checkWaiting, processWatchfulness, managePerRequest
+  , handleRequestTimedCases, affectSmell, reqMove, reqMelee, reqMeleeChecked
+  , reqDisplace, reqAlter, reqWait, reqWait10, reqYell, reqMoveItems
+  , reqMoveItem, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
   ) where
@@ -105,20 +105,21 @@ handleRequestUI fid aid cmd = case cmd of
   ReqUIAutomate -> reqAutomate fid >> return Nothing
   ReqUINop -> return Nothing
 
+checkWaiting :: RequestTimed -> Maybe Bool
+checkWaiting cmd = case cmd of
+  ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
+  ReqWait10 -> Just False  -- false wait, only one clip at a time
+  _ -> Nothing
+
 -- | This is a shorthand. Instead of setting @bwatch@ in @ReqWait@
--- and unsetting in all other requests, we call this once before
+-- and unsetting in all other requests, we call this once after
 -- executing a request.
--- In the result, we collect the number of server requests pertaining
+-- In game state, we collect the number of server requests pertaining
 -- to the actor (the number of actor's "moves"), through which
 -- the actor was waiting.
-setBWait :: MonadServerAtomic m
-         => RequestTimed -> ActorId -> Actor -> m (Maybe Bool)
-{-# INLINE setBWait #-}
-setBWait cmd aid b = do
-  let mwait = case cmd of
-        ReqWait -> Just True  -- true wait, with bracing, no overhead, etc.
-        ReqWait10 -> Just False  -- false wait, only one clip at a time
-        _ -> Nothing
+processWatchfulness :: MonadServerAtomic m
+                    => Maybe Bool -> ActorId -> Actor -> m ()
+processWatchfulness mwait aid b = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
@@ -136,11 +137,11 @@ setBWait cmd aid b = do
              -- 10-level run, 10HP would be gained, so weak actors would wake up
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
-    WWait 0 -> case cmd of  -- actor couldn't brace last time
-      ReqWait -> return ()  -- if he still waits, keep him stuck unbraced
+    WWait 0 -> case mwait of  -- actor couldn't brace last time
+      Just True -> return ()  -- if he still waits, keep him stuck unbraced
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
-    WWait n -> case cmd of
-      ReqWait ->  -- only proper wait prevents switching to watchfulness
+    WWait n -> case mwait of
+      Just True ->  -- only proper wait prevents switching to watchfulness
         if n >= 100 then  -- enough dozing to fall asleep
           if not uneasy  -- won't wake up at once
              && canSleep actorMaxSk  -- enough skills
@@ -165,13 +166,12 @@ setBWait cmd aid b = do
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
         else
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
-  return mwait
 
 handleRequestTimed :: MonadServerAtomic m
                    => FactionId -> ActorId -> RequestTimed -> m Bool
 handleRequestTimed fid aid cmd = do
+  let mwait = checkWaiting cmd
   b <- getsState $ getActorBody aid
-  mwait <- setBWait cmd aid b
   -- Note that only the ordinary 1-turn wait eliminates overhead.
   -- The more fine-graned waits don't make actors braced and induce
   -- overhead, so that they have some drawbacks in addition to the
@@ -181,6 +181,10 @@ handleRequestTimed fid aid cmd = do
   advanceTime aid (if mwait == Just False then 10 else 100) True
   handleRequestTimedCases aid cmd
   managePerRequest aid
+  -- Note that due to the order, actor was still braced or sleeping
+  -- throughout request processing, etc. So, if he hits himself kinetically,
+  -- his armor from bracing previous turn is still in effect.
+  processWatchfulness mwait aid b
   return $! isNothing mwait  -- for speed, we report if @cmd@ harmless
 
 -- | Clear deltas for Calm and HP for proper UI display and AI hints.
@@ -412,7 +416,8 @@ reqMeleeChecked voluntary source target iid cstore = do
     if bproj tb
        && EM.size (beqp tb) == 1
        && not (IA.checkFlag Ability.Blast arTrunk)
-       && actorWaits sb then do  -- TODO: this is wrong
+       && actorWaits sb  -- still valid while request being processed
+    then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
       -- and the weapon (organ) is never destroyed, even if not durable.
@@ -731,7 +736,7 @@ reqAlterFail voluntary source tpos = do
 
 -- | Do nothing. Wait skill 1 required. Bracing requires 2, sleep 3, lurking 4.
 --
--- Something is sometimes done in 'setBWait'.
+-- Something is sometimes done in 'setWatchfulness'.
 reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
 reqWait source = do
@@ -743,7 +748,7 @@ reqWait source = do
 
 -- | Do nothing.
 --
--- Something is sometimes done in 'setBWait'.
+-- Something is sometimes done in 'setWatchfulness'.
 reqWait10 :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait10 #-}
 reqWait10 source = do
@@ -766,7 +771,7 @@ reqYell source = do
   actorSk <- currentSkillsServer source
   if | Ability.getSk Ability.SkWait actorSk > 0 ->
        -- Last yawn before waking up is displayed as a yell, but that's fine.
-       -- To fix that, we'd need to move the @SfxTaunt@ to @setBWait@.
+       -- To fix that, we'd need to move the @SfxTaunt@ to @setWatchfulness@.
        execSfxAtomic $ SfxTaunt True source
      | Ability.getSk Ability.SkMove actorSk <= 0
        || Ability.getSk Ability.SkDisplace actorSk <= 0
