@@ -148,8 +148,8 @@ spreadConcussion = ItemKind
                , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , DropItem 1 maxBound COrgan "condition"
-               , toOrganBad "immobile" (2 + 1 `d` 2)   -- no balance
-               , toOrganBad "deafened" (20 + 1 `d` 5) ]
+               , toOrganBad "immobile" 3  -- no balance
+               , toOrganBad "deafened" 23 ]
   , idesc    = ""
   , ikit     = []
   }
@@ -274,7 +274,7 @@ fragrance = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [Impress, toOrganGood "rose-smelling" (40 + 1 `d` 20)]
+  , ieffects = [Impress, toOrganGood "rose-smelling" 45]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
   -- before actor turn's end (e.g., via a necklace).
   , idesc    = "A pleasant scent."
@@ -528,7 +528,7 @@ denseShower = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "strengthened" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood "strengthened" 5]
   , idesc    = "A thick rain of droplets."
   , ikit     = []
   }
@@ -543,7 +543,7 @@ sparseShower = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "weakened" (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad "weakened" 7]
   , idesc    = "Light droplets that cling to clothing."
   , ikit     = []
   }
