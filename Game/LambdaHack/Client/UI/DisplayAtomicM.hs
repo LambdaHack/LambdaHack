@@ -1304,22 +1304,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
-      bagAfter <- getsState $ getBodyStoreBag b cstore
       let kit = (1, [])
           (name, powers) = partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
-          oldDelta = case iid `EM.lookup` bagAfter of
-            Just (_, timerAfter : _) ->
-              let totalDelta = timeDeltaToFrom timerAfter localTime
-              in timeDeltaSubtract totalDelta delta
-            _ -> Delta timeZero
       return $! makeSentence $
-        ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last longer"]
-        ++ [ MU.Text $ "(" <> tshow (timeDeltaInSeconds oldDelta) <> "s + "
-                       <> tshow (timeDeltaInSeconds delta) <> "s)"
-           | oldDelta /= Delta timeZero ]
+        ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
+        ++ [MU.Text $ tshow (timeDeltaInSeconds delta) <> "s"] ++ ["longer"]
     else return ""
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid
