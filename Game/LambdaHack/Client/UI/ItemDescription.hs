@@ -77,7 +77,9 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
            ++ take maxWordsToShow powerTs
            ++ ["(...)" | length powerTs > maxWordsToShow && maxWordsToShow > 0]
            ++ [charges | maxWordsToShow > 1]
-      name | temporary = "temporarily" <+> IK.iname itemKind
+      name | temporary =
+             let adj = if timeout == 0 then "temporarily" else "impermanent"
+             in adj <+> IK.iname itemKind
            | itemSuspect = flav <+> IK.iname itemKind
            | otherwise = IK.iname itemKind
       capName = if IA.checkFlag Ability.Unique arItem
@@ -127,18 +129,21 @@ textAllPowers detailLevel skipRecharging
                         $ map (ppE . unSmash) smashEffs
             rechargingTs = T.intercalate " " $ filter (not . T.null)
                            $ damageText : map ppE noSmashEffs
+            fragile = IA.checkFlag Ability.Fragile arItem
             periodicText =
               if | skipRecharging || T.null rechargingTs -> ""
-                 | periodic -> case mtimeout of
-                     Nothing | IA.checkFlag Ability.Fragile arItem ->
+                 | periodic -> case (mtimeout, fragile) of
+                     (Nothing, True) ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
-                     Nothing ->
+                     (Nothing, False) ->
                        "(each turn:" <+> rechargingTs <> ")"
                          -- timeout 0, so it just fires each turn and it's not
                          -- fragile, so a copy is not destroyed each turn
-                     Just (IK.Timeout t) ->
+                     (Just (IK.Timeout t), True) ->
+                       "(every" <+> reduce_a t <+> "until gone:"
+                       <+> rechargingTs <> ")"
+                     (Just (IK.Timeout t), False) ->
                        "(every" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
-                         -- if also fragile, eventually runs out, but TMI
                      _ -> error $ "" `showFailure` mtimeout
                  | otherwise -> ""
             ppERestEs = if periodic then [periodicText] else map ppE noSmashEffs
@@ -165,11 +170,11 @@ textAllPowers detailLevel skipRecharging
               Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
-       in if periodic then [] else [damageText, timeoutText]
-           ++ if detLev >= DetailHigh
-                 || detLev >= DetailMedium && T.null elab
-              then aes ++ [onSmash | detLev >= DetailAll]
-              else []
+       in (if periodic then [] else [damageText, timeoutText])
+          ++ if detLev >= DetailHigh
+                || detLev >= DetailMedium && T.null elab
+             then aes ++ [onSmash | detLev >= DetailAll]
+             else []
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
       dmg = Dice.meanDice $ IK.idamage itemKind
