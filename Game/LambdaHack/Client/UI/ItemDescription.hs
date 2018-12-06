@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.ItemDescription
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , show64With2, partItemN, textAllPowers, partItemWsR
+  , partItemN, textAllPowers, partItemWsR
 #endif
   ) where
 
@@ -14,7 +14,6 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Int (Int64)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -31,16 +30,6 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
-
-show64With2 :: Int64 -> Text
-show64With2 n =
-  let k = 100 * n `div` oneM
-      l = k `div` 100
-      x = k - l * 100
-  in tshow l
-     <> if | x == 0 -> ""
-           | x < 10 -> ".0" <> tshow x
-           | otherwise -> "." <> tshow x
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show.

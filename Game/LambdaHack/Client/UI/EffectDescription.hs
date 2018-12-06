@@ -66,16 +66,14 @@ effectToSuffix detailLevel effect =
             Nothing -> tshow dice <+> "* 0.05s"
             Just p ->
               let dt = timeDeltaScale (Delta timeClip) p
-                  seconds = timeDeltaInSeconds dt
-              in T.take 7 (tshow seconds) <> "s"
+              in timeDeltaInSecondsText dt
       in "of paralysis for" <+> time
     ParalyzeInWater dice ->
       let time = case Dice.reduceDice dice of
             Nothing -> tshow dice <+> "* 0.05s"
             Just p ->
               let dt = timeDeltaScale (Delta timeClip) p
-                  seconds = timeDeltaInSeconds dt
-              in T.take 7 (tshow seconds) <> "s"
+              in timeDeltaInSecondsText dt
       in "of retardation for" <+> time
     InsertMove dice ->
       let moves = case Dice.reduceDice dice of

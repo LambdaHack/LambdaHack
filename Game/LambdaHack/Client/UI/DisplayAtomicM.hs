@@ -1311,7 +1311,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
       return $! makeSentence $
         ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
-        ++ [MU.Text $ tshow (timeDeltaInSeconds delta) <> "s"] ++ ["longer"]
+        ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"]
     else return ""
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid

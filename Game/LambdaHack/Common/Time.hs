@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Time
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
   , timeDeltaReverse, timeDeltaScale, timeDeltaPercent, timeDeltaDiv
-  , timeDeltaToDigit, timeDeltaInSeconds
+  , timeDeltaToDigit, timeDeltaInSecondsText
   , Speed, toSpeed, fromSpeed, minSpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, speedAdd
@@ -24,6 +24,8 @@ import Game.LambdaHack.Common.Prelude
 import           Data.Binary
 import qualified Data.Char as Char
 import           Data.Int (Int64)
+
+import Game.LambdaHack.Common.Misc
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
@@ -154,9 +156,12 @@ timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
             | otherwise = Char.intToDigit $ fromEnum k
   in digit
 
-timeDeltaInSeconds :: Delta Time -> Double
-timeDeltaInSeconds (Delta (Time dt)) =
-  fromIntegral dt / fromIntegral (timeTicks timeSecond)
+-- @oneM@ times the number of seconds represented by the time delta
+timeDeltaInSeconds :: Delta Time -> Int64
+timeDeltaInSeconds (Delta (Time dt)) = oneM * dt `div` timeTicks timeSecond
+
+timeDeltaInSecondsText :: Delta Time -> Text
+timeDeltaInSecondsText delta = show64With2 (timeDeltaInSeconds delta) <> "s"
 
 -- | Speed in meters per 1 million seconds (m/Ms).
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)

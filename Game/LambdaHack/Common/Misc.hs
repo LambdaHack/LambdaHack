@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Misc
     -- * Assorted
   , GroupName
   , toGroupName, fromGroupName, makePhrase, makeSentence, squashedWWandW
-  , appDataDir, xM, xD, minusM, minusM1, minusM2, oneM, tenthM
+  , appDataDir, xM, xD, minusM, minusM1, minusM2, oneM, tenthM, show64With2
   , workaroundOnMainThreadMVar
   ) where
 
@@ -111,6 +111,16 @@ minusM1 = xM (-1) - 1
 minusM2 = xM (-1) - 2
 oneM = xM 1
 tenthM = 100000
+
+show64With2 :: Int64 -> Text
+show64With2 n =
+  let k = 100 * n `div` oneM
+      l = k `div` 100
+      x = k - l * 100
+  in tshow l
+     <> if | x == 0 -> ""
+           | x < 10 -> ".0" <> tshow x
+           | otherwise -> "." <> tshow x
 
 -- Global variable for passing the action to run on main thread, if any.
 workaroundOnMainThreadMVar :: MVar (IO ())
