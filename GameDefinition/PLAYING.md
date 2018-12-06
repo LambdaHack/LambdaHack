@@ -6,13 +6,13 @@ The following blurb is a copy of the game intro screen.
 LambdaHack is a small dungeon crawler illustrating the roguelike game engine
 of the same name. Playing the game involves exploring spooky dungeons,
 alone or in a party of fearless explorers, avoiding and setting up ambushes,
-hiding in shadows from the gaze of unspeakable horrors, discovering
-secret passages and gorgeous magical treasure and making creative use
-of it all.
+hiding in shadows from the gaze of unspeakable horrors, discovering secret
+passages and gorgeous magical treasure and making creative use of it all.
 
 The madness-inspiring abominations that multiply in the depths perform
-the same feats, due to their aberrant, abstract hyper-intelligence,
-Count on them to tirelessly chase the elusive heroes by sight, sound and smell.
+the same feats, due to their aberrant, abstract hyper-intelligence.
+They look out for any sign of weakness or indecision, ready to tirelessly
+chase the elusive heroes by sight, sound and smell.
 
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
@@ -267,7 +267,7 @@ known, guesses are based on averages for the item kind in question.
 The displayed figures are rounded, but the game internally keeps track
 of minute fractions of HP.
 
-The stress of combat drains Calm, gradually limiting the use of items and,
+The stress of combat drains Calm, gradually limiting viewing radius and,
 if Calm reaches zero and the actor is sufficiently impressed by his foes,
 making him defect and surrender to their domination.
 Whenever the monster's or hero's hit points reach zero,
