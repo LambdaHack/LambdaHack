@@ -1365,7 +1365,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
-        sleepy = if bwatch tb `elem` [WSleep, WWake] then "a sleepy" else ""
+        sleepy = if bwatch tb `elem` [WSleep, WWake] then "the sleepy" else ""
         -- In the case of forceful hit, we mention neither attacker's bonuses
         -- nor victim's maluses. The player may indeed be left guessing.
         subtly = if IK.idamage (itemKind itemFullWeapon) == 0
