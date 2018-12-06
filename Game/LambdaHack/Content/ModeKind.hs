@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
-import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
@@ -36,7 +35,7 @@ data ModeKind = ModeKind
   , mfreq   :: Freqs ModeKind  -- ^ frequency within groups
   , mroster :: Roster          -- ^ players taking part in the game
   , mcaves  :: Caves           -- ^ arena of the game
-  , mendMsg :: EM.EnumMap Outcome Text
+  , mendMsg :: [(Outcome, Text)]
                                -- ^ messages displayed at particular game ends;
                                --   if no message, the screen is skipped
   , mdesc   :: Text            -- ^ description
@@ -162,8 +161,8 @@ instance NFData AutoLeader
 horrorGroup :: GroupName ItemKind
 horrorGroup = "horror"
 
-genericEndMessages :: EM.EnumMap Outcome Text
-genericEndMessages = EM.fromList
+genericEndMessages :: [(Outcome, Text)]
+genericEndMessages =
   [ (Killed, "Let's hope another try will save the day!" )
   , (Defeated, "Let's hope your new overlords let you live." )
   , (Camping, "See you soon, stronger and braver!" )

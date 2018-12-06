@@ -7,8 +7,6 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import qualified Data.EnumMap.Strict as EM
-
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Misc
@@ -40,11 +38,8 @@ raid = ModeKind  -- mini-crawl
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
-  , mendMsg =
-    let override =
-          [ (Defeated, "Sadly, the other team snatched the grant, while you were busy contemplating natural phenomena. As sad as it sounds, there is competition in science. It's not enough to make a discovery, you have to be the first.")
-          , (Escape, "You've got hold of the machine! Think of the hours of fun taking it apart and putting it together again! That's a great first step on your quest to solve the typing problems of the world.") ]
-    in EM.fromList override `EM.union` genericEndMessages
+  , mendMsg = [ (Defeated, "Sadly, the other team snatched the grant, while you were busy contemplating natural phenomena. As sad as it sounds, there is competition in science. It's not enough to make a discovery, you have to be the first.")
+              , (Escape, "You've got hold of the machine! Think of the hours of fun taking it apart and putting it together again! That's a great first step on your quest to solve the typing problems of the world.") ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
   }
 
@@ -54,7 +49,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Your engineering team disagrees over a drink with some gentlemen scientists about premises of a relative completeness theorem and there's only one way to settle that. Remember to keep your party together, or the opposing team might be tempted to gang upon a solitary disputant. Take heed of your surroundings."
   }
 
@@ -72,7 +67,7 @@ shootout = ModeKind  -- sparse ranged in daylight
   , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
   , mroster = rosterShootout
   , mcaves  = cavesShootout
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Whose arguments are most striking and whose ideas fly fastest? Let's scatter up, attack the problems from different angles and find out. (To display the trajectory of any soaring entity, point it with the crosshair in aiming mode.)"
   }
 
@@ -82,7 +77,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   , mfreq   = [("hunt", 1), ("campaign scenario", 1)]
   , mroster = rosterHunt
   , mcaves  = cavesHunt
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Who is the hunter and who is the prey?"
   }
 
@@ -92,7 +87,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Dwelling into dark matters is dangerous, so avoid the crowd of firebrand disputants, catch any gems of thought, find a way out and bring back a larger team to shed new light on the field."
   }
 
@@ -102,7 +97,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "The heat of the dispute reaches the nearby Wonders of Science and Nature exhibition, igniting greenery, nets and cages. Crazed animals must be dissuaded from ruining precious scientific equipment and setting back the otherwise fruitful exchange of ideas."
   }
 
@@ -120,7 +115,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Prevent hijacking of your ideas at all cost! Be stealthy, be observant, be aggressive. Fast execution is what makes or breaks a creative team."
   }
 
@@ -130,11 +125,8 @@ crawl = ModeKind
   , mfreq   = [("crawl", 1), ("campaign scenario", 1)]
   , mroster = rosterCrawl
   , mcaves  = cavesCrawl
-  , mendMsg =
-    let override =
-          [ (Killed, "To think that followers of science and messengers of engligthment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely, but without the foreknowlege of the grisly difficulty, was insurmountable and lost from the start, despite the enormous power of educated reason at out disposal?")
-          , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorous scientific wonders in these forbidding tunnels anyway. Or was there?") ]
-    in EM.fromList override `EM.union` genericEndMessages
+  , mendMsg = [ (Killed, "To think that followers of science and messengers of engligthment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely, but without the foreknowlege of the grisly difficulty, was insurmountable and lost from the start, despite the enormous power of educated reason at out disposal?")
+              , (Escape, "It's better to live to tell the tale than to choke on more than one can swallow. There was no more exquisite cultural artifacts and glorous scientific wonders in these forbidding tunnels anyway. Or was there?") ]
   , mdesc   = "Enjoy the peaceful seclusion of these cold austere tunnels, but don't let wanton curiosity, greed and the ever-creeping abstraction madness keep you down there for too long. If you find survivors (whole or perturbed or segmented) of the past scientific missions, exercise extreme caution and engage or ignore at your discretion."
   }
 
@@ -144,7 +136,7 @@ safari = ModeKind  -- easter egg available only via screensaver
   , mfreq   = [("safari", 1)]
   , mroster = rosterSafari
   , mcaves  = cavesSafari
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "\"In this enactment you'll discover the joys of hunting the most exquisite of Earth's flora and fauna, both animal and semi-intelligent. Exit at the bottommost level.\" This is a drama script recovered from a monster nest debris."
   }
 
@@ -156,7 +148,7 @@ dig = ModeKind
   , mfreq   = [("dig", 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesDig
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Delve deeper!"
   }
 
@@ -166,7 +158,7 @@ see = ModeKind
   , mfreq   = [("see", 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesSee
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "See all!"
   }
 
@@ -176,7 +168,7 @@ crawlEmpty = ModeKind
   , mfreq   = [("crawl empty", 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesCrawl
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Enjoy the free space."
   }
 
@@ -186,7 +178,7 @@ crawlSurvival = ModeKind
   , mfreq   = [("crawl survival", 1)]
   , mroster = rosterCrawlSurvival
   , mcaves  = cavesCrawl
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Lure the human intruders deeper and deeper."
   }
 
@@ -196,7 +188,7 @@ safariSurvival = ModeKind
   , mfreq   = [("safari survival", 1)]
   , mroster = rosterSafariSurvival
   , mcaves  = cavesSafari
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "In this enactment you'll discover the joys of being hunted among the most exquisite of Earth's flora and fauna, both animal and semi-intelligent."
   }
 
@@ -206,7 +198,7 @@ battle = ModeKind
   , mfreq   = [("battle", 1)]
   , mroster = rosterBattle
   , mcaves  = cavesBattle
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Odds are stacked against those that unleash the horrors of abstraction."
   }
 
@@ -216,7 +208,7 @@ battleDefense = ModeKind
   , mfreq   = [("battle defense", 1)]
   , mroster = rosterBattleDefense
   , mcaves  = cavesBattle
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Odds are stacked for those that breathe mathematics."
   }
 
@@ -226,7 +218,7 @@ battleSurvival = ModeKind
   , mfreq   = [("battle survival", 1)]
   , mroster = rosterBattleSurvival
   , mcaves  = cavesBattle
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Odds are stacked for those that ally with the strongest."
   }
 
@@ -236,7 +228,7 @@ defense = ModeKind  -- perhaps a real scenario in the future
   , mfreq   = [("defense", 1)]
   , mroster = rosterDefense
   , mcaves  = cavesCrawl
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Don't let human interlopers defile your abstract secrets and flee unpunished!"
   }
 
@@ -246,7 +238,7 @@ defenseEmpty = ModeKind
   , mfreq   = [("defense empty", 1)]
   , mroster = rosterDefenseEmpty
   , mcaves  = cavesCrawl
-  , mendMsg = genericEndMessages
+  , mendMsg = []
   , mdesc   = "Lord over."
   }
 

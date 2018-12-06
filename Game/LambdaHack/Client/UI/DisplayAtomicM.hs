@@ -788,11 +788,11 @@ quitFactionUI fid toSt manalytics = do
         Nothing -> Nothing  -- server wipes out Camping for savefile
       middlePart = case toSt of
         _ | fid /= side -> Nothing
-        Just Status{stOutcome} -> EM.lookup stOutcome $ mendMsg mode
+        Just Status{stOutcome} -> lookup stOutcome $ mendMsg mode
         Nothing -> Nothing
       partingPart = case toSt of
         _ | fid /= side -> Nothing
-        Just Status{stOutcome} -> EM.lookup stOutcome genericEndMessages
+        Just Status{stOutcome} -> lookup stOutcome genericEndMessages
         Nothing -> Nothing
   case startingPart of
     Nothing -> return ()
