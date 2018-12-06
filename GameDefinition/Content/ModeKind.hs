@@ -38,7 +38,8 @@ raid = ModeKind  -- mini-crawl
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
-  , mendMsg = [ (Defeated, "Sadly, the other team snatched the grant, while you were busy contemplating natural phenomena. As sad as it sounds, there is competition in science. It's not enough to make a discovery, you have to be the first.")
+  , mendMsg = [  (Killed, "This adventure has gone bad. However, scientific mind does not despair, but analyzes and corrects. Did you perchance awake one animal too many? Did you remember to try using all consumbles at your disposal for your immediate survival? Did you choose a challenge with difficulty level within your means? Answer honestly, ponder wisely, experiment methodically.")
+              , (Defeated, "Sadly, the other team snatched the grant, while you were busy contemplating natural phenomena. As sad as it sounds, there is competition in science. It's not enough to make a discovery, you have to be the first.")
               , (Escape, "You've got hold of the machine! Think of the hours of fun taking it apart and putting it together again! That's a great first step on your quest to solve the typing problems of the world.") ]
   , mdesc   = "An incredibly advanced typing machine worth 100 gold is buried at the exit of this maze. Be the first to find it and fund a research team that makes typing accurate and dependable forever."
   }
