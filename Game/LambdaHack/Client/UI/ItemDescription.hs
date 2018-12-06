@@ -221,10 +221,11 @@ partItemWsR side factionD ranged count localTime itemFull kit =
   let (name, powers) =
         partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
+      periodic = IA.checkFlag Ability.Periodic arItem
       condition = IA.checkFlag Ability.Condition arItem
       maxCount = Dice.supDice $ IK.icount $ itemKind itemFull
   in if | condition && count == 1 -> MU.Phrase [name, powers]
-        | condition && maxCount > 1 ->
+        | condition && not periodic && maxCount > 1 ->
             let percent = 100 * count `divUp` maxCount
                 amount = tshow count <> "-strong"
                          <+> "(" <> tshow percent <> "%)"
