@@ -163,7 +163,7 @@ horrorGroup = "horror"
 
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =
-  [ (Killed, "Let's hope another try will save the day!" )
+  [ (Killed, "Let's hope a rescue party arrives in time!" )
   , (Defeated, "Let's hope your new overlords let you live." )
   , (Camping, "See you soon, stronger and braver!" )
   , (Conquer, "Can it be done in a better style, though?" )
