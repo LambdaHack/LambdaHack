@@ -362,7 +362,7 @@ flaskTemplate = ItemKind
 flask1 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
   , icount   = 1 `dL` 5
-  , irarity  = [(10, 7)]
+  , irarity  = [(10, 10)]
   , iaspects = ELabel "of strength renewal brew"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "strengthened" (20 + 1 `d` 5)
@@ -468,7 +468,7 @@ flask12 = flaskTemplate
 -- at once is not easy to arrange, so these explosions can stay powerful.
 flask13 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , irarity  = [(1, 2), (10, 10)]
+  , irarity  = [(1, 2), (10, 12)]
   , iaspects = ELabel "of regeneration brew"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "rose-smelling" (80 + 1 `d` 20)
@@ -559,8 +559,8 @@ potion3 = potionTemplate
   }
 potion4 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
-  , irarity  = [(1, 6), (10, 9)]
-  , ieffects = [ RefillHP 10, DropItem 1 maxBound COrgan "poisoned"
+  , irarity  = [(1, 6), (10, 10)]
+  , ieffects = [ RefillHP 10, DropItem maxBound maxBound COrgan "condition"
                , OnSmash (Explode "healing mist 2") ]
   }
 potion5 = potionTemplate
@@ -784,7 +784,7 @@ ediblePlant5 = ediblePlantTemplate
   { iname    = "fragrant herb"
   , ifreq    = [("common item", 100), ("edible plant", 100)]
   , icount   = 1 `dL` 9
-  , irarity  = [(1, 12), (10, 3)]
+  , irarity  = [(1, 12), (10, 5)]
   , iaspects = ELabel "of lethargy"
                : iaspects ediblePlantTemplate
   , ieffects = [ toOrganBad "slowed" (20 + 1 `d` 5)
@@ -1053,7 +1053,7 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ DropItem 1 3 COrgan "condition"  -- mildly useful when applied
+  , ieffects = [ DropItem 1 1 COrgan "condition"  -- mildly useful when applied
                , Impress
                , Summon "mobile animal" $ 1 `dL` 2
                , Explode "waste" ]
@@ -1429,7 +1429,7 @@ buckler = ItemKind
   }
 shield = buckler
   { iname    = "shield"
-  , irarity  = [(8, 4)]  -- the stronger variants add to total probability
+  , irarity  = [(8, 3)]  -- the stronger variants add to total probability
   , iflavour = zipPlain [Green]
   , iweight  = 4000
   , idamage  = 4 `d` 1

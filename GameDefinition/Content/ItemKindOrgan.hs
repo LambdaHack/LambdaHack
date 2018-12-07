@@ -563,5 +563,6 @@ pupil = fist
   , iaspects = [AddSkill SkSight 12, Timeout 12]
                ++ iaspects fist
   , ieffects = [DropItem 1 maxBound COrgan "condition", RefillCalm (-10)]
+                 -- can be useful for the player, but Calm drain is a risk
   , idesc    = ""
   }
