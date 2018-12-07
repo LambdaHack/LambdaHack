@@ -863,11 +863,15 @@ displayGameOverLoot (heldBag, total) generationAn = do
                 ++ [MU.CarWs worth $ MU.Text currencyName]
             holdsMsg =
               let n = generationItem EM.! iid
-              in makePhrase
-                   [ "You hold"
-                   , MU.CarWs (max 0 k) "piece out of"
-                   , MU.Cardinal n
-                   , "scattered:" ]
+              in if | k == 1 && n == 1 ->
+                      "You keep the only specimen extant:"
+                    | k == 0 && n == 1 ->
+                      "You don't have the only reported specimen:"
+                    | otherwise -> makePhrase [ "You hold"
+                                              , MU.CardinalWs (max 0 k) "piece"
+                                              , "out of"
+                                              , MU.Cardinal n
+                                              , "scattered:" ]
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let promptGold = spoilsBlurb currencyName total dungeonTotal
@@ -1365,7 +1369,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
-        sleepy = if bwatch tb `elem` [WSleep, WWake] then "the sleepy" else ""
+        sleepy = if bwatch tb `elem` [WSleep, WWake] && tpart /= "you"
+                 then "the sleepy"
+                 else ""
         -- In the case of forceful hit, we mention neither attacker's bonuses
         -- nor victim's maluses. The player may indeed be left guessing.
         subtly = if IK.idamage (itemKind itemFullWeapon) == 0
@@ -1409,7 +1415,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      [ MU.SubjectVerbSg spart verb, sleepy, tpart
                      , "with", partItemChoice itemFullWeapon kitWeapon ]
               butEvenThough = if hurtMult >= 70
-                              then ", even though"
+                              then "accurately, even though"
                               else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
