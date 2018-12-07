@@ -1286,7 +1286,7 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
-  itemFull@ItemFull{itemKind} <- getsState $ itemToFull iid
+  itemFull@ItemFull{itemKind, itemBase} <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       c = CActor aid store
       fragile = IA.checkFlag Ability.Fragile arItem
@@ -1295,13 +1295,19 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
-        -- Activate even if effects null, to destroy the item, if needed
-        -- (if it's discharged, it will never get destroyed).
-        -- We don't know if it's voluntary, so we conservatively assume it is
-        -- and we blame @aid@.
+        -- Even if effects null, let's go through the paces to identify
+        -- the item, if needed and if recharged. We don't know if
+        -- it's voluntary, so we conservatively assume it is and we blame @aid@.
         voluntary = True
     effectAndDestroyAndAddKill
       voluntary aid False aid aid iid c False effs (itemFull, kit)
+    -- At most one copy was destroyed (or none if the item was discharged),
+    -- so let's mop up.
+    bag <- getsState $ getContainerBag c
+    maybe (return ())
+          (\(k2, it) ->
+             execUpdAtomic $ UpdLoseItem False iid itemBase (min kMax k2, it) c)
+          (EM.lookup iid bag)
   else do
     cDrop <- pickDroppable False aid b  -- drop over fog, etc.
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
