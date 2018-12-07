@@ -1407,9 +1407,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                    | otherwise ->
                      [ MU.SubjectVerbSg spart verb, sleepy, tpart
                      , "with", partItemChoice itemFullWeapon kitWeapon ]
-              butActionWell | catch = ""
-                            | otherwise =
-                ", but" <+> makePhrase [actionPhrase, howWell]
+              butEvenThough = if catch then ", even though" else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
@@ -1443,8 +1441,11 @@ strike catch source target iid cstore = assert (source /= target) $ do
                 in if | armor >= 15 -> ", thanks to being" <+> name <> "."
                       | armor <= -15 -> ", despite being" <+> name <> "."
                       | otherwise -> "."
-          in makePhrase ([MU.Capitalize sActs <> MU.Text butActionWell]
-                         ++ withWhat)
+          in makePhrase
+               ([ MU.Capitalize sActs <> butEvenThough
+                , actionPhrase
+                , howWell ]
+                ++ withWhat)
              <> tmpInfluenceDot
     msgAdd msg
     return ((bpos tb, bpos sb), hurtMult, IK.idamage (itemKind itemFullWeapon))
