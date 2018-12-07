@@ -1427,22 +1427,23 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      if actorWaits tb then "doggedly" else "nonchalantly"
                    | otherwise ->         -- 1% got through, which can
                      "almost completely"  -- still be deadly, if fast missile
-              withWhat | null eqpAndOrgArmor = []
+              withWhat | null eqpAndOrgArmor || bproj sb = []
                        | otherwise =
                 let (armor, (iidArmor, itemKind)) =
                       maximumBy (Ord.comparing fst) eqpAndOrgArmor
                 in if armor >= 15
+                      && IA.aTimeout (aspectRecordFull itemFullWeapon) >= 3
                    then let name | iidArmor == btrunk tb = "trunk"
                                  | otherwise = MU.Text $ IK.iname itemKind
                         in [ "with", MU.WownW tpronoun name ]
                    else []
-              tmpInfluenceDot | null condArmor = "."
+              tmpInfluenceDot | null condArmor || bproj sb= "."
                               | otherwise =
                 let (armor, (_, itemKind)) =
                       maximumBy (Ord.comparing $ abs . fst) condArmor
                     name = IK.iname itemKind
-                in if | armor >= 15 -> ", thanks to being" <+> name <> "."
-                      | armor <= -15 -> ", despite being" <+> name <> "."
+                in if | armor <= -15 -> ", despite being" <+> name <> "."
+                      | armor >= 15 -> ", thanks to being" <+> name <> "."
                       | otherwise -> "."
           in makePhrase
                ([ MU.Capitalize sActs <> butEvenThough
