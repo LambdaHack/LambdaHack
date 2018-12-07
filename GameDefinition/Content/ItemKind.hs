@@ -1066,7 +1066,7 @@ necklace3 = necklaceTemplate
                , AddSkill SkHearing 2 ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectActor 10  -- can be applied; destroys the item
-               , RefillCalm (-20) ]
+               , RefillCalm (-40) ]
   }
 necklace4 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
@@ -1123,7 +1123,9 @@ necklace10 = necklaceTemplate
   , iaspects = [ ELabel "of greed"
                , Timeout ((3 + 1 `d` 2) * 10) ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [Detect DetectLoot 20, Teleport 20]
+  , ieffects = [ Detect DetectLoot 20
+               , Teleport 40  -- risky
+               , toOrganBad "parsimonious" (10 + 1 `d` 3) ]  -- hard to flee
   }
 
 -- ** Non-periodic jewelry
