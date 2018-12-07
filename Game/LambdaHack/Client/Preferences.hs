@@ -407,12 +407,11 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
              / if durable then 1 else durabilityMult
       effDice = - IK.damageUsefulness itemKind
       -- For melee, we add the foe part only.
-      benMelee = min 0 $  -- optional; usually I don't need to hit with it
-        if periodic
-        then 0  -- because never recharged, so never ready for melee
-        else scaleTimeout (effFoe + effDice)
-               -- @AddHurtMelee@ already in @eqpSum@
-             / if durable then 1 else durabilityMult
+      benMelee = if periodic
+                 then 0  -- because never recharged, so never ready for melee
+                 else effFoe + effDice  -- @AddHurtMelee@ already in @eqpSum@
+      benMeleeAvg = scaleTimeout benMelee
+                    / if durable then 1 else durabilityMult
       -- Experimenting is fun, but it's better to risk foes' skin than ours,
       -- so we only buff flinging, not applying, when item not identified.
       -- It's also more gameplay fun when enemies throw at us rather than
@@ -471,7 +470,8 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
           && (benMelee < 0 || itemSuspect)
           && eqpSum >= -20 =
           ( True  -- equip, melee crucial and only weapons in eqp can be used
-          , eqpSum + max benApply (- benMelee) )  -- apply or melee or not
+          , eqpSum
+            + maximum [benApply, - benMeleeAvg, 0] )  -- apply or melee or not
         | (IA.goesIntoEqp arItem
           || isJust (lookup "condition" $ IK.ifreq itemKind))
                -- hack to record benefit, to use it in calculations later on
