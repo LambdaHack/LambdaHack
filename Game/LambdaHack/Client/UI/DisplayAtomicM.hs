@@ -1371,7 +1371,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
         subtly = if IK.idamage (itemKind itemFullWeapon) == 0
                  then if not (bproj sb) then "delicately" else ""
                  else if hurtMult >= 120 then "forcefully" else ""
-        msg | not $ hasCharge localTime itemFullWeapon kitWeapon =
+        msg | not (hasCharge localTime itemFullWeapon kitWeapon) && not catch =
               -- Can easily happen with a thrown discharged item.
               -- Much less plausible with a wielded weapon.
               if bproj sb
@@ -1384,7 +1384,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
             | bhp tb <= 0  -- incapacitated, so doesn't actively block
               || hurtMult > 90  -- at most minor armor
               || bproj sb && bproj tb  -- too much spam when explosions collide
-              || IK.idamage (itemKind itemFullWeapon) == 0 =
+              || IK.idamage (itemKind itemFullWeapon) == 0
+              || catch =
               -- In this case either no items increase armor enough,
               -- or the bonuses and maluses cancel out, so it would be
               -- a lot of talk about a negligible total effect.
@@ -1407,7 +1408,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
                    | otherwise ->
                      [ MU.SubjectVerbSg spart verb, sleepy, tpart
                      , "with", partItemChoice itemFullWeapon kitWeapon ]
-              butEvenThough = if catch then ", even though" else ", but"
+              butEvenThough = if hurtMult >= 70
+                              then ", even though"
+                              else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
                 $ if bproj sb
