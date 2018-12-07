@@ -536,6 +536,10 @@ discoverIfMinorEffects c iid itemKindId = do
   discoAspect <- getsState sdiscoAspect
   let arItem = discoAspect EM.! iid
       itemKind = okind coitem itemKindId
+  -- We could refrain from discovering if the item is a weapon, because
+  -- kintetic damage identifies items, but we have no guarantee the item
+  -- would ever be chosen for melee instead of the organs and also it's
+  -- not fun enough for the effort, because stats are usually not that deadly.
   if IA.onlyMinorEffects arItem itemKind
   then execUpdAtomic $ UpdDiscover c iid itemKindId arItem
   else return ()  -- discover by use when item's effects get activated later on

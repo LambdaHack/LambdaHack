@@ -210,15 +210,6 @@ effectAndDestroy :: MonadServerAtomic m
                  => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
                  -> [IK.Effect] -> ItemFullKit
                  -> m ()
-effectAndDestroy kineticPerformed _ _ iid container periodic []
-                 (itemFull@ItemFull{itemBase}, (_, itemTimer)) =
-  -- No identification occurs if effects are null. This case is also a speedup.
-  if kineticPerformed then do  -- kinetic may cause item destruction
-    let kit2 = (1, take 1 itemTimer)
-        imperishable = imperishableKit periodic itemFull
-    unless imperishable $
-      execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
-  else return ()
 effectAndDestroy kineticPerformed source target iid container periodic effs
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , (itemK, itemTimer) ) = do
@@ -233,10 +224,9 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
       recharged = len < itemK
   -- If the item has no charges and no kinetic hit was performed,
   -- we speed up by shortcutting early. If the item was used kinetically,
-  -- we enter the code below and make it possible for the item to get destroyed,
-  -- if perishable, and let it get identified, even if no effect
-  -- was eventually triggered (but kinetic hit is not enough for identification,
-  -- if the item has no potential effects at all, see above).
+  -- we enter the code below and make it possible for the item to get destroyed
+  -- if perishable, and let it get identified, even if it has no effect,
+  -- and we use up its single charge.
   when (kineticPerformed || recharged) $ do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
@@ -270,12 +260,12 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
         -- If the item activation is not periodic, but the item itself is,
         -- only the first effect gets activated (and the item may be destroyed,
         -- unlike with periodic activations).
-        let effsAfterCharge =
+        let effsManual =
               if not periodic && IA.checkFlag Ability.Periodic arItem
-              then [head effs]
+              then take 1 effs  -- may be empty
               else effs
         triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                           periodic effsAfterCharge
+                                           periodic effsManual
         let trig = if kineticPerformed then UseUp else triggeredEffect
         sb <- getsState $ getActorBody source
         -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -284,7 +274,7 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
                 || bproj sb  -- don't spam, projectiles can be very numerous
                 ) $
           execSfxAtomic $ SfxMsgFid (bfid sb) $
-            if any IK.forApplyEffect effsAfterCharge
+            if any IK.forApplyEffect effsManual
             then SfxFizzles  -- something didn't work, despite promising effects
             else SfxNothingHappens  -- fully expected
         return trig
@@ -331,7 +321,7 @@ itemEffectDisco source target iid itemKind c periodic effs = do
   discoAspect <- getsState sdiscoAspect
   let arItem = discoAspect EM.! iid
       ur = case urs of
-        [] -> UseDud
+        [] -> UseDud  -- there was no effects
         _ -> maximum urs
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
   when (ur >= UseId && not (IA.onlyMinorEffects arItem itemKind)) $ do
@@ -1305,7 +1295,8 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
-        -- Activate even if effects null, to destroy the item, if needed.
+        -- Activate even if effects null, to destroy the item, if needed
+        -- (if it's discharged, it will never get destroyed).
         -- We don't know if it's voluntary, so we conservatively assume it is
         -- and we blame @aid@.
         voluntary = True
