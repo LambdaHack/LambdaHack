@@ -817,9 +817,10 @@ applyItem aid applyGroup = do
               && ("condition" `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myGoodGrps)))
             wastesDrop = not dropsBadOrgans && not (null dropsGrps)
+            wastesHP = hpEnough b actorMaxSk && heals
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull
             situationalBenApply | dropsBadOrgans = benApply + 20
-                                | wastesDrop = benApply - 10
+                                | wastesDrop || wastesHP = benApply - 10
                                 | otherwise = benApply
             benR = ceiling situationalBenApply
                    * if cstore == CEqp && not durable
@@ -829,8 +830,9 @@ applyItem aid applyGroup = do
               ApplyFirstAid -> q benAv && heals
               ApplyAll -> q benAv
                           && not dropsGoodOrgans
-                          && (dropsBadOrgans
-                              || not (hpEnough b actorMaxSk && heals))
+                          && (dropsBadOrgans || not wastesHP)
+                               -- waste healing only if it drops bad organs;
+                               -- otherwise apply anything beneficial at will
         in if canApply
            then Just (benR, ReqApply iid cstore)
            else Nothing
