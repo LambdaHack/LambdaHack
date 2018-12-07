@@ -65,8 +65,8 @@ effectToBenefit cops fact eff =
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach
     IK.RefillCalm p -> delta $ if p > 0
-                               then min 50 (fromIntegral p)
-                               else max (-50) (fromIntegral p)
+                               then min 100 (fromIntegral p)
+                               else max (-500) (5 * fromIntegral p)
     IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100;
                               -- divided by 3, because impression needed first
@@ -138,6 +138,7 @@ effectToBenefit cops fact eff =
     IK.DupItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
+    IK.Detect IK.DetectLoot radius -> (fromIntegral radius * 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)
     IK.SendFlying _ -> (0, -100)  -- very context dependent, but lack of control
     IK.PushActor _ -> (0, -100)   -- is deadly on some maps, leading to harm;
