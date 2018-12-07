@@ -1109,44 +1109,47 @@ effectInsertMove execSfx nDm source target = do
 effectTeleport :: MonadServerAtomic m
                => m () -> Dice.Dice -> ActorId -> ActorId -> m UseResult
 effectTeleport execSfx nDm source target = do
-  COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  totalDepth <- getsState stotalDepth
-  lvl@Level{ldepth} <- getLevel (blid tb)
-  range <- rndToAction $ castDice ldepth totalDepth nDm
-  let spos = bpos tb
-      dMinMax !delta !pos =
-        let d = chessDist spos pos
-        in d >= range - delta && d <= range + delta
-      dist !delta !pos _ = dMinMax delta pos
-  mtpos <- rndToAction $ findPosTry 200 lvl
-    (\p !t -> Tile.isWalkable coTileSpeedup t
-              && not (Tile.isNoActor coTileSpeedup t)
-              && not (occupiedBigLvl p lvl)
-              && not (occupiedProjLvl p lvl))
-    [ dist 1
-    , dist $ 1 + range `div` 9
-    , dist $ 1 + range `div` 7
-    , dist $ 1 + range `div` 5
-    , dist 5
-    , dist 7
-    , dist 9
-    ]
-  case mtpos of
-    Nothing -> do  -- really very rare, so debug
-      debugPossiblyPrint
-        "Server: effectTeleport: failed to find any free position"
-      execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
-      return UseId
-    Just tpos ->
-      if | actorWaits tb -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
-           return UseId
-         | otherwise -> do
-           execSfx
-           execUpdAtomic $ UpdMoveActor target spos tpos
-           return UseUp
+  if actorWaits tb && source /= target
+       -- immune only against not own effects, to enable teleport as beneficial
+       -- necklace drawback; also consistent with sleep not protecting
+  then do
+    execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
+    return UseId
+  else do
+    COps{coTileSpeedup} <- getsState scops
+    totalDepth <- getsState stotalDepth
+    lvl@Level{ldepth} <- getLevel (blid tb)
+    range <- rndToAction $ castDice ldepth totalDepth nDm
+    let spos = bpos tb
+        dMinMax !delta !pos =
+          let d = chessDist spos pos
+          in d >= range - delta && d <= range + delta
+        dist !delta !pos _ = dMinMax delta pos
+    mtpos <- rndToAction $ findPosTry 200 lvl
+      (\p !t -> Tile.isWalkable coTileSpeedup t
+                && not (Tile.isNoActor coTileSpeedup t)
+                && not (occupiedBigLvl p lvl)
+                && not (occupiedProjLvl p lvl))
+      [ dist 1
+      , dist $ 1 + range `div` 9
+      , dist $ 1 + range `div` 7
+      , dist $ 1 + range `div` 5
+      , dist 5
+      , dist 7
+      , dist 9
+      ]
+    case mtpos of
+      Nothing -> do  -- really very rare, so debug
+        debugPossiblyPrint
+          "Server: effectTeleport: failed to find any free position"
+        execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
+        return UseId
+      Just tpos -> do
+        execSfx
+        execUpdAtomic $ UpdMoveActor target spos tpos
+        return UseUp
 
 -- ** CreateItem
 
