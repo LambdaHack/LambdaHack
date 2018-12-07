@@ -117,9 +117,9 @@ checkWaiting cmd = case cmd of
 -- In game state, we collect the number of server requests pertaining
 -- to the actor (the number of actor's "moves"), through which
 -- the actor was waiting.
-processWatchfulness :: MonadServerAtomic m
-                    => Maybe Bool -> ActorId -> Actor -> m ()
-processWatchfulness mwait aid b = do
+processWatchfulness :: MonadServerAtomic m => Maybe Bool -> ActorId -> m ()
+processWatchfulness mwait aid = do
+  b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
@@ -184,7 +184,7 @@ handleRequestTimed fid aid cmd = do
   -- Note that due to the order, actor was still braced or sleeping
   -- throughout request processing, etc. So, if he hits himself kinetically,
   -- his armor from bracing previous turn is still in effect.
-  processWatchfulness mwait aid b
+  processWatchfulness mwait aid
   return $! isNothing mwait  -- for speed, we report if @cmd@ harmless
 
 -- | Clear deltas for Calm and HP for proper UI display and AI hints.
