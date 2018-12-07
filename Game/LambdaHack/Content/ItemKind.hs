@@ -259,8 +259,8 @@ getDropOrgans :: ItemKind -> [GroupName ItemKind]
 getDropOrgans =
   let f (DropItem _ _ COrgan grp) = [grp]
       f Impress = ["impressed"]
-      f (OneOf l) = concatMap f l
-      f (Composite l) = concatMap f l
+      f (OneOf l) = concatMap f l  -- even remote possibility accepted
+      f (Composite l) = concatMap f l  -- not certain, but accepted
       f _ = []
   in concatMap f . ieffects
 

@@ -807,11 +807,15 @@ applyItem aid applyGroup = do
             getHP (IK.Composite l) = any getHP l
             getHP _ = False
             heals = any getHP $ IK.ieffects itemKind
-            dropsGrps = IK.getDropOrgans itemKind
+            dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included
             dropsBadOrgans =
               not (null myBadGrps)
               && ("condition" `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myBadGrps)))
+            dropsImpressed =
+              "impressed" `elem` myBadGrps
+              && ("condition" `elem` dropsGrps
+                  || "impressed" `elem` dropsGrps)
             dropsGoodOrgans =
               not (null myGoodGrps)
               && ("condition" `elem` dropsGrps
@@ -819,15 +823,19 @@ applyItem aid applyGroup = do
             wastesDrop = not dropsBadOrgans && not (null dropsGrps)
             wastesHP = hpEnough b actorMaxSk && heals
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull
-            situationalBenApply | dropsBadOrgans = benApply + 20
-                                | wastesDrop || wastesHP = benApply - 10
-                                | otherwise = benApply
+            situationalBenApply =
+              if | dropsBadOrgans -> if dropsImpressed
+                                     then benApply + 1000  -- crucial
+                                     else benApply + 20
+                 | wastesDrop || wastesHP -> benApply - 10
+                 | otherwise -> benApply
             benR = ceiling situationalBenApply
                    * if cstore == CEqp && not durable
                      then 1000  -- must hinder currently (or be very potent)
                      else coeff cstore
             canApply = situationalBenApply > 0 && case applyGroup of
-              ApplyFirstAid -> q benAv && heals
+              ApplyFirstAid -> q benAv && (heals || dropsImpressed)
+                -- when low HP, Calm easy to deplete, so impressed crucial
               ApplyAll -> q benAv
                           && not dropsGoodOrgans
                           && (dropsBadOrgans || not wastesHP)
