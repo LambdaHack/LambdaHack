@@ -178,22 +178,21 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
                       | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
-        let IK.ItemKind{IK.ieffects} = itemKind itemFull
         effectAndDestroyAndAddKill voluntary killer False kineticPerformed
                                    source target iid c
-                                   False ieffects (itemFull, kit)
+                                   False (itemFull, kit)
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId -> Bool -> Bool
                            -> ActorId -> ActorId -> ItemId -> Container
-                           -> Bool -> [IK.Effect] -> ItemFullKit
+                           -> Bool ->  ItemFullKit
                            -> m ()
 effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
                            source target iid container
-                           periodic effs (itemFull, kit) = do
+                           periodic (itemFull, kit) = do
   tbOld <- getsState $ getActorBody target
   effectAndDestroy onSmashOnly kineticPerformed source target iid container
-                   periodic effs (itemFull, kit)
+                   periodic (itemFull, kit)
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -208,13 +207,16 @@ effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> Bool -> ActorId -> ActorId -> ItemId -> Container
-                 -> Bool -> [IK.Effect] -> ItemFullKit
+                 -> Bool -> ItemFullKit
                  -> m ()
 effectAndDestroy onSmashOnly kineticPerformed
-                 source target iid container periodic effs
+                 source target iid container periodic
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , (itemK, itemTimer) ) = do
-  let arItem = itemAspect itemDisco
+  let effs = if onSmashOnly
+             then IK.strengthOnSmash itemKind
+             else IK.ieffects itemKind
+      arItem = itemAspect itemDisco
       timeout = IA.aTimeout arItem
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
@@ -1284,7 +1286,7 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m ()
 dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
-  itemFull@ItemFull{itemKind, itemBase} <- getsState $ itemToFull iid
+  itemFull@ItemFull{itemBase} <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       c = CActor aid store
       fragile = IA.checkFlag Ability.Fragile arItem
@@ -1292,13 +1294,12 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
-    let effs = IK.strengthOnSmash itemKind
-        -- We don't know if it's voluntary,
+    let -- We don't know if it's voluntary,
         --so we conservatively assume it is and we blame @aid@.
         voluntary = True
         onSmashOnly = True
     effectAndDestroyAndAddKill
-      voluntary aid onSmashOnly False aid aid iid c False effs (itemFull, kit)
+      voluntary aid onSmashOnly False aid aid iid c False (itemFull, kit)
     -- At most one copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
