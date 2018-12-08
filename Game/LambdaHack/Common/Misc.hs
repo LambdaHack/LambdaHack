@@ -116,8 +116,10 @@ show64With2 n =
   let k = 100 * n `div` oneM
       l = k `div` 100
       x = k - l * 100
+      y = x `div` 10
   in tshow l
      <> if | x == 0 -> ""
+           | x == y * 10 -> "." <> tshow y
            | x < 10 -> ".0" <> tshow x
            | otherwise -> "." <> tshow x
 
