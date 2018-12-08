@@ -76,7 +76,9 @@ effectToBenefit cops fact eff =
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
-      in if grp `elem` fgroups (gplayer fact) then (ben, -1) else (-ben, 1)
+      in if grp `elem` fgroups (gplayer fact)
+         then (ben, -1)
+         else (-ben * 3, 1)  -- the foe may spawn during battle and gang up
         -- prefer applying to flinging summoning items; further, but more robust
     IK.Ascend{} -> (-99, 99)
       -- note the reversed values: only change levels sensibly, in teams,
@@ -183,8 +185,9 @@ averageTurnValue = 10
 avgItemDelay :: Double
 avgItemDelay = 3
 
--- The average time between item being found (and enough skill obtained
--- to use it) and item not being used any more. We specifically ignore
+-- The average time between consumable item being found
+-- (and enough skill obtained to use it) and the item
+-- not being worth using any more. We specifically ignore
 -- item not being used any more, because it is not durable and is consumed.
 -- However we do consider actor mortality (especially common for spawners)
 -- and item contending with many other very different but valuable items
@@ -192,7 +195,7 @@ avgItemDelay = 3
 -- for non-spawners). Another reason is item getting obsolete or duplicated,
 -- by finding a strictly better item or an identical item.
 -- The @avgItemLife@ constant only makes sense for items with non-periodic
--- effects, because the effects' benefit is not cumulative
+-- effects, because the effects' benefit is not cumulated
 -- by just placing them in equipment and they cost a turn to activate.
 -- We set the value to 30, assuming if the actor finds an item, then he is
 -- most likely at an unlooted level, so he will find more loot soon,
