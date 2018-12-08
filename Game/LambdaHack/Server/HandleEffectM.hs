@@ -225,11 +225,10 @@ effectAndDestroy onSmashOnly kineticPerformed
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK || onSmashOnly
-  -- If the item has no charges and no kinetic hit was performed,
-  -- we speed up by shortcutting early. If the item was used kinetically,
-  -- we enter the code below and make it possible for the item to get destroyed
-  -- if perishable, and we use up a charge of the item.
-  when (kineticPerformed || recharged) $ do
+  -- If the item has no charges and the effects are not @OnSmash@
+  -- we speed up by shortcutting early, because we don't need to activate
+  -- effects and we know kinetic hit was not performed (no charges to do so).
+  when recharged $ do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) localTime ++ it1
@@ -280,7 +279,8 @@ effectAndDestroy onSmashOnly kineticPerformed
             then SfxFizzles  -- something didn't work, despite promising effects
             else SfxNothingHappens  -- fully expected
         return trig
-    -- If none of item's effects was performed, we try to recreate the item.
+    -- If none of item's effects nor a kinetic hit were performed,
+    -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (imperishable || triggered == UseUp) $
