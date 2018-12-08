@@ -60,7 +60,7 @@ toGroupName :: Text -> GroupName a
 {-# INLINE toGroupName #-}
 toGroupName = GroupName
 
--- | Re-exported English phrase creation functions, applied to default
+-- | Re-exported English phrase creation functions, applied to our custom
 -- irregular word sets.
 makePhrase, makeSentence :: [MU.Part] -> Text
 makePhrase = MU.makePhrase irregular
