@@ -1482,7 +1482,7 @@ identifyIid iid c itemKindId = do
 effectDetect :: MonadServerAtomic m
              => m () -> IK.DetectKind -> Int -> ActorId -> Point -> m UseResult
 effectDetect execSfx d radius target pos = do
-  COps{coTileSpeedup} <- getsState scops
+  COps{coitem, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
   s <- getState
@@ -1498,8 +1498,11 @@ effectDetect execSfx d radius target pos = do
         let itemFull = itemToFull iid s
             IK.ItemKind{IK.ieffects} = itemKind itemFull
         in any effectHasLoot ieffects
-      effectHasLoot (IK.CreateItem cstore _ _) =
+      reported acc _ _ itemKind =
+        acc && isNothing (lookup "unreported inventory" $ IK.ifreq itemKind)
+      effectHasLoot (IK.CreateItem cstore grp _) =
         cstore `elem` [CGround, CEqp, CInv, CSha]
+        && ofoldlGroup' coitem grp reported True
       effectHasLoot IK.PolyItem = True
       effectHasLoot IK.RerollItem = True
       effectHasLoot IK.DupItem = True
