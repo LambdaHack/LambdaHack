@@ -838,8 +838,8 @@ applyItem aid applyGroup = do
                 -- when low HP, Calm easy to deplete, so impressed crucial
               ApplyAll -> q benAv
                           && not dropsGoodOrgans
-                          && (dropsBadOrgans || not wastesHP)
-                               -- waste healing only if it drops bad organs;
+                          && (dropsImpressed || not wastesHP)
+                               -- waste healing only if it drops impressed;
                                -- otherwise apply anything beneficial at will
         in if canApply
            then Just (benR, ReqApply iid cstore)
