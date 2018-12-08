@@ -1305,8 +1305,12 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
     maybe (return ())
-          (\(k2, it) ->
-             execUpdAtomic $ UpdLoseItem False iid itemBase (min kMax k2, it) c)
+          (\(k1, it) ->
+             let destroyedSoFar = k - k1
+                 k2 = min (kMax - destroyedSoFar) k1
+                 kit2 = (k2, take k2 it)
+             in when (k2 > 0)
+                $ execUpdAtomic $ UpdLoseItem False iid itemBase kit2 c)
           (EM.lookup iid bag)
   else do
     cDrop <- pickDroppable False aid b  -- drop over fog, etc.
