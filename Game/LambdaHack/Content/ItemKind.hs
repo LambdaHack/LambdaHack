@@ -47,9 +47,9 @@ data ItemKind = ItemKind
   , idamage  :: Dice.Dice       -- ^ basic kinetic damage
   , iaspects :: [Aspect]        -- ^ affect the actor continuously
   , ieffects :: [Effect]        -- ^ cause the effects when triggered
-  , idesc    :: Text            -- ^ description
   , ikit     :: [(GroupName ItemKind, CStore)]
                                 -- ^ accompanying organs and equipment
+  , idesc    :: Text            -- ^ description
   }
   deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
 

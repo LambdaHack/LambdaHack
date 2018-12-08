@@ -52,10 +52,10 @@ warrior = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = ""
-  -- , idesc    = "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan)
                , ("eye 6", COrgan), ("ear 3", COrgan)
                , ("sapient brain", COrgan) ]
+  -- , idesc    = "A hardened veteran of combat."
   }
 warrior2 = warrior
   { iname    = "adventurer"
