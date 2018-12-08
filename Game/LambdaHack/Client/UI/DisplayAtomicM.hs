@@ -857,16 +857,19 @@ displayGameOverLoot (heldBag, total) generationAn = do
       promptFun iid itemFull2 k =
         let worth = itemPrice 1 $ itemKind itemFull2
             lootMsg = if worth == 0 then "" else
-              makeSentence $
-                ["this treasure specimen is worth"]
-                ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
-                ++ [MU.CarWs worth $ MU.Text currencyName]
+              let pile = if k == 1 then "exemplar" else "hoard"
+              in makeSentence $
+                   ["this treasure", pile, "is worth"]
+                   ++ (if k > 1 then [ MU.Cardinal k, "times"] else [])
+                   ++ [MU.CarWs worth $ MU.Text currencyName]
             holdsMsg =
               let n = generationItem EM.! iid
-              in if | k == 1 && n == 1 ->
+              in if | max 0 k == 1 && n == 1 ->
                       "You keep the only specimen extant:"
-                    | k == 0 && n == 1 ->
-                      "You don't have the only reported specimen:"
+                    | max 0 k == 0 && n == 1 ->
+                      "You don't have the only hypothesized specimen:"
+                    | max 0 k == 0 && n == 0 ->
+                      "No such specimen was recorded:"
                     | otherwise -> makePhrase [ "You hold"
                                               , MU.CardinalWs (max 0 k) "piece"
                                               , "out of"
