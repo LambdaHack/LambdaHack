@@ -179,20 +179,20 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         let IK.ItemKind{IK.ieffects} = itemKind itemFull
-        effectAndDestroyAndAddKill voluntary killer
-                                   kineticPerformed source target iid c
+        effectAndDestroyAndAddKill voluntary killer False kineticPerformed
+                                   source target iid c
                                    False ieffects (itemFull, kit)
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
-                           => Bool -> ActorId
-                           -> Bool -> ActorId -> ActorId -> ItemId -> Container
+                           => Bool -> ActorId -> Bool -> Bool
+                           -> ActorId -> ActorId -> ItemId -> Container
                            -> Bool -> [IK.Effect] -> ItemFullKit
                            -> m ()
-effectAndDestroyAndAddKill voluntary killer
-                           kineticPerformed source target iid container
+effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
+                           source target iid container
                            periodic effs (itemFull, kit) = do
   tbOld <- getsState $ getActorBody target
-  effectAndDestroy kineticPerformed source target iid container
+  effectAndDestroy onSmashOnly kineticPerformed source target iid container
                    periodic effs (itemFull, kit)
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
@@ -207,10 +207,11 @@ effectAndDestroyAndAddKill voluntary killer
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
 
 effectAndDestroy :: MonadServerAtomic m
-                 => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
-                 -> [IK.Effect] -> ItemFullKit
+                 => Bool -> Bool -> ActorId -> ActorId -> ItemId -> Container
+                 -> Bool -> [IK.Effect] -> ItemFullKit
                  -> m ()
-effectAndDestroy kineticPerformed source target iid container periodic effs
+effectAndDestroy onSmashOnly kineticPerformed
+                 source target iid container periodic effs
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
                  , (itemK, itemTimer) ) = do
   let arItem = itemAspect itemDisco
@@ -221,12 +222,11 @@ effectAndDestroy kineticPerformed source target iid container periodic effs
                 charging startT = timeShift startT timeoutTurns > localTime
             in filter charging itemTimer
       len = length it1
-      recharged = len < itemK
+      recharged = len < itemK || onSmashOnly
   -- If the item has no charges and no kinetic hit was performed,
   -- we speed up by shortcutting early. If the item was used kinetically,
   -- we enter the code below and make it possible for the item to get destroyed
-  -- if perishable, and let it get identified, even if it has no effect,
-  -- and we use up its single charge.
+  -- if perishable, and we use up a charge of the item.
   when (kineticPerformed || recharged) $ do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
@@ -1273,14 +1273,12 @@ specific than the two general abilities described as desirable above
     mapM_ (uncurry (dropCStoreItem True store target tb kcopy)) $ take ngroup is
     return UseUp
 
--- | Drop a single actor's item. Note that if there are multiple copies,
--- at most one explodes to avoid excessive carnage and UI clutter
--- (let's say, the multiple explosions interfere with each other or perhaps
+-- | Drop a single actor's item (though possibly multiple copies).
+-- Note that if there are multiple copies, at most one explodes
+-- to avoid excessive carnage and UI clutter (let's say,
+-- the multiple explosions interfere with each other or perhaps
 -- larger quantities of explosives tend to be packaged more safely).
---
--- If the item is discharged, no @OnSmash@ effects will be produced,
--- but the item will still get destroyed if the conditions are right
--- and if there is, in fact, any @OnSmash@ effect.
+-- Note also that @OnSmash@ effects are activated even if item discharged.
 dropCStoreItem :: MonadServerAtomic m
                => Bool -> CStore -> ActorId -> Actor -> Int
                -> ItemId -> ItemQuant
@@ -1295,12 +1293,12 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effs = IK.strengthOnSmash itemKind
-        -- Even if effects null, let's go through the paces to identify
-        -- the item, if needed and if recharged. We don't know if
-        -- it's voluntary, so we conservatively assume it is and we blame @aid@.
+        -- We don't know if it's voluntary,
+        --so we conservatively assume it is and we blame @aid@.
         voluntary = True
+        onSmashOnly = True
     effectAndDestroyAndAddKill
-      voluntary aid False aid aid iid c False effs (itemFull, kit)
+      voluntary aid onSmashOnly False aid aid iid c False effs (itemFull, kit)
     -- At most one copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c

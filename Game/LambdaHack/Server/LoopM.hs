@@ -356,8 +356,8 @@ applyPeriodicLevel = do
               -- Activate even if effects null or vacuous, to possibly
               -- destroy the item.
               effectAndDestroyAndAddKill
-                True aid
-                False aid aid iid (CActor aid cstore) True
+                True aid False False
+                aid aid iid (CActor aid cstore) True
                 (IK.ieffects itemKind) (itemFull, kit)
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
