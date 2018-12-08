@@ -568,7 +568,7 @@ potion5 = potionTemplate
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
   , icount   = 3 `dL` 1  -- always as many as possible on this level
                          -- without giving away potion identity
-  , irarity  = [(1, 10)]
+  , irarity  = [(1, 12)]
   , ieffects = [ OneOf [ RefillHP 10, RefillHP 5, Burn 5
                        , DropItem 1 maxBound COrgan "poisoned"
                        , toOrganGood "strengthened" (20 + 1 `d` 5) ]
