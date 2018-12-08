@@ -69,7 +69,9 @@ makeSentence = MU.makeSentence irregular
 irregular :: MU.Irregular
 irregular = ( fst MU.defIrregular
               `M.union`
-              M.fromList []  -- miniutter default suffices, for now
+              M.fromList [("merchandise", "merchandise")]
+                -- this is both countable and uncountable, but I use it here
+                -- only as uncountable, do I overwrite the default
             , snd MU.defIrregular )
 
 -- | Apply the @WWandW@ constructor, first representing repetitions
