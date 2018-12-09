@@ -485,19 +485,16 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions
-  nU <- nUI
   -- If difficulty is below standard, HP is added to the UI factions,
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
   let diffBonusCoeff = difficultyCoeff $ cdiff curChalSer
-      hasUIorEscapes Faction{gplayer} =
-        fhasUI gplayer || nU == 0 && fcanEscape gplayer
       boostFact = not bproj
                   && if diffBonusCoeff > 0
-                     then any (hasUIorEscapes . snd)
+                     then any (fhasUI . gplayer . snd)
                               (filter (\(fi, fa) -> isFriend fi fa fid)
                                       (EM.assocs factionD))
-                     else any (hasUIorEscapes . snd)
+                     else any (fhasUI . gplayer  . snd)
                               (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
       finalHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]

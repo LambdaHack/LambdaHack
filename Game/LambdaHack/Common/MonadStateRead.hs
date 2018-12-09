@@ -2,7 +2,7 @@
 -- | Game state reading monad and basic operations.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getState, getLevel, nUI
+  , getState, getLevel
   , getGameMode, isNoConfirmsGame, getEntryArena, pickWeaponM, displayTaunt
   ) where
 
@@ -39,11 +39,6 @@ getState = getsState id
 
 getLevel :: MonadStateRead m => LevelId -> m Level
 getLevel lid = getsState $ (EM.! lid) . sdungeon
-
-nUI :: MonadStateRead m => m Int
-nUI = do
-  factionD <- getsState sfactionD
-  return $! length $ filter (fhasUI . gplayer) $ EM.elems factionD
 
 getGameMode :: MonadStateRead m => m ModeKind
 getGameMode = do
