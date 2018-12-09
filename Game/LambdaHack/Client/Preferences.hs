@@ -141,6 +141,7 @@ effectToBenefit cops fact eff =
     IK.Identify -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.Detect IK.DetectAll radius -> (fromIntegral radius * 2, 0)
     IK.Detect IK.DetectLoot radius -> (fromIntegral radius * 2, 0)
+    IK.Detect IK.DetectExit radius -> (fromIntegral radius / 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)
     IK.SendFlying _ -> (0, -100)  -- very context dependent, but lack of control
     IK.PushActor _ -> (0, -100)   -- is deadly on some maps, leading to harm;
