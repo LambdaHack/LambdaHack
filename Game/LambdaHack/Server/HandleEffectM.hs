@@ -1246,17 +1246,25 @@ effectDropItem execSfx iidId ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   isRaw <- allGroupItems store grp target
+  curChalSer <- getsServer $ scurChalSer . soptions
+  factionD <- getsState sfactionD
   let is = filter ((/= iidId) . fst) isRaw
-  if bproj tb || null is
-  then return UseDud
-  else if fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
-          && ngroup == maxBound && kcopy == maxBound
-          && store `elem` [CEqp, CInv, CSha]
-  then
+  if | bproj tb || null is -> return UseDud
+     | ngroup == maxBound && kcopy == maxBound
+       && store `elem` [CEqp, CInv, CSha]
+       && fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
+       && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
+           && any (fhasUI . gplayer . snd)
+                  (filter (\(fi, fa) -> isFriend fi fa (bfid tb))
+                          (EM.assocs factionD))
+           || cdiff curChalSer == difficultyBound
+              && any (fhasUI . gplayer  . snd)
+                     (filter (\(fi, fa) -> isFoe fi fa (bfid tb))
+                             (EM.assocs factionD))) ->
 {-
-a hardwired hack, because AI heroes don't cope with Allure's decontamination
-chamber:
-- they don't switch leader to the hero past laboratory to equip
+A hardwired hack, because AI heroes don't cope with Allure's decontamination
+chamber; beginners may struggle too, so this is trigered by difficulty.
+- AI heroes don't switch leader to the hero past laboratory to equip
 weapons from stash between the in-lab hero picks up the loot pile
 and himself enters the decontamination chamber
 - all consumables always end up in a pack and the whole pack
@@ -1269,11 +1277,12 @@ would still need to learn to spread consumables from stash to packs afterwards
 is taught the foolproof solution of this puzzle, which is yet a bit more
 specific than the two general abilities described as desirable above
 -}
-    return UseUp
-  else do
-    unless (store == COrgan) execSfx
-    mapM_ (uncurry (dropCStoreItem True store target tb kcopy)) $ take ngroup is
-    return UseUp
+       return UseUp
+     | otherwise -> do
+       unless (store == COrgan) execSfx
+       mapM_ (uncurry (dropCStoreItem True store target tb kcopy))
+             (take ngroup is)
+       return UseUp
 
 -- | Drop a single actor's item (though possibly multiple copies).
 -- Note that if there are multiple copies, at most one explodes
