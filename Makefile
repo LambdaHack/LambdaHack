@@ -113,7 +113,7 @@ benchNull: benchBattle benchAnimBattle benchCrawl
 bench: benchBattle benchAnimBattle benchFrontendBattle benchCrawl benchFrontendCrawl
 
 nativeBenchCrawl:
-	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --logPriority 4 --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
+	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
 
 nativeBenchBattle:
 	dist/build/LambdaHack/LambdaHack		   --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
@@ -121,7 +121,7 @@ nativeBenchBattle:
 nativeBench: nativeBenchBattle nativeBenchCrawl
 
 nodeBenchCrawl:
-	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 2 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
+	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 2000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
 
 nodeBenchBattle:
 	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
