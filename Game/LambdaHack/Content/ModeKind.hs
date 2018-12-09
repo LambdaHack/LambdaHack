@@ -187,6 +187,8 @@ validateSingleRoster :: Caves -> Roster -> [Text]
 validateSingleRoster caves Roster{..} =
   [ "no player keeps the dungeon alive"
   | all (not . fneverEmpty . fst) rosterList ]
+  ++ [ "not exactly one UI client"
+     | length (filter (fhasUI . fst) rosterList) /= 1 ]
   ++ concatMap (validateSinglePlayer . fst) rosterList
   ++ let checkPl field pl =
            [ pl <+> "is not a player name in" <+> field
