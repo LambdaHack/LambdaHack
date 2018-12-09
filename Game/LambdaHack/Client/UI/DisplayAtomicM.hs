@@ -1418,7 +1418,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      [ MU.SubjectVerbSg spart verb, sleepy, tpart
                      , "with", partItemChoice itemFullWeapon kitWeapon ]
               butEvenThough = if hurtMult >= 70
-                              then "accurately, even though"
+                              then " accurately, even though"
                               else ", but"
               actionPhrase =
                 MU.SubjectVerbSg tpart
