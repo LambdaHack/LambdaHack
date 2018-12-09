@@ -382,13 +382,19 @@ fleeList aid = do
       dVic = map (dist &&& id) myVic
       -- Flee, if possible. Direct access required; not enough time to open.
       -- Can't be occupied.
-      accUnocc p = Tile.isWalkable coTileSpeedup (lvl `at` p)
-                   && not (occupiedBigLvl p lvl)
-                   && not (occupiedProjLvl p lvl)
-      accVic = filter (accUnocc . snd) dVic
-      gtVic = filter ((> dist (bpos b)) . fst) accVic
-      eqVic = filter ((== dist (bpos b)) . fst) accVic
-      ltVic = filter ((< dist (bpos b)) . fst) accVic
+      accWalkUnocc p = Tile.isWalkable coTileSpeedup (lvl `at` p)
+                       && not (occupiedBigLvl p lvl)
+                       && not (occupiedProjLvl p lvl)
+      accWalkVic = filter (accWalkUnocc . snd) dVic
+      gtVic = filter ((> dist (bpos b)) . fst) accWalkVic
+      eqVic = filter ((== dist (bpos b)) . fst) accWalkVic
+      accNonWalkUnocc p = not (Tile.isWalkable coTileSpeedup (lvl `at` p))
+                          && (Tile.isEasyOpen coTileSpeedup (lvl `at` p))
+                          && not (occupiedBigLvl p lvl)
+                          && not (occupiedProjLvl p lvl)
+      accNonWalkVic = filter (accNonWalkUnocc . snd) dVic
+      gtEqNonVic = filter ((>= dist (bpos b)) . fst) accNonWalkVic
+      ltAllVic = filter ((< dist (bpos b)) . fst) dVic
       rewardPath mult (d, p) = case etgtPath of
         Right tgtPath | p `elem` tgtPath ->
           (100 * mult * d, p)
@@ -406,5 +412,5 @@ fleeList aid = do
         _ -> (mult * d, p)  -- far from target path or even on target goal
       goodVic = map (rewardPath 10000) gtVic
                 ++ map (rewardPath 100) eqVic
-      badVic = map (rewardPath 1) ltVic
+      badVic = map (rewardPath 1) $ gtEqNonVic ++ ltAllVic
   return (goodVic, badVic)

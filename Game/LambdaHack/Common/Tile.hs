@@ -213,8 +213,8 @@ isNoActor :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isNoActor #-}
 isNoActor TileSpeedup{isNoActorTab} = accessTab isNoActorTab
 
--- | Whether a tile kind (specified by its id) has an OpenTo feature
--- and reasonable alter min skill.
+-- | Whether a tile kind (specified by its id) has an @OpenTo@ feature
+-- or is walkable even without opening.
 isEasyOpen :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isEasyOpen #-}
 isEasyOpen TileSpeedup{isEasyOpenTab} = accessTab isEasyOpenTab

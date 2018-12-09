@@ -245,7 +245,7 @@ actionStrategy moldLeader aid retry = do
           , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
-          , flee aid panicFleeL  -- ultimate panic mode, displaces foes
+          , flee aid panicFleeL  -- ultimate panic mode; open tiles, if needed
           , condAnyFoeAdj )
         ]
       -- Order doesn't matter, scaling does.
