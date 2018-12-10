@@ -396,13 +396,20 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- it equivalent to a permanent item --- one without timeout restriction.
       -- Timeout 2 means two such items are needed to use the effect each turn,
       -- so a single such item may be worth half of the permanent value.
-      -- With non-periodic items, when we need to expend a turn to apply
-      -- or we lose opportunity to use another weapon if we hit with this one,
-      -- the loss of value due to timeout is lower.
-      timeout = IA.aTimeout arItem
-      scalePeriodic value = value / max 1 (fromIntegral timeout)
-      scaleTimeout v | fromIntegral timeout <= avgItemDelay = v
-                     | otherwise = v * avgItemDelay / fromIntegral timeout
+      -- E.g., when item heals 1 HP each turn, that's precisly the calculation.
+      timeout = fromIntegral $ IA.aTimeout arItem
+      scalePeriodic value = value / max 1 timeout
+      -- With non-periodic items, when we need to expend a turn to apply the
+      -- item or, e.g., we lose the opportunity to use another weapon if we hit
+      -- with this one, the loss of value due to timeout is lower.
+      -- Also, by the time cooldown recharges, one of combatants is often dead
+      -- or fled, so some effects are no longer useful (but 1 HP gain is).
+      -- To balance all that, we consider a square root of timeout
+      -- and assume we need to spend turn on other actions at least every other
+      -- turn (hence @max 2@). Note that this makes AI like powerful weapons
+      -- with high timeout a bit more, though it still prefers low timeouts.
+      timeoutSqrt = sqrt $ max 2 timeout
+      scaleTimeout v = v / timeoutSqrt
       (effSelf, effFoe) =
         let effPairs = map (effectToBenefit cops fact) (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
