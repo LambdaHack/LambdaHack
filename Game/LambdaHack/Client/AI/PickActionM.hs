@@ -707,7 +707,8 @@ projectItem aid = do
           localTime <- getsState $ getLocalTime (blid b)
           let coeff CGround = 2  -- pickup turn saved
               coeff COrgan = error $ "" `showFailure` benList
-              coeff CEqp = 100000  -- must hinder currently (or be very potent)
+              coeff CEqp = 1000  -- must hinder currently (or be very potent);
+                                 -- note: not larger, to avoid Int32 overflow
               coeff CInv = 1
               coeff CSha = 1
               fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
