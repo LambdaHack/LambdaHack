@@ -67,12 +67,14 @@ makePhrase = MU.makePhrase irregular
 makeSentence = MU.makeSentence irregular
 
 irregular :: MU.Irregular
-irregular = ( fst MU.defIrregular
-              `M.union`
-              M.fromList [("merchandise", "merchandise")]
-                -- this is both countable and uncountable, but I use it here
-                -- only as uncountable, do I overwrite the default
-            , snd MU.defIrregular )
+irregular = MU.Irregular
+  { irrPlural = MU.irrPlural MU.defIrregular
+                `M.union` M.fromList
+      [("merchandise", "merchandise")]
+        -- this is both countable and uncountable, but I use it here
+        -- only as uncountable, do I overwrite the default
+  , irrIndefinite = MU.irrIndefinite MU.defIrregular
+  }
 
 -- | Apply the @WWandW@ constructor, first representing repetitions
 -- as @CardinalWs@.

@@ -666,6 +666,6 @@ spoilsBlurb currencyName total dungeonTotal =
      | total == 0 -> "You haven't found any genuine treasure."
      | otherwise -> makeSentence
          [ "your spoils are worth"
-         , MU.CarWs total $ MU.Text currencyName
+         , MU.CarAWs total $ MU.Text currencyName
          , "out of the rumoured total"
          , MU.Cardinal dungeonTotal ]

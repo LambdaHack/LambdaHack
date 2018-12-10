@@ -510,8 +510,7 @@ itemAidVerbMU aid verb iid ek cstore = do
               assert (n <= k `blame` (aid, verb, iid, cstore))
               $ let (name1, powers) =
                       partItemShort side factionD localTime itemFull kit
-                    name = if n == 1 then name1 else MU.CarWs n name1
-                in MU.Phrase ["the", name, powers]
+                in MU.Phrase ["the", MU.Car1Ws n name1, powers]
           msg = makeSentence [MU.SubjectVerbSg subject verb, object]
       msgAdd msg
 
@@ -871,9 +870,9 @@ displayGameOverLoot (heldBag, total) generationAn = do
                     | max 0 k == 0 && n == 0 ->
                       "No such specimen was recorded:"
                     | otherwise -> makePhrase [ "You hold"
-                                              , MU.CardinalWs (max 0 k) "piece"
+                                              , MU.CardinalAWs (max 0 k) "piece"
                                               , "out of"
-                                              , MU.Cardinal n
+                                              , MU.Car n
                                               , "scattered:" ]
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
@@ -933,7 +932,7 @@ displayGameOverLore slore exposeCount generationAn = do
       promptFun _ _ k =
         makeSentence
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
-          , if k /= 1 then MU.CarWs k "time" else "one time" ]
+          , MU.CarWs k "time" ]
       prompt = makeSentence [ "you experienced the following variety of"
                             , MU.Ws $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun

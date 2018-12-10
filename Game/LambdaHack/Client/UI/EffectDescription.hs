@@ -82,7 +82,7 @@ effectToSuffix detailLevel effect =
               let (d, m) = p `divMod` 10
               in if m == 0
                  then makePhrase [MU.CarWs d "move"]
-                 else makePhrase [MU.CarWs p "tenth", "of a move"]
+                 else makePhrase [MU.Car1Ws p "tenth", "of a move"]
       in "of speed surge for" <+> moves
     Teleport dice | Dice.supDice dice <= 9 ->
       "of blinking" <+> wrapInParens (tshow dice)
@@ -118,7 +118,7 @@ effectToSuffix detailLevel effect =
           marvels = T.intercalate ", " $ map (effectToSuffix detailLevel) l
       in if detailLevel >= DetailAll && marvels /= ""
          then header <+> "[" <> marvels <> "]"
-         else header
+         else header  -- of no wonders :)
     OnSmash _ -> ""  -- printed inside a separate section
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     Composite effs -> T.intercalate " and then "

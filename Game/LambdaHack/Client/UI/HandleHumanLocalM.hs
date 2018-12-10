@@ -123,9 +123,7 @@ chooseItemDialogMode c = do
         in case c2 of
         MStore CGround ->
           let n = countItems CGround
-              nItems = case n of
-                0 -> "no items"
-                _ -> MU.CarWs n "item"
+              nItems = MU.CarAWs n "item"
           in makePhrase
                [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
                , nItems, "at"
@@ -146,9 +144,7 @@ chooseItemDialogMode c = do
                , MU.Text t ]
         MStore cstore ->
           let n = countItems cstore
-              nItems = case n of
-                0 -> "no items"
-                _ -> MU.CarWs n "item"
+              nItems = MU.CarAWs n "item"
           in makePhrase
                [ MU.Capitalize $ MU.SubjectVerbSg subject "see"
                , nItems, MU.Text tIn
@@ -283,7 +279,7 @@ chooseItemDialogMode c = do
                     [makeSentence
                        [ "Appears on"
                        , MU.CarWs (ES.size es) "level" <> ":"
-                       , MU.WWandW $ map (MU.Text . tshow) $ sort
+                       , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
                           (if sexposePlaces soptions
@@ -715,7 +711,7 @@ eitherHistory showAll = do
         [ "You survived for"
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
-        , MU.Text (tshow turnsLocal) <> ")" ]
+        , MU.Car turnsLocal <> ")" ]
       kxs = [ (Right sn, (slotPrefix sn, 0, rwidth))
             | sn <- take (length rh) intSlots ]
   promptAdd0 msg

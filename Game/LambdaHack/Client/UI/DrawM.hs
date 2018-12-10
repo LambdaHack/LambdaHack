@@ -109,10 +109,7 @@ targetDesc mtarget = do
                 factionD <- getsState sfactionD
                 let (name, powers) =
                       partItem side factionD localTime itemFull kit
-                return $! makePhrase
-                          $ if k == 1
-                            then [name, powers]  -- "a sword" too wordy
-                            else [MU.CarWs k name, powers]
+                return $! makePhrase [MU.Car1Ws k name, powers]
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (Just pointedText, Nothing)
@@ -490,10 +487,7 @@ drawFrameStatus drawnLevelId = do
                 factionD <- getsState sfactionD
                 let (name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
-                    t = makePhrase
-                        $ if k == 1
-                          then [name, powers]  -- "a sword" too wordy
-                          else [MU.CarWs k name, powers]
+                    t = makePhrase [MU.Car1Ws k name, powers]
                 return $! "Item:" <+> trimTgtDesc widthTgtOrItem t
         | otherwise =
             return $! tgtBlurb

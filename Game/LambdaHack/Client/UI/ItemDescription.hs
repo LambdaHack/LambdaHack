@@ -234,7 +234,7 @@ partItemWsR side factionD ranged count localTime itemFull kit =
             MU.Phrase [MU.Text $ tshow count <> "-fold", name, powers]
         | IA.checkFlag Ability.Unique arItem && count == 1 ->
             MU.Phrase ["the", name, powers]
-        | otherwise -> MU.Phrase [MU.CarWs count name, powers]
+        | otherwise -> MU.Phrase [MU.CarAWs count name, powers]
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
            -> MU.Part
