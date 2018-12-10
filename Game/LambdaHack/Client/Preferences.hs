@@ -102,8 +102,8 @@ effectToBenefit cops fact eff =
     IK.CreateItem COrgan "condition" _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
-      let noneResult = averageTurnValue + 1  -- copy count used instead
-          turnTimer = IK.foldTimer noneResult Dice.meanDice Dice.meanDice timer
+      let turnTimer = IK.foldTimer 1 Dice.meanDice Dice.meanDice timer
+            -- copy count used instead of timer for organs with many copies
           (total, count) = organBenefit turnTimer grp cops fact
       in delta $ total / fromIntegral count
            -- the same when created in me and in foe
@@ -225,8 +225,8 @@ durabilityMult = avgItemLife / avgItemDelay
 -- That's how the lack of durability impacts their value, not via
 -- @durabilityMult@, which however may be applied to organ creating item.
 -- So, on average, maintaining the organ costs @averageTurnValue/turnTimer@.
--- So, if an item lasts @averageTurnValue@ and it can be created at will,
--- it's as valuable as permanent. This makes sense even if the item creating
+-- So, if an item lasts @averageTurnValue@ and can be created at will, it's
+-- almost as valuable as permanent. This makes sense even if the item creating
 -- the organ is not durable, but the timer is huge. One may think the lack
 -- of durability should be offset by the timer, but remember that average
 -- item life @avgItemLife@ is rather low, so either a new item will be found
@@ -239,20 +239,29 @@ durabilityMult = avgItemLife / avgItemDelay
 -- because, similarly as for periodic items, we don't control when they
 -- are applied and we can't stop/restart them.
 --
--- We assume, only one of the timer and count mechanisms is present at once.
+-- We assume, only one of the timer and count mechanisms is present at once
+-- (@count@ or @turnTimer@ is 1).
 -- We assume no organ has effect that drops its group or creates its group;
 -- otherwise we'd loop.
 organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
              -> (Double, Int)
 organBenefit turnTimer grp cops@COps{coitem} fact =
   let f (!sacc, !pacc) !p _ !kind =
-        let paspect asp = fromIntegral p * aspectToBenefit asp
-            peffect eff = fromIntegral p
-                          * fst (effectToBenefit cops fact eff)
-        in ( sacc + Dice.meanDice (IK.icount kind)
-                    * (sum (map paspect $ IK.iaspects kind)
-                       + sum (map peffect $ IK.ieffects kind))
-                  - averageTurnValue / turnTimer
+        let count = Dice.meanDice (IK.icount kind)
+            paspect asp =
+              fromIntegral p
+              * count * turnTimer
+                -- the aspect stays for this many turns'
+               * aspectToBenefit asp
+            peffect eff =
+              fromIntegral p
+              * count
+                -- this many consecutive effects will be generated, if any
+              * fst (effectToBenefit cops fact eff)
+        in ( sacc + (sum (map paspect $ IK.iaspects kind)
+                     + sum (map peffect $ IK.ieffects kind))
+             - averageTurnValue  -- the cost of 1 turn spent acquiring the organ
+                                 -- (or of inflexibility of periodic items)
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
 
@@ -277,6 +286,16 @@ fakeItem kindId kind km =
       itemDisco = ItemDiscoMean km
   in ItemFull itemBase kindId kind itemDisco True
 
+-- The value of aspect bonus is supposed to be, roughly, the benefit
+-- of having that bonus on actor for one turn (as if equipping didn't cost
+-- any time). Comparing or adding this value later on to the benefit of one-time
+-- applying the item makes sense, especially if the item is durable,
+-- but even if not, as lont as I have many items relative to equipment slots.
+-- If I have scarcity of items, the value should be higher, because if I apply
+-- a non-durable item, it no longer benefits me, but if I wear it,
+-- it can benefit me next turn also. The time cost of equipping balances this
+-- to some extent, just as @durabilityMult@ and the equipment slot limit.
+--
 -- Value of aspects and effects is linked by some deep economic principles
 -- which I'm unfortunately ignorant of. E.g., average weapon hits for 5HP,
 -- so it's worth 50 per turn, so that should also be the worth per turn
