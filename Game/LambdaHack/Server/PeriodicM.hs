@@ -296,7 +296,7 @@ leadLevelSwitch = do
             s <- getsServer $ (EM.! fid) . sclientStates
             let leaderStuck = actorWaits body
                 oursRaw =
-                  [ (lid, (allSeen, as))
+                  [ ((lid, lvl), (allSeen, as))
                   | (lid, lvl) <- EM.assocs $ sdungeon s
                   , lid /= blid body || not leaderStuck
                   , let as = -- Drama levels ignored, hence @Regular@.
@@ -321,14 +321,19 @@ leadLevelSwitch = do
                 -- and sometimes the level with the boss is counted among
                 -- them, but it never happens in the crucial periods when
                 -- AI armies are transferred from level to level.
-                f (lid, _) = abs $ fromEnum lid
+                f ((lid, _), _) = abs $ fromEnum lid
                 ours = oursSeen ++ take 2 (sortBy (comparing f) oursNotSeen)
-            -- Sole stranded actors tend to become (or stay) leaders
-            -- so that they can join the main force ASAP.
+            -- Actors on desolate levels (not many own or enemy non-projectiles)
+            -- tend to become (or stay) leaders so that they can join the main
+            -- force where it matters ASAP. Unfortunately, this keeps hero
+            -- scouts as leader, but foes spawn very fast earlyon ,
+            -- so they give back leadership rather quicly to let others follow.
+            -- We could also ignore non-mobile and sleeping actors, but probably
+            -- not too much noise from that.
             let freqList = [ (k, (lid, aid))
-                           | (lid, (_, aid : rest)) <- ours
-                           , let len = 1 + min 7 (length rest)
-                                 k = 1000000 `div` len ]
+                           | ((lid, lvl), (_, aid : _)) <- ours
+                           , let len = min 20 (EM.size $ lbig lvl)
+                                 k = 1000000 `div` (1 + len) ]
             unless (null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
