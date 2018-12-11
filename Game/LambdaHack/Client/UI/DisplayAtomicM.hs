@@ -1398,34 +1398,33 @@ strike catch source target iid cstore = assert (source /= target) $ do
                   - modifyDamageBySpeed rawDeltaHP speed
                 _ -> - rawDeltaHP
           in min 0 speedDeltaHP
-        deadliness = 1000 * (- sDamage) `div` bhp tb
+        deadliness = 1000 * (- sDamage) `div` max oneM (bhp tb)
         strongly
-          | deadliness >= 20000 = "arfully"
-          | deadliness >= 10000 = "gracefully"
+          | deadliness >= 10000 = "artfully"
           | deadliness >= 5000 = "madly"
           | deadliness >= 2000 = "mercilessly"
-          | deadliness >= 1000 = "murderously"
-          | deadliness >= 700 = "unstoppably"
-          | deadliness >= 500 = "devastatingly"
+          | deadliness >= 1000 = "murderously"  -- one blow can wipe out all HP
+          | deadliness >= 700 = "devastatingly"
+          | deadliness >= 500 = "vehemently"
           | deadliness >= 400 = "forcefully"
           | deadliness >= 350 = "sturdily"
           | deadliness >= 300 = "accurately"
           | deadliness >= 20 = ""  -- common, terse case, between 2% and 30%
           | deadliness >= 10 = "cautiously"
           | deadliness >= 5 = "guardedly"
-          | deadliness >= 3 = "fearfully"
+          | deadliness >= 3 = "hesitantly"
           | deadliness >= 2 = "clumsily"
           | deadliness >= 1 = "haltingly"
           | otherwise = "feebly"
         -- Here we take into account armor, so we look at @hurtMult@,
         -- so we finally convey the full info about effectiveness of the strike.
-        blockHowWell  -- at @hurtMult >= 90@ message not shown at all
+        blockHowWell  -- if @hurtMult >= 90@, the message not shown at all
           | hurtMult >= 70 = "too late"
-          | hurtMult >= 10 = if | deadliness >= 500 -> "partly"
+          | hurtMult >= 20 = if | deadliness >= 500 -> "partly"
                                 | deadliness >= 200 -> "to a large extent"
                                 | otherwise -> "for the most part"
           | hurtMult > 1 = if | actorWaits tb -> "doggedly"
-                              | hurtMult >= 5 -> "nonchalantly"
+                              | hurtMult >= 10 -> "nonchalantly"
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- 1% always gets through, but if fast missile, can be deadly
