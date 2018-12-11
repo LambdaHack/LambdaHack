@@ -162,7 +162,8 @@ slotToSentence es = case es of
   EqpSlotSight -> "The short-sighted wear it to notice their demise sooner."
   EqpSlotShine -> "Explorers brave enough to highlight themselves put it in their equipment."
   EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."
-  EqpSlotWeapon -> "Melee fighters pick it for their weapon combo."
+  EqpSlotWeaponFast -> "Melee fighters pick it as their mainstay weapon."
+  EqpSlotWeaponBig -> "Melee fighters pick it as their opening weapon."
 
 skillName :: Skill -> Text
 skillName SkMove = "move stat"

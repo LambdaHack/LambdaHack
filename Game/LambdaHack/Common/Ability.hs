@@ -143,7 +143,8 @@ data EqpSlot =
   | EqpSlotSight
   | EqpSlotShine
   | EqpSlotMiscBonus
-  | EqpSlotWeapon
+  | EqpSlotWeaponFast
+  | EqpSlotWeaponBig
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance NFData Skill

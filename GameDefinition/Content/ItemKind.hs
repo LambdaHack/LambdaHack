@@ -887,7 +887,7 @@ scroll8 = scrollTemplate
   }
 scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(1, 9)]  -- powerful, even if not ideal
+  , irarity  = [(10, 9)]  -- powerful, even if not ideal; scares newbies
   , ieffects = [Detect DetectAll 20]
   }
 scroll10 = scrollTemplate
@@ -1474,7 +1474,7 @@ dagger = ItemKind
                , AddSkill SkArmorMelee $ (1 `d` 2) * 5
                    -- very common, so don't make too random
                , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeapon
+               , EqpSlot EqpSlotWeaponFast
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
   , idesc    = "A short dagger for thrusting and parrying blows. Does not penetrate deeply, but is quick to move and hard to block. Especially useful in conjunction with a larger weapon."
@@ -1504,7 +1504,7 @@ hammerTemplate = ItemKind
                         -- to subdivide this identification class by dice
   , iaspects = [ HideAs "hammer unknown"
                , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeapon
+               , EqpSlot EqpSlotWeaponBig
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
   , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
@@ -1518,8 +1518,8 @@ hammer1 = hammerTemplate
 hammer2 = hammerTemplate
   { ifreq    = [("common item", 10), ("starting weapon", 1)]
   , iweight  = 1000
-  , iaspects = [Timeout 3]
-               ++ iaspects hammerTemplate
+  , iaspects = [Timeout 3, EqpSlot EqpSlotWeaponFast]
+               ++ delete (EqpSlot EqpSlotWeaponBig) (iaspects hammerTemplate)
   , idesc    = "Upon closer inspection, this hammer turns out particularly handy and well balanced, with one thick and sturdy and two long and sharp points compensating the modest heft."
   }
 hammer3 = hammerTemplate
@@ -1567,7 +1567,7 @@ sword = ItemKind
   , idamage  = 10 `d` 1
   , iaspects = [ Timeout 5
                , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeapon
+               , EqpSlot EqpSlotWeaponBig
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
   , idesc    = "Difficult to master; deadly when used effectively. The steel is particularly hard and keen, but rusts quickly without regular maintenance."
@@ -1586,8 +1586,8 @@ swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
-  , iaspects = [SetFlag Unique]
-               ++ iaspects sword
+  , iaspects = [SetFlag Unique, Timeout 3, EqpSlot EqpSlotWeaponFast]
+               ++ (iaspects sword \\ [Timeout 5, EqpSlot EqpSlotWeaponBig])
   , ieffects = [ DropItem 1 maxBound COrgan "condition"
                , RefillCalm (-10)
                , Yell ]
@@ -1608,7 +1608,7 @@ halberd = ItemKind
                    -- useless against armor at game start
                , AddSkill SkArmorMelee $ (1 + 1 `dL` 4) * 5
                , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeapon
+               , EqpSlot EqpSlotWeaponBig
                , toVelocity 20 ]  -- not balanced
   , ieffects = []
   , idesc    = "An improvised weapon made of scythe's blade attached to a long pole. Not often one succeeds in making enough space to swing it freely, but even when stuck between terrain obstacles it blocks approaches effectively."

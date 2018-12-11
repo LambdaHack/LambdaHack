@@ -188,15 +188,23 @@ strongestSlot :: DiscoveryBenefit -> Ability.EqpSlot -> [(ItemId, ItemFullKit)]
               -> [(Int, (ItemId, ItemFullKit))]
 strongestSlot discoBenefit eqpSlot is =
   let f (iid, (itemFull, kit)) =
-        let Benefit{benInEqp, benPickup} = discoBenefit EM.! iid
+        let Benefit{benInEqp, benPickup, benMelee} = discoBenefit EM.! iid
         in if not benInEqp
            then Nothing
            else Just $
-             let ben = if eqpSlot == Ability.EqpSlotWeapon
-                       -- For equipping/unequipping a weapon we take into
-                       -- account not only melee damage, but also aspects, etc.
-                       then ceiling benPickup
-                       else valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
+             let ben = case eqpSlot of
+                   EqpSlotWeaponFast ->
+                       -- For equipping/unequipping the main reliable weapon,
+                       -- we take into account not only melee damage,
+                       -- but also timeout, aspects, etc.
+                       ceiling benPickup
+                   EqpSlotWeaponBig ->
+                       -- For equipping/unequipping the one-shot big hitter
+                       -- weapon, we take into account only melee damage
+                       -- and we don't even care if it's durable.
+                       -- The backup is ready in the slot above, after all.
+                       ceiling benMelee
+                   _ -> valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
@@ -226,7 +234,8 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
       + Ability.getSk Ability.SkSmell aSkills
       + Ability.getSk Ability.SkNocto aSkills
           -- powerful, but hard to boost over aSight
-    EqpSlotWeapon -> error $ "" `showFailure` arItem  -- sum of all benefits
+    EqpSlotWeaponFast -> error $ "" `showFailure` arItem  -- sum of all benefits
+    EqpSlotWeaponBig -> error $ "" `showFailure` arItem  -- sum of all benefits
 
 hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
 hasCharge localTime itemFull (itemK, itemTimer) =
