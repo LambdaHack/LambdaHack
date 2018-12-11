@@ -1143,6 +1143,16 @@ displayRespSfxAtomicUI sfx = case sfx of
                 lvl <- getLevel lid
                 msgAdd $ cdesc $ okind cocave $ lkind lvl
               [] -> return ()  -- spell fizzles; normally should not be sent
+        IK.Escape{} | isOurCharacter -> do
+          ours <- getsState $ fidActorNotProjGlobalAssocs side
+          when (length ours > 1) $ do
+            -- TODO: only say farewell if nonstandard dominated actors
+            -- in the team. Also react to the only suriving actor being such.
+            let farewells = ", says its farewells"
+                object = partActor bUI
+            msgAdd $ "The team joins" <+> makePhrase [object]
+                     <> ", forms a perimeter, repacks its belongings"
+                     <> farewells <+> "and leaves triumphant."
         IK.Escape{} -> return ()
         IK.Paralyze{} -> actorVerbMU aid bUI "be paralyzed"
         IK.ParalyzeInWater{} -> actorVerbMU aid bUI "move with difficulty"

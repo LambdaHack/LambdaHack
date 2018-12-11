@@ -380,11 +380,11 @@ resetGameStart = do
 -- | The part of speech describing the actor or "you" if a leader
 -- of the client's faction. The actor may be not present in the dungeon.
 partActorLeader :: MonadClientUI m => ActorId -> ActorUI -> m MU.Part
-partActorLeader aid b = do
+partActorLeader aid bUI = do
   mleader <- getsClient sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
-    _ -> partActor b
+    _ -> partActor bUI
 
 partActorLeaderFun :: MonadClientUI m => m (ActorId -> MU.Part)
 partActorLeaderFun = do

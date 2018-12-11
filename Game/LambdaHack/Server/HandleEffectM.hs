@@ -358,7 +358,7 @@ effectSem source target iid c periodic effect = do
     IK.Yell -> effectYell execSfx target
     IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
-    IK.Escape{} -> effectEscape source target
+    IK.Escape{} -> effectEscape execSfx source target
     IK.Paralyze nDm -> effectParalyze execSfx nDm source target
     IK.ParalyzeInWater nDm -> effectParalyzeInWater execSfx nDm source target
     IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
@@ -991,8 +991,8 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
 -- ** Escape
 
 -- | The faction leaves the dungeon.
-effectEscape :: MonadServerAtomic m => ActorId -> ActorId -> m UseResult
-effectEscape source target = do
+effectEscape :: MonadServerAtomic m => m () -> ActorId -> ActorId -> m UseResult
+effectEscape execSfx source target = do
   -- Obvious effect, nothing announced.
   sb <- getsState $ getActorBody source
   b <- getsState $ getActorBody target
@@ -1004,6 +1004,7 @@ effectEscape source target = do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
        return UseId
      | otherwise -> do
+       execSfx
        deduceQuits (bfid b) $ Status Escape (fromEnum $ blid b) Nothing
        return UseUp
 
