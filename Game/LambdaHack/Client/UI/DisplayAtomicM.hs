@@ -1445,10 +1445,13 @@ strike catch source target iid cstore = assert (source /= target) $ do
                            | otherwise = MU.Text $ IK.iname itemKind
                   in [ "with", MU.WownW tpronoun name ]
              else []
+        deadlinessMatchesHurtMult =
+          deadliness >= 20 && hurtMult >= 70  -- strong attack and weak defense
+          || deadliness < 20 && hurtMult < 70  -- weak attack and decent defense
         msgArmor = if hurtMult >= 90
                    then ""  -- at most minor armor, relatively to strength
                             -- of the hit, so we don't talk about blocking
-                   else (if hurtMult >= 70 then " and" else ", but")
+                   else (if deadlinessMatchesHurtMult then " and" else ", but")
                         <+> makePhrase ([blockVerb, blockHowWell]
                                         ++ blockWithWhat)
         ps = (bpos tb, bpos sb)
