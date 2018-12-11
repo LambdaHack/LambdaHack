@@ -1343,6 +1343,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
     tbUI <- getsSession $ getActorUI target
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
+    sMaxSk <- getsState $ getActorMaxSkills source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
     tpart <- partActorLeader target tbUI
@@ -1366,23 +1367,99 @@ strike catch source target iid cstore = assert (source /= target) $ do
             , itemKind itemFull2 ) )
         eqpAndOrgArmor = map rateArmor $ filter notCond eqpOrgKit
         condArmor = map rateArmor $ filter isOrdinaryCond orgKit
-        verb | catch = "catch"
-             | otherwise = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
+        verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
+        weaponName = partItemChoice itemFullWeapon kitWeapon
         sleepy = if bwatch tb `elem` [WSleep, WWake] && tpart /= "you"
                  then "the sleepy"
                  else ""
-        -- In the case of forceful hit, we mention neither attacker's bonuses
-        -- nor victim's maluses. The player may indeed be left guessing.
-        subtly = if IK.idamage (itemKind itemFullWeapon) == 0
-                 then if not (bproj sb) then "delicately" else ""
-                 else if hurtMult >= 120 then "forcefully" else ""
+        -- For variety, attack adverb is based on attacker's and weapon's
+        -- damage potential as compared to victim's current HP.
+        -- We are not taking into account victim's armor yet.
+        sHurt = armorHurtCalculation (bproj sb) sMaxSk Ability.zeroSkills
+        sDamage =
+          let dmg = Dice.supDice $ IK.idamage $ itemKind itemFullWeapon
+              rawDeltaHP = fromIntegral sHurt * xM dmg `divUp` 100
+              speedDeltaHP = case btrajectory sb of
+                Just (_, speed) | bproj sb ->
+                  - modifyDamageBySpeed rawDeltaHP speed
+                _ -> - rawDeltaHP
+          in min 0 speedDeltaHP
+        deadliness = 1000 * (- sDamage) `div` bhp tb
+        strongly
+          | deadliness >= 20000 = "arfully"
+          | deadliness >= 10000 = "gracefully"
+          | deadliness >= 5000 = "madly"
+          | deadliness >= 2000 = "mercilessly"
+          | deadliness >= 1000 = "murderously"
+          | deadliness >= 700 = "unstoppably"
+          | deadliness >= 500 = "devastatingly"
+          | deadliness >= 400 = "forcefully"
+          | deadliness >= 350 = "sturdily"
+          | deadliness >= 300 = "accurately"
+          | deadliness >= 20 = ""  -- common, terse case, between 2% and 30%
+          | deadliness >= 10 = "cautiously"
+          | deadliness >= 5 = "guardedly"
+          | deadliness >= 3 = "fearfully"
+          | deadliness >= 2 = "clumsily"
+          | deadliness >= 1 = "haltingly"
+          | otherwise = "feebly"
+        -- Here we take into account armor, so we look at @hurtMult@,
+        -- so we finally convey the full info about effectiveness of the strike.
+        blockHowWell  -- at @hurtMult >= 90@ message not shown at all
+          | hurtMult >= 70 = "too late"
+          | hurtMult >= 10 = if | deadliness >= 500 -> "partly"
+                                | deadliness >= 200 -> "to a large extent"
+                                | otherwise -> "for the most part"
+          | hurtMult > 1 = if | actorWaits tb -> "doggedly"
+                              | hurtMult >= 5 -> "nonchalantly"
+                              | otherwise -> "bemusedly"
+          | otherwise = "almost completely"
+              -- 1% always gets through, but if fast missile, can be deadly
+        blockVerb = MU.SubjectVerbSg tpart
+                    $ if bproj sb
+                      then if actorWaits tb
+                           then "deflect it"
+                           else "fend it off"  -- ward it off
+                      else if actorWaits tb
+                           then "block"
+                           else "parry"
+        blockWithWhat | null eqpAndOrgArmor = []
+                      | otherwise =
+          let (armor, (iidArmor, itemKind)) =
+                maximumBy (Ord.comparing fst) eqpAndOrgArmor
+          in if armor >= 15
+             then let name | iidArmor == btrunk tb = "trunk"
+                           | otherwise = MU.Text $ IK.iname itemKind
+                  in [ "with", MU.WownW tpronoun name ]
+             else []
+        msgArmor = if hurtMult >= 90
+                   then ""  -- at most minor armor, relatively to strength
+                            -- of the hit, so we don't talk about blocking
+                   else (if hurtMult >= 70 then " and" else ", but")
+                        <+> makePhrase ([blockVerb, blockHowWell]
+                                        ++ blockWithWhat)
         ps = (bpos tb, bpos sb)
-    if | not (hasCharge localTime itemFullWeapon kitWeapon)
-         && not catch -> do  -- charge not needed when catching
+        basicAnim
+          | hurtMult >= 70 = twirlSplash coscreen ps Color.BrRed Color.Red
+          | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
+          | otherwise = blockMiss coscreen ps
+    -- The messages about parrying and immediately afterwards dying
+    -- sound goofy, but there is no easy way to prevent that.
+    -- And it's consistent.
+    -- If/when death blow instead sets HP to 1 and only the next below 1,
+    -- we can check here for HP==1; also perhaps actors with HP 1 should
+    -- not be able to block.
+    if | catch -> do  -- charge not needed when catching
+         let msg = makeSentence $
+               [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
+               ++ if bproj sb then [] else ["with", weaponName]
+         msgAdd msg
+         animate (blid tb) $ blockHit coscreen ps Color.BrGreen Color.Green
+       | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
          -- Much less plausible with a wielded weapon.
          let msg = if bproj sb
@@ -1392,89 +1469,41 @@ strike catch source target iid cstore = assert (source /= target) $ do
                    else makePhrase
                           [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
                           , "to", verb, tpart, "with"
-                          , partItemChoice itemFullWeapon kitWeapon ]
+                          , weaponName ]
                         <> ", but it's not readied yet."
          msgAdd msg  -- and no animation
        | bproj sb && bproj tb -> do  -- too much spam when explosions collide
-           msgAdd $ makeSentence $ [MU.SubjectVerbSg spart verb, tpart]
-           -- Basic animation regardless of stats.
-           animate (blid tb) $ twirlSplash coscreen ps Color.BrRed Color.Red
-       | bhp tb <= 0  -- incapacitated, so doesn't actively block
-         || hurtMult > 90  -- at most minor armor
-         || IK.idamage (itemKind itemFullWeapon) == 0
-         || catch -> do
-         let msg =
-               -- In this case either no items increase armor enough,
-               -- or the bonuses and maluses cancel out, so it would be
-               -- a lot of talk about a negligible total effect.
-               makeSentence $
-                 [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
-                 ++ if bproj sb
-                    then []
-                    else ["with", partItemChoice itemFullWeapon kitWeapon]
+         -- Short message.
+         msgAdd $ makeSentence $ [MU.SubjectVerbSg spart verb, tpart]
+         -- Basic non-bloody animation regardless of stats.
+         animate (blid tb) $ blockHit coscreen ps Color.BrBlue Color.Blue
+       | IK.idamage (itemKind itemFullWeapon) == 0 -> do
+         let adverb = if bproj sb then "lightly" else "delicately"
+             msg = makeSentence $
+               [MU.SubjectVerbSg spart verb, tpart, adverb]
+               ++ if bproj sb then [] else ["with", weaponName]
          msgAdd msg
-       | otherwise -> do
-          -- This sounds goofy when the victim falls down immediately,
-          -- but there is no easy way to prevent that. And it's consistent.
-          -- If/when death blow instead sets HP to 1 and only the next below 1,
-          -- we can check here for HP==1; also perhaps actors with HP 1 should
-          -- not be able to block.
-          let sActs = MU.Phrase $
-                if | bproj sb && hurtMult >= 70 ->  -- strong, for a projectile
-                     [MU.SubjectVerbSg spart verb, sleepy, tpart]
-                   | bproj sb ->
-                     [MU.SubjectVerbSg spart "connect"]
-                   | otherwise ->
-                     [ MU.SubjectVerbSg spart verb, sleepy, tpart
-                     , "with", partItemChoice itemFullWeapon kitWeapon ]
-              butEvenThough = if hurtMult >= 70
-                              then " accurately, even though"
-                              else ", but"
-              actionPhrase =
-                MU.SubjectVerbSg tpart
-                $ if bproj sb
-                  then if actorWaits tb
-                       then "deflect it"
-                       else "fend it off"  -- ward it off
-                  else if actorWaits tb
-                       then "block"
-                       else "parry"
-              howWell =
-                if | hurtMult >= 50 ->  -- braced or big bonuses
-                     if bproj sb then "clumsily" else "partly"
-                   | hurtMult > 1 ->  -- braced and/or huge bonuses
-                     if actorWaits tb then "doggedly" else "nonchalantly"
-                   | otherwise ->         -- 1% got through, which can
-                     "almost completely"  -- still be deadly, if fast missile
-              withWhat | null eqpAndOrgArmor || bproj sb = []
-                       | otherwise =
-                let (armor, (iidArmor, itemKind)) =
-                      maximumBy (Ord.comparing fst) eqpAndOrgArmor
-                in if armor >= 15
-                      && IA.aTimeout (aspectRecordFull itemFullWeapon) >= 3
-                   then let name | iidArmor == btrunk tb = "trunk"
-                                 | otherwise = MU.Text $ IK.iname itemKind
-                        in [ "with", MU.WownW tpronoun name ]
-                   else []
-              tmpInfluenceDot | null condArmor || bproj sb= "."
-                              | otherwise =
-                let (armor, (_, itemKind)) =
-                      maximumBy (Ord.comparing $ abs . fst) condArmor
-                    name = IK.iname itemKind
-                in if | armor <= -15 -> ", despite being" <+> name <> "."
-                      | armor >= 15 -> ", thanks to being" <+> name <> "."
-                      | otherwise -> "."
-              msg = makePhrase
-                      ([ MU.Capitalize sActs <> butEvenThough
-                       , actionPhrase
-                       , howWell ]
-                       ++ withWhat)
-                      <> tmpInfluenceDot
-          msgAdd msg
-          let anim | IK.idamage (itemKind itemFullWeapon) == 0 =
-                       subtleHit coscreen $ snd ps
-                   | hurtMult > 90 =
-                       twirlSplash coscreen ps Color.BrRed Color.Red
-                   | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
-                   | otherwise = blockMiss coscreen ps
-          animate (blid tb) anim
+         animate (blid tb) $ subtleHit coscreen (bpos sb)
+       | bproj sb -> do  -- more terse than melee, since sometimes very spammy
+         let attackParts =
+               if hurtMult >= 70  -- strong, for a projectile
+               then [MU.SubjectVerbSg spart verb, tpart]
+               else [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
+         msgAdd $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
+                  <> msgArmor <> "."
+         animate (blid tb) basicAnim
+       | otherwise -> do  -- ordinary melee
+         let attackParts =
+               [ MU.SubjectVerbSg spart verb, sleepy, tpart, strongly
+               , "with", weaponName ]
+             tmpInfluence | null condArmor || T.null msgArmor = ""
+                          | otherwise =
+               let (armor, (_, itemKind)) =
+                     maximumBy (Ord.comparing $ abs . fst) condArmor
+                   name = IK.iname itemKind
+               in if | armor <= -15 -> ", despite being" <+> name
+                     | armor >= 15 -> ", thanks to being" <+> name
+                     | otherwise -> ""
+         msgAdd $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
+                  <> msgArmor <> tmpInfluence <> "."
+         animate (blid tb) basicAnim
