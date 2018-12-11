@@ -464,6 +464,12 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- Msgs inside @itemEffect@ describe the target part of the strike.
         -- If any effects and aspects, this is also where they are identified.
         -- Here also the kinetic damage is applied, before any effects are.
+        --
+        -- Note: that "hornet swarm detect items" via a scrolls is intentional,
+        -- even though unrealistic and funny. Otherwise actors could protect
+        -- themselves from some projectiles by lowering their apply stat.
+        -- Also, the animal faction won't have too much benefit from that info,
+        -- so the problem is not balance, but the goofy message.
         kineticEffectAndDestroy voluntary killer source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
@@ -576,7 +582,6 @@ reqAlterFail voluntary source tpos = do
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
-      applySkill = Ability.getSk Ability.SkApply actorSk
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   getKind <- getsState $ flip getIidKindServer
@@ -592,11 +597,12 @@ reqAlterFail voluntary source tpos = do
                              (sortEmbeds cops getKind serverTile embeds)
       tryApplyEmbed (iid, kit) = do
         let itemFull@ItemFull{itemKind} = itemToF iid
-            legal = permittedApply localTime applySkill calmE itemFull kit
-        -- Let even completely unskilled actors trigger basic embeds.
+            -- Let even completely apply-unskilled actors trigger basic embeds.
+            -- See the note about no skill check when melee triggers effects.
+            legal = permittedApply localTime maxBound calmE itemFull kit
         case legal of
           Left ApplyNoEffects -> return ()  -- pure flavour embed
-          Left reqFail | reqFail `notElem` [ApplyUnskilled, NotCalmPrecious] ->
+          Left reqFail ->
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
