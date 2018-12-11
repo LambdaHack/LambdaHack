@@ -95,8 +95,8 @@ applyKineticDamage source target iid = do
     dmg <- rndToAction $ castDice ldepth totalDepth $ IK.idamage itemKind
     let rawDeltaHP = fromIntegral hurtMult * xM dmg `divUp` 100
         speedDeltaHP = case btrajectory sb of
-          Just (_, speed) -> - modifyDamageBySpeed rawDeltaHP speed
-          Nothing -> - rawDeltaHP
+          Just (_, speed) | bproj sb -> - modifyDamageBySpeed rawDeltaHP speed
+          _ -> - rawDeltaHP
     if speedDeltaHP < 0 then do  -- damage the target, never heal
       refillHP source target speedDeltaHP
       return True
