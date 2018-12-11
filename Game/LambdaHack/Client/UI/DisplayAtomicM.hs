@@ -1336,10 +1336,11 @@ strike :: MonadClientUI m
 strike catch source target iid cstore = assert (source /= target) $ do
   CCUI{coscreen} <- getsSession sccui
   tb <- getsState $ getActorBody target
-  tbUI <- getsSession $ getActorUI target
   sourceSeen <- getsState $ memActor source (blid tb)
-  (ps, hurtMult, dmg) <-
-   if sourceSeen then do
+  if not sourceSeen then
+    animate (blid tb) $ subtleHit coscreen (bpos tb)
+  else do
+    tbUI <- getsSession $ getActorUI target
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
     sbUI <- getsSession $ getActorUI source
@@ -1379,30 +1380,40 @@ strike catch source target iid cstore = assert (source /= target) $ do
         subtly = if IK.idamage (itemKind itemFullWeapon) == 0
                  then if not (bproj sb) then "delicately" else ""
                  else if hurtMult >= 120 then "forcefully" else ""
-        msg | not (hasCharge localTime itemFullWeapon kitWeapon) && not catch =
-              -- Can easily happen with a thrown discharged item.
-              -- Much less plausible with a wielded weapon.
-              if bproj sb
-              then makePhrase [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
-                   <> ", but it's completely discharged."
-              else makePhrase [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
-                              , "to", verb, tpart, "with"
-                              , partItemChoice itemFullWeapon kitWeapon ]
-                   <> ", but it's not readied yet."
-            | bhp tb <= 0  -- incapacitated, so doesn't actively block
-              || hurtMult > 90  -- at most minor armor
-              || bproj sb && bproj tb  -- too much spam when explosions collide
-              || IK.idamage (itemKind itemFullWeapon) == 0
-              || catch =
-              -- In this case either no items increase armor enough,
-              -- or the bonuses and maluses cancel out, so it would be
-              -- a lot of talk about a negligible total effect.
-              makeSentence $
-                [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
-                ++ if bproj sb
-                   then []
-                   else ["with", partItemChoice itemFullWeapon kitWeapon]
-            | otherwise =
+        ps = (bpos tb, bpos sb)
+    if | not (hasCharge localTime itemFullWeapon kitWeapon)
+         && not catch -> do  -- charge not needed when catching
+         -- Can easily happen with a thrown discharged item.
+         -- Much less plausible with a wielded weapon.
+         let msg = if bproj sb
+                   then makePhrase
+                          [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
+                        <> ", but it's completely discharged."
+                   else makePhrase
+                          [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
+                          , "to", verb, tpart, "with"
+                          , partItemChoice itemFullWeapon kitWeapon ]
+                        <> ", but it's not readied yet."
+         msgAdd msg  -- and no animation
+       | bproj sb && bproj tb -> do  -- too much spam when explosions collide
+           msgAdd $ makeSentence $ [MU.SubjectVerbSg spart verb, tpart]
+           -- Basic animation regardless of stats.
+           animate (blid tb) $ twirlSplash coscreen ps Color.BrRed Color.Red
+       | bhp tb <= 0  -- incapacitated, so doesn't actively block
+         || hurtMult > 90  -- at most minor armor
+         || IK.idamage (itemKind itemFullWeapon) == 0
+         || catch -> do
+         let msg =
+               -- In this case either no items increase armor enough,
+               -- or the bonuses and maluses cancel out, so it would be
+               -- a lot of talk about a negligible total effect.
+               makeSentence $
+                 [MU.SubjectVerbSg spart verb, sleepy, tpart, subtly]
+                 ++ if bproj sb
+                    then []
+                    else ["with", partItemChoice itemFullWeapon kitWeapon]
+         msgAdd msg
+       | otherwise -> do
           -- This sounds goofy when the victim falls down immediately,
           -- but there is no easy way to prevent that. And it's consistent.
           -- If/when death blow instead sets HP to 1 and only the next below 1,
@@ -1453,17 +1464,17 @@ strike catch source target iid cstore = assert (source /= target) $ do
                 in if | armor <= -15 -> ", despite being" <+> name <> "."
                       | armor >= 15 -> ", thanks to being" <+> name <> "."
                       | otherwise -> "."
-          in makePhrase
-               ([ MU.Capitalize sActs <> butEvenThough
-                , actionPhrase
-                , howWell ]
-                ++ withWhat)
-             <> tmpInfluenceDot
-    msgAdd msg
-    return ((bpos tb, bpos sb), hurtMult, IK.idamage (itemKind itemFullWeapon))
-   else return ((bpos tb, bpos tb), 100, 1)
-  let anim | dmg == 0 = subtleHit coscreen $ snd ps
-           | hurtMult > 90 = twirlSplash coscreen ps Color.BrRed Color.Red
-           | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
-           | otherwise = blockMiss coscreen ps
-  animate (blid tb) anim
+              msg = makePhrase
+                      ([ MU.Capitalize sActs <> butEvenThough
+                       , actionPhrase
+                       , howWell ]
+                       ++ withWhat)
+                      <> tmpInfluenceDot
+          msgAdd msg
+          let anim | IK.idamage (itemKind itemFullWeapon) == 0 =
+                       subtleHit coscreen $ snd ps
+                   | hurtMult > 90 =
+                       twirlSplash coscreen ps Color.BrRed Color.Red
+                   | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
+                   | otherwise = blockMiss coscreen ps
+          animate (blid tb) anim
