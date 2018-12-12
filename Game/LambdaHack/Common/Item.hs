@@ -203,7 +203,7 @@ strongestSlot discoBenefit eqpSlot is =
                        -- weapon, we take into account only melee damage
                        -- and we don't even care if it's durable.
                        -- The backup is ready in the slot above, after all.
-                       ceiling benMelee
+                       ceiling (- benMelee)
                    _ -> valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
              in (ben, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is

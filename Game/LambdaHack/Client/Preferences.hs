@@ -418,7 +418,7 @@ totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again
       -- in the same skirmish and also enemy can pick up and fling back.
-      -- Only @benMelee@ and @benApply@ are affected, regardless if the item
+      -- Only @benMeleeAvg@ and @benApply@ are affected, regardless if the item
       -- is in equipment or not. As summands of @benPickup@ they should be
       -- impacted by durability, because picking an item to be used
       -- only once is less advantageous than when the item is durable.
