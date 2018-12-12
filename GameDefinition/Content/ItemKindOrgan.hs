@@ -134,7 +134,7 @@ rhinoHorn = fist
   { iname    = "ugly horn"  -- made of keratin, unlike real horns
   , ifreq    = [("rhino horn", 100)]
   , icount   = 1  -- single, unlike real horns
-  , iverbHit = "impale"
+  , iverbHit = "gore"
   , idamage  = 5 `d` 1
   , iaspects = [Timeout 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
@@ -153,7 +153,7 @@ thorn = fist
   { iname    = "thorn"
   , ifreq    = [("thorn", 100)]
   , icount   = 2 + 1 `d` 3
-  , iverbHit = "impale"
+  , iverbHit = "puncture"
   , idamage  = 2 `d` 1
   , iaspects = [SetFlag Meleeable]  -- not Durable
   , idesc    = "Sharp yet brittle."
@@ -201,7 +201,7 @@ sting = fist
   { iname    = "sting"
   , ifreq    = [("sting", 100)]
   , icount   = 1
-  , iverbHit = "sting"
+  , iverbHit = "inject"
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
@@ -256,6 +256,7 @@ largeTail = fist
 hugeTail = largeTail
   { iname    = "huge tail"
   , ifreq    = [("huge tail", 50)]
+  , iverbHit = "upend"
   , iaspects = [Timeout $ 3 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
                  -- timeout higher, lest they regain push before closing again
@@ -547,7 +548,7 @@ torsionLeft = fist
   { iname    = "left torsion"
   , ifreq    = [("left torsion", 100)]
   , icount   = 1
-  , iverbHit = "twist"
+  , iverbHit = "untwist"
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
