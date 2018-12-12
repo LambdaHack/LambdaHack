@@ -911,9 +911,9 @@ displayGameOverAnalytics factionAn generationAn = do
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun iid _ k =
         let n = generationTrunk EM.! iid
-        in "You recall the adversary, which you killed"
-           <+> tshow (max 0 k) <+> "out of"
-           <+> tshow n <+> "reported:"
+        in makePhrase [ "You recall the adversary, which you killed"
+                      , MU.CarWs (max 0 k) "time", "out of"
+                      , MU.CarWs n "individual", "reported:" ]
       prompt = "Your team vanquished the following adversaries."
                <+> (if sexposeActors
                     then "Non-positive count means none killed but this many reported."
