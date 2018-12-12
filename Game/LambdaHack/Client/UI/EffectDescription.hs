@@ -126,7 +126,7 @@ effectToSuffix detailLevel effect =
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of
-  DetectAll -> ""
+  DetectAll -> "detail"
   DetectActor -> "intruder"
   DetectLoot -> "merchandise"
   DetectExit -> "exit"
@@ -135,7 +135,7 @@ detectToObject d = case d of
 
 detectToVerb :: DetectKind -> Text
 detectToVerb d = case d of
-  DetectAll -> "map surrounding area"
+  DetectAll -> "map all"
   DetectActor -> "spot nearby"
   DetectLoot -> "locate nearby"
   DetectExit -> "learn nearby"

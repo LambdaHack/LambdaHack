@@ -1240,11 +1240,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
     <+> showReqFailure reqFailure <> "."
   SfxFizzles -> return "It didn't work."
   SfxNothingHappens -> return "Nothing happens."
-  SfxVoidDetection d -> do
-    let object = detectToObject d
-        noNewObject | T.null object = ["nothing new"]
-                    | otherwise = ["no new", MU.Text object]
-    return $! makeSentence $ noNewObject ++ ["detected"]
+  SfxVoidDetection d ->
+    return $! makeSentence ["no new", MU.Text $ detectToObject d, "detected"]
   SfxUnimpressed aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
