@@ -1059,8 +1059,9 @@ effectParalyzeInWater execSfx nDm source target = do
     if Dice.supDice nDm > swimmingOrFlying
     then paralyze execSfx nDm source target  -- no help at all
     else do  -- fully resisted
-      sb <- getsState $ getActorBody source
-      execSfxAtomic $ SfxMsgFid (bfid sb) SfxWaterParalysisResisted
+      -- Don't spam:
+      -- sb <- getsState $ getActorBody source
+      -- execSfxAtomic $ SfxMsgFid (bfid sb) SfxWaterParalysisResisted
       return UseId
 
 -- ** InsertMove

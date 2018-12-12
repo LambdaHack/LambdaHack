@@ -226,6 +226,7 @@ forApplyEffect eff = case eff of
   OnSmash{} -> False
   Composite effs -> any forApplyEffect effs
   VerbMsg{} -> False
+  ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
   _ -> True
 
 isEffEscape :: Effect -> Bool
