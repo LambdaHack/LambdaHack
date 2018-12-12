@@ -1416,10 +1416,15 @@ strike catch source target iid cstore = assert (source /= target) $ do
         -- Here we take into account armor, so we look at @hurtMult@,
         -- so we finally convey the full info about effectiveness of the strike.
         blockHowWell  -- if @hurtMult > 90@, the message not shown at all
-          | hurtMult > 70 = "too late"
-          | hurtMult > 20 = if | deadliness >= 500 -> "partly"
-                               | deadliness >= 200 -> "to a large extent"
-                               | otherwise -> "for the most part"
+          | hurtMult > 80 = "too late"
+          | hurtMult > 70 = "too slowly"
+          | hurtMult > 20 = if | deadliness >= 1000 -> "somewhat"
+                               | deadliness >= 700 -> "partially"
+                               | deadliness >= 300 -> "partly"  -- common
+                               | deadliness >= 200 -> "to an extent"
+                               | deadliness >= 100 -> "to a large extent"
+                               | deadliness >= 50 -> "for the most part"
+                               | otherwise -> "mostly"
           | hurtMult > 1 = if | actorWaits tb -> "doggedly"
                               | hurtMult > 10 -> "nonchalantly"
                               | otherwise -> "bemusedly"
@@ -1494,10 +1499,13 @@ strike catch source target iid cstore = assert (source /= target) $ do
          msgAdd msg
          animate (blid tb) $ subtleHit coscreen (bpos sb)
        | bproj sb -> do  -- more terse than melee, since sometimes very spammy
-         let attackParts =
-               if hurtMult > 70  -- strong, for a projectile
-               then [MU.SubjectVerbSg spart verb, tpart]
-               else [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
+         let attackParts
+               | deadliness >= 300 =
+                 [MU.SubjectVerbSg spart verb, tpart, "powerfully"]
+               | deadliness >= 20 =
+                 [MU.SubjectVerbSg spart verb, tpart]  -- strong, for a proj
+               | otherwise =
+                 [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
          msgAdd $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                   <> msgArmor <> "."
          animate (blid tb) basicAnim
