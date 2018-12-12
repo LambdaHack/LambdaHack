@@ -1418,13 +1418,13 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | otherwise = "feebly"
         -- Here we take into account armor, so we look at @hurtMult@,
         -- so we finally convey the full info about effectiveness of the strike.
-        blockHowWell  -- if @hurtMult >= 90@, the message not shown at all
-          | hurtMult >= 70 = "too late"
-          | hurtMult >= 20 = if | deadliness >= 500 -> "partly"
-                                | deadliness >= 200 -> "to a large extent"
-                                | otherwise -> "for the most part"
+        blockHowWell  -- if @hurtMult > 90@, the message not shown at all
+          | hurtMult > 70 = "too late"
+          | hurtMult > 20 = if | deadliness >= 500 -> "partly"
+                               | deadliness >= 200 -> "to a large extent"
+                               | otherwise -> "for the most part"
           | hurtMult > 1 = if | actorWaits tb -> "doggedly"
-                              | hurtMult >= 10 -> "nonchalantly"
+                              | hurtMult > 10 -> "nonchalantly"
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- 1% always gets through, but if fast missile, can be deadly
@@ -1446,9 +1446,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
                   in [ "with", MU.WownW tpronoun name ]
              else []
         deadlinessMatchesHurtMult =
-          deadliness >= 20 && hurtMult >= 70  -- strong attack and weak defense
-          || deadliness < 20 && hurtMult < 70  -- weak attack and decent defense
-        msgArmor = if hurtMult >= 90
+          deadliness >= 20 && hurtMult > 70  -- strong attack and weak defense
+          || deadliness < 20 && hurtMult <= 70  -- weak attack and mild defense
+        msgArmor = if hurtMult > 90
                    then ""  -- at most minor armor, relatively to strength
                             -- of the hit, so we don't talk about blocking
                    else (if deadlinessMatchesHurtMult then " and" else ", but")
@@ -1456,7 +1456,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                                         ++ blockWithWhat)
         ps = (bpos tb, bpos sb)
         basicAnim
-          | hurtMult >= 70 = twirlSplash coscreen ps Color.BrRed Color.Red
+          | hurtMult > 70 = twirlSplash coscreen ps Color.BrRed Color.Red
           | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
           | otherwise = blockMiss coscreen ps
     -- The messages about parrying and immediately afterwards dying
@@ -1498,7 +1498,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
          animate (blid tb) $ subtleHit coscreen (bpos sb)
        | bproj sb -> do  -- more terse than melee, since sometimes very spammy
          let attackParts =
-               if hurtMult >= 70  -- strong, for a projectile
+               if hurtMult > 70  -- strong, for a projectile
                then [MU.SubjectVerbSg spart verb, tpart]
                else [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
          msgAdd $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
