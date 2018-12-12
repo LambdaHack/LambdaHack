@@ -71,7 +71,8 @@ abortedKnownBfs = pred maxBfsDistance
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
--- | Fill out the given BFS array.
+-- | Fill out the given BFS array (not all cells are overwritten,
+-- so we assume the array is previously filled with @apartBfs@).
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.

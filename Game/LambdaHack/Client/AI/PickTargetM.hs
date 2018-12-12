@@ -297,7 +297,7 @@ computeTarget aid = do
                       upos <- closestUnknown aid
                       case upos of
                         Nothing -> do
-                          -- If can't move (i.e., no Bfs data), no info gained.
+                          -- If can't move (and so no BFS data), no info gained.
                           -- Or if can't alter and possibly stuck among rubble.
                           when (canMove && canAlterLabyrinth) $
                             modifyClient $ \cli -> cli {sexplored =

@@ -253,6 +253,18 @@ furthestKnown aid = do
 -- We should generally avoid such levels, because digging and/or trying
 -- to find other stairs leading to disconnected areas is not KISS
 -- so we don't do this in AI, so AI is at a disadvantage.
+--
+-- If the closest unknown is more than 126 tiles away from the targetting
+-- actor, the level will marked as explored. We could complicate the code
+-- and not mark if the unknown is too far as opposed to inaccessible,
+-- but then if it is both too distant and inaccessible, AI would be
+-- permanently stuck on such levels. To cope with this, escapes need to be
+-- placed on open or small levels, or in dispersed enough that they don't
+-- appear in such potentially unexplored potions of caves. Other than that,
+-- this is rather harmless and hard to exploit, so let it be.
+-- The principled way to fix this would be to extend BFS to @Word16@,
+-- but then it takes too long to compute on maze levels, so we'd need
+-- to optimize hard for JS.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   body <- getsState $ getActorBody aid
@@ -264,7 +276,7 @@ closestUnknown aid = do
   return $!
     if lexpl lvl <= lseen lvl
          -- Some unknown may still be visible and even pathable, but we already
-         -- know from global level info that they are blocked.
+         -- know from global level info that they are inaccessible.
        || dist >= apartBfs
          -- Global level info may tell us that terrain was changed and so
          -- some new explorable tile appeared, but we don't care about those
