@@ -1418,13 +1418,13 @@ strike catch source target iid cstore = assert (source /= target) $ do
         blockHowWell  -- if @hurtMult > 90@, the message not shown at all
           | hurtMult > 80 = "too late"
           | hurtMult > 70 = "too slowly"
-          | hurtMult > 20 = if | deadliness >= 1000 -> "somewhat"
-                               | deadliness >= 700 -> "partially"
-                               | deadliness >= 300 -> "partly"  -- common
-                               | deadliness >= 200 -> "to an extent"
-                               | deadliness >= 100 -> "to a large extent"
-                               | deadliness >= 50 -> "for the most part"
-                               | otherwise -> "mostly"
+          | hurtMult > 20 = if | deadliness >= 2000 -> "marginally"
+                               | deadliness >= 1000 -> "partially"
+                               | deadliness >= 100 -> "partly"  -- common
+                               | deadliness >= 50 -> "to an extent"
+                               | deadliness >= 20 -> "to a large extent"
+                               | deadliness >= 5 -> "for the major part"
+                               | otherwise -> "for the most part"
           | hurtMult > 1 = if | actorWaits tb -> "doggedly"
                               | hurtMult > 10 -> "nonchalantly"
                               | otherwise -> "bemusedly"

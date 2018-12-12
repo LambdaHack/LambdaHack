@@ -362,7 +362,9 @@ applyPeriodicLevel = do
         -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds
         -- of projectiles exist due to ongoing explosions.
-        when (not (bproj b) && blid b `ES.member` arenasSet) $ do
+        -- Nothing activates when actor dying to prevent a regenerating
+        -- actor from resurrecting each turn, resulting in silly end-game stats.
+        when (not (bproj b) && bhp b > 0 && blid b `ES.member` arenasSet) $ do
           -- Equipment goes first, to refresh organs before they expire,
           -- to avoid the message that organ expired.
           mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
