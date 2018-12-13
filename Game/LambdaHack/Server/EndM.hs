@@ -58,7 +58,9 @@ endOrLoop loop restart = do
   when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll True
-  if | restartNeeded -> restart (listToMaybe quitters)
+  if | restartNeeded -> do
+       execSfxAtomic SfxRestart
+       restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called
      | otherwise -> loop  -- continue current game
 

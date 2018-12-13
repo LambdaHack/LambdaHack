@@ -833,8 +833,6 @@ quitFactionUI fid toSt manalytics = do
         promptAdd0 pp
         partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
-      unless (fmap stOutcome toSt == Just Camping) $
-        fadeOutOrIn True
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
@@ -1215,6 +1213,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         recordHistory
     msg <- ppSfxMsg sfxMsg
     msgAdd msg
+  SfxRestart -> fadeOutOrIn True
   SfxSortSlots -> sortSlots
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops

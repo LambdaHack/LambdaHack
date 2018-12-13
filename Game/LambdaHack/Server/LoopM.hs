@@ -518,6 +518,8 @@ advanceTrajectory aid b = do
              _ -> do
                -- Altering failed, probably just a wall, so lose HP
                -- due to being pushed into an obstacle. Never kill in this way.
+               -- Note that sometimes this may come already after one faction
+               -- wins the game and end game screens are show. This is OK-ish.
                execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
                when (bhp b > oneM) $ do
                  execUpdAtomic $ UpdRefillHP aid minusM

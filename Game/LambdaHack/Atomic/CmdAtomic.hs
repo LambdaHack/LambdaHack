@@ -156,6 +156,7 @@ data SfxAtomic =
   | SfxShun ActorId Point
   | SfxEffect FactionId ActorId IK.Effect Int64
   | SfxMsgFid FactionId SfxMsg
+  | SfxRestart
   | SfxSortSlots
   | SfxCollideTile ActorId Point
   | SfxTaunt Bool ActorId
@@ -273,6 +274,7 @@ undoSfxAtomic cmd = case cmd of
   SfxShun aid p -> SfxTrigger aid p
   SfxEffect{} -> cmd  -- not ideal?
   SfxMsgFid{} -> cmd
+  SfxRestart -> cmd
   SfxSortSlots -> cmd
   SfxCollideTile{} -> cmd
   SfxTaunt{} -> cmd
