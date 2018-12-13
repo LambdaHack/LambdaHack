@@ -888,7 +888,7 @@ scroll8 = scrollTemplate
   }
 scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(10, 9)]  -- powerful, even if not ideal; scares newbies
+  , irarity  = [(10, 7)]  -- powerful, even if not ideal; scares newbies
   , ieffects = [Detect DetectAll 20]
   }
 scroll10 = scrollTemplate
@@ -1025,7 +1025,7 @@ necklaceTemplate = ItemKind
   , ifreq    = [("necklace unknown", 1)]
   , iflavour = zipFancy stdCol ++ zipPlain brightCol
   , icount   = 1
-  , irarity  = [(4, 3), (10, 4)]
+  , irarity  = [(4, 3), (10, 6)]
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
@@ -1564,7 +1564,7 @@ sword = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 10)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 1
-  , irarity  = [(3, 1), (5, 15)]
+  , irarity  = [(3, 1), (5, 20)]
   , iverbHit = "slash"
   , iweight  = 2000
   , idamage  = 10 `d` 1
