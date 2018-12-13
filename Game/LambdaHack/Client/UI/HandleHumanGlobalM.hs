@@ -1170,7 +1170,8 @@ itemMenuHuman cmdAction = do
                                   ppLoc bUI2 store) foundUI
               foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
-              desc = itemDesc False (bfid b) factionD
+              markParagraphs = rheight >= 45
+              desc = itemDesc markParagraphs (bfid b) factionD
                               (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                               fromCStore localTime jlid itemFull kit
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
