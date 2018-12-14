@@ -291,12 +291,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
       tspeed | IA.checkFlag Ability.Condition arItem
                || IK.iweight itemKind == 0 = ""
              | speed < speedLimp = "When thrown, it drops at once."
-             | speed < speedWalk = "When thrown, it travels only one meter and drops immediately."
+             | speed < speedWalk = "When thrown, it drops after one meter."
              | otherwise =
-               "When thrown, it flies with speed of"
+               "Can be thrown at"
                <+> tshow (fromSpeed speed `div` 10)
                <> if throwLinger /= 100
-                  then " m/s and range" <+> tshow range <+> "m."
+                  then " m/s dropping after" <+> tshow range <+> "m."
                   else " m/s."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, aspectSentences, damageAnalysis) =
@@ -322,7 +322,7 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
                   prawDeltaHP = fromIntegral pmult * minDeltaHP
                   pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed
-              in "Against defenceless targets you would inflict around"
+              in "Against defenceless foes you'd inflict around"
                    -- rounding and non-id items
                  <+> tshow meanDmg
                  <> "*" <> tshow mult <> "%"
