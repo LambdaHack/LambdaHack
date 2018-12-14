@@ -1506,7 +1506,6 @@ hammerTemplate = ItemKind
                         -- to subdivide this identification class by dice
   , iaspects = [ HideAs "hammer unknown"
                , SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotWeaponBig
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
   , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
@@ -1514,49 +1513,51 @@ hammerTemplate = ItemKind
   }
 hammer1 = hammerTemplate
   { ifreq    = [("common item", 100), ("starting weapon", 100)]
-  , iaspects = [Timeout 5]
+  , iaspects = [Timeout 5, EqpSlot EqpSlotWeaponBig]
                ++ iaspects hammerTemplate
   }
 hammer2 = hammerTemplate
-  { ifreq    = [("common item", 10), ("starting weapon", 1)]
+  { ifreq    = [("common item", 20), ("starting weapon", 10)]
   , iverbHit = "gouge"
-  , iweight  = 1000
   , iaspects = [Timeout 3, EqpSlot EqpSlotWeaponFast]
-               ++ delete (EqpSlot EqpSlotWeaponBig) (iaspects hammerTemplate)
-  , idesc    = "Upon closer inspection, this hammer turns out particularly handy and well balanced, with one thick and sturdy and two long and sharp points compensating the modest heft."
+               ++ iaspects hammerTemplate
+  , idesc    = "Upon closer inspection, this hammer turns out particularly handy and well balanced, with one thick and sturdy and two long and sharp points compensating the modest size."
   }
 hammer3 = hammerTemplate
   { ifreq    = [("common item", 3), ("starting weapon", 1)]
-  , iweight  = 2400
+  , iverbHit = "puncture"
+  , iweight  = 2400  -- weight gives it away
   , idamage  = 12 `d` 1
-  , iaspects = [Timeout 7]
-               ++ iaspects hammerTemplate
-  , idesc    = "This hammer sports a long metal handle that increases durability and momentum of the sharpened head's swing, at the cost of longer recovery."
+  , iaspects = [Timeout 7, EqpSlot EqpSlotWeaponBig]
+               ++ delete (HideAs "hammer unknown") (iaspects hammerTemplate)
+  , idesc    = "This hammer sports a long metal handle that increases the momentum of the sharpened head's swing, at the cost of longer recovery."
   }
 hammerParalyze = hammerTemplate
   { iname    = "Brute Hammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [ SetFlag Unique
-               , Timeout 7 ]
+               , Timeout 7
+               , EqpSlot EqpSlotWeaponBig ]
                ++ iaspects hammerTemplate
   , ieffects = [Paralyze 10]
-  , idesc    = "A huge shapeless lump of steel on a sturdy pole. Nobody remains standing when this head connects."
+  , idesc    = "A huge shapeless lump of meteorite iron alloy on a sturdy pole. Nobody remains standing when this head connects."
   }
 hammerSpark = hammerTemplate
   { iname    = "Grand Smithhammer"
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
-  , iweight  = 2400
+  , iweight  = 2400  -- weight gives it away
   , idamage  = 12 `d` 1
   , iaspects = [ SetFlag Unique
                , Timeout 10
+               , EqpSlot EqpSlotWeaponBig
                , AddSkill SkShine 3]
-               ++ iaspects hammerTemplate
+               ++ delete (HideAs "hammer unknown") (iaspects hammerTemplate)
   , ieffects = [Explode "spark"]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
-  , idesc    = "Smiths of old wielded this hammer and its sparks christened many a potent blade."
+  , idesc    = "Smiths of old wielded this heavy hammer and its sparks christened many a potent blade."
   }
 sword = ItemKind
   { isymbol  = symbolEdged
