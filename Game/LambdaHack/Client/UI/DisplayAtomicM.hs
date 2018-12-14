@@ -1191,7 +1191,8 @@ displayRespSfxAtomicUI sfx = case sfx of
           let verb = MU.Text $ detectToVerb d
               object = MU.Ws $ MU.Text $ detectToObject d
           msgAdd $ makeSentence [MU.SubjectVerbSg subject verb, object]
-          displayMore ColorFull ""
+          unless (d == IK.DetectHidden) $  -- too common and too weak
+            displayMore ColorFull ""
         IK.SendFlying{} -> actorVerbMU aid bUI "be sent flying"
         IK.PushActor{} -> actorVerbMU aid bUI "be pushed"
         IK.PullActor{} -> actorVerbMU aid bUI "be pulled"
@@ -1396,6 +1397,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           in min 0 speedDeltaHP
         deadliness = 1000 * (- sDamage) `div` max oneM (bhp tb)
         strongly
+          | bhp tb <= 0 = ""  -- no kudos for kicking the dead
           | deadliness >= 10000 = "artfully"
           | deadliness >= 5000 = "madly"
           | deadliness >= 2000 = "mercilessly"

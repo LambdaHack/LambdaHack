@@ -1548,7 +1548,7 @@ effectDetect execSfx d radius target pos = do
                         Just entry ->
                           execUpdAtomic $ UpdSpotEntry (blid b) [(p, entry)]
                 mapM_ f l
-                return $! not $ null l
+                return $! not $ null l  -- KISS, even if client knows all
           in (predicateH, actionH)
         IK.DetectEmbed -> ((`EM.member` lembed lvl), const $ return False)
   effectDetectX d predicate action execSfx radius target
