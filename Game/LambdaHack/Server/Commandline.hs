@@ -243,7 +243,7 @@ sdlFonSizeAddP :: Parser (Maybe Int)
 sdlFonSizeAddP = optional $
   option auto (  long "sdlFonSizeAdd"
               <> metavar "N"
-              <> help "Enlarge map cells by N on top of .fon font max height in SDL2 frontend" )
+              <> help "Enlarge map cells by N on top of fixed font max height in SDL2 frontend" )
 
 fontSizeP :: Parser (Maybe Int)
 fontSizeP = optional $

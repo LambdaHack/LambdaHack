@@ -33,9 +33,9 @@ gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,F
 ;sdlFontFile = "Fix15Mono-Bold.woff"
 fontSize = 16
 sdlTtfSizeAdd = -2
-sdlFontFile = "16x16x.fon"
+sdlFontFile = "16x16x.fnt"
 sdlFonSizeAdd = 1
-;sdlFontFile = "8x8xb.fon"
+;sdlFontFile = "8x8xb.fnt"
 ;sdlFonSizeAdd = 2
 colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.

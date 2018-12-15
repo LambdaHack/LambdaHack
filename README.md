@@ -112,7 +112,7 @@ or something else altogether) on Windows, and in RMB menu, under
 
 Screen font can be changed by editing the config file in the user
 data folder. For a small game window, the highly optimized
-16x16x.fon and 8x8x.fon bitmap fonts are the best,
+16x16x.fnt and 8x8xb.fnt bitmap fonts are the best,
 but for larger window sizes or if you require international characters
 (e.g. to give custom names to player characters), a modern scalable font
 supplied with the game is the only option. The game window automatically

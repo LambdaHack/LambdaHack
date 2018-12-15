@@ -8,7 +8,7 @@ Copyright: 2008-2011 Andres Loeh
            2010-2018 Mikolaj Konarski and others (see git history)
 License: BSD-3-clause
 
-Files: GameDefinition/fonts/*.fon
+Files: GameDefinition/fonts/*.fnt
 Copyright: 1997-2016 Leon Marrick
            1997-2016 Sheldon Simms III
            1997-2016 Nick McConnell

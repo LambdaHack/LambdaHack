@@ -20,7 +20,7 @@ data ClientOptions = ClientOptions
   , sdlTtfSizeAdd     :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
   , sdlFonSizeAdd     :: Maybe Int
-      -- ^ Pixels to add to map cells on top of .fon font max glyph height.
+      -- ^ Pixels to add to map cells on top of fixed font max glyph height.
   , sfontSize         :: Maybe Int
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: Maybe Bool

@@ -237,9 +237,9 @@ build-binary-common:
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=LambdaHackTheGameInstall
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
-	cp GameDefinition/fonts/16x16x.fon LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8xb.fon LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/8x8x.fon LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/16x16x.fnt LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8xb.fnt LambdaHackTheGame/GameDefinition/fonts
+	cp GameDefinition/fonts/8x8x.fnt LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/LICENSE.16x16x LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/Fix15Mono-Bold.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold LambdaHackTheGame/GameDefinition/fonts
