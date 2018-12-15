@@ -386,10 +386,10 @@ projectBla propeller source pos rest iid cstore blast = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
-      let delay | IK.iweight itemKind == 0 = timeTurn
-                    -- big delay at start, e.g., to easily read a hologram
-                | blast = timeZero  -- avoid running into own fragrance
-                | otherwise = timeClip  -- a moment to appreciate
+      let delay =
+            if IK.iweight itemKind == 0
+            then timeTurn  -- big delay at start, e.g., to easily read hologram
+            else timeZero  -- avoid running into own projectiles
           btime = absoluteTimeAdd delay localTime
       addProjectile propeller pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore

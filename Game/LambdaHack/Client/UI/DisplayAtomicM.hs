@@ -606,11 +606,11 @@ createActorUI born aid body = do
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
-  if ES.member aid lastLost || bproj body then
-    markDisplayNeeded (blid body)
-  else do
-    actorVerbMU aid bUI verb
-    animate (blid body) $ actorX coscreen (bpos body)
+  if | born && bproj body -> pushFrame  -- make sure first position displayed
+     | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
+     | otherwise -> do
+       actorVerbMU aid bUI verb
+       animate (blid body) $ actorX coscreen (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
