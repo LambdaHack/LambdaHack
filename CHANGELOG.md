@@ -1,3 +1,6 @@
+## [v0.9.0.0, aka 'Velvet smoking jacket'](https://github.com/LambdaHack/LambdaHack/compare/v0.8.3.0...v0.9.0.0)
+
+
 ## [v0.8.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.2...v0.8.3.0)
 
 - Add a hack to run SDL2 on the main thread, fixing the OS X crash
