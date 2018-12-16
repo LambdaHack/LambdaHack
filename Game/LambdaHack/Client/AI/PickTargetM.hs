@@ -183,12 +183,12 @@ computeTarget aid = do
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
                         && bwatch body `notElem` [WSleep, WWake]
                              -- exploit sleep weakness
-                        && Ability.getSk Ability.SkAggression actorMaxSkE < 2
-                             -- react to provocation
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
-            cd -> condCanMelee && cd <= n && (not nonmoving || attacksFriends)
+            cd -> (condCanMelee && cd <= n && (not nonmoving || attacksFriends))
+                  || Ability.getSk Ability.SkAggression actorMaxSkE >= 2
+                       -- react to provocation regardless (usually bosses)
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
