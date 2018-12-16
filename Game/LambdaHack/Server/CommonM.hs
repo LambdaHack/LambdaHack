@@ -500,11 +500,12 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
                      else any (fhasUI . gplayer  . snd)
                               (filter (\(fi, fa) -> isFoe fi fa fid)
                                       (EM.assocs factionD))
-      finalHP | boostFact = if cdiff curChalSer `elem` [1, difficultyBound]
-                            then xM 900  -- almost as much as UI can stand
-                            else hp * 2 ^ abs diffBonusCoeff
+      finalHP | boostFact = min (xM 899)  -- no more than UI can stand
+                                (hp * 2 ^ abs diffBonusCoeff)
               | otherwise = hp
-      bonusHP = min 999 (fromEnum (2 * finalHP `div` oneM)) - trunkMaxHP
+      maxHP = min (finalHP + xM 100) (2 * finalHP)
+        -- prevent too high max HP resulting in panic when low HP/max HP ratio
+      bonusHP = fromEnum (maxHP `div` oneM) - trunkMaxHP
       healthOrgans = [ (Just bonusHP, ("bonus HP", COrgan))
                      | bonusHP /= 0 && not bproj ]
       b = actorTemplate trunkId finalHP calm pos lid fid bproj
