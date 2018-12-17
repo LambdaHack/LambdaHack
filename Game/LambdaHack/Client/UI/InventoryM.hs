@@ -283,7 +283,11 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
-      (autoDun, _) = autoDungeonLevel fact
+  (bagFiltered, promptChosen) <- getsState $ \s ->
+    case itemDialogState of
+      ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur s <> ":")
+      IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur s <> ":")
+  let (autoDun, _) = autoDungeonLevel fact
       multipleSlots = if itemDialogState == IAll
                       then bagItemSlotsAll
                       else suitableItemSlotsAll
@@ -350,6 +354,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
            , defCond = cCur /= MOrgans  -- auto-sorted each time
                        && cCur /= MSkills  -- artificial slots
                        && cCur /= MPlaces  -- artificial slots
+                       && EM.size bagFiltered > 1  -- no feedback
            , defAction = \_ -> do
                sortSlots
                recCall numPrefix cCur cRest itemDialogState
@@ -414,10 +419,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                  `showFailure` (slot, bagItemSlots)
               Just iid -> return $! getResult (Right slot) [iid]
         }
-  (bagFiltered, promptChosen) <- getsState $ \s ->
-    case itemDialogState of
-      ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur s <> ":")
-      IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur s <> ":")
   case cCur of
     MSkills -> do
       io <- skillsOverlay leader
