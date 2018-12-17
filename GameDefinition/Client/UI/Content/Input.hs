@@ -81,6 +81,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , tisymbols = "!,?/" }])
   , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
                          "item" False)
+  , ("i", replaceDesc "" $ moveItemTriple [CGround, CEqp, CSha] CInv
+                                          "item" False)
   , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
                          "item" False)
   , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
@@ -112,7 +114,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Item use, continued
   , ("^", ( [CmdItem], "sort items by kind and rolled aspects", SortSlots))
   , ("P", ( [CmdItem, CmdDashboard]
-          , "manage item pack of the leader"
+          , "manage inventory pack of the leader"
+          , ChooseItemMenu (MStore CInv) ))
+  , ("I", ( [CmdItem, CmdDashboard]
+          , ""
           , ChooseItemMenu (MStore CInv) ))
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"

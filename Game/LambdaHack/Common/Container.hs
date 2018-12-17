@@ -71,7 +71,7 @@ ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
 ppCStore COrgan = ("in", "body")
 ppCStore CEqp = ("in", "equipment")
-ppCStore CInv = ("in", "pack")
+ppCStore CInv = ("in", "pack")  -- "inventory pack" overflows text too easily
 ppCStore CSha = ("in", "shared stash")
 
 ppCStoreIn :: CStore -> Text
