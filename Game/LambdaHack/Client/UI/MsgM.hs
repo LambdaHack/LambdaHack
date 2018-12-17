@@ -78,12 +78,12 @@ promptMainKeys = do
                | otherwise = "keypad"
       manyTeammates = length ours > 1
       keepTab = if manyTeammates
-                then "Keep [TAB] of teammates ([S-TAB] for other levels)."
+                then "Keep TAB of teammates (S-TAB for other levels)."
                 else ""
       viewEquip = if eqpKeysAreNormal
-                  then "View [E]quipment and [e]quip items."
+                  then "View (E)quipment and (e)quip items."
                   else ""
-      moreHelp = "Press [" <> tshow kmHelp <> "] for help."
+      moreHelp = "Press" <+> tshow kmHelp <+> "for help."
       eqpKeysAreNormal = kmViewEqp == K.mkChar 'E'
                          && kmItemEqp == K.mkChar 'e'
       keys | isNothing saimMode =
