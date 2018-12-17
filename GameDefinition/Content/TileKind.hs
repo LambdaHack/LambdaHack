@@ -175,7 +175,7 @@ wallObscuredFrescoedH = TileKind
                   -- so no @ConsideredByAI@
   }
 pillar = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("stair terminal Lit", 100), ("stair terminal Dark", 100)
@@ -190,7 +190,7 @@ pillar = TileKind
   , tfeature = []
   }
 pillarCache = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "smoothed rock"
   , tfreq    = [("cachable", 30), ("cache", 1), ("stair terminal Dark", 4)]
                  -- treasure only in dark staircases
@@ -203,16 +203,16 @@ pillarCache = TileKind
       -- Very beneficial, so AI eager to trigger, unless wary of traps.
   }
 lampPost = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "lamp post"
-  , tfreq    = [("lampPostOver_O", 1)]
+  , tfreq    = [("lampPostOver_0", 1)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 100
   , tfeature = []
   }
 signboardUnread = TileKind  -- client only, indicates never used by this faction
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "signboard"
   , tfreq    = [("signboard unread", 1)]
   , tcolor   = BrCyan
@@ -223,7 +223,7 @@ signboardUnread = TileKind  -- client only, indicates never used by this faction
                ]
   }
 signboardRead = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "signboard"
   , tfreq    = [("signboard", 1), ("escapeSetDark", 1)]
   , tcolor   = BrCyan
@@ -232,10 +232,10 @@ signboardRead = TileKind
   , tfeature = [Embed "signboard", HideAs "signboard unread"]
   }
 tree = TileKind
-  { tsymbol  = 'O'
+  { tsymbol  = '0'
   , tname    = "tree"
   , tfreq    = [ ("brawlSetLit", 140), ("shootoutSetLit", 10)
-               , ("escapeSetLit", 35), ("treeShadeOver_O_Lit", 1) ]
+               , ("escapeSetLit", 35), ("treeShadeOver_0_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50

@@ -137,14 +137,14 @@ pulpit = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "==·"
                , "!··"
-               , "··O"
+               , "··0"
                ]
   , poverrideDark = [ ('=', "glasshouseOver_=_Lit")
                     , ('!', "glasshouseOver_!_Lit")
-                    , ('O', "pulpit") ]
+                    , ('0', "pulpit") ]
   , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
                    , ('!', "glasshouseOver_!_Lit")
-                   , ('O', "pulpit") ]
+                   , ('0', "pulpit") ]
       -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
@@ -175,48 +175,48 @@ collapsed = PlaceKind
   , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
-  , ptopLeft = [ "O"
+  , ptopLeft = [ "0"
                ]
   , poverrideDark = []
   , poverrideLit = []
   }
 collapsed2 = collapsed
   { pfreq    = [("noise", 1000), ("battle", 200)]
-  , ptopLeft = [ "XO"
-               , "OO"
+  , ptopLeft = [ "X0"
+               , "00"
                ]
   }
 collapsed3 = collapsed
   { pfreq    = [("noise", 2000), ("battle", 200)]
-  , ptopLeft = [ "XXO"
-               , "OOO"
+  , ptopLeft = [ "XX0"
+               , "000"
                ]
   }
 collapsed4 = collapsed
   { pfreq    = [("noise", 2000), ("battle", 200)]
-  , ptopLeft = [ "XXXO"
-               , "OOOO"
+  , ptopLeft = [ "XXX0"
+               , "0000"
                ]
   }
 collapsed5 = collapsed
   { pfreq    = [("noise", 3000), ("battle", 500)]
-  , ptopLeft = [ "XXO"
-               , "XOO"
-               , "OOO"
+  , ptopLeft = [ "XX0"
+               , "X00"
+               , "000"
                ]
   }
 collapsed6 = collapsed
   { pfreq    = [("noise", 4000), ("battle", 1000)]
-  , ptopLeft = [ "XXXO"
-               , "XOOO"
-               , "OOOO"
+  , ptopLeft = [ "XXX0"
+               , "X000"
+               , "0000"
                ]
   }
 collapsed7 = collapsed
   { pfreq    = [("noise", 4000), ("battle", 1000)]
-  , ptopLeft = [ "XXXO"
-               , "XXOO"
-               , "OOOO"
+  , ptopLeft = [ "XXX0"
+               , "XX00"
+               , "0000"
                ]
   }
 pillar = PlaceKind
@@ -229,7 +229,7 @@ pillar = PlaceKind
   -- Larger rooms require support pillars.
   , ptopLeft = [ "----"
                , "|···"
-               , "|·O·"
+               , "|·0·"
                , "|···"
                ]
   , poverrideDark = []
@@ -238,7 +238,7 @@ pillar = PlaceKind
 pillar2 = pillar
   { pfreq    = [("rogue", 60), ("laboratory", 200)]
   , ptopLeft = [ "----"
-               , "|O··"
+               , "|0··"
                , "|···"
                , "|···"
                ]
@@ -246,9 +246,9 @@ pillar2 = pillar
 pillar3 = pillar
   { pfreq    = [("rogue", 8000), ("laboratory", 25000)]
   , ptopLeft = [ "-----"
-               , "|O···"
+               , "|0···"
                , "|····"
-               , "|··O·"
+               , "|··0·"
                , "|····"
                ]
   }
@@ -256,9 +256,9 @@ pillar4 = pillar
   { pname    = "an exquisite hall"
   , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
   , ptopLeft = [ "-----"
-               , "|&·O·"
+               , "|&·0·"
                , "|····"
-               , "|O·O·"
+               , "|0·0·"
                , "|····"
                ]
   , poverrideDark = [('&', "cache")]
@@ -268,9 +268,9 @@ pillar5 = pillar
   { pname    = "a decorated hall"
   , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
   , ptopLeft = [ "-----"
-               , "|&·O·"
+               , "|&·0·"
                , "|····"
-               , "|O···"
+               , "|0···"
                , "|····"
                ]
   , poverrideDark = [('&', "cache")]
@@ -285,7 +285,7 @@ colonnade = PlaceKind
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
-  , ptopLeft = [ "O·"
+  , ptopLeft = [ "0·"
                , "··"
                ]
   , poverrideDark = []
@@ -293,35 +293,35 @@ colonnade = PlaceKind
   }
 colonnade2 = colonnade
   { prarity  = [(1, 15), (10, 15)]
-  , ptopLeft = [ "O·"
-               , "·O"
+  , ptopLeft = [ "0·"
+               , "·0"
                ]
   }
 colonnade3 = colonnade
   { prarity  = [(1, 800), (10, 800)]
-  , ptopLeft = [ "··O"
-               , "·O·"
-               , "O··"
+  , ptopLeft = [ "··0"
+               , "·0·"
+               , "0··"
                ]
   }
 colonnade4 = colonnade
   { prarity  = [(1, 200), (10, 200)]
-  , ptopLeft = [ "O··"
-               , "·O·"
-               , "··O"
+  , ptopLeft = [ "0··"
+               , "·0·"
+               , "··0"
                ]
   }
 colonnade5 = colonnade
   { prarity  = [(1, 10), (10, 10)]
-  , ptopLeft = [ "O··"
-               , "··O"
+  , ptopLeft = [ "0··"
+               , "··0"
                ]
   }
 colonnade6 = colonnade
   { prarity  = [(1, 100), (10, 100)]
-  , ptopLeft = [ "O·"
+  , ptopLeft = [ "0·"
                , "··"
-               , "·O"
+               , "·0"
                ]
   }
 lampPost = PlaceKind
@@ -332,15 +332,15 @@ lampPost = PlaceKind
   , pcover   = CVerbatim
   , pfence   = FNone
   , ptopLeft = [ "X·X"
-               , "·O·"
+               , "·0·"
                , "X·X"
                ]
-  , poverrideDark = [('O', "lampPostOver_O"), ('·', "floorActorLit")]
-  , poverrideLit = [('O', "lampPostOver_O"), ('·', "floorActorLit")]
+  , poverrideDark = [('0', "lampPostOver_0"), ('·', "floorActorLit")]
+  , poverrideLit = [('0', "lampPostOver_0"), ('·', "floorActorLit")]
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
-               , "·O·"
+               , "·0·"
                , "···"
                ]
   }
@@ -349,7 +349,7 @@ lampPost3 = lampPost
                , ("battle", 110) ]
   , ptopLeft = [ "XX·XX"
                , "X···X"
-               , "··O··"
+               , "··0··"
                , "X···X"
                , "XX·XX"
                ]
@@ -358,7 +358,7 @@ lampPost4 = lampPost
   { pfreq    = [("escape", 3000), ("ambush", 3000), ("zoo", 50), ("battle", 60)]
   , ptopLeft = [ "X···X"
                , "·····"
-               , "··O··"
+               , "··0··"
                , "·····"
                , "X···X"
                ]
@@ -371,13 +371,13 @@ treeShade = PlaceKind
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "··s"
-               , "sO·"
+               , "s0·"
                , "Xs·"
                ]
-  , poverrideDark = [ ('O', "treeShadeOver_O_Dark")
+  , poverrideDark = [ ('0', "treeShadeOver_0_Dark")
                     , ('s', "treeShadeOver_s_Dark")
                     , ('·', "shaded ground") ]
-  , poverrideLit = [ ('O', "treeShadeOver_O_Lit")
+  , poverrideLit = [ ('0', "treeShadeOver_0_Lit")
                    , ('s', "treeShadeOver_s_Lit")
                    , ('·', "shaded ground") ]
   }
@@ -474,18 +474,18 @@ escapeDown = PlaceKind
 escapeDown2 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O"
+  , ptopLeft = [ "0·0"
                , "·>·"
-               , "O·O"
+               , "0·0"
                ]
   }
 escapeDown3 = escapeDown
   { pfreq    = [("escape down", 2000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O·O|"
+               , "|0·0|"
                , "|·>·|"
-               , "|O·O|"
+               , "|0·0|"
                , "-----"
                ]
   }
@@ -493,9 +493,9 @@ escapeDown4 = escapeDown
   { pfreq    = [("escape down", 1000)]
   , pcover   = CMirror
   , pfence   = FFloor
-  , ptopLeft = [ "O··"
+  , ptopLeft = [ "0··"
                , "·>·"
-               , "··O"
+               , "··0"
                ]
   }
 escapeDown5 = escapeDown
@@ -503,9 +503,9 @@ escapeDown5 = escapeDown
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
-               , "|O··|"
+               , "|0··|"
                , "|·>·|"
-               , "|O·O|"
+               , "|0·0|"
                , "-----"
                ]
   }
@@ -546,209 +546,209 @@ staircase4 = staircase2
 staircase5 = staircase
   { pfreq    = [("open staircase", 200)]  -- no cover, open
   , pfence   = FGround
-  , ptopLeft = [ "O·O"
+  , ptopLeft = [ "0·0"
                , "···"
                , "<·>"
                , "···"
-               , "O·O"
+               , "0·0"
                ]
   }
 staircase6 = staircase
   { pfreq    = [("open staircase", 300)]
   , pfence   = FGround
-  , ptopLeft = [ "O·O·O"
+  , ptopLeft = [ "0·0·0"
                , "·····"
                , "·<·>·"
                , "·····"
-               , "O·O·O"
+               , "0·0·0"
                ]
   }
 staircase7 = staircase
   { pfreq    = [("open staircase", 500)]
   , pfence   = FGround
-  , ptopLeft = [ "O·O·O·O"
+  , ptopLeft = [ "0·0·0·0"
                , "·······"
-               , "O·<·>·O"
+               , "0·<·>·0"
                , "·······"
-               , "O·O·O·O"
+               , "0·0·0·0"
                ]
   }
 staircase8 = staircase
   { pfreq    = [("open staircase", 2000)]
   , pfence   = FGround
-  , ptopLeft = [ "·O·I·O·"
-               , "O·····O"
+  , ptopLeft = [ "·0·I·0·"
+               , "0·····0"
                , "··<·>··"
-               , "O·····O"
-               , "·O·O·O·"
+               , "0·····0"
+               , "·0·0·0·"
                ]
   }
 staircase9 = staircase
   { pfreq    = [("open staircase", 500)]
   , pfence   = FGround
-  , ptopLeft = [ "O·······O"
+  , ptopLeft = [ "0·······0"
                , "···<·>···"
-               , "O·······O"
+               , "0·······0"
                ]
   }
 staircase10 = staircase
   { pfreq    = [("open staircase", 500)]
   , pfence   = FGround
-  , ptopLeft = [ "O·····O"
+  , ptopLeft = [ "0·····0"
                , "··<·>··"
-               , "O·····O"
+               , "0·····0"
                ]
   }
 staircase11 = staircase
   { pfreq    = [("closed staircase", 2000)]  -- weak cover, low freq
   , pfence   = FFloor
-  , ptopLeft = [ "·O·"
-               , "O·O"
+  , ptopLeft = [ "·0·"
+               , "0·0"
                , "···"
                , "<·>"
                , "···"
-               , "O·O"
-               , "·O·"
+               , "0·0"
+               , "·0·"
                ]
   }
 staircase12 = staircase
   { pfreq    = [("closed staircase", 4000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·O·"
-               , "O·O·O"
+  , ptopLeft = [ "·0·0·"
+               , "0·0·0"
                , "·····"
                , "·<·>·"
                , "·····"
-               , "O·O·O"
-               , "·O·O·"
+               , "0·0·0"
+               , "·0·0·"
                ]
   }
 staircase13 = staircase
   { pfreq    = [("closed staircase", 6000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·O·O·"
-               , "O·O·O·O"
+  , ptopLeft = [ "·0·0·0·"
+               , "0·0·0·0"
                , "·······"
-               , "O·<·>·O"
+               , "0·<·>·0"
                , "·······"
-               , "O·O·O·O"
-               , "·O·O·O·"
+               , "0·0·0·0"
+               , "·0·0·0·"
                ]
   }
 staircase14 = staircase
   { pfreq    = [("closed staircase", 10000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·O·O"
-               , "·O·O·O·"
-               , "O·····O"
+  , ptopLeft = [ "0·0·0·0"
+               , "·0·0·0·"
+               , "0·····0"
                , "··<·>··"
-               , "O·····O"
-               , "·O·O·O·"
-               , "O·O·O·O"
+               , "0·····0"
+               , "·0·0·0·"
+               , "0·0·0·0"
                ]
   }
 staircase15 = staircase
   { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·O·O·O·"
-               , "O·O·O·O·O"
-               , "·O·····O·"
-               , "O··<·>··O"
-               , "·O·····O·"
-               , "O·O·O·O·O"
-               , "·O·O·O·O·"
+  , ptopLeft = [ "·0·0·0·0·"
+               , "0·0·0·0·0"
+               , "·0·····0·"
+               , "0··<·>··0"
+               , "·0·····0·"
+               , "0·0·0·0·0"
+               , "·0·0·0·0·"
                ]
   }
 staircase16 = staircase
   { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·O·O·O"
-               , "·O·O·O·O·"
-               , "O·······O"
-               , "·O·<·>·O·"
-               , "O·······O"
-               , "·O·O·O·O·"
-               , "O·O·O·O·O"
+  , ptopLeft = [ "0·0·0·0·0"
+               , "·0·0·0·0·"
+               , "0·······0"
+               , "·0·<·>·0·"
+               , "0·······0"
+               , "·0·0·0·0·"
+               , "0·0·0·0·0"
                ]
   }
 staircase17 = staircase
   { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·O·O·O·O"
-               , "·O·O·O·O·O·"
-               , "O·O·····O·O"
-               , "·O··<·>··O·"
-               , "O·O·····O·O"
-               , "·O·O·O·O·O·"
-               , "O·O·O·O·O·O"
+  , ptopLeft = [ "0·0·0·0·0·0"
+               , "·0·0·0·0·0·"
+               , "0·0·····0·0"
+               , "·0··<·>··0·"
+               , "0·0·····0·0"
+               , "·0·0·0·0·0·"
+               , "0·0·0·0·0·0"
                ]
   }
 staircase18 = staircase
   { pfreq    = [("closed staircase", 80000)]
   , pfence   = FFloor
-  , ptopLeft = [ "··O·O·O·O··"
-               , "·O·O·O·O·O·"
-               , "O·O·····O·O"
-               , "·O··<·>··O·"
-               , "O·O·····O·O"
-               , "·O·O·O·O·O·"
-               , "··O·O·O·O··"
+  , ptopLeft = [ "··0·0·0·0··"
+               , "·0·0·0·0·0·"
+               , "0·0·····0·0"
+               , "·0··<·>··0·"
+               , "0·0·····0·0"
+               , "·0·0·0·0·0·"
+               , "··0·0·0·0··"
                ]
   }
 staircase19 = staircase
   { pfreq    = [("closed staircase", 20000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·O·O·O·O·"
-               , "O·O·O·O·O·O"
-               , "·O·······O·"
-               , "O·O·<·>·O·O"
-               , "·O·······O·"
-               , "O·O·O·O·O·O"
-               , "·O·O·O·O·O·"
+  , ptopLeft = [ "·0·0·0·0·0·"
+               , "0·0·0·0·0·0"
+               , "·0·······0·"
+               , "0·0·<·>·0·0"
+               , "·0·······0·"
+               , "0·0·0·0·0·0"
+               , "·0·0·0·0·0·"
                ]
   }
 staircase20 = staircase
   { pfreq    = [("closed staircase", 5000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·O·O·O·O·"
-               , "O·O·····O·O"
-               , "·O··<·>··O·"
-               , "O·O·····O·O"
-               , "·O·O·I·O·O·"
+  , ptopLeft = [ "·0·0·0·0·0·"
+               , "0·0·····0·0"
+               , "·0··<·>··0·"
+               , "0·0·····0·0"
+               , "·0·0·I·0·0·"
                ]
   }
 staircase21 = staircase
   { pfreq    = [("closed staircase", 5000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·I·O·O"
-               , "·O·····O·"
-               , "O··<·>··O"
-               , "·O·····O·"
-               , "O·O·O·O·O"
+  , ptopLeft = [ "0·0·I·0·0"
+               , "·0·····0·"
+               , "0··<·>··0"
+               , "·0·····0·"
+               , "0·0·0·0·0"
                ]
   }
 staircase22 = staircase
   { pfreq    = [("closed staircase", 2000)]
   , pfence   = FFloor
-  , ptopLeft = [ "O·O·····O·O"
-               , "·O··<·>··O·"
-               , "O·O·····O·O"
+  , ptopLeft = [ "0·0·····0·0"
+               , "·0··<·>··0·"
+               , "0·0·····0·0"
                ]
   }
 staircase23 = staircase
   { pfreq    = [("closed staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·······O·"
-               , "O·O·<·>·O·O"
-               , "·O·······O·"
+  , ptopLeft = [ "·0·······0·"
+               , "0·0·<·>·0·0"
+               , "·0·······0·"
                ]
   }
 staircase24 = staircase
   { pfreq    = [("closed staircase", 1000)]
   , pfence   = FFloor
-  , ptopLeft = [ "·O·····O·"
-               , "O··<·>··O"
-               , "·O·····O·"
+  , ptopLeft = [ "·0·····0·"
+               , "0··<·>··0"
+               , "·0·····0·"
                ]
   }
 staircase25 = staircase
@@ -775,9 +775,9 @@ staircase27 = staircase
   { pfreq    = [("walled staircase", 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|O·····O|"
+               , "|0·····0|"
                , "|··<·>··|"
-               , "|O·····O|"
+               , "|0·····0|"
                , "---------"
                ]
   }
@@ -797,11 +797,11 @@ staircase29 = staircase
   { pfreq    = [("walled staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
-               , "|O···O|"
+               , "|0···0|"
                , "|·····|"
                , "|·<·>·|"
                , "|·····|"
-               , "|O···O|"
+               , "|0···0|"
                , "-------"
                ]
   }
@@ -809,11 +809,11 @@ staircase30 = staircase
   { pfreq    = [("walled staircase", 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
-               , "|O·O·O|"
+               , "|0·0·0|"
                , "|·····|"
                , "|·<·>·|"
                , "|·····|"
-               , "|O·O·O|"
+               , "|0·0·0|"
                , "-------"
                ]
   }
@@ -833,11 +833,11 @@ staircase32 = staircase
   { pfreq    = [("walled staircase", 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|O·····O|"
+               , "|0·····0|"
                , "|·······|"
                , "|··<·>··|"
                , "|·······|"
-               , "|O·····O|"
+               , "|0·····0|"
                , "---------"
                ]
   }
@@ -845,11 +845,11 @@ staircase33 = staircase
   { pfreq    = [("walled staircase", 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|O·O·O·O|"
+               , "|0·0·0·0|"
                , "|·······|"
-               , "|O·<·>·O|"
+               , "|0·<·>·0|"
                , "|·······|"
-               , "|O·O·O·O|"
+               , "|0·0·0·0|"
                , "---------"
                ]
   }
@@ -857,11 +857,11 @@ staircase34 = staircase
   { pfreq    = [("walled staircase", 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
-               , "|·O·O·O·|"
-               , "|O·····O|"
+               , "|·0·0·0·|"
+               , "|0·····0|"
                , "|··<·>··|"
-               , "|O·····O|"
-               , "|·O·I·O·|"
+               , "|0·····0|"
+               , "|·0·I·0·|"
                , "---------"
                ]
   }
@@ -879,9 +879,9 @@ staircase36 = staircase
   { pfreq    = [("walled staircase", 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
-               , "|·O·····O·|"
-               , "|O··<·>··O|"
-               , "|·O·····O·|"
+               , "|·0·····0·|"
+               , "|0··<·>··0|"
+               , "|·0·····0·|"
                , "-----------"
                ]
   }
@@ -889,9 +889,9 @@ staircase37 = staircase
   { pfreq    = [("walled staircase", 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
-               , "|O·······O|"
-               , "|·O·<·>·O·|"
-               , "|O·······O|"
+               , "|0·······0|"
+               , "|·0·<·>·0·|"
+               , "|0·······0|"
                , "-----------"
                ]
   }
