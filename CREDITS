@@ -33,3 +33,5 @@ Modifications were performed with font editor FontForge and are as follows:
 * set width of space, nbsp and # glyphs to 1170
     (this is a hack to make DOM create square table cells)
 * copy O to 0 (zero) and add the middle dot from the original zero
+* randomly fix various errors and simplify with fontforge
+* auto-generate hints with fontforge
