@@ -195,7 +195,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
-        smenuIxMap = M.singleton "main" 999
+        smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
         sreportNull = True
         shintMode = HintAbsent
         sstart = 0
