@@ -387,7 +387,8 @@ fleeList aid = do
                        && not (occupiedProjLvl p lvl)
       accWalkVic = filter (accWalkUnocc . snd) dVic
       gtVic = filter ((> dist (bpos b)) . fst) accWalkVic
-      eqVic = filter ((== dist (bpos b)) . fst) accWalkVic
+      eqVicRaw = filter ((== dist (bpos b)) . fst) accWalkVic
+      (eqVicOld, eqVic) = partition ((== boldpos b) . Just . snd) eqVicRaw
       accNonWalkUnocc p = not (Tile.isWalkable coTileSpeedup (lvl `at` p))
                           && (Tile.isEasyOpen coTileSpeedup (lvl `at` p))
                           && not (occupiedBigLvl p lvl)
@@ -412,5 +413,5 @@ fleeList aid = do
         _ -> (mult * d, p)  -- far from target path or even on target goal
       goodVic = map (rewardPath 10000) gtVic
                 ++ map (rewardPath 100) eqVic
-      badVic = map (rewardPath 1) $ gtEqNonVic ++ ltAllVic
+      badVic = map (rewardPath 1) $ gtEqNonVic ++ eqVicOld ++ ltAllVic
   return (goodVic, badVic)
