@@ -79,6 +79,34 @@ keyHelp COps{corule}
       [ ""
       , "Press SPACE to see the next page of command descriptions."
       ]
+    itemMenuEnding =
+      [ ""
+      , "Note how lower case item commands (pack, equip and stash) let you move items"
+      , "into a particular item store."
+      , ""
+      , "Press SPACE to see the detailed descriptions of other item-related commands."
+      ]
+    itemRemainingEnding =
+      [ ""
+      , "Note how upper case item commands (manage Pack, Equipment, Stash, etc.)"
+      , "let you view and organize items within a particular item store. Once a menu"
+      , "is opened, you can switch stores at will, so each of the commands only"
+      , "determines the starting item store. Each store is accessible from the dashboard"
+      , "as well."
+      , ""
+      , "Press SPACE to see the next page of command descriptions."
+      ]
+    itemAllEnding =
+      [ ""
+      , "Note how lower case item commands (pack, equip and stash) let you move items"
+      , "into a particular item store, while upper case item commands (manage Pack,"
+      , "Equipment, Stash, etc.) let you view and organize items within an item store."
+      , "Once a store management menu is opened, you can switch stores at will,"
+      , "so the multiple commands only determine the starting item store."
+      , "Each store is accessible from the dashboard as well."
+      , ""
+      , "Press SPACE to see the next page of command descriptions."
+      ]
     mouseBasicsBlurb =
       [ "Screen area and UI mode (exploration/aiming) determine mouse click effects."
       , "First, we give an overview of effects of each button over the game map area."
@@ -112,6 +140,9 @@ keyHelp COps{corule}
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
     categoryEnd = map fmts categoryEnding
+    itemMenuEnd = map fmts itemMenuEnding
+    itemRemainingEnd = map fmts itemRemainingEnding
+    itemAllEnd = map fmts itemAllEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
     mouseBasicsEnd = map fmts mouseBasicsEnding
     lastHelpEnd = map fmts lastHelpEnding
@@ -187,16 +218,16 @@ keyHelp COps{corule}
     , if catLength CmdItemMenu + catLength CmdItem
          + 9 > rheight then
         [ ( categoryDescription CmdItemMenu <> "."
-          , okxs CmdItemMenu [keyCaption] categoryEnd )
+          , okxs CmdItemMenu [keyCaption] itemMenuEnd )
         , ( categoryDescription CmdItem <> "."
-          , okxs CmdItem [keyCaption] categoryEnd ) ]
+          , okxs CmdItem [keyCaption] itemRemainingEnd ) ]
       else
         [ ( categoryDescription CmdItemMenu <> "."
           , mergeOKX
               (okxs CmdItemMenu [keyCaption] [""])
               (okxs CmdItem
                     [categoryDescription CmdItem <> ".", "", keyCaption]
-                    categoryEnd) ) ]
+                    itemAllEnd) ) ]
     , if catLength CmdMove + catLength CmdAim
          + 9 > rheight then
         [ ( "All terrain exploration and alteration commands."

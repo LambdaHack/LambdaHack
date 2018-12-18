@@ -112,22 +112,21 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
-  , ("^", ( [CmdItem], "sort items by kind and rolled aspects", SortSlots))
   , ("P", ( [CmdItem, CmdDashboard]
           , "manage inventory pack of the leader"
           , ChooseItemMenu (MStore CInv) ))
   , ("I", ( [CmdItem, CmdDashboard]
           , ""
           , ChooseItemMenu (MStore CInv) ))
-  , ("G", ( [CmdItem, CmdDashboard]
-          , "manage items on the ground"
-          , ChooseItemMenu (MStore CGround) ))
   , ("E", ( [CmdItem, CmdDashboard]
           , "manage equipment of the leader"
           , ChooseItemMenu (MStore CEqp) ))
   , ("S", ( [CmdItem, CmdDashboard]
           , "manage the shared party stash"
           , ChooseItemMenu (MStore CSha) ))
+  , ("G", ( [CmdItem, CmdDashboard]
+          , "manage items on the ground"
+          , ChooseItemMenu (MStore CGround) ))
   , ("A", ( [CmdItem, CmdDashboard]
           , "manage all owned items"
           , ChooseItemMenu MOwned ))
@@ -137,6 +136,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("#", ( [CmdItem, CmdDashboard]
           , "show skill summary of the leader"
           , ChooseItemMenu MSkills ))
+  , ("^", ( [CmdItem], "sort items by kind and rolled aspects", SortSlots))
   , ("~", ( [CmdItem]
           , "display known lore"
           , ChooseItemMenu (MLore SItem) ))
