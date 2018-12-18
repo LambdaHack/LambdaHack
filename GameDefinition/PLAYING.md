@@ -29,7 +29,8 @@ or describe your problem on gitter or the issue tracker.
 Heroes
 ------
 
-The heroes are marked on the map with symbols `@` and `1` through `9`.
+The heroes are marked on the map with bright white (red if they are
+about to be lost) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party leader is highlighted on the map
 and his attributes are displayed at the bottommost status line,
 which in its most complex form looks as follows.
@@ -81,15 +82,19 @@ between the two points.
 Game map
 --------
 
-The map of any particular scenario may consist of one or many
-levels and each level consists of a large number of tiles.
-The game world is persistent, i.e., every time the player visits
-a level during a single game, its layout is the same.
-The basic tile kinds are as follows.
+The map of any particular scenario may consist of one or many levels
+and each level consists of a large number of tiles with a particular
+terrain kind on each. The game world is persistent, i.e., every time
+the player visits a level during a single game, its layout is the same.
+
+Terrain is depicted with non-letter and non-digit (except zero `0`)
+characters, the same as items lying on the ground, though blocky,
+solid characters are more likely to be non-passable terrain than items.
+The basic terrain kinds are as follows.
 
     game map terrain type                  on-screen symbol
     wall (horizontal and vertical)         - and |
-    tree or rock or man-made column        O
+    tree or rock or man-made column        0
     rubble                                 &
     bush, transparent obstacle             %
     trap, ice                              ^
@@ -230,6 +235,10 @@ and out of this world, roam the dark corridors and crawl from damp holes
 day and night. While heroes pay attention to all other party members
 and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
+
+Monsters are depicted on the map with letters. Upper case letters
+are unique monsters, often guardians of dungeon levels, and lower case
+letters are the rest.
 
 When a hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. Heroes and monsters running into one another
