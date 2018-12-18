@@ -1498,7 +1498,7 @@ gameRestartHuman = do
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionForget $ oneOf
-              [ "yea, would be a pity to leave them all to die"
+              [ "yea, would be a pity to leave them to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2
 
