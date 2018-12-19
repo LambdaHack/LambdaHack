@@ -218,8 +218,10 @@ as explained in section [Heroes](#heroes) above.
 Commands for saving and exiting the current game, starting a new game,
 configuring convenience settings for the current game and challenges
 for the next game are listed in the main menu, brought up by the `ESC` key.
-Game difficulty, from the challenges menu, determines
-hitpoints at birth for any actor of any UI-using faction.
+Game difficulty, from the challenges menu, determines hitpoints at birth:
+difficulty below 5 multiplies hitpoints of player characters, difficulty
+over 5 multiplies hitpoints of their enemies.
+
 The "lone wolf" challenge mode reduces player's starting actors to exactly
 one (consequently, this does not affect the initial 'raid' scenario).
 The "cold fish" challenge mode makes it impossible for player characters
@@ -227,15 +229,21 @@ to be healed by actors from other factions (this is a significant
 restriction in the final 'crawl' scenario).
 
 For a person new to roguelikes, the 'raid' scenario offers a gentle
-introduction. The subsequent game scenarios gradually introduce
-squad combat, stealth, opportunity fire, asymmetric battles and more.
+introduction. The subsequent game scenarios lead the player along
+an optional story arc. They gradually introduce squad combat,
+stealth, opportunity fire, asymmetric battles and more.
 Starting from the second scenario, the player controls a whole team
 of characters and will develop his repertoire of squad formations,
-preferred rendezvous locations and the use of light sources. The last
-scenario takes place in a multi-floor setting, giving player the choice
-of exploration of a single level at a time or portions of many levels
-along a single staircase and also of guarding staircases against
-enemies from other levels or, inversely, avoiding the staircases.
+preferred rendezvous locations and the use of light sources.
+
+The last scenario takes place in a multi-floor setting, giving player
+the choice of exploration of a single level at a time or portions
+of many levels along a single staircase. This should be considered
+the gist and the main challenge of the game, involving strategic
+resource management and area denial elements. Compared to that,
+the smaller scenarios provide more tactical training and offer variety
+and entertainment of chaising a high-score between the deaths^H^H^H^H^H^H
+long crawls.
 
 
 Monsters
