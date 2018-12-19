@@ -173,7 +173,7 @@ slingBullet = ItemKind
   , idamage  = 1 `d` 1
   , iaspects = [ AddSkill SkHurtMelee $ (-17 + 1 `d` 2 + 1 `dL` 3) * 5
                    -- not too good against armor
-               , ToThrow $ ThrowMod 200 100 3 ]  -- piercing
+               , ToThrow $ ThrowMod 200 100 2 ]  -- piercing
   , ieffects = []
   , idesc    = "Small almond-shaped leaden projectile that weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
   , ikit     = []
