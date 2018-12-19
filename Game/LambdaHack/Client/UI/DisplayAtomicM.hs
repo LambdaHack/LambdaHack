@@ -518,6 +518,9 @@ createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
   CCUI{coscreen} <- getsSession sccui
   side <- getsClient sside
+  when (bfid body == side && not (bproj body)) $ do
+    let upd = ES.insert aid
+    modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid body
   globalTime <- getsState stime
