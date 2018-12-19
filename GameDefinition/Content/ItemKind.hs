@@ -175,7 +175,7 @@ slingBullet = ItemKind
                    -- not too good against armor
                , ToThrow $ ThrowMod 200 100 2 ]  -- piercing
   , ieffects = []
-  , idesc    = "Small almond-shaped leaden projectile that weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released."
+  , idesc    = "Small almond-shaped leaden projectile that weighs more than the sling used to tie the bag. It doesn't drop out of the sling's pouch when swung and doesn't snag when released. Known to pierce through flesh, at least at maximum speed."  -- we lie, it doesn't slow down in our model; but it stops piercing alright
   , ikit     = []
   }
 
