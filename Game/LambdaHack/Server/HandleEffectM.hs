@@ -81,7 +81,7 @@ applyItem aid iid cstore = do
   -- Treated as if the actor hit himself with the item as a weapon,
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@.
-  kineticEffectAndDestroy True aid aid aid iid c
+  kineticEffectAndDestroy True aid aid aid iid c True
 
 applyKineticDamage :: MonadServerAtomic m
                    => ActorId -> ActorId -> ItemId -> m Bool
@@ -150,9 +150,9 @@ cutCalm target = do
 -- AI benefit calculation may be used for flinging and for applying items.
 kineticEffectAndDestroy :: MonadServerAtomic m
                         => Bool -> ActorId -> ActorId -> ActorId
-                        -> ItemId -> Container
+                        -> ItemId -> Container -> Bool
                         -> m ()
-kineticEffectAndDestroy voluntary killer source target iid c = do
+kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
@@ -180,19 +180,19 @@ kineticEffectAndDestroy voluntary killer source target iid c = do
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         effectAndDestroyAndAddKill voluntary killer False kineticPerformed
                                    source target iid c
-                                   False (itemFull, kit)
+                                   False (itemFull, kit) mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId -> Bool -> Bool
                            -> ActorId -> ActorId -> ItemId -> Container
-                           -> Bool ->  ItemFullKit
+                           -> Bool ->  ItemFullKit -> Bool
                            -> m ()
 effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
                            source target iid container
-                           periodic (itemFull, kit) = do
+                           periodic (itemFull, kit) mayDestroy = do
   tbOld <- getsState $ getActorBody target
   effectAndDestroy onSmashOnly kineticPerformed source target iid container
-                   periodic (itemFull, kit)
+                   periodic (itemFull, kit) mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -207,12 +207,12 @@ effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> Bool -> ActorId -> ActorId -> ItemId -> Container
-                 -> Bool -> ItemFullKit
+                 -> Bool -> ItemFullKit -> Bool
                  -> m ()
 effectAndDestroy onSmashOnly kineticPerformed
                  source target iid container periodic
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
-                 , (itemK, itemTimer) ) = do
+                 , (itemK, itemTimer) ) mayDestroy = do
   let effs = if onSmashOnly
              then IK.strengthOnSmash itemKind
              else IK.ieffects itemKind
@@ -249,7 +249,7 @@ effectAndDestroy onSmashOnly kineticPerformed
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let imperishable = imperishableKit periodic itemFull
+    let imperishable = not mayDestroy || imperishableKit periodic itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
     -- At this point, the item is potentially no longer in container
@@ -304,7 +304,7 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@. Information whether this happened due to being pushed
   -- is preserved, but how did the pushing is lost, so we blame the victim.
-  kineticEffectAndDestroy voluntary aid aid aid iid c
+  kineticEffectAndDestroy voluntary aid aid aid iid c True
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
@@ -1339,7 +1339,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
         voluntary = True
         onSmashOnly = True
     effectAndDestroyAndAddKill
-      voluntary aid onSmashOnly False aid aid iid c False (itemFull, kit)
+      voluntary aid onSmashOnly False aid aid iid c False (itemFull, kit) True
     -- At most one copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
@@ -1758,7 +1758,7 @@ effectActivateInv execSfx iidId source target symbol = do
   effectTransformContainer execSfx iidId symbol c $ \iid _ ->
     -- We don't know if it's voluntary, so we conservatively assume it is
     -- and we blame @source@.
-    kineticEffectAndDestroy True source target target iid c
+    kineticEffectAndDestroy True source target target iid c True
 
 effectTransformContainer :: forall m. MonadServerAtomic m
                          => m () -> ItemId -> Char -> Container

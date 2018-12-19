@@ -357,7 +357,7 @@ applyPeriodicLevel = do
               -- destroy the item.
               effectAndDestroyAndAddKill
                 True aid False False
-                aid aid iid (CActor aid cstore) True (itemFull, kit)
+                aid aid iid (CActor aid cstore) True (itemFull, kit) True
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds

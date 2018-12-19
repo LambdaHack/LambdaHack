@@ -461,6 +461,8 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- the source part of the strike.
         execSfxAtomic $ SfxStrike source target iid cstore
         let c = CActor source cstore
+            mayDestroy = not (bproj sb) || bhp sb <= oneM
+              -- piercing projectiles may not have their weapon destroyed
         -- Msgs inside @itemEffect@ describe the target part of the strike.
         -- If any effects and aspects, this is also where they are identified.
         -- Here also the kinetic damage is applied, before any effects are.
@@ -470,7 +472,7 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- themselves from some projectiles by lowering their apply stat.
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
-        kineticEffectAndDestroy voluntary killer source target iid c
+        kineticEffectAndDestroy voluntary killer source target iid c mayDestroy
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do
