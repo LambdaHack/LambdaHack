@@ -29,7 +29,7 @@ or describe your problem on gitter or the issue tracker.
 Heroes
 ------
 
-The heroes are marked on the map with bright white (red if they are
+The heroes are marked on the map with bright white color (red if they are
 about to be lost) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party leader is highlighted on the map
 and his attributes are displayed at the bottommost status line,
@@ -238,7 +238,8 @@ and all move at once, sometimes brutally colliding by accident.
 
 Monsters are depicted on the map with letters. Upper case letters
 are unique monsters, often guardians of dungeon levels, and lower case
-letters are the rest.
+letters are the rest. If there are humans from outside our team,
+they are marked with `@` and `1` through `9`, in other colours than white.
 
 When a hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. Heroes and monsters running into one another
