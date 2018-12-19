@@ -26,6 +26,57 @@ other technical issues, please consult
 or describe your problem on gitter or the issue tracker.
 
 
+Game map
+--------
+
+The map of any particular scenario may consist of one or many levels
+and each level consists of a large number of tiles with a particular
+terrain kind on each. The game world is persistent, i.e., every time
+the player visits a level during a single game, its layout is the same.
+
+Terrain is depicted with non-letter and non-digit (except zero `0`)
+characters, the same as items lying on the ground, though blocky
+solid symbol are more likely to be non-passable terrain than items.
+In case of doubt, one of the aiming commands (keypad `/`, with default
+keybinding) cycles through all visible and remembered items on the level
+and another (keypad `*`, with default keybinding) though all foes.
+The basic terrain kinds are as follows.
+
+    game map terrain type                  on-screen symbol
+    wall (horizontal and vertical)         - and |
+    tree or rock or man-made column        0
+    rubble                                 &
+    bush, transparent obstacle             %
+    trap, ice                              ^
+    closed door                            +
+    open door (horizontal and vertical)    | and -
+    corridor                               #
+    smoke or fog                           ;
+    ground                                 .
+    water                                  ~
+    stairs or exit up                      <
+    stairs or exit down                    >
+    bedrock                                blank
+
+Actors are marked with lower and upper case letters and with
+characters `@` and `1` through `9` (but never `0`). Player-controlled
+heroes are always bright white. If player manages to control animals
+or other actors, they retain their letter and color, but gain
+a white box around their symbol. Player-controlled actors that are
+selected (e.g., to run together) have a blue box around their symbol.
+
+So, for example, the following map shows a room with a closed door,
+full of actors, connected by a corridor with a room with an open door,
+a pillar, a staircase down and rubble that obscures one of the corners.
+The lower row of the larger room is full of items.
+
+   ------       ------
+   |@19.|       |....&&
+   |r...+#######-...O.>&&|
+   |Ra..|       |[?!,)$"=|
+   ------       ----------
+
+
 Heroes
 ------
 
@@ -77,46 +128,6 @@ In this example, the corsshair points at an exact position on the map
 and at the end of the status line comes the length of the shortest
 path from the leader position to the spot and the straight-line distance
 between the two points.
-
-
-Game map
---------
-
-The map of any particular scenario may consist of one or many levels
-and each level consists of a large number of tiles with a particular
-terrain kind on each. The game world is persistent, i.e., every time
-the player visits a level during a single game, its layout is the same.
-
-Terrain is depicted with non-letter and non-digit (except zero `0`)
-characters, the same as items lying on the ground, though blocky,
-solid characters are more likely to be non-passable terrain than items.
-The basic terrain kinds are as follows.
-
-    game map terrain type                  on-screen symbol
-    wall (horizontal and vertical)         - and |
-    tree or rock or man-made column        0
-    rubble                                 &
-    bush, transparent obstacle             %
-    trap, ice                              ^
-    closed door                            +
-    open door (horizontal and vertical)    | and -
-    corridor                               #
-    smoke or fog                           ;
-    ground                                 .
-    water                                  ~
-    stairs or exit up                      <
-    stairs or exit down                    >
-    bedrock                                blank
-
-So, for example, the following map shows a room with a closed door
-connected by a corridor with a room with an open door, a pillar,
-staircase down and rubble that obscures one of the corners.
-
-    ----       ----
-    |..|       |..&&
-    |..+#######-.O.>&|
-    |..|       |.....|
-    ----       -------
 
 
 Basic Commands
