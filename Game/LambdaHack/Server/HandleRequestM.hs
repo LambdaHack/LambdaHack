@@ -142,7 +142,7 @@ processWatchfulness mwait aid = do
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
     WWait n -> case mwait of
       Just True ->  -- only proper wait prevents switching to watchfulness
-        if n >= 100 then  -- enough dozing to fall asleep
+        if n >= 500 then  -- enough dozing to fall asleep
           if not uneasy  -- won't wake up at once
              && canSleep actorMaxSk  -- enough skills
           then do
