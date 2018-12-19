@@ -364,11 +364,11 @@ effectSem source target iid c periodic effect = do
     IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
-      effectCreateItem (Just $ bfid sb) Nothing target store grp tim
+      effectCreateItem (Just $ bfid sb) Nothing source target store grp tim
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
-    IK.PolyItem -> effectPolyItem execSfx iid source target
-    IK.RerollItem -> effectRerollItem execSfx iid source target
-    IK.DupItem -> effectDupItem execSfx iid source target
+    IK.PolyItem -> effectPolyItem execSfx iid target
+    IK.RerollItem -> effectRerollItem execSfx iid target
+    IK.DupItem -> effectDupItem execSfx iid target
     IK.Identify -> effectIdentify execSfx iid target
     IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
@@ -558,10 +558,12 @@ effectDominate source target = do
                     || hiImpressionK >= 10)
                      -- to tame/hack animal/robot, impress them a lot first
        if permitted then do
-         b <- dominateFidSfx target (bfid sb)
+         b <- dominateFidSfx source target (bfid sb)
          return $! if b then UseUp else UseDud
        else do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxUnimpressed target
+         when (source /= target) $
+           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxUnimpressed target
          return UseDud
 
 highestImpression :: MonadServerAtomic m
@@ -581,8 +583,9 @@ highestImpression tb = do
     Just fid -> assert (fid /= bfid tb)
                 $ return $ Just (fid, fst $ snd maxImpression)
 
-dominateFidSfx :: MonadServerAtomic m => ActorId -> FactionId -> m Bool
-dominateFidSfx target fid = do
+dominateFidSfx :: MonadServerAtomic m
+               => ActorId ->  ActorId -> FactionId -> m Bool
+dominateFidSfx source target fid = do
   tb <- getsState $ getActorBody target
   let !_A = assert (not $ bproj tb) ()
   -- Actors that don't move freely can't be dominated, for otherwise,
@@ -595,15 +598,15 @@ dominateFidSfx target fid = do
   if isNothing (btrajectory tb) && canTra && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
-    gameOver <- dominateFid fid target
+    gameOver <- dominateFid fid source target
     unless gameOver  -- avoid spam
       execSfx  -- see the actor as theirs, unless position not visible
     return True
   else
     return False
 
-dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> m Bool
-dominateFid fid target = do
+dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> ActorId -> m Bool
+dominateFid fid source target = do
   tb0 <- getsState $ getActorBody target
   deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
@@ -651,7 +654,7 @@ dominateFid fid target = do
   then return True  -- avoid the spam of identifying items at this point
   else do
     -- Add some nostalgia for the old faction.
-    void $ effectCreateItem (Just $ bfid tb) (Just 10) target COrgan
+    void $ effectCreateItem (Just $ bfid tb) (Just 10) source target COrgan
                             "impressed" IK.timerNone
     -- Identify organs that won't get identified by use.
     getKindId <- getsState $ flip getIidKindIdServer
@@ -688,7 +691,7 @@ effectImpress recursiveCall execSfx source target = do
        if canTra then do
          unless (bhp tb <= 0)
            execSfx  -- avoid spam just before death
-         effectCreateItem (Just $ bfid sb) (Just 1) target COrgan
+         effectCreateItem (Just $ bfid sb) (Just 1) source target COrgan
                           "impressed" IK.timerNone
        else return UseDud  -- no message, because common and not crucial
 
@@ -767,22 +770,28 @@ effectSummon grp nDm iid source target periodic = do
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if | (periodic || durable) && not (bproj sb)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sMaxSk)) -> do
-       unless (bproj sb) $
+       unless (bproj sb) $ do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
+         when (source /= target) $
+           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonLackCalm source
        return UseId
      | nFriends >= 20 -> do
        -- We assume the actor tries to summon his teammates or allies.
        -- As he repeats such summoning, he is going to bump into this limit.
        -- If he summons others, see the next condition.
-       unless (bproj sb) $
+       unless (bproj sb) $ do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyOwn source
+         when (source /= target) $
+           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonTooManyOwn source
        return UseId
      | EM.size lbig >= 200 -> do  -- lower than the 300 limit for spawning
        -- Even if the actor summons foes, he is prevented from exploiting it
        -- too many times and stopping natural monster spawning on the level
        -- (e.g., by filling the level with harmless foes).
-       unless (bproj sb) $
+       unless (bproj sb) $ do
          execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyAll source
+         when (source /= target) $
+           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonTooManyAll source
        return UseId
      | otherwise -> do
        execSfx
@@ -824,9 +833,13 @@ effectAscend recursiveCall execSfx up source target pos = do
   sb <- getsState $ getActorBody source
   if | actorWaits b1 && source /= target -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
+       when (source /= target) $
+         execSfxAtomic $ SfxMsgFid (bfid b1) $ SfxBracedImmune target
        return UseId
      | null destinations -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelNoMore
+       when (source /= target) $
+         execSfxAtomic $ SfxMsgFid (bfid b1) SfxLevelNoMore
        -- We keep it useful even in shallow dungeons.
        recursiveCall $ IK.Teleport 30  -- powerful teleport
      | otherwise -> do
@@ -854,9 +867,11 @@ effectAscend recursiveCall execSfx up source target pos = do
            switch2
          (_, b2) : _ -> do
            -- Alert about the switch.
-           -- Only tell one player, even if many actors, because then
+           execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelPushed
+           -- Only tell one pushed player, even if many actors, because then
            -- they are projectiles, so not too important.
-           execSfxAtomic $ SfxMsgFid (bfid b2) SfxLevelPushed
+           when (source /= target) $
+             execSfxAtomic $ SfxMsgFid (bfid b2) SfxLevelPushed
            -- Move the actor out of the way.
            switch1
            -- Move the inhabitants out of the way and to where the actor was.
@@ -995,17 +1010,19 @@ effectEscape :: MonadServerAtomic m => m () -> ActorId -> ActorId -> m UseResult
 effectEscape execSfx source target = do
   -- Obvious effect, nothing announced.
   sb <- getsState $ getActorBody source
-  b <- getsState $ getActorBody target
-  let fid = bfid b
+  tb <- getsState $ getActorBody target
+  let fid = bfid tb
   fact <- getsState $ (EM.! fid) . sfactionD
-  if | bproj b ->
+  if | bproj tb ->
        return UseDud  -- basically a misfire
      | not (fcanEscape $ gplayer fact) -> do
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxEscapeImpossible
+       when (source /= target) $
+         execSfxAtomic $ SfxMsgFid (bfid tb) SfxEscapeImpossible
        return UseId
      | otherwise -> do
        execSfx
-       deduceQuits (bfid b) $ Status Escape (fromEnum $ blid b) Nothing
+       deduceQuits (bfid tb) $ Status Escape (fromEnum $ blid tb) Nothing
        return UseUp
 
 -- ** Paralyze
@@ -1031,6 +1048,8 @@ paralyze execSfx nDm source target = do
   if | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
+       when (source /= target) $
+         execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
@@ -1084,6 +1103,8 @@ effectInsertMove execSfx nDm source target = do
      | ES.member target actorStasis -> do
        sb <- getsState $ getActorBody source
        execSfxAtomic $ SfxMsgFid (bfid sb) SfxStasisProtects
+       when (source /= target) $
+         execSfxAtomic $ SfxMsgFid (bfid tb) SfxStasisProtects
        return UseId
      | otherwise -> do
        execSfx
@@ -1110,6 +1131,8 @@ effectTeleport execSfx nDm source target = do
        -- necklace drawback; also consistent with sleep not protecting
   then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
+    when (source /= target) $
+      execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxBracedImmune target
     return UseId
   else do
     COps{coTileSpeedup} <- getsState scops
@@ -1139,6 +1162,8 @@ effectTeleport execSfx nDm source target = do
         debugPossiblyPrint
           "Server: effectTeleport: failed to find any free position"
         execSfxAtomic $ SfxMsgFid (bfid sb) SfxTransImpossible
+        when (source /= target) $
+          execSfxAtomic $ SfxMsgFid (bfid tb) SfxTransImpossible
         return UseId
       Just tpos -> do
         execSfx
@@ -1148,10 +1173,11 @@ effectTeleport execSfx nDm source target = do
 -- ** CreateItem
 
 effectCreateItem :: MonadServerAtomic m
-                 => Maybe FactionId -> Maybe Int -> ActorId -> CStore
+                 => Maybe FactionId -> Maybe Int -> ActorId -> ActorId -> CStore
                  -> GroupName ItemKind -> IK.TimerDice
                  -> m UseResult
-effectCreateItem jfidRaw mcount target store grp tim = do
+effectCreateItem jfidRaw mcount source target store grp tim = do
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
@@ -1209,8 +1235,11 @@ effectCreateItem jfidRaw mcount target store grp tim = do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
         -- It's hard for the client to tell this timer change from charge use,
         -- timer reset on pickup, etc., so we create the msg manually.
-        execSfxAtomic $ SfxMsgFid (bfid tb)
+        execSfxAtomic $ SfxMsgFid (bfid sb)
                       $ SfxTimerExtended (blid tb) target iid store delta
+        when (source /= target) $
+          execSfxAtomic $ SfxMsgFid (bfid tb)
+                        $ SfxTimerExtended (blid tb) target iid store delta
         return UseUp
       else return UseDud  -- probably incorrect content, but let it be
     _ -> do
@@ -1344,27 +1373,28 @@ pickDroppable respectNoItem aid b = do
 
 -- Can't apply to the item itself (any copies).
 effectPolyItem :: MonadServerAtomic m
-               => m () -> ItemId -> ActorId -> ActorId -> m UseResult
-effectPolyItem execSfx iidId source target = do
-  sb <- getsState $ getActorBody source
+               => m () -> ItemId -> ActorId -> m UseResult
+effectPolyItem execSfx iidId target = do
+  tb <- getsState $ getActorBody target
   let cstore = CGround
   kitAss <- getsState $ kitAssocs target [cstore]
   case filter ((/= iidId) . fst) kitAss of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeNothing
+      execSfxAtomic $ SfxMsgFid (bfid tb) SfxPurposeNothing
+      -- Do not spam the source actor player about the failures.
       return UseId
     (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , (itemK, itemTimer) )) : _ -> do
       let arItem = aspectRecordFull itemFull
           maxCount = Dice.supDice $ IK.icount itemKind
       if | IA.checkFlag Ability.Unique arItem -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeUnique
+           execSfxAtomic $ SfxMsgFid (bfid tb) SfxPurposeUnique
            return UseId
          | maybe True (<= 0) $ lookup "common item" $ IK.ifreq itemKind -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxPurposeNotCommon
+           execSfxAtomic $ SfxMsgFid (bfid tb) SfxPurposeNotCommon
            return UseId
          | itemK < maxCount -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb)
+           execSfxAtomic $ SfxMsgFid (bfid tb)
                          $ SfxPurposeTooFew maxCount itemK
            return UseId
          | otherwise -> do
@@ -1374,27 +1404,28 @@ effectPolyItem execSfx iidId source target = do
            execSfx
            identifyIid iid c itemKindId
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
-           effectCreateItem (Just $ bfid sb) Nothing
-                            target cstore "common item" IK.timerNone
+           effectCreateItem (Just $ bfid tb) Nothing
+                            target target cstore "common item" IK.timerNone
 
 -- ** RerollItem
 
 -- Can't apply to the item itself (any copies).
 effectRerollItem :: MonadServerAtomic m
-                 => m () -> ItemId -> ActorId -> ActorId -> m UseResult
-effectRerollItem execSfx iidId source target = do
+                 => m () -> ItemId -> ActorId -> m UseResult
+effectRerollItem execSfx iidId target = do
   COps{coItemSpeedup} <- getsState scops
-  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   let cstore = CGround  -- if ever changed, call @discoverIfMinorEffects@
   kitAss <- getsState $ kitAssocs target [cstore]
   case filter ((/= iidId) . fst) kitAss of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNothing
+      execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNothing
+      -- Do not spam the source actor player about the failures.
       return UseId
     (iid, ( ItemFull{itemBase, itemKindId, itemKind}
           , kit )) : _ ->
       if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxRerollNotRandom
+           execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
            return UseId
          | otherwise -> do
            let c = CActor target cstore
@@ -1415,25 +1446,25 @@ effectRerollItem execSfx iidId source target = do
 -- ** DupItem
 
 -- Can't apply to the item itself (any copies).
-effectDupItem :: MonadServerAtomic m
-              => m () -> ItemId -> ActorId -> ActorId -> m UseResult
-effectDupItem execSfx iidId source target = do
-  sb <- getsState $ getActorBody source
+effectDupItem :: MonadServerAtomic m => m () -> ItemId -> ActorId -> m UseResult
+effectDupItem execSfx iidId target = do
+  tb <- getsState $ getActorBody target
   let cstore = CGround  -- beware of other options, e.g., creating in eqp
                         -- and not setting timeout to a random value
   kitAss <- getsState $ kitAssocs target [cstore]
   case filter ((/= iidId) . fst) kitAss of
     [] -> do
-      execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupNothing
+      execSfxAtomic $ SfxMsgFid (bfid tb) SfxDupNothing
+      -- Do not spam the source actor player about the failures.
       return UseId
     (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
           , _ )) : _ -> do
       let arItem = aspectRecordFull itemFull
       if | IA.checkFlag Ability.Unique arItem -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupUnique
+           execSfxAtomic $ SfxMsgFid (bfid tb) SfxDupUnique
            return UseId
          | maybe False (> 0) $ lookup "valuable" $ IK.ifreq itemKind -> do
-           execSfxAtomic $ SfxMsgFid (bfid sb) SfxDupValuable
+           execSfxAtomic $ SfxMsgFid (bfid tb) SfxDupValuable
            return UseId
          | otherwise -> do
            let c = CActor target cstore
@@ -1617,6 +1648,8 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
           && source /= target
           && isNothing (btrajectory tb) then do
     execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxBracedImmune target
+    when (source /= target) $
+      execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxBracedImmune target
     return UseUp  -- waste it to prevent repeated throwing at immobile actors
   else do
    COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops

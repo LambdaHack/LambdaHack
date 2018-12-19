@@ -328,7 +328,7 @@ manageCalmAndDomination aid b = do
                -- animals/robots/human drones never Calm-dominated
              || hiImpressionK >= 10
                -- unless very high impression, e.g., in a dominated hero
-          then dominateFidSfx aid hiImpressionFid
+          then dominateFidSfx aid aid hiImpressionFid
           else return False
   unless performedDomination $ do
     newCalmDelta <- getsState $ regenCalmDelta aid b
