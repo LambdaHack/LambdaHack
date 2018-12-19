@@ -369,7 +369,7 @@ effectSem source target iid c periodic effect = do
     IK.PolyItem -> effectPolyItem execSfx iid source target
     IK.RerollItem -> effectRerollItem execSfx iid source target
     IK.DupItem -> effectDupItem execSfx iid source target
-    IK.Identify -> effectIdentify execSfx iid source target
+    IK.Identify -> effectIdentify execSfx iid target
     IK.Detect d radius -> effectDetect execSfx d radius target pos
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target c Nothing
@@ -1445,12 +1445,15 @@ effectDupItem execSfx iidId source target = do
 -- ** Identify
 
 effectIdentify :: MonadServerAtomic m
-               => m () -> ItemId -> ActorId -> ActorId -> m UseResult
-effectIdentify execSfx iidId source target = do
+               => m () -> ItemId -> ActorId -> m UseResult
+effectIdentify execSfx iidId target = do
   COps{coItemSpeedup} <- getsState scops
   discoAspect <- getsState sdiscoAspect
-  sb <- getsState $ getActorBody source
-  s <- getsServer $ (EM.! bfid sb) . sclientStates
+  -- The actor that causes the application does not determine what item
+  -- is identifiable, becuase it's the target actor that identifies
+  -- his possesions.
+  tb <- getsState $ getActorBody target
+  s <- getsServer $ (EM.! bfid tb) . sclientStates
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
@@ -1474,7 +1477,7 @@ effectIdentify execSfx iidId source target = do
             return True
       tryStore stores = case stores of
         [] -> do
-          execSfxAtomic $ SfxMsgFid (bfid sb) SfxIdentifyNothing
+          execSfxAtomic $ SfxMsgFid (bfid tb) SfxIdentifyNothing
           return UseId  -- the message tells it's ID effect
         store : rest -> do
           allAssocs <- getsState $ fullAssocs target [store]
