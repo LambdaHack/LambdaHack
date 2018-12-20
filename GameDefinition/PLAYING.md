@@ -60,10 +60,10 @@ The basic terrain kinds are as follows.
 
 Actors are marked with lower and upper case letters and with
 characters `@` and `1` through `9` (but never `0`). Player-controlled
-heroes are always bright white. If player manages to control animals
-or other actors, they retain their letter and color, but gain
-a white box around their symbol. Player-controlled actors that are
-selected (e.g., to run together) have a blue box around their symbol.
+heroes are always bright white and by default they are selected
+(e.g., to run together) so they have a blue box around their symbol.
+If player manages to control animals or other actors, they retain their
+letter and color, but gain a box around their symbol as well.
 
 So, for example, the following map shows a room with a closed door,
 full of actors, connected by a corridor with a room with an open door,
