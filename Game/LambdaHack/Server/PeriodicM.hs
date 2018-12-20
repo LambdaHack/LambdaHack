@@ -127,23 +127,13 @@ rollSpawnPos :: COps -> ES.EnumSet Point
              -> Bool -> Bool -> LevelId -> Level -> FactionId -> State
              -> Rnd (Maybe Point)
 rollSpawnPos COps{coTileSpeedup} visible
-             mobile aquatic lid lvl@Level{larea, lstair} fid s = do
-  let -- Monsters try to harass enemies ASAP, instead of catching up from afar.
-      inhabitants = foeRegularList fid lid s
+             mobile aquatic lid lvl@Level{larea} fid s = do
+  let inhabitants = foeRegularList fid lid s
       nearInh !df !p = all (\ !b -> df $ chessDist (bpos b) p) inhabitants
-      -- Monsters often appear from deeper levels or at least we try
-      -- to suggest that.
-      deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
-      nearStairs !df !p =
-        any (\ !pstair -> df $ chessDist pstair p) deeperStairs
-      -- Near deep stairs, risk of close enemy spawn is higher.
-      -- Also, spawns are common midway between actors and stairs.
-      distantSo !df !p = nearInh df p && nearStairs df p
       distantMiddle !d !p = chessDist p (middlePoint larea) < d
       condList | mobile =
-        [ distantSo (<= 15)
-        , distantSo (<= 20)
-        , distantSo (<= 25)
+        [ nearInh (<= 50)  -- don't spawn very far from foes
+        , nearInh (<= 100)
         ]
                | otherwise =
         [ distantMiddle 8
@@ -161,12 +151,12 @@ rollSpawnPos COps{coTileSpeedup} visible
                && not (occupiedBigLvl p lvl)
                && not (occupiedProjLvl p lvl) )
     (map (\f p _ -> f p) condList)
-    (\ !p t -> distantSo (> 4) p  -- otherwise actors in dark rooms swarmed
+    (\ !p t -> nearInh (> 4) p  -- otherwise actors in dark rooms swarmed
                && not (p `ES.member` visible)  -- visibility and plausibility
                && (not aquatic || Tile.isAquatic coTileSpeedup t))
-    [ \ !p _ -> distantSo (> 3) p
+    [ \ !p _ -> nearInh (> 3) p
                 && not (p `ES.member` visible)
-    , \ !p _ -> distantSo (> 2) p  -- otherwise actors hit on entering level
+    , \ !p _ -> nearInh (> 2) p  -- otherwise actors hit on entering level
                 && not (p `ES.member` visible)
     , \ !p _ -> not (p `ES.member` visible)
     ]
