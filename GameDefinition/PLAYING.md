@@ -236,14 +236,16 @@ Starting from the second scenario, the player controls a whole team
 of characters and will develop his repertoire of squad formations,
 preferred rendezvous locations and the use of light sources.
 
-The last scenario takes place in a multi-floor setting, giving player
-the choice of exploration of a single level at a time or portions
-of many levels along a single staircase. This should be considered
-the gist and the main challenge of the game, involving strategic
-resource management and area denial elements. Compared to that,
-the smaller scenarios provide more tactical training and offer variety
-and entertainment of chaising a high-score between the deaths^H^H^H^H^H^H
-long crawls.
+The last scenario, the crawl, is the only one that takes place
+in a multi-floor setting, spanning 10 varied levels, requiring lots
+of time and focus to beat and providing considerable replayability.
+The player has a choice of exploring a single level at a time or portions
+of many levels along a single staircase. The scenario is the gist
+and the main challenge of the game, involving strategic resource
+management and area denial elements. Compared to that, the smaller
+scenarios provide more tactical training and offer variety
+and entertainment of chasing a high-score between the deaths^H^H^H^H^H^H
+the brave attempts at the long crawl scenario.
 
 
 Monsters
