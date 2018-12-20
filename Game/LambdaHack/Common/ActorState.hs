@@ -319,6 +319,7 @@ regenCalmDelta aid body s =
            && not (actorWaitsOrSleeps b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
       actorRelaxed = deltaBenign $ bcalmDelta body
+      actorWasRelaxed = deltaWasBenign $ bcalmDelta body
   in if | not actorRelaxed -> 0
             -- if no foes around, do not compensate and obscure distress,
             -- otherwise, don't increase delta further and suggest grave harm;
@@ -328,7 +329,10 @@ regenCalmDelta aid body s =
         | any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body ->
           minusM1  -- even if all calmness spent, keep informing the client;
                    -- from above we know delta won't get too large here
-        | otherwise -> min calmIncr (max 0 maxDeltaCalm)  -- if Calm is over max
+        | actorWasRelaxed -> min calmIncr (max 0 maxDeltaCalm)
+                                             -- if Calm is over max
+        | otherwise -> 0  -- don't regenerate if shortly after stress, to make
+                          -- waking up actors via bad stealth easier
 
 actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =

@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
     ActorId
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
-  , deltasSerious, deltasHears, deltaBenign, actorCanMelee
+  , deltasSerious, deltasHears, deltaBenign, deltaWasBenign, actorCanMelee
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -111,6 +111,10 @@ deltasHears ResDelta{..} = fst resCurrentTurn == minusM1
 deltaBenign :: ResDelta -> Bool
 deltaBenign ResDelta{resCurrentTurn} =
   fst resCurrentTurn >= 0  -- only the current one
+
+deltaWasBenign :: ResDelta -> Bool
+deltaWasBenign ResDelta{resPreviousTurn} =
+  fst resPreviousTurn >= 0  -- only the previous one
 
 actorCanMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
 actorCanMelee actorMaxSkills aid b =
