@@ -38,9 +38,9 @@ keyHelp COps{corule}
       , "Press SPACE for help or ESC to see the map again."
       ]
     movBlurb =
-      [ "Walk throughout a level with mouse or numeric keypad (left diagram below)"
-      , "or its compact laptop replacement (middle) or the Vi text editor keys (right,"
-      , "enabled in config.ui.ini). Run, until disturbed, by adding Shift or Control."
+      [ "Walk throughout a level with mouse or numeric keypad (left diagram below),"
+      , "or with its compact laptop replacement (middle) or the Vi editor keys (right)"
+      , "selectable in config.ui.ini. Run until disturbed with Shift or Control."
       , "Go-to with LMB (left mouse button). Run collectively with RMB."
       , ""
       , "               7 8 9          7 8 9          y k u"
@@ -50,14 +50,13 @@ keyHelp COps{corule}
       , "               1 2 3          j k l          b j n"
       , ""
       , "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
-      , "Press 'KP_5' ('5' on keypad, or 'i' or '.') to wait, bracing for impact,"
-      , "which reduces any damage taken and prevents displacement by foes. Press"
-      , "'C-KP_5' (the key with Control) to wait 0.1 of a turn, without bracing and"
-      , "'S-KP_5' (with Shift) to yell/yawn, taunting and waking up enemies/yourself."
-      , "You displace enemies by running into them with Shift/Control or RMB. Search,"
-      , "open, descend and attack by bumping into walls, doors, stairs and enemies."
-      , "The best item to attack with is automatically chosen from among weapons"
-      , "in your personal equipment and your body parts."
+      , "Press 'KP_5' ('5' on keypad) to wait, bracing for impact, which reduces any"
+      , "damage taken and prevents displacement by foes. Press 'C-KP_5' (the same key"
+      , "with Control) to wait 0.1 of a turn, without bracing and 'S-KP_5' (with Shift)"
+      , "to yell/yawn, taunting and waking up enemies/yourself. You displace enemies"
+      , "by running into them with Shift/Control or RMB. Search, open, descend and"
+      , "attack by bumping into walls, doors, stairs and enemies. The best attack weapon"
+      , "is automatically chosen from your equipment and from among your body parts."
       ]
     movBlurbEnd =
       [ "Press SPACE or scroll the mouse wheel to see the minimal command set."
@@ -207,7 +206,7 @@ keyHelp COps{corule}
          + length movText + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (map textToAL ([""] ++ movText ++ movTextEnd), []) )
+          , (map textToAL ([""] ++ movText ++ [""] ++ movTextEnd), []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
       else
