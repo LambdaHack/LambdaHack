@@ -203,7 +203,7 @@ monsterGenChance :: Dice.AbsDepth -> Dice.AbsDepth -> Int -> Int -> Rnd Bool
 monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
                  lvlSpawned actorCoeff =
   assert (totalDepth > 0 && ldepth > 0) $
-    -- The spawn speed is now doubled compared to the comment below,
+    -- The sustained spawn speed is now trebled compared to the comment below,
     -- to compensate for some monsters generated asleep:
     --
     -- Heroes have to endure a level depth-sized wave of immediate
@@ -216,7 +216,7 @@ monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
         -- Never spawn too rarely so that camping is never safe.
         maxCoeff = 100 * 30  -- safe level after 30 spawns flattens out
         coeff = min maxCoeff $ actorCoeff * (lvlSpawned - scaledDepth - 2)
-    in chance $ 2%fromIntegral (coeff `max` 1)  -- 2 --- doubled
+    in chance $ 3%fromIntegral (coeff `max` 1)  -- 3 --- trebled
 
 -- | How long until an actor's smell vanishes from a tile.
 smellTimeout :: Delta Time
