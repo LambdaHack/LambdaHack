@@ -318,10 +318,16 @@ regenCalmDelta aid body s =
         in inline chessDist p (bpos body) <= 3
            && not (actorWaitsOrSleeps b)  -- uncommon
            && inline isFoe (bfid body) fact (bfid b)  -- costly
-      actorMildlyDistressed = not $ deltaBenign $ bcalmDelta body
-  in if | any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body ->
-          minusM1  -- even if all calmness spent, keep informing the client
-        | actorMildlyDistressed -> 0  -- do not compensate and obscure distress
+      actorRelaxed = deltaBenign $ bcalmDelta body
+  in if | not actorRelaxed -> 0
+            -- if no foes around, do not compensate and obscure distress,
+            -- otherwise, don't increase delta further and suggest grave harm;
+            -- note that in the effect, an actor that first hears distant
+            -- action and then hears nearby enemy, won't notice the latter,
+            -- which can be justified by distraction and is KISS and tactical
+        | any isHeardFoe $ EM.assocs $ lbig $ sdungeon s EM.! blid body ->
+          minusM1  -- even if all calmness spent, keep informing the client;
+                   -- from above we know delta won't get too large here
         | otherwise -> min calmIncr (max 0 maxDeltaCalm)  -- if Calm is over max
 
 actorInAmbient :: Actor -> State -> Bool
