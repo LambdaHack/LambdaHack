@@ -132,7 +132,7 @@ actionStrategy moldLeader aid retry = do
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
-        deltaSerious (bcalmDelta body)
+        deltasSerious (bcalmDelta body)
       condNotCalmEnough = not (calmEnough body actorMaxSk)
       uneasy = heavilyDistressed || condNotCalmEnough
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
@@ -441,7 +441,7 @@ equipItems aid = do
                 (n, (iidInv, 1, fromCStore, CEqp) : l4)
           _ -> (oldN, l4)
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta body)
+        deltasSerious (bcalmDelta body)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip, so that the unneeded
       -- but powerful items don't fool us.
@@ -484,7 +484,7 @@ yieldUnneeded aid = do
   -- they can repair the ring, wield it, drop at death and it's
   -- in play again.
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta body)
+        deltasSerious (bcalmDelta body)
       csha = if calmE then CSha else CInv
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp ->
@@ -538,7 +538,7 @@ unEquipItems aid = do
       worseThanSha _ [] = False
       worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta body)
+        deltasSerious (bcalmDelta body)
       -- Here we don't need to filter out items that hinder (except in sha)
       -- because they are moved to sha and will be equipped by another actor
       -- at another time, where hindering will be completely different.
@@ -748,7 +748,7 @@ applyItem aid applyGroup = do
   let calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta b)
+        deltasSerious (bcalmDelta b)
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent

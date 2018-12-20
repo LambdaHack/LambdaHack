@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
     ActorId
     -- * The@ Acto@r type, its components and operations on them
   , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
-  , deltaSerious, deltaHears, deltaBenign, actorCanMelee
+  , deltasSerious, deltasHears, deltaBenign, actorCanMelee
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -100,17 +100,17 @@ data Watchfulness = WWatch | WWait Int | WSleep | WWake
 
 instance Binary Watchfulness
 
-deltaSerious :: ResDelta -> Bool
-deltaSerious ResDelta{..} = fst resCurrentTurn <= minusM2
-                            || fst resPreviousTurn <= minusM2
+deltasSerious :: ResDelta -> Bool
+deltasSerious ResDelta{..} = fst resCurrentTurn <= minusM2
+                             || fst resPreviousTurn <= minusM2
 
-deltaHears :: ResDelta -> Bool
-deltaHears ResDelta{..} = fst resCurrentTurn == minusM1
-                          || fst resPreviousTurn == minusM1
+deltasHears :: ResDelta -> Bool
+deltasHears ResDelta{..} = fst resCurrentTurn == minusM1
+                           || fst resPreviousTurn == minusM1
 
 deltaBenign :: ResDelta -> Bool
-deltaBenign ResDelta{..} = fst resCurrentTurn >= 0
-                           && fst resPreviousTurn >= 0
+deltaBenign ResDelta{resCurrentTurn} =
+  fst resCurrentTurn >= 0  -- only the current one
 
 actorCanMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
 actorCanMelee actorMaxSkills aid b =

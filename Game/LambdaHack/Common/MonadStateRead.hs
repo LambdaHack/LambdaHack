@@ -101,7 +101,7 @@ displayTaunt _voluntary rndToAction aid = do
       braceEasy = [ (2, ("something", "stretch"))
                   , (1, ("something", "fidget"))
                   , (1, ("something", "fret")) ]
-      uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
+      uneasy = deltasSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   if bwatch b `elem` [WSleep, WWake]
   then rndToAction $ frequency $ toFreq "SfxTaunt" $
     if uneasy

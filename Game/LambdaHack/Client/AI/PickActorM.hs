@@ -125,7 +125,7 @@ pickActorToMove maidToAvoid = do
                   threatAdj
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
-                  deltaSerious (bcalmDelta body)
+                  deltasSerious (bcalmDelta body)
                 actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
                 aCanDeLightL | actorShines = []
                              | otherwise = canDeAmbientL
@@ -167,7 +167,7 @@ pickActorToMove maidToAvoid = do
           actorHearning ((_aid, b), _) = do
             allFoes <- getsState $ foeRegularList side (blid b)
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-                actorHears = deltaHears (bcalmDelta b)
+                actorHears = deltasHears (bcalmDelta b)
             return $! actorHears  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,

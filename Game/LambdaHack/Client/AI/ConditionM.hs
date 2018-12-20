@@ -224,7 +224,7 @@ projectList discoBenefit skill aid
       calmE = calmEnough b actorMaxSk
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
-        deltaSerious (bcalmDelta b)
+        deltasSerious (bcalmDelta b)
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough actorMaxSk

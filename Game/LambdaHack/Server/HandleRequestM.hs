@@ -121,7 +121,7 @@ processWatchfulness :: MonadServerAtomic m => Maybe Bool -> ActorId -> m ()
 processWatchfulness mwait aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
+  let uneasy = deltasSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
     WSleep ->
       if mwait /= Just False  -- lurk can't wake up regardless; too short
