@@ -36,9 +36,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("F12", ([CmdMainMenu], "go to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
 
-  -- Minimal command set, in the desired presentation order
+  -- Minimal command set, in the desired presentation order.
+  -- A lot of these are not necessary, but may be familiar to new players.
+  , ("P", ( [CmdMinimal, CmdItem, CmdDashboard]
+          , "manage inventory pack of the leader"
+          , ChooseItemMenu (MStore CInv) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
-      -- actually it's not necessary, ground items menu suffices
   , ("Escape", ( [CmdMinimal, CmdAim]
                , "cancel aiming/open main menu"
                , ByAimMode { exploration = ExecuteIfClear MainMenu
@@ -52,15 +55,20 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history"
               , ExecuteIfClear LastHistory ))
-      -- not necessary, because messages available from dashboard
+  , ("Tab", ( [CmdMove]
+            , "cycle among party members on the level"
+            , MemberCycle ))
+      -- listed here to keep proper order
   , ("BackTab", ( [CmdMinimal, CmdMove]
               , "cycle among all party members"
               , MemberBack ))
   , ("KP_Multiply", ( [CmdMinimal, CmdAim]
                     , "cycle x-hair among enemies"
                     , AimEnemy ))
-      -- not necessary, because flinging from item menu enters aiming mode
-  , ("C-c", ([CmdMinimal, CmdMove], "open or close or alter", AlterDir []))
+  , ("KP_Divide", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
+  , ("c", ( [CmdMinimal, CmdMove]
+          , descTs closeDoorTriggers
+          , AlterDir closeDoorTriggers ))
   , ("+", ([CmdMinimal, CmdAim], "swerve the aiming line", EpsIncr True))
 
   -- Item menu, first part of item use commands
@@ -89,10 +97,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                          "and share item" False)
 
   -- Terrain exploration and alteration
-  , ("Tab", ( [CmdMove]
-            , "cycle among party members on the level"
-            , MemberCycle ))
-  , ("c", ([CmdMove], descTs closeDoorTriggers, AlterDir closeDoorTriggers))
+  , ("C-c", ([CmdMove], "open or close or alter", AlterDir []))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
@@ -112,9 +117,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
-  , ("P", ( [CmdItem, CmdDashboard]
-          , "manage inventory pack of the leader"
-          , ChooseItemMenu (MStore CInv) ))
   , ("I", ( [CmdItem, CmdDashboard]
           , ""
           , ChooseItemMenu (MStore CInv) ))
@@ -158,7 +160,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 
   -- Aiming
   , ("!", ([CmdAim], "", AimEnemy))
-  , ("KP_Divide", ([CmdAim], "cycle x-hair among items", AimItem))
   , ("/", ([CmdAim], "", AimItem))
   , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
   , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
