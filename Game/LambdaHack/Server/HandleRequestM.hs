@@ -399,6 +399,7 @@ reqMeleeChecked voluntary source target iid cstore = do
                  | otherwise -> return source
     discoAspect <- getsState sdiscoAspect
     let arTrunk = discoAspect EM.! btrunk tb
+        arWeapon = discoAspect EM.! iid
         sfid = bfid sb
         tfid = bfid tb
         -- Let the missile drop down, but don't remove its trajectory
@@ -452,10 +453,13 @@ reqMeleeChecked voluntary source target iid cstore = do
           execUpdAtomic $ UpdRefillHP target minusM
         when (bhp tb <= oneM) $ do
           -- If projectile has too low HP to pierce, terminate its flight.
-          let arWeapon = discoAspect EM.! iid
-              killHow | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
+          let killHow | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           haltTrajectory killHow target tb
+        -- Avoid spam when two explosions collide.
+        when (not (IA.checkFlag Ability.Blast arWeapon)
+              && not (IA.checkFlag Ability.Blast arTrunk)) $
+          execSfxAtomic $ SfxStrike source target iid cstore
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
         -- the source part of the strike.

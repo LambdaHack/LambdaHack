@@ -1493,9 +1493,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
                           , weaponName ]
                         <> ", but it's not readied yet."
          msgAdd msg  -- and no animation
-       | bproj sb && bproj tb -> do  -- too much spam when explosions collide
+       | bproj sb && bproj tb -> do  -- server sends only if neither is blast
          -- Short message.
-         msgAdd $ makeSentence $ [MU.SubjectVerbSg spart verb, tpart]
+         msgAdd $ makeSentence $ [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit coscreen ps Color.BrBlue Color.Blue
        | IK.idamage (itemKind itemFullWeapon) == 0 -> do
