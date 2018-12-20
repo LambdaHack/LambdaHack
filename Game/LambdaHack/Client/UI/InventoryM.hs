@@ -409,10 +409,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         , defCond = True
         , defAction = \ekm ->
             let slot = case ekm of
-                  Left K.KM{key} -> case key of
-                    K.Char l -> SlotChar numPrefix l
-                    _ -> error $ "unexpected key:"
-                                 `showFailure` K.showKey key
+                  Left K.KM{key=K.Char l} -> SlotChar numPrefix l
+                  Left km ->
+                    error $ "unexpected key:" `showFailure` K.showKM km
                   Right sl -> sl
             in case EM.lookup slot bagItemSlotsAll of
               Nothing -> error $ "unexpected slot"

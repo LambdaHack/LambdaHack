@@ -627,6 +627,13 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
       keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
       allOKX = concatMap snd $ slideshow itemSlides
       keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
+      viewAtSlot slot = do
+        let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+        go2 <- examItem ix0 lSlots
+        if go2
+        then viewLoreItems enableSorting menuName lSlots
+                           trunkBag prompt examItem
+        else return K.escKM
   ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km == K.spaceKM -> return km
@@ -636,13 +643,10 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
       viewLoreItems False menuName (sortSlotMap itemToF lSlotsRaw)
                     trunkBag prompt examItem
     Left km | km == K.escKM -> return km
-    Left _ -> error $ "" `showFailure` ekm
-    Right slot -> do
-      let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
-      go2 <- examItem ix0 lSlots
-      if go2
-      then viewLoreItems enableSorting menuName lSlots trunkBag prompt examItem
-      else return K.escKM
+    Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
+      -- other prefixes are not accessible via keys; tough luck; waste of effort
+    Left km -> error $ "" `showFailure` km
+    Right slot -> viewAtSlot slot
 
 cycleLore :: MonadClientUI m => [m K.KM] -> [m K.KM] -> m ()
 cycleLore _ [] = return ()
