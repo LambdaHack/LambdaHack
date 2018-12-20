@@ -21,6 +21,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ord as Ord
+import           Data.Ratio
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ClientOptions (..))
@@ -422,9 +423,10 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
   actorMaxSk <- getsState $ getActorMaxSkills aid
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
-  when (canSleep actorMaxSk
-        && not condAnyFoeAdj
-        && prefersSleep actorMaxSk) $ addSleep aid
+  when (canSleep actorMaxSk && not condAnyFoeAdj) $ do
+    let sleepOdds = if prefersSleep actorMaxSk then 9%10 else 1%2
+    sleeps <- rndToAction $ chance sleepOdds
+    when sleeps $ addSleep aid
   return aid
 
 addProjectile :: MonadServerAtomic m
