@@ -113,6 +113,9 @@ actionStrategy moldLeader aid retry = do
   let anyFriendOnLevelAwake = any (\b ->
         bwatch b /= WSleep && bpos b /= bpos body) friends
       actorMaxSk = actorMaxSkills EM.! aid
+      prefersSleepWhenAwake = case bwatch body of
+        WSleep -> Ability.getSk Ability.SkMoveItem actorMaxSk <= -10
+        _ -> prefersSleep actorMaxSk  -- nm @WWake@
       mayFallAsleep = not condAimEnemyRemembered
                       && mayContinueSleep
                       && canSleep actorSk
@@ -120,7 +123,8 @@ actionStrategy moldLeader aid retry = do
                          && not (hpFull body actorSk)
                          && not uneasy
                          && not condAnyFoeAdj
-                         && anyFriendOnLevelAwake  -- friend guards the sleeper
+                         && (anyFriendOnLevelAwake  -- friend guards the sleeper
+                             || prefersSleepWhenAwake)  -- or he doesn't care
       dozes = case bwatch body of
                 WWait n -> n > 0
                 _ -> False
@@ -326,11 +330,8 @@ actionStrategy moldLeader aid retry = do
                   -- Also, this is what non-leader heroes do, unless they melee.
         [ ( [SkWait]
           , case bwatch body of
-              WSleep -> if mayContinueSleep
-                             -- no check of @canSleep@, because sight
-                             -- lowered by sleeping
-                        then waitBlockNow
-                        else yellNow  -- celebrate wake up with a bang
+              WSleep -> yellNow  -- we know that @not mayContinueSleep@;
+                                 -- celebrate wake up with a bang
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something
