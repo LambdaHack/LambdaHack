@@ -124,7 +124,7 @@ processWatchfulness mwait aid = do
   let uneasy = deltaSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
     WSleep ->
-      if mwait /= Just False  -- lurk can't wake up regardless; too fast
+      if mwait /= Just False  -- lurk can't wake up regardless; too short
          && (not (isJust mwait)  -- not a wait
              || uneasy  -- spooked
              || not (deltaBenign $ bhpDelta b))  -- any HP lost

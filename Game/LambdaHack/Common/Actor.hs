@@ -204,7 +204,7 @@ monsterGenChance (Dice.AbsDepth ldepth) (Dice.AbsDepth totalDepth)
                  lvlSpawned actorCoeff =
   assert (totalDepth > 0 && ldepth > 0) $
     -- The spawn speed is now doubled compared to the comment below,
-    -- due to some monsters generated asleep:
+    -- to compensate for some monsters generated asleep:
     --
     -- Heroes have to endure a level depth-sized wave of immediate
     -- spawners for each level and only then the monsters start

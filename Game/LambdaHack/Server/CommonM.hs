@@ -421,9 +421,12 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
   trunkId <- registerItem (itemFull, kit) itemKnown container False
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
+  fact <- getsState $ (EM.! bfid) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills aid
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
-  when (canSleep actorMaxSk && not condAnyFoeAdj) $ do
+  when (canSleep actorMaxSk &&
+        not condAnyFoeAdj
+        && not (fhasGender (gplayer fact))) $ do  -- heroes never start asleep
     let sleepOdds = if prefersSleep actorMaxSk then 9%10 else 1%2
     sleeps <- rndToAction $ chance sleepOdds
     when sleeps $ addSleep aid
