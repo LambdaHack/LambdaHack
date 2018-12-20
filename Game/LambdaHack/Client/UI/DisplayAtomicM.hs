@@ -878,6 +878,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let promptGold = spoilsBlurb currencyName total dungeonTotal
+      -- Total number of items is meaningless in the precence of so much junk.
       prompt = promptGold
                <+> (if sexposeItems
                     then "Non-positive count means none held but this many generated."
@@ -909,13 +910,15 @@ displayGameOverAnalytics factionAn generationAn = do
                  slots = EM.fromAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
         else (killedBag, lSlotsRaw)
+      total = sum $ filter (> 0) $ map fst $ EM.elems trunkBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun iid _ k =
         let n = generationTrunk EM.! iid
         in makePhrase [ "You recall the adversary, which you killed"
                       , MU.CarWs (max 0 k) "time", "out of"
                       , MU.CarWs n "individual", "reported:" ]
-      prompt = "Your team vanquished the following adversaries."
+      prompt = makeSentence ["your team vanquished", MU.CarWs total "adversary"]
+                 -- total reported would include our own, so not given
                <+> (if sexposeActors
                     then "Non-positive count means none killed but this many reported."
                     else "")
@@ -928,6 +931,7 @@ displayGameOverLore slore exposeCount generationAn = do
   let generationLore = generationAn EM.! slore
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
                              generationLore
+      total = sum $ map fst $ EM.elems generationBag
       slots = EM.fromAscList $ zip allSlots $ EM.keys generationBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun _ _ k =
@@ -935,7 +939,7 @@ displayGameOverLore slore exposeCount generationAn = do
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
           , MU.CarWs k "time" ]
       prompt = makeSentence [ "you experienced the following variety of"
-                            , MU.Ws $ MU.Text (headingSLore slore) ]
+                            , MU.CarWs total $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
   viewLoreItems False ("GameOverLore" ++ show slore)
                 slots generationBag prompt examItem
