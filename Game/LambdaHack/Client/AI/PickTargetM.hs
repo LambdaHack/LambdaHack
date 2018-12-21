@@ -152,13 +152,24 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't melee-target nonmoving actors, including sleeping, unless
-      -- they have loot or attack ours, because nonmoving can't be lured
-      -- nor ambushed nor can chase us.
-      -- This is especially important for fences, tower defense actors, etc.
-      targetableMelee aidE body = do
+      -- Don't target nonmoving actors, including sleeping, unless
+      -- they have loot or attack ours or at heroes, because nonmoving
+      -- can't be lured nor ambushed nor can chase us.
+      --
+      -- This is KISS, but not ideal, because AI doesn't fling at nonmoving
+      -- actors but only at moving ones and so probably doesn't use
+      -- ranged combat as much as would be optimal.
+      worthTargetting aidE body = do
         actorMaxSkE <- getsState $ getActorMaxSkills aidE
         factE <- getsState $ (EM.! bfid body) . sfactionD
+        let attacksFriends = any (adjacent (bpos body) . bpos) friends
+            nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
+                        && bwatch body /= WWake  -- will start moving very soon
+            hasLoot = not (EM.null (beqp body)) || not (EM.null (binv body))
+              -- even consider "unreported inventory", for speed and KISS
+            isHero = fhasGender (gplayer factE)
+        return $! not nonmoving || hasLoot || attacksFriends || isHero
+      targetableMelee body =
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
             -- 1 from condSupport1
@@ -175,17 +186,7 @@ computeTarget aid = do
                   -- would attack our friend in a couple of turns anyway,
                   -- but we may be too far from him at that time
               | otherwise = meleeNearby
-            nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
-                        && bwatch body /= WWake  -- will start moving very soon
-            hasLoot = not (EM.null (beqp body)) || not (EM.null (binv body))
-              -- even consider "unreported inventory", for speed and KISS
-            isHero = fhasGender (gplayer factE)
-        return {-keep lazy-} $
-          case chessDist (bpos body) (bpos b) of
-            1 -> True  -- if adjacent, target even if can't melee, to flee
-            cd -> condCanMelee
-                  && cd <= n
-                  && (not nonmoving || hasLoot || attacksFriends || isHero )
+        in condCanMelee && chessDist (bpos body) (bpos b) <= n
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
@@ -194,9 +195,12 @@ computeTarget aid = do
           -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
-      targetableEnemy (aidE, body) = do
-        tMelee <- targetableMelee aidE body
-        return $! targetableRanged body || tMelee
+      targetableEnemy (aidE, body) =
+        if adjacent (bpos body) (bpos b)
+        then return True  -- target regardless of anything, e.g., to flee
+        else do
+          worth <- worthTargetting aidE body
+          return $! worth && (targetableRanged body || targetableMelee body)
   nearbyFoes <- filterM targetableEnemy allFoes
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
