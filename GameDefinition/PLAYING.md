@@ -61,9 +61,9 @@ The basic terrain kinds are as follows.
 Actors are marked with lower and upper case letters and with
 characters `@` and `1` through `9` (but never `0`). Player-controlled
 heroes are always bright white and by default they are selected
-(e.g., to run together) so they have a blue box around their symbol.
+(e.g., to run together) so they have a blue highlight around their symbol.
 If player manages to control animals or other actors, they retain their
-letter and color, but gain a box around their symbol as well.
+letter and color, but gain a highlight as well.
 
 So, for example, the following map shows a room with a closed door,
 full of actors, connected by a corridor with a room with an open door,
@@ -82,7 +82,7 @@ Heroes
 
 The heroes are marked on the map with bright white color (red if they are
 about to be lost) and symbols `@` and `1` through `9` (never `0`).
-The currently chosen party leader is highlighted on the map
+The currently chosen party leader is red-highlighted on the map
 and his attributes are displayed at the bottommost status line,
 which in its most complex form looks as follows.
 
