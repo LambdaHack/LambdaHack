@@ -156,10 +156,9 @@ computeTarget aid = do
       -- they have loot or attack ours, because nonmoving can't be lured
       -- nor ambushed nor can chase us.
       -- This is especially important for fences, tower defense actors, etc.
-      -- This also means a hero that drops all items and eats sleeping herbs
-      -- is ignored by melee-only AI enemies. It's risky, though.
       targetableMelee aidE body = do
         actorMaxSkE <- getsState $ getActorMaxSkills aidE
+        factE <- getsState $ (EM.! bfid body) . sfactionD
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
             -- 1 from condSupport1
@@ -180,12 +179,13 @@ computeTarget aid = do
                         && bwatch body /= WWake  -- will start moving very soon
             hasLoot = not (EM.null (beqp body)) || not (EM.null (binv body))
               -- even consider "unreported inventory", for speed and KISS
+            isHero = fhasGender (gplayer factE)
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
             cd -> condCanMelee
                   && cd <= n
-                  && (not nonmoving || hasLoot || attacksFriends)
+                  && (not nonmoving || hasLoot || attacksFriends || isHero )
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
