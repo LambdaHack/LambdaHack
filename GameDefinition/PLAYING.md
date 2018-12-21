@@ -140,9 +140,9 @@ not shown here, list all game commands grouped by categories, in detail.
 A text snapshot of the complete in-game help is in
 [InGameHelp.txt](InGameHelp.txt).
 
-Walk throughout a level with mouse or numeric keypad (left diagram below)
-or its compact laptop replacement (middle) or the Vi text editor keys (right,
-enabled in config.ui.ini). Run, until disturbed, by adding Shift or Control.
+Walk throughout a level with mouse or numeric keypad (left diagram below),
+or with its compact laptop replacement (middle) or the Vi editor keys (right)
+selectable in config.ui.ini. Run until disturbed with Shift or Control.
 Go-to with LMB (left mouse button). Run collectively with RMB.
 
                7 8 9          7 8 9          y k u
@@ -152,14 +152,13 @@ Go-to with LMB (left mouse button). Run collectively with RMB.
                1 2 3          j k l          b j n
 
 In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
-Press 'KP_5' ('5' on keypad, or 'i' or '.') to wait, bracing for impact,
-which reduces any damage taken and prevents displacement by foes. Press
-'C-KP_5' (the same key with Control) to wait 0.1 of a turn, without bracing.
-You displace enemies by running into them with Shift/Control or RMB. Search,
-open, descend and attack by bumping into walls, doors, stairs and enemies.
-The best item to attack with is automatically chosen from among weapons
-in your personal equipment and your body parts (items on cooldown
-are excluded, since they would have no effect).
+Press 'KP_5' ('5' on keypad) to wait, bracing for impact, which reduces any
+damage taken and prevents displacement by foes. Press 'C-KP_5' (the same key
+with Control) to wait 0.1 of a turn, without bracing and 'S-KP_5' (with Shift)
+to yell/yawn, taunting and waking up enemies/yourself. You displace enemies
+by running into them with Shift/Control or RMB. Search, open, descend and
+attack by bumping into walls, doors, stairs and enemies. The best attack weapon
+is automatically chosen from your equipment and from among your body parts.
 
 The following commands, joined with the basic set above, let you accomplish
 anything in the game, though not necessarily with the fewest keystrokes.
@@ -169,21 +168,22 @@ select a command with arrows or mouse directly from the help screen
 or the dashboard and execute it on the spot.
 
     keys         command
+    P or I       manage inventory pack of the leader
     g or ,       grab item(s)
     ESC          cancel aiming/open main menu
     RET or INS   accept target/open dashboard
     SPACE        clear messages/display history
     S-TAB        cycle among all party members
     KP_* or !    cycle x-hair among enemies
-    C-c          open or close or alter
+    KP_/ or /    cycle x-hair among items
+    c            close door
     +            swerve the aiming line
 
-Screen area and UI mode (aiming/exploration) determine mouse click effects.
-Here is an overview of effects of each button over most of the game map area.
+Screen area and UI mode (exploration/aiming) determine mouse click effects.
+We give an overview of effects of each button over the game map area.
 The list includes not only left and right buttons, but also the optional
-middle mouse button (MMB) and even the mouse wheel, which is normally used
-over menus, to page-scroll them.
-For mice without RMB, one can use C-LMB (Control key and left mouse button).
+middle mouse button (MMB) and the mouse wheel, which is also used over menus,
+to page-scroll them. (For mice without RMB, one can use Control key with LMB.)
 
     keys         command
     LMB          set x-hair to enemy/go to pointer for 25 steps
