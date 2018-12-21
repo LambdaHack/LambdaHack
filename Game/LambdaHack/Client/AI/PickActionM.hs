@@ -365,6 +365,7 @@ actionStrategy moldLeader aid retry = do
   sumSuffix <- sumS suffix
   sumFallback <- sumS fallback
   return $! if bwatch body == WSleep
+               && abInSkill SkWait
                && mayContinueSleep
                  -- no check of @canSleep@, because sight lowered by sleeping
             then returN "sleep" ReqWait
