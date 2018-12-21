@@ -56,10 +56,9 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick the most desirable AI ation for the actor.
-pickAction :: MonadClient m
-           => Maybe ActorId -> ActorId -> Bool -> m RequestTimed
+pickAction :: MonadClient m => ActorId -> Bool -> m RequestTimed
 {-# INLINE pickAction #-}
-pickAction moldLeader aid retry = do
+pickAction aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
@@ -70,7 +69,7 @@ pickAction moldLeader aid retry = do
                     `swith` (aid, bfid body, side)) ()
   -- Reset fleeing flag. May then be set in @flee@.
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
-  stratAction <- actionStrategy moldLeader aid retry
+  stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
@@ -81,9 +80,9 @@ pickAction moldLeader aid retry = do
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => Maybe ActorId -> ActorId -> Bool -> m (Strategy RequestTimed)
+               => ActorId -> Bool -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
-actionStrategy moldLeader aid retry = do
+actionStrategy aid retry = do
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
   condInMelee <- condInMeleeM $ blid body
@@ -129,9 +128,7 @@ actionStrategy moldLeader aid retry = do
                 WWait n -> n > 0
                 _ -> False
               && mayFallAsleep
-              && (Just aid /= mleader || maybe True (== aid) moldLeader)
-                   -- perhaps waited last turn only due to not being a leader,
-                   -- so dozing interrupted when becomes a leader
+              && Just aid /= mleader  -- best teammate for a task so stop dozing
       lidExplored = ES.member (blid body) explored
       panicFleeL = fleeL ++ badVic
       condHpTooLow = hpTooLow body actorMaxSk

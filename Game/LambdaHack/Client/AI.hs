@@ -77,5 +77,5 @@ pickActorAndAction maid aid = do
   -- If a new leader found, there is hope (but we don't check)
   -- that he gets a non-waiting action without any desperate measures.
   let retry = maybe False (aidToMove ==) maid
-  treq <- pickAction mleader aidToMove retry
+  treq <- pickAction aidToMove retry
   return (aidToMove, treq, oldFlee)
