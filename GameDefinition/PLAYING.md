@@ -29,8 +29,8 @@ or describe your problem on gitter or the issue tracker.
 Game map
 --------
 
-The map of any particular scenario may consist of one or many levels
-and each level consists of a large number of tiles with a particular
+The map of any particular scenario consists of one or many levels
+and each level has a large number of tiles with a particular
 terrain kind on each. The game world is persistent, i.e., every time
 the player visits a level during a single game, its layout is the same.
 
@@ -47,7 +47,7 @@ The basic terrain kinds are as follows.
     tree or rock or man-made column        0
     rubble                                 &
     bush, transparent obstacle             %
-    trap, ice                              ^
+    trap, ice obstacle                     ^
     closed door                            +
     open door (horizontal and vertical)    | and -
     corridor                               #
@@ -72,7 +72,7 @@ The lower row of the larger room is full of items.
 
    ------       ------
    |@19.|       |....&&
-   |r...+#######-...O.>&&|
+   |r...+#######-...0.>&&|
    |Ra..|       |[?!,)$"=|
    ------       ----------
 
@@ -80,10 +80,10 @@ The lower row of the larger room is full of items.
 Heroes
 ------
 
-The heroes are marked on the map with bright white color (red if they are
+The heroes are displayed on the map with bright white color (red if they are
 about to be lost) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party leader is red-highlighted on the map
-and his attributes are displayed at the bottommost status line,
+and his attributes are displayed at the bottom-most status line,
 which in its most complex form looks as follows.
 
     *@12        4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**__]
@@ -124,7 +124,7 @@ First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
 The `X-hair` (aiming crosshair) is the common focus of the whole party,
 marked on the map and manipulated with mouse or movement keys in aiming mode.
-In this example, the corsshair points at an exact position on the map
+In this example, the crosshair points at an exact position on the map
 and at the end of the status line comes the length of the shortest
 path from the leader position to the spot and the straight-line distance
 between the two points.
