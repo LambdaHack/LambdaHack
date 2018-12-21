@@ -289,8 +289,15 @@ leadLevelSwitch = do
                   [ ((lid, lvl), (allSeen, as))
                   | (lid, lvl) <- EM.assocs $ sdungeon s
                   , lid /= blid body || not leaderStuck
-                  , let as = -- Drama levels ignored, hence @Regular@.
-                             fidActorRegularIds fid lid s
+                  , let asRaw = -- Drama levels ignored, hence @Regular@.
+                                fidActorRegularAssocs fid lid s
+                        isAlert (_, b) = case bwatch b of
+                          WWatch -> True
+                          WWait n -> n == 0
+                          WSleep -> False
+                          WWake -> True  -- probably in danger
+                        (alert, relaxed) = partition isAlert asRaw
+                        as = alert ++ relaxed  -- best switch leader to alert
                   , not (null as)
                   , let allSeen =
                           lexpl lvl <= lseen lvl
@@ -321,7 +328,7 @@ leadLevelSwitch = do
             -- We could also ignore non-mobile and sleeping actors, but probably
             -- not too much noise from that.
             let freqList = [ (k, (lid, aid))
-                           | ((lid, lvl), (_, aid : _)) <- ours
+                           | ((lid, lvl), (_, (aid, _) : _)) <- ours
                            , let len = min 20 (EM.size $ lbig lvl)
                                  k = 1000000 `div` (1 + len) ]
             unless (null freqList) $ do
