@@ -1068,42 +1068,31 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
+        feelLookAlive adjective =
+          when (bhp b > 0) $ feelLook adjective
+        feelLook adjective =
+          let verb = if isOurCharacter then "feel" else "look"
+          in actorVerbMU aid bUI $ MU.Text $ verb <+> adjective
     case effect of
         IK.Burn{} -> do
-          if isOurAlive
-          then actorVerbMU aid bUI "feel burned"
-          else actorVerbMU aid bUI "look burned"
+          feelLook " burned"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel healthier"
-          else
-            actorVerbMU aid bUI "look healthier"
+          feelLook "healthier"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash coscreen ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
-          if isOurAlive then
-            actorVerbMU aid bUI "feel wounded"
-          else
-            actorVerbMU aid bUI "look wounded"
+          feelLook "wounded"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Red
         IK.RefillCalm{} | bproj b -> return ()
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
-        IK.RefillCalm p | p > 0 ->
-          if isOurAlive then
-            actorVerbMU aid bUI "feel calmer"
-          else
-            actorVerbMU aid bUI "look calmer"
-        IK.RefillCalm _ ->
-          if isOurAlive then
-            actorVerbMU aid bUI "feel agitated"
-          else
-            actorVerbMU aid bUI "look agitated"
+        IK.RefillCalm p | p > 0 -> feelLookAlive "calmer"
+        IK.RefillCalm _ -> feelLookAlive "agitated"
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor bUI
