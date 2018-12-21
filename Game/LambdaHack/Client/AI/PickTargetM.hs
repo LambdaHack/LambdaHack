@@ -152,16 +152,12 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't melee-target inherently nonmoving actors (not due to sleep
-      -- and not if they are particularly aggresive),
-      -- unless they attack ours, because nonmoving can't be lured
+      -- Don't melee-target nonmoving actors, including sleeping, unless
+      -- they have loot or attack ours, because nonmoving can't be lured
       -- nor ambushed nor can chase us.
       -- This is especially important for fences, tower defense actors, etc.
-      -- If content gives nonmoving actor loot, this becomes problematic,
-      -- so such actors should be made aggressive.
-      -- Human players may also choose not to wake up sleeping actors,
-      -- but deciding if they are likely to wake up on their own later on
-      -- and if they have decent loot per risk ratio is too difficult for AI.
+      -- This also means a hero that drops all items and eats sleeping herbs
+      -- is ignored by melee-only AI enemies. It's risky, though.
       targetableMelee aidE body = do
         actorMaxSkE <- getsState $ getActorMaxSkills aidE
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
@@ -181,14 +177,15 @@ computeTarget aid = do
                   -- but we may be too far from him at that time
               | otherwise = meleeNearby
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
-                        && bwatch body `notElem` [WSleep, WWake]
-                             -- exploit sleep weakness
+                        && bwatch body /= WWake  -- will start moving very soon
+            hasLoot = not (EM.null (beqp body)) || not (EM.null (binv body))
+              -- even consider "unreported inventory", for speed and KISS
         return {-keep lazy-} $
           case chessDist (bpos body) (bpos b) of
             1 -> True  -- if adjacent, target even if can't melee, to flee
-            cd -> (condCanMelee && cd <= n && (not nonmoving || attacksFriends))
-                  || Ability.getSk Ability.SkAggression actorMaxSkE >= 2
-                       -- react to provocation regardless (usually bosses)
+            cd -> condCanMelee
+                  && cd <= n
+                  && (not nonmoving || hasLoot || attacksFriends)
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
