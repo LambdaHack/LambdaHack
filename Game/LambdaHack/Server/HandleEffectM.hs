@@ -227,7 +227,8 @@ effectAndDestroy onSmashOnly kineticPerformed
       recharged = len < itemK || onSmashOnly
   -- If the item has no charges and the effects are not @OnSmash@
   -- we speed up by shortcutting early, because we don't need to activate
-  -- effects and we know kinetic hit was not performed (no charges to do so).
+  -- effects and we know kinetic hit was not performed (no charges to do so
+  -- and in case of @OnSmash@, only effects are triggered).
   when recharged $ do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
@@ -244,7 +245,7 @@ effectAndDestroy onSmashOnly kineticPerformed
     unless (itemTimer == it2) $
       execUpdAtomic $ UpdTimeItem iid container itemTimer it2
     -- We have to destroy the item before the effect affects the item
-    -- or the actor holding it or standing on it (later on we could
+    -- or affects the actor holding it or standing on it (later on we could
     -- lose track of the item and wouldn't be able to destroy it) .
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
@@ -253,32 +254,26 @@ effectAndDestroy onSmashOnly kineticPerformed
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
     -- At this point, the item is potentially no longer in container
-    -- @container@, so beware of assuming so in the code below.
-    triggered <-
-      if not recharged
-      then return $ if kineticPerformed then UseUp else UseDud
-      else do
-        -- If the item activation is not periodic, but the item itself is,
-        -- only the first effect gets activated (and the item may be destroyed,
-        -- unlike with periodic activations).
-        let effsManual =
-              if not periodic && IA.checkFlag Ability.Periodic arItem
-              then take 1 effs  -- may be empty
-              else effs
-        triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                           periodic effsManual
-        let trig = if kineticPerformed then UseUp else triggeredEffect
-        sb <- getsState $ getActorBody source
-        -- Announce no effect, which is rare and wastes time, so noteworthy.
-        unless (trig == UseUp  -- effects triggered; feedback comes from them
-                || periodic  -- don't spam via fizzled periodic effects
-                || bproj sb  -- don't spam, projectiles can be very numerous
-                ) $
-          execSfxAtomic $ SfxMsgFid (bfid sb) $
-            if any IK.forApplyEffect effsManual
-            then SfxFizzles  -- something didn't work, despite promising effects
-            else SfxNothingHappens  -- fully expected
-        return trig
+    -- @container@, therefore beware of assuming so in the code below.
+    -- If the item activation is not periodic, but the item itself is,
+    -- only the first effect gets activated (and the item may be destroyed,
+    -- unlike with periodic activations).
+    let effsManual = if not periodic && IA.checkFlag Ability.Periodic arItem
+                     then take 1 effs  -- may be empty
+                     else effs
+    triggeredEffect <- itemEffectDisco source target iid itemKind container
+                                       periodic effsManual
+    let triggered = if kineticPerformed then UseUp else triggeredEffect
+    sb <- getsState $ getActorBody source
+    -- Announce no effect, which is rare and wastes time, so noteworthy.
+    unless (triggered == UseUp  -- effects triggered; feedback comes from them
+            || periodic  -- don't spam via fizzled periodic effects
+            || bproj sb  -- don't spam, projectiles can be very numerous
+            ) $
+      execSfxAtomic $ SfxMsgFid (bfid sb) $
+        if any IK.forApplyEffect effsManual
+        then SfxFizzles  -- something didn't work, despite promising effects
+        else SfxNothingHappens  -- fully expected
     -- If none of item's effects nor a kinetic hit were performed,
     -- we recreate the item (assuming we deleted the item above).
     -- Regardless, we don't rewind the time, because some info is gained
@@ -1335,7 +1330,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let -- We don't know if it's voluntary,
-        --so we conservatively assume it is and we blame @aid@.
+        -- so we conservatively assume it is and we blame @aid@.
         voluntary = True
         onSmashOnly = True
     effectAndDestroyAndAddKill
