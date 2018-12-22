@@ -1694,7 +1694,6 @@ gem1 = gemTemplate
                  -- reflects strongly, distracts; so it glows in the dark,
                  -- is visible on dark floor, but not too tempting to wear
                ++ iaspects gemTemplate
-  , ieffects = [RefillCalm (-1)]  -- minor effect to ensure no id-on-pickup
   }
 gem2 = gem1
   { ifreq    = [ ("treasure", 100), ("gem", 100), ("any jewelry", 100)
@@ -1742,7 +1741,7 @@ currency = currencyTemplate
   { ifreq    = [("treasure", 100), ("currency", 100), ("valuable", 1)]
   , iaspects = [AddSkill SkShine 1, AddSkill SkSpeed (-1)]
                ++ iaspects currencyTemplate
-  , ieffects = [RefillCalm (-1)]
+
   }
 
 -- * LambdaHack-specific items

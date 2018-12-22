@@ -338,9 +338,8 @@ itemEffectDisco kineticPerformed source target iid itemKindId itemKind
         IdentityCovered{} -> False
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
   when ((ur >= UseId || kineticPerformed)
-        && not triviallyIdentified
-        && not (IA.isHumanTrinket itemKind)) $
-    identifyIid iid c itemKindId
+        && not triviallyIdentified) $
+    identifyIid iid c itemKindId itemKind
   return ur
 
 -- | Source actor affects target actor, with a given effect and it strength.
@@ -1415,7 +1414,7 @@ effectPolyItem execSfx iidId target = do
            let c = CActor target cstore
                kit = (maxCount, take maxCount itemTimer)
            execSfx
-           identifyIid iid c itemKindId
+           identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
            effectCreateItem (Just $ bfid tb) Nothing
                             target target cstore "common item" IK.timerNone
@@ -1444,7 +1443,7 @@ effectRerollItem execSfx iidId target = do
            let c = CActor target cstore
                freq = pure (itemKindId, itemKind)
            execSfx
-           identifyIid iid c itemKindId
+           identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem iid itemBase kit c
            dungeon <- getsState sdungeon
            let maxLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
@@ -1482,7 +1481,7 @@ effectDupItem execSfx iidId target = do
          | otherwise -> do
            let c = CActor target cstore
            execSfx
-           identifyIid iid c itemKindId
+           identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdCreateItem iid itemBase (1, []) c
            return UseUp
 
@@ -1517,7 +1516,7 @@ effectIdentify execSfx iidId target = do
           else do
             let c = CActor target store
             execSfx
-            identifyIid iid c itemKindId
+            identifyIid iid c itemKindId itemKind
             return True
       tryStore stores = case stores of
         [] -> do
@@ -1530,10 +1529,11 @@ effectIdentify execSfx iidId target = do
   tryStore [CGround, CEqp, CInv, CSha]
 
 identifyIid :: MonadServerAtomic m
-            => ItemId -> Container -> ContentId ItemKind -> m ()
-identifyIid iid c itemKindId = do
-  discoAspect <- getsState sdiscoAspect
-  execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
+            => ItemId -> Container -> ContentId ItemKind -> ItemKind -> m ()
+identifyIid iid c itemKindId itemKind = do
+  unless (IA.isHumanTrinket itemKind) $ do
+    discoAspect <- getsState sdiscoAspect
+    execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
 
 -- ** Detect
 
