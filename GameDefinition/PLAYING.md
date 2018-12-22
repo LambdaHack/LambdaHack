@@ -70,11 +70,11 @@ full of actors, connected by a corridor with a room with an open door,
 a pillar, a staircase down and rubble that obscures one of the corners.
 The lower row of the larger room is full of items.
 
-   ------       ------
-   |@19.|       |....&&
-   |r...+#######-...0.>&&|
-   |Ra..|       |[?!,)$"=|
-   ------       ----------
+    ------       ------
+    |@19.|       |....&&
+    |r...+#######-...0.>&&|
+    |Ra..|       |[?!,)$"=|
+    ------       ----------
 
 
 Heroes
