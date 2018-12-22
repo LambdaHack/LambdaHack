@@ -34,9 +34,9 @@ matrix:
     - env: GTKVTY=noopt
       compiler: "ghc-8.0.2"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-    - env: GTKVTY=opt2
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
+#    - env: GTKVTY=opt2
+#      compiler: "ghc-8.0.2"
+#      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
       compiler: "ghc-8.0.2"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
