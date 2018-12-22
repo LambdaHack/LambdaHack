@@ -211,7 +211,7 @@ effectAndDestroy :: MonadServerAtomic m
                  -> m ()
 effectAndDestroy onSmashOnly kineticPerformed
                  source target iid container periodic
-                 ( itemFull@ItemFull{itemBase, itemDisco, itemKind}
+                 ( itemFull@ItemFull{itemBase, itemDisco, itemKindId, itemKind}
                  , (itemK, itemTimer) ) mayDestroy = do
   let effs = if onSmashOnly
              then IK.strengthOnSmash itemKind
@@ -261,8 +261,9 @@ effectAndDestroy onSmashOnly kineticPerformed
     let effsManual = if not periodic && IA.checkFlag Ability.Periodic arItem
                      then take 1 effs  -- may be empty
                      else effs
-    triggeredEffect <- itemEffectDisco source target iid itemKind container
-                                       periodic effsManual
+    triggeredEffect <- itemEffectDisco kineticPerformed
+                                       source target iid itemKindId itemKind
+                                       container periodic effsManual
     let triggered = if kineticPerformed then UseUp else triggeredEffect
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
@@ -303,27 +304,43 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
--- Note that using raw damage (beating the enemy with the magic wand,
--- for example) does not identify the item.
+-- Even using raw damage (beating the enemy with the magic wand,
+-- for example) identifies the item. This means a costly @UpdDiscover@
+-- is processed for each random timeout weapon hit and for most projectiles,
+-- but at least not for most explosion particles nor plain organs.
+-- So, enemy missiles that hit us are no longer mysterious until picked up,
+-- which is for the better, because the client knows their charging status
+-- and so can generate accurate messages in the case when not recharged.
+-- This also means that thrown consumables in flasks sturdy enough to cause
+-- damage are always identified at hit, even if no effect activated.
+-- So throwing them at foes is a better identification method than applying.
 --
--- Note that if we activate a durable item, e.g., armor, from the ground,
--- it will get identified, which is perfectly fine, until we want to add
--- sticky armor that can't be easily taken off (and, e.g., has some maluses).
+-- Note that if we activate a durable non-passive item, e.g., a spiked shield,
+-- from the ground, it will get identified, which is perfectly fine,
+-- until we want to add sticky armor that can't be easily taken off
+-- (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
-                => ActorId -> ActorId -> ItemId -> ItemKind -> Container
-                -> Bool -> [IK.Effect]
+                => Bool -> ActorId -> ActorId -> ItemId
+                -> ContentId ItemKind -> ItemKind
+                -> Container -> Bool -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco source target iid itemKind c periodic effs = do
+itemEffectDisco kineticPerformed source target iid itemKindId itemKind
+                c periodic effs = do
+  COps{coItemSpeedup} <- getsState scops
   urs <- mapM (effectSem source target iid c periodic) effs
-  discoAspect <- getsState sdiscoAspect
-  let arItem = discoAspect EM.! iid
-      ur = case urs of
+  itemBase <- getsState $ getItemBody iid
+  let ur = case urs of
         [] -> UseDud  -- there was no effects
         _ -> maximum urs
+      triviallyIdentified = case jkind itemBase of
+        IdentityObvious{} ->
+          IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
+        IdentityCovered{} -> False
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
-  when (ur >= UseId && not (IA.onlyMinorEffects arItem itemKind)) $ do
-    kindId <- getsState $ getIidKindIdServer iid
-    execUpdAtomic $ UpdDiscover c iid kindId arItem
+  when ((ur >= UseId || kineticPerformed)
+        && not triviallyIdentified
+        && not (IA.isHumanTrinket itemKind)) $
+    identifyIid iid c itemKindId
   return ur
 
 -- | Source actor affects target actor, with a given effect and it strength.
@@ -1480,7 +1497,7 @@ effectIdentify execSfx iidId target = do
   -- is identifiable, becuase it's the target actor that identifies
   -- his possesions.
   tb <- getsState $ getActorBody target
-  s <- getsServer $ (EM.! bfid tb) . sclientStates
+  sClient <- getsServer $ (EM.! bfid tb) . sclientStates
   let tryFull store as = case as of
         [] -> return False
         (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
@@ -1488,8 +1505,8 @@ effectIdentify execSfx iidId target = do
           let arItem = discoAspect EM.! iid
               kindIsKnown = case jkind itemBase of
                 IdentityObvious _ -> True
-                IdentityCovered ix _ -> ix `EM.member` sdiscoKind s
-          if iid `EM.member` sdiscoAspect s  -- already fully identified
+                IdentityCovered ix _ -> ix `EM.member` sdiscoKind sClient
+          if iid `EM.member` sdiscoAspect sClient  -- already fully identified
              || IA.isHumanTrinket itemKind  -- hack; keep them non-identified
              || store == CGround && IA.onlyMinorEffects arItem itemKind
                -- will be identified when picked up, so don't bother
