@@ -480,7 +480,7 @@ drawFrameStatus drawnLevelId = do
             b <- getsState $ getActorBody leader
             bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
-              Nothing -> return $! tgtBlurb
+              Nothing -> return (tgtBlurb, pathTgt)
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemFull <- getsState $ itemToFull iid
@@ -488,13 +488,13 @@ drawFrameStatus drawnLevelId = do
                 let (name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
-                return $! "Item:" <+> trimTgtDesc widthTgtOrItem t
+                return ("Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
         | otherwise =
-            return $! tgtBlurb
-  targetText <- tgtOrItem
-  let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
+            return (tgtBlurb, pathTgt)
+  (targetText, pathTgtOrNull) <- tgtOrItem
+  let targetGap = emptyAttrLine (widthTgt - T.length pathTgtOrNull
                                           - T.length targetText)
-      targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgt
+      targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgtOrNull
       status = arenaStatus
                <+:> xhairStatus
                <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
