@@ -1482,12 +1482,12 @@ strike catch source target iid cstore = assert (source /= target) $ do
          let msg = if bproj sb
                    then makePhrase
                           [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
-                        <> ", but it's completely discharged."
+                        <> ", but it may be completely discharged."
                    else makePhrase
                           [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
                           , "to", verb, tpart, "with"
                           , weaponName ]
-                        <> ", but it's not readied yet."
+                        <> ", but it may be not readied yet."
          msgAdd msg  -- and no animation
        | bproj sb && bproj tb -> do  -- server sends only if neither is blast
          -- Short message.
