@@ -847,6 +847,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     -- and back to stash (as a flip side, a charging item in stash may sometimes
     -- be used at once on another level, with different local time, but only
     -- once, because after first use, the timeout is set to local time).
+    -- This is not terribly consistent, but not recharging in stash is
+    -- not better, because either we block activation of any items with timeout,
+    -- or it encourages moving items out of stash, recharging and moving in.
+    -- Which is not fun at all, but one more thing to remember doing regularly.
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]
           || fromCStore == CSha) $ do

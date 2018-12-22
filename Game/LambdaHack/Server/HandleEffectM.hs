@@ -308,6 +308,7 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
 -- for example) identifies the item. This means a costly @UpdDiscover@
 -- is processed for each random timeout weapon hit and for most projectiles,
 -- but at least not for most explosion particles nor plain organs.
+-- And if not needed, the @UpdDiscover@ are eventually not sent to clients.
 -- So, enemy missiles that hit us are no longer mysterious until picked up,
 -- which is for the better, because the client knows their charging status
 -- and so can generate accurate messages in the case when not recharged.
@@ -326,19 +327,12 @@ itemEffectDisco :: MonadServerAtomic m
                 -> m UseResult
 itemEffectDisco kineticPerformed source target iid itemKindId itemKind
                 c periodic effs = do
-  COps{coItemSpeedup} <- getsState scops
   urs <- mapM (effectSem source target iid c periodic) effs
-  itemBase <- getsState $ getItemBody iid
   let ur = case urs of
         [] -> UseDud  -- there was no effects
         _ -> maximum urs
-      triviallyIdentified = case jkind itemBase of
-        IdentityObvious{} ->
-          IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
-        IdentityCovered{} -> False
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
-  when ((ur >= UseId || kineticPerformed)
-        && not triviallyIdentified) $
+  when (ur >= UseId || kineticPerformed) $
     identifyIid iid c itemKindId itemKind
   return ur
 
@@ -1511,7 +1505,9 @@ effectIdentify execSfx iidId target = do
                -- will be identified when picked up, so don't bother
              || IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
                 && kindIsKnown
-               -- constant aspects and known kind; no need to identify further
+               -- constant aspects and known kind; no need to identify further;
+               -- this should normally not be needed, since clients should
+               -- identify such items for free
           then tryFull store rest
           else do
             let c = CActor target store
