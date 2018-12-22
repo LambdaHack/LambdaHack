@@ -1476,6 +1476,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
        | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
          -- Much less plausible with a wielded weapon.
+         -- Theoretically possible if the weapon not identified
+         -- (then timeout is a mean estimate), but they usually should be,
+         -- even in foes' possesion.
          let msg = if bproj sb
                    then makePhrase
                           [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]

@@ -656,7 +656,8 @@ dominateFid fid source target = do
     let discoverIf (iid, cstore) = do
           let itemKindId = getKindId iid
               c = CActor target cstore
-          discoverIfMinorEffects c iid itemKindId
+          assert (cstore /= CGround) $
+            discoverIfMinorEffects c iid itemKindId
         aic = (btrunk tb, COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic

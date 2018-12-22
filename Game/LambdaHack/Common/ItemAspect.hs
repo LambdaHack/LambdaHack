@@ -180,6 +180,14 @@ speedupItem coitem =
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)
 
+-- Kinetic damage is not considered major effect, even though it
+-- identifies an item, when one hits with it. However, it's tedious
+-- to wait for weapon identification until first hit and also
+-- if a weapon is periodically activated, the kinetic damage would not apply,
+-- so we'd need special cases that force identification or warn
+-- or here not consider kinetic damage a major effect if item is periodic.
+-- So we opt for KISS and identify effect-less weapons at pick-up,
+-- not at first hit.
 onlyMinorEffects :: AspectRecord -> IK.ItemKind -> Bool
 onlyMinorEffects ar kind =
   checkFlag Ability.MinorEffects ar  -- override

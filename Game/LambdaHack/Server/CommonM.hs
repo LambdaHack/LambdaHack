@@ -530,9 +530,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
       Just (iid, (itemFull2, _)) ->
-        -- The items are create in inventory, so won't be picked up,
-        -- so we have to discover them now, if eligible.
-        discoverIfMinorEffects container iid (itemKindId itemFull2)
+        when (cstore /= CGround) $
+          -- The items are created in inventory, so won't be picked up,
+          -- so we have to discover them now, if eligible.
+          discoverIfMinorEffects container iid (itemKindId itemFull2)
   return aid
 
 discoverIfMinorEffects :: MonadServerAtomic m
