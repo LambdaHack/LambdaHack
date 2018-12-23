@@ -195,6 +195,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-v", repeatTriple 1000)
   , ("C-V", repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
+  , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
 
   -- Dashboard, in addition to commands marked above
@@ -212,7 +213,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 
   -- Debug and others not to display in help screens
-  , ("C-S", ([CmdDebug], "save game", GameSave))
   , ("C-semicolon", ( [CmdNoHelp]
                     , "move one step towards the x-hair"
                     , MoveOnceToXhair ))
