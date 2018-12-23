@@ -365,11 +365,8 @@ aspectRecordToBenefit arItem =
 
 -- | Compute the whole 'Benefit' structure, containing various facets
 -- of AI item preference, for an item with the given effects and aspects.
---
--- Note: result has non-strict fields, so arguments are forced to avoid leaks.
--- When AI looks at items (including organs) more often, force the fields.
 totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
-totalUsefulness !cops !fact itemFull@ItemFull{itemKind, itemSuspect} =
+totalUsefulness cops fact itemFull@ItemFull{itemKind, itemSuspect} =
   let arItem = aspectRecordFull itemFull
       -- If the item is periodic, we only add effects to equipment benefit,
       -- because we assume it's in equipment and then

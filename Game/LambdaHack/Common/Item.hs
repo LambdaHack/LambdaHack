@@ -123,19 +123,18 @@ type DiscoveryKind = EM.EnumMap ItemKindIx (ContentId IK.ItemKind)
 -- AI item use benefit data.
 type ItemIxMap = EM.EnumMap ItemKindIx (ES.EnumSet ItemId)
 
--- | Fields are intentionally kept non-strict, because they are recomputed
--- often, but not used every time. The fields are, in order:
+-- | The fields are, in order:
 -- 1. whether the item should be kept in equipment (not in pack nor stash)
 -- 2. the total benefit from picking the item up (to use or to put in equipment)
 -- 3. the benefit of applying the item to self
 -- 4. the (usually negative, for him) value of hitting a foe in melee with it
 -- 5. the (usually negative, for him) value of flinging the item at an opponent
 data Benefit = Benefit
-  { benInEqp  :: ~Bool
-  , benPickup :: ~Double
-  , benApply  :: ~Double
-  , benMelee  :: ~Double
-  , benFling  :: ~Double
+  { benInEqp  :: Bool
+  , benPickup :: Double
+  , benApply  :: Double
+  , benMelee  :: Double
+  , benFling  :: Double
   }
   deriving (Show, Generic)
 
