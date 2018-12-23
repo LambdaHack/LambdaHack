@@ -189,7 +189,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Assorted
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("?", ([CmdMeta], "display help", Hint))
-  , ("F1", ([CmdMeta], "", Hint))
+  , ("F1", ([CmdMeta], "display help immediately", Help))
   , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
   , ("V", repeatTriple 100)
   , ("C-v", repeatTriple 1000)
