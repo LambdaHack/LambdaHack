@@ -290,7 +290,8 @@ createActor aid b ais = do
           in TgtAndPath tgt NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
-  mapM_ (addItemToDiscoBenefit . fst) ais
+  mapM_ (addItemToDiscoBenefit . fst) $
+    filter (\(iid, _) -> iid /= btrunk b) ais  -- beware of trunk-weapons!
   unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
   invalidateInMelee (blid b)
 
