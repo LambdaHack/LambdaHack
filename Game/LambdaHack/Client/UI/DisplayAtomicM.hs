@@ -938,7 +938,12 @@ displayGameOverLore slore exposeCount generationAn = do
         makeSentence
           [ "this", MU.Text (ppSLore slore), "manifested during your quest"
           , MU.CarWs k "time" ]
-      prompt = makeSentence [ "you experienced the following variety of"
+      prompt | total == 0 =
+               makeSentence [ "you didn't experience any"
+                            , MU.Ws $ MU.Text (headingSLore slore)
+                            , "this time" ]
+             | otherwise =
+               makeSentence [ "you experienced the following variety of"
                             , MU.CarWs total $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
   viewLoreItems False ("GameOverLore" ++ show slore)

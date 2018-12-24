@@ -619,8 +619,7 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
       lSlots = if enableSorting
                then lSlotsRaw
                else sortSlotMap itemToF lSlotsRaw
-  promptAdd0 $
-    prompt <+> if EM.null lSlots then "(Nothing here this time.)" else ""
+  promptAdd0 prompt
   io <- itemOverlay lSlots arena trunkBag
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
