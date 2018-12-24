@@ -68,7 +68,6 @@ pickAction aid retry = do
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
   -- Reset fleeing flag. May then be set in @flee@.
-  modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
@@ -93,6 +92,7 @@ actionStrategy aid retry = do
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
+  modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
   condSolo <- condSoloM aid  -- solo fighters aggresive

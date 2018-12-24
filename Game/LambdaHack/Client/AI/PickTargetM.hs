@@ -333,8 +333,6 @@ computeTarget aid = do
         pickNewTarget
       updateTgt :: TgtAndPath -> m (Maybe TgtAndPath)
       updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
-      updateTgt _ | EM.member aid fleeD = pickNewTarget
-        -- forget enemy positions to prevent attacking them again soon
       updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
         TEnemy a -> do
           body <- getsState $ getActorBody a
@@ -344,6 +342,8 @@ computeTarget aid = do
                || blid body /= blid b  -- wrong level
                || actorDying body -> -- foe already dying
                pickNewTarget
+             | EM.member aid fleeD -> pickNewTarget
+                 -- forget enemy positions to prevent attacking them again soon
              | otherwise -> do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,
@@ -376,6 +376,8 @@ computeTarget aid = do
         TPoint tgoal lid pos -> case tgoal of
           TEnemyPos _  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
+            | EM.member aid fleeD -> pickNewTarget
+                -- forget enemy positions to prevent attacking them again soon
             | otherwise -> do
               -- Here pick the closer enemy, remembered or seen, to avoid
               -- loops when approaching new enemy obscures him behind obstacle

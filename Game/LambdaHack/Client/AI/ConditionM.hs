@@ -367,12 +367,17 @@ fleeList aid = do
   -- Prefer fleeing along the path to target, unless the target is a foe,
   -- in which case flee in the opposite direction.
   let etgtPath = case mtgtMPath of
-        Just TgtAndPath{ tapPath=tapPath@AndPath{pathList}
+        Just TgtAndPath{ tapPath=AndPath{pathList, pathGoal}
                        , tapTgt } -> case tapTgt of
-          TEnemy{} -> Left tapPath
-          TPoint TEnemyPos{} _ _ -> Left tapPath
+          TEnemy{} -> Left pathGoal
+          TPoint TEnemyPos{} _ _ -> Left pathGoal
           _ -> Right pathList
         _ -> Right []
+  fleeD <- getsClient sfleeD
+  -- But if fled previous turn, prefer even more fleeing further this turn.
+  let eOldFleeOrTgt = case EM.lookup aid fleeD of
+        Nothing -> etgtPath
+        Just p -> Left p
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
@@ -396,12 +401,12 @@ fleeList aid = do
       accNonWalkVic = filter (accNonWalkUnocc . snd) dVic
       gtEqNonVic = filter ((>= dist (bpos b)) . fst) accNonWalkVic
       ltAllVic = filter ((< dist (bpos b)) . fst) dVic
-      rewardPath mult (d, p) = case etgtPath of
-        Right tgtPath | p `elem` tgtPath ->
+      rewardPath mult (d, p) = case eOldFleeOrTgt of
+        Right tgtPathList | p `elem` tgtPathList ->
           (100 * mult * d, p)
-        Right tgtPath | any (adjacent p) tgtPath ->
+        Right tgtPathList | any (adjacent p) tgtPathList ->
           (10 * mult * d, p)
-        Left AndPath{pathGoal} | bpos b /= pathGoal ->
+        Left pathGoal | bpos b /= pathGoal ->
           let venemy = towards (bpos b) pathGoal
               vflee = towards (bpos b) p
               sq = euclidDistSqVector venemy vflee
