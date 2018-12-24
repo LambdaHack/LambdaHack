@@ -603,16 +603,26 @@ dominateFidSfx source target fid = do
   if isNothing (btrajectory tb) && canTra && bhp tb > 0 then do
     let execSfx = execSfxAtomic $ SfxEffect fid target IK.Dominate 0
     execSfx  -- if actor ours, possibly the last occasion to see him
-    gameOver <- dominateFid fid source target
-    unless gameOver  -- avoid spam
-      execSfx  -- see the actor as theirs, unless position not visible
+    dominateFid fid source target
+    -- If domination resulted in game over, the message won't be seen
+    -- before the end game screens, but at least it will be seen afterwards
+    -- and browsable in history while inside subsequent game, revealing
+    -- the cause of the previous game over. Better than no message at all.
+    execSfx  -- see the actor as theirs, unless position not visible
     return True
   else
     return False
 
-dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> ActorId -> m Bool
+dominateFid :: MonadServerAtomic m => FactionId -> ActorId -> ActorId -> m ()
 dominateFid fid source target = do
   tb0 <- getsState $ getActorBody target
+  -- Game over deduced very early, so no further animation nor message
+  -- will appear before game end screens. This is good in that our last actor
+  -- that yielded will still be on screen when end game messages roll.
+  -- This is bad in that last enemy actor that got dominated by us
+  -- may not be on screen and we have no clue how we won until
+  -- we see history in the next game. Even worse if our ally dominated
+  -- the enemy actor. Then we may never learn. Oh well, that's realism.
   deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
   fact <- getsState $ (EM.! bfid tb0) . sfactionD
@@ -655,9 +665,8 @@ dominateFid fid source target = do
         Just Status{stOutcome=Camping} -> True
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
-  if gameOver
-  then return True  -- avoid the spam of identifying items at this point
-  else do
+  -- Avoid the spam of identifying items, if game over.
+  unless gameOver $ do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) source target COrgan
                             "impressed" IK.timerNone
@@ -671,7 +680,6 @@ dominateFid fid source target = do
         aic = (btrunk tb, COrgan)
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
-    return False
 
 -- | Drop all actor's items.
 dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()

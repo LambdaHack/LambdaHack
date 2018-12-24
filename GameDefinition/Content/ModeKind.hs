@@ -58,9 +58,9 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
 -- behind a bush and others hiding in mist. If no suitable bushes,
 -- fire once and flee into mist or behind cover. Then whomever is out of LOS
 -- range or inside mist can shoot at the last seen enemy locations,
--- adjusting and according to ounds and incoming missile trajectories.
--- If the scount can't find bushes or glass building to set a lookout,
--- the other team member are more spotters and guardians than snipers
+-- adjusting aim according to sounds and incoming missile trajectories.
+-- If the scout can't find bushes or glass building to set a lookout,
+-- the other team members are more spotters and guardians than snipers
 -- and that's their only role, so a small party makes sense.
 shootout = ModeKind  -- sparse ranged in daylight
   { msymbol = 's'
