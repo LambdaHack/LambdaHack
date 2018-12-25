@@ -85,11 +85,19 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
  let title = fromJust stitle
      fontFileName = T.unpack (fromJust sdlFontFile)
-     fontFile | isRelative fontFileName = fromJust sfontDir </> fontFileName
-              | otherwise = fontFileName
- fontFileExists <- doesFileExist fontFile
+     fontFileOrig | isRelative fontFileName = fromJust sfontDir </> fontFileName
+                  | otherwise = fontFileName
+ (fontFileExists, fontFile) <- do
+   fontFileOrigExists <- doesFileExist fontFileOrig
+   if fontFileOrigExists
+   then return (True, fontFileOrig)
+   else do
+     -- Handling old font format specified in old game config files.
+     let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
+     fontFileAltExists <- doesFileExist fontFileAlt
+     return (fontFileAltExists, fontFileAlt)
  unless fontFileExists $
-   fail $ "Font file does not exist: " ++ fontFile
+   fail $ "Font file does not exist: " ++ fontFileOrig
  let fontSize = fromJust sfontSize
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
