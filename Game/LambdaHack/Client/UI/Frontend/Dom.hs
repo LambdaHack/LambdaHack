@@ -47,6 +47,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -147,7 +148,7 @@ runWeb coscreen soptions@ClientOptions{..} rfMVar = do
       stopPropagation
   -- Handle mouseclicks, per-cell.
   let setupMouse i a =
-        let Point{..} = PointArray.punindex (rwidth coscreen) i
+        let Point{..} = punindex (rwidth coscreen) i
         in handleMouse rf a px py
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
