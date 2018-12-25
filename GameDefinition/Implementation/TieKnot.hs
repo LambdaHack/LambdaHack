@@ -104,14 +104,11 @@ tieKnotForAsync options@ServerOptions{ sallClear
 -- | Runs tieKnotForAsync in an async and applies the main thread workaround.
 tieKnot :: ServerOptions -> IO ()
 tieKnot serverOptions = do
-#ifndef USE_JSFILE
   let fillWorkaround =
         -- Set up void workaround if nothing specific required.
         void $ tryPutMVar workaroundOnMainThreadMVar $ return ()
-#endif
   -- Avoid the bound thread that would slow down the communication.
   a <- async $ tieKnotForAsync serverOptions
-#ifndef USE_JSFILE
                `Ex.finally` fillWorkaround
   link a
   -- Run a (possibly void) workaround. It's needed for OSes/frontends
@@ -119,5 +116,4 @@ tieKnot serverOptions = do
   -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
   workaround <- takeMVar workaroundOnMainThreadMVar
   workaround
-#endif
   wait a
