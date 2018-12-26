@@ -95,8 +95,8 @@ randomResetTimeout k iid itemFull beforeIt toC = do
   lid <- getsState $ lidFromC toC
   localTime <- getsState $ getLocalTime lid
   mrndTimeout <- rndToAction $ computeRndTimeout localTime itemFull
-  -- The created or moved item set (not the whole stack) has its timeout
-  -- reset to a random value between timeout and twice timeout.
+  -- The created or moved item set (not the items previously at destination)
+  -- has its timeouts reset to a random value between timeout and twice timeout.
   -- This prevents micromanagement via swapping items in and out of eqp
   -- and via exact prediction of first timeout after equip.
   case mrndTimeout of
@@ -108,17 +108,16 @@ randomResetTimeout k iid itemFull beforeIt toC = do
           resetIt = beforeIt ++ replicate k rndT
       when (afterIt /= resetIt) $
         execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
-    Nothing -> return ()  -- no Periodic or Timeout aspect; don't touch
+    Nothing -> return ()  -- no @Timeout@ aspect; don't touch
 
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime itemFull@ItemFull{itemDisco} = do
-  let arItem = aspectRecordFull itemFull
-  case IA.aTimeout $ itemAspect itemDisco of
-    t | t /= 0 && IA.checkFlag Ability.Periodic arItem -> do
-      rndT <- randomR (0, t)
-      let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
-      return $ Just $ timeShift localTime rndTurns
-    _ -> return Nothing
+computeRndTimeout localTime ItemFull{itemDisco} = do
+  let t = IA.aTimeout $ itemAspect itemDisco
+  if t /= 0 then do
+    rndT <- randomR (0, t)
+    let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
+    return $ Just $ timeShift localTime rndTurns
+  else return Nothing
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createLevelItem pos lid = do

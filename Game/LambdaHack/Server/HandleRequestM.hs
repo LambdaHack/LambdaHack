@@ -836,10 +836,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     itemFull <- getsState $ itemToFull iid
     when (fromCStore == CGround) $  -- pick up
       discoverIfMinorEffects toC iid (itemKindId itemFull)
-    -- The first recharging period after pick up is random,
+    -- The first recharging period after equipping is random,
     -- between 1 and 2 standard timeouts of the item.
     -- We reset timeout for equipped periodic items and also for items
-    -- moved out of the shared stash, in which timeouts are not consistently
+    -- moved out of the shared stash, in which timeouts are not consistent
     -- wrt some local time, because actors from many levels put items there
     -- all the time (and don't rebase it to any common clock).
     -- If wrong local time in shared stash causes an item to recharge
@@ -849,7 +849,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     -- once, because after first use, the timeout is set to local time).
     -- This is not terribly consistent, but not recharging in stash is
     -- not better, because either we block activation of any items with timeout,
-    -- or it encourages moving items out of stash, recharging and moving in.
+    -- or encourage moving items out of stash, recharging and moving in.
     -- Which is not fun at all, but one more thing to remember doing regularly.
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]
