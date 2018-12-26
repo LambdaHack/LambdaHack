@@ -30,7 +30,9 @@ import Implementation.TieKnot
 -- run the game and handle exit.
 main :: IO ()
 main = do
-  -- This may be broken with JS and also bloats the outcome file, so disabled.
+  -- This test is faulty with JS, because it reports the browser console
+  -- is not a terminal, but then we can't open files to contain the logs.
+  -- Also it bloats the outcome JS file, so disabled.
 #ifndef USE_JSFILE
   -- Special case hack, when the game is started not on a console.
   -- Without this, any attempt to output on stdout crashes a Windows exe
