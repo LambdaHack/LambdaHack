@@ -802,20 +802,18 @@ quitFactionUI fid toSt manalytics = do
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
-      go <- if isNoConfirms && fmap stOutcome toSt /= Just Camping
+      go <- if isNoConfirms
             then return False
-            else do
-              void $ displaySpaceEsc ColorFull ""
-              return True
+            else displaySpaceEsc ColorFull ""
       recordHistory
         -- we are going to exit or restart, so record and clear, but only once
+      (itemBag, total) <- getsState $ calculateTotal side
       when go $ do
         case middlePart of
           Nothing -> return ()
           Just sp -> do
             msgAdd sp
             void $ displaySpaceEsc ColorFull ""
-        (itemBag, total) <- getsState $ calculateTotal side
         case manalytics of
           Nothing -> return ()
           Just (factionAn, generationAn) -> do
@@ -826,16 +824,16 @@ quitFactionUI fid toSt manalytics = do
               , displayGameOverLore SOrgan True generationAn
               , displayGameOverLore SCondition sexposeItems generationAn
               , displayGameOverLore SBlast True generationAn ]
-        unless isNoConfirms $ do
-          -- Show score for any UI client after any kind of game exit,
-          -- even though it's saved only for human UI clients at game over
-          -- (that is not a noConfirms or benchmark game).
-          scoreSlides <- scoreToSlideshow total status
-          void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
-        -- The last prompt stays onscreen during shutdown, etc.
-        promptAdd0 pp
-        partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-        void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+      unless isNoConfirms $ do
+        -- Show score for any UI client after any kind of game exit,
+        -- even though it's saved only for human UI clients at game over
+        -- (that is not a noConfirms or benchmark game).
+        scoreSlides <- scoreToSlideshow total status
+        void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
+      -- The last prompt stays onscreen during shutdown, etc.
+      promptAdd0 pp
+      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
+      void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
