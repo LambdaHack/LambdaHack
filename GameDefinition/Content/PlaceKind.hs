@@ -172,6 +172,8 @@ collapsed = PlaceKind
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
   , pfreq    = [("noise", 1)]
+      -- no point taking up space if very little space taken,
+      -- but if no other place can be generated, a failsafe is useful
   , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone

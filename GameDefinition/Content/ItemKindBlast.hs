@@ -23,7 +23,7 @@ burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracke
 
 -- We take care (e.g., in burningOil below) that blasts are not faster
 -- than 100% fastest natural speed, or some frames would be skipped,
--- which is a waste of prefectly good frames.
+-- which is a waste of perfectly good frames.
 
 -- * Parameterized blasts
 
@@ -86,7 +86,7 @@ spreadFragmentation = ItemKind
   { isymbol  = '*'
   , iname    = "fragmentation burst"
   , ifreq    = [("violent fragmentation", 1)]
-  , iflavour = zipPlain [Red]  -- flying shards; some fire and smoke
+  , iflavour = zipPlain [Red]
   , icount   = 16  -- strong but few, so not always hits target
   , irarity  = [(1, 1)]
   , iverbHit = "tear apart"
@@ -97,7 +97,7 @@ spreadFragmentation = ItemKind
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
   , ieffects = [DropItem 1 1 COrgan "condition"]
-  , idesc    = ""
+  , idesc    = "Flying shards, flame and smoke."
   , ikit     = []
   }
 spreadFragmentation8 = spreadFragmentation
@@ -124,14 +124,14 @@ focusedFragmentation = ItemKind
       -- when the target position is occupied, the explosion starts one step
       -- away, hence we set range to 0 steps, to limit dispersal
   , ieffects = [OnSmash $ Explode "fragmentation"]
-  , idesc    = ""
+  , idesc    = idesc spreadFragmentation
   , ikit     = []
   }
 spreadConcussion = ItemKind
   { isymbol  = '*'
   , iname    = "concussion blast"
   , ifreq    = [("violent concussion", 1)]
-  , iflavour = zipPlain [Magenta]  -- mosty shock wave; some fire and smoke
+  , iflavour = zipPlain [Magenta]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "shock"
@@ -150,7 +150,7 @@ spreadConcussion = ItemKind
                , DropItem 1 1 COrgan "condition"
                , toOrganBad "immobile" 3  -- no balance
                , toOrganBad "deafened" 23 ]
-  , idesc    = ""
+  , idesc    = "Shock wave, hot gases, some fire and smoke."
   , ikit     = []
   }
 spreadConcussion8 = spreadConcussion
@@ -174,14 +174,14 @@ focusedConcussion = ItemKind
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [OnSmash $ Explode "concussion"]
-  , idesc    = ""
+  , idesc    = idesc spreadConcussion
   , ikit     = []
   }
 spreadFlash = ItemKind
   { isymbol  = '`'
   , iname    = "magnesium flash"
   , ifreq    = [("violent flash", 1)]
-  , iflavour = zipPlain [BrWhite]  -- very brigh flash
+  , iflavour = zipPlain [BrWhite]
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "dazzle"
@@ -190,10 +190,10 @@ spreadFlash = ItemKind
   , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
-  , ieffects = [toOrganBad "blind" 10, toOrganBad "weakened" 20]
+  , ieffects = [toOrganBad "blind" 5, toOrganBad "weakened" 20]
                  -- Wikipedia says: blind for five seconds and afterimage
                  -- for much longer, harming aim
-  , idesc    = "A flash of fire."
+  , idesc    = "A very bright flash of fire."
   , ikit     = []
   }
 spreadFlash8 = spreadFlash
@@ -218,7 +218,7 @@ focusedFlash = ItemKind
   , iaspects = [ toLinger 0  -- 0 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [OnSmash $ Explode "spark"]
-  , idesc    = ""
+  , idesc    = idesc spreadFlash
   , ikit     = []
   }
 singleSpark = spreadFlash
@@ -409,7 +409,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [toOrganBad "withholding" (5 + 1 `d` 3)]
-                  -- choking and tears, can rougly see, but not aim
+                  -- choking and tears, can roughly see, but not aim
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
   }
@@ -457,7 +457,7 @@ waste = ItemKind
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
   , ieffects = [ toOrganBad "foul-smelling" (30 + 1 `d` 10)
-               , toOrganBad "dispossessed" (10 + 1 `d` 10) ]
+               , toOrganBad "dispossessed" (10 + 1 `d` 5) ]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -506,7 +506,7 @@ mistSleep = ItemKind
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [PutToSleep]
-  , idesc    = "Luls weary warriors."
+  , idesc    = "Lulls weary warriors."
   , ikit     = []
   }
 
@@ -588,7 +588,7 @@ vulnerabilityBalm = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "defenseless" (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad "defenseless" (3 + 1 `d` 3)]
   , idesc    = "Only the most learned make use of this."
   , ikit     = []
   }
@@ -759,8 +759,8 @@ blastNoStat grp = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganBad (toGroupName grp) (5 + 1 `d` 3)]
-  , idesc    = ""
+  , ieffects = [toOrganBad (toGroupName grp) (3 + 1 `d` 3)]
+  , idesc    = "Completely disables one personal faculty."
   , ikit     = []
   }
 blastNoSkMove = blastNoStat "immobile"
@@ -785,7 +785,7 @@ blastBonusStat grp = ItemKind
   , iaspects = [ toVelocity 10  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [toOrganGood (toGroupName grp) (20 + 1 `d` 5)]
-  , idesc    = ""
+  , idesc    = "Temporarily enhances the given personal faculty."
   , ikit     = []
   }
 blastBonusSkMove = blastBonusStat "more mobile"

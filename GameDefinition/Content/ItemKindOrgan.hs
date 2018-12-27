@@ -205,7 +205,7 @@ sting = fist
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
-  , ieffects = [toOrganBad "retaining" (10 + 1 `d` 10)]
+  , ieffects = [toOrganBad "retaining" (3 + 1 `d` 3)]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
@@ -281,7 +281,7 @@ armoredSkin = ItemKind
   , iaspects = [ AddSkill SkArmorMelee 30, AddSkill SkArmorRanged 15
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = "Homemade armour is just as good."
+  , idesc    = "Homemade armour is just as good."  -- hmm, it may get confused with leather armor jackets, etc.
   , ikit     = []
   }
 bark = armoredSkin
@@ -367,8 +367,8 @@ sapientBrain = armoredSkin
   , iverbHit = "outbrain"
   , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkMove 4]  -- can move at once when waking up
-               ++ [AddSkill SkWait 3]  -- can brace and sleep and lurk
-               ++ [AddSkill SkAlter 2]  -- can use stairs
+               ++ [AddSkill SkAlter 4]  -- can use all stairs; dig rubble, ice
+               ++ [AddSkill SkWait 2]  -- can brace and sleep
                ++ [AddSkill SkApply 1]  -- can use most items, not just foods
                ++ [SetFlag Durable]
   , idesc    = ""
@@ -379,10 +379,12 @@ animalBrain = armoredSkin
   , iverbHit = "blank"
   , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkMove 4]  -- can move at once when waking up
+               ++ [AddSkill SkAlter 2]  -- can use normal stairs; can't dig
                ++ [AddSkill SkWait 2]  -- can brace and sleep
-               ++ [AddSkill SkAlter 2]  -- can use stairs
-               ++ [ AddSkill sk (-1)
-                  | sk <- [SkDisplace, SkMoveItem, SkProject] ]
+               -- No @SkAppy@ bonus, so can only apply foods.
+               ++ [AddSkill SkDisplace (-1)]  -- no melee tactics
+               ++ [AddSkill SkMoveItem (-1)]  -- no item gathering
+               ++ [AddSkill SkProject (-1)]  -- nor item flinging
                ++ [SetFlag Durable]
   , idesc    = ""
   }
@@ -454,7 +456,7 @@ bonusHP = armoredSkin
   , iverbHit = "intimidate"
   , iweight  = 0
   , iaspects = [AddSkill SkMaxHP 1]
-  , idesc    = "Growing up in a priviledged background gave you the training and the discrete garment accessories that improve your posture and resilience."
+  , idesc    = "Growing up in a privileged background gave you the training and the discrete garment accessories that improve your posture and resilience."
   }
 braced = armoredSkin
   { isymbol  = 'B'
@@ -490,9 +492,8 @@ impressed = armoredSkin
   , iflavour = zipPlain [BrRed]
   , iverbHit = "confuse"
   , iweight  = 0
-  , iaspects = [ AddSkill SkMaxCalm (-1)
-                 -- to help player notice on main screen
-                 -- and to count as bad condition
+  , iaspects = [ AddSkill SkMaxCalm (-1)  -- to help player notice on HUD
+                                          -- and to count as bad condition
                , SetFlag Fragile  -- to announce "no longer" only when
                                   -- all impressions gone
                , SetFlag Condition ]  -- this is really a condition,

@@ -15,11 +15,11 @@ import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
-  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush]
+  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush]
   -- LH-specific
   ++ [geyserBoiling, geyserArsenic, geyserSulfur]
 
-warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, komodoDragon, hyena, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush :: ItemKind
 -- LH-specific
 geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
@@ -45,17 +45,16 @@ warrior = ItemKind
                , AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 20
                , AddSkill SkNocto 2
-               , AddSkill SkProject 2
-               , AddSkill SkApply 2  -- can apply periodic items
-               , AddSkill SkAlter 2
+               , AddSkill SkWait 1  -- can lurk
+               , AddSkill SkProject 2  -- can lob
+               , AddSkill SkApply 2  -- can even apply periodic items
                , AddSkill SkOdor 1
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = ""
+  , idesc    = ""  -- "A hardened veteran of combat."
   , ikit     = [ ("fist", COrgan), ("foot", COrgan)
                , ("eye 6", COrgan), ("ear 3", COrgan)
                , ("sapient brain", COrgan) ]
-  -- , idesc    = "A hardened veteran of combat."
   }
 warrior2 = warrior
   { iname    = "adventurer"
@@ -165,7 +164,8 @@ eye = ItemKind
   , iaspects = [ AddSkill SkMaxHP 16, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
                , AddSkill SkAggression 1
-               , AddSkill SkProject 2, AddSkill SkApply 1, AddSkill SkAlter 2
+               , AddSkill SkProject 2  -- can lob
+               , AddSkill SkApply 1  -- can even use cultural artifacts
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
@@ -186,7 +186,6 @@ fastEye = ItemKind
   , iaspects = [ AddSkill SkMaxHP 5, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 30, AddSkill SkNocto 2
                , AddSkill SkAggression 1
-               , AddSkill SkAlter 2
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
@@ -208,7 +207,7 @@ nose = ItemKind  -- depends solely on smell
   , iaspects = [ AddSkill SkMaxHP 30, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
                , AddSkill SkAggression 1
-               , AddSkill SkProject (-1), AddSkill SkAlter 2
+               , AddSkill SkProject (-1)  -- can't project
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
@@ -229,8 +228,9 @@ elbow = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 80
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
-               , AddSkill SkProject 2, AddSkill SkApply 1
-               , AddSkill SkAlter 2, AddSkill SkMelee (-1)
+               , AddSkill SkProject 2  -- can lob
+               , AddSkill SkApply 1  -- can even use cultural artifacts
+               , AddSkill SkMelee (-1)
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
@@ -255,8 +255,10 @@ torsor = ItemKind
                , AddSkill SkMaxHP 300, AddSkill SkMaxCalm 100
                , AddSkill SkSpeed 15, AddSkill SkNocto 2
                , AddSkill SkAggression 3
-               , AddSkill SkProject 2, AddSkill SkApply 1
-               , AddSkill SkAlter 1  -- can't exit the gated level, the boss
+               , AddSkill SkProject 2  -- can lob
+               , AddSkill SkApply 1  -- can even use cultural artifacts
+               , AddSkill SkAlter (-1)  -- can't exit the gated level; a boss,
+                                        -- but can dig rubble, ice
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
@@ -302,7 +304,7 @@ griffonVulture = ItemKind
                , ("scavenger", 30) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(1, 5)]
+  , irarity  = [(1, 3), (10, 3)]
   , iverbHit = "thud"
   , iweight  = 13000
   , idamage  = 0
@@ -310,7 +312,7 @@ griffonVulture = ItemKind
                    -- enough Calm to summon twice only if not attacked at all;
                    -- loses a lot of sight after summoning
                , AddSkill SkSpeed 22, AddSkill SkNocto 2
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
       -- Animals don't have leader, usually, so even if only one on level,
@@ -331,7 +333,7 @@ skunk = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 8), (5, 2)]
+  , irarity  = [(1, 8), (5, 1)]
   , iverbHit = "thud"
   , iweight  = 4000
   , idamage  = 0
@@ -353,13 +355,13 @@ armadillo = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 5)]
+  , irarity  = [(1, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 13, AddSkill SkMaxCalm 30
                , AddSkill SkSpeed 20, AddSkill SkNocto 2
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "When threatened, it rolls into a ball."
@@ -380,7 +382,7 @@ gilaMonster = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 15, AddSkill SkMaxCalm 50
                , AddSkill SkSpeed 18, AddSkill SkNocto 2
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
@@ -394,13 +396,13 @@ rattlesnake = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(6, 1), (10, 9)]
+  , irarity  = [(5, 1), (10, 7)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 28, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 16, AddSkill SkNocto 2
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
@@ -416,7 +418,7 @@ hyena = ItemKind
                , ("scavenger", 20) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
-  , irarity  = [(4, 1), (10, 4)]  -- gets summoned often, so low base rarity
+  , irarity  = [(4, 1), (10, 5)]  -- gets summoned often, so low base rarity
   , iverbHit = "thud"
   , iweight  = 60000
   , idamage  = 0
@@ -444,7 +446,7 @@ komodoDragon = ItemKind
                , AddSkill SkAggression 1  -- match the description
                , SetFlag Durable ]
   , ieffects = []
-  , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds at its lesser cousins."
+  , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds as its lesser cousins."
   , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
                , ("hooked claw", COrgan)
                , ("speed gland 5", COrgan), ("armored skin", COrgan)
@@ -487,8 +489,8 @@ rhinoceros = ItemKind
                , AddSkill SkMaxHP 90, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 27, AddSkill SkNocto 2
                , AddSkill SkAggression 2
-               , AddSkill SkAlter (-1)  -- can't switch levels, a miniboss;
-                                        -- also easy to contain with doors
+               , AddSkill SkAlter (-1)  -- can't use normal stairs nor dig;
+                                        -- a weak miniboss
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
@@ -506,13 +508,13 @@ beeSwarm = ItemKind
   , ifreq    = [("animal", 100), ("mobile", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 2), (10, 4)]
+  , irarity  = [(1, 3), (10, 4)]
   , iverbHit = "buzz"
   , iweight  = 1000
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 30, AddSkill SkNocto 2  -- armor in sting
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , AddSkill SkWait (-2)  -- can't brace, sleep and lurk
                , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
@@ -535,7 +537,7 @@ hornetSwarm = ItemKind
   , iaspects = [ AddSkill SkArmorMelee 80, AddSkill SkArmorRanged 40
                , AddSkill SkMaxHP 8, AddSkill SkMaxCalm 70
                , AddSkill SkSpeed 30, AddSkill SkNocto 2
-               , AddSkill SkAlter (-2)  -- can't use stairs nor doors
+               , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , AddSkill SkWait (-2)  -- can't brace, sleep and lurk
                , AddSkill SkFlying 10  -- flies slowly, but far
                , SetFlag Durable ]
@@ -548,10 +550,10 @@ hornetSwarm = ItemKind
 thornbush = ItemKind
   { isymbol  = 't'
   , iname    = "thornbush"
-  , ifreq    = [("animal", 25), ("immobile animal", 30)]
+  , ifreq    = [("animal", 30), ("immobile animal", 30)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 14)]
+  , irarity  = [(1, 13)]
   , iverbHit = "scrape"
   , iweight  = 80000
   , idamage  = 0
@@ -570,7 +572,7 @@ geyserBoiling = ItemKind
   , ifreq    = [("animal", 8), ("immobile animal", 30)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
-  , irarity  = [(1, 10), (5, 12)]
+  , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
@@ -588,7 +590,7 @@ geyserArsenic = ItemKind
   , ifreq    = [("animal", 8), ("immobile animal", 40)]
   , iflavour = zipPlain [Cyan]
   , icount   = 1
-  , irarity  = [(1, 10), (5, 10)]
+  , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
@@ -606,7 +608,7 @@ geyserSulfur = ItemKind
   , ifreq    = [("animal", 8), ("immobile animal", 120)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
-  , irarity  = [(1, 10), (5, 10)]
+  , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0

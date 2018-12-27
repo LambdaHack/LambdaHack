@@ -154,7 +154,7 @@ hiHeroMedium =
 hiHeroLong =
   [ ( [(HiLoot, 10000)]  -- multiplied by fraction of collected
     , [minBound..maxBound] )
-  , ( [(HiSprint, -10000)]  -- speedrun bonus, if below this number of turns
+  , ( [(HiSprint, -20000)]  -- speedrun bonus, if below this number of turns
     , victoryOutcomes )
   , ( [(HiBlitz, -100)]  -- speed matters always
     , victoryOutcomes )

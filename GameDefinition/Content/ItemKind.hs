@@ -39,7 +39,7 @@ sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, 
 -- instead of "hmm, I found one of the countless variants, a decent one").
 -- In particular, for unique items, unless they inherit aspects from
 -- a standard item, permit only a couple possible variants.
--- This is especially important if an item kind has mulitple random aspects.
+-- This is especially important if an item kind has multiple random aspects.
 -- Instead multiply dice results, e.g., (1 `d` 3) * 5 instead of 1 `d` 15.
 --
 -- Beware of non-periodic non-weapon durable items with beneficial effects
@@ -99,7 +99,7 @@ dart = ItemKind
   , ifreq    = [("common item", 100), ("any arrow", 50), ("weak arrow", 50)]
   , iflavour = zipPlain [BrRed]
   , icount   = 1 + 4 `dL` 5
-  , irarity  = [(1, 15), (10, 10)]
+  , irarity  = [(1, 15), (10, 5)]
   , iverbHit = "prick"
   , iweight  = 40
   , idamage  = 1 `d` 1
@@ -115,7 +115,7 @@ spike = ItemKind
   , ifreq    = [("common item", 100), ("any arrow", 50), ("weak arrow", 50)]
   , iflavour = zipPlain [Cyan]
   , icount   = 1 + 4 `dL` 5
-  , irarity  = [(1, 10), (10, 15)]
+  , irarity  = [(1, 10), (10, 8)]
   , iverbHit = "nick"
   , iweight  = 150
   , idamage  = 2 `d` 1
@@ -220,7 +220,7 @@ harpoon = ItemKind
   }
 harpoon2 = harpoon
   { iname    = "whaling harpoon"
-  , ifreq    = [("common item", 2), ("harpoon", 2)]
+  , ifreq    = [("common item", 5), ("harpoon", 2)]
   , icount   = 2 `dL` 5
   , iweight  = 1000
   , idamage  = 10 `d` 1
@@ -232,7 +232,7 @@ net = ItemKind
   , ifreq    = [("common item", 100)]
   , iflavour = zipPlain [White]
   , icount   = 1 `dL` 3
-  , irarity  = [(3, 5), (10, 4)]
+  , irarity  = [(5, 5), (10, 7)]
   , iverbHit = "entangle"
   , iweight  = 1000
   , idamage  = 2 `d` 1
@@ -255,7 +255,7 @@ light1 = ItemKind
                , ("wooden torch", 1) ]
   , iflavour = zipPlain [Brown]
   , icount   = 1 `dL` 4
-  , irarity  = [(1, 15)]
+  , irarity  = [(1, 30), (4, 1)]
   , iverbHit = "scorch"
   , iweight  = 1000
   , idamage  = 0
@@ -333,7 +333,7 @@ blanket = ItemKind
 -- Not identified, because they are perfect for the id-by-use fun,
 -- due to effects. They are fragile and upon hitting the ground explode
 -- for effects roughly corresponding to their normal effects.
--- Whether to hit with them or explode them close to the tartget
+-- Whether to hit with them or explode them close to the target
 -- is intended to be an interesting tactical decision.
 --
 -- Flasks are often not natural; maths, magic, distillery.
@@ -411,7 +411,7 @@ flask6 = flaskTemplate
   }
 flask7 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , icount   = 1  -- too poweful en masse
+  , icount   = 1  -- too powerful en masse
   , iaspects = ELabel "of haste brew"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood "hasted" (20 + 1 `d` 5)
@@ -486,7 +486,7 @@ flask14 = flaskTemplate
   }
 flask15 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 4)]
   , iaspects = ELabel "of slow resistance"
                : iaspects flaskTemplate
   , ieffects = [ toOrganNoTimer "slow resistant"
@@ -494,7 +494,7 @@ flask15 = flaskTemplate
   }
 flask16 = flaskTemplate
   { ifreq    = [("common item", 100), ("explosive", 100), ("any vial", 100)]
-  , irarity  = [(10, 3)]
+  , irarity  = [(10, 4)]
   , iaspects = ELabel "of poison resistance"
                : iaspects flaskTemplate
   , ieffects = [ toOrganNoTimer "poison resistant"
@@ -583,7 +583,7 @@ potion6 = potionTemplate
   -- needs to be common to show at least a portion of effects
   { ifreq    = [("common item", 100), ("potion", 100), ("any vial", 100)]
   , icount   = 3 `dL` 1
-  , irarity  = [(10, 8)]
+  , irarity  = [(10, 10)]
   , ieffects = [ Impress
                , OneOf [ RefillHP 20, RefillHP 10, Burn 10
                        , DropItem 1 maxBound COrgan "poisoned"
@@ -640,7 +640,7 @@ potion10 = potionTemplate
                : iaspects potionTemplate
   , ieffects = [ Yell
                , toOrganGood "strengthened" (20 + 1 `d` 5)
-               , toOrganBad "retaining" (40 + 1 `d` 10)
+               , toOrganBad "retaining" (5 + 1 `d` 3)
                , toOrganBad "frenzied" (40 + 1 `d` 10)
                , OnSmash (Explode "dense shower")
                , OnSmash (Explode "retaining mist")
@@ -654,7 +654,7 @@ potion11 = potionTemplate
   , ieffects = [ RefillCalm (-30)
                , toOrganGood "hasted" (20 + 1 `d` 5)
                , toOrganBad "weakened" (20 + 1 `d` 5)
-               , toOrganBad "withholding" (20 + 1 `d` 5)
+               , toOrganBad "withholding" (10 + 1 `d` 5)
                , OnSmash (Explode "haste spray")
                , OnSmash (Explode "sparse shower")
                , OnSmash (Explode "withholding mist") ]
@@ -665,8 +665,8 @@ potion12 = potionTemplate
   , iaspects = ELabel "of quicksilver"
                : iaspects potionTemplate
   , ieffects = [ toOrganGood "hasted" (20 + 1 `d` 5)
-               , toOrganBad "blind" (20 + 1 `d` 5)
-               , toOrganBad "immobile" (20 + 1 `d` 5)
+               , toOrganBad "blind" (10 + 1 `d` 5)
+               , toOrganBad "immobile" (5 + 1 `d` 5)
                , OnSmash (Explode "haste spray")
                , OnSmash (Explode "iron filing")
                , OnSmash (Explode "immobile mist") ]
@@ -684,7 +684,7 @@ fragmentationBomb = ItemKind
   , ifreq    = [("common item", 100), ("explosive", 200)]
   , iflavour = zipPlain [Red]
   , icount   = 1 `dL` 5  -- many, because not very intricate
-  , irarity  = [(5, 7), (10, 5)]
+  , irarity  = [(5, 8), (10, 5)]
   , iverbHit = "thud"
   , iweight  = 3000  -- low velocity due to weight
   , idamage  = 1 `d` 1  -- heavy and hard
@@ -693,8 +693,6 @@ fragmentationBomb = ItemKind
   , ieffects = [ Explode "focused fragmentation"
                , OnSmash (Explode "violent fragmentation") ]
   , idesc    = "The practical application of science."
-      -- given that we now have several kinds of explosives, tell something
-      -- related to 'fragmentation', e.g., mention flying shards
   , ikit     = []
   }
 concussionBomb = fragmentationBomb
@@ -764,7 +762,7 @@ ediblePlantTemplate = ItemKind
 ediblePlant1 = ediblePlantTemplate
   { iname    = "overripe berry"
   , ifreq    = [("common item", 100), ("edible plant", 100)]
-  , ieffects = [RefillHP 1, toOrganBad "immobile" (10 + 1 `d` 5)]
+  , ieffects = [RefillHP 1, toOrganBad "immobile" (5 + 1 `d` 5)]
   }
 ediblePlant2 = ediblePlantTemplate
   { iname    = "frayed fungus"
@@ -779,7 +777,7 @@ ediblePlant3 = ediblePlantTemplate
 ediblePlant4 = ediblePlantTemplate
   { iname    = "shrunk fruit"
   , ifreq    = [("common item", 100), ("edible plant", 100)]
-  , ieffects = [toOrganBad "blind" (40 + 1 `d` 10)]
+  , ieffects = [toOrganBad "blind" (10 + 1 `d` 10)]
   }
 ediblePlant5 = ediblePlantTemplate
   { iname    = "fragrant herb"
@@ -848,7 +846,7 @@ scroll4 = scrollTemplate
   -- needs to be common to show at least a portion of effects
   { ifreq    = [("common item", 100), ("any scroll", 100)]
   , icount   = 3 `dL` 1
-  , irarity  = [(10, 11)]
+  , irarity  = [(10, 14)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
@@ -857,8 +855,7 @@ scroll4 = scrollTemplate
   }
 scroll5 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , icount   = 1  -- too poweful en masse
-  , irarity  = [(10, 6)]
+  , irarity  = [(1, 6)]  -- powerful, but low counts at the depths it appears on
   , ieffects = [InsertMove $ 20 + 1 `dL` 20]
   }
 scroll6 = scrollTemplate
@@ -884,11 +881,11 @@ scroll8 = scrollTemplate
   , iaspects = [SetFlag Unique, ELabel "of Rescue Proclamation"]
                ++ iaspects scrollTemplate
   , ieffects = [Summon "hero" 1]
-  , idesc    = "A survivor is found that enjoys, apparently, complete physiological integrity. If we so wish, we can pronounce him rescued and let him join our team."
+  , idesc    = "A survivor of past exploration missions is found that enjoys, apparently, complete physiological integrity. We can pronounce him a comrade in arms and let him join our party."
   }
 scroll9 = scrollTemplate
   { ifreq    = [("common item", 100), ("any scroll", 100)]
-  , irarity  = [(10, 7)]  -- powerful, even if not ideal; scares newbies
+  , irarity  = [(10, 4)]  -- powerful, even if not ideal; scares newbies
   , ieffects = [Detect DetectAll 20]
   }
 scroll10 = scrollTemplate
@@ -962,7 +959,7 @@ seeingItem = ItemKind
   , ifreq    = [("common item", 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
-  , irarity  = [(1, 1)]
+  , irarity  = [(1, 2)]
   , iverbHit = "gaze at"
   , iweight  = 100
   , idamage  = 0
@@ -1018,7 +1015,7 @@ gorget = necklaceTemplate
   , ieffects = [RefillCalm 1]
   , idesc    = "Highly ornamental, cold, large, steel medallion on a chain. Unlikely to offer much protection as an armor piece, but the old, worn engraving reassures you."
   }
--- Not idenfified, because id by use, e.g., via periodic activations. Fun.
+-- Not identified, because id by use, e.g., via periodic activations. Fun.
 necklaceTemplate = ItemKind
   { isymbol  = symbolNecklace
   , iname    = "necklace"
@@ -1122,11 +1119,11 @@ necklace9 = necklaceTemplate
 necklace10 = necklaceTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , iaspects = [ ELabel "of greed"
-               , Timeout ((3 + 1 `d` 2) * 10) ]
+               , Timeout ((2 + 1 `d` 3) * 10) ]
                ++ iaspects_necklaceTemplate
   , ieffects = [ Detect DetectLoot 20
                , Teleport 40  -- risky
-               , toOrganBad "parsimonious" (10 + 1 `d` 3) ]  -- hard to flee
+               , toOrganBad "parsimonious" (5 + 1 `d` 3) ]  -- hard to flee
   }
 
 -- ** Non-periodic jewelry
@@ -1177,7 +1174,7 @@ ringTemplate = ItemKind
   , ifreq    = [("ring unknown", 1)]
   , iflavour = zipPlain stdCol ++ zipFancy darkCol
   , icount   = 1
-  , irarity  = [(10, 1)]  -- the default very low
+  , irarity  = [(10, 2)]  -- the default very low
   , iverbHit = "knock"
   , iweight  = 15
   , idamage  = 0
@@ -1195,9 +1192,8 @@ ring1 = ringTemplate
   }
 ring2 = ringTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 2)]
   , iaspects = [ SetFlag Unique, ELabel "of Rush"
-               , AddSkill SkSpeed $ (1 `d` 2) * 3
+               , AddSkill SkSpeed $ (1 + 1 `d` 2) * 2
                , AddSkill SkMaxCalm (-40), AddSkill SkMaxHP (-20)
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
@@ -1205,7 +1201,7 @@ ring2 = ringTemplate
   }
 ring3 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 11)]
+  , irarity  = [(10, 10)]
   , iaspects = [ AddSkill SkMaxHP $ 10 + (1 `dL` 5) * 2
                , AddSkill SkMaxCalm $ -20 + (1 `dL` 5) * 2
                , EqpSlot EqpSlotMaxHP ]
@@ -1221,7 +1217,7 @@ ring4 = ringTemplate
   }
 ring5 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(3, 3), (10, 6)]
+  , irarity  = [(3, 4), (10, 6)]
   , iaspects = [ AddSkill SkHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddSkill SkMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3
                    -- !!!
@@ -1230,7 +1226,7 @@ ring5 = ringTemplate
   }
 ring6 = ringTemplate  -- weak skill per eqp slot, so can be without drawbacks
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 4)]
+  , irarity  = [(10, 3)]
   , iaspects = [ AddSkill SkShine 1
                , EqpSlot EqpSlotShine ]
                ++ iaspects ringTemplate
@@ -1326,8 +1322,8 @@ gloveJousting = gloveFencing
   { iname    = "Tournament Gauntlet"
   , ifreq    = [("common item", 100), ("misc armor", 1)]
   , iflavour = zipFancy [BrRed]
-  , iverbHit = "rasp"
   , irarity  = [(1, 3), (10, 3)]
+  , iverbHit = "rasp"
   , iweight  = 3000
   , idamage  = 3 `d` 1
   , iaspects = [ SetFlag Unique
@@ -1338,7 +1334,7 @@ gloveJousting = gloveFencing
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- flaps and flutters
-  , idesc    = "Rigid, steel, jousting handgear. If only you had a lance. And a horse to carry it all."
+  , idesc    = "Rigid, steel jousting handgear. If only you had a lance. And a horse to carry it all."
   }
 hatUshanka = ItemKind
   { isymbol  = symbolMiscArmor
@@ -1346,7 +1342,7 @@ hatUshanka = ItemKind
   , ifreq    = [("common item", 100), ("misc armor", 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
-  , irarity  = [(1, 6), (10, 2)]
+  , irarity  = [(1, 6), (10, 1)]
   , iverbHit = "tickle"
   , iweight  = 500
   , idamage  = 0
@@ -1431,7 +1427,7 @@ buckler = ItemKind
   }
 shield = buckler
   { iname    = "shield"
-  , irarity  = [(8, 3)]  -- the stronger variants add to total probability
+  , irarity  = [(8, 4)]  -- the stronger variants add to total probability
   , iflavour = zipPlain [Green]
   , iweight  = 4000
   , idamage  = 4 `d` 1
@@ -1450,13 +1446,12 @@ shield2 = shield
   { ifreq    = [("common item", 3 * 3)]  -- very low base rarity
   , iweight  = 5000
   , idamage  = 8 `d` 1
-  -- , idesc    = "" e.g., "this kind has a spike protruding from the center"
+  , idesc    = "A relic of long-past wars, heavy and with a central spike."
   }
-shield3 = shield
+shield3 = shield2
   { ifreq    = [("common item", 1 * 3)]  -- very low base rarity
   , iweight  = 6000
   , idamage  = 12 `d` 1
-  -- , idesc    = ""
   }
 
 -- ** Weapons
@@ -1467,7 +1462,7 @@ dagger = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 100)]
   , iflavour = zipPlain [BrCyan]
   , icount   = 1
-  , irarity  = [(1, 40), (3, 1)]
+  , irarity  = [(1, 40), (4, 1)]
   , iverbHit = "cut"
   , iweight  = 800
   , idamage  = 6 `d` 1
@@ -1508,7 +1503,7 @@ hammerTemplate = ItemKind
                , SetFlag Durable, SetFlag Meleeable
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
-  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that it requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
+  , idesc    = "It may not cause extensive wounds, but neither does it harmlessly glance off heavy armour as blades and polearms tend to. There are so many shapes and types, some looking more like tools than weapons, that at a glance you can't tell what a particular specimen does. It's obvious, though, that any of them requires some time to recover after a swing."  -- if it's really the average kind, the weak kind, the description stays; if not, it's replaced with one of the descriptions below at identification time
   , ikit     = []
   }
 hammer1 = hammerTemplate
@@ -1565,7 +1560,7 @@ sword = ItemKind
   , ifreq    = [("common item", 100), ("starting weapon", 10)]
   , iflavour = zipPlain [BrBlue]
   , icount   = 1
-  , irarity  = [(3, 1), (5, 20)]
+  , irarity  = [(4, 1), (6, 20)]
   , iverbHit = "slash"
   , iweight  = 2000
   , idamage  = 10 `d` 1
@@ -1589,6 +1584,7 @@ swordImpress = sword
 swordNullify = sword
   { iname    = "Gutting Sword"
   , ifreq    = [("treasure", 20)]
+  , iverbHit = "pierce"
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [SetFlag Unique, Timeout 3, EqpSlot EqpSlotWeaponFast]
                ++ (iaspects sword \\ [Timeout 5, EqpSlot EqpSlotWeaponBig])
@@ -1713,7 +1709,7 @@ gem4 = gem1
 gem5 = gem1
   { isymbol  = symbolSpecial
   , iname    = "elixir"
-  , ifreq    = [ ("treasure", 100), ("gem", 25), ("any jewelry", 25)
+  , ifreq    = [ ("treasure", 100), ("gem", 25), ("any jewelry", 10)
                , ("valuable", 100) ]
   , iflavour = zipPlain [BrYellow]
   , irarity  = [(1, 40), (10, 10)]

@@ -23,7 +23,7 @@ rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermos
 rogue = CaveKind
   { csymbol       = 'R'
   , cname         = "A maze of twisty passages"
-  , cfreq         = [ ("default random", 100), ("caveRogue", 1) ]
+  , cfreq         = [("default random", 100), ("caveRogue", 1)]
   , cXminSize     = 80
   , cYminSize     = 21
   , ccellSize     = DiceXY (2 `d` 4 + 10) 6
@@ -91,7 +91,7 @@ arena = rogue
   , cpassable     = True
   , cdefTile      = "arenaSetLit"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
-  , clitCorTile   = "trailLit"
+  , clitCorTile   = "trailLit"  -- may be rolled different than the above
   , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
                     , ("tiny staircase", 1) ]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
@@ -371,7 +371,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
   , cdarkOdds     = 51  -- rooms always dark so that fence not visible from afar
   , cnightOdds    = 51  -- always night
-  , cauxConnects  = 2
+  , cauxConnects  = 2  -- many lit trails, so easy to aim
   , cmaxVoid      = 1%100
   , cextraStairs  = 0
   , chidden       = 0
@@ -427,7 +427,7 @@ ambush = rogue  -- a scenario with strong missiles;
                 -- dark, so solid obstacles are to hide from missiles,
                 -- not view, and they are all lit, because stopped missiles
                 -- are frustrating, while a few LOS-only obstacles are not lit;
-                -- lots of small lights to cross, to give a chance to snipe;
+                -- few small lights to cross, giving a chance to snipe;
                 -- crucial difference wrt shootout and hunt is that trajectories
                 -- of missiles are usually not seen, so enemy can't be guessed;
                 -- camping doesn't pay off, because enemies can sneak and only
@@ -440,8 +440,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
   , cdarkOdds     = 51  -- rooms always dark so that fence not visible from afar
   , cnightOdds    = 51  -- always night
-  , cauxConnects  = 3%2
-  , cmaxVoid      = 1%20
+  , cauxConnects  = 1%10  -- few lit trails, so hard to aim
   , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
@@ -461,7 +460,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cdesc         = ""
   }
 
--- * Other caves; testing, easter egg, future work
+-- * Other caves; testing, Easter egg, future work
 
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'B'

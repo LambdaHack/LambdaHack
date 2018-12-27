@@ -22,7 +22,7 @@ scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTr
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time
--- bumping walls, which is boring compare to fights or dialogues
+-- bumping walls, which is boring compared to fights or dialogues
 -- and ever worse, the player will bump all secret walls, wasting time
 -- and foregoing the fun of guessing how to find entrance to a disjoint part
 -- of the level by bumping the least number of secret walls.
@@ -104,7 +104,7 @@ treasureCacheTrap = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [OneOf [ toOrganBad "blind" (40 + 1 `d` 10)
+  , ieffects = [OneOf [ toOrganBad "blind" (10 + 1 `d` 10)
                       , RefillCalm (-99)
                       , Explode "focused concussion"
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
@@ -136,7 +136,7 @@ signboardMerchandise = signboardExit
   { iname    = "treasure map"
   , ifreq    = [("signboard", 50)]
   , ieffects = [Detect DetectLoot 20]
-  , idesc    = "Equally cryptic and promising."
+  , idesc    = "In equal parts cryptic and promising."
   }
 fireSmall = ItemKind
   { isymbol  = '%'
@@ -218,7 +218,7 @@ doorwayTrapTemplate = ItemKind
   }
 doorwayTrap1 = doorwayTrapTemplate
   { ifreq    = [("doorway trap", 50)]
-  , ieffects = [toOrganBad "blind" $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganBad "blind" $ (1 `dL` 4) * 5]
   -- , idesc    = ""
   }
 doorwayTrap2 = doorwayTrapTemplate
