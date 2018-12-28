@@ -248,7 +248,10 @@ skillToDecorator skill b t =
   let tshow200 n = let n200 = min 200 $ max (-200) n
                    in tshow n200 <> if n200 /= n then "$" else ""
       -- Some values can be negative, for others 0 is equivalent but shorter.
-      tshowRadius r = if r == 0 then "0m" else tshow (r - 1) <> ".5m"
+      tshowRadius r = case compare r 0 of
+                        GT -> tshow (r - 1) <> ".5m"
+                        EQ -> "0m"
+                        LT -> tshow (r + 1) <> ".5m"
       showIntWith1 :: Int -> Text
       showIntWith1 k =
         let l = k `div` 10
@@ -272,16 +275,15 @@ skillToDecorator skill b t =
     SkMaxCalm -> tshow $ max 0 t
     SkSpeed -> showIntWith1 (max minSpeed t) <> "m/s"
     SkSight ->
-      let tmax = max 0 t
-          tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) tmax
+      let tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) t
       in tshowRadius tcapped
-         <+> if tcapped == tmax
+         <+> if tcapped == t
              then ""
-             else "(max" <+> tshowRadius tmax <> ")"
-    SkSmell -> tshowRadius (max 0 t)
-    SkShine -> tshowRadius (max 0 t)
-    SkNocto -> tshowRadius (max 0 t)
-    SkHearing -> tshowRadius (max 0 t)
+             else "(max" <+> tshowRadius t <> ")"
+    SkSmell -> tshowRadius t
+    SkShine -> tshowRadius t
+    SkNocto -> tshowRadius t
+    SkHearing -> tshowRadius t
     SkAggression -> tshow t
     SkOdor -> tshow t
 
