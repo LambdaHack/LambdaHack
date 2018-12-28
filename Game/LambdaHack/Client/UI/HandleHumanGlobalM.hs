@@ -1115,7 +1115,7 @@ dashboardHuman :: MonadClientUI m
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  let keyL = 1
+  let keyL = 2
       (ov0, kxs0) = okxsN coinput 1 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
