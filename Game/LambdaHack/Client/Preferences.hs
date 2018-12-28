@@ -76,13 +76,19 @@ effectToBenefit cops fid factionD eff =
     IK.Impress -> (0, -20)
     IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
     IK.Yell -> (-5, -10)  -- usually uncontrollably wakes up enemies, so bad
-    IK.Summon grp d ->  -- contrived by not taking into account alliances
-                        -- and not checking if enemies also control that group
+    IK.Summon grp d ->  -- contrived by not checking if enemies also control
+                        -- that group; safe for normal dungeon crawl content;
+                        -- not correct for symmetric scenarios, but let it be
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
-      in if grp `elem` fgroups (gplayer $ factionD EM.! fid)
+          fact = factionD EM.! fid
+          friendlyHasGrp fid2 =
+            isFriend fid fact fid2
+            && grp `elem` fgroups (gplayer $ factionD EM.! fid2)
+      in -- Prefer applying summoning items to flinging them; the actor gets
+         -- spawned further from for, but it's more robust
+         if any friendlyHasGrp $ EM.keys factionD
          then (ben, -1)
          else (-ben * 3, 1)  -- the foe may spawn during battle and gang up
-        -- prefer applying to flinging summoning items; further, but more robust
     IK.Ascend{} -> (-99, 99)
       -- note the reversed values: only change levels sensibly, in teams,
       -- and don't remove enemy too far, he may be easy to kill
