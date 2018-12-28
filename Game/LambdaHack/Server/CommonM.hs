@@ -426,6 +426,7 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
   when (canSleep actorMaxSk &&
         not condAnyFoeAdj
+        && not summoned
         && not (fhasGender (gplayer fact))) $ do  -- heroes never start asleep
     let sleepOdds = if prefersSleep actorMaxSk then 9%10 else 1%2
     sleeps <- rndToAction $ chance sleepOdds
