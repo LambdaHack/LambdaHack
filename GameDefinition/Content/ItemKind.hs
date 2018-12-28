@@ -947,7 +947,7 @@ sharpeningTool = ItemKind
   , iverbHit = "smack"
   , iweight  = 400
   , idamage  = 0
-  , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 5) * 5
+  , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 7) * 5
                , SetFlag Equipable, EqpSlot EqpSlotHurtMelee ]
   , ieffects = []
   , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
@@ -985,8 +985,8 @@ motionScanner = ItemKind
   , iweight  = 300
   , idamage  = 0
   , iaspects = [ AddSkill SkNocto 1
-               , AddSkill SkArmorMelee (-10 + 1 `dL` 5)
-               , AddSkill SkArmorRanged (-10 + 1 `dL` 5)
+               , AddSkill SkArmorMelee (-10 + 1 `dL` 8)
+               , AddSkill SkArmorRanged (-10 + 1 `dL` 8)
                , SetFlag Equipable, EqpSlot EqpSlotMiscBonus ]
   , ieffects = []
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
@@ -1008,7 +1008,7 @@ gorget = necklaceTemplate
   , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces,
                                   -- but it's OK, it's an artifact
   , iaspects = [ SetFlag Unique
-               , Timeout $ (1 `d` 2) * 2
+               , Timeout $ (5 - 1 `dL` 4)
                , AddSkill SkArmorMelee 3, AddSkill SkArmorRanged 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
