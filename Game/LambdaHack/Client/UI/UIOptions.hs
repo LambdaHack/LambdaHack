@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.UIOptions
   ( UIOptions(..), mkUIOptions, applyUIOptions
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , parseConfig
+  , configError, readError, parseConfig
 #endif
   ) where
 
@@ -60,30 +60,38 @@ instance NFData UIOptions
 
 instance Binary UIOptions
 
+configError :: String -> a
+configError err = error $ "Error when parsing configuration file. Please fix config.ui.ini or remove it altogether. The details:\n" ++ err
+
+readError :: Read a => String -> a
+readError = either (configError . ("when reading a value" `showFailure`)) id
+            . readEither
+
 parseConfig :: Ini.Config -> UIOptions
 parseConfig cfg =
   let uCommands =
         let mkCommand (ident, keydef) =
               case stripPrefix "Cmd_" ident of
                 Just _ ->
-                  let (key, def) = read keydef
+                  let (key, def) = readError keydef
                   in (K.mkKM key, def :: CmdTriple)
-                Nothing -> error $ "wrong macro id" `showFailure` ident
+                Nothing -> configError $ "wrong macro id" `showFailure` ident
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
       uHeroNames =
         let toNumber (ident, nameAndPronoun) =
               case stripPrefix "HeroName_" ident of
-                Just n -> (read n, read nameAndPronoun)
-                Nothing -> error $ "wrong hero name id" `showFailure` ident
+                Just n -> (readError n, readError nameAndPronoun)
+                Nothing -> configError
+                           $ "wrong hero name id" `showFailure` ident
             section = Ini.allItems "hero_names" cfg
         in map toNumber section
       getOption :: forall a. Read a => String -> a
       getOption optionName =
         let lookupFail :: forall b. String -> b
             lookupFail err =
-              error $ "config file access failed"
-                      `showFailure` (err, optionName, cfg)
+              configError $ "config file access failed"
+                            `showFailure` (err, optionName, cfg)
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
       uVi = getOption "movementViKeys_hjklyubn"
@@ -109,8 +117,9 @@ mkUIOptions :: COps -> Bool -> IO UIOptions
 mkUIOptions COps{corule} benchmark = do
   let cfgUIName = rcfgUIName corule
       sUIDefault = rcfgUIDefault corule
-      cfgUIDefault = either (error . ("" `showFailure`)) id
-                     $ Ini.parse sUIDefault
+      cfgUIDefault =
+        either (configError . ("Ini.parse sUIDefault" `showFailure`)) id
+        $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName
   cfgUser <- if benchmark then return Ini.emptyConfig else do
@@ -119,7 +128,8 @@ mkUIOptions COps{corule} benchmark = do
       then return Ini.emptyConfig
       else do
         sUser <- readFile userPath
-        return $! either (error . ("" `showFailure`)) id $ Ini.parse sUser
+        return $! either (configError . ("Ini.parse sUser" `showFailure`)) id
+                  $ Ini.parse sUser
   let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
       conf = parseConfig cfgUI
   -- Catch syntax errors in complex expressions ASAP.
