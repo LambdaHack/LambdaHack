@@ -1438,12 +1438,13 @@ effectRerollItem execSfx iidId target = do
       -- Do not spam the source actor player about the failures.
       return UseId
     (iid, ( ItemFull{itemBase, itemKindId, itemKind}
-          , kit )) : _ ->
+          , (_, itemTimer) )) : _ ->
       if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
            return UseId
          | otherwise -> do
            let c = CActor target cstore
+               kit = (1, take 1 itemTimer)  -- prevent micromanagement
                freq = pure (itemKindId, itemKind)
            execSfx
            identifyIid iid c itemKindId itemKind
@@ -1741,7 +1742,7 @@ sendFlyingVector source target modePush = do
 
 -- ** DropBestWeapon
 
--- | Make the target actor drop his best weapon (stack).
+-- | Make the target actor drop his best weapon.
 -- The item itself is immune (any copies).
 effectDropBestWeapon :: MonadServerAtomic m
                      => m () -> ItemId -> ActorId -> m UseResult
