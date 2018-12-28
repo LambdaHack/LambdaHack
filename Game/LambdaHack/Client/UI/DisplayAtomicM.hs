@@ -876,7 +876,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let promptGold = spoilsBlurb currencyName total dungeonTotal
-      -- Total number of items is meaningless in the precence of so much junk.
+      -- Total number of items is meaningless in the presence of so much junk.
       prompt = promptGold
                <+> (if sexposeItems
                     then "Non-positive count means none held but this many generated."
@@ -1106,7 +1106,7 @@ displayRespSfxAtomicUI sfx = case sfx of
                | isOurAlive ->
                  aidVerbMU aid $ MU.Text "black out, dominated by foes"
                | otherwise ->
-                 aidVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
+                 aidVerbMU aid $ MU.Text "decide abruptly to switch allegiance"
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             let verb = "be no longer controlled by"
             msgAdd $ makeSentence
@@ -1144,7 +1144,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           ours <- getsState $ fidActorNotProjGlobalAssocs side
           when (length ours > 1) $ do
             -- TODO: only say farewell if nonstandard dominated actors
-            -- in the team. Also react to the only suriving actor being such.
+            -- in the team. Also react to the only surviving actor being such.
             let farewells = ", says its farewells"
                 object = partActor bUI
             msgAdd $ "The team joins" <+> makePhrase [object]
@@ -1481,7 +1481,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
          -- Much less plausible with a wielded weapon.
          -- Theoretically possible if the weapon not identified
          -- (then timeout is a mean estimate), but they usually should be,
-         -- even in foes' possesion.
+         -- even in foes' possession.
          let msg = if bproj sb
                    then makePhrase
                           [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]

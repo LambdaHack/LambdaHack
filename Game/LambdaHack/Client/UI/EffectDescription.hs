@@ -158,7 +158,7 @@ slotToSentence es = case es of
   EqpSlotArmorMelee -> "Worn by people in risk of melee wounds."
   EqpSlotArmorRanged -> "People scared of shots in the dark wear it."
   EqpSlotMaxHP -> "The frail wear it to increase their Hit Point capacity."
-  EqpSlotSpeed -> "The slughish equip it to speed up their whole life."
+  EqpSlotSpeed -> "The sluggish equip it to speed up their whole life."
   EqpSlotSight -> "The short-sighted wear it to notice their demise sooner."
   EqpSlotShine -> "Explorers brave enough to highlight themselves put it in their equipment."
   EqpSlotMiscBonus -> "Those that don't scorn minor bonuses may equip it."

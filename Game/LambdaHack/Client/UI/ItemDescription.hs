@@ -1,4 +1,4 @@
--- | Descripitons of items.
+-- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
   ( partItem, partItemShort, partItemActor, partItemHigh, partItemWs
   , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW

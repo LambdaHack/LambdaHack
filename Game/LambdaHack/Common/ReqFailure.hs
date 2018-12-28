@@ -161,7 +161,7 @@ showReqFailure reqFailure = case reqFailure of
   NoChangeDunLeader -> "no manual level change for your team"
 
 -- The item should not be applied nor thrown because it's too delicate
--- to operate when not calm or becuse it's too precious to identify by use.
+-- to operate when not calm or because it's too precious to identify by use.
 permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedPrecious forced calmE itemFull@ItemFull{itemDisco} =
   let arItem = aspectRecordFull itemFull
