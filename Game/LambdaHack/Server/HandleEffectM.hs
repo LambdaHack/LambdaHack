@@ -8,17 +8,18 @@ module Game.LambdaHack.Server.HandleEffectM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , UseResult(..)
-  , applyKineticDamage, effectAndDestroy
-  , refillHP, cutCalm, imperishableKit, itemEffectDisco, effectSem
-  , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
-  , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectSummon
+  , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
+  , itemEffectDisco, effectSem
+  , effectBurn, effectExplode, effectRefillHP, effectRefillCalm, effectDominate
+  , dominateFid, effectImpress, effectPutToSleep, effectYell, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
-  , effectParalyze, effectInsertMove, effectTeleport, effectCreateItem
-  , effectDropItem, dropCStoreItem, effectPolyItem, effectIdentify, identifyIid
-  , effectDetect, effectDetectX
-  , effectSendFlying, sendFlyingVector, effectDropBestWeapon
-  , effectActivateInv, effectTransformContainer, effectApplyPerfume, effectOneOf
-  , effectVerbMsg, effectComposite
+  , effectParalyze, paralyze, effectParalyzeInWater, effectInsertMove
+  , effectTeleport, effectCreateItem, effectDropItem, dropCStoreItem
+  , effectPolyItem, effectRerollItem, effectDupItem, effectIdentify
+  , identifyIid, effectDetect, effectDetectX, effectSendFlying
+  , sendFlyingVector, effectDropBestWeapon, effectActivateInv
+  , effectTransformContainer, effectApplyPerfume, effectOneOf, effectVerbMsg
+  , effectComposite
 #endif
   ) where
 
