@@ -220,7 +220,11 @@ configuring convenience settings for the current game and challenges
 for the next game are listed in the main menu, brought up by the `ESC` key.
 Game difficulty, from the challenges menu, determines hitpoints at birth:
 difficulty below 5 multiplies hitpoints of player characters, difficulty
-over 5 multiplies hitpoints of their enemies.
+over 5 multiplies hitpoints of their enemies. Of the convenience settings,
+the `suspect terrain` choice is particularly interesting, because it
+determines not only screen display of the level map, but also whether
+suspect tiles are considered for auto-explore or for the `C-?` command that
+marks the nearest unexplored position.
 
 The "lone wolf" challenge mode reduces player's starting actors to exactly
 one (consequently, this does not affect the initial 'raid' scenario).
