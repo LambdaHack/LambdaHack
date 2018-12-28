@@ -1548,20 +1548,20 @@ effectDetect execSfx d radius target pos = do
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
   s <- getState
+  getKind <- getsState $ flip getIidKindServer
   let lootPredicate p =
         p `EM.member` lfloor lvl
         || (case posToBigAssoc p (blid b) s of
               Nothing -> False
               Just (_, body) ->
-                not (EM.null (beqp body) && EM.null (binv body)))
-                  -- shared stash ignored, because hard to get
+                let belongings = EM.keys (beqp body) ++ EM.keys (binv body)
+                      -- shared stash ignored, because hard to get
+                in any belongingIsLoot belongings)
         || any embedHasLoot (EM.keys $ getEmbedBag (blid b) p s)
-      embedHasLoot iid =
-        let itemFull = itemToFull iid s
-            IK.ItemKind{IK.ieffects} = itemKind itemFull
-        in any effectHasLoot ieffects
-      reported acc _ _ itemKind =
-        acc && isNothing (lookup "unreported inventory" $ IK.ifreq itemKind)
+      itemKindIsLoot = isNothing . lookup "unreported inventory" . IK.ifreq
+      belongingIsLoot iid = itemKindIsLoot $ getKind iid
+      embedHasLoot iid = any effectHasLoot $ IK.ieffects $ getKind iid
+      reported acc _ _ itemKind = acc && itemKindIsLoot itemKind
       effectHasLoot (IK.CreateItem cstore grp _) =
         cstore `elem` [CGround, CEqp, CInv, CSha]
         && ofoldlGroup' coitem grp reported True
