@@ -356,7 +356,7 @@ embedBenefit fleeVia aid pbags = do
           -- Escape (or guard) only after exploring, for high score, etc.
           let escapeOrGuard =
                 fcanEscape (gplayer fact)
-                || fleeVia `elem` [ViaAnything, ViaExit]  -- targeting to guard
+                || fleeVia `elem` [ViaExit]  -- target to guard after explored
           in if fleeVia `elem` [ViaAnything, ViaEscape, ViaExit]
                 && escapeOrGuard
                 && allExplored
@@ -383,7 +383,7 @@ embedBenefit fleeVia aid pbags = do
             _ -> 0  -- don't ascend prematurely
         _ ->
           if fleeVia `elem` [ViaNothing, ViaAnything]
-          then -- Actor uses the embedded item on himself, hence @effApply@.
+          then -- Actor uses the embedded item on himself, hence @benApply@.
                -- Let distance be the deciding factor and also prevent
                -- overflow on 32-bit machines.
                let sacrificeForExperiment = 101  -- single explosion acceptable
