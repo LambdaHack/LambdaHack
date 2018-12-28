@@ -961,9 +961,10 @@ discover c iid = do
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
       bOwnerUI <- getsSession $ getActorUI aidOwner
-      let name = if bproj bOwner || bfid bOwner == side
+      partOwner <- partActorLeader aidOwner bOwnerUI
+      let name = if bproj bOwner
                  then []
-                 else ppCStoreWownW True storeOwner (partActor bOwnerUI)
+                 else ppCStoreWownW True storeOwner partOwner
           isOurOrgan = bfid bOwner == side && storeOwner == COrgan
             -- assume own faction organs known intuitively
       return (isOurOrgan, name)
