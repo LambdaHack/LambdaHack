@@ -1078,7 +1078,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           in actorVerbMU aid bUI $ MU.Text $ verb <+> adjective
     case effect of
         IK.Burn{} -> do
-          feelLook " burned"
+          feelLook "burned"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
