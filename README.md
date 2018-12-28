@@ -112,16 +112,16 @@ or something else altogether) on Windows, and in RMB menu, under
 
 Screen font can be changed by editing the config file in the user
 data folder. For a small game window, the highly optimized
-16x16x.fnt and 8x8xb.fnt bitmap fonts are the best,
+`16x16x.fnt` and `8x8xb.fnt` bitmap fonts are the best,
 but for larger window sizes or if you require international characters
 (e.g. to give custom names to player characters), a modern scalable font
 supplied with the game is the only option. The game window automatically
 scales according to the specified font size.
 
-If you don't have a numeric keypad, you can use mouse or laptop keys
-(uk8o79jl) for movement or you can enable the Vi keys (aka roguelike keys)
-in the config file. If numeric keypad doesn't work, toggling
-the Num Lock key sometimes helps. If running with the Shift key
+If you don't have a numeric keypad, you can use mouse for movement
+or you can enable the compact laptop keys (uk8o79jl) or the Vi keys
+(aka roguelike keys) in the config file. If numeric keypad doesn't work,
+toggling the Num Lock key sometimes helps. If running with the Shift key
 and keypad keys doesn't work, try Control key instead.
 The game is fully playable with mouse only, as well as with keyboard only,
 but the most efficient combination for some players is mouse for go-to,
