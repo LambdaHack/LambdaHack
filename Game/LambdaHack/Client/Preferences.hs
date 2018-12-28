@@ -13,6 +13,8 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import qualified Data.EnumMap.Strict as EM
+
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -39,8 +41,9 @@ import           Game.LambdaHack.Content.ModeKind
 -- So there is less than @averageTurnValue@ included in each benefit,
 -- so in case when turn is not spent, e.g, periodic activation or conditions,
 -- the difference in value is only slight.
-effectToBenefit :: COps -> Faction -> IK.Effect -> (Double, Double)
-effectToBenefit cops fact eff =
+effectToBenefit :: COps -> FactionId -> FactionDict -> IK.Effect
+                -> (Double, Double)
+effectToBenefit cops fid factionD eff =
   let delta x = (x, x)
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
@@ -76,7 +79,7 @@ effectToBenefit cops fact eff =
     IK.Summon grp d ->  -- contrived by not taking into account alliances
                         -- and not checking if enemies also control that group
       let ben = Dice.meanDice d * 200  -- the new actor can have, say, 10HP
-      in if grp `elem` fgroups (gplayer fact)
+      in if grp `elem` fgroups (gplayer $ factionD EM.! fid)
          then (ben, -1)
          else (-ben * 3, 1)  -- the foe may spawn during battle and gang up
         -- prefer applying to flinging summoning items; further, but more robust
@@ -104,7 +107,7 @@ effectToBenefit cops fact eff =
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
       let turnTimer = IK.foldTimer 1 Dice.meanDice Dice.meanDice timer
             -- copy count used instead of timer for organs with many copies
-          (total, count) = organBenefit turnTimer grp cops fact
+          (total, count) = organBenefit turnTimer grp cops fid factionD
       in delta $ total / fromIntegral count
            -- the same when created in me and in foe
            -- average over all matching grps; simplified: rarities ignored
@@ -117,7 +120,7 @@ effectToBenefit cops fact eff =
     IK.CreateItem _ "explosive" _ -> (50, 0)
     IK.CreateItem _ "any jewelry" _ -> (100, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
-      let (total, count) = recBenefit grp cops fact
+      let (total, count) = recBenefit grp cops fid factionD
       in (total / fromIntegral count, 0)
     IK.DropItem _ _ COrgan "condition" ->
       delta 30  -- save for curing own bad conditions
@@ -129,7 +132,7 @@ effectToBenefit cops fact eff =
       -- are dropped. Separately we add bonuses for @ngroup@ and @kcopy@.
       -- Remaining time of the organ is arbitrarily assumed to be 20 turns.
       let turnTimer = 20
-          (total, count) = organBenefit turnTimer grp cops fact
+          (total, count) = organBenefit turnTimer grp cops fid factionD
           boundBonus n = if n == maxBound then 10 else 0
       in delta $ boundBonus ngroup + boundBonus kcopy
                  - total / fromIntegral count
@@ -151,7 +154,7 @@ effectToBenefit cops fact eff =
     IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
-      let bs = map (effectToBenefit cops fact) efs
+      let bs = map (effectToBenefit cops fid factionD) efs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
@@ -159,7 +162,7 @@ effectToBenefit cops fact eff =
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.Composite [] -> delta 0
-    IK.Composite (eff1 : _) -> effectToBenefit cops fact eff1
+    IK.Composite (eff1 : _) -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
@@ -243,9 +246,9 @@ durabilityMult = avgItemLife / avgItemDelay
 -- (@count@ or @turnTimer@ is 1).
 -- We assume no organ has effect that drops its group or creates its group;
 -- otherwise we'd loop.
-organBenefit :: Double -> GroupName ItemKind -> COps -> Faction
+organBenefit :: Double -> GroupName ItemKind -> COps -> FactionId -> FactionDict
              -> (Double, Int)
-organBenefit turnTimer grp cops@COps{coitem} fact =
+organBenefit turnTimer grp cops@COps{coitem} fid factionD =
   let f (!sacc, !pacc) !p _ !kind =
         let count = Dice.meanDice (IK.icount kind)
             paspect asp =
@@ -257,7 +260,7 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
               fromIntegral p
               * count
                 -- this many consecutive effects will be generated, if any
-              * fst (effectToBenefit cops fact eff)
+              * fst (effectToBenefit cops fid factionD eff)
         in ( sacc + (sum (map paspect $ IK.iaspects kind)
                      + sum (map peffect $ IK.ieffects kind))
              - averageTurnValue  -- the cost of 1 turn spent acquiring the organ
@@ -267,12 +270,14 @@ organBenefit turnTimer grp cops@COps{coitem} fact =
 
 -- We assume no item has effect that drops its group or creates its group;
 -- otherwise we'd loop.
-recBenefit :: GroupName ItemKind -> COps -> Faction -> (Double, Int)
-recBenefit grp cops@COps{coitem, coItemSpeedup} fact =
+recBenefit :: GroupName ItemKind -> COps -> FactionId -> FactionDict
+           -> (Double, Int)
+recBenefit grp cops@COps{coitem, coItemSpeedup} fid factionD =
   let f (!sacc, !pacc) !p !kindId !kind =
         let km = IA.getKindMean kindId coItemSpeedup
             recPickup =
-              benPickup $ totalUsefulness cops fact (fakeItem kindId kind km)
+              benPickup $ totalUsefulness cops fid factionD
+                                          (fakeItem kindId kind km)
         in ( sacc + Dice.meanDice (IK.icount kind) * recPickup
            , pacc + p )
   in ofoldlGroup' coitem grp f (0, 0)
@@ -365,8 +370,8 @@ aspectRecordToBenefit arItem =
 
 -- | Compute the whole 'Benefit' structure, containing various facets
 -- of AI item preference, for an item with the given effects and aspects.
-totalUsefulness :: COps -> Faction -> ItemFull -> Benefit
-totalUsefulness cops fact itemFull@ItemFull{itemKind, itemSuspect} =
+totalUsefulness :: COps -> FactionId -> FactionDict -> ItemFull -> Benefit
+totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
   let arItem = aspectRecordFull itemFull
       -- If the item is periodic, we only add effects to equipment benefit,
       -- because we assume it's in equipment and then
@@ -408,7 +413,8 @@ totalUsefulness cops fact itemFull@ItemFull{itemKind, itemSuspect} =
       timeoutSqrt = sqrt $ max 2 timeout
       scaleTimeout v = v / timeoutSqrt
       (effSelf, effFoe) =
-        let effPairs = map (effectToBenefit cops fact) (IK.ieffects itemKind)
+        let effPairs = map (effectToBenefit cops fid factionD)
+                           (IK.ieffects itemKind)
             f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
         in foldr f (0, 0) effPairs
       -- Durability doesn't have any numerical impact on @eqpSum,

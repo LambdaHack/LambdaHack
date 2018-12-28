@@ -328,9 +328,9 @@ addItemToDiscoBenefit iid = do
       -- but we haven't learned anything new about the item
     Nothing -> do
       side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
+      factionD <- getsState sfactionD
       itemFull <- getsState $ itemToFull iid
-      let benefit = totalUsefulness cops fact itemFull
+      let benefit = totalUsefulness cops side factionD itemFull
       modifyClient $ \cli ->
         cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
 
@@ -369,9 +369,9 @@ discoverKindAndAspect ix = do
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
+  factionD <- getsState sfactionD
   itemToF <- getsState $ flip itemToFull
-  let benefit iid = totalUsefulness cops fact (itemToF iid)
+  let benefit iid = totalUsefulness cops side factionD (itemToF iid)
   itemIxMap <- getsState $ (EM.! ix) . sitemIxMap
   -- Possibly overwrite earlier, provisional benefits.
   forM_ (ES.elems itemIxMap) $ \iid -> modifyClient $ \cli ->
@@ -390,9 +390,9 @@ discoverAspect iid = do
   -- affect his actors' skills relevant to BFS.
   invalidateBfsAll
   side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
+  factionD <- getsState sfactionD
   itemFull <- getsState $ itemToFull iid
-  let benefit = totalUsefulness cops fact itemFull
+  let benefit = totalUsefulness cops side factionD itemFull
   -- Possibly overwrite earlier, provisional benefits.
   modifyClient $ \cli ->
     cli {sdiscoBenefit = EM.insert iid benefit (sdiscoBenefit cli)}
