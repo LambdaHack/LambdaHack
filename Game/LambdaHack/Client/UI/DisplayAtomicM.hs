@@ -569,9 +569,11 @@ createActorUI born aid body = do
                                      itemFull (1, [])
                  in (makePhrase [adj, object1, object2], basePronoun)
                | baseColor /= Color.BrWhite ->
-                 let the | IA.checkFlag Ability.Unique arItem = "the"
-                         | otherwise = ""
-                 in (the <+> IK.iname itemKind, basePronoun)
+                 let name = IK.iname itemKind <+> IA.aELabel arItem
+                 in ( if IA.checkFlag Ability.Unique arItem
+                      then makePhrase [MU.Capitalize $ MU.Text $ "the" <+> name]
+                      else name
+                    , basePronoun )
                | otherwise -> heroNamePronoun n
           bcolor | bproj body = if IA.checkFlag Ability.Blast arItem
                                 then baseColor
