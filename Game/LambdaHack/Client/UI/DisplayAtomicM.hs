@@ -1474,9 +1474,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
     -- we can check here for HP==1; also perhaps actors with HP 1 should
     -- not be able to block.
     if | catch -> do  -- charge not needed when catching
-         let msg = makeSentence $
-               [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
-               ++ if bproj sb then [] else ["with", weaponName]
+         let msg = makeSentence
+                     [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd msg
          animate (blid tb) $ blockHit coscreen ps Color.BrGreen Color.Green
        | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
