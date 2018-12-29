@@ -1425,7 +1425,7 @@ effectPolyItem execSfx iidId target = do
 -- ** RerollItem
 
 -- Can't apply to the item itself (any copies).
-effectRerollItem :: MonadServerAtomic m
+effectRerollItem :: forall m . MonadServerAtomic m
                  => m () -> ItemId -> ActorId -> m UseResult
 effectRerollItem execSfx iidId target = do
   COps{coItemSpeedup} <- getsState scops
@@ -1437,7 +1437,7 @@ effectRerollItem execSfx iidId target = do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNothing
       -- Do not spam the source actor player about the failures.
       return UseId
-    (iid, ( ItemFull{itemBase, itemKindId, itemKind}
+    (iid, ( ItemFull{itemBase, itemKindId, itemKind, itemDisco}
           , (_, itemTimer) )) : _ ->
       if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
@@ -1452,12 +1452,19 @@ effectRerollItem execSfx iidId target = do
            dungeon <- getsState sdungeon
            let maxLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
                             $ EM.assocs dungeon
-           m2 <- rollItemAspect freq maxLid
-           case m2 of
-             Nothing -> error "effectRerollItem: can't create rerolled item"
-             Just (itemKnown, (itemFull, _)) -> do
-               void $ registerItem (itemFull, kit) itemKnown c True
-               return UseUp
+               roll100 :: Int -> m (ItemKnown, ItemFullKit)
+               roll100 n = do
+                 m2 <- rollItemAspect freq maxLid
+                 case m2 of
+                   Nothing ->
+                     error "effectRerollItem: can't create rerolled item"
+                   Just i2@(ItemKnown _ ar2 _, _) ->
+                     if ar2 == itemAspect itemDisco && n > 0
+                     then roll100 (n - 1)
+                     else return i2
+           (itemKnown, (itemFull, _)) <- roll100 100
+           void $ registerItem (itemFull, kit) itemKnown c True
+           return UseUp
 
 -- ** DupItem
 
