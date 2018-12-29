@@ -410,7 +410,8 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 7 `d` 8
-  , citemFreq     = [("common item", 100), ("light source", 1000)]
+  , citemFreq     = [ ("common item", 100), ("light source", 1000)
+                    , ("starting weapon", 1000) ]
   , cplaceFreq    = [("zoo", 1)]
   , cpassable     = True
   , cdefTile      = "zooSetDark"
