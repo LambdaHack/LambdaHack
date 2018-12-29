@@ -17,7 +17,6 @@ import qualified Data.Map.Strict as M
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
@@ -43,7 +42,7 @@ data StateClient = StateClient
                                     -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath
                                     -- ^ pathfinding data for our actors
-  , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
+  , sundo         :: [()] -- [CmdAtomic] -- ^ atomic commands performed to date
   , sdiscoBenefit :: DiscoveryBenefit
       -- ^ remembered AI benefits of items; could be recomputed at resume,
       --   but they are costly to generate and not too large

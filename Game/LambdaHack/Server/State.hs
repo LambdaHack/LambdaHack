@@ -14,7 +14,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified System.Random as R
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Analytics
 import Game.LambdaHack.Common.Faction
@@ -49,7 +48,7 @@ data StateServer = StateServer
   , sacounter     :: ActorId        -- ^ stores next actor index
   , sicounter     :: ItemId         -- ^ stores next item index
   , snumSpawned   :: EM.EnumMap LevelId Int
-  , sundo         :: [CmdAtomic]    -- ^ atomic commands performed to date
+  , sundo         :: [()] -- [CmdAtomic] -- ^ atomic commands performed to date
   , sclientStates :: EM.EnumMap FactionId State
                                     -- ^ each faction state, as seen by clients
   , sperFid       :: PerFid         -- ^ perception of all factions

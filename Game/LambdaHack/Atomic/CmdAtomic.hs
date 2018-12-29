@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | A set of atomic commands shared by client and server.
 -- These are the largest building blocks that have no components
 -- that can be observed in isolation.
@@ -21,9 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Binary
 import Data.Int (Int64)
-import GHC.Generics (Generic)
 
 -- Dependence on ClientOptions is an anomaly. Instead, probably the raw
 -- remaining commandline should be passed and parsed by the client to extract
@@ -56,9 +53,11 @@ import           Game.LambdaHack.Content.TileKind (TileKind)
 data CmdAtomic =
     UpdAtomic UpdAtomic  -- ^ atomic updates
   | SfxAtomic SfxAtomic  -- ^ atomic special effects
-  deriving (Show, Eq, Generic)
+  deriving Show
 
-instance Binary CmdAtomic
+--  deriving (Show, Eq, Generic)
+--
+-- instance Binary CmdAtomic
 
 -- | Abstract syntax of atomic updates, that is, atomic commands
 -- that really change the 'State'. Most of them are an encoding of a game
@@ -126,9 +125,7 @@ data UpdAtomic =
   | UpdKillExit FactionId
   | UpdWriteSave
   | UpdHearFid FactionId HearMsg  -- in @UpdAtomic@ to let AI analyze and count
-  deriving (Show, Eq, Generic)
-
-instance Binary UpdAtomic
+  deriving Show
 
 -- | Symbolic representation of text messages about heard noises,
 -- sent by server to clients and shown to players and used by AI.
@@ -137,9 +134,7 @@ data HearMsg =
   | HearStrike (ContentId ItemKind)
   | HearSummon Bool (GroupName ItemKind) Dice.Dice
   | HearTaunt Text
-  deriving (Show, Eq, Generic)
-
-instance Binary HearMsg
+  deriving Show
 
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change 'State' nor client state.
@@ -160,9 +155,7 @@ data SfxAtomic =
   | SfxSortSlots
   | SfxCollideTile ActorId Point
   | SfxTaunt Bool ActorId
-  deriving (Show, Eq, Generic)
-
-instance Binary SfxAtomic
+  deriving Show
 
 -- | Symbolic representation of text messages sent by server to clients
 -- and shown to players.
@@ -196,9 +189,7 @@ data SfxMsg =
   | SfxColdFish
   | SfxTimerExtended LevelId ActorId ItemId CStore (Delta Time)
   | SfxCollideActor LevelId ActorId ActorId
-  deriving (Show, Eq, Generic)
-
-instance Binary SfxMsg
+  deriving Show
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
