@@ -1534,7 +1534,6 @@ hammerParalyze = hammerTemplate
   , ifreq    = [("treasure", 20)]
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [ SetFlag Unique
-               , Timeout 7
                , EqpSlot EqpSlotWeaponBig ]
                ++ iaspects hammerTemplate
   , ieffects = [Paralyze 10]
