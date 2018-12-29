@@ -985,8 +985,8 @@ motionScanner = ItemKind
   , iweight  = 300
   , idamage  = 0
   , iaspects = [ AddSkill SkNocto 1
-               , AddSkill SkArmorMelee (-10 + 1 `dL` 8)
-               , AddSkill SkArmorRanged (-10 + 1 `dL` 8)
+               , AddSkill SkArmorMelee (-15 + (1 `dL` 3) * 5)
+               , AddSkill SkArmorRanged (-15 + (1 `dL` 3) * 5)
                , SetFlag Equipable, EqpSlot EqpSlotMiscBonus ]
   , ieffects = []
   , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
@@ -1036,7 +1036,8 @@ necklace1 = necklaceTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , irarity  = [(10, 3)]
   , iaspects = [ SetFlag Unique, ELabel "of Aromata"
-               , Timeout $ (1 `d` 2) * 20  -- priceless, so worth the long wait
+               , Timeout $ (4 - 1 `dL` 3) * 10
+                   -- priceless, so worth the long wait
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
   , ieffects = [RefillHP 1]
@@ -1139,7 +1140,7 @@ imageItensifier = ItemKind
   , iweight  = 500
   , idamage  = 0
   , iaspects = [ AddSkill SkNocto 1, AddSkill SkSight (-1)
-               , AddSkill SkArmorMelee $ (1 `dL` 3) * 3
+               , AddSkill SkArmorMelee $ (-1 + 1 `dL` 6) * 3
                , SetFlag Precious, SetFlag Equipable
                , EqpSlot EqpSlotMiscBonus ]
   , ieffects = []
@@ -1154,8 +1155,8 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
       -- be misleading when seen on the map
   , irarity  = [(7, 1), (10, 12)]  -- low @ifreq@
   , iweight  = 50  -- heavier that it looks, due to glass
-  , iaspects = [ AddSkill SkSight $ 1 + 1 `d` 2
-               , AddSkill SkHurtMelee $ (1 `d` 2) * 3
+  , iaspects = [ AddSkill SkSight $ 1 + 1 `dL` 2
+               , AddSkill SkHurtMelee $ (-1 + 1 `d` 3) * 3
                , EqpSlot EqpSlotSight ]
                ++ iaspects ringTemplate
   , idesc    = "Lets you better focus your weaker eye."
@@ -1186,14 +1187,14 @@ ringTemplate = ItemKind
 ring1 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(10, 4)]
-  , iaspects = [ AddSkill SkSpeed $ 1 `d` 3, AddSkill SkMaxHP (-15)
+  , iaspects = [ AddSkill SkSpeed $ 1 `dL` 3, AddSkill SkMaxHP (-10)
                , EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
   }
 ring2 = ringTemplate
   { ifreq    = [("treasure", 100), ("any jewelry", 100)]
   , iaspects = [ SetFlag Unique, ELabel "of Rush"
-               , AddSkill SkSpeed $ (1 + 1 `d` 2) * 2
+               , AddSkill SkSpeed $ (1 + 1 `dL` 2) * 2
                , AddSkill SkMaxCalm (-40), AddSkill SkMaxHP (-20)
                , SetFlag Durable, EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
@@ -1202,15 +1203,15 @@ ring2 = ringTemplate
 ring3 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(10, 10)]
-  , iaspects = [ AddSkill SkMaxHP $ 10 + (1 `dL` 5) * 2
-               , AddSkill SkMaxCalm $ -20 + (1 `dL` 5) * 2
+  , iaspects = [ AddSkill SkMaxHP $ 5 + (1 `d` 2 + 1 `dL` 2) * 5
+               , AddSkill SkMaxCalm $ -30 + (1 `dL` 3) * 5
                , EqpSlot EqpSlotMaxHP ]
                ++ iaspects ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(5, 1), (10, 12)]  -- needed after other rings drop Calm
-  , iaspects = [ AddSkill SkMaxCalm $ 25 + (1 `dL` 4) * 5
+  , iaspects = [ AddSkill SkMaxCalm $ 20 + (1 `dL` 4) * 5
                , EqpSlot EqpSlotMiscBonus ]
                ++ iaspects ringTemplate
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with solemn, strangely comforting, worn out words."
@@ -1219,8 +1220,7 @@ ring5 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
   , irarity  = [(3, 4), (10, 6)]
   , iaspects = [ AddSkill SkHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
-               , AddSkill SkMaxHP $ (-2 - (1 `d` 2) + (1 `dL` 2) * 2) * 3
-                   -- !!!
+               , AddSkill SkMaxHP $ (-3 + 1 `dL` 3) * 10
                , EqpSlot EqpSlotHurtMelee ]
                ++ iaspects ringTemplate
   }
@@ -1331,6 +1331,7 @@ gloveJousting = gloveFencing
                , AddSkill SkArmorMelee $ (2 + 1 `d` 2 + 1 `dL` 2) * 5
                , AddSkill SkArmorRanged $ (1 + 1 `dL` 2) * 3
                  -- very random on purpose and can even be good on occasion
+                 -- or when ItemRerolled enough times
                , SetFlag Durable, SetFlag Equipable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- flaps and flutters
@@ -1365,7 +1366,7 @@ capReinforced = ItemKind
   , iverbHit = "cut"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkArmorMelee $ (1 `dL` 2) * 5
+  , iaspects = [ AddSkill SkArmorMelee $ (1 `d` 2) * 5
                , AddSkill SkProject 1
                    -- the brim shields against blinding by light sources, etc.
                , SetFlag Durable, SetFlag Equipable
