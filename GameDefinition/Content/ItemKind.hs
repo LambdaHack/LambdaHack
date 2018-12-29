@@ -1565,7 +1565,7 @@ sword = ItemKind
   , iverbHit = "slash"
   , iweight  = 2000
   , idamage  = 10 `d` 1
-  , iaspects = [ Timeout 5
+  , iaspects = [ Timeout 7
                , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotWeaponBig
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
@@ -1588,7 +1588,7 @@ swordNullify = sword
   , iverbHit = "pierce"
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [SetFlag Unique, Timeout 3, EqpSlot EqpSlotWeaponFast]
-               ++ (iaspects sword \\ [Timeout 5, EqpSlot EqpSlotWeaponBig])
+               ++ (iaspects sword \\ [Timeout 7, EqpSlot EqpSlotWeaponBig])
   , ieffects = [ DropItem 1 maxBound COrgan "condition"
                , RefillCalm (-10)
                , Yell ]
