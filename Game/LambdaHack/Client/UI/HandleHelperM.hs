@@ -532,18 +532,25 @@ lookAtItems canSee p aid = do
   is <- getsState $ getFloorBag lidV p
   side <- getsClient sside
   factionD <- getsState sfactionD
-  let verb = MU.Text $ if | p == bpos b && lidV == blid b -> "stand on"
+  let standingOn = p == bpos b && lidV == blid b
+      verb = MU.Text $ if | standingOn -> "stand on"
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
         partItemWs side factionD k localTime (itemToF iid) kit
+      object = case EM.assocs is of
+        ii : _ : _ | standingOn && bfid b == side ->
+          MU.Phrase [nWs ii, "and other items"]
+          -- the actor is ours, so can see details with inventory commands
+        iis -> MU.WWandW $ map nWs iis
+
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>
   -- to distinguish from a stack of items at a single position.
-  return $! if EM.null is then ""
-            else makeSentence [ MU.SubjectVerbSg subject verb
-                              , MU.WWandW $ map nWs $ EM.assocs is]
+  return $! if EM.null is
+            then ""
+            else makeSentence [MU.SubjectVerbSg subject verb, object]
 
 -- | Produces a textual description of everything at the requested
 -- level's position.
