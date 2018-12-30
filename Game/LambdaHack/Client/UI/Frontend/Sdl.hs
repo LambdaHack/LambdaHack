@@ -103,6 +103,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  sfont <- TTF.load fontFile fontSize
  let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                 || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                 || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
      sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
@@ -284,6 +286,8 @@ drawFrame :: ClientOptions    -- ^ client options
 drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                  || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                  || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
       sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
