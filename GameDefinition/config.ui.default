@@ -37,9 +37,9 @@ sdlFontFile = "16x16x.fnt"
 sdlFntSizeAdd = 0
 ;sdlFonSizeAdd is now ignored
 ;sdlFontFile = "8x8xb.fnt"
-;sdlFonSizeAdd = 2
+;sdlFntSizeAdd = 2
 ;sdlFontFile = "8x8x.fnt"
-;sdlFonSizeAdd = 2
+;sdlFntSizeAdd = 2
 colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
