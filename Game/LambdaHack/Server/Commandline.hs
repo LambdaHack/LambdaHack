@@ -69,7 +69,7 @@ serverOptionsP = do
   sgtkFontFamily    <- gtkFontFamilyP
   sdlFontFile       <- sdlFontFileP
   sdlTtfSizeAdd     <- sdlTtfSizeAddP
-  sdlFonSizeAdd     <- sdlFonSizeAddP
+  sdlFntSizeAdd     <- sdlFntSizeAddP
   sfontSize         <- fontSizeP
   sfontDir          <- fontDirP
   scolorIsBold      <- noColorIsBoldP
@@ -239,9 +239,9 @@ sdlTtfSizeAddP = optional $
               <> metavar "N"
               <> help "Enlarge map cells by N over scalable font max height in SDL2 frontend" )
 
-sdlFonSizeAddP :: Parser (Maybe Int)
-sdlFonSizeAddP = optional $
-  option auto (  long "sdlFonSizeAdd"
+sdlFntSizeAddP :: Parser (Maybe Int)
+sdlFntSizeAddP = optional $
+  option auto (  long "sdlFntSizeAdd"
               <> metavar "N"
               <> help "Enlarge map cells by N on top of fixed font max height in SDL2 frontend" )
 

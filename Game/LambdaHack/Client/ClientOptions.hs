@@ -19,8 +19,10 @@ data ClientOptions = ClientOptions
       -- ^ Font file to use for the SDL2 main game window.
   , sdlTtfSizeAdd     :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
-  , sdlFonSizeAdd     :: Maybe Int
+      --   To get symmetric padding, add an even number.
+  , sdlFntSizeAdd     :: Maybe Int
       -- ^ Pixels to add to map cells on top of fixed font max glyph height.
+      --   To get symmetric padding, add an even number.
   , sfontSize         :: Maybe Int
       -- ^ Font size to use for the main game window.
   , scolorIsBold      :: Maybe Bool
@@ -70,7 +72,7 @@ defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing
   , sdlFontFile = Nothing
   , sdlTtfSizeAdd = Nothing
-  , sdlFonSizeAdd = Nothing
+  , sdlFntSizeAdd = Nothing
   , sfontSize = Nothing
   , scolorIsBold = Nothing
   , slogPriority = Nothing

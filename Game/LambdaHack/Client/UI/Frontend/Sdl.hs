@@ -105,7 +105,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                  || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-     sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+     sdlSizeAdd = fromJust $ if isFonFile then sdlFntSizeAdd else sdlTtfSizeAdd
  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
@@ -288,7 +288,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
                   || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if isFonFile then sdlFonSizeAdd else sdlTtfSizeAdd
+      sdlSizeAdd = fromJust $ if isFonFile then sdlFntSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt

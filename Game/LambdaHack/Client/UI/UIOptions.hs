@@ -42,7 +42,7 @@ data UIOptions = UIOptions
   , uGtkFontFamily    :: Text
   , uSdlFontFile      :: Text
   , uSdlTtfSizeAdd    :: Int
-  , uSdlFonSizeAdd    :: Int
+  , uSdlFntSizeAdd    :: Int
   , uFontSize         :: Int
   , uColorIsBold      :: Bool
   , uHistoryMax       :: Int
@@ -101,7 +101,7 @@ parseConfig cfg =
       uGtkFontFamily = getOption "gtkFontFamily"
       uSdlFontFile = getOption "sdlFontFile"
       uSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
-      uSdlFonSizeAdd = getOption "sdlFonSizeAdd"
+      uSdlFntSizeAdd = getOption "sdlFntSizeAdd"
       uFontSize = getOption "fontSize"
       uColorIsBold = getOption "colorIsBold"
       uHistoryMax = getOption "historyMax"
@@ -144,8 +144,8 @@ applyUIOptions COps{corule} uioptions soptions =
         sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
      (\opts -> opts {sdlTtfSizeAdd =
         sdlTtfSizeAdd opts `mplus` Just (uSdlTtfSizeAdd uioptions)}) .
-     (\opts -> opts {sdlFonSizeAdd =
-        sdlFonSizeAdd opts `mplus` Just (uSdlFonSizeAdd uioptions)}) .
+     (\opts -> opts {sdlFntSizeAdd =
+        sdlFntSizeAdd opts `mplus` Just (uSdlFntSizeAdd uioptions)}) .
      (\opts -> opts {sfontSize =
         sfontSize opts `mplus` Just (uFontSize uioptions)}) .
      (\opts -> opts {scolorIsBold =
