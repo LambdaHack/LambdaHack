@@ -24,6 +24,7 @@ emptyCCUI = CCUI
                              , rheight = 0
                              , rmainMenuArt = ""
                              , rintroScreen = []
+                             , rmoveKeysScreen = []
                              , rapplyVerbMap = EM.empty
                              }
   }

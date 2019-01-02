@@ -54,5 +54,13 @@ standardLayoutAndFeatures = ScreenContent
               ["", ""] ++ par1 ++ [""] ++ par2 ++ ["", ""]
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
+  , rmoveKeysScreen = $(do
+      let path = "GameDefinition/MoveKeys.txt"
+      qAddDependentFile path
+      x <- qRunIO $ do
+        handle <- openFile path ReadMode
+        hSetEncoding handle utf8
+        hGetContents handle
+      lift $ lines x)
   , rapplyVerbMap = EM.fromList [('!', "quaff"), (',', "eat"), ('?', "read")]
   }

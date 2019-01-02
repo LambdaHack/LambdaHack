@@ -18,12 +18,13 @@ import Game.LambdaHack.Common.Point
 
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent
-  { rwidth        :: X         -- ^ screen width
-  , rheight       :: Y         -- ^ screen height
-  , rmainMenuArt  :: Text      -- ^ the ASCII art for the main menu
-  , rintroScreen  :: [String]  -- ^ the intro screen (first help screen) text
-  , rapplyVerbMap :: EM.EnumMap Char T.Text
-                               -- ^ verbs to use for apply actions
+  { rwidth          :: X         -- ^ screen width
+  , rheight         :: Y         -- ^ screen height
+  , rmainMenuArt    :: Text      -- ^ the ASCII art for the main menu
+  , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
+  , rmoveKeysScreen :: [String]  -- ^ the fixed move key help blurb
+  , rapplyVerbMap   :: EM.EnumMap Char T.Text
+                                 -- ^ verbs to use for apply actions
   }
 
 -- | Catch invalid rule kind definitions.
