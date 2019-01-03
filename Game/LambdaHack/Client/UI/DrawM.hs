@@ -423,7 +423,13 @@ drawFrameStatus drawnLevelId = do
       widthTgt = 39
       widthStatus = widthX - widthTgt - 1
       arenaStatus = drawArenaStatus cops lvl widthStatus
-      displayPathText mp mt =
+      leaderStatusWidth = 23
+  leaderStatus <- drawLeaderStatus swaitTimes
+  (selectedStatusWidth, selectedStatus)
+    <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
+  damageStatus <- drawLeaderDamage (widthStatus - leaderStatusWidth
+                                                - selectedStatusWidth)
+  let displayPathText mp mt =
         let (plen, llen) | Just target <- mp
                          , Just bfs <- mbfs
                          , Just bpos <- mbpos
@@ -456,28 +462,11 @@ drawFrameStatus drawnLevelId = do
                         ["Waiting for", nMember, "team member to spawn"]
       leaderName = maybe fallback (\body ->
         "Leader:" <+> trimTgtDesc widthXhairOrItem (bname body)) mbodyUI
-      xhairText =
+      xhairBlurb =
         maybe leaderName (\t ->
           (if isJust saimMode then "x-hair>" else "X-hair:")
           <+> trimTgtDesc widthXhairOrItem t)
         mhairDesc
-      xhairGap = emptyAttrLine (widthTgt - T.length pathCsr
-                                         - T.length xhairText)
-      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
-      leaderStatusWidth = 23
-  leaderStatus <- drawLeaderStatus swaitTimes
-  (selectedStatusWidth, selectedStatus)
-    <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
-  damageStatus <- drawLeaderDamage (widthStatus - leaderStatusWidth
-                                                - selectedStatusWidth)
-  -- The indicators must fit, they are the actual information.
-  let pathTgt = displayPathText tgtPos mtargetHP
-      widthTgtOrItem = widthTgt - T.length pathTgt - 8
-      statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
-                                             - selectedStatusWidth
-                                             - length damageStatus)
-      tgtBlurb = maybe leaderName (\t ->
-        "Target:" <+> trimTgtDesc widthTgtOrItem t) mtgtDesc
       tgtOrItem
         | Just (iid, fromCStore, _) <- sitemSel
         , Just leader <- mleader
@@ -485,7 +474,7 @@ drawFrameStatus drawnLevelId = do
             b <- getsState $ getActorBody leader
             bag <- getsState $ getBodyStoreBag b fromCStore
             case iid `EM.lookup` bag of
-              Nothing -> return (tgtBlurb, pathTgt)
+              Nothing -> return (xhairBlurb, pathCsr)
               Just kit@(k, _) -> do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemFull <- getsState $ itemToFull iid
@@ -495,11 +484,22 @@ drawFrameStatus drawnLevelId = do
                     t = makePhrase [MU.Car1Ws k name, powers]
                 return ("Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
         | otherwise =
-            return (tgtBlurb, pathTgt)
-  (targetText, pathTgtOrNull) <- tgtOrItem
-  let targetGap = emptyAttrLine (widthTgt - T.length pathTgtOrNull
-                                          - T.length targetText)
-      targetStatus = textToAL targetText ++ targetGap ++ textToAL pathTgtOrNull
+            return (xhairBlurb, pathCsr)
+  (xhairText, pathXhairOrNull) <- tgtOrItem
+  let xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
+                                         - T.length xhairText)
+      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
+      -- The indicators must fit, they are the actual information.
+      pathTgt = displayPathText tgtPos mtargetHP
+      widthTgtOrItem = widthTgt - T.length pathTgt - 8
+      statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
+                                             - selectedStatusWidth
+                                             - length damageStatus)
+  let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
+                                          - T.length tgtBlurb)
+      tgtBlurb = maybe leaderName (\t ->
+        "Target:" <+> trimTgtDesc widthTgtOrItem t) mtgtDesc
+      targetStatus = textToAL tgtBlurb ++ targetGap ++ textToAL pathTgt
       status = arenaStatus
                <+:> xhairStatus
                <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
