@@ -2,7 +2,7 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
-  ( targetDescLeader, drawHudFrame
+  ( drawHudFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , targetDesc, targetDescXhair, drawFrameTerrain, drawFrameContent
@@ -122,11 +122,6 @@ targetDesc mtarget = do
               validMsg p = "shift to" <+> tshow p
           return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
     Nothing -> return (Nothing, Nothing)
-
-targetDescLeader :: MonadClientUI m => ActorId -> m (Maybe Text, Maybe Text)
-targetDescLeader leader = do
-  tgt <- getsClient $ getTarget leader
-  targetDesc tgt
 
 targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe Text)
 targetDescXhair = do
@@ -405,10 +400,7 @@ drawFrameStatus drawnLevelId = do
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
-  tgtPos <- leaderTgtToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
-  (mtgtDesc, mtargetHP) <-
-    maybe (return (Nothing, Nothing)) targetDescLeader mleader
   (mhairDesc, mxhairHP) <- targetDescXhair
   lvl <- getLevel drawnLevelId
   side <- getsClient sside
@@ -454,6 +446,7 @@ drawFrameStatus drawnLevelId = do
                         else let lw = T.words fitsPlusOne
                              in T.unwords $ init lw
              in fits <> ellipsis
+      -- The indicators must fit, they are the actual information.
       widthXhairOrItem = widthTgt - T.length pathCsr - 8
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
       fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
@@ -461,7 +454,7 @@ drawFrameStatus drawnLevelId = do
                  else makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
       leaderName = maybe fallback (\body ->
-        "Leader:" <+> trimTgtDesc widthXhairOrItem (bname body)) mbodyUI
+        "Leader:" <+> trimTgtDesc (widthTgt - 8) (bname body)) mbodyUI
       xhairBlurb =
         maybe leaderName (\t ->
           (if isJust saimMode then "x-hair>" else "X-hair:")
@@ -488,22 +481,15 @@ drawFrameStatus drawnLevelId = do
   (xhairText, pathXhairOrNull) <- tgtOrItem
   let xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
                                          - T.length xhairText)
-      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
-      -- The indicators must fit, they are the actual information.
-      pathTgt = displayPathText tgtPos mtargetHP
-      widthTgtOrItem = widthTgt - T.length pathTgt - 8
-      statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
-                                             - selectedStatusWidth
-                                             - length damageStatus)
-  let targetGap = emptyAttrLine (widthTgt - T.length pathTgt
-                                          - T.length tgtBlurb)
-      tgtBlurb = maybe leaderName (\t ->
-        "Target:" <+> trimTgtDesc widthTgtOrItem t) mtgtDesc
-      targetStatus = textToAL tgtBlurb ++ targetGap ++ textToAL pathTgt
+      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathXhairOrNull
+      selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
+                                               - selectedStatusWidth
+                                               - length damageStatus)
       status = arenaStatus
                <+:> xhairStatus
-               <> selectedStatus ++ statusGap ++ damageStatus ++ leaderStatus
-               <+:> targetStatus
+               <> selectedStatus ++ selectedGap ++ damageStatus ++ leaderStatus
+               <+:> textToAL leaderName
+                    ++ emptyAttrLine (widthTgt - T.length leaderName)
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS

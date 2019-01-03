@@ -807,7 +807,8 @@ endAiming = do
 endAimingMsg :: MonadClientUI m => m ()
 endAimingMsg = do
   leader <- getLeaderUI
-  (mtargetMsg, _) <- targetDescLeader leader
+  tgt <- getsClient $ getTarget leader
+  (mtargetMsg, _) <- targetDesc tgt
   let targetMsg = fromJust mtargetMsg
   subject <- partAidLeader leader
   promptAdd1 $
