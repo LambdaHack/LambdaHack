@@ -44,7 +44,7 @@ initUI sccui@CCUI{coscreen} = do
   modifySession $ \sess ->
     sess { schanF
          , sccui
-         , sxhair = TVector $ Vector 1 1 }
+         , sxhair = TVector $ Vector 0 0 }
              -- a step south-east, less alarming
 
 -- | The main game loop for an AI or UI client. It receives responses from

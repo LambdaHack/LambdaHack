@@ -73,6 +73,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 
@@ -244,13 +245,8 @@ xhairToPos = do
     Just aid -> getsState $ aidTgtToPos aid lidV sxhair
                   -- e.g., xhair on another level
 
--- Reset xhair and move it to actor's position.
 clearXhair :: MonadClientUI m => m ()
-clearXhair = do
-  leader <- getLeaderUI
-  lpos <- getsState $ bpos . getActorBody leader
-  lidV <- viewedLevelUI  -- don't assume aiming mode is or will be off
-  modifySession $ \sess -> sess {sxhair = TPoint TAny lidV lpos}
+clearXhair = modifySession $ \sess -> sess {sxhair = TVector $ Vector 0 0}
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair

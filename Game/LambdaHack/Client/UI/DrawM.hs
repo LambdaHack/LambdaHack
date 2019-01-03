@@ -128,10 +128,13 @@ targetDescLeader leader = do
   tgt <- getsClient $ getTarget leader
   targetDesc tgt
 
-targetDescXhair :: MonadClientUI m => m (Text, Maybe Text)
+targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe Text)
 targetDescXhair = do
   sxhair <- getsSession sxhair
-  first fromJust <$> targetDesc (Just sxhair)
+  let xhair = if sxhair == TVector (Vector 0 0)  -- hack; for savefile comp.
+              then Nothing
+              else Just sxhair
+  targetDesc xhair
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
@@ -406,8 +409,10 @@ drawFrameStatus drawnLevelId = do
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
   (mtgtDesc, mtargetHP) <-
     maybe (return (Nothing, Nothing)) targetDescLeader mleader
-  (xhairDesc, mxhairHP) <- targetDescXhair
+  (mhairDesc, mxhairHP) <- targetDescXhair
   lvl <- getLevel drawnLevelId
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   (mblid, mbpos, mbodyUI) <- case mleader of
     Just leader -> do
       Actor{bpos, blid} <- getsState $ getActorBody leader
@@ -443,10 +448,19 @@ drawFrameStatus drawnLevelId = do
                         else let lw = T.words fitsPlusOne
                              in T.unwords $ init lw
              in fits <> ellipsis
+      widthXhairOrItem = widthTgt - T.length pathCsr - 8
+      nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
+      fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
+                 then "This faction never picks a leader"
+                 else makePhrase
+                        ["Waiting for", nMember, "team member to spawn"]
+      leaderName = maybe fallback (\body ->
+        "Leader:" <+> trimTgtDesc widthXhairOrItem (bname body)) mbodyUI
       xhairText =
-        let n = widthTgt - T.length pathCsr - 8
-        in (if isJust saimMode then "x-hair>" else "X-hair:")
-           <+> trimTgtDesc n xhairDesc
+        maybe leaderName (\t ->
+          (if isJust saimMode then "x-hair>" else "X-hair:")
+          <+> trimTgtDesc widthXhairOrItem t)
+        mhairDesc
       xhairGap = emptyAttrLine (widthTgt - T.length pathCsr
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathCsr
@@ -456,21 +470,12 @@ drawFrameStatus drawnLevelId = do
     <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
   damageStatus <- drawLeaderDamage (widthStatus - leaderStatusWidth
                                                 - selectedStatusWidth)
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   -- The indicators must fit, they are the actual information.
   let pathTgt = displayPathText tgtPos mtargetHP
       widthTgtOrItem = widthTgt - T.length pathTgt - 8
       statusGap = emptyAttrLine (widthStatus - leaderStatusWidth
                                              - selectedStatusWidth
                                              - length damageStatus)
-      nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
-      fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
-                 then "This faction never picks a leader"
-                 else makePhrase
-                        ["Waiting for", nMember, "team member to spawn"]
-      leaderName = maybe fallback (\body ->
-        "Leader:" <+> trimTgtDesc widthTgtOrItem (bname body)) mbodyUI
       tgtBlurb = maybe leaderName (\t ->
         "Target:" <+> trimTgtDesc widthTgtOrItem t) mtgtDesc
       tgtOrItem
