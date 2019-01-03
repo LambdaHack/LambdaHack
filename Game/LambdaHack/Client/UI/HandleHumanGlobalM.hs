@@ -1082,8 +1082,8 @@ helpHuman cmdAction = do
         splitOKX rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
-  -- e.g., shared stash menu. This is especially clear then the shared stash
-  -- menu contains meny pages.
+  -- e.g., shared stash menu. This is especially clear when the shared stash
+  -- menu contains many pages.
   ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
