@@ -1286,9 +1286,9 @@ artWithVersion = do
         let exeVersion = rexeVersion corule
             libVersion = Self.version
             version = " Version " ++ showVersion exeVersion
-                      ++ "-rc7 (frontend: " ++ frontendName
+                      ++ "-rc8 (frontend: " ++ frontendName
                       ++ ", engine: LambdaHack " ++ showVersion libVersion
-                      ++ "-rc7) "
+                      ++ "-rc8) "
             versionLen = length version
             f line =
               let (prefix, versionSuffix) = T.breakOn "Version" line
