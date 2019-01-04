@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Time
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
   , timeDeltaReverse, timeDeltaScale, timeDeltaPercent, timeDeltaDiv
   , timeDeltaToDigit, timeDeltaInSecondsText
-  , Speed, toSpeed, fromSpeed, minSpeed
+  , Speed, toSpeed, fromSpeed, minSpeed, displaySpeed
   , speedZero, speedWalk, speedLimp, speedThrust, modifyDamageBySpeed
   , speedScale, speedAdd
   , ticksPerMeter, speedFromWeight, rangeFromSpeedAndLinger
@@ -181,7 +181,7 @@ toSpeed :: Int -> Speed
 {-# INLINE toSpeed #-}
 toSpeed s = Speed $ fromIntegral s * sInMs `div` 10
 
--- | Pretty-printing of speed in the format used in content definitions.
+-- | Readable representation of speed in the format used in content definitions.
 fromSpeed :: Speed -> Int
 {-# INLINE fromSpeed #-}
 fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
@@ -189,6 +189,15 @@ fromSpeed (Speed s) = fromEnum $ s * 10 `div` sInMs
 minSpeed :: Int
 minSpeed = 5
 
+-- | Pretty-print speed given in the format used in content definitions.
+displaySpeed :: Int -> String
+displaySpeed kRaw =
+  let k = max minSpeed kRaw
+      l = k `div` 10
+      x = k - l * 10
+  in show l
+     <> (if x == 0 then "" else "." <> show x)
+     <> "m/s"
 -- | The minimal speed is half a meter (half a step across a tile)
 -- per second (two standard turns, which the time span during which
 -- projectile moves, unless it has modified linger value).

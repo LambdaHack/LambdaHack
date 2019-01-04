@@ -252,11 +252,6 @@ skillToDecorator skill b t =
                         GT -> tshow (r - 1) <> ".5m"
                         EQ -> "0m"
                         LT -> tshow (r + 1) <> ".5m"
-      showIntWith1 :: Int -> Text
-      showIntWith1 k =
-        let l = k `div` 10
-            x = k - l * 10
-        in tshow l <> if x == 0 then "" else "." <> tshow x
   in case skill of
     SkMove -> tshow t
     SkMelee -> tshow t
@@ -273,7 +268,7 @@ skillToDecorator skill b t =
     SkArmorRanged -> "{" <> tshow200 t <> "%}"
     SkMaxHP -> tshow $ max 0 t
     SkMaxCalm -> tshow $ max 0 t
-    SkSpeed -> showIntWith1 (max minSpeed t) <> "m/s"
+    SkSpeed -> T.pack $ displaySpeed t
     SkSight ->
       let tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) t
       in tshowRadius tcapped

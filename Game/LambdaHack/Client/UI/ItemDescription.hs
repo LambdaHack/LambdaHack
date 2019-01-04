@@ -294,10 +294,10 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
              | speed < speedWalk = "When thrown, it drops after one meter."
              | otherwise =
                "Can be thrown at"
-               <+> tshow (fromSpeed speed `div` 10)
+               <+> T.pack (displaySpeed $ fromSpeed speed)
                <> if throwLinger /= 100
-                  then " m/s dropping after" <+> tshow range <+> "m."
-                  else " m/s."
+                  then " dropping after" <+> tshow range <> "m."
+                  else "."
       tsuspect = ["You are unsure what it does." | itemSuspect]
       (desc, aspectSentences, damageAnalysis) =
         let aspects = case itemDisco of
