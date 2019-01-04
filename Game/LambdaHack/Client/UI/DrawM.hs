@@ -622,10 +622,6 @@ drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
   actorSk <- leaderSkillsClientUI
   actorMaxSkills <- getsState sactorMaxSkills
-  let kitAssOnlyWeapons =
-        filter (IA.checkFlag Ability.Meleeable
-                . aspectRecordFull . fst . snd) kitAssRaw
-  strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
   let ppDice :: ItemFull -> AttrLine
       ppDice itemFull =
         let tdice = show $ IK.idamage $ itemKind itemFull
@@ -651,7 +647,11 @@ drawLeaderDamage width leader = do
               GT -> Color.Green
               LT -> Color.Red
         in map (Color.attrChar2ToW32 cbonus) tbonus
-      mdice = listToMaybe $ map (ppDice . fst . snd . snd) strongest
+  let kitAssOnlyWeapons =
+        filter (IA.checkFlag Ability.Meleeable
+                . aspectRecordFull . fst . snd) kitAssRaw
+  strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
+  let mdice = listToMaybe $ map (ppDice . fst . snd . snd) strongest
   return $! case mdice of
               Just ldice | length ldice + length lbonus <= width ->
                 ldice ++ lbonus
