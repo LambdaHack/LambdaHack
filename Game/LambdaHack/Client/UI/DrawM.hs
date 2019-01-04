@@ -467,8 +467,18 @@ drawFrameStatus drawnLevelId = do
         "Leader:" <+> leaderName bUI) mbodyUI
       leaderBlurbShort = maybe fallback (\bUI ->
         leaderName bUI) mbodyUI
+  ours <- getsState $ fidActorNotProjGlobalAssocs side
+  let na = length ours
+      nl = ES.size $ ES.fromList $ map (blid . snd) ours
+      ns = EM.size $ gsha fact
+      -- To be replaced by something more useful.
+      teamBlurb = trimTgtDesc widthTgt $
+        makePhrase [ "Team:"
+                   , MU.CarWs na "actor", "on"
+                   , MU.CarWs nl "level" <> ","
+                   , "stash", MU.Car ns ]
       xhairBlurb =
-        maybe leaderBlurbLong (\t ->
+        maybe teamBlurb (\t ->
           (if isJust saimMode then "x-hair>" else "X-hair:")
           <+> trimTgtDesc widthXhairOrItem t)
         mhairDesc
