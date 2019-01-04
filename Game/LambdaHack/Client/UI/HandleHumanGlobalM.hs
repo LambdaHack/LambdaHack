@@ -567,11 +567,7 @@ goToXhair initialStep run = do
     xhairPos <- xhairToPos
     case xhairPos of
       Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b -> do
-        actorSk <- leaderSkillsClientUI
-        if initialStep && Ability.getSk Ability.SkWait actorSk > 0
-        then return $ Right ReqWait
-        else failWith "position reached"
+      Just c | c == bpos b -> failWith "position reached"
       Just c -> do
         running <- getsSession srunning
         case running of
