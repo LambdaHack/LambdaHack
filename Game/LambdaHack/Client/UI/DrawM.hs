@@ -419,8 +419,6 @@ drawFrameStatus drawnLevelId = do
   leaderStatus <- drawLeaderStatus swaitTimes
   (selectedStatusWidth, selectedStatus)
     <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
-  damageStatus <- drawLeaderDamage (widthStatus - leaderStatusWidth
-                                                - selectedStatusWidth)
   let displayPathText mp mt =
         let (plen, llen) | Just target <- mp
                          , Just bfs <- mbfs
@@ -479,17 +477,23 @@ drawFrameStatus drawnLevelId = do
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairText, pathXhairOrNull) <- tgtOrItem
+  damageStatus <- drawLeaderDamage widthTgt
+  let damageStatusWidth = length damageStatus
+      leaderBottom =
+        if T.length leaderName > widthTgt - damageStatusWidth - 1
+        then ""
+        else leaderName
+      damageGap = emptyAttrLine
+                  $ widthTgt - damageStatusWidth - T.length leaderBottom
   let xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathXhairOrNull
       selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
-                                               - selectedStatusWidth
-                                               - length damageStatus)
+                                               - selectedStatusWidth)
       status = arenaStatus
                <+:> xhairStatus
-               <> selectedStatus ++ selectedGap ++ damageStatus ++ leaderStatus
-               <+:> textToAL leaderName
-                    ++ emptyAttrLine (widthTgt - T.length leaderName)
+               <> selectedStatus ++ selectedGap ++ leaderStatus
+               <+:> textToAL leaderName ++ damageGap ++ damageStatus
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
