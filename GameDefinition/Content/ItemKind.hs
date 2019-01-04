@@ -1026,7 +1026,9 @@ necklaceTemplate = ItemKind
   , iverbHit = "whip"
   , iweight  = 30
   , idamage  = 0
-  , iaspects = Timeout 1  -- fake, but won't be displayed thanks to periodic
+  , iaspects = Timeout 1000000
+                 -- fake, needed to display "charging"; the timeout itself
+                 -- won't be displayed thanks to periodic
                : iaspects_necklaceTemplate
   , ieffects = []
   , idesc    = "Menacing Greek symbols shimmer with increasing speeds along a chain of fine encrusted links. After a tense build-up, a prismatic arc shoots towards the ground and the iridescence subdues, becomes ordered and resembles a harmless ornament again, for a time."
