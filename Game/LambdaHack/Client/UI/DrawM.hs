@@ -652,8 +652,9 @@ drawLeaderDamage width leader = do
   let kitAssOnlyWeapons =
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
-  strongest <- map (fst . snd . snd)
-               <$> pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
+  discoBenefit <- getsClient sdiscoBenefit
+  strongest <- map (fst . snd . snd) <$>
+    pickWeaponM (Just discoBenefit) kitAssOnlyWeapons actorSk leader
   let (lT, lNoT) = span hasTimeout strongest
       strongestToDisplay = lT ++ take 1 lNoT
       lToDisplay = map ppDice strongestToDisplay
