@@ -633,28 +633,29 @@ drawLeaderDamage width leader = do
             timeout = IA.aTimeout arItem
             cDice = if timeout > 0 then Color.BrCyan else Color.BrBlue
         in map (Color.attrChar2ToW32 cDice) tdice
-      (ldice, tbonus, cbonus) = case strongest of
-        [] -> ([], "", Color.White)
-        (_, (_, (itemFull, _))) : _ ->
-          let bonusRaw = Ability.getSk Ability.SkHurtMelee
-                         $ actorMaxSkills EM.! leader
-              bonus = min 200 $ max (-200) bonusRaw
-              unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
-              tbonus2 = if bonus == 0
-                       then if unknownBonus then "+?" else ""
-                       else (if bonus > 0 then "+" else "")
-                            <> show bonus
-                            <> (if bonus /= bonusRaw then "$" else "")
-                            <> if unknownBonus then "%?" else "%"
-              conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
-              cbonus2 = case compare conditionBonus 0 of
-                EQ -> Color.White
-                GT -> Color.Green
-                LT -> Color.Red
-          in (ppDice itemFull, tbonus2, cbonus2)
-      addColorBonus = map (Color.attrChar2ToW32 cbonus)
-  return $! if null ldice || length ldice + length tbonus >= width then []
-            else ldice ++ addColorBonus tbonus
+      lbonus :: AttrLine
+      lbonus =
+        let bonusRaw = Ability.getSk Ability.SkHurtMelee
+                       $ actorMaxSkills EM.! leader
+            bonus = min 200 $ max (-200) bonusRaw
+            unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
+            tbonus = if bonus == 0
+                     then if unknownBonus then "+?" else ""
+                     else (if bonus > 0 then "+" else "")
+                          <> show bonus
+                          <> (if bonus /= bonusRaw then "$" else "")
+                          <> if unknownBonus then "%?" else "%"
+            conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
+            cbonus = case compare conditionBonus 0 of
+              EQ -> Color.White
+              GT -> Color.Green
+              LT -> Color.Red
+        in map (Color.attrChar2ToW32 cbonus) tbonus
+      mdice = listToMaybe $ map (ppDice . fst . snd . snd) strongest
+  return $! case mdice of
+              Just ldice | length ldice + length lbonus <= width ->
+                ldice ++ lbonus
+              _ -> []
 
 drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
