@@ -88,51 +88,64 @@ Heroes
 The heroes are displayed on the map with bright white color (red if they are
 about to be lost) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party leader is red-highlighted on the map
-and his attributes are displayed at the bottom-most status line,
-which in its most complex form looks as follows.
+and his attributes are displayed at the bottom-most status line which,
+in its most complex form, looks as follows.
 
-    *@12        4d1+5% Calm: 20/60 HP: 33/50 Target: basilisk  [**__]
+    *@12   2m/s Calm: 20/60 HP: 33/50 Leader: Haskell Alvin   6d1+5% 4d1
 
 The line starts with the list of party members, with the current leader
-highlighted. Most commands involve only the leader, including movement
-with keyboard's keypad or `LMB` (left mouse button). If more heroes
-are selected, e.g., by clicking on the list with `RMB` (right mouse button),
-they run together whenever `:` or `RMB` over map area is pressed.
+highlighted in red. Most commands involve only the leader, including
+movement with keyboard's keypad or `LMB` (left mouse button). If more
+heroes are selected (highlighted in blue), they run together
+whenever `:` or `RMB` (right mouse button) over map area is pressed.
 
-Next on the status line is the damage of the best melee weapon the leader
-can use at this moment, then his current and maximum Calm (morale, composure,
-focus, attentiveness), then his current and maximum HP (hit points, health).
-At the end, the personal target of the leader is described, in this case
-a basilisk monster, with hit points drawn as a bar. Additionally,
-the colon after "Calm" turning into a dot signifies that the leader
-is in a position without ambient illumination and a brace sign instead
-of colon after "HP" means the leader is braced for combat (see section
-[Basic Commands](#basic-commands)).
+Next on the bottom-most status line is the leader's current and maximum
+Calm (morale, composure, focus, attentiveness), then his current
+and maximum HP (hit points, health). The colon after "Calm" turning
+into a dot signifies that the leader is in a position without ambient
+illumination and a brace sign instead of a colon after "HP" means
+the leader is braced for combat (see section [Basic Commands](#basic-commands)).
 
-Instead of a monster, the target area may describe a position on the map,
-a recently spotted item on the floor or an item in inventory selected
-for further action or, if none are available, just display the current
-leader name. Weapon damage and other item properties are displayed using
+In the second half of the bottom status line, the leader's name is shown.
+Then come damage dice of the leader's weapons and appendages,
+ordered by their power. The dice of the first recharged weapon,
+the one that would be used at this moment, is adorned with percentage
+damage bonus collected from the whole equipment of the leader.
+If the dice are displayed with upper-case `D` instead of lower-case `d`,
+the weapon has additional effects apart of the usual kinetic damage.
+The nature of the effects can be appraised via the `E`quipment screen.
+
+Weapon damage and other item properties are displayed using
 the dice notation `xdy`, which means `x` rolls of `y`-sided dice.
 A variant denoted `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
 always one, then it grows up to full rolled value at the last level).
 Section [Monsters](#monsters) below describes combat resolution in detail,
-including the percentage damage bonus seen in the example.
+including the role of the percentage damage bonus.
 
 The second, upper status line describes the current level in relation
 to the party.
 
-    5  Lofty hall   [33% seen] X-hair: exact spot (71,12)  p15 l10
+    5  Lofty hall    [33% seen] X-hair: dire basilisk    [**__]
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
 The `X-hair` (aiming crosshair) is the common focus of the whole party,
-marked on the map and manipulated with mouse or movement keys in aiming mode.
-In this example, the crosshair points at an exact position on the map
-and at the end of the status line comes the length of the shortest
-path from the leader position to the spot and the straight-line distance
-between the two points.
+marked on the map and manipulated with mouse or movement keys
+in aiming mode. In this example, the crosshair points at a dire basilisk
+monster, with hit points drawn as a bar.
+
+Instead of a monster, the `X-hair` area may describe a position on the map,
+a recently spotted item on the floor or an item in inventory selected
+for further action or, if none are available, a summary of the team status.
+For example, this form
+
+    5  Lofty hall    [33% seen] X-hair: exact spot (71,12)    p15 l10
+
+indicates that the party is aiming at an exact spot on the map.
+At the end of the status line comes the length of the shortest
+path from the leader's position to the spot and the straight-line
+distance, one that a flung projectile would travel, between the two points.
 
 
 Basic Commands
@@ -212,12 +225,12 @@ The latter is essential in the rare cases when your henchmen
 (via innate skills or rare equipment). Also, if your henchman is adjacent
 to more than one enemy, setting his target makes him melee a particular foe.
 
-You can enter the detailed aiming mode with the `*` keypad key that selects
-enemies or the `/` keypad key that cycles among items on the floor
-and marks a tile underneath an item. You can move x-hair with direction keys
-and assign a personal target to the leader with `RET` key (Return, Enter).
-The details of the shared x-hair position and of the personal target
-are described in the status lines at the bottom of the screen,
+You can enter the detailed aiming mode with the `*` keypad key
+that selects enemies or the `/` keypad key that cycles among items
+on the floor and marks a tile underneath an item. You can move x-hair
+with direction keys and assign a personal target to the leader
+with a `RET` key (Return, Enter). The details of the shared x-hair mark
+are displayed in a status line close to the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
 
 Commands for saving and exiting the current game, starting a new game,

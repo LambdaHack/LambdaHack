@@ -43,7 +43,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu (MStore CInv) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
-               , "cancel aiming/open main menu"
+               , "finish aiming/open main menu"
                , ByAimMode { exploration = ExecuteIfClear MainMenu
                            , aiming = Cancel } ))
   , ("C-Escape", ([CmdNoHelp], "", MainMenu))
@@ -183,7 +183,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C->", ( [CmdNoHelp], "move aiming 10 levels down"
             , AimAscend (-10)) )
   , ("BackSpace" , ( [CmdAim]
-                   , "clear chosen item and target"
+                   , "clear chosen item and x-hair"
                    , ComposeUnlessError ItemClear TgtClear ))
 
   -- Assorted
