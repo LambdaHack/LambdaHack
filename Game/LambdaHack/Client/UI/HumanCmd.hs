@@ -62,7 +62,7 @@ data CmdArea =
   | CaCalmValue
   | CaHPGauge
   | CaHPValue
-  | CaTargetDesc
+  | CaLeaderDesc
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance NFData CmdArea
@@ -84,7 +84,7 @@ areaDescription ca = case ca of
   CaCalmValue ->    "Calm value"
   CaHPGauge ->      "HP gauge"
   CaHPValue ->      "HP Value"
-  CaTargetDesc ->   "target info"
+  CaLeaderDesc ->   "leader info"
   --                 1234567890123
 
 -- | This triple of command categories, description and the command term itself

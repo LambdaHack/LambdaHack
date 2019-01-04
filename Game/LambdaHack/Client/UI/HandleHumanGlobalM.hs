@@ -163,7 +163,7 @@ areaToRectangles ca = map toArea <$> do
   CaHPValue -> let y = rheight - 1
                    x = (rwidth - 1) `div` 2
                in return [(x - 6, y, x, y)]
-  CaTargetDesc -> let y = rheight - 1
+  CaLeaderDesc -> let y = rheight - 1
                       x = (rwidth - 1) `div` 2 + 2
                   in return [(x, y, rwidth - 1, y)]
 

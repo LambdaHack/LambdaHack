@@ -143,7 +143,7 @@ mouseLMB =
     , (CaCalmValue, Yell)
     , (CaHPGauge, Macro ["KP_Begin", "C-V"])
     , (CaHPValue, Wait)
-    , (CaTargetDesc, projectICmd flingTs) ]
+    , (CaLeaderDesc, projectICmd flingTs) ]
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
@@ -175,7 +175,7 @@ mouseRMB =
     , (CaCalmValue, Yell)
     , (CaHPGauge, Macro ["C-KP_Begin", "V"])
     , (CaHPValue, Wait10)
-    , (CaTargetDesc, ComposeUnlessError ItemClear TgtClear) ]
+    , (CaLeaderDesc, ComposeUnlessError ItemClear TgtClear) ]
 
 goToCmd :: HumanCmd
 goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-/", "C-V"]
