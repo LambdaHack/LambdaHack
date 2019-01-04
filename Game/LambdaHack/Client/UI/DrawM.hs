@@ -495,7 +495,7 @@ drawFrameStatus drawnLevelId = do
       status = arenaStatus
                <+:> xhairStatus
                <> selectedStatus ++ selectedGap ++ leaderStatus
-               <+:> textToAL leaderName ++ damageGap ++ damageStatus
+               <+:> (textToAL leaderBottom ++ damageGap ++ damageStatus)
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
