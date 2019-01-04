@@ -451,10 +451,13 @@ drawFrameStatus drawnLevelId = do
                  then "This faction never picks a leader"
                  else makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
-      leaderName = maybe fallback (\body ->
-        "Leader:" <+> trimTgtDesc (widthTgt - 8) (bname body)) mbodyUI
+      leaderName body = trimTgtDesc (widthTgt - 8) (bname body)
+      leaderBlurbLong = maybe fallback (\body ->
+        "Leader:" <+> leaderName body) mbodyUI
+      leaderBlurbShort = maybe fallback (\body ->
+        leaderName body) mbodyUI
       xhairBlurb =
-        maybe leaderName (\t ->
+        maybe leaderBlurbLong (\t ->
           (if isJust saimMode then "x-hair>" else "X-hair:")
           <+> trimTgtDesc widthXhairOrItem t)
         mhairDesc
@@ -481,10 +484,11 @@ drawFrameStatus drawnLevelId = do
                         (\leader -> drawLeaderDamage widthTgt leader)
                         mleader
   let damageStatusWidth = length damageStatus
+      withForLeader = widthTgt - damageStatusWidth - 1
       leaderBottom =
-        if T.length leaderName > widthTgt - damageStatusWidth - 1
-        then ""
-        else leaderName
+        if | T.length leaderBlurbShort > withForLeader -> ""
+           | T.length leaderBlurbLong > withForLeader -> leaderBlurbShort
+           | otherwise -> leaderBlurbLong
       damageGap = emptyAttrLine
                   $ widthTgt - damageStatusWidth - T.length leaderBottom
       xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
