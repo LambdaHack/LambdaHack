@@ -630,15 +630,20 @@ drawLeaderDamage width leader = do
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
+      hasEffect itemFull =
+        any IK.forApplyEffect $ IK.ieffects $ itemKind itemFull
       ppDice :: (Int, ItemFullKit) -> [(Bool, AttrLine)]
       ppDice (ncharges, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
+            tdiceEffect = if hasEffect itemFull
+                          then map Char.toUpper tdice
+                          else tdice
         in if hasTimeout itemFull
            then replicate (k - ncharges)
-                  (False, map (Color.attrChar2ToW32 Color.Cyan) tdice)
+                  (False, map (Color.attrChar2ToW32 Color.Cyan) tdiceEffect)
                 ++ replicate ncharges
-                     (True, map (Color.attrChar2ToW32 Color.BrCyan) tdice)
-           else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdice)]
+                     (True, map (Color.attrChar2ToW32 Color.BrCyan) tdiceEffect)
+           else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdiceEffect)]
       lbonus :: AttrLine
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee
