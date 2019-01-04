@@ -127,7 +127,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       allOKX = concatMap snd frs
       initIx = case findIndex (isRight . fst) allOKX of
         Just p -> p
-        _ -> length allOKX
+        _ -> 0  -- can't be @length allOKX@ or a multi-page item menu
+                -- mangles saved index of other item munus
       clearIx = if initIx > maxIx then 0 else initIx
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
