@@ -299,7 +299,8 @@ drawFrameActor drawnLevelId = do
               dominated = maybe False (/= bfid) jfid
               bg = case mleader of
                 Just leader | aid == leader -> Color.HighlightRed
-                _ -> if | aid `ES.member` sselected -> Color.HighlightBlue
+                _ -> if | bwatch == WSleep -> Color.HighlightGreen
+                        | aid `ES.member` sselected -> Color.HighlightBlue
                         | dominated -> if bfid == side  -- dominated by us
                                        then Color.HighlightWhite
                                        else Color.HighlightMagenta
