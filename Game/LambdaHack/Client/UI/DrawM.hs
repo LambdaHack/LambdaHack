@@ -652,15 +652,15 @@ drawLeaderDamage width leader = do
       hasEffect itemFull =
         any IK.forApplyEffect $ IK.ieffects $ itemKind itemFull
       ppDice :: (Int, ItemFullKit) -> [(Bool, AttrLine)]
-      ppDice (ncharges, (itemFull, (k, _))) =
+      ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             tdiceEffect = if hasEffect itemFull
                           then map Char.toUpper tdice
                           else tdice
         in if hasTimeout itemFull
-           then replicate (k - ncharges)
+           then replicate (k - nch)
                   (False, map (Color.attrChar2ToW32 Color.Cyan) tdiceEffect)
-                ++ replicate ncharges
+                ++ replicate nch
                      (True, map (Color.attrChar2ToW32 Color.BrCyan) tdiceEffect)
            else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdiceEffect)]
       lbonus :: AttrLine

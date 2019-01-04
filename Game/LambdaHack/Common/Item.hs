@@ -5,10 +5,9 @@ module Game.LambdaHack.Common.Item
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , itemToFull6, aspectRecordFull, strongestSlot, hasCharge, strongestMelee
-  , unknownMeleeBonus, unknownSpeedBonus
-  , conditionMeleeBonus, conditionSpeedBonus
-  , armorHurtCalculation
+  , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
+  , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
+  , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect

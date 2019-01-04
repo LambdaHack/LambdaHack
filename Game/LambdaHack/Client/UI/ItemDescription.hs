@@ -42,12 +42,9 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
   let flav = flavourToName $ jflavour itemBase
       arItem = aspectRecordFull itemFull
       timeout = IA.aTimeout arItem
-      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
-      charging startT = timeShift startT timeoutTurns > localTime
-      it1 = filter charging itemTimer
-      lenCh = length it1
+      lenCh = itemK - ncharges localTime itemFull (itemK, itemTimer)
       charges | lenCh == 0 || temporary = ""
               | itemK == 1 && lenCh == 1 = "(charging)"
               | itemK == lenCh = "(all charging)"
