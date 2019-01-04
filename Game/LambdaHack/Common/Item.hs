@@ -6,7 +6,9 @@ module Game.LambdaHack.Common.Item
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
   , itemToFull6, aspectRecordFull, strongestSlot, hasCharge, strongestMelee
-  , unknownMeleeBonus, conditionMeleeBonus, armorHurtCalculation
+  , unknownMeleeBonus, unknownSpeedBonus
+  , conditionMeleeBonus, conditionSpeedBonus
+  , armorHurtCalculation
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -298,12 +300,30 @@ unknownMeleeBonus =
       f itemFull b = b || unknownAspect p itemFull
   in foldr f False
 
+-- We assume @SkSpeed@ never appears inside @Odds@. If it does,
+-- not much harm.
+unknownSpeedBonus :: [ItemFull] -> Bool
+unknownSpeedBonus =
+  let p (IK.AddSkill Ability.SkSpeed k) = [k]
+      p _ = []
+      f itemFull b = b || unknownAspect p itemFull
+  in foldr f False
+
 conditionMeleeBonus :: [ItemFullKit] -> Int
 conditionMeleeBonus kitAss =
   let f (itemFull, (itemK, _)) k =
         let arItem = aspectRecordFull itemFull
         in if IA.checkFlag Ability.Condition arItem
            then k + itemK * IA.getSkill Ability.SkHurtMelee arItem
+           else k
+  in foldr f 0 kitAss
+
+conditionSpeedBonus :: [ItemFullKit] -> Int
+conditionSpeedBonus kitAss =
+  let f (itemFull, (itemK, _)) k =
+        let arItem = aspectRecordFull itemFull
+        in if IA.checkFlag Ability.Condition arItem
+           then k + itemK * IA.getSkill Ability.SkSpeed arItem
            else k
   in foldr f 0 kitAss
 

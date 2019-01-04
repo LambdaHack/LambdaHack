@@ -419,7 +419,25 @@ drawFrameStatus drawnLevelId = do
   leaderStatus <- drawLeaderStatus swaitTimes
   (selectedStatusWidth, selectedStatus)
     <- drawSelected drawnLevelId (widthStatus - leaderStatusWidth) sselected
-  let displayPathText mp mt =
+  let speedStatusWidth = widthStatus - leaderStatusWidth - selectedStatusWidth
+  speedDisplay <- case mleader of
+    Nothing -> return []
+    Just leader -> do
+      actorMaxSk <- getsState $ getActorMaxSkills leader
+      kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
+      let speed = Ability.getSk Ability.SkSpeed actorMaxSk
+          unknownBonus = unknownSpeedBonus $ map (fst . snd) kitAssRaw
+          speedString = displaySpeed speed ++ if unknownBonus then "?" else ""
+          conditionBonus = conditionSpeedBonus $ map snd kitAssRaw
+          cspeed = case compare conditionBonus 0 of
+            EQ -> Color.White
+            GT -> Color.Green
+            LT -> Color.Red
+      return $! map (Color.attrChar2ToW32 cspeed) speedString
+  let speedStatus = if length speedDisplay >= speedStatusWidth
+                    then []
+                    else speedDisplay ++ [Color.spaceAttrW32]
+      displayPathText mp mt =
         let (plen, llen) | Just target <- mp
                          , Just bfs <- mbfs
                          , Just bpos <- mbpos
@@ -451,11 +469,11 @@ drawFrameStatus drawnLevelId = do
                  then "This faction never picks a leader"
                  else makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
-      leaderName body = trimTgtDesc (widthTgt - 8) (bname body)
-      leaderBlurbLong = maybe fallback (\body ->
-        "Leader:" <+> leaderName body) mbodyUI
-      leaderBlurbShort = maybe fallback (\body ->
-        leaderName body) mbodyUI
+      leaderName bUI = trimTgtDesc (widthTgt - 8) (bname bUI)
+      leaderBlurbLong = maybe fallback (\bUI ->
+        "Leader:" <+> leaderName bUI) mbodyUI
+      leaderBlurbShort = maybe fallback (\bUI ->
+        leaderName bUI) mbodyUI
       xhairBlurb =
         maybe leaderBlurbLong (\t ->
           (if isJust saimMode then "x-hair>" else "X-hair:")
@@ -495,10 +513,11 @@ drawFrameStatus drawnLevelId = do
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathXhairOrNull
       selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
-                                               - selectedStatusWidth)
+                                               - selectedStatusWidth
+                                               - length speedStatus)
       status = arenaStatus
                <+:> xhairStatus
-               <> selectedStatus ++ selectedGap ++ leaderStatus
+               <> selectedStatus ++ selectedGap ++ speedStatus ++ leaderStatus
                <+:> (textToAL leaderBottom ++ damageGap ++ damageStatus)
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
@@ -625,7 +644,7 @@ drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrLine
 drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
   actorSk <- leaderSkillsClientUI
-  actorMaxSkills <- getsState sactorMaxSkills
+  actorMaxSk <- getsState $ getActorMaxSkills leader
   let hasTimeout itemFull =
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
@@ -646,8 +665,7 @@ drawLeaderDamage width leader = do
            else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdiceEffect)]
       lbonus :: AttrLine
       lbonus =
-        let bonusRaw = Ability.getSk Ability.SkHurtMelee
-                       $ actorMaxSkills EM.! leader
+        let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk
             bonus = min 200 $ max (-200) bonusRaw
             unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
             tbonus = if bonus == 0
