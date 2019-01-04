@@ -626,13 +626,15 @@ drawLeaderDamage width leader = do
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
-      ppDice :: (Bool, ItemFull) -> (Bool, AttrLine)
-      ppDice (charged, itemFull) =
+      ppDice :: (Int, ItemFullKit) -> [(Bool, AttrLine)]
+      ppDice (ncharges, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
-            cDice = if | not charged -> Color.Cyan
-                       | hasTimeout itemFull -> Color.BrCyan
-                       | otherwise -> Color.BrBlue
-        in (charged, map (Color.attrChar2ToW32 cDice) tdice)
+        in if hasTimeout itemFull
+           then replicate (k - ncharges)
+                  (False, map (Color.attrChar2ToW32 Color.Cyan) tdice)
+                ++ replicate ncharges
+                     (True, map (Color.attrChar2ToW32 Color.BrCyan) tdice)
+           else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdice)]
       lbonus :: AttrLine
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee
@@ -655,11 +657,11 @@ drawLeaderDamage width leader = do
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- map (second (fst . snd) . snd) <$>
+  strongest <- map (second snd . snd) <$>
     pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
-  let (lT, lRatherNoT) = span (hasTimeout . snd) strongest
+  let (lT, lRatherNoT) = span (hasTimeout . fst . snd) strongest
       strongestToDisplay = lT ++ take 1 lRatherNoT
-      lToDisplay = map ppDice strongestToDisplay
+      lToDisplay = concatMap ppDice strongestToDisplay
       (ldischarged, lrest) = span (not . fst) lToDisplay
       lWithBonus = case map snd lrest of
         [] -> []  -- unlikely; means no timeout-free organ

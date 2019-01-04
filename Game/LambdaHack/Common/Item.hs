@@ -236,17 +236,21 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
     EqpSlotWeaponFast -> error $ "" `showFailure` arItem  -- sum of all benefits
     EqpSlotWeaponBig -> error $ "" `showFailure` arItem  -- sum of all benefits
 
-hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
-hasCharge localTime itemFull (itemK, itemTimer) =
+ncharges :: Time -> ItemFull -> ItemQuant -> Int
+ncharges localTime itemFull (itemK, itemTimer) =
   let timeout = IA.aTimeout $ aspectRecordFull itemFull
       timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
       charging startT = timeShift startT timeoutTurns > localTime
       it1 = filter charging itemTimer
-  in length it1 < itemK
+  in itemK - length it1
+
+hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
+hasCharge localTime itemFull (itemK, itemTimer) =
+  ncharges localTime itemFull (itemK, itemTimer) > 0
 
 strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
-               -> [(Double, (Bool, (ItemId, ItemFullKit)))]
+               -> [(Double, (Int, (ItemId, ItemFullKit)))]
 strongestMelee _ _ _ [] = []
 strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- For fighting, as opposed to equipping, we value weapon only for
@@ -265,11 +269,11 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
                 let Benefit{benMelee} = discoBenefit EM.! iid
                 in - benMelee + unIDedBonus
               Nothing -> rawDmg  -- special case: not interested about ID
-            charged = hasCharge localTime itemFull kit
-        in ( if ignoreCharges || charged
+            ncha = ncharges localTime itemFull kit
+        in ( if ignoreCharges || ncha > 0
              then totalValue
              else -100000
-           , (charged, (iid, (itemFull, kit))) )
+           , (ncha, (iid, (itemFull, kit))) )
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
