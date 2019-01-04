@@ -487,7 +487,7 @@ drawFrameStatus drawnLevelId = do
         else leaderName
       damageGap = emptyAttrLine
                   $ widthTgt - damageStatusWidth - T.length leaderBottom
-  let xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
+      xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
                                          - T.length xhairText)
       xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathXhairOrNull
       selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
@@ -622,12 +622,14 @@ drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
   actorSk <- leaderSkillsClientUI
   actorMaxSkills <- getsState sactorMaxSkills
-  let ppDice :: ItemFull -> AttrLine
+  let hasTimeout itemFull =
+        let arItem = aspectRecordFull itemFull
+            timeout = IA.aTimeout arItem
+        in timeout > 0
+      ppDice :: ItemFull -> AttrLine
       ppDice itemFull =
         let tdice = show $ IK.idamage $ itemKind itemFull
-            arItem = aspectRecordFull itemFull
-            timeout = IA.aTimeout arItem
-            cDice = if timeout > 0 then Color.BrCyan else Color.BrBlue
+            cDice = if hasTimeout itemFull then Color.BrCyan else Color.BrBlue
         in map (Color.attrChar2ToW32 cDice) tdice
       lbonus :: AttrLine
       lbonus =
@@ -650,12 +652,19 @@ drawLeaderDamage width leader = do
   let kitAssOnlyWeapons =
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
-  strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
-  let mdice = listToMaybe $ map (ppDice . fst . snd . snd) strongest
-  return $! case mdice of
-              Just ldice | length ldice + length lbonus <= width ->
-                ldice ++ lbonus
-              _ -> []
+  strongest <- map (fst . snd . snd)
+               <$> pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
+  let (lT, lNoT) = span hasTimeout strongest
+      strongestToDisplay = lT ++ take 1 lNoT
+      lToDisplay = map ppDice strongestToDisplay
+      lFlatWithBonus = case lToDisplay of
+        [] -> []
+        l1 : rest -> intercalate [Color.spaceAttrW32]
+                     $ (l1 ++ lbonus) : rest
+      lFits = if length lFlatWithBonus > width
+              then take (width - 3) lFlatWithBonus ++ stringToAL "..."
+              else lFlatWithBonus
+  return $! lFits
 
 drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
