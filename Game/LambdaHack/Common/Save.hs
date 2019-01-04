@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loopSave, vExevLib, showVersion2, delayPrint
+  , loopSave, vExevLib, compatibleVersion, showVersion2, delayPrint
 #endif
   ) where
 
@@ -101,14 +101,17 @@ restoreGame cops fileName = do
   -- terminate the program with an exception.
   res <- Ex.try $
     if saveExists then do
+      let vExevLib1 = vExevLib cops
       (vExevLib2, s) <- strictDecodeEOF (path "")
-      if vExevLib2 == vExevLib cops
+      if compatibleVersion (fst vExevLib1) (fst vExevLib2)
+         && compatibleVersion (snd vExevLib1) (snd vExevLib2)
       then return $ Just s
       else do
-        let msg = "Savefile" <+> T.pack (path "") <+> "from old version"
+        let msg = "Savefile" <+> T.pack (path "")
+                  <+> "from an incompatible version"
                   <+> showVersion2 vExevLib2
                   <+> "detected while trying to restore"
-                  <+> showVersion2 (vExevLib cops)
+                  <+> showVersion2 vExevLib1
                   <+> "game."
         fail $ T.unpack msg
     else return Nothing
@@ -126,6 +129,10 @@ vExevLib COps{corule} =
   let exeVersion = rexeVersion corule
       libVersion = Self.version
   in (exeVersion, libVersion)
+
+-- Minor version discrepancy permitted.
+compatibleVersion :: Version -> Version -> Bool
+compatibleVersion v1 v2 = take 3 (versionBranch v1) == take 3 (versionBranch v2)
 
 showVersion2 :: (Version, Version) -> Text
 showVersion2 (exeVersion, libVersion) = T.pack $
