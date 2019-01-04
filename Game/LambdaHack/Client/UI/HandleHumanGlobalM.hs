@@ -369,8 +369,8 @@ meleeAid target = do
     Nothing -> failWith "nothing to melee with"
     Just wp -> do
       let returnCmd = do
-            -- Set personal target to the enemy position,
-            -- to easily hit him with a ranged attack when he flees.
+            -- Set personal target to enemy, so that AI, if it takes over
+            -- the actor, is likely to continue the fight even if the foe flees.
             modifyClient $ updateTarget leader $ const $ Just $ TEnemy target
             return $ Right wp
           res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
@@ -848,7 +848,8 @@ projectItem (fromCStore, (iid, itemFull)) = do
         case psuitReqFun itemFull of
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
-            -- Set personal target to the aim position, to easily repeat.
+            -- Set personal target to enemy, so that AI, if it takes over
+            -- the actor, is likely to continue the fight even if the foe flees.
             mposTgt <- leaderTgtToPos
             unless (Just pos == mposTgt) $ do
               sxhair <- getsSession sxhair
