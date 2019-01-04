@@ -631,7 +631,7 @@ drawLeaderDamage width leader = do
         let tdice = show $ IK.idamage $ itemKind itemFull
             arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
-            cDice = if timeout > 0 then Color.BrCyan else Color.Cyan
+            cDice = if timeout > 0 then Color.BrCyan else Color.BrBlue
         in map (Color.attrChar2ToW32 cDice) tdice
       (ldice, tbonus, cbonus) = case strongest of
         [] -> ([], "", Color.White)
@@ -655,7 +655,6 @@ drawLeaderDamage width leader = do
       addColorBonus = map (Color.attrChar2ToW32 cbonus)
   return $! if null ldice || length ldice + length tbonus >= width then []
             else ldice ++ addColorBonus tbonus
-                 ++ [Color.spaceAttrW32]
 
 drawSelected :: MonadClientUI m
              => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
