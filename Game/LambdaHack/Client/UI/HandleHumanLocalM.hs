@@ -821,13 +821,8 @@ endAimingMsg = do
 
 tgtClearHuman :: (MonadClient m, MonadClientUI m) => m ()
 tgtClearHuman = do
-  leader <- getLeaderUI
-  tgt <- getsClient $ getTarget leader
-  case tgt of
-    Just _ -> modifyClient $ updateTarget leader (const Nothing)
-    Nothing -> do
-      clearXhair
-      doLook
+  modifySession $ \sess -> sess {sxhair = TVector $ Vector 0 0}
+  doLook
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.

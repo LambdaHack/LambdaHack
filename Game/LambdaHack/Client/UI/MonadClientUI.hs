@@ -12,8 +12,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, addPressedControlEsc
   , revCmdMap, getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , leaderTgtToPos, xhairToPos, clearXhair, clearAimMode
-  , scoreToSlideshow, defaultHistory
+  , leaderTgtToPos, xhairToPos, clearAimMode, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart
   , partActorLeader, partActorLeaderFun, partPronounLeader, partAidLeader
@@ -73,7 +72,6 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 
@@ -244,9 +242,6 @@ xhairToPos = do
     Nothing -> return Nothing  -- e.g., when game start and no leader yet
     Just aid -> getsState $ aidTgtToPos aid lidV sxhair
                   -- e.g., xhair on another level
-
-clearXhair :: MonadClientUI m => m ()
-clearXhair = modifySession $ \sess -> sess {sxhair = TVector $ Vector 0 0}
 
 -- If aim mode is exited, usually the player had the opportunity to deal
 -- with xhair on a foe spotted on another level, so now move xhair
