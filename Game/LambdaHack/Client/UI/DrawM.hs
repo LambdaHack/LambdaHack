@@ -454,14 +454,7 @@ drawFrameStatus drawnLevelId = do
       -- The indicators must fit, they are the actual information.
       pathCsr = displayPathText xhairPos mxhairHP
       trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
-        if T.length t <= n then t
-        else let ellipsis = "..."
-                 fitsPlusOne = T.take (n - T.length ellipsis + 1) t
-                 fits = if T.last fitsPlusOne == ' '
-                        then T.init fitsPlusOne
-                        else let lw = T.words fitsPlusOne
-                             in T.unwords $ init lw
-             in fits <> ellipsis
+        if T.length t <= n then t else T.take (n - 3) t <> "..."
       -- The indicators must fit, they are the actual information.
       widthXhairOrItem = widthTgt - T.length pathCsr - 8
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
