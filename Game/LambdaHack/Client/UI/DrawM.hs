@@ -477,7 +477,9 @@ drawFrameStatus drawnLevelId = do
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairText, pathXhairOrNull) <- tgtOrItem
-  damageStatus <- drawLeaderDamage widthTgt
+  damageStatus <- maybe (return [])
+                        (\leader -> drawLeaderDamage widthTgt leader)
+                        mleader
   let damageStatusWidth = length damageStatus
       leaderBottom =
         if T.length leaderName > widthTgt - damageStatusWidth - 1
@@ -615,27 +617,24 @@ drawLeaderStatus waitT = do
       return $! stringToAL (calmHeaderText ++ ":  --" ++ slashPick ++ "--")
                 <+:> stringToAL (hpHeaderText <> ":  --/--")
 
-drawLeaderDamage :: MonadClientUI m => Int -> m AttrLine
-drawLeaderDamage width = do
-  mleader <- getsClient sleader
-  (tdice, tbonus, cDice, cbonus) <- case mleader of
-    Just leader -> do
-      kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
-      actorSk <- leaderSkillsClientUI
-      actorMaxSkills <- getsState sactorMaxSkills
-      let kitAssOnlyWeapons =
-            filter (IA.checkFlag Ability.Meleeable
-                    . aspectRecordFull . fst . snd) kitAssRaw
-      strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
-      return $! case strongest of
-        [] -> ("0", "", Color.BrCyan, Color.White)
+drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrLine
+drawLeaderDamage width leader = do
+  kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
+  actorSk <- leaderSkillsClientUI
+  actorMaxSkills <- getsState sactorMaxSkills
+  let kitAssOnlyWeapons =
+        filter (IA.checkFlag Ability.Meleeable
+                . aspectRecordFull . fst . snd) kitAssRaw
+  strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
+  let (tdice, tbonus, cDice, cbonus) = case strongest of
+        [] -> ("", "", Color.BrCyan, Color.White)
         (_, (_, (itemFull, _))) : _ ->
-          let tdice = show $ IK.idamage $ itemKind itemFull
+          let tdice2 = show $ IK.idamage $ itemKind itemFull
               bonusRaw = Ability.getSk Ability.SkHurtMelee
                          $ actorMaxSkills EM.! leader
               bonus = min 200 $ max (-200) bonusRaw
               unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
-              tbonus = if bonus == 0
+              tbonus2 = if bonus == 0
                        then if unknownBonus then "+?" else ""
                        else (if bonus > 0 then "+" else "")
                             <> show bonus
@@ -643,15 +642,14 @@ drawLeaderDamage width = do
                             <> if unknownBonus then "%?" else "%"
               arItem = aspectRecordFull itemFull
               timeout = IA.aTimeout arItem
-              cDice = if timeout > 0 then Color.BrCyan else Color.Cyan
+              cDice2 = if timeout > 0 then Color.BrCyan else Color.Cyan
               conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
-              cbonus = case compare conditionBonus 0 of
+              cbonus2 = case compare conditionBonus 0 of
                 EQ -> Color.White
                 GT -> Color.Green
                 LT -> Color.Red
-          in (tdice, tbonus, cDice, cbonus)
-    Nothing -> return ("", "", Color.BrCyan, Color.White)
-  let addColorDice = map (Color.attrChar2ToW32 cDice)
+          in (tdice2, tbonus2, cDice2, cbonus2)
+      addColorDice = map (Color.attrChar2ToW32 cDice)
       addColorBonus = map (Color.attrChar2ToW32 cbonus)
   return $! if null tdice || length tdice + length tbonus >= width then []
             else addColorDice tdice ++ addColorBonus tbonus
