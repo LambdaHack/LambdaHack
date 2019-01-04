@@ -114,9 +114,9 @@ Screen font can be changed by editing the config file in the user
 data folder. For a small game window, the highly optimized
 `16x16x.fnt` and `8x8xb.fnt` bitmap fonts are the best,
 but for larger window sizes or if you require international characters
-(e.g. to give custom names to player characters), a modern scalable font
+(e.g. to give custom names to player characters), a (somewhat) scalable font
 supplied with the game is the only option. The game window automatically
-scales according to the specified font size.
+scales according to the font size.
 
 If you don't have a numeric keypad, you can use mouse for movement
 or you can enable the compact laptop keys (uk8o79jl) or the Vi keys
@@ -168,8 +168,8 @@ for teletype terminals or a keyboard and a printer (but it's going to use
 a lot of paper, unless you disable animations with `--noAnim`). To compile
 with one of the less rudimentary terminal frontends (in which case you are
 on your own regarding font choice and color setup and you won't have
-the spiffy colorful squares around special positions, only crude highlights),
-use Cabal flags, e.g,
+the spiffy colorful squares around special positions that exist in SDL2
+frontend, but only crude cursor highlights), use Cabal flags, e.g,
 
     cabal install -fvty
 
