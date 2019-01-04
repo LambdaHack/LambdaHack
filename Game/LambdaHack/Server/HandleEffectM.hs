@@ -1761,8 +1761,9 @@ effectDropBestWeapon execSfx iidId target = do
     let kitAss = filter (\(iid, (i, _)) ->
                           IA.checkFlag Ability.Meleeable (aspectRecordFull i)
                           && iid /= iidId) kitAssRaw
-    case strongestMelee Nothing localTime kitAss of
-      (_, (iid, _)) : _ -> do
+        ignoreCharges = True
+    case strongestMelee ignoreCharges Nothing localTime kitAss of
+      (_, (_, (iid, _))) : _ -> do
         execSfx
         let kit = beqp tb EM.! iid
         dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack

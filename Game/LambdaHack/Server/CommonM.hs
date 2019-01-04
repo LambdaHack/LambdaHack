@@ -564,12 +564,12 @@ pickWeaponServer source = do
   -- Server ignores item effects or it would leak item discovery info.
   -- In particular, it even uses weapons that would heal opponent,
   -- and not only in case of projectiles.
-  strongest <- pickWeaponM Nothing kitAss actorSk source
+  strongest <- pickWeaponM False Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
-      (iid, _) <- rndToAction $ oneOf maxIis
+      (_, (iid, _)) <- rndToAction $ oneOf maxIis
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 

@@ -244,11 +244,11 @@ hasCharge localTime itemFull (itemK, itemTimer) =
       it1 = filter charging itemTimer
   in length it1 < itemK
 
-strongestMelee :: Maybe DiscoveryBenefit -> Time
+strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
-               -> [(Double, (ItemId, ItemFullKit))]
-strongestMelee _ _ [] = []
-strongestMelee mdiscoBenefit localTime kitAss =
+               -> [(Double, (Bool, (ItemId, ItemFullKit)))]
+strongestMelee _ _ _ [] = []
+strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- For fighting, as opposed to equipping, we value weapon only for
   -- its raw damage and harming effects and at this very moment only,
   -- not in the future. Hehce, we exclude discharged weapons.
@@ -265,10 +265,11 @@ strongestMelee mdiscoBenefit localTime kitAss =
                 let Benefit{benMelee} = discoBenefit EM.! iid
                 in - benMelee + unIDedBonus
               Nothing -> rawDmg  -- special case: not interested about ID
-        in ( if hasCharge localTime itemFull kit
+            charged = hasCharge localTime itemFull kit
+        in ( if ignoreCharges || charged
              then totalValue
              else -100000
-           , (iid, (itemFull, kit)) )
+           , (charged, (iid, (itemFull, kit))) )
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.

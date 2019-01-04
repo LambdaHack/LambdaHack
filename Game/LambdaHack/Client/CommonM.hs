@@ -141,12 +141,12 @@ pickWeaponClient source target = do
       kitAss = filter (IA.checkFlag Ability.Meleeable
                        . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- pickWeaponM (Just discoBenefit) kitAss actorSk source
+  strongest <- pickWeaponM False (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
     iis@((maxS, _) : _) -> do
       let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
-      (iid, _) <- rndToAction $ oneOf maxIis
+      (_, (iid, _)) <- rndToAction $ oneOf maxIis
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just $ ReqMelee target iid cstore

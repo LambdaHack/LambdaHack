@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Game state reading monad and basic operations.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
@@ -60,10 +59,10 @@ getEntryArena fact = do
   return $! max minD $ min maxD $ toEnum $ f $ ginitial fact
 
 pickWeaponM :: MonadStateRead m
-            => Maybe DiscoveryBenefit
+            => Bool -> Maybe DiscoveryBenefit
             -> [(ItemId, ItemFullKit)] -> Ability.Skills -> ActorId
-            -> m [(Double, (ItemId, ItemFullKit))]
-pickWeaponM mdiscoBenefit kitAss actorSk source = do
+            -> m [(Double, (Bool, (ItemId, ItemFullKit)))]
+pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
   actorMaxSk <- getsState $ getActorMaxSkills source
@@ -72,8 +71,9 @@ pickWeaponM mdiscoBenefit kitAss actorSk source = do
       permitted = permittedPrecious forced calmE
       preferredPrecious = either (const False) id . permitted
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
-      strongest = strongestMelee mdiscoBenefit localTime permAssocs
-  return $! if | forced -> map (1,) kitAss
+      strongest = strongestMelee ignoreCharges mdiscoBenefit
+                                 localTime permAssocs
+  return $! if | forced -> map (\ii -> (1, (True, ii))) kitAss
                | Ability.getSk Ability.SkMelee actorSk <= 0 -> []
                | otherwise -> strongest
 

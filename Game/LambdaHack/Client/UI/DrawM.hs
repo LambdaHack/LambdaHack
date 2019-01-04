@@ -626,10 +626,12 @@ drawLeaderDamage width leader = do
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
-      ppDice :: ItemFull -> AttrLine
-      ppDice itemFull =
+      ppDice :: (Bool, ItemFull) -> AttrLine
+      ppDice (charged, itemFull) =
         let tdice = show $ IK.idamage $ itemKind itemFull
-            cDice = if hasTimeout itemFull then Color.BrCyan else Color.BrBlue
+            cDice = if | not charged -> Color.Cyan
+                       | hasTimeout itemFull -> Color.BrCyan
+                       | otherwise -> Color.BrBlue
         in map (Color.attrChar2ToW32 cDice) tdice
       lbonus :: AttrLine
       lbonus =
@@ -653,9 +655,9 @@ drawLeaderDamage width leader = do
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- map (fst . snd . snd) <$>
-    pickWeaponM (Just discoBenefit) kitAssOnlyWeapons actorSk leader
-  let (lT, lNoT) = span hasTimeout strongest
+  strongest <- map (second (fst . snd) . snd) <$>
+    pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
+  let (lT, lNoT) = span (hasTimeout . snd) strongest
       strongestToDisplay = lT ++ take 1 lNoT
       lToDisplay = map ppDice strongestToDisplay
       lFlatWithBonus = case lToDisplay of
