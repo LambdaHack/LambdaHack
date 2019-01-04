@@ -626,11 +626,17 @@ drawLeaderDamage width leader = do
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
   strongest <- pickWeaponM Nothing kitAssOnlyWeapons actorSk leader
-  let (tdice, tbonus, cDice, cbonus) = case strongest of
-        [] -> ("", "", Color.BrCyan, Color.White)
+  let ppDice :: ItemFull -> AttrLine
+      ppDice itemFull =
+        let tdice = show $ IK.idamage $ itemKind itemFull
+            arItem = aspectRecordFull itemFull
+            timeout = IA.aTimeout arItem
+            cDice = if timeout > 0 then Color.BrCyan else Color.Cyan
+        in map (Color.attrChar2ToW32 cDice) tdice
+      (ldice, tbonus, cbonus) = case strongest of
+        [] -> ([], "", Color.White)
         (_, (_, (itemFull, _))) : _ ->
-          let tdice2 = show $ IK.idamage $ itemKind itemFull
-              bonusRaw = Ability.getSk Ability.SkHurtMelee
+          let bonusRaw = Ability.getSk Ability.SkHurtMelee
                          $ actorMaxSkills EM.! leader
               bonus = min 200 $ max (-200) bonusRaw
               unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
@@ -640,19 +646,15 @@ drawLeaderDamage width leader = do
                             <> show bonus
                             <> (if bonus /= bonusRaw then "$" else "")
                             <> if unknownBonus then "%?" else "%"
-              arItem = aspectRecordFull itemFull
-              timeout = IA.aTimeout arItem
-              cDice2 = if timeout > 0 then Color.BrCyan else Color.Cyan
               conditionBonus = conditionMeleeBonus $ map snd kitAssRaw
               cbonus2 = case compare conditionBonus 0 of
                 EQ -> Color.White
                 GT -> Color.Green
                 LT -> Color.Red
-          in (tdice2, tbonus2, cDice2, cbonus2)
-      addColorDice = map (Color.attrChar2ToW32 cDice)
+          in (ppDice itemFull, tbonus2, cbonus2)
       addColorBonus = map (Color.attrChar2ToW32 cbonus)
-  return $! if null tdice || length tdice + length tbonus >= width then []
-            else addColorDice tdice ++ addColorBonus tbonus
+  return $! if null ldice || length ldice + length tbonus >= width then []
+            else ldice ++ addColorBonus tbonus
                  ++ [Color.spaceAttrW32]
 
 drawSelected :: MonadClientUI m
