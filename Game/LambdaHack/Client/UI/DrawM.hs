@@ -626,13 +626,13 @@ drawLeaderDamage width leader = do
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
-      ppDice :: (Bool, ItemFull) -> AttrLine
+      ppDice :: (Bool, ItemFull) -> (Bool, AttrLine)
       ppDice (charged, itemFull) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             cDice = if | not charged -> Color.Cyan
                        | hasTimeout itemFull -> Color.BrCyan
                        | otherwise -> Color.BrBlue
-        in map (Color.attrChar2ToW32 cDice) tdice
+        in (charged, map (Color.attrChar2ToW32 cDice) tdice)
       lbonus :: AttrLine
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee
@@ -657,16 +657,18 @@ drawLeaderDamage width leader = do
   discoBenefit <- getsClient sdiscoBenefit
   strongest <- map (second (fst . snd) . snd) <$>
     pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
-  let (lT, lNoT) = span (hasTimeout . snd) strongest
-      strongestToDisplay = lT ++ take 1 lNoT
+  let (lT, lRatherNoT) = span (hasTimeout . snd) strongest
+      strongestToDisplay = lT ++ take 1 lRatherNoT
       lToDisplay = map ppDice strongestToDisplay
-      lFlatWithBonus = case lToDisplay of
-        [] -> []
-        l1 : rest -> intercalate [Color.spaceAttrW32]
-                     $ (l1 ++ lbonus) : rest
-      lFits = if length lFlatWithBonus > width
-              then take (width - 3) lFlatWithBonus ++ stringToAL "..."
-              else lFlatWithBonus
+      (ldischarged, lrest) = span (not . fst) lToDisplay
+      lWithBonus = case map snd lrest of
+        [] -> []  -- unlikely; means no timeout-free organ
+        l1 : rest -> (l1 ++ lbonus) : rest
+      lFlat = intercalate [Color.spaceAttrW32]
+              $ map snd ldischarged ++ lWithBonus
+      lFits = if length lFlat > width
+              then take (width - 3) lFlat ++ stringToAL "..."
+              else lFlat
   return $! lFits
 
 drawSelected :: MonadClientUI m
