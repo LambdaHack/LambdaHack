@@ -2,10 +2,10 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
-  ( targetDesc, drawHudFrame
+  ( targetDesc, targetDescXhair, drawHudFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , targetDescXhair, drawFrameTerrain, drawFrameContent
+  , drawFrameTerrain, drawFrameContent
   , drawFramePath, drawFrameActor, drawFrameExtra, drawFrameStatus
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
 #endif

@@ -785,7 +785,10 @@ cancelHuman = do
   saimMode <- getsSession saimMode
   when (isJust saimMode) $ do
     clearAimMode
-    promptAdd1 "Target not set."
+    (mtargetMsg, _) <- targetDescXhair
+    case mtargetMsg of
+      Just targetMsg -> promptAdd1 $ "X-hair set to" <+> targetMsg <> "."
+      Nothing -> return ()
 
 -- * Accept
 
