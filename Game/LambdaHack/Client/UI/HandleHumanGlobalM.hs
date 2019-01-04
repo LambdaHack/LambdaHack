@@ -372,6 +372,10 @@ meleeAid target = do
             -- Set personal target to enemy, so that AI, if it takes over
             -- the actor, is likely to continue the fight even if the foe flees.
             modifyClient $ updateTarget leader $ const $ Just $ TEnemy target
+            -- Also set xhair to see the foe's HP, because it's automatically
+            -- set to any new spotted actor, so it needs to be reset
+            -- and also it's not useful as permanent ranged target anyway.
+            modifySession $ \sess -> sess {sxhair = TEnemy target}
             return $ Right wp
           res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
               | isFriend (bfid sb) sfact (bfid tb) = do
