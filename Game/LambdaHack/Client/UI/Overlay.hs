@@ -76,6 +76,7 @@ splitAttrLine w l =
 
 indentSplitAttrLine :: X -> AttrLine -> [AttrLine]
 indentSplitAttrLine w l =
+  -- First line could be split at @w@, not @w - 1@, but it's good enough.
   let ts = splitAttrLine (w - 1) l
   in case ts of
     [] -> []
@@ -90,8 +91,10 @@ splitAttrPhrase :: X -> AttrLine -> Overlay
 splitAttrPhrase w xs
   | w >= length xs = [xs]  -- no problem, everything fits
   | otherwise =
-      let (pre, post) = splitAt w xs
-          (ppre, ppost) = break (== Color.spaceAttrW32) $ reverse pre
+      let (pre, postRaw) = splitAt w xs
+          ((ppre, ppost), post) = case postRaw of
+            c : rest | c == Color.spaceAttrW32 -> (([], reverse pre), rest)
+            _ -> (break (== Color.spaceAttrW32) $ reverse pre, postRaw)
           testPost = dropWhileEnd (== Color.spaceAttrW32) ppost
       in if null testPost
          then pre : splitAttrPhrase w post
