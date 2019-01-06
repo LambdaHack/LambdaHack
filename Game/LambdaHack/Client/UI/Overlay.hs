@@ -87,14 +87,32 @@ linesAttr l | null l = []
             | otherwise = h : if null t then [] else linesAttr (tail t)
  where (h, t) = span (/= Color.retAttrW32) l
 
+-- We consider only these, because they are short and form a closed category.
+nonbreakableRev :: [AttrLine]
+nonbreakableRev = map stringToAL ["eht", "a", "na", "ehT", "A", "nA"]
+
+breakAtSpace :: AttrLine -> (AttrLine, AttrLine)
+breakAtSpace lRev =
+  let (pre, post) = break (== Color.spaceAttrW32) lRev
+  in case post of
+    c : rest | c == Color.spaceAttrW32 ->
+      if any (`isPrefixOf` rest) nonbreakableRev
+      then let (pre2, post2) = breakAtSpace rest
+           in (pre ++ c : pre2, post2)
+      else (pre, post)
+    _ -> (pre, post)  -- no space found, give up
+
 splitAttrPhrase :: X -> AttrLine -> Overlay
 splitAttrPhrase w xs
   | w >= length xs = [xs]  -- no problem, everything fits
   | otherwise =
       let (pre, postRaw) = splitAt w xs
+          preRev = reverse pre
           ((ppre, ppost), post) = case postRaw of
-            c : rest | c == Color.spaceAttrW32 -> (([], reverse pre), rest)
-            _ -> (break (== Color.spaceAttrW32) $ reverse pre, postRaw)
+            c : rest | c == Color.spaceAttrW32
+                       && not (any (`isPrefixOf` preRev) nonbreakableRev) ->
+              (([], preRev), rest)
+            _ -> (breakAtSpace preRev, postRaw)
           testPost = dropWhileEnd (== Color.spaceAttrW32) ppost
       in if null testPost
          then pre : splitAttrPhrase w post
