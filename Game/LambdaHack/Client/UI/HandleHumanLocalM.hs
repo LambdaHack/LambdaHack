@@ -775,7 +775,9 @@ markSuspectHuman = do
 
 -- * PrintScreen
 printScreenHuman :: MonadClientUI m => m ()
-printScreenHuman = printScreen
+printScreenHuman = do
+  promptAdd1 "Screenshot printed."
+  printScreen
 
 -- * Cancel
 
