@@ -539,7 +539,7 @@ lookAtItems canSee p aid = do
       nWs (iid, kit@(k, _)) =
         partItemWs side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
-        ii : _ : _ | standingOn && bfid b == side ->
+        ii : _ : _ : _ | standingOn && bfid b == side ->
           MU.Phrase [nWs ii, "and other items"]
           -- the actor is ours, so can see details with inventory commands
         iis -> MU.WWandW $ map nWs iis
