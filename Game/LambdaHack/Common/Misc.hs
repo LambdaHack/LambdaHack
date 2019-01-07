@@ -68,12 +68,13 @@ makeSentence = MU.makeSentence irregular
 
 irregular :: MU.Irregular
 irregular = MU.Irregular
-  { irrPlural = MU.irrPlural MU.defIrregular
-                `M.union` M.fromList
-      [ ("merchandise", "merchandise")
-      , ("Merchandise", "Merchandise") ]
-        -- this is both countable and uncountable, but I use it here
-        -- only as uncountable, do I overwrite the default
+  { irrPlural =
+      M.fromList
+        [ ("merchandise", "merchandise")
+        , ("Merchandise", "Merchandise") ]
+            -- this is both countable and uncountable, but I use it here
+            -- only as uncountable, do I overwrite the default
+      `M.union` MU.irrPlural MU.defIrregular
   , irrIndefinite = MU.irrIndefinite MU.defIrregular
   }
 
