@@ -10,7 +10,6 @@ import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent.Async
 import           Data.Char (chr, ord)
-import qualified Data.Char as Char
 import qualified System.IO as SIO
 
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -20,6 +19,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 
 -- No session data maintained by this frontend
 
@@ -53,7 +53,7 @@ display :: ScreenContent
 display coscreen SingleFrame{singleFrame} =
   let f w l =
         let acCharRaw = Color.charFromW32 w
-            acChar = if Char.ord acCharRaw == 183 then '.' else acCharRaw
+            acChar = if acCharRaw == floorSymbol then '.' else acCharRaw
         in acChar : l
       levelChar = chunk $ PointArray.foldrA f [] singleFrame
       chunk [] = []

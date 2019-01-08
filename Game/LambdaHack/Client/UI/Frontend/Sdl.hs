@@ -49,6 +49,7 @@ import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -324,7 +325,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
             -- Make all visible floors bold (no bold fold variant for 16x16x,
             -- so only the dot can be bold).
             let acChar = if not (Color.isBright fg)
-                            && Char.ord acCharRaw == 183  -- 0xb7
+                            && acCharRaw == floorSymbol  -- 0xb7
                          then if isFonFile
                               then Char.chr 7   -- hack
                               else Char.chr 8901  -- 0x22c5

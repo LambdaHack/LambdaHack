@@ -51,6 +51,7 @@ import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -248,11 +249,10 @@ display FrontendSession{..}
         let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             (!cell, !style) = scharCells V.! i
-        case Char.ord acChar of
-          32 -> setTextContent cell $ Just [Char.chr 160]
-          183 | fg <= Color.BrBlack ->
-            setTextContent cell $ Just [Char.chr 8901]
-          _  -> setTextContent cell $ Just [acChar]
+        if | acChar == ' ' -> setTextContent cell $ Just [Char.chr 160]
+           | acChar == floorSymbol && not (isBright fg) ->
+             setTextContent cell $ Just [Char.chr 8901]
+           | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
         case bg of
           Color.HighlightNone ->
