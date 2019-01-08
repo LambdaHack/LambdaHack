@@ -41,8 +41,8 @@ startup coscreen _soptions = do
   C.start
   void $ C.cursSet C.CursorInvisible
   let s = [ ((fg, bg), C.Style (toFColor fg) (toBColor bg))
-          | -- No more color combinations possible: 16*4, 64 is max.
-            fg <- [minBound..maxBound]
+          | -- Almost no more color combinations possible: 15*4, 64 is max.
+            fg <- Color.legalFgCol
           , bg <- [Color.Black, Color.Blue, Color.White, Color.BrBlack] ]
   nr <- C.colorPairs
   when (nr < length s) $

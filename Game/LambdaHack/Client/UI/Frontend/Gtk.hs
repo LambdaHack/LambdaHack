@@ -75,7 +75,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                       doAttr soptions tt (emulateBox ak)
                       return (fromAttr ak, tt))
                [ Color.Attr{fg, bg}
-               | fg <- [minBound..maxBound], bg <- [minBound..maxBound] ]
+               | fg <- Color.legalFgCol
+               , bg <- Color.Black : Color.legalFgCol ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
   -- Create text view.
