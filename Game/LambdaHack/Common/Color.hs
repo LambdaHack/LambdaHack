@@ -42,7 +42,6 @@ data Color =
   | Magenta
   | Cyan
   | White
-  | AltWhite  -- only use for frontend hacks
   | BrBlack
   | BrRed
   | BrGreen
@@ -51,6 +50,7 @@ data Color =
   | BrMagenta
   | BrCyan
   | BrWhite
+  | AltWhite  -- only use for frontend hacks
   deriving (Show, Eq, Ord, Enum, Generic)
 
 instance Binary Color where
@@ -67,7 +67,7 @@ defFG = White
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
-isBright c = c > BrBlack
+isBright c = c > BrBlack && c /= AltWhite
 
 -- | Colour sets.
 darkCol, brightCol, stdCol, legalFgCol :: [Color]
