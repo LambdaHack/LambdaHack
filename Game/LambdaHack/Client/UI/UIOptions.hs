@@ -44,7 +44,6 @@ data UIOptions = UIOptions
   , uSdlTtfSizeAdd    :: Int
   , uSdlFntSizeAdd    :: Int
   , uFontSize         :: Int
-  , uColorIsBold      :: Bool
   , uHistoryMax       :: Int
   , uMaxFps           :: Int
   , uNoAnim           :: Bool
@@ -103,7 +102,6 @@ parseConfig cfg =
       uSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
       uSdlFntSizeAdd = getOption "sdlFntSizeAdd"
       uFontSize = getOption "fontSize"
-      uColorIsBold = getOption "colorIsBold"
       uHistoryMax = getOption "historyMax"
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
@@ -148,8 +146,6 @@ applyUIOptions COps{corule} uioptions soptions =
         sdlFntSizeAdd opts `mplus` Just (uSdlFntSizeAdd uioptions)}) .
      (\opts -> opts {sfontSize =
         sfontSize opts `mplus` Just (uFontSize uioptions)}) .
-     (\opts -> opts {scolorIsBold =
-        scolorIsBold opts `mplus` Just (uColorIsBold uioptions)}) .
      (\opts -> opts {smaxFps =
         smaxFps opts `mplus` Just (uMaxFps uioptions)}) .
      (\opts -> opts {snoAnim =

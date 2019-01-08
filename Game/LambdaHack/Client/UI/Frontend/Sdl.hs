@@ -325,10 +325,9 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
             -- so only the dot can be bold).
             let acChar = if not (Color.isBright fg)
                             && Char.ord acCharRaw == 183  -- 0xb7
-                            && scolorIsBold == Just True  -- only dot but enough
-                         then Char.chr $ if isFonFile
-                                         then 7   -- hack
-                                         else 8901  -- 0x22c5
+                         then if isFonFile
+                              then Char.chr 7   -- hack
+                              else Char.chr 8901  -- 0x22c5
                          else acCharRaw
             textSurfaceRaw <- TTF.shadedGlyph sfont (colorToRGBA fg)
                                               (colorToRGBA Color.Black) acChar

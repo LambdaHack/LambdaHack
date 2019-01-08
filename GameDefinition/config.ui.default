@@ -40,7 +40,6 @@ sdlFntSizeAdd = 0
 ;sdlFntSizeAdd = 2
 ;sdlFontFile = "8x8x.fnt"
 ;sdlFntSizeAdd = 2
-colorIsBold = True
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 30

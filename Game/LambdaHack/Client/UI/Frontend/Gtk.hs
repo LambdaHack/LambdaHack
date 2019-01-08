@@ -72,7 +72,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
              mapM (\ak -> do
                       tt <- textTagNew Nothing
                       textTagTableAdd ttt tt
-                      doAttr soptions tt (emulateBox ak)
+                      doAttr tt (emulateBox ak)
                       return (fromAttr ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- Color.legalFgCol
@@ -204,23 +204,22 @@ shutdown = postGUISync mainQuit
 fromAttr :: Color.Attr -> Int
 fromAttr Color.Attr{..} = unsafeShiftL (fromEnum fg) 8 + fromEnum bg
 
-doAttr :: ClientOptions -> TextTag -> (Color.Color, Color.Color) -> IO ()
-doAttr soptions tt (fg, bg)
+doAttr :: TextTag -> (Color.Color, Color.Color) -> IO ()
+doAttr tt (fg, bg)
   | fg == Color.defFG && bg == Color.Black = return ()
   | fg == Color.defFG =
     set tt [textTagBackground := Color.colorToRGB bg]
   | bg == Color.Black =
-    set tt $ extraAttr soptions
+    set tt $ extraAttr
              ++ [textTagForeground := Color.colorToRGB fg]
   | otherwise =
-    set tt $ extraAttr soptions
+    set tt $ extraAttr
              ++ [ textTagForeground := Color.colorToRGB fg
                 , textTagBackground := Color.colorToRGB bg ]
 
-extraAttr :: ClientOptions -> [AttrOp TextTag]
-extraAttr ClientOptions{scolorIsBold} =
-  [textTagWeight := fromEnum WeightBold | scolorIsBold == Just True]
---     , textTagStretch := StretchUltraExpanded
+extraAttr :: [AttrOp TextTag]
+extraAttr = [textTagWeight := fromEnum WeightBold]
+--          , textTagStretch := StretchUltraExpanded
 
 -- | Add a frame to be drawn.
 display :: ScreenContent

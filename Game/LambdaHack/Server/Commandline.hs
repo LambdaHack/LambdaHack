@@ -72,7 +72,6 @@ serverOptionsP = do
   sdlFntSizeAdd     <- sdlFntSizeAddP
   sfontSize         <- fontSizeP
   sfontDir          <- fontDirP
-  scolorIsBold      <- noColorIsBoldP
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
@@ -256,12 +255,6 @@ fontDirP = optional $
   option auto (  long "fontDir"
               <> metavar "FILEPATH"
               <> help "Take font files for the SDL2 frontend from FILEPATH" )
-
-noColorIsBoldP :: Parser (Maybe Bool)
-noColorIsBoldP =
-  flag Nothing (Just False)
-       (  long "noColorIsBold"
-       <> help "Refrain from making some bright color characters bolder" )
 
 maxFpsP :: Parser (Maybe Int)
 maxFpsP = optional $ max 1 <$>

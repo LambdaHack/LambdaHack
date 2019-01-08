@@ -74,7 +74,7 @@ startup coscreen soptions = do
   takeMVar rfMVar
 
 runWeb :: ScreenContent -> ClientOptions -> MVar RawFrontend -> DOM ()
-runWeb coscreen soptions@ClientOptions{..} rfMVar = do
+runWeb coscreen ClientOptions{..} rfMVar = do
   -- Init the document.
   Just doc <- currentDocument
   Just scurrentWindow <- currentWindow
@@ -114,7 +114,7 @@ runWeb coscreen soptions@ClientOptions{..} rfMVar = do
   scharCells <- flattenTable coscreen tableElem
   spreviousFrame <- newIORef $ blankSingleFrame coscreen
   let sess = FrontendSession{..}
-  rf <- IO.liftIO $ createRawFrontend coscreen (display soptions sess) shutdown
+  rf <- IO.liftIO $ createRawFrontend coscreen (display sess) shutdown
   let readMod = do
         modCtrl <- ask >>= getCtrlKey
         modShift <- ask >>= getShiftKey
@@ -237,12 +237,10 @@ flattenTable coscreen table = do
   return $! V.fromListN (rwidth coscreen * rheight coscreen) $ concat lrc
 
 -- | Output to the screen via the frontend.
-display :: ClientOptions
-        -> FrontendSession  -- ^ frontend session data
+display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display ClientOptions{scolorIsBold}
-        FrontendSession{..}
+display FrontendSession{..}
         !curFrame = flip runDOM undefined $ do
   let setChar :: Int -> (Word32, Word32) -> DOM Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
@@ -252,7 +250,7 @@ display ClientOptions{scolorIsBold}
             (!cell, !style) = scharCells V.! i
         case Char.ord acChar of
           32 -> setTextContent cell $ Just [Char.chr 160]
-          183 | fg <= Color.BrBlack && scolorIsBold == Just True ->
+          183 | fg <= Color.BrBlack ->
             setTextContent cell $ Just [Char.chr 8901]
           _  -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg

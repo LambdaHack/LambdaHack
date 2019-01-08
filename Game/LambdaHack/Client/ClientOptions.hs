@@ -25,8 +25,6 @@ data ClientOptions = ClientOptions
       --   To get symmetric padding, add an even number.
   , sfontSize         :: Maybe Int
       -- ^ Font size to use for the main game window.
-  , scolorIsBold      :: Maybe Bool
-      -- ^ Whether to use bold attribute for colorful characters.
   , slogPriority      :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
   , smaxFps           :: Maybe Int
@@ -74,7 +72,6 @@ defClientOptions = ClientOptions
   , sdlTtfSizeAdd = Nothing
   , sdlFntSizeAdd = Nothing
   , sfontSize = Nothing
-  , scolorIsBold = Nothing
   , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False
