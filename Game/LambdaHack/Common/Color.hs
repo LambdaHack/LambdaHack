@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Color
   ( -- * Colours
     Color(..)
-  , defFG, isBright, darkCol, brightCol, stdCol, colorToRGB
+  , defFG, isBright, darkCol, brightCol, stdCol, legalFgCol, colorToRGB
     -- * Complete text attributes
   , Highlight (..), Attr(..)
   , defAttr
@@ -51,7 +51,7 @@ data Color =
   | BrMagenta
   | BrCyan
   | BrWhite
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Generic)
 
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum
@@ -70,10 +70,11 @@ isBright :: Color -> Bool
 isBright c = c >= BrBlack
 
 -- | Colour sets.
-darkCol, brightCol, stdCol :: [Color]
-darkCol   = [Red .. Cyan]
+darkCol, brightCol, stdCol, legalFgCol :: [Color]
+darkCol = [Red .. Cyan]
 brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
-stdCol    = darkCol ++ brightCol
+stdCol = darkCol ++ brightCol
+legalFgCol = White : BrWhite : BrBlack : stdCol
 
 -- | Translationg to heavily modified Linux console color RGB values.
 --
@@ -129,7 +130,7 @@ data Highlight =
   | HighlightWhite
   | HighlightMagenta
   | HighlightGreen
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Ord, Enum, Generic)
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr

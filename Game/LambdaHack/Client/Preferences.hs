@@ -292,7 +292,7 @@ fakeItem :: ContentId IK.ItemKind -> IK.ItemKind -> IA.KindMean -> ItemFull
 fakeItem kindId kind km =
   let jkind    = IdentityObvious kindId
       jfid     = Nothing  -- the default
-      jflavour = Flavour minBound minBound  -- dummy
+      jflavour = Flavour (toEnum 0) (toEnum 0) -- dummy
       itemBase = Item{..}
       itemDisco = ItemDiscoMean km
   in ItemFull itemBase kindId kind itemDisco True

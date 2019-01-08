@@ -146,6 +146,7 @@ colorToGlassFancyName color = colorToFancyName color <+> "crystal"
 
 -- | Simple names for team colors (bright colours preferred).
 colorToTeamName :: Color -> Text
+colorToTeamName BrBlack   = "black"
 colorToTeamName BrRed     = "red"
 colorToTeamName BrGreen   = "green"
 colorToTeamName BrYellow  = "yellow"

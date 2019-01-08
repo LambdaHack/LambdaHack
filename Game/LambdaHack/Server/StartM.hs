@@ -170,10 +170,10 @@ sampleItems dungeon = do
   return $! EM.singleton SItem
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
 
-mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
-mapFromFuns =
+mapFromFuns :: Ord b => [a] -> [a -> b] -> M.Map b a
+mapFromFuns domain =
   let fromFun f m1 =
-        let invAssocs = map (\c -> (f c, c)) [minBound..maxBound]
+        let invAssocs = map (\c -> (f c, c)) domain
             m2 = M.fromList invAssocs
         in m2 `M.union` m1
   in foldr fromFun M.empty
@@ -188,7 +188,8 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
               return (ln, n, actorGroup)
         ginitial <- mapM castInitialActors initialActors
         let cmap =
-              mapFromFuns [colorToTeamName, colorToPlainName, colorToFancyName]
+              mapFromFuns Color.legalFgCol
+                          [colorToTeamName, colorToPlainName, colorToFancyName]
             colorName = T.toLower $ head $ T.words fname
             prefix = case fleaderMode of
               LeaderNull -> "Loose"
