@@ -167,7 +167,7 @@ attrCharFromW32 !w = AttrChar (attrFromW32 w) (charFromW32 w)
 fgFromW32 :: AttrCharW32 -> Color
 {-# INLINE fgFromW32 #-}
 fgFromW32 w =
-  toEnum $ fromEnum $ unsafeShiftR (attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
+  toEnum $ unsafeShiftR (fromEnum $ attrCharW32 w) 8 .&. (2 ^ (8 :: Int) - 1)
 
 bgFromW32 :: AttrCharW32 -> Highlight
 {-# INLINE bgFromW32 #-}
@@ -177,7 +177,7 @@ bgFromW32 w =
 charFromW32 :: AttrCharW32 -> Char
 {-# INLINE charFromW32 #-}
 charFromW32 w =
-  Char.chr $ fromEnum $ unsafeShiftR (attrCharW32 w) 16
+  Char.chr $ unsafeShiftR (fromEnum $ attrCharW32 w) 16
 
 attrFromW32 :: AttrCharW32 -> Attr
 {-# INLINE attrFromW32 #-}
@@ -199,7 +199,8 @@ attrChar2ToW32 fg acChar =
   case unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16 of
     I# i -> AttrCharW32 $ W32# (int2Word# i)
 {- the hacks save one allocation (?) (before fits-in-32bits check) compared to
-  unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16
+  AttrCharW32 $ toEnum
+  $ unsafeShiftL (fromEnum fg) 8 + unsafeShiftL (Char.ord acChar) 16
 -}
 
 attrChar1ToW32 :: Char -> AttrCharW32
