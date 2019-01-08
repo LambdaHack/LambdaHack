@@ -323,7 +323,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
           Nothing -> do
             -- Make all visible floors bold (no bold fold variant for 16x16x,
             -- so only the dot can be bold).
-            let acChar = if fg <= Color.BrBlack
+            let acChar = if not (Color.isBright fg)
                             && Char.ord acCharRaw == 183  -- 0xb7
                             && scolorIsBold == Just True  -- only dot but enough
                          then Char.chr $ if isFonFile

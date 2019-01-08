@@ -67,7 +67,7 @@ defFG = White
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
-isBright c = c >= BrBlack
+isBright c = c > BrBlack
 
 -- | Colour sets.
 darkCol, brightCol, stdCol, legalFgCol :: [Color]
