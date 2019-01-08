@@ -138,6 +138,7 @@ aToc Color.Blue      = blue
 aToc Color.Magenta   = magenta
 aToc Color.Cyan      = cyan
 aToc Color.White     = white
+aToc Color.AltWhite  = white
 aToc Color.BrBlack   = brightBlack
 aToc Color.BrRed     = brightRed
 aToc Color.BrGreen   = brightGreen

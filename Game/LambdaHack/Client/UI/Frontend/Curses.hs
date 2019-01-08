@@ -156,6 +156,7 @@ toFColor Color.Blue      = C.DarkBlueF
 toFColor Color.Magenta   = C.PurpleF
 toFColor Color.Cyan      = C.DarkCyanF
 toFColor Color.White     = C.WhiteF
+toFColor Color.AltWhite  = C.WhiteF
 toFColor Color.BrBlack   = C.GreyF
 toFColor Color.BrRed     = C.RedF
 toFColor Color.BrGreen   = C.GreenF

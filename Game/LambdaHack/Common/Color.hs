@@ -42,6 +42,7 @@ data Color =
   | Magenta
   | Cyan
   | White
+  | AltWhite  -- only use for frontend hacks
   | BrBlack
   | BrRed
   | BrGreen
@@ -86,6 +87,7 @@ colorToRGB Blue      = "#203AF0"
 colorToRGB Magenta   = "#AA00AA"
 colorToRGB Cyan      = "#00AAAA"
 colorToRGB White     = "#C5BCB8"
+colorToRGB AltWhite  = "#C5BCB8"
 colorToRGB BrBlack   = "#6F5F5F"
 colorToRGB BrRed     = "#FF5555"
 colorToRGB BrGreen   = "#75FF45"
@@ -106,6 +108,7 @@ _olorToRGB Blue      = "#0000AA"
 _olorToRGB Magenta   = "#AA00AA"
 _olorToRGB Cyan      = "#00AAAA"
 _olorToRGB White     = "#AAAAAA"
+_olorToRGB AltWhite  = "#AAAAAA"
 _olorToRGB BrBlack   = "#555555"
 _olorToRGB BrRed     = "#FF5555"
 _olorToRGB BrGreen   = "#55FF55"

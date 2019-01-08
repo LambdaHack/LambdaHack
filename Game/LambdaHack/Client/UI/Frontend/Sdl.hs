@@ -312,12 +312,12 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
       setChar i (w, _) = do
         atlas <- readIORef satlas
-        let acRaw = Color.AttrCharW32 w
-            Color.AttrChar{acAttr=Color.Attr{..}, acChar=acCharRaw} =
-              Color.attrCharFromW32 acRaw
-            ac = if bg == Color.HighlightNone
-                 then acRaw
-                 else Color.attrChar2ToW32 fg acCharRaw
+        let Point{..} = toEnum i
+            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,..}, acChar=acCharRaw} =
+              Color.attrCharFromW32 $ Color.AttrCharW32 w
+            fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
+            ac = Color.attrChar2ToW32 fg acCharRaw
         -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
@@ -352,11 +352,10 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
             SDL.freeSurface textSurfaceRaw
             textTexture <- SDL.createTextureFromSurface srenderer textSurface
             SDL.freeSurface textSurface
-            writeIORef satlas $ EM.insert ac textTexture atlas  -- not @acRaw@
+            writeIORef satlas $ EM.insert ac textTexture atlas
             return textTexture
           Just textTexture -> return textTexture
-        let Point{..} = toEnum i
-            tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2
+        let tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         -- Potentially overwrite a portion of the glyph.
         chooseAndDrawHighlight px py bg
@@ -529,7 +528,8 @@ colorToRGBA Color.Brown     = SDL.V4 0xCA 0x4A 0x00 sDL_ALPHA_OPAQUE
 colorToRGBA Color.Blue      = SDL.V4 0x20 0x3A 0xF0 sDL_ALPHA_OPAQUE
 colorToRGBA Color.Magenta   = SDL.V4 0xAA 0x00 0xAA sDL_ALPHA_OPAQUE
 colorToRGBA Color.Cyan      = SDL.V4 0x00 0xAA 0xAA sDL_ALPHA_OPAQUE
-colorToRGBA Color.White     = SDL.V4 0xC5 0xBC 0xB8 sDL_ALPHA_OPAQUE
+colorToRGBA Color.White     = SDL.V4 0xB7 0xBD 0xC4 sDL_ALPHA_OPAQUE
+colorToRGBA Color.AltWhite  = SDL.V4 0xC4 0xBD 0xB7 sDL_ALPHA_OPAQUE
 colorToRGBA Color.BrBlack   = SDL.V4 0x6F 0x5F 0x5F sDL_ALPHA_OPAQUE
 colorToRGBA Color.BrRed     = SDL.V4 0xFF 0x55 0x55 sDL_ALPHA_OPAQUE
 colorToRGBA Color.BrGreen   = SDL.V4 0x75 0xFF 0x45 sDL_ALPHA_OPAQUE
