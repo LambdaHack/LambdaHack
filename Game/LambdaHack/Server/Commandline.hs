@@ -72,6 +72,7 @@ serverOptionsP = do
   sdlFntSizeAdd     <- sdlFntSizeAddP
   sfontSize         <- fontSizeP
   sfontDir          <- fontDirP
+  scolorIsBold      <- pure Nothing
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP
