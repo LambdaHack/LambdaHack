@@ -76,7 +76,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                       return (fromAttr ak, tt))
                [ Color.Attr{fg, bg}
                | fg <- Color.legalFgCol
-               , bg <- Color.Black : Color.legalFgCol ]
+               , bg <- [minBound..maxBound] ]
   -- Text buffer.
   tb <- textBufferNew (Just ttt)
   -- Create text view.

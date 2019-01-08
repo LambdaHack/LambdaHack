@@ -130,7 +130,7 @@ data Highlight =
   | HighlightWhite
   | HighlightMagenta
   | HighlightGreen
-  deriving (Show, Eq, Ord, Enum, Generic)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
