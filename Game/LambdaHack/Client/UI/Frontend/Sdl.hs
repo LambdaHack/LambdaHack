@@ -302,13 +302,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
           -- reset back to black
       chooseAndDrawHighlight !x !y !bg = case bg of
         Color.HighlightNone -> return ()
-        Color.HighlightRed -> drawHighlight x y Color.Red
-        Color.HighlightBlue -> drawHighlight x y Color.Blue
-        Color.HighlightYellow -> drawHighlight x y Color.BrYellow
-        Color.HighlightGrey -> drawHighlight x y Color.BrBlack
-        Color.HighlightWhite -> drawHighlight x y Color.White
-        Color.HighlightMagenta -> drawHighlight x y Color.BrMagenta
-        Color.HighlightGreen -> drawHighlight x y Color.Green
+        _ -> drawHighlight x y $ Color.highlightToColor bg
       setChar :: Int -> (Word32, Word32) -> IO Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
       setChar i (w, _) = do

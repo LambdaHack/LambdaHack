@@ -116,13 +116,13 @@ setAttr Color.Attr{..} =
           if fg /= Color.Blue
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
-        Color.HighlightYellow ->
-          if fg /= Color.Brown
-          then (fg, Color.Brown)
-          else (fg, Color.defFG)
         Color.HighlightGrey ->
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
+          else (fg, Color.defFG)
+        Color.HighlightYellow ->
+          if fg /= Color.Brown
+          then (fg, Color.Brown)
           else (fg, Color.defFG)
         _ -> (fg, Color.Black)
   in hack fg1 $ hack bg1 $

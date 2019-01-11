@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Color
   , defFG, isBright, darkCol, brightCol, stdCol, legalFgCol, colorToRGB
     -- * Complete text attributes
   , Highlight (..), Attr(..)
-  , defAttr
+  , highlightToColor, defAttr
     -- * Characters with attributes
   , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
@@ -124,13 +124,26 @@ _olorToRGB BrWhite   = "#FFFFFF"
 data Highlight =
     HighlightNone
   | HighlightRed
+  | HighlightGreen
   | HighlightBlue
-  | HighlightYellow
+  | HighlightMagenta
   | HighlightGrey
   | HighlightWhite
-  | HighlightMagenta
-  | HighlightGreen
+  | HighlightYellow
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+highlightToColor :: Highlight -> Color
+highlightToColor hi = case hi of
+  HighlightNone -> White -- rather fake
+  HighlightRed -> Red
+  HighlightGreen -> Green
+  HighlightBlue -> Blue
+  HighlightMagenta -> BrMagenta  -- usually around white, so bright is fine
+  HighlightGrey -> BrBlack
+  HighlightWhite -> White  -- bright, but no saturation, so doesn't obscure
+  HighlightYellow -> BrYellow
+                       -- obscures dark colours, but nicely contrasts with blue,
+                       -- which is the least visible of dark colours
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr

@@ -255,22 +255,8 @@ display FrontendSession{..}
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
         case bg of
-          Color.HighlightNone ->
-            setProp style "border-color" "transparent"
-          Color.HighlightRed ->
-            setProp style "border-color" $ Color.colorToRGB Color.Red
-          Color.HighlightBlue ->
-            setProp style "border-color" $ Color.colorToRGB Color.Blue
-          Color.HighlightYellow ->
-            setProp style "border-color" $ Color.colorToRGB Color.BrYellow
-          Color.HighlightGrey ->
-            setProp style "border-color" $ Color.colorToRGB Color.BrBlack
-          Color.HighlightWhite ->
-            setProp style "border-color" $ Color.colorToRGB Color.White
-          Color.HighlightMagenta ->
-            setProp style "border-color" $ Color.colorToRGB Color.Magenta
-          Color.HighlightGreen ->
-            setProp style "border-color" $ Color.colorToRGB Color.Green
+          Color.HighlightNone -> setProp style "border-color" "transparent"
+          _ -> setProp style "border-color" $ Color.highlightToColor bg
         return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
