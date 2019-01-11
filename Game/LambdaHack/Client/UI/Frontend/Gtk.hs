@@ -183,7 +183,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     return True
   -- Modify default colours.
   let black = Color minBound minBound minBound  -- Color.defBG == Color.Black
-      white = Color 0xC000 0xC700 0xD300        -- Color.defFG == Color.White
+      white = Color 0xB800 0xBF00 0xCB00        -- Color.defFG == Color.White
   widgetModifyBg sview StateNormal black
   widgetModifyFg sview StateNormal white
   -- Set up the main window.
