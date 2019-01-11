@@ -87,14 +87,14 @@ Heroes
 
 The heroes are displayed on the map with bright white color (red if they are
 about to be lost) and symbols `@` and `1` through `9` (never `0`).
-The currently chosen party leader is red-highlighted on the map
+The currently chosen party leader is yellow-highlighted on the map
 and his attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
 
     *@12   2m/s Calm: 20/60 HP: 33/50 Leader: Haskell Alvin   6d1+5% 4d1
 
 The line starts with the list of party members, with the current leader
-highlighted in red. Most commands involve only the leader, including
+highlighted in yellow. Most commands involve only the leader, including
 movement with keyboard's keypad or `LMB` (left mouse button). If more
 heroes are selected (highlighted in blue), they run together
 whenever `:` or `RMB` (right mouse button) over map area is pressed.
@@ -132,7 +132,7 @@ to the party.
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
 The `X-hair` (aiming crosshair) is the common focus of the whole party,
-marked on the map with a yellow box and manipulated with mouse
+marked on the map with a red box and manipulated with mouse
 or movement keys in aiming mode. In this example, the crosshair points
 at a dire basilisk monster, with its hit points drawn as a bar.
 

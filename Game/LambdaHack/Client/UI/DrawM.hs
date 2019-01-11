@@ -298,7 +298,7 @@ drawFrameActor drawnLevelId = do
                      | otherwise = '%'
               dominated = maybe False (/= bfid) jfid
               bg = case mleader of
-                Just leader | aid == leader -> Color.HighlightRed
+                Just leader | aid == leader -> Color.HighlightYellow
                 _ -> if | bwatch == WSleep -> Color.HighlightGreen
                         | aid `ES.member` sselected -> Color.HighlightBlue
                         | dominated -> if bfid == side  -- dominated by us
@@ -364,7 +364,7 @@ drawFrameExtra dm drawnLevelId = do
         Color.AttrChar (Color.Attr fg _) ch ->
           Color.AttrChar (Color.Attr fg Color.HighlightGrey) ch
       writeSquare !hi (Color.AttrChar (Color.Attr fg bg) ch) =
-        let hiUnlessLeader | bg == Color.HighlightRed = bg
+        let hiUnlessLeader | bg == Color.HighlightYellow = bg
                            | otherwise = hi
         in Color.AttrChar (Color.Attr fg hiUnlessLeader) ch
       turnBW (Color.AttrChar _ ch) = Color.AttrChar Color.defAttr ch
@@ -390,7 +390,7 @@ drawFrameExtra dm drawnLevelId = do
                           [fromEnum p] v
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
-          Just p -> mapVL (writeSquare Color.HighlightYellow)
+          Just p -> mapVL (writeSquare Color.HighlightRed)
                           [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
@@ -714,7 +714,7 @@ drawSelected drawnLevelId width selected = do
                       . inline actorAssocs (== side) drawnLevelId
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewOurs (aid, Actor{bhp, bwatch}, ActorUI{bsymbol, bcolor}) =
-        let bg = if | mleader == Just aid -> Color.HighlightRed
+        let bg = if | mleader == Just aid -> Color.HighlightYellow
                     | ES.member aid selected -> Color.HighlightBlue
                     | bwatch == WSleep -> Color.HighlightGreen
                     | otherwise -> Color.HighlightNone

@@ -141,9 +141,7 @@ highlightToColor hi = case hi of
   HighlightMagenta -> BrMagenta  -- usually around white, so bright is fine
   HighlightGrey -> BrBlack
   HighlightWhite -> White  -- bright, but no saturation, so doesn't obscure
-  HighlightYellow -> BrYellow
-                       -- obscures dark colours, but nicely contrasts with blue,
-                       -- which is the least visible of dark colours
+  HighlightYellow -> BrYellow  -- obscures, but mostly used around bright white
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr

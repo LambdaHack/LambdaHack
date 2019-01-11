@@ -51,8 +51,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   let emulateBox attr = case attr of
         Color.Attr{bg=Color.HighlightNone,fg} ->
           (fg, Color.Black)
-        Color.Attr{bg=Color.HighlightRed} ->
-          (Color.Black, Color.defFG)
+        Color.Attr{bg=Color.HighlightRed,fg} ->
+          if fg /= Color.Red
+          then (fg, Color.Red)
+          else (fg, Color.defFG)
         Color.Attr{bg=Color.HighlightBlue,fg} ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
@@ -61,10 +63,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
-        Color.Attr{bg=Color.HighlightYellow,fg} ->
-          if fg /= Color.Brown
-          then (fg, Color.Brown)
-          else (fg, Color.defFG)
+        Color.Attr{bg=Color.HighlightYellow} ->
+          (Color.Black, Color.defFG)
         Color.Attr{fg} ->
           (fg, Color.Black)
   ttt <- textTagTableNew
