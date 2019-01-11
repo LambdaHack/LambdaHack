@@ -81,12 +81,12 @@ legalFgCol = White : BrWhite : BrBlack : stdCol
 -- Warning: SDL frontend sadly duplicates this code.
 colorToRGB :: Color -> Text
 colorToRGB Black     = "#000000"
-colorToRGB Red       = "#D50000"
-colorToRGB Green     = "#00AA00"
-colorToRGB Brown     = "#CA4A00"
-colorToRGB Blue      = "#203AF0"
-colorToRGB Magenta   = "#AA00AA"
-colorToRGB Cyan      = "#00AAAA"
+colorToRGB Red       = "#D50505"
+colorToRGB Green     = "#059D05"
+colorToRGB Brown     = "#CA4A05"
+colorToRGB Blue      = "#5352FF"
+colorToRGB Magenta   = "#AF0EAF"
+colorToRGB Cyan      = "#059696"
 colorToRGB White     = "#B7BDC4"
 colorToRGB AltWhite  = "#C4BDB7"
 colorToRGB BrBlack   = "#6F5F5F"
