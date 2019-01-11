@@ -259,9 +259,9 @@ drawFramePath drawnLevelId = do
                 _ | isUknownSpace tile -> Color.BrBlack
                 _ | Tile.isSuspect coTileSpeedup tile -> Color.BrMagenta
                 (True, True)   -> Color.BrGreen
-                (True, False)  -> Color.BrRed
+                (True, False)  -> Color.BrCyan
                 (False, True)  -> Color.Green
-                (False, False) -> Color.Red
+                (False, False) -> Color.Cyan
         in Color.attrChar2ToW32 fgOnPathOrLine ch
       mapVTL :: forall s. (Point -> ContentId TileKind -> Color.AttrCharW32)
              -> [Point]
