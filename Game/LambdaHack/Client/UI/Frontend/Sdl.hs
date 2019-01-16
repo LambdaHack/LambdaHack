@@ -102,11 +102,14 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  let fontSize = fromJust sfontSize
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
- let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+ let isBitmapFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                 || "bdf" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-     sdlSizeAdd = fromJust $ if isFonFile then sdlFntSizeAdd else sdlTtfSizeAdd
+                 || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+     sdlSizeAdd = fromJust
+                  $ if isBitmapFile then sdlFntSizeAdd else sdlTtfSizeAdd
  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
@@ -285,11 +288,14 @@ drawFrame :: ClientOptions    -- ^ client options
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
 drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
-  let isFonFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+  let isBitmapFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+                  || "bdf" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if isFonFile then sdlFntSizeAdd else sdlTtfSizeAdd
+                  || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust
+                   $ if isBitmapFile then sdlFntSizeAdd else sdlTtfSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
@@ -320,7 +326,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
             -- so only the dot can be bold).
             let acChar = if not (Color.isBright fg)
                             && acCharRaw == floorSymbol  -- 0xb7
-                         then if isFonFile
+                         then if isBitmapFile
                               then Char.chr 7   -- hack
                               else Char.chr 8901  -- 0x22c5
                          else acCharRaw

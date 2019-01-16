@@ -33,7 +33,7 @@ gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,F
 ;sdlFontFile = "Fix15Mono-Bold.woff"
 fontSize = 16
 sdlTtfSizeAdd = -2
-sdlFontFile = "16x16x.fnt"
+sdlFontFile = "16x16xw.bdf"
 sdlFntSizeAdd = 0
 ;sdlFonSizeAdd is now ignored
 ;sdlFontFile = "8x8xb.fnt"
