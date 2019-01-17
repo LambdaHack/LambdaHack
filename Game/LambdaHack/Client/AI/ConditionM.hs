@@ -328,9 +328,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
       actorMaxSk = actorMaxSkills EM.! aid
       n = min 2 param - Ability.getSk Ability.SkAggression actorMaxSk
       b = getActorBody aid s
-      mtgtPos = case btarget of
-        Nothing -> Nothing
-        Just target -> aidTgtToPos aid (blid b) target s
+      mtgtPos = aidTgtToPos aid (blid b) btarget s
       approaching b2 = case mtgtPos of
         Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
           chessDist (bpos b2) tgtPos <= 1 + param

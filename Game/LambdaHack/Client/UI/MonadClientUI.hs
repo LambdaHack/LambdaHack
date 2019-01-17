@@ -229,9 +229,7 @@ leaderTgtToPos = do
     Nothing -> return Nothing
     Just aid -> do
       mtgt <- getsClient $ getTarget aid
-      case mtgt of
-        Nothing -> return Nothing
-        Just tgt -> getsState $ aidTgtToPos aid lidV tgt
+      getsState $ aidTgtToPos aid lidV mtgt
 
 xhairToPos :: MonadClientUI m => m (Maybe Point)
 xhairToPos = do
@@ -256,9 +254,9 @@ clearAimMode = do
   sxhairOld <- getsSession sxhair
   let cpos = fromMaybe lpos xhairPos
       sxhair = case sxhairOld of
-        TEnemy{} -> sxhairOld
-        TVector{} -> sxhairOld
-        _ -> TPoint TAny lidV cpos
+        Just TEnemy{} -> sxhairOld
+        Just TVector{} -> sxhairOld
+        _ -> Just $ TPoint TAny lidV cpos
   modifySession $ \sess -> sess {sxhair}
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow

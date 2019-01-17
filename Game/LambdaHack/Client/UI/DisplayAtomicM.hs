@@ -605,7 +605,7 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifySession $ \sess -> sess {sxhair = TEnemy aid}
+      modifySession $ \sess -> sess {sxhair = Just $ TEnemy aid}
     stopPlayBack
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
@@ -624,7 +624,7 @@ destroyActorUI destroy aid b = do
   unless (baseColor == Color.BrWhite) $  -- keep setup for heroes, etc.
     modifySession $ \sess -> sess {sactorUI = EM.delete aid $ sactorUI sess}
   let affect tgt = case tgt of
-        TEnemy a | a == aid ->
+        Just (TEnemy a) | a == aid -> Just $
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
@@ -670,8 +670,8 @@ spotItem verbose iid kit c = do
         CFloor lid p -> do
           sxhairOld <- getsSession sxhair
           case sxhairOld of
-            TEnemy{} -> return ()  -- probably too important to overwrite
-            TPoint TEnemyPos{} _ _ -> return ()
+            Just TEnemy{} -> return ()  -- probably too important to overwrite
+            Just (TPoint TEnemyPos{} _ _) -> return ()
             _ -> do
               -- Don't steal xhair if it's only an item on another level.
               -- For enemies, OTOH, capture xhair to alarm player.
@@ -679,7 +679,7 @@ spotItem verbose iid kit c = do
               when (lid == lidV) $ do
                 bag <- getsState $ getFloorBag lid p
                 modifySession $ \sess ->
-                  sess {sxhair = TPoint (TItem bag) lidV p}
+                  sess {sxhair = Just $ TPoint (TItem bag) lidV p}
           itemVerbMU iid kit "be located" c
           stopPlayBack
         _ -> return ()

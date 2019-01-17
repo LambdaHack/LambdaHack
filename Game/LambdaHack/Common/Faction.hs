@@ -4,9 +4,8 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , Target(..), TGoal(..), Challenge(..)
-  , gleader, tgtKindDescription, isHorrorFact
-  , noRunWithMulti, isAIFact, autoDungeonLevel, automatePlayer
-  , isFoe, isFriend
+  , gleader, isHorrorFact, noRunWithMulti, isAIFact, autoDungeonLevel
+  , automatePlayer, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge, possibleActorFactions
 #ifdef EXPOSE_INTERNAL
@@ -120,13 +119,6 @@ instance Binary Challenge
 
 gleader :: Faction -> Maybe ActorId
 gleader = _gleader
-
-tgtKindDescription :: Target -> Text
-tgtKindDescription tgt = case tgt of
-  TEnemy _ -> "at enemy"
-  TNonEnemy _ -> "at non-enemy"
-  TPoint{} -> "at position"
-  TVector{} -> "with a vector"
 
 -- | Tell whether the faction consists of summoned horrors only.
 --

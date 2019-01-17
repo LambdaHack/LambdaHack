@@ -113,11 +113,11 @@ targetDesc mtarget = do
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
         return (Just pointedText, Nothing)
-    Just target@TVector{} ->
+    Just TVector{} ->
       case mleader of
         Nothing -> return (Just "a relative shift", Nothing)
         Just aid -> do
-          tgtPos <- getsState $ aidTgtToPos aid lidV target
+          tgtPos <- getsState $ aidTgtToPos aid lidV mtarget
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> tshow p
           return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
@@ -126,10 +126,7 @@ targetDesc mtarget = do
 targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe Text)
 targetDescXhair = do
   sxhair <- getsSession sxhair
-  let xhair = if sxhair == TVector (Vector 0 0)  -- hack; for savefile comp.
-              then Nothing
-              else Just sxhair
-  targetDesc xhair
+  targetDesc sxhair
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
@@ -352,9 +349,7 @@ drawFrameExtra dm drawnLevelId = do
       Nothing -> return Nothing
       Just leader -> do
         mtgt <- getsClient $ getTarget leader
-        case mtgt of
-          Nothing -> return Nothing
-          Just tgt -> getsState $ aidTgtToPos leader drawnLevelId tgt
+        getsState $ aidTgtToPos leader drawnLevelId mtgt
   let visionMarks =
         if smarkVision
         then IS.toList $ ES.enumSetToIntSet totVisible

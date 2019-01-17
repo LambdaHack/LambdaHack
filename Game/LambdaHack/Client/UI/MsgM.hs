@@ -92,11 +92,19 @@ promptMainKeys = do
         <+> keepTab
         <+> moreHelp
            | otherwise =
-        "Aim" <+> tgtKindDescription xhair
+        tgtKindVerb xhair
         <+> "with" <+> moveKeys <+> "keys or mouse."
         <+> keepTab
         <+> moreHelp
   void $ promptAdd0 keys
+
+tgtKindVerb :: Maybe Target -> Text
+tgtKindVerb mtgt = case mtgt of
+  Just TEnemy{} -> "Aim at enemy"
+  Just TNonEnemy{} -> "Aim at non-enemy"
+  Just TPoint{} -> "Aim at position"
+  Just TVector{} -> "Indicate a move vector"
+  Nothing -> "Start aiming"
 
 -- | Store new report in the history and archive old report.
 recordHistory :: MonadClientUI m => m ()

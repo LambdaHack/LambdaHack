@@ -415,25 +415,26 @@ xhairLegalEps = do
                             else "aiming line blocked somewhere"
   xhair <- getsSession sxhair
   case xhair of
-    TEnemy a -> do
+    Nothing -> return $ Left "no aim designated"
+    Just (TEnemy a) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
       else return $ Left "can't fling at an enemy on remote level"
-    TNonEnemy a -> do
+    Just (TNonEnemy a) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       if blid body == lidV
       then findNewEps False pos
       else return $ Left "can't fling at a non-enemy on remote level"
-    TPoint TEnemyPos{} _ _ ->
+    Just (TPoint TEnemyPos{} _ _) ->
       return $ Left "selected opponent not visible"
-    TPoint _ lid pos ->
+    Just (TPoint _ lid pos) ->
       if lid == lidV
       then findNewEps False pos
       else return $ Left "can't fling at a target on remote level"
-    TVector v -> do
+    Just (TVector v) -> do
       -- Not @ScreenContent@, because not drawing here.
       COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
       let shifted = shiftBounded rXmax rYmax (bpos b) v
@@ -448,10 +449,9 @@ posFromXhair = do
     Right newEps -> do
       -- Modify @seps@, permanently.
       modifyClient $ \cli -> cli {seps = newEps}
-      sxhair <- getsSession sxhair
       mpos <- xhairToPos
       case mpos of
-        Nothing -> error $ "" `showFailure` sxhair
+        Nothing -> error $ "" `showFailure` mpos
         Just pos -> do
           munit <- projectCheck pos
           case munit of
@@ -807,7 +807,7 @@ endAiming :: (MonadClient m, MonadClientUI m) => m ()
 endAiming = do
   leader <- getLeaderUI
   sxhair <- getsSession sxhair
-  modifyClient $ updateTarget leader $ const $ Just sxhair
+  modifyClient $ updateTarget leader $ const sxhair
 
 endAimingMsg :: MonadClientUI m => m ()
 endAimingMsg = do
@@ -823,7 +823,7 @@ endAimingMsg = do
 
 tgtClearHuman :: (MonadClient m, MonadClientUI m) => m ()
 tgtClearHuman = do
-  modifySession $ \sess -> sess {sxhair = TVector $ Vector 0 0}
+  modifySession $ \sess -> sess {sxhair = Nothing}
   doLook
 
 -- | Perform look around in the current position of the xhair.
@@ -836,10 +836,10 @@ doLook = do
     Just aimMode -> do
       leader <- getLeaderUI
       let lidV = aimLevelId aimMode
-      xhairPos <- xhairToPos
+      mxhairPos <- xhairToPos
       b <- getsState $ getActorBody leader
-      let p = fromMaybe (bpos b) xhairPos
-      blurb <- lookAtPosition lidV p
+      let xhairPos = fromMaybe (bpos b) mxhairPos
+      blurb <- lookAtPosition lidV xhairPos
       promptAdd1 blurb
 
 -- * ItemClear
@@ -858,17 +858,17 @@ moveXhairHuman dir n = do
   let lidV = maybe (error $ "" `showFailure` leader) aimLevelId saimMode
   -- Not @ScreenContent@, because not drawing here.
   lpos <- getsState $ bpos . getActorBody leader
-  sxhair <- getsSession sxhair
-  xhairPos <- xhairToPos
-  let cpos = fromMaybe lpos xhairPos
+  xhair <- getsSession sxhair
+  mxhairPos <- xhairToPos
+  let xhairPos = fromMaybe lpos mxhairPos
       shiftB pos = shiftBounded rXmax rYmax pos dir
-      newPos = iterate shiftB cpos !! n
-  if newPos == cpos then failMsg "never mind"
+      newPos = iterate shiftB xhairPos !! n
+  if newPos == xhairPos then failMsg "never mind"
   else do
-    let tgt = case sxhair of
-          TVector{} -> TVector $ newPos `vectorToFrom` lpos
-          _ -> TPoint TAny lidV newPos
-    modifySession $ \sess -> sess {sxhair = tgt}
+    let sxhair = case xhair of
+          Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
+          _ -> Just $ TPoint TAny lidV newPos
+    modifySession $ \sess -> sess {sxhair}
     doLook
     return Nothing
 
@@ -892,31 +892,32 @@ aimFloorHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  xhairPos <- xhairToPos
-  sxhair <- getsSession sxhair
+  mxhairPos <- xhairToPos
+  xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ actorAssocs (const True) lidV
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let xhair = fromMaybe lpos xhairPos
-      tgt = case sxhair of
+  let xhairPos = fromMaybe lpos mxhairPos
+      sxhair = case xhair of
+        Nothing -> xhair
         _ | isNothing saimMode ->  -- first key press: keep target
-          sxhair
-        TEnemy{} -> TPoint TAny lidV xhair
-        TNonEnemy{} -> TPoint TAny lidV xhair
-        TPoint{} -> TVector $ xhair `vectorToFrom` lpos
-        TVector{} ->
+          xhair
+        Just TEnemy{} -> Just $ TPoint TAny lidV xhairPos
+        Just TNonEnemy{} -> Just $ TPoint TAny lidV xhairPos
+        Just TPoint{} -> Just $ TVector $ xhairPos `vectorToFrom` lpos
+        Just TVector{} ->
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- when pressing "*", without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
-          case find (\(_, b) -> Just (bpos b) == xhairPos) bsAll of
-            Just (aid, b) -> if isFoe side fact (bfid b)
-                             then TEnemy aid
-                             else TNonEnemy aid
-            Nothing -> TPoint TAny lidV xhair
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifySession $ \sess -> sess {sxhair = tgt}
+          case find (\(_, b) -> Just (bpos b) == mxhairPos) bsAll of
+            Just (aid, b) -> Just $ if isFoe side fact (bfid b)
+                                    then TEnemy aid
+                                    else TNonEnemy aid
+            Nothing -> Just $ TPoint TAny lidV xhairPos
+  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
+                                , sxhair }
   doLook
 
 -- * AimEnemy
@@ -926,8 +927,8 @@ aimEnemyHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  xhairPos <- xhairToPos
-  sxhair <- getsSession sxhair
+  mxhairPos <- xhairToPos
+  xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -936,15 +937,15 @@ aimEnemyHuman = do
       ordPos (_, b) = (chessDist lpos $ bpos b, bpos b, bproj b)
       dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the actor under xhair, if any
-        fromMaybe (-1) $ findIndex ((== xhairPos) . Just . bpos . snd) dbs
-      (pickEnemies, i) = case sxhair of
-        TEnemy a | isJust saimMode ->  -- pick next enemy
+        fromMaybe (-1) $ findIndex ((== mxhairPos) . Just . bpos . snd) dbs
+      (pickEnemies, i) = case xhair of
+        Just (TEnemy a) | isJust saimMode ->  -- pick next enemy
           (True, 1 + fromMaybe (-1) (findIndex ((== a) . fst) dbs))
-        TEnemy a ->  -- first key press, retarget old enemy
+        Just (TEnemy a) ->  -- first key press, retarget old enemy
           (True, fromMaybe (-1) $ findIndex ((== a) . fst) dbs)
-        TNonEnemy a | isJust saimMode ->  -- pick next non-enemy
+        Just (TNonEnemy a) | isJust saimMode ->  -- pick next non-enemy
           (False, 1 + fromMaybe (-1) (findIndex ((== a) . fst) dbs))
-        TNonEnemy a ->  -- first key press, retarget old non-enemy
+        Just (TNonEnemy a) ->  -- first key press, retarget old non-enemy
           (False, fromMaybe (-1) $ findIndex ((== a) . fst) dbs)
         _ -> (True, pickUnderXhair)
       (lt, gt) = splitAt i dbs
@@ -953,12 +954,12 @@ aimEnemyHuman = do
                   && bhp b > 0
       cond = if pickEnemies then isEnemy else not . isEnemy
       lf = filter (cond . snd) $ gt ++ lt
-      tgt = case lf of
-        (a, _) : _ -> if pickEnemies then TEnemy a else TNonEnemy a
-        [] -> sxhair  -- no seen foes in sight, stick to last target
+      sxhair = case lf of
+        (a, _) : _ -> Just $ if pickEnemies then TEnemy a else TNonEnemy a
+        [] -> xhair  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifySession $ \sess -> sess {sxhair = tgt}
+  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
+                                , sxhair }
   doLook
 
 -- * AimItem
@@ -968,31 +969,33 @@ aimItemHuman = do
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  xhairPos <- xhairToPos
-  sxhair <- getsSession sxhair
+  mxhairPos <- xhairToPos
+  xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
   bsAll <- getsState $ EM.keys . lfloor . (EM.! lidV) . sdungeon
   let ordPos p = (chessDist lpos p, p)
       dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the item under xhair, if any
         let i = fromMaybe (-1)
-                $ findIndex ((== xhairPos) . Just) dbs
+                $ findIndex ((== mxhairPos) . Just) dbs
         in splitAt i dbs
-      (lt, gt) = case sxhair of
-        TPoint _ lid pos | isJust saimMode && lid == lidV ->  -- pick next item
-          let i = fromMaybe (-1) $ findIndex (== pos) dbs
-          in splitAt (i + 1) dbs
-        TPoint _ lid pos | lid == lidV ->  -- first key press, retarget old item
-          let i = fromMaybe (-1) $ findIndex (== pos) dbs
-          in splitAt i dbs
+      (lt, gt) = case xhair of
+        Just (TPoint _ lid pos)
+          | isJust saimMode && lid == lidV ->  -- pick next item
+            let i = fromMaybe (-1) $ findIndex (== pos) dbs
+            in splitAt (i + 1) dbs
+        Just (TPoint _ lid pos)
+          | lid == lidV ->  -- first key press, retarget old item
+            let i = fromMaybe (-1) $ findIndex (== pos) dbs
+            in splitAt i dbs
         _ -> pickUnderXhair
       gtlt = gt ++ lt
-      tgt = case gtlt of
-        p : _ -> TPoint TAny lidV p
-        [] -> sxhair  -- no items remembered, stick to last target
+      sxhair = case gtlt of
+        p : _ -> Just $ TPoint TAny lidV p
+        [] -> xhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
-  modifySession $ \sess -> sess {sxhair = tgt}
+  modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
+                                , sxhair }
   doLook
 
 -- * AimAscend
@@ -1013,11 +1016,11 @@ aimAscendHuman k = do
           lidK = iterate ascendOne lidV !! abs k
       leader <- getLeaderUI
       lpos <- getsState $ bpos . getActorBody leader
-      xhairPos <- xhairToPos
-      let cpos = fromMaybe lpos xhairPos
-          tgt = TPoint TAny lidK cpos
+      mxhairPos <- xhairToPos
+      let xhairPos = fromMaybe lpos mxhairPos
+          sxhair = Just $ TPoint TAny lidK xhairPos
       modifySession $ \sess -> sess { saimMode = Just (AimMode lidK)
-                                    , sxhair = tgt }
+                                    , sxhair }
       doLook
       return Nothing
 
@@ -1050,7 +1053,7 @@ xhairUnknownHuman = do
   case mpos of
     Nothing -> failMsg "no more unknown spots left"
     Just p -> do
-      let sxhair = TPoint TUnknown (blid b) p
+      let sxhair = Just $ TPoint TUnknown (blid b) p
       modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
@@ -1066,7 +1069,7 @@ xhairItemHuman = do
     [] -> failMsg "no more items remembered or visible"
     _ -> do
       let (_, (p, bag)) = maximumBy (comparing fst) items
-          sxhair = TPoint (TItem bag) (blid b) p
+          sxhair = Just $ TPoint (TItem bag) (blid b) p
       modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
@@ -1082,7 +1085,7 @@ xhairStairHuman up = do
     [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
     _ -> do
       let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
-          sxhair = TPoint (TEmbed bag p0) (blid b) p
+          sxhair = Just $ TPoint (TEmbed bag p0) (blid b) p
       modifySession $ \sess -> sess {sxhair}
       doLook
       return Nothing
@@ -1105,7 +1108,7 @@ xhairPointerFloor verbose = do
      && px < rXmax && py - mapStartY < rYmax
   then do
     oldXhair <- getsSession sxhair
-    let sxhair = TPoint TAny lidV $ Point px (py - mapStartY)
+    let sxhair = Just $ TPoint TAny lidV $ Point px (py - mapStartY)
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
@@ -1142,15 +1145,15 @@ xhairPointerEnemy verbose = do
           -- when pressing "*", without any intervening actors from other tiles.
           -- This is why we use @actorAssocs@ above instead of @posToAidAssocs@.
           case find (\(_, b) -> bpos b == newPos) bsAll of
-            Just (aid, b) -> if isFoe side fact (bfid b)
-                             then TEnemy aid
-                             else TNonEnemy aid
-            Nothing -> TPoint TAny lidV newPos
+            Just (aid, b) -> Just $ if isFoe side fact (bfid b)
+                                    then TEnemy aid
+                                    else TNonEnemy aid
+            Nothing -> Just $ TPoint TAny lidV newPos
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
-           , sxhairMoused }
-    modifySession $ \sess -> sess {sxhair}
+           , sxhairMoused
+           , sxhair }
     if verbose then doLook else flashAiming
   else stopPlayBack
 

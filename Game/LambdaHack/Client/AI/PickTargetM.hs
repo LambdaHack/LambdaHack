@@ -106,7 +106,7 @@ computeTarget aid = do
       -- This is also triggered by @UpdLeadFaction@.
       Just <$> createPath aid tapTgt
     Just tap@TgtAndPath{..} -> do
-      mvalidPos <- getsState $ aidTgtToPos aid (blid b) tapTgt
+      mvalidPos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
       if | isNothing mvalidPos -> return Nothing  -- wrong level
          | bpos b == pathGoal tapPath ->
              return mtgtMPath  -- goal reached; stay there picking up items

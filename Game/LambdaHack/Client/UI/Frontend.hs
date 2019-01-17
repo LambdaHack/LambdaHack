@@ -97,7 +97,7 @@ getKey fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
   if autoYes && (null keys || K.spaceKM `elem` keys) then do
     display rf frame
-    return $! KMP{kmpKeyMod = K.spaceKM, kmpPointer=originPoint}
+    return $! KMP {kmpKeyMod = K.spaceKM, kmpPointer = originPoint}
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
     display rf frame

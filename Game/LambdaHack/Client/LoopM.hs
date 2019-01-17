@@ -22,8 +22,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Vector
 
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where
@@ -41,11 +39,7 @@ initUI sccui@CCUI{coscreen} = do
   debugPossiblyPrint $ "UI client" <+> tshow side <+> "initializing."
   -- Start the frontend.
   schanF <- chanFrontend coscreen soptions
-  modifySession $ \sess ->
-    sess { schanF
-         , sccui
-         , sxhair = TVector $ Vector 0 0 }
-             -- a step south-east, less alarming
+  modifySession $ \sess -> sess {schanF, sccui}
 
 -- | The main game loop for an AI or UI client. It receives responses from
 -- the server, changes internal client state accordingly, analyzes

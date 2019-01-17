@@ -375,7 +375,7 @@ meleeAid target = do
             -- Also set xhair to see the foe's HP, because it's automatically
             -- set to any new spotted actor, so it needs to be reset
             -- and also it's not useful as permanent ranged target anyway.
-            modifySession $ \sess -> sess {sxhair = TEnemy target}
+            modifySession $ \sess -> sess {sxhair = Just $ TEnemy target}
             return $ Right wp
           res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
               | isFriend (bfid sb) sfact (bfid tb) = do
@@ -854,10 +854,9 @@ projectItem (fromCStore, (iid, itemFull)) = do
           Right (pos, _) -> do
             -- Set personal target to enemy, so that AI, if it takes over
             -- the actor, is likely to continue the fight even if the foe flees.
-            mposTgt <- leaderTgtToPos
-            unless (Just pos == mposTgt) $ do
-              sxhair <- getsSession sxhair
-              modifyClient $ updateTarget leader (const $ Just sxhair)
+            -- Similarly if the crosshair points at position, etc.
+            sxhair <- getsSession sxhair
+            modifyClient $ updateTarget leader (const sxhair)
             -- Project.
             eps <- getsClient seps
             return $ Right $ ReqProject pos eps iid fromCStore

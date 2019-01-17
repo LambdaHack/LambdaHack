@@ -43,8 +43,9 @@ getPerFid lid = do
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.
-aidTgtToPos :: ActorId -> LevelId -> Target -> State -> Maybe Point
-aidTgtToPos aid lidV tgt s = case tgt of
+aidTgtToPos :: ActorId -> LevelId -> Maybe Target -> State -> Maybe Point
+aidTgtToPos _ _ Nothing _ = Nothing
+aidTgtToPos aid lidV (Just tgt) s = case tgt of
   TEnemy a ->
     let body = getActorBody a s
     in if blid body == lidV then Just (bpos body) else Nothing

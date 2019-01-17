@@ -688,9 +688,7 @@ projectItem :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
-  mfpos <- case btarget of
-    Nothing -> return Nothing
-    Just target -> getsState $ aidTgtToPos aid (blid b) target
+  mfpos <- getsState $ aidTgtToPos aid (blid b) btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
     (_, Just fpos) | adjacent (bpos b) fpos -> return reject

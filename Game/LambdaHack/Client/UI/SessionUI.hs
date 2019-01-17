@@ -29,14 +29,13 @@ import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Vector
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
 -- Some of it is saved, some is reset when a new playing session starts.
 -- An important component is the frontend session.
 data SessionUI = SessionUI
-  { sxhair         :: Target             -- ^ the common xhair
+  { sxhair         :: Maybe Target       -- ^ the common xhair
   , sactorUI       :: ActorDictUI        -- ^ assigned actor UI presentations
   , sitemUI        :: ItemDictUI         -- ^ assigned item first seen level
   , sslots         :: ItemSlots          -- ^ map from slots to items
@@ -111,7 +110,7 @@ data HintMode =
 emptySessionUI :: UIOptions -> SessionUI
 emptySessionUI sUIOptions =
   SessionUI
-    { sxhair = TVector $ Vector 0 0
+    { sxhair = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
     , sslots = ItemSlots $ EM.fromAscList
