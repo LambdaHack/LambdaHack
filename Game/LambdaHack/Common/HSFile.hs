@@ -16,12 +16,13 @@ import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex
 import           Data.Binary
 import qualified Data.ByteString.Lazy as LBS
+import           Data.Version
 import           System.Directory
 import           System.FilePath
 import           System.IO (IOMode (..), hClose, openBinaryFile, readFile,
                             withBinaryFile, writeFile)
 
--- | Serialize, compress and save data.
+-- | Serialize and save data.
 -- Note that LBS.writeFile opens the file in binary mode.
 encodeData :: Binary a => FilePath -> a -> IO ()
 encodeData path a = do
@@ -30,7 +31,7 @@ encodeData path a = do
     (openBinaryFile tmpPath WriteMode)
     (\h -> hClose h >> removeFile tmpPath)
     (\h -> do
-       LBS.hPut h . Z.compress . encode $ a
+       LBS.hPut h . encode $ a
        hClose h
        renameFile tmpPath path
     )
@@ -38,20 +39,24 @@ encodeData path a = do
 -- | Serialize, compress and save data with an EOF marker.
 -- The @OK@ is used as an EOF marker to ensure any apparent problems with
 -- corrupted files are reported to the user ASAP.
-encodeEOF :: Binary a => FilePath -> a -> IO ()
-encodeEOF path a = encodeData path (a, "OK" :: String)
+encodeEOF :: Binary b => FilePath -> Version -> b -> IO ()
+encodeEOF path v b =
+  encodeData path (v, (Z.compress $ encode b, "OK" :: String))
 
 -- | Read, decompress and deserialize data with an EOF marker.
 -- The @OK@ EOF marker ensures any easily detectable file corruption
--- is discovered and reported before the function returns.
-strictDecodeEOF :: Binary a => FilePath -> IO a
+-- is discovered and reported before any value is decoded from
+-- the second component and before the file handle is closed.
+-- OTOH, binary encoding corruption is not discovered until a version
+-- check elswere ensures that binary formats are compatible.
+strictDecodeEOF :: Binary b => FilePath -> IO (Version, b)
 strictDecodeEOF path =
   withBinaryFile path ReadMode $ \h -> do
-    c <- LBS.hGetContents h
-    let (a, n) = decode $ Z.decompress c
-    if n == ("OK" :: String)
-    then return $! a
-    else fail $ "Fatal error: corrupted file " ++ path
+    c1 <- LBS.hGetContents h
+    let (v1, (c2, s)) = decode c1
+    return $! if s == ("OK" :: String)
+              then (v1, decode $ Z.decompress c2)
+              else error $ "Fatal error: corrupted file " ++ path
 
 -- | Try to create a directory, if it doesn't exist. We catch exceptions
 -- in case many clients try to do the same thing at the same time.

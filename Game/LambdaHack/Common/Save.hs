@@ -3,16 +3,13 @@ module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loopSave, vExevLib, compatibleVersion, showVersion2, delayPrint
+  , loopSave, compatibleVersion, delayPrint
 #endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
-
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
 
 import           Control.Concurrent
 import           Control.Concurrent.Async
@@ -53,7 +50,9 @@ loopSave cops stateToFileName toSave =
         tryCreateDir (dataDir </> "saves")
         let fileName = stateToFileName s
         yield  -- minimize UI lag due to saving
-        encodeEOF (dataDir </> "saves" </> fileName) (vExevLib cops, s)
+        encodeEOF (dataDir </> "saves" </> fileName)
+                  (rexeVersion $ corule cops)
+                  s
         -- Wait until the save finished. During that time, the mvar
         -- is continually updated to newest state values.
         loop
@@ -101,17 +100,16 @@ restoreGame cops fileName = do
   -- terminate the program with an exception.
   res <- Ex.try $
     if saveExists then do
-      let vExevLib1 = vExevLib cops
-      (vExevLib2, s) <- strictDecodeEOF (path "")
-      if compatibleVersion (fst vExevLib1) (fst vExevLib2)
-         && compatibleVersion (snd vExevLib1) (snd vExevLib2)
+      let vExe1 = rexeVersion $ corule cops
+      (vExe2, s) <- strictDecodeEOF (path "")
+      if compatibleVersion vExe1 vExe2
       then return $ Just s
       else do
         let msg = "Savefile" <+> T.pack (path "")
                   <+> "from an incompatible version"
-                  <+> showVersion2 vExevLib2
+                  <+> T.pack (showVersion vExe2)
                   <+> "detected while trying to restore"
-                  <+> showVersion2 vExevLib1
+                  <+> T.pack (showVersion vExe1)
                   <+> "game."
         fail $ T.unpack msg
     else return Nothing
@@ -124,19 +122,9 @@ restoreGame cops fileName = do
         return Nothing
   either handler return res
 
-vExevLib :: COps -> (Version, Version)
-vExevLib COps{corule} =
-  let exeVersion = rexeVersion corule
-      libVersion = Self.version
-  in (exeVersion, libVersion)
-
 -- Minor version discrepancy permitted.
 compatibleVersion :: Version -> Version -> Bool
 compatibleVersion v1 v2 = take 3 (versionBranch v1) == take 3 (versionBranch v2)
-
-showVersion2 :: (Version, Version) -> Text
-showVersion2 (exeVersion, libVersion) = T.pack $
-  showVersion exeVersion <> "-" <> showVersion libVersion
 
 delayPrint :: Text -> IO ()
 delayPrint t = do

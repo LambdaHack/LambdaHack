@@ -174,7 +174,7 @@ registerScore status fid = do
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $
-               encodeEOF path (Self.version, nScoreDict :: HighScore.ScoreDict)
+               encodeEOF path Self.version (nScoreDict :: HighScore.ScoreDict)
       chal | fhasUI $ gplayer fact = curChalSer
            | otherwise = curChalSer
                            {cdiff = difficultyInverse (cdiff curChalSer)}
