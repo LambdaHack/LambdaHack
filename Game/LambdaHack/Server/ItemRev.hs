@@ -69,8 +69,7 @@ buildItem COps{coitem} arItem (FlavourMap flavourMap)
                kindHidden
         Nothing -> IdentityObvious ikChosen
       jfid     = Nothing  -- the default
-      mflavour = flavourMap U.!? contentIdIndex ikChosen
-      jflavour = toEnum $ fromMaybe 2 $ fromEnum <$> mflavour
+      jflavour = toEnum $ fromEnum $ flavourMap U.! contentIdIndex ikChosen
   in Item{..}
 
 -- | Roll an item kind based on given @Freqs@ and kind rarities
