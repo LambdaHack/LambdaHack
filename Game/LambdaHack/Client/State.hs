@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Client-specific game state components.
 module Game.LambdaHack.Client.State
-  ( StateClient(..), AlterLid, BfsAndPath(..), TgtAndPath(..)
+  ( StateClient(..), AlterLid, BfsAndPath(..)
+  , TgtAndPath(..), Target(..), TGoal(..)
   , emptyStateClient, cycleMarkSuspect
   , updateTarget, getTarget, updateLeader, sside, sleader
   ) where
@@ -29,6 +30,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
 
 -- | Client state, belonging to a single faction.
@@ -83,6 +85,33 @@ data TgtAndPath = TgtAndPath {tapTgt :: Target, tapPath :: AndPath}
   deriving (Show, Generic)
 
 instance Binary TgtAndPath
+
+-- | The type of na actor target.
+data Target =
+    TEnemy ActorId              -- ^ target an enemy
+  | TNonEnemy ActorId           -- ^ target a friend or neutral
+  | TPoint TGoal LevelId Point  -- ^ target a concrete spot
+  | TVector Vector              -- ^ target position relative to actor
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Target
+
+-- | The goal of an actor.
+data TGoal =
+    TEnemyPos ActorId  -- ^ last seen position of the targeted actor
+  | TEmbed ItemBag Point  -- ^ embedded item that can be triggered;
+                          -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is
+                          -- embbedded in @p@ and @q@ is an adjacent open tile
+  | TItem ItemBag  -- ^ item lying on the ground
+  | TSmell  -- ^ smell potentially left by enemies
+  | TBlock  -- ^ a blocking tile to be approached (and, e.g., revealed
+            --   to be walkable or altered or searched)
+  | TUnknown  -- ^ an unknown tile to be explored
+  | TKnown  -- ^ a known tile to be patrolled
+  | TAny  -- ^ an unspecified goal
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary TGoal
 
 -- | Initial empty game client state.
 emptyStateClient :: FactionId -> StateClient

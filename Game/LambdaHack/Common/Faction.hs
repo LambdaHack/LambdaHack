@@ -2,8 +2,8 @@
 -- | Factions taking part in the game, e.g., a hero faction, a monster faction
 -- and an animal faction.
 module Game.LambdaHack.Common.Faction
-  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
-  , Target(..), TGoal(..), Challenge(..)
+  ( FactionId, FactionDict, Faction(..), Diplomacy(..)
+  , Status(..), Challenge(..)
   , gleader, isHorrorFact, noRunWithMulti, isAIFact, autoDungeonLevel
   , automatePlayer, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
@@ -29,8 +29,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
@@ -80,33 +78,6 @@ data Status = Status
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Status
-
--- | The type of na actor target.
-data Target =
-    TEnemy ActorId              -- ^ target an enemy
-  | TNonEnemy ActorId           -- ^ target a friend or neutral
-  | TPoint TGoal LevelId Point  -- ^ target a concrete spot
-  | TVector Vector              -- ^ target position relative to actor
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary Target
-
--- | The goal of an actor.
-data TGoal =
-    TEnemyPos ActorId  -- ^ last seen position of the targeted actor
-  | TEmbed ItemBag Point  -- ^ embedded item that can be triggered;
-                          -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is
-                          -- embbedded in @p@ and @q@ is an adjacent open tile
-  | TItem ItemBag  -- ^ item lying on the ground
-  | TSmell  -- ^ smell potentially left by enemies
-  | TBlock  -- ^ a blocking tile to be approached (and, e.g., revealed
-            --   to be walkable or altered or searched)
-  | TUnknown  -- ^ an unknown tile to be explored
-  | TKnown  -- ^ a known tile to be patrolled
-  | TAny  -- ^ an unspecified goal
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary TGoal
 
 data Challenge = Challenge
   { cdiff :: Int   -- ^ game difficulty level (HP bonus or malus)

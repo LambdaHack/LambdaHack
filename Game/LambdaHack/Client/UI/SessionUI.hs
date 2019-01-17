@@ -15,6 +15,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import           Data.Time.Clock.POSIX
 
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frontend
@@ -24,7 +25,6 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
