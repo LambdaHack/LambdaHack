@@ -48,7 +48,7 @@ data StateServer = StateServer
   , sacounter     :: ActorId        -- ^ stores next actor index
   , sicounter     :: ItemId         -- ^ stores next item index
   , snumSpawned   :: EM.EnumMap LevelId Int
-  , sundo         :: [()] -- [CmdAtomic] -- ^ atomic commands performed to date
+  , sundo         :: () -- [CmdAtomic] -- ^ atomic commands performed to date
   , sclientStates :: EM.EnumMap FactionId State
                                     -- ^ each faction state, as seen by clients
   , sperFid       :: PerFid         -- ^ perception of all factions
@@ -95,7 +95,7 @@ emptyStateServer =
     , sacounter = toEnum 0
     , sicounter = toEnum 0
     , snumSpawned = EM.empty
-    , sundo = []
+    , sundo = ()
     , sclientStates = EM.empty
     , sperFid = EM.empty
     , sperValidFid = EM.empty
@@ -172,7 +172,7 @@ instance Binary StateServer where
     srngs <- get
     soptions <- get
     let srandom = read g
-        sundo = []
+        sundo = ()
         sperFid = EM.empty
         sperValidFid = EM.empty
         sperCacheFid = EM.empty

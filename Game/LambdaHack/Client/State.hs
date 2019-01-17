@@ -44,7 +44,7 @@ data StateClient = StateClient
                                     -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath
                                     -- ^ pathfinding data for our actors
-  , sundo         :: [()] -- [CmdAtomic] -- ^ atomic commands performed to date
+  , sundo         :: () -- [CmdAtomic] -- ^ atomic commands performed to date
   , sdiscoBenefit :: DiscoveryBenefit
       -- ^ remembered AI benefits of items; could be recomputed at resume,
       --   but they are costly to generate and not too large
@@ -93,7 +93,7 @@ emptyStateClient _sside =
     , sfleeD = EM.empty
     , sexplored = ES.empty
     , sbfsD = EM.empty
-    , sundo = []
+    , sundo = ()
     , sdiscoBenefit = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
@@ -149,7 +149,6 @@ instance Binary StateClient where
     put stargetD
     put sfleeD
     put sexplored
-    put sundo
     put sdiscoBenefit
     put (show srandom)
     put _sleader
@@ -168,7 +167,6 @@ instance Binary StateClient where
     stargetD <- get
     sfleeD <- get
     sexplored <- get
-    sundo <- get
     sdiscoBenefit <- get
     g <- get
     _sleader <- get
@@ -180,6 +178,7 @@ instance Binary StateClient where
     scondInMelee <- get
     svictories <- get
     let sbfsD = EM.empty
+        sundo = ()
         salter = EM.empty
         srandom = read g
         squit = False
