@@ -246,18 +246,20 @@ xhairToPos = do
 -- back to the leader level.
 clearAimMode :: MonadClientUI m => m ()
 clearAimMode = do
-  leader <- getLeaderUI
-  lpos <- getsState $ bpos . getActorBody leader
-  xhairPos <- xhairToPos  -- computed while still in aiming mode
+  lidVOld <- viewedLevelUI  -- not in aiming mode at this point
+  mxhairPos <- xhairToPos  -- computed while still in aiming mode
   modifySession $ \sess -> sess {saimMode = Nothing}
   lidV <- viewedLevelUI  -- not in aiming mode at this point
-  sxhairOld <- getsSession sxhair
-  let cpos = fromMaybe lpos xhairPos
-      sxhair = case sxhairOld of
-        Just TEnemy{} -> sxhairOld
-        Just TVector{} -> sxhairOld
-        _ -> Just $ TPoint TAny lidV cpos
-  modifySession $ \sess -> sess {sxhair}
+  when (lidVOld /= lidV) $ do
+    leader <- getLeaderUI
+    lpos <- getsState $ bpos . getActorBody leader
+    sxhairOld <- getsSession sxhair
+    let xhairPos = fromMaybe lpos mxhairPos
+        sxhair = case sxhairOld of
+          Just TPoint{} -> Just $ TPoint TUnknown lidV xhairPos
+            -- the point is possibly unknown on this level; unimportant anyway
+          _ -> sxhairOld
+    modifySession $ \sess -> sess {sxhair}
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
