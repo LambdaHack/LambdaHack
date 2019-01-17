@@ -13,53 +13,53 @@ import GHC.Generics (Generic)
 
 -- | Options that affect the behaviour of the client (but not game rules).
 data ClientOptions = ClientOptions
-  { sgtkFontFamily    :: Maybe Text
+  { sgtkFontFamily     :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
-  , sdlFontFile       :: Maybe Text
+  , sdlFontFile        :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
-  , sdlTtfSizeAdd     :: Maybe Int
+  , sdlScalableSizeAdd :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
       --   To get symmetric padding, add an even number.
-  , sdlFntSizeAdd     :: Maybe Int
+  , sdlBitmapSizeAdd   :: Maybe Int
       -- ^ Pixels to add to map cells on top of fixed font max glyph height.
       --   To get symmetric padding, add an even number.
-  , sfontSize         :: Maybe Int
+  , sscalableFontSize  :: Maybe Int
       -- ^ Font size to use for the main game window.
-  , scolorIsBold      :: Maybe Bool  -- backward compatibility
-  , slogPriority      :: Maybe Int
+  , scolorIsBold       :: Maybe Bool  -- backward compatibility
+  , slogPriority       :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
-  , smaxFps           :: Maybe Int
+  , smaxFps            :: Maybe Int
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , sdisableAutoYes   :: Bool
+  , sdisableAutoYes    :: Bool
       -- ^ Never auto-answer all prompts, even if under AI control.
-  , snoAnim           :: Maybe Bool
+  , snoAnim            :: Maybe Bool
       -- ^ Don't show any animations.
-  , snewGameCli       :: Bool
+  , snewGameCli        :: Bool
       -- ^ Start a new game, overwriting the save file.
-  , sbenchmark        :: Bool
+  , sbenchmark         :: Bool
       -- ^ Don't create directories and files and show time stats.
-  , stitle            :: Maybe Text
-  , sfontDir          :: Maybe FilePath
-  , ssavePrefixCli    :: String
+  , stitle             :: Maybe Text
+  , sfontDir           :: Maybe FilePath
+  , ssavePrefixCli     :: String
       -- ^ Prefix of the save game file name.
-  , sfrontendTeletype :: Bool
+  , sfrontendTeletype  :: Bool
       -- ^ Whether to use the stdout/stdin frontend.
-  , sfrontendNull     :: Bool
+  , sfrontendNull      :: Bool
       -- ^ Whether to use null (no input/output) frontend.
-  , sfrontendLazy     :: Bool
+  , sfrontendLazy      :: Bool
       -- ^ Whether to use lazy (output not even calculated) frontend.
-  , sdbgMsgCli        :: Bool
+  , sdbgMsgCli         :: Bool
       -- ^ Show clients' internal debug messages.
-  , sstopAfterSeconds :: Maybe Int
-  , sstopAfterFrames  :: Maybe Int
-  , sprintEachScreen  :: Bool
-  , sexposePlaces     :: Bool
-  , sexposeItems      :: Bool
-  , sexposeActors     :: Bool
+  , sstopAfterSeconds  :: Maybe Int
+  , sstopAfterFrames   :: Maybe Int
+  , sprintEachScreen   :: Bool
+  , sexposePlaces      :: Bool
+  , sexposeItems       :: Bool
+  , sexposeActors      :: Bool
   }
   deriving (Show, Eq, Generic)
 
@@ -70,9 +70,9 @@ defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing
   , sdlFontFile = Nothing
-  , sdlTtfSizeAdd = Nothing
-  , sdlFntSizeAdd = Nothing
-  , sfontSize = Nothing
+  , sdlScalableSizeAdd = Nothing
+  , sdlBitmapSizeAdd = Nothing
+  , sscalableFontSize = Nothing
   , scolorIsBold = Nothing
   , slogPriority = Nothing
   , smaxFps = Nothing

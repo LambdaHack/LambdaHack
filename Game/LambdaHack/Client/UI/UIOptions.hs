@@ -33,25 +33,25 @@ import           Game.LambdaHack.Content.RuleKind
 -- | Options that affect the UI of the client.
 data UIOptions = UIOptions
   { -- commands
-    uCommands         :: [(K.KM, CmdTriple)]
+    uCommands           :: [(K.KM, CmdTriple)]
     -- hero names
-  , uHeroNames        :: [(Int, (Text, Text))]
+  , uHeroNames          :: [(Int, (Text, Text))]
     -- ui
-  , uVi               :: Bool  -- ^ the option for Vi keys takes precendence
-  , uLaptop           :: Bool  -- ^ because the laptop keys are the default
-  , uGtkFontFamily    :: Text
-  , uSdlFontFile      :: Text
-  , uSdlTtfSizeAdd    :: Int
-  , uSdlFntSizeAdd    :: Int
-  , uFontSize         :: Int
-  , uColorIsBold      :: Bool
-  , uHistoryMax       :: Int
-  , uMaxFps           :: Int
-  , uNoAnim           :: Bool
-  , uRunStopMsgs      :: Bool
-  , uhpWarningPercent :: Int
+  , uVi                 :: Bool  -- ^ the option for Vi keys takes precendence
+  , uLaptop             :: Bool  -- ^ because the laptop keys are the default
+  , uGtkFontFamily      :: Text
+  , uSdlFontFile        :: Text
+  , uSdlScalableSizeAdd :: Int
+  , uSdlBitmapSizeAdd   :: Int
+  , uScalableFontSize   :: Int
+  , uColorIsBold        :: Bool
+  , uHistoryMax         :: Int
+  , uMaxFps             :: Int
+  , uNoAnim             :: Bool
+  , uRunStopMsgs        :: Bool
+  , uhpWarningPercent   :: Int
       -- ^ HP percent at which warning is emitted.
-  , uCmdline          :: [String]
+  , uCmdline            :: [String]
       -- ^ Hardwired commandline arguments to process.
   }
   deriving (Show, Generic)
@@ -100,9 +100,9 @@ parseConfig cfg =
       uLaptop = not uVi && getOption "movementLaptopKeys_uk8o79jl"
       uGtkFontFamily = getOption "gtkFontFamily"
       uSdlFontFile = getOption "sdlFontFile"
-      uSdlTtfSizeAdd = getOption "sdlTtfSizeAdd"
-      uSdlFntSizeAdd = getOption "sdlFntSizeAdd"
-      uFontSize = getOption "fontSize"
+      uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
+      uSdlBitmapSizeAdd = getOption "sdlBitmapSizeAdd"
+      uScalableFontSize = getOption "scalableFontSize"
       uHistoryMax = getOption "historyMax"
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
@@ -141,12 +141,12 @@ applyUIOptions COps{corule} uioptions soptions =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlFontFile =
         sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
-     (\opts -> opts {sdlTtfSizeAdd =
-        sdlTtfSizeAdd opts `mplus` Just (uSdlTtfSizeAdd uioptions)}) .
-     (\opts -> opts {sdlFntSizeAdd =
-        sdlFntSizeAdd opts `mplus` Just (uSdlFntSizeAdd uioptions)}) .
-     (\opts -> opts {sfontSize =
-        sfontSize opts `mplus` Just (uFontSize uioptions)}) .
+     (\opts -> opts {sdlScalableSizeAdd =
+        sdlScalableSizeAdd opts `mplus` Just (uSdlScalableSizeAdd uioptions)}) .
+     (\opts -> opts {sdlBitmapSizeAdd =
+        sdlBitmapSizeAdd opts `mplus` Just (uSdlBitmapSizeAdd uioptions)}) .
+     (\opts -> opts {sscalableFontSize =
+        sscalableFontSize opts `mplus` Just (uScalableFontSize uioptions)}) .
      (\opts -> opts {smaxFps =
         smaxFps opts `mplus` Just (uMaxFps uioptions)}) .
      (\opts -> opts {snoAnim =

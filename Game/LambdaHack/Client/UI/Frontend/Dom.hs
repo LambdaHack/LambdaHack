@@ -98,8 +98,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   -- Speed: <http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout>
   setProp scharStyle "table-layout" "fixed"
   setProp scharStyle "font-family" "lambdaHackFont"
-  setProp scharStyle "font-size" $ tshow (fromJust sfontSize) <> "px"
-  setProp scharStyle "font-weight" "bold"
+  setProp scharStyle "font-size" $ tshow (fromJust sscalableFontSize) <> "px"
   setProp scharStyle "outline" "1px solid grey"
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "margin-left" "auto"

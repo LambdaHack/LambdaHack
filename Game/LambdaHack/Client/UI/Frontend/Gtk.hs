@@ -107,7 +107,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString
        $ fromMaybe "Monospace" sgtkFontFamily
-         <+> maybe "16" tshow sfontSize <> "px"
+         <+> maybe "16" tshow sscalableFontSize <> "px"
   widgetModifyFont sview (Just f)
   IO.liftIO $ do
     textViewSetLeftMargin sview 3

@@ -99,7 +99,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
      return (fontFileAltExists, fontFileAlt)
  unless fontFileExists $
    fail $ "Font file does not exist: " ++ fontFileOrig
- let fontSize = fromJust sfontSize
+ let fontSize = fromJust sscalableFontSize  -- will be ignored for bitmap fonts
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
  let isBitmapFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
@@ -108,8 +108,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                  || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                  || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-     sdlSizeAdd = fromJust
-                  $ if isBitmapFile then sdlFntSizeAdd else sdlTtfSizeAdd
+     sdlSizeAdd = fromJust $ if isBitmapFile
+                             then sdlBitmapSizeAdd
+                             else sdlScalableSizeAdd
  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
@@ -294,8 +295,9 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
                   || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
                   || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust
-                   $ if isBitmapFile then sdlFntSizeAdd else sdlTtfSizeAdd
+      sdlSizeAdd = fromJust $ if isBitmapFile
+                              then sdlBitmapSizeAdd
+                              else sdlScalableSizeAdd
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
   let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt

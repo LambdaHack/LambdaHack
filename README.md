@@ -117,8 +117,9 @@ the config file in the user data folder. The default bitmap font
 in a game window of exactly 720p (standard HD) dimensions. The `8x8xb.fnt`
 bitmap font results in a tiny window and covers latin-1 characters only.
 The scalable `16x16xw.woff` font results in window sizes dependent
-on the `fontSize` parameter in the config file. With `fontSize = 16`
-it should look almost the same as the pixel-perfect `16x16xw.bdf`.
+on the `scalableFontSize` parameter in the config file.
+With `scalableFontSize = 16` it should look almost the same
+as the pixel-perfect `16x16xw.bdf`.
 
 If you don't have a numeric keypad, you can use mouse for movement
 or you can enable the compact laptop keys (uk8o79jl) or the Vi keys

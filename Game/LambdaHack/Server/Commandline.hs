@@ -68,9 +68,9 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sgtkFontFamily    <- gtkFontFamilyP
   sdlFontFile       <- sdlFontFileP
-  sdlTtfSizeAdd     <- sdlTtfSizeAddP
-  sdlFntSizeAdd     <- sdlFntSizeAddP
-  sfontSize         <- fontSizeP
+  sdlScalableSizeAdd <- sdlScalableSizeAddP
+  sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
+  sscalableFontSize <- scalableFontSizeP
   sfontDir          <- fontDirP
   scolorIsBold      <- pure Nothing
   slogPriority      <- logPriorityP
@@ -233,23 +233,23 @@ sdlFontFileP = optional $ T.pack <$>
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
 
-sdlTtfSizeAddP :: Parser (Maybe Int)
-sdlTtfSizeAddP = optional $
-  option auto (  long "sdlTtfSizeAdd"
+sdlScalableSizeAddP :: Parser (Maybe Int)
+sdlScalableSizeAddP = optional $
+  option auto (  long "sdlScalableSizeAdd"
               <> metavar "N"
-              <> help "Enlarge map cells by N over scalable font max height in SDL2 frontend" )
+              <> help "Enlarge map cells by N over scalable font max height in SDL2 frontend (N may be negative)" )
 
-sdlFntSizeAddP :: Parser (Maybe Int)
-sdlFntSizeAddP = optional $
-  option auto (  long "sdlFntSizeAdd"
+sdlBitmapSizeAddP :: Parser (Maybe Int)
+sdlBitmapSizeAddP = optional $
+  option auto (  long "sdlBitmapSizeAdd"
               <> metavar "N"
-              <> help "Enlarge map cells by N on top of fixed font max height in SDL2 frontend" )
+              <> help "Enlarge map cells by N on top of bitmap font max height in SDL2 frontend (N may be negative)" )
 
-fontSizeP :: Parser (Maybe Int)
-fontSizeP = optional $
-  option auto (  long "fontSize"
+scalableFontSizeP :: Parser (Maybe Int)
+scalableFontSizeP = optional $
+  option auto (  long "scalableFontSize"
               <> metavar "N"
-              <> help "Use font size N for the main game window (interpreted differently by different graphical frontends)" )
+              <> help "Use font size of N pixels for the main game window (interpreted differently by different graphical frontends; ignored for bitmap fonts)" )
 
 fontDirP :: Parser (Maybe FilePath)
 fontDirP = optional $

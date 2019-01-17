@@ -31,15 +31,15 @@ movementLaptopKeys_uk8o79jl = False
 ; Monospace fonts that have fixed size regardless of boldness (on some OSes at least)
 gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
 ;sdlFontFile = "16x16xw.woff"
-fontSize = 16
-sdlTtfSizeAdd = 0
+scalableFontSize = 16
+sdlScalableSizeAdd = 0
 sdlFontFile = "16x16xw.bdf"
-sdlFntSizeAdd = 0
+sdlBitmapSizeAdd = 0
 ;sdlFonSizeAdd is now ignored
 ;sdlFontFile = "8x8xb.fnt"
-;sdlFntSizeAdd = 2
+;sdlBitmapSizeAdd = 2
 ;sdlFontFile = "8x8x.fnt"
-;sdlFntSizeAdd = 2
+;sdlBitmapSizeAdd = 2
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 30
