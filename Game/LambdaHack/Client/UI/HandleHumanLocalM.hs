@@ -867,7 +867,7 @@ moveXhairHuman dir n = do
   else do
     let sxhair = case xhair of
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
-          _ -> Just $ TPoint TAny lidV newPos
+          _ -> Just $ TPoint TUnknown lidV newPos
     modifySession $ \sess -> sess {sxhair}
     doLook
     return Nothing
@@ -903,8 +903,8 @@ aimFloorHuman = do
         Nothing -> xhair
         _ | isNothing saimMode ->  -- first key press: keep target
           xhair
-        Just TEnemy{} -> Just $ TPoint TAny lidV xhairPos
-        Just TNonEnemy{} -> Just $ TPoint TAny lidV xhairPos
+        Just TEnemy{} -> Just $ TPoint TKnown lidV xhairPos
+        Just TNonEnemy{} -> Just $ TPoint TKnown lidV xhairPos
         Just TPoint{} -> Just $ TVector $ xhairPos `vectorToFrom` lpos
         Just TVector{} ->
           -- If many actors, we pick here the first that would be picked
@@ -915,7 +915,7 @@ aimFloorHuman = do
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
                                     then TEnemy aid
                                     else TNonEnemy aid
-            Nothing -> Just $ TPoint TAny lidV xhairPos
+            Nothing -> Just $ TPoint TUnknown lidV xhairPos
   modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
                                 , sxhair }
   doLook
@@ -991,7 +991,7 @@ aimItemHuman = do
         _ -> pickUnderXhair
       gtlt = gt ++ lt
       sxhair = case gtlt of
-        p : _ -> Just $ TPoint TAny lidV p
+        p : _ -> Just $ TPoint TKnown lidV p  -- don't force AI to collect it
         [] -> xhair  -- no items remembered, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
@@ -1018,7 +1018,7 @@ aimAscendHuman k = do
       lpos <- getsState $ bpos . getActorBody leader
       mxhairPos <- xhairToPos
       let xhairPos = fromMaybe lpos mxhairPos
-          sxhair = Just $ TPoint TAny lidK xhairPos
+          sxhair = Just $ TPoint TKnown lidK xhairPos
       modifySession $ \sess -> sess { saimMode = Just (AimMode lidK)
                                     , sxhair }
       doLook
@@ -1108,7 +1108,7 @@ xhairPointerFloor verbose = do
      && px < rXmax && py - mapStartY < rYmax
   then do
     oldXhair <- getsSession sxhair
-    let sxhair = Just $ TPoint TAny lidV $ Point px (py - mapStartY)
+    let sxhair = Just $ TPoint TUnknown lidV $ Point px (py - mapStartY)
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
@@ -1148,7 +1148,7 @@ xhairPointerEnemy verbose = do
             Just (aid, b) -> Just $ if isFoe side fact (bfid b)
                                     then TEnemy aid
                                     else TNonEnemy aid
-            Nothing -> Just $ TPoint TAny lidV newPos
+            Nothing -> Just $ TPoint TUnknown lidV newPos
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV

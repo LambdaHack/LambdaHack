@@ -108,7 +108,6 @@ data TGoal =
             --   to be walkable or altered or searched)
   | TUnknown  -- ^ an unknown tile to be explored
   | TKnown  -- ^ a known tile to be patrolled
-  | TAny  -- ^ an unspecified goal
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary TGoal

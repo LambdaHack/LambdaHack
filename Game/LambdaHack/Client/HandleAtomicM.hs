@@ -286,7 +286,7 @@ createActor aid b ais = do
   let affect3 tap@TgtAndPath{..} = case tapTgt of
         TPoint (TEnemyPos a) _ _ | a == aid ->
           let tgt | isFoe side fact (bfid b) = TEnemy a  -- still a foe
-                  | otherwise = TPoint TAny (blid b) (bpos b)
+                  | otherwise = TPoint TKnown (blid b) (bpos b)
           in TgtAndPath tgt NoPath
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
@@ -303,11 +303,11 @@ destroyActor aid b destroy = do
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
-            TPoint TAny (blid b) (bpos b)
+            TPoint TKnown (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
             TPoint (TEnemyPos a) (blid b) (bpos b)
-        TNonEnemy a | a == aid -> TPoint TAny (blid b) (bpos b)
+        TNonEnemy a | a == aid -> TPoint TKnown (blid b) (bpos b)
         _ -> tgt
       affect3 TgtAndPath{..} =
         let newMPath = case tapPath of

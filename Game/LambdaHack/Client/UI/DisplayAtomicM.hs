@@ -628,7 +628,7 @@ destroyActorUI destroy aid b = do
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
-            TPoint TAny (blid b) (bpos b)
+            TPoint TKnown (blid b) (bpos b)
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
             TPoint (TEnemyPos a) (blid b) (bpos b)

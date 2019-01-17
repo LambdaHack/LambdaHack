@@ -409,7 +409,7 @@ computeTarget aid = do
             bag2 <- getsState $ getEmbedBag lid p  -- not @pos@
             if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
                | adjacent (bpos b) p ->  -- regardless if at @pos@ or not
-                   setPath $ TPoint TAny lid (bpos b)
+                   setPath $ TPoint TKnown lid (bpos b)
                      -- stay there one turn (high chance to become leader)
                      -- to enable triggering; if trigger fails
                      -- (e.g, changed skills), will retarget next turn (@TAny@)
@@ -418,7 +418,7 @@ computeTarget aid = do
             bag2 <- getsState $ getFloorBag lid pos
             if | bag /= bag2 -> pickNewTarget  -- others will notice soon enough
                | bpos b == pos ->
-                   setPath $ TPoint TAny lid (bpos b)
+                   setPath $ TPoint TKnown lid (bpos b)
                      -- stay there one turn (high chance to become leader)
                      -- to enable pickup; if pickup fails, will retarget
                | otherwise -> return $ Just tap
@@ -451,7 +451,6 @@ computeTarget aid = do
                     -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
             else return $ Just tap
-          TAny -> pickNewTarget  -- reset elsewhere or carried over from UI
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to any vector
         TNonEnemy _ | mleader == Just aid ->  -- a leader, never follow
@@ -471,4 +470,4 @@ computeTarget aid = do
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $ Just $ TgtAndPath (TPoint TAny (blid b) (bpos b)) NoPath
+  else return $ Just $ TgtAndPath (TPoint TKnown (blid b) (bpos b)) NoPath

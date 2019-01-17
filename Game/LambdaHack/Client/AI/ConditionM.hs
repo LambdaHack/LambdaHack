@@ -111,7 +111,7 @@ condAimCrucialM aid = do
     Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath=AndPath{pathLen}} ->
       lid == blid b
       && (pathLen < 10  -- close enough to get there first
-          || tgoal `notElem` [TUnknown, TKnown, TAny])
+          || tgoal `notElem` [TUnknown, TKnown])
     Just TgtAndPath{tapTgt=TVector{}, tapPath=AndPath{pathLen}} ->
       pathLen < 7  -- the constant in @vToTgt@, where only
                    -- non-crucial targets are produced; this will also
