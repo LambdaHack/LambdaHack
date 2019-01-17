@@ -863,7 +863,7 @@ moveXhairHuman dir n = do
   let xhairPos = fromMaybe lpos mxhairPos
       shiftB pos = shiftBounded rXmax rYmax pos dir
       newPos = iterate shiftB xhairPos !! n
-  if newPos == xhairPos then failMsg "never mind"
+  if newPos == xhairPos || newPos == lpos then failMsg "never mind"
   else do
     let sxhair = case xhair of
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
@@ -900,12 +900,12 @@ aimFloorHuman = do
   fact <- getsState $ (EM.! side) . sfactionD
   let xhairPos = fromMaybe lpos mxhairPos
       sxhair = case xhair of
-        Nothing -> xhair
         _ | isNothing saimMode ->  -- first key press: keep target
           xhair
         Just TEnemy{} -> Just $ TPoint TKnown lidV xhairPos
         Just TNonEnemy{} -> Just $ TPoint TKnown lidV xhairPos
-        Just TPoint{} -> Just $ TVector $ xhairPos `vectorToFrom` lpos
+        Just TPoint{} | xhairPos /= lpos ->
+          Just $ TVector $ xhairPos `vectorToFrom` lpos
         Just TVector{} ->
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
@@ -916,6 +916,7 @@ aimFloorHuman = do
                                     then TEnemy aid
                                     else TNonEnemy aid
             Nothing -> Just $ TPoint TUnknown lidV xhairPos
+        _ -> xhair
   modifySession $ \sess -> sess { saimMode = Just $ AimMode lidV
                                 , sxhair }
   doLook
