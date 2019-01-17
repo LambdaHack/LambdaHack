@@ -47,6 +47,7 @@ license:       BSD3
 license-file:  COPYLEFT
 tested-with:   GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.3
 data-files:    GameDefinition/config.ui.default,
+               GameDefinition/fonts/16x16xw.woff,
                GameDefinition/fonts/16x16xw.bdf,
                GameDefinition/fonts/16x16x.fnt,
                GameDefinition/fonts/8x8xb.fnt,
