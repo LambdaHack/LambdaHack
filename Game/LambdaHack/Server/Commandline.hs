@@ -72,7 +72,6 @@ serverOptionsP = do
   sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
   sscalableFontSize <- scalableFontSizeP
   sfontDir          <- fontDirP
-  scolorIsBold      <- pure Nothing
   slogPriority      <- logPriorityP
   smaxFps           <- maxFpsP
   sdisableAutoYes   <- disableAutoYesP

@@ -25,7 +25,6 @@ data ClientOptions = ClientOptions
       --   To get symmetric padding, add an even number.
   , sscalableFontSize  :: Maybe Int
       -- ^ Font size to use for the main game window.
-  , scolorIsBold       :: Maybe Bool  -- backward compatibility
   , slogPriority       :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
   , smaxFps            :: Maybe Int
@@ -73,7 +72,6 @@ defClientOptions = ClientOptions
   , sdlScalableSizeAdd = Nothing
   , sdlBitmapSizeAdd = Nothing
   , sscalableFontSize = Nothing
-  , scolorIsBold = Nothing
   , slogPriority = Nothing
   , smaxFps = Nothing
   , sdisableAutoYes = False

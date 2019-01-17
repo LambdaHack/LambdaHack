@@ -44,7 +44,6 @@ data UIOptions = UIOptions
   , uSdlScalableSizeAdd :: Int
   , uSdlBitmapSizeAdd   :: Int
   , uScalableFontSize   :: Int
-  , uColorIsBold        :: Bool
   , uHistoryMax         :: Int
   , uMaxFps             :: Int
   , uNoAnim             :: Bool
@@ -109,7 +108,7 @@ parseConfig cfg =
       uRunStopMsgs = getOption "runStopMsgs"
       uhpWarningPercent = getOption "hpWarningPercent"
       uCmdline = words $ getOption "overrideCmdline"
-  in UIOptions{uColorIsBold = False, ..}
+  in UIOptions{..}
 
 -- | Read and parse UI config file.
 mkUIOptions :: COps -> Bool -> IO UIOptions
