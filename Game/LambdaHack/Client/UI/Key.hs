@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Key
   , escKM, controlEscKM, spaceKM, safeSpaceKM, undefinedKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
-  , homeKM, endKM, backspaceKM
+  , homeKM, endKM, backspaceKM, controlP
   , leftButtonReleaseKM, rightButtonReleaseKM
   , dirAllKey, handleDir, moveBinding, mkKM, mkChar, mkKP
   , keyTranslate, keyTranslateWeb
@@ -189,6 +189,9 @@ endKM = KM NoModifier End
 
 backspaceKM :: KM
 backspaceKM = KM NoModifier BackSpace
+
+controlP :: KM
+controlP = KM Control (Char 'P')
 
 leftButtonReleaseKM :: KM
 leftButtonReleaseKM = KM NoModifier LeftButtonRelease

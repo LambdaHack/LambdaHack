@@ -106,7 +106,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                        , K.returnKM, K.spaceKM
                        , K.upKM, K.leftKM, K.downKM, K.rightKM
                        , K.pgupKM, K.pgdnKM, K.wheelNorthKM, K.wheelSouthKM
-                       , K.homeKM, K.endKM ]
+                       , K.homeKM, K.endKM, K.controlP ]
       legalKeys = keys ++ navigationKeys
       -- The arguments go from first menu line and menu page to the last,
       -- in order. Their indexing is from 0. We select the nearest item
@@ -158,6 +158,10 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               interpretKey :: K.KM -> m (Either K.KM SlotChar, Int)
               interpretKey ikm =
                 case K.key ikm of
+                  _ | ikm == K.controlP -> do
+                    -- Silent, because any prompt would be shown too late.
+                    printScreen
+                    ignoreKey
                   K.Return -> case ekm of
                     Left (km : _) ->
                       if K.key km == K.Return && km `elem` keys
