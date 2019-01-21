@@ -388,7 +388,7 @@ effectSem source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbMsg _ -> effectVerbMsg execSfx source iid c
+    IK.VerbMsg _ -> effectVerbMsg execSfx source iid c periodic
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1349,13 +1349,13 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
       isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
-    let -- We don't know if it's voluntary,
-        -- so we conservatively assume it is and we blame @aid@.
+    let -- We don't know if it's voluntary, so we conservatively assume
+        -- it is and we blame @aid@.
         voluntary = True
         onSmashOnly = True
     effectAndDestroyAndAddKill
       voluntary aid onSmashOnly False aid aid iid c False (itemFull, kit) True
-    -- At most one copy was destroyed (or none if the item was discharged),
+    -- Ine copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
     maybe (return ())
@@ -1841,21 +1841,23 @@ effectOneOf recursiveCall l = do
 -- ** VerbMsg
 
 effectVerbMsg :: MonadServerAtomic m
-              => m () -> ActorId -> ItemId -> Container -> m UseResult
-effectVerbMsg execSfx source iid c = do
+              => m () -> ActorId -> ItemId -> Container -> Bool -> m UseResult
+effectVerbMsg execSfx source iid c periodic = do
   b <- getsState $ getActorBody source
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       fragile = IA.checkFlag Ability.Fragile arItem
   unless (bproj b) $ do  -- don't spam when projectiles activate
-    if fragile
+    if periodic && fragile
     then do
       bag <- getsState $ getContainerBag c
       case iid `EM.lookup` bag of
         Just _ -> return ()  -- still some copies left
-        Nothing -> execSfx  -- last copy just destroyed
+        Nothing -> execSfx  -- last copy just destroyed on periodic activation
     else execSfx
-  return UseUp  -- speaking always successful; also needed to destroy conditions
+  return UseUp  -- if the item no longer in the container, doesn't matter;
+                -- otherwise, announcing always successful and this helps
+                -- to destroy the item (e.g., condition)
 
 -- ** Composite
 
