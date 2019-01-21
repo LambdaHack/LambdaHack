@@ -156,6 +156,7 @@ thorn = fist
   , iverbHit = "puncture"
   , idamage  = 2 `d` 1
   , iaspects = [SetFlag Meleeable]  -- not Durable
+  , ieffects = [VerbMsg "be not so thorny any more"]
   , idesc    = "Sharp yet brittle."
   }
 boilingFissure = fist
@@ -166,7 +167,8 @@ boilingFissure = fist
   , idamage  = 1 `d` 1
   , iaspects = [ AddSkill SkHurtMelee 20  -- decreasing as count decreases
                , SetFlag Meleeable ]  -- not Durable
-  , ieffects = [DropItem 1 1 COrgan "condition"]  -- useful; limited
+  , ieffects = [ DropItem 1 1 COrgan "condition"  -- useful; limited
+               , VerbMsg "widen the crack, releasing pressure" ]
   , idesc    = "A deep crack to the underworld."
   }
 arsenicFissure = boilingFissure
@@ -174,8 +176,9 @@ arsenicFissure = boilingFissure
   , ifreq    = [("arsenic fissure", 100)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
-  , ieffects = [toOrganBad "parsimonious" (5 + 1 `d` 3)]
+  , ieffects = [ toOrganBad "parsimonious" (5 + 1 `d` 3)
                -- weaken/poison, impacting intellectual abilities first
+               , VerbMsg "stop exuding stupefying vapours" ]
   , idesc    = ""
   }
 sulfurFissure = boilingFissure
@@ -183,7 +186,8 @@ sulfurFissure = boilingFissure
   , ifreq    = [("sulfur fissure", 100)]
   , icount   = 2 + 1 `d` 2
   , idamage  = 0  -- heal not via (negative) idamage, for armour would block it
-  , ieffects = [RefillHP 5]
+  , ieffects = [ RefillHP 5
+               , VerbMsg "run out of the healing fumes" ]
   , idesc    = ""
   }
 beeSting = fist
@@ -195,6 +199,7 @@ beeSting = fist
   , iaspects = [ AddSkill SkArmorMelee 200, AddSkill SkArmorRanged 45
                , SetFlag Meleeable ]  -- not Durable
   , ieffects = [Paralyze 6, RefillHP 4]
+                 -- no special message when runs out, because it's 1 copy
   , idesc    = "Painful, but beneficial."
   }
 sting = fist
