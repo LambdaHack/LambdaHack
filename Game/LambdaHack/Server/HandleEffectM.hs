@@ -262,7 +262,7 @@ effectAndDestroy onSmashOnly kineticPerformed
     let effsManual = if not periodic && IA.checkFlag Ability.Periodic arItem
                      then take 1 effs  -- may be empty
                      else effs
-    triggeredEffect <- itemEffectDisco kineticPerformed
+    triggeredEffect <- itemEffectDisco onSmashOnly kineticPerformed
                                        source target iid itemKindId itemKind
                                        container periodic effsManual
     let triggered = if kineticPerformed then UseUp else triggeredEffect
@@ -322,13 +322,14 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
 -- until we want to add sticky armor that can't be easily taken off
 -- (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
-                => Bool -> ActorId -> ActorId -> ItemId
+                => Bool -> Bool -> ActorId -> ActorId -> ItemId
                 -> ContentId ItemKind -> ItemKind
                 -> Container -> Bool -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco kineticPerformed source target iid itemKindId itemKind
+itemEffectDisco onSmashOnly kineticPerformed
+                source target iid itemKindId itemKind
                 c periodic effs = do
-  urs <- mapM (effectSem source target iid c periodic) effs
+  urs <- mapM (effectSem onSmashOnly source target iid c periodic) effs
   let ur = case urs of
         [] -> UseDud  -- there was no effects
         _ -> maximum urs
@@ -343,11 +344,11 @@ itemEffectDisco kineticPerformed source target iid itemKindId itemKind
 -- The boolean result indicates if the effect actually fired up,
 -- as opposed to fizzled.
 effectSem :: MonadServerAtomic m
-          => ActorId -> ActorId -> ItemId -> Container -> Bool
+          => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
           -> IK.Effect
           -> m UseResult
-effectSem source target iid c periodic effect = do
-  let recursiveCall = effectSem source target iid c periodic
+effectSem onSmashOnly source target iid c periodic effect = do
+  let recursiveCall = effectSem onSmashOnly source target iid c periodic
   sb <- getsState $ getActorBody source
   pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
@@ -388,7 +389,9 @@ effectSem source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbMsg _ -> effectVerbMsg execSfx source iid c periodic
+    IK.VerbMsg _ ->
+      let execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
+      in effectVerbMsg execSfxSource onSmashOnly source iid c
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1841,20 +1844,17 @@ effectOneOf recursiveCall l = do
 -- ** VerbMsg
 
 effectVerbMsg :: MonadServerAtomic m
-              => m () -> ActorId -> ItemId -> Container -> Bool -> m UseResult
-effectVerbMsg execSfx source iid c periodic = do
+              => m () -> Bool -> ActorId -> ItemId -> Container -> m UseResult
+effectVerbMsg execSfx onSmashOnly source iid c = do
   b <- getsState $ getActorBody source
-  itemFull <- getsState $ itemToFull iid
-  let arItem = aspectRecordFull itemFull
-      fragile = IA.checkFlag Ability.Fragile arItem
   unless (bproj b) $ do  -- don't spam when projectiles activate
-    if periodic && fragile
-    then do
+    if onSmashOnly
+    then execSfx
+    else do
       bag <- getsState $ getContainerBag c
       case iid `EM.lookup` bag of
         Just _ -> return ()  -- still some copies left
         Nothing -> execSfx  -- last copy just destroyed on periodic activation
-    else execSfx
   return UseUp  -- if the item no longer in the container, doesn't matter;
                 -- otherwise, announcing always successful and this helps
                 -- to destroy the item (e.g., condition)
