@@ -785,12 +785,7 @@ printScreenHuman = do
 cancelHuman :: MonadClientUI m => m ()
 cancelHuman = do
   saimMode <- getsSession saimMode
-  when (isJust saimMode) $ do
-    clearAimMode
-    (mtargetMsg, _) <- targetDescXhair
-    case mtargetMsg of
-      Just targetMsg -> promptAdd1 $ "X-hair set to" <+> targetMsg <> "."
-      Nothing -> return ()
+  when (isJust saimMode) clearAimMode
 
 -- * Accept
 
