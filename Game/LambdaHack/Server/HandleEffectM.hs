@@ -107,11 +107,14 @@ refillHP :: MonadServerAtomic m => ActorId -> ActorId -> Int64 -> m ()
 refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
   tbOld <- getsState $ getActorBody target
   actorMaxSk <- getsState $ getActorMaxSkills target
-  -- We ignore light poison, tiny blasts and similar -1HP per turn annoyances.
-  let serious = speedDeltaHP < minusM && source /= target && not (bproj tbOld)
+  -- We don't ignore even tiny HP drains, because they can be very weak
+  -- enemy projectiles and so will recur and in total can be deadly
+  -- and also AI should rather be stupidly aggressive than stupidly lethargic.
+  let serious = source /= target && not (bproj tbOld)
       hpMax = Ability.getSk Ability.SkMaxHP actorMaxSk
-      deltaHP0 | serious = -- if overfull, at least cut back to max
-                           min speedDeltaHP (xM hpMax - bhp tbOld)
+      deltaHP0 | serious && speedDeltaHP < minusM =
+                 -- If overfull, at least cut back to max, unless minor drain.
+                 min speedDeltaHP (xM hpMax - bhp tbOld)
                | otherwise = speedDeltaHP
       deltaHP = if | deltaHP0 > 0 && bhp tbOld > xM 999 ->  -- UI limit
                      tenthM  -- avoid nop, to avoid loops
