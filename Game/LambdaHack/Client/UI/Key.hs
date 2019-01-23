@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.Key
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude hiding (Alt, Left, Right)
+import Game.LambdaHack.Common.Prelude hiding (Left, Right)
 
 import           Control.DeepSeq
 import           Data.Binary

@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Prelude
   , module Control.Monad.Compat
   , module Data.List.Compat
   , module Data.Maybe
-  , module Data.Monoid.Compat
+  , module Data.Semigroup.Compat
 
   , module Control.Exception.Assert.Sugar
 
@@ -37,7 +37,7 @@ import           Data.Key
 import           Data.List.Compat hiding (length, null, sum)
 import qualified Data.List.Compat as List
 import           Data.Maybe
-import           Data.Monoid.Compat
+import           Data.Semigroup.Compat (Semigroup ((<>)))
 import           Data.Text (Text)
 import qualified Data.Text as T (pack)
 import qualified Data.Time as Time

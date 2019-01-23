@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude hiding (Alt)
+import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent
 import qualified Data.Char as Char
