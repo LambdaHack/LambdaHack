@@ -162,8 +162,8 @@ addToReport History{..} msg n time =
     Just scrappedH -> (scrappedH, True)
     Nothing -> (newH, False)
 
--- | Archive old report to history, filtering out prompts.
--- Set up new report with a new timestamp.
+-- | Archive old report to history, filtering out messages with 0 duplicates
+-- and prompts. Set up new report with a new timestamp.
 archiveReport :: History -> History
 archiveReport History{newReport=Report newMsgs, ..} =
   let f (RepMsgN _ n) = n > 0

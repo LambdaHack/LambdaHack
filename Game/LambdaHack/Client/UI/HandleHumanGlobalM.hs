@@ -471,7 +471,7 @@ moveSearchAlter run dir = do
        -- Not walkable, so search and/or alter the tile.
        | run -> do
            -- Explicit request to examine the terrain.
-           promptAdd1 blurb
+           promptAdd0 blurb
            failWith $ if alterable
                       then "potentially alterable"
                       else "not alterable"
@@ -487,11 +487,11 @@ moveSearchAlter run dir = do
          && not underFeet
          && alterSkill < alterMinSkill -> do
            -- Rather rare (requires high skill), so describe the tile.
-           promptAdd1 blurb
+           promptAdd0 blurb
            failSer AlterUnwalked
        | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds -> do
            -- Rather rare (charging embeds), so describe the tile.
-           promptAdd1 blurb
+           promptAdd0 blurb
            failWith "unable to exploit the terrain"
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
        | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
@@ -1513,7 +1513,7 @@ nxtGameMode COps{comode} snxtScenario =
 gameExitHuman :: MonadClientUI m => m ReqUI
 gameExitHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd1 "Saving game. The program stops now."
+  promptAdd0 "Saving game. The program stops now."
   return ReqUIGameSaveAndExit
 
 -- * GameSave

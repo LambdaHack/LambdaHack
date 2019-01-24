@@ -51,7 +51,7 @@ promptAdd1 :: MonadClientUI m => Text -> m ()
 promptAdd1 = void <$> flip promptAddDuplicate 1
 
 -- | Add a prompt to the current report with 0 copies for the purpose
--- of collating cuplicates. Do not report if it was a duplicate.
+-- of collating duplicates. Do not report if it was a duplicate.
 promptAdd0 :: MonadClientUI m => Text -> m ()
 promptAdd0 = void <$> flip promptAddDuplicate 0
 

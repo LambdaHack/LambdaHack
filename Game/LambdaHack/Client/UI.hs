@@ -179,6 +179,8 @@ humanCommand = do
           Left Nothing -> loop
           Left (Just err) -> do
             stopPlayBack
-            promptAdd1 $ showFailError err
+            -- Avoid "*never mind*<x4>".
+            let t = showFailError err
+            if t == "*never mind*" then promptAdd0 t else promptAdd1 t
             loop
   loop

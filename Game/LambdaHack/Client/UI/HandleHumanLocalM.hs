@@ -839,7 +839,7 @@ doLook = do
       b <- getsState $ getActorBody leader
       let xhairPos = fromMaybe (bpos b) mxhairPos
       blurb <- lookAtPosition lidV xhairPos
-      promptAdd1 blurb
+      promptAdd0 blurb
 
 -- * ItemClear
 
