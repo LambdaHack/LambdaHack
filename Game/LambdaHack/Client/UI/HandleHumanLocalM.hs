@@ -819,6 +819,8 @@ endAimingMsg = do
 tgtClearHuman :: (MonadClient m, MonadClientUI m) => m ()
 tgtClearHuman = do
   modifySession $ \sess -> sess {sxhair = Nothing}
+  leader <- getLeaderUI
+  modifyClient $ updateTarget leader (const Nothing)
   doLook
 
 -- | Perform look around in the current position of the xhair.
