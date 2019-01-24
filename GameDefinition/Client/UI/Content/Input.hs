@@ -184,7 +184,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , AimAscend (-10)) )
   , ("BackSpace" , ( [CmdAim]
                    , "clear chosen item and x-hair"
-                   , ComposeUnlessError ItemClear TgtClear ))
+                   , ComposeUnlessError ClearTargetIfItemClear ItemClear))
 
   -- Assorted
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))

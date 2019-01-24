@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , repeatHuman, recordHuman, allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
     -- * Commands specific to aiming
-  , cancelHuman, acceptHuman, tgtClearHuman, itemClearHuman
+  , cancelHuman, acceptHuman, clearTargetIfItemClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
   , aimAscendHuman, epsIncrHuman
   , xhairUnknownHuman, xhairItemHuman, xhairStairHuman
@@ -814,14 +814,16 @@ endAimingMsg = do
   promptAdd1 $
     makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
--- * TgtClear
+-- * ClearTargetIfItemClear
 
-tgtClearHuman :: (MonadClient m, MonadClientUI m) => m ()
-tgtClearHuman = do
-  modifySession $ \sess -> sess {sxhair = Nothing}
-  leader <- getLeaderUI
-  modifyClient $ updateTarget leader (const Nothing)
-  doLook
+clearTargetIfItemClearHuman :: (MonadClient m, MonadClientUI m) => m ()
+clearTargetIfItemClearHuman = do
+  itemSel <- getsSession sitemSel
+  when (isNothing itemSel) $ do
+    modifySession $ \sess -> sess {sxhair = Nothing}
+    leader <- getLeaderUI
+    modifyClient $ updateTarget leader (const Nothing)
+    doLook
 
 -- | Perform look around in the current position of the xhair.
 -- Does nothing outside aiming mode.

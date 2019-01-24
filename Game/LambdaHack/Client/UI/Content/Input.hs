@@ -175,7 +175,7 @@ mouseRMB =
     , (CaCalmValue, Yell)
     , (CaHPGauge, Macro ["C-KP_Begin", "V"])
     , (CaHPValue, Wait10)
-    , (CaLeaderDesc, ComposeUnlessError ItemClear TgtClear) ]
+    , (CaLeaderDesc, ComposeUnlessError ClearTargetIfItemClear ItemClear) ]
 
 goToCmd :: HumanCmd
 goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-/", "C-V"]

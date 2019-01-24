@@ -160,7 +160,7 @@ data HumanCmd =
     -- These are mostly related to aiming.
   | Cancel
   | Accept
-  | TgtClear
+  | ClearTargetIfItemClear
   | ItemClear
   | MoveXhair Vector Int
   | AimTgt
