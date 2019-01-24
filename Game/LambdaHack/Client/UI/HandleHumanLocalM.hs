@@ -862,7 +862,7 @@ moveXhairHuman dir n = do
   let xhairPos = fromMaybe lpos mxhairPos
       shiftB pos = shiftBounded rXmax rYmax pos dir
       newPos = iterate shiftB xhairPos !! n
-  if newPos == xhairPos || newPos == lpos then failMsg "never mind"
+  if newPos == xhairPos then failMsg "never mind"
   else do
     let sxhair = case xhair of
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
