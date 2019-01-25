@@ -63,6 +63,7 @@ data MsgClass =
   | MsgDeathGood
   | MsgDeathBad
   | MsgDeath
+  | MsgDeathThreat
   | MsgLeader
   | MsgDiplomacy
   | MsgOutcome
@@ -129,6 +130,7 @@ msgColor MsgItemDestruction = Color.Magenta
 msgColor MsgDeathGood = Color.BrGreen
 msgColor MsgDeathBad = Color.BrRed
 msgColor MsgDeath = Color.White
+msgColor MsgDeathThreat = Color.BrRed
 msgColor MsgLeader = Color.White
 msgColor MsgDiplomacy = Color.BrMagenta  -- discovery of relations
 msgColor MsgOutcome = Color.White

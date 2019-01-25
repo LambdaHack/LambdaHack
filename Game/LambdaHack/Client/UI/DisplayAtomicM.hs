@@ -34,6 +34,7 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
@@ -155,19 +156,19 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
   UpdRefillHP _ 0 -> return ()
-  UpdRefillHP aid n -> do
+  UpdRefillHP aid hpDelta -> do
     CCUI{coscreen} <- getsSession sccui
     when verbose $
       aidVerbMU MsgEffectMinor aid
-      $ MU.Text $ (if n > 0 then "heal" else "lose")
-                  <+> tshow (abs n `divUp` oneM) <> "HP"
+      $ MU.Text $ (if hpDelta > 0 then "heal" else "lose")
+                  <+> tshow (abs hpDelta `divUp` oneM) <> "HP"
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     arena <- getArenaUI
     side <- getsClient sside
     if | bproj b && (EM.null (beqp b) || isNothing (btrajectory b)) ->
            return ()  -- ignore caught proj or one hitting a wall
-       | bhp b <= 0 && n < 0
+       | bhp b <= 0 && hpDelta < 0
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
                (True, True) -> ("drop down", "tumble down")
@@ -175,7 +176,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
-             alreadyDeadBefore = bhp b - n <= 0
+             alreadyDeadBefore = bhp b - hpDelta <= 0
          subject <- partActorLeader aid bUI
          tfact <- getsState $ (EM.! bfid b) . sfactionD
          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
@@ -194,41 +195,65 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                | otherwise = shortDeathBody coscreen (bpos b)
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
-         when (n >= bhp b && bhp b > 0) $
+         when (hpDelta >= bhp b && bhp b > 0) $
            actorVerbMU MsgWarning aid bUI "return from the brink of death"
          mleader <- getsClient sleader
-         if Just aid == mleader then do
+         when (Just aid == mleader) $ do
            actorMaxSk <- getsState $ getActorMaxSkills aid
            -- Regenerating actors never stop gaining HP, so we need to stop
            -- reporting it after they reach full HP for the first time.
+           -- Also, no spam for non-leaders.
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
-                 && bhp b - n < xM (Ability.getSk Ability.SkMaxHP
+                 && bhp b - hpDelta < xM (Ability.getSk Ability.SkMaxHP
                                                   actorMaxSk)) $ do
              msgAdd MsgVeryRare "You recover your health fully."
              stopPlayBack
-         else when (bfid b == side) $
+         when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
+           when (hpDelta < 0) $ do
+             sUIOptions <- getsSession sUIOptions
+             currentWarning <-
+               getsState $ checkWarningHP sUIOptions aid (bhp b)
+             when currentWarning $ do
+               previousWarning <-
+                 getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
+               unless previousWarning $
+                 aidVerbMU MsgDeathThreat aid
+                           "be down to a dangerous health level"
+  UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
-    body <- getsState $ getActorBody aid
-    when (bfid body == side) $
+    b <- getsState $ getActorBody aid
+    when (bfid b == side && not (bproj b)) $ do
       if | calmDelta > 0 ->  -- regeneration or effect
-           markDisplayNeeded (blid body)
+           markDisplayNeeded (blid b)
          | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
            s <- getState
            let closeFoe (!p, aid2) =  -- mimics isHeardFoe
-                 let b = getActorBody aid2 s
-                 in inline chessDist p (bpos body) <= 3
-                    && not (actorWaitsOrSleeps b)  -- uncommon
-                    && inline isFoe side fact (bfid b)  -- costly
+                 let b2 = getActorBody aid2 s
+                 in inline chessDist p (bpos b) <= 3
+                    && not (actorWaitsOrSleeps b2)  -- uncommon
+                    && inline isFoe side fact (bfid b2)  -- costly
                anyCloseFoes = any closeFoe $ EM.assocs $ lbig
-                                           $ sdungeon s EM.! blid body
+                                           $ sdungeon s EM.! blid b
            unless anyCloseFoes $ do  -- obvious where the feeling comes from
              duplicated <- aidVerbDuplicateMU MsgHeardClose aid "hear something"
              unless duplicated stopPlayBack
          | otherwise ->  -- low deltas from hits; displayed elsewhere
            return ()
+      when (calmDelta < 0) $ do
+        sUIOptions <- getsSession sUIOptions
+        currentWarning <-
+          getsState $ checkWarningCalm sUIOptions aid (bcalm b)
+        when currentWarning $ do
+          previousWarning <-
+            getsState $ checkWarningCalm sUIOptions aid (bcalm b - calmDelta)
+          unless previousWarning $
+            -- This messages is not shown if impression happens after
+            -- Calm is low enough. However, this is rare and HUD shows the red.
+            aidVerbMU MsgDeathThreat aid
+                      "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
