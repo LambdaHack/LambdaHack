@@ -72,6 +72,7 @@ data MsgClass =
   | MsgTileDisco
   | MsgItemDisco
   | MsgActorSpot
+  | MsgFirstEnemySpot
   | MsgItemSpot
   | MsgItemMove
   | MsgAction
@@ -139,6 +140,7 @@ msgColor MsgLandscape = Color.White
 msgColor MsgTileDisco = Color.Magenta
 msgColor MsgItemDisco = Color.BrMagenta
 msgColor MsgActorSpot = Color.White  -- too common
+msgColor MsgFirstEnemySpot = Color.Red
 msgColor MsgItemSpot = Color.White
 msgColor MsgItemMove = Color.White
 msgColor MsgAction = Color.White

@@ -639,19 +639,22 @@ createActorUI born aid body = do
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
+  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
+  -- invisible this turn (in that case move is broken down to lose+spot)
+  -- or on a distant tile, via teleport while the observer teleported, too).
+  lastLost <- getsSession slastLost
   when (bfid body /= side) $ do
-    when (not (bproj body) && isFoe (bfid body) fact side) $
+    when (not (bproj body) && isFoe (bfid body) fact side) $ do
       -- Aim even if nobody can shoot at the enemy. Let's home in on him
       -- and then we can aim or melee. We set permit to False, because it's
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
       modifySession $ \sess -> sess {sxhair = Just $ TEnemy aid}
+      foes <- getsState $ foeRegularList side (blid body)
+      unless (ES.member aid lastLost || length foes > 1) $
+        msgAdd MsgFirstEnemySpot "You are not alone!"
     stopPlayBack
-  -- Don't spam if the actor was already visible (but, e.g., on a tile that is
-  -- invisible this turn (in that case move is broken down to lose+spot)
-  -- or on a distant tile, via teleport while the observer teleported, too).
-  lastLost <- getsSession slastLost
   if | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
