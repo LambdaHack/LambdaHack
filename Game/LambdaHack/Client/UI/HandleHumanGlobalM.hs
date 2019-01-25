@@ -1521,7 +1521,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m ReqUI
 gameSaveHuman = do
   -- Announce before the saving started, since it can take a while.
-  promptAdd1 "Saving game backup."
+  promptAdd0 "Saving game backup."
   return ReqUIGameSave
 
 -- * Tactic
