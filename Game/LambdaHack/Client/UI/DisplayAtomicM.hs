@@ -1171,9 +1171,9 @@ displayRespSfxAtomicUI sfx = case sfx of
             msgAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress -> actorVerbMU MsgEffect aid bUI "be awestruck"
+        IK.Impress -> actorVerbMU MsgEffectMinor aid bUI "be awestruck"
         IK.PutToSleep -> actorVerbMU MsgEffectMajor aid bUI "be put to sleep"
-        IK.Yell -> actorVerbMU MsgHeard aid bUI "start"
+        IK.Yell -> actorVerbMU MsgMisc aid bUI "start"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- works, because exact number sent, not dice
@@ -1288,7 +1288,7 @@ displayRespSfxAtomicUI sfx = case sfx of
     sbUI <- getsSession $ getActorUI aid
     spart <- partActorLeader aid sbUI
     (_heardSubject, verb) <- displayTaunt voluntary rndToActionForget aid
-    msgAdd MsgHeard $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+    msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m (Maybe (MsgClass, Text))
 ppSfxMsg sfxMsg = case sfxMsg of
