@@ -69,6 +69,8 @@ type IntOverlay = [(Int, AttrLine)]
 -- | Split a string into lines. Avoids ending the line with
 -- a character other than space. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
+--
+-- Note that we only split wrt @White@ space, nothing else.
 splitAttrLine :: X -> AttrLine -> Overlay
 splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))

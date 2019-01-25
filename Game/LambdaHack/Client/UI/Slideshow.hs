@@ -97,6 +97,7 @@ splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay width height report keys (ls0, kxs0) =
   toSlideshow $ splitOKX width height (renderReport report) keys (ls0, kxs0)
 
+-- Note that we only split wrt @White@ space, nothing else.
 splitOKX :: X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
 splitOKX width height rrep keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted

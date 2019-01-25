@@ -110,13 +110,14 @@ toMsg msgClass l =
       msgLine = map (colorAttrChar color) l
   in Msg {..}
 
--- Only @White@ color gets replaced.
 colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
-colorAttrChar color w
-  | Color.AttrChar{acAttr=Color.Attr{fg=Color.White}, acChar}
-      <- Color.attrCharFromW32 w =
-    Color.attrChar2ToW32 color acChar
-colorAttrChar _ w = w
+colorAttrChar color w =
+  -- Only @White@ color gets replaced.
+  -- For speed and simplicity we always keep the space @White@.
+  let acChar = Color.charFromW32 w
+  in if Color.fgFromW32 w == Color.White && acChar /= ' '
+     then Color.attrChar2ToW32 color acChar
+     else w
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgNumeric = False
