@@ -33,8 +33,8 @@ msgAddDuplicate msg msgClass n = do
   return duplicate
 
 -- | Add a message to the current report. Do not report if it was a duplicate.
-msgAdd :: MonadClientUI m => Text -> m ()
-msgAdd msg = void $ msgAddDuplicate msg MsgMsg 1
+msgAdd :: MonadClientUI m => MsgClass -> Text -> m ()
+msgAdd msgClass msg = void $ msgAddDuplicate msg msgClass 1
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd1 :: MonadClientUI m => Text -> m ()

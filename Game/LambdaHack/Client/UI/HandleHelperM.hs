@@ -35,6 +35,7 @@ import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
@@ -162,7 +163,8 @@ pickLeader verbose aid = do
                         `swith` (aid, body)) ()
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor bodyUI
-      when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
+      when verbose $
+        msgAdd MsgDone $ makeSentence [subject, "picked as a leader"]
       -- Update client state.
       updateClientLeader aid
       -- Move the xhair, if active, to the new level.
@@ -172,7 +174,7 @@ pickLeader verbose aid = do
           modifySession $ \sess -> sess {saimMode = Just $ AimMode $ blid body}
       -- Inform about items, etc.
       itemsBlurb <- lookAtItems True (bpos body) aid
-      when verbose $ msgAdd itemsBlurb
+      when verbose $ msgAdd MsgAtFeet itemsBlurb
       return True
 
 pickLeaderWithPointer :: MonadClientUI m => m MError

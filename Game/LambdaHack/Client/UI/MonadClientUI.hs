@@ -303,7 +303,7 @@ defaultHistory uHistoryMax = liftIO $ do
   timezone <- getTimeZone utcTime
   let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
       emptyHist = emptyHistory uHistoryMax
-      msg = toMsg MsgMsg $ stringToAL
+      msg = toMsg MsgAdmin $ stringToAL
             $ "History log started on " ++ curDate ++ "."
   return $! fst $ addToReport emptyHist msg 0 timeZero
 

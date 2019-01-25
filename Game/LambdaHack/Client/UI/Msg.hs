@@ -54,7 +54,45 @@ data Msg = Msg
 instance Binary Msg
 
 data MsgClass =
-    MsgMsg
+    MsgAdmin
+  | MsgBecome
+  | MsgNoLonger
+  | MsgLonger
+  | MsgItemCreation
+  | MsgItemDestruction
+  | MsgDeathGood
+  | MsgDeathBad
+  | MsgDeath
+  | MsgLeader
+  | MsgDiplomacy
+  | MsgOutcome
+  | MsgPlot
+  | MsgLandscape
+  | MsgTileDisco
+  | MsgItemDisco
+  | MsgActorSpot
+  | MsgItemSpot
+  | MsgItemMove
+  | MsgAction
+  | MsgEffectMajor
+  | MsgEffect
+  | MsgEffectMinor
+  | MsgMisc
+  | MsgHeardClose
+  | MsgHeard
+  | MsgWarning
+  | MsgRangedPowerfulGood
+  | MsgRangedPowerfulBad
+  | MsgRanged
+  | MsgRare
+  | MsgVeryRare
+  | MsgMeleePowerfulGood
+  | MsgMeleePowerfulBad
+  | MsgMeleeInterestingGood
+  | MsgMeleeInterestingBad
+  | MsgMelee
+  | MsgDone
+  | MsgAtFeet
   | MsgPrompt
   | MsgAlert
  deriving (Show, Eq, Generic)
@@ -76,13 +114,51 @@ colorAttrChar color w
 colorAttrChar _ w = w
 
 isSavedToHistory :: MsgClass -> Bool
-isSavedToHistory MsgMsg = True
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgAlert = False
+isSavedToHistory _ = True
 
 -- Only @White@ color gets replaced by this one.
 msgColor :: MsgClass -> Color.Color
-msgColor MsgMsg = Color.White
+msgColor MsgAdmin = Color.White
+msgColor MsgBecome = Color.BrBlue  -- similar color to cyan and role to Effect
+msgColor MsgNoLonger = Color.Blue
+msgColor MsgLonger = Color.White  -- not important enough
+msgColor MsgItemCreation = Color.BrMagenta  -- discovery of new item created
+msgColor MsgItemDestruction = Color.Magenta
+msgColor MsgDeathGood = Color.BrGreen
+msgColor MsgDeathBad = Color.BrRed
+msgColor MsgDeath = Color.White
+msgColor MsgLeader = Color.White
+msgColor MsgDiplomacy = Color.BrMagenta  -- discovery of relations
+msgColor MsgOutcome = Color.White
+msgColor MsgPlot = Color.White
+msgColor MsgLandscape = Color.White
+msgColor MsgTileDisco = Color.Magenta
+msgColor MsgItemDisco = Color.BrMagenta
+msgColor MsgActorSpot = Color.White  -- too common
+msgColor MsgItemSpot = Color.White
+msgColor MsgItemMove = Color.White
+msgColor MsgAction = Color.White
+msgColor MsgEffectMajor = Color.BrCyan
+msgColor MsgEffect = Color.Cyan
+msgColor MsgEffectMinor = Color.White
+msgColor MsgMisc = Color.White
+msgColor MsgHeardClose = Color.BrYellow
+msgColor MsgHeard = Color.Brown
+msgColor MsgWarning = Color.BrYellow
+msgColor MsgRangedPowerfulGood = Color.Green
+msgColor MsgRangedPowerfulBad = Color.Red
+msgColor MsgRanged = Color.White
+msgColor MsgRare = Color.Cyan
+msgColor MsgVeryRare = Color.BrCyan
+msgColor MsgMeleePowerfulGood = Color.Green
+msgColor MsgMeleePowerfulBad = Color.Red
+msgColor MsgMeleeInterestingGood = Color.Green
+msgColor MsgMeleeInterestingBad = Color.Red
+msgColor MsgMelee = Color.White
+msgColor MsgDone = Color.White
+msgColor MsgAtFeet = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgAlert = Color.BrYellow
 

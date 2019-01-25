@@ -787,7 +787,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             let fullWarn = if eqpOverfull b (oldN + 1)
                            then EqpOverfull
                            else EqpStackFull
-            msgAdd $ "Warning:" <+> showReqFailure fullWarn <> "."
+            msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
             retRec $ if calmE then CSha else CInv
           CEqp | inEqp ->
             retRec CEqp
@@ -990,7 +990,7 @@ alterTileAtPos ts tpos pText = do
           case verAlters of
             Right() -> do
               let msg = makeSentence ["you", v, MU.Text pText]
-              msgAdd msg
+              msgAdd MsgDone msg
               return $ Right $ ReqAlter tpos
             Left err -> return $ Left err
         else failSer AlterBlockActor
