@@ -11,6 +11,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , MsgClass, isSavedToHistory
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
   , emptyReport, snocReport, renderRepetition, scrapRepetition, renderTimeReport
 #endif
@@ -44,20 +45,32 @@ attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine :: AttrLine  -- ^ the colours and characters of the message
-  , msgHist :: Bool      -- ^ whether message should be recorded in history
+  { msgLine  :: AttrLine  -- ^ the colours and characters of the message
+  , msgClass :: MsgClass  -- ^ whether message should be displayed,
+                          --   recorded in history, with what color, etc.
   }
   deriving (Show, Eq, Generic)
 
 instance Binary Msg
 
+data MsgClass =
+    MsgMsg
+  | MsgPrompt
+  deriving (Show, Eq, Generic)
+
+instance Binary MsgClass
+
 toMsg :: AttrLine -> Msg
 toMsg l = Msg { msgLine = l
-              , msgHist = True }
+              , msgClass = MsgMsg }
 
 toPrompt :: AttrLine -> Msg
 toPrompt l = Msg { msgLine = l
-                 , msgHist = False }
+                 , msgClass = MsgPrompt }
+
+isSavedToHistory :: MsgClass -> Bool
+isSavedToHistory MsgMsg = True
+isSavedToHistory MsgPrompt = False
 
 -- * Report
 
@@ -178,7 +191,7 @@ archiveReport History{newReport=Report newMsgs, ..} =
 renderTimeReport :: Time -> Report -> [AttrLine]
 renderTimeReport !t (Report r') =
   let turns = t `timeFitUp` timeTurn
-      rep = Report $ filter (msgHist . repMsg) r'
+      rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r'
   in if nullReport rep
      then []
      else [stringToAL (show turns ++ ": ") ++ renderReport rep]
