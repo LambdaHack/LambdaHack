@@ -1310,8 +1310,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Nothing -> return Nothing
       Just sbUI -> do
         let subject = partActor sbUI
-            verb = "is unimpressed"
-        return $ Just (MsgWarning, makeSentence [subject, verb])
+            verb = "be unimpressed"
+        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxSummonLackCalm aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
@@ -1319,14 +1319,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Just sbUI -> do
         let subject = partActor sbUI
             verb = "lack Calm to summon"
-        return $ Just (MsgWarning, makeSentence [subject, verb])
+        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxSummonTooManyOwn aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
     case msbUI of
       Nothing -> return Nothing
       Just sbUI -> do
         let subject = partActor sbUI
-            verb = "can't keep track of his numerous friends, let alone summon any more"
+            verb = "can't keep track of their numerous friends, let alone summon any more"
         return $ Just (MsgWarning, makeSentence [subject, verb])
   SfxSummonTooManyAll aid -> do
     msbUI <- getsSession $ EM.lookup aid . sactorUI
@@ -1346,8 +1346,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
       Nothing -> return Nothing
       Just sbUI -> do
         let subject = partActor sbUI
-            verb = "is braced and so immune to translocation"
-        return $ Just (MsgMisc, makeSentence [subject, verb])  -- too common
+            verb = "be braced and so immune to translocation"
+        return $ Just (MsgMisc, makeSentence [MU.SubjectVerbSg subject verb])
+                         -- too common
   SfxEscapeImpossible -> return $
     Just ( MsgWarning
          , "Escaping outside is unthinkable for members of this faction." )
@@ -1517,14 +1518,14 @@ strike catch source target iid cstore = assert (source /= target) $ do
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- 1% always gets through, but if fast missile, can be deadly
-        blockVerb = MU.SubjectVerbSg tpart
-                    $ if bproj sb
-                      then if actorWaits tb
-                           then "deflect it"
-                           else "fend it off"  -- ward it off
-                      else if actorWaits tb
-                           then "block"
-                           else "parry"
+        blockPhrase = MU.SubjectVerbSg tpart
+                      $ if bproj sb
+                        then if actorWaits tb
+                             then "deflect it"
+                             else "fend it off"  -- ward it off
+                        else if actorWaits tb
+                             then "block"
+                             else "parry"
         blockWithWhat | null eqpAndOrgArmor = []
                       | otherwise =
           let (armor, (iidArmor, itemKind)) =
@@ -1545,7 +1546,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                             -- of the hit, so we don't talk about blocking,
                             -- unless a condition is at play, too
                    else yetButAnd
-                        <+> makePhrase ([blockVerb, blockHowWell]
+                        <+> makePhrase ([blockPhrase, blockHowWell]
                                         ++ blockWithWhat)
         ps = (bpos tb, bpos sb)
         basicAnim
