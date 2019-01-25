@@ -1458,7 +1458,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
           , ( iidArmor
             , itemKind itemFull2 ) )
         eqpAndOrgArmor = map rateArmor $ filter notCond eqpOrgKit
-        condArmor = map rateArmor $ filter isOrdinaryCond orgKit
+        abs15 (v, _) = abs v >= 15
+        condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
         verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1628,17 +1629,17 @@ strike catch source target iid cstore = assert (source /= target) $ do
                else let (armor, (_, itemKind)) =
                            maximumBy (Ord.comparing $ abs . fst) condArmor
                         name = IK.iname itemKind
-                    in if | abs armor < 15 -> ("", MsgMelee)
-                          | hurtMult > 20 ->
-                            ( (if armor <= -15
+                    in if hurtMult > 20
+                       then ( (if armor <= -15
                                then ", due to being"
-                               else ", regardless of being")
+                               else assert (armor >= 15)
+                                           ", regardless of being")
                               <+> name
                             , msgMeleeInteresting )
-                          | otherwise ->
-                            ( (if armor >= 15
+                       else ( (if armor >= 15
                                then ", thanks to being"
-                               else ", despite being")
+                               else assert (armor <= -15)
+                                           ", despite being")
                               <+> name
                             , msgMeleeInteresting )
              msgClass = if targetIsFriend && deadliness >= 300
