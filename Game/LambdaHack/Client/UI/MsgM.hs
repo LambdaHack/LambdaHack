@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAdd, promptAddDuplicate, promptAdd1, promptAdd0
+  ( msgAddDuplicate, msgAdd, promptAdd1, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -23,22 +23,8 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 
 -- | Add a message to the current report.
-msgAddDuplicate :: MonadClientUI m => Text -> m Bool
-msgAddDuplicate msg = do
-  time <- getsState stime
-  history <- getsSession shistory
-  let (nhistory, duplicate) =
-        addToReport history (toMsg MsgMsg $ textToAL msg) 1 time
-  modifySession $ \sess -> sess {shistory = nhistory}
-  return duplicate
-
--- | Add a message to the current report. Do not report if it was a duplicate.
-msgAdd :: MonadClientUI m => Text -> m ()
-msgAdd = void <$> msgAddDuplicate
-
--- | Add a prompt to the current report.
-promptAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool
-promptAddDuplicate msg msgClass n = do
+msgAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool
+msgAddDuplicate msg msgClass n = do
   time <- getsState stime
   history <- getsSession shistory
   let (nhistory, duplicate) =
@@ -46,14 +32,18 @@ promptAddDuplicate msg msgClass n = do
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
+-- | Add a message to the current report. Do not report if it was a duplicate.
+msgAdd :: MonadClientUI m => Text -> m ()
+msgAdd msg = void $ msgAddDuplicate msg MsgMsg 1
+
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd1 :: MonadClientUI m => Text -> m ()
-promptAdd1 = void <$> \msg -> promptAddDuplicate msg MsgAlert 1
+promptAdd1 msg = void $ msgAddDuplicate msg MsgAlert 1
 
 -- | Add a prompt to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 promptAdd0 :: MonadClientUI m => Text -> m ()
-promptAdd0 = void <$> \msg -> promptAddDuplicate msg MsgPrompt 0
+promptAdd0 msg = void $ msgAddDuplicate msg MsgPrompt 0
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()

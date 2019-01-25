@@ -462,7 +462,7 @@ aidVerbDuplicateMU :: MonadClientUI m => ActorId -> MU.Part -> m Bool
 aidVerbDuplicateMU aid verb = do
   bUI <- getsSession $ getActorUI aid
   subject <- partActorLeader aid bUI
-  msgAddDuplicate $ makeSentence [MU.SubjectVerbSg subject verb]
+  msgAddDuplicate (makeSentence [MU.SubjectVerbSg subject verb]) MsgMsg 1
 
 itemVerbMU :: MonadClientUI m
            => ItemId -> ItemQuant -> MU.Part -> Container -> m ()
