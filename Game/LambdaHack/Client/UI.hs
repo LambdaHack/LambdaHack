@@ -181,6 +181,7 @@ humanCommand = do
             stopPlayBack
             -- Avoid "*never mind*<x4>".
             let t = showFailError err
-            if t == "*never mind*" then promptAdd0 t else promptAdd1 t
+            if t == "*never mind*" then void $ msgAddDuplicate t MsgAlert 0
+                                   else promptAdd1 t
             loop
   loop
