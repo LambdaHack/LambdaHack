@@ -642,6 +642,11 @@ createActorUI born aid body = do
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
+  if | born && bproj body -> pushFrame  -- make sure first position displayed
+     | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
+     | otherwise -> do
+       actorVerbMU MsgActorSpot aid bUI verb
+       animate (blid body) $ actorX coscreen (bpos body)
   when (bfid body /= side) $ do
     when (not (bproj body) && isFoe (bfid body) fact side) $ do
       -- Aim even if nobody can shoot at the enemy. Let's home in on him
@@ -654,11 +659,6 @@ createActorUI born aid body = do
       unless (ES.member aid lastLost || length foes > 1) $
         msgAdd MsgFirstEnemySpot "You are not alone!"
     stopPlayBack
-  if | born && bproj body -> pushFrame  -- make sure first position displayed
-     | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
-     | otherwise -> do
-       actorVerbMU MsgActorSpot aid bUI verb
-       animate (blid body) $ actorX coscreen (bpos body)
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 destroyActorUI destroy aid b = do
