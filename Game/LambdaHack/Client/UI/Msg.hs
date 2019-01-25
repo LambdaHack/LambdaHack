@@ -3,7 +3,7 @@
 -- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
-    Msg, MsgClass(..), toMsg
+    Msg, toMsg, MsgClass(..)
     -- * Report
   , Report, nullReport, consReport, renderReport, findInReport
     -- * History
@@ -54,6 +54,21 @@ data Msg = Msg
 
 instance Binary Msg
 
+toMsg :: MsgClass -> AttrLine -> Msg
+toMsg msgClass l =
+  let color = msgColor msgClass
+      msgLine = map (colorAttrChar color) l
+  in Msg {..}
+
+colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
+colorAttrChar color w =
+  -- Only @White@ color gets replaced.
+  -- For speed and simplicity we always keep the space @White@.
+  let acChar = Color.charFromW32 w
+  in if Color.fgFromW32 w == Color.White && acChar /= ' '
+     then Color.attrChar2ToW32 color acChar
+     else w
+
 data MsgClass =
     MsgAdmin
   | MsgBecome
@@ -103,21 +118,6 @@ data MsgClass =
  deriving (Show, Eq, Generic)
 
 instance Binary MsgClass
-
-toMsg :: MsgClass -> AttrLine -> Msg
-toMsg msgClass l =
-  let color = msgColor msgClass
-      msgLine = map (colorAttrChar color) l
-  in Msg {..}
-
-colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
-colorAttrChar color w =
-  -- Only @White@ color gets replaced.
-  -- For speed and simplicity we always keep the space @White@.
-  let acChar = Color.charFromW32 w
-  in if Color.fgFromW32 w == Color.White && acChar /= ' '
-     then Color.attrChar2ToW32 color acChar
-     else w
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgNumeric = False
