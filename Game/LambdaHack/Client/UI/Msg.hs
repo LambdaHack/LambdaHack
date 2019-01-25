@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , isSavedToHistory
+  , colorAttrChar, isSavedToHistory, msgColor
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
   , emptyReport, snocReport, renderRepetition, scrapRepetition, renderTimeReport
 #endif
@@ -62,12 +62,29 @@ data MsgClass =
 instance Binary MsgClass
 
 toMsg :: MsgClass -> AttrLine -> Msg
-toMsg msgClass msgLine = Msg {..}
+toMsg msgClass l =
+  let color = msgColor msgClass
+      msgLine = map (colorAttrChar color) l
+  in Msg {..}
+
+-- Only @White@ color gets replaced.
+colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
+colorAttrChar color w
+  | Color.AttrChar{acAttr=Color.Attr{fg=Color.White}, acChar}
+      <- Color.attrCharFromW32 w =
+    Color.attrChar2ToW32 color acChar
+colorAttrChar _ w = w
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgMsg = True
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgAlert = False
+
+-- Only @White@ color gets replaced by this one.
+msgColor :: MsgClass -> Color.Color
+msgColor MsgMsg = Color.White
+msgColor MsgPrompt = Color.White
+msgColor MsgAlert = Color.BrYellow
 
 -- * Report
 
