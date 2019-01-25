@@ -1473,7 +1473,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | otherwise = "feebly"
         -- Here we take into account armor, so we look at @hurtMult@,
         -- so we finally convey the full info about effectiveness of the strike.
-        blockHowWell  -- if @hurtMult > 90@, the message not shown at all
+        blockHowWell  -- under some conditions, the message not shown at all
+          | hurtMult > 90 = "incompetently"
           | hurtMult > 80 = "too late"
           | hurtMult > 70 = "too slowly"
           | hurtMult > 20 = if | deadliness >= 2000 -> "marginally"
@@ -1511,9 +1512,10 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | deadliness < 20 && hurtMult > 70 = ", yet"
               -- weak attack, yet surprisingly defense not too successful
           | otherwise = " and"  -- no surprises
-        msgArmor = if hurtMult > 90
-                   then ""  -- at most minor armor, relatively to strength
-                            -- of the hit, so we don't talk about blocking
+        msgArmor = if hurtMult > 90 && null condArmor
+                   then ""  -- at most minor armor, relatively to skill
+                            -- of the hit, so we don't talk about blocking,
+                            -- unless a condition is at play, too
                    else yetButAnd
                         <+> makePhrase ([blockVerb, blockHowWell]
                                         ++ blockWithWhat)
@@ -1564,7 +1566,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                ++ if bproj sb then [] else ["with", weaponName]
          msgAdd MsgRare msg
          animate (blid tb) $ subtleHit coscreen (bpos sb)
-       | bproj sb -> do  -- more terse than melee, since sometimes very spammy
+       | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulGood
                                | targetIsFriend = MsgRangedPowerfulBad
                                | otherwise = MsgRanged
@@ -1598,11 +1600,19 @@ strike catch source target iid cstore = assert (source /= target) $ do
                else let (armor, (_, itemKind)) =
                            maximumBy (Ord.comparing $ abs . fst) condArmor
                         name = IK.iname itemKind
-                    in if | armor <= -15 ->
-                            (", despite being" <+> name, msgMeleeInteresting)
-                          | armor >= 15 ->
-                            (", thanks to being" <+> name, msgMeleeInteresting)
-                          | otherwise -> ("", MsgMelee)
+                    in if | abs armor < 15 -> ("", MsgMelee)
+                          | hurtMult > 20 ->
+                            ( (if armor <= -15
+                               then ", due to being"
+                               else ", regardless of being")
+                              <+> name
+                            , msgMeleeInteresting )
+                          | otherwise ->
+                            ( (if armor >= 15
+                               then ", thanks to being"
+                               else ", despite being")
+                              <+> name
+                            , msgMeleeInteresting )
              msgClass = if targetIsFriend && deadliness >= 300
                            || deadliness >= 2000
                         then msgMeleePowerful
