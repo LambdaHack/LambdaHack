@@ -3,7 +3,7 @@
 -- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
-    Msg, toMsg, toPrompt
+    Msg, MsgClass(..), toMsg
     -- * Report
   , Report, nullReport, consReport, renderReport, findInReport
     -- * History
@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , MsgClass, isSavedToHistory
+  , isSavedToHistory
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
   , emptyReport, snocReport, renderRepetition, scrapRepetition, renderTimeReport
 #endif
@@ -56,21 +56,18 @@ instance Binary Msg
 data MsgClass =
     MsgMsg
   | MsgPrompt
-  deriving (Show, Eq, Generic)
+  | MsgAlert
+ deriving (Show, Eq, Generic)
 
 instance Binary MsgClass
 
-toMsg :: AttrLine -> Msg
-toMsg l = Msg { msgLine = l
-              , msgClass = MsgMsg }
-
-toPrompt :: AttrLine -> Msg
-toPrompt l = Msg { msgLine = l
-                 , msgClass = MsgPrompt }
+toMsg :: MsgClass -> AttrLine -> Msg
+toMsg msgClass msgLine = Msg {..}
 
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgMsg = True
 isSavedToHistory MsgPrompt = False
+isSavedToHistory MsgAlert = False
 
 -- * Report
 

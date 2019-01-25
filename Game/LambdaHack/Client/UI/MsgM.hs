@@ -28,7 +28,7 @@ msgAddDuplicate msg = do
   time <- getsState stime
   history <- getsSession shistory
   let (nhistory, duplicate) =
-        addToReport history (toMsg $ textToAL msg) 1 time
+        addToReport history (toMsg MsgMsg $ textToAL msg) 1 time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
@@ -37,23 +37,23 @@ msgAdd :: MonadClientUI m => Text -> m ()
 msgAdd = void <$> msgAddDuplicate
 
 -- | Add a prompt to the current report.
-promptAddDuplicate :: MonadClientUI m => Text -> Int -> m Bool
-promptAddDuplicate msg n = do
+promptAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool
+promptAddDuplicate msg msgClass n = do
   time <- getsState stime
   history <- getsSession shistory
   let (nhistory, duplicate) =
-        addToReport history (toPrompt $ textToAL msg) n time
+        addToReport history (toMsg msgClass $ textToAL msg) n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd1 :: MonadClientUI m => Text -> m ()
-promptAdd1 = void <$> flip promptAddDuplicate 1
+promptAdd1 = void <$> \msg -> promptAddDuplicate msg MsgAlert 1
 
 -- | Add a prompt to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 promptAdd0 :: MonadClientUI m => Text -> m ()
-promptAdd0 = void <$> flip promptAddDuplicate 0
+promptAdd0 = void <$> \msg -> promptAddDuplicate msg MsgPrompt 0
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()

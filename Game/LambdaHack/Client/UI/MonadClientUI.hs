@@ -186,7 +186,7 @@ getReportUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      promptAI = toPrompt $ stringToAL "[press ESC for main menu]"
+      promptAI = toMsg MsgPrompt $ stringToAL "[press ESC for main menu]"
   return $! if underAI then consReport promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
@@ -303,7 +303,8 @@ defaultHistory uHistoryMax = liftIO $ do
   timezone <- getTimeZone utcTime
   let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
       emptyHist = emptyHistory uHistoryMax
-      msg = toMsg $ stringToAL $ "History log started on " ++ curDate ++ "."
+      msg = toMsg MsgMsg $ stringToAL
+            $ "History log started on " ++ curDate ++ "."
   return $! fst $ addToReport emptyHist msg 0 timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()
