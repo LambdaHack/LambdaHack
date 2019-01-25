@@ -1541,7 +1541,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | deadliness < 20 && hurtMult > 70 = ", yet"
               -- weak attack, yet surprisingly defense not too successful
           | otherwise = " and"  -- no surprises
-        msgArmor = if hurtMult > 90 && null condArmor
+        msgArmor = if hurtMult > 90 && (null condArmor || deadliness < 100)
                    then ""  -- at most minor armor, relatively to skill
                             -- of the hit, so we don't talk about blocking,
                             -- unless a condition is at play, too
