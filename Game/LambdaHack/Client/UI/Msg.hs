@@ -11,9 +11,10 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , colorAttrChar, isSavedToHistory, msgColor
+  , colorAttrChar, isSavedToHistory, isDisplayed, msgColor
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
-  , emptyReport, snocReport, renderRepetition, scrapRepetition, renderTimeReport
+  , emptyReport, snocReport, renderWholeReport, renderRepetition
+  , scrapRepetition, renderTimeReport
 #endif
   ) where
 
@@ -95,6 +96,8 @@ data MsgClass =
   | MsgMelee
   | MsgDone
   | MsgAtFeet
+  | MsgNumeric
+  | MsgSpam
   | MsgPrompt
   | MsgAlert
  deriving (Show, Eq, Generic)
@@ -116,9 +119,16 @@ colorAttrChar color w
 colorAttrChar _ w = w
 
 isSavedToHistory :: MsgClass -> Bool
+isSavedToHistory MsgNumeric = False
+isSavedToHistory MsgSpam = False
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgAlert = False
 isSavedToHistory _ = True
+
+isDisplayed :: MsgClass -> Bool
+isDisplayed MsgNumeric = False
+isDisplayed MsgSpam = False
+isDisplayed _ = True
 
 -- Only @White@ color gets replaced by this one.
 msgColor :: MsgClass -> Color.Color
@@ -163,6 +173,8 @@ msgColor MsgMeleeInterestingBad = Color.Red
 msgColor MsgMelee = Color.White
 msgColor MsgDone = Color.White
 msgColor MsgAtFeet = Color.White
+msgColor MsgNumeric = Color.White
+msgColor MsgSpam = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgAlert = Color.BrYellow
 
@@ -195,11 +207,18 @@ consReport :: Msg -> Report -> Report
 consReport Msg{msgLine=[]} rep = rep
 consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
 
--- | Render a report as a (possibly very long) 'AttrLine'.
+-- | Render a report as a (possibly very long) 'AttrLine'. Filter out
+-- messages not meant for display.
 renderReport :: Report -> AttrLine
-renderReport (Report []) = []
-renderReport (Report (x : xs)) =
-  renderReport (Report xs) <+:> renderRepetition x
+renderReport (Report r) =
+  let rep = Report $ filter (isDisplayed . msgClass . repMsg) r
+  in renderWholeReport rep
+
+-- | Render a report as a (possibly very long) 'AttrLine'.
+renderWholeReport :: Report -> AttrLine
+renderWholeReport (Report []) = []
+renderWholeReport (Report (x : xs)) =
+  renderWholeReport (Report xs) <+:> renderRepetition x
 
 renderRepetition :: RepMsgN -> AttrLine
 renderRepetition (RepMsgN s 0) = msgLine s
@@ -283,9 +302,9 @@ archiveReport History{newReport=Report newMsgs, ..} =
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
 renderTimeReport :: Time -> Report -> [AttrLine]
-renderTimeReport !t (Report r') =
+renderTimeReport !t (Report r) =
   let turns = t `timeFitUp` timeTurn
-      rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r'
+      rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r
   in if nullReport rep
      then []
      else [stringToAL (show turns ++ ": ") ++ renderReport rep]

@@ -81,9 +81,9 @@ import qualified Game.LambdaHack.Content.TileKind as TK
 -- the client state is modified by the command.
 -- Don't modify client state (except a few fields), but only client
 -- session (e.g., by displaying messages). This is enforced by types.
-displayRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
+displayRespUpdAtomicUI :: MonadClientUI m => UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
-displayRespUpdAtomicUI verbose cmd = case cmd of
+displayRespUpdAtomicUI cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
@@ -131,7 +131,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     markDisplayNeeded lid
   UpdSpotActor aid body _ -> createActorUI False aid body
   UpdLoseActor aid body _ -> destroyActorUI False aid body
-  UpdSpotItem verbose2 iid _ kit c -> spotItem verbose2 iid kit c
+  UpdSpotItem verbose iid _ kit c -> spotItem verbose iid kit c
   {-
   UpdLoseItem False _ _ _ _ -> return ()
   -- The message is rather cryptic, so let's disable it until it's decided
@@ -158,10 +158,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid hpDelta -> do
     CCUI{coscreen} <- getsSession sccui
-    when verbose $
-      aidVerbMU MsgEffectMinor aid
-      $ MU.Text $ (if hpDelta > 0 then "heal" else "lose")
-                  <+> tshow (abs hpDelta `divUp` oneM) <> "HP"
+    aidVerbMU MsgNumeric aid $ MU.Text
+                             $ (if hpDelta > 0 then "heal" else "lose")
+                               <+> tshow (abs hpDelta `divUp` oneM) <> "HP"
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     arena <- getArenaUI
@@ -422,7 +421,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       else promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
-  UpdWriteSave -> when verbose $ promptAdd1 "Saving backup."
+  UpdWriteSave -> msgAdd MsgSpam "Saving backup."
   UpdHearFid _ hearMsg -> do
     mleader <- getsClient sleader
     case mleader of
