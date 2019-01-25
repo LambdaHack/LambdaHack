@@ -3,11 +3,13 @@
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.UI.DrawM
   ( targetDesc, targetDescXhair, drawHudFrame
+  , checkWarningHP, checkWarningCalm
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawFrameTerrain, drawFrameContent
   , drawFramePath, drawFrameActor, drawFrameExtra, drawFrameStatus
   , drawArenaStatus, drawLeaderStatus, drawLeaderDamage, drawSelected
+  , checkWarnings
 #endif
   ) where
 
@@ -19,6 +21,7 @@ import           Control.Monad.ST.Strict
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import           Data.Int (Int64)
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import qualified Data.Text as T
@@ -557,21 +560,6 @@ drawArenaStatus COps{cocave}
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
                 <+> seenStatus
 
-checkWarnings :: UIOptions -> ActorId -> State -> (Bool, Bool)
-checkWarnings UIOptions{uhpWarningPercent} leader s =
-  let b = getActorBody leader s
-      actorMaxSk = getActorMaxSkills leader s
-      isImpression iid =
-        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
-      isImpressed = any isImpression $ EM.keys $ borgan b
-      maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
-      hpCheckWarning = bhp b <= xM (uhpWarningPercent * maxHp `div` 100)
-      maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
-      calmCheckWarning =
-        bcalm b <= xM (uhpWarningPercent * maxCalm `div` 100)
-        && isImpressed
-  in (hpCheckWarning, calmCheckWarning)
-
 drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
 drawLeaderStatus waitT = do
   time <- getsState stime
@@ -727,3 +715,26 @@ drawSelected drawnLevelId width selected = do
       viewed = map viewOurs $ take maxViewed
                $ sortOn keySelected oursUI
   return (min width (len + 2), [star] ++ viewed ++ [Color.spaceAttrW32])
+
+checkWarningHP :: UIOptions -> ActorId -> Int64 -> State -> Bool
+checkWarningHP UIOptions{uhpWarningPercent} leader hp s =
+  let actorMaxSk = getActorMaxSkills leader s
+      maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
+  in hp <= xM (uhpWarningPercent * maxHp `div` 100)
+
+checkWarningCalm :: UIOptions -> ActorId -> Int64 -> State -> Bool
+checkWarningCalm UIOptions{uhpWarningPercent} leader calm s =
+  let b = getActorBody leader s
+      actorMaxSk = getActorMaxSkills leader s
+      isImpression iid =
+        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
+      isImpressed = any isImpression $ EM.keys $ borgan b
+      maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
+  in calm <= xM (uhpWarningPercent * maxCalm `div` 100)
+     && isImpressed
+
+checkWarnings :: UIOptions -> ActorId -> State -> (Bool, Bool)
+checkWarnings uiOptions leader s =
+  let b = getActorBody leader s
+  in ( checkWarningHP uiOptions leader (bhp b) s
+     , checkWarningCalm uiOptions leader (bcalm b) s )
