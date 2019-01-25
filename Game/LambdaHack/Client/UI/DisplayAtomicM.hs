@@ -1592,7 +1592,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else ["with", weaponName]
-         msgAdd MsgRare msg
+         msgAdd MsgMelee msg  -- too common for color
          animate (blid tb) $ subtleHit coscreen (bpos sb)
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulGood
