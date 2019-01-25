@@ -1613,6 +1613,11 @@ strike catch source target iid cstore = assert (source /= target) $ do
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
          animate (blid tb) basicAnim
+       | bproj tb -> do  -- much less emotion and the victim not active.
+         let attackParts =
+               [MU.SubjectVerbSg spart verb, tpart, "with", weaponName]
+         msgAdd MsgMelee $ makeSentence attackParts
+         animate (blid tb) basicAnim
        | otherwise -> do  -- ordinary melee
          let msgMeleeInteresting | targetIsFoe = MsgMeleeInterestingGood
                                  | targetIsFriend = MsgMeleeInterestingBad
