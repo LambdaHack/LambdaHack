@@ -25,6 +25,8 @@ import           Text.Read
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.Msg
+import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
@@ -50,6 +52,7 @@ data UIOptions = UIOptions
   , uRunStopMsgs        :: Bool
   , uhpWarningPercent   :: Int
       -- ^ HP percent at which warning is emitted.
+  , uMessageColors      :: Maybe [(MsgClass, Color.Color)]
   , uCmdline            :: [String]
       -- ^ Hardwired commandline arguments to process.
   }
@@ -85,14 +88,19 @@ parseConfig cfg =
                            $ "wrong hero name id" `showFailure` ident
             section = Ini.allItems "hero_names" cfg
         in map toNumber section
+      lookupFail :: forall b. String -> String -> b
+      lookupFail optionName err =
+        configError $ "config file access failed"
+                      `showFailure` (err, optionName, cfg)
+      getOptionMaybe :: forall a. Read a => String -> Maybe a
+      getOptionMaybe optionName =
+        let ms = Ini.getOption "ui" optionName cfg
+        in either (lookupFail optionName) id . readEither <$> ms
       getOption :: forall a. Read a => String -> a
       getOption optionName =
-        let lookupFail :: forall b. String -> b
-            lookupFail err =
-              configError $ "config file access failed"
-                            `showFailure` (err, optionName, cfg)
-            s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
-        in either lookupFail id $ readEither s
+        let s = fromMaybe (lookupFail optionName "")
+                $ Ini.getOption "ui" optionName cfg
+        in either (lookupFail optionName) id $ readEither s
       uVi = getOption "movementViKeys_hjklyubn"
       -- The option for Vi keys takes precendence,
       -- because the laptop keys are the default.
@@ -107,6 +115,7 @@ parseConfig cfg =
       uNoAnim = getOption "noAnim"
       uRunStopMsgs = getOption "runStopMsgs"
       uhpWarningPercent = getOption "hpWarningPercent"
+      uMessageColors = getOptionMaybe "messageColors"
       uCmdline = words $ getOption "overrideCmdline"
   in UIOptions{..}
 

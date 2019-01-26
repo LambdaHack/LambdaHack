@@ -57,6 +57,7 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
+import           Game.LambdaHack.Client.UI.UIOptions
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
@@ -182,11 +183,13 @@ revCmdMap = do
 
 getReportUI :: MonadClientUI m => m Report
 getReportUI = do
+  sUIOptions <- getsSession sUIOptions
   report <- getsSession $ newReport . shistory
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
-      promptAI = toMsg MsgPrompt $ stringToAL "[press ESC for main menu]"
+      mem = EM.fromList <$> uMessageColors sUIOptions
+      promptAI = toMsg mem MsgPrompt $ stringToAL "[press ESC for main menu]"
   return $! if underAI then consReport promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
@@ -297,15 +300,18 @@ scoreToSlideshow total status = do
             then sli
             else emptySlideshow
 
-defaultHistory :: MonadClientUI m => Int -> m History
-defaultHistory uHistoryMax = liftIO $ do
-  utcTime <- getCurrentTime
-  timezone <- getTimeZone utcTime
-  let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
-      emptyHist = emptyHistory uHistoryMax
-      msg = toMsg MsgAdmin $ stringToAL
-            $ "History log started on " ++ curDate ++ "."
-  return $! fst $ addToReport emptyHist msg 0 timeZero
+defaultHistory :: MonadClientUI m => m History
+defaultHistory = do
+  sUIOptions <- getsSession sUIOptions
+  liftIO $ do
+    utcTime <- getCurrentTime
+    timezone <- getTimeZone utcTime
+    let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
+        emptyHist = emptyHistory $ uHistoryMax sUIOptions
+        mem = EM.fromList <$> uMessageColors sUIOptions
+        msg = toMsg mem MsgAdmin $ stringToAL
+              $ "History log started on " ++ curDate ++ "."
+    return $! fst $ addToReport emptyHist msg 0 timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do

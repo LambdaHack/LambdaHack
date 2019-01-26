@@ -375,8 +375,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       let title = rtitle corule
       msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
-      sUIOptions <- getsSession sUIOptions
-      shistory <- defaultHistory $ uHistoryMax sUIOptions
+      shistory <- defaultHistory
       modifySession $ \sess -> sess {shistory}
     else
       recordHistory

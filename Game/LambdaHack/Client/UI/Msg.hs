@@ -22,7 +22,9 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import           Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word32)
 import           GHC.Generics (Generic)
@@ -54,9 +56,10 @@ data Msg = Msg
 
 instance Binary Msg
 
-toMsg :: MsgClass -> AttrLine -> Msg
-toMsg msgClass l =
-  let color = msgColor msgClass
+toMsg :: Maybe (EM.EnumMap MsgClass Color.Color) -> MsgClass -> AttrLine -> Msg
+toMsg mem msgClass l =
+  let findColorInConfig = EM.findWithDefault Color.White msgClass
+      color = maybe (msgColor msgClass) findColorInConfig mem
       msgLine = if color == Color.White then l else map (colorAttrChar color) l
   in Msg {..}
 
@@ -115,7 +118,9 @@ data MsgClass =
   | MsgSpam
   | MsgPrompt
   | MsgAlert
- deriving (Show, Eq, Generic)
+ deriving (Show, Read, Eq, Enum, Generic)
+
+instance NFData MsgClass
 
 instance Binary MsgClass
 

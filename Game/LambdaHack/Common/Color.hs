@@ -51,7 +51,7 @@ data Color =
   | BrMagenta
   | BrCyan
   | BrWhite
-  deriving (Show, Eq, Ord, Enum, Generic)
+  deriving (Show, Read, Eq, Ord, Enum, Generic)
 
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum
