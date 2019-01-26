@@ -57,7 +57,7 @@ instance Binary Msg
 toMsg :: MsgClass -> AttrLine -> Msg
 toMsg msgClass l =
   let color = msgColor msgClass
-      msgLine = map (colorAttrChar color) l
+      msgLine = if color == Color.White then l else map (colorAttrChar color) l
   in Msg {..}
 
 colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
