@@ -388,12 +388,16 @@ displayRespUpdAtomicUI cmd = case cmd of
           [] -> True
           [(_, 1, _)] -> True
           _ -> False
-    msgAdd MsgAdmin $
-       "New game started in" <+> mname mode <+> "mode."
-      <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
-      <+> if cwolf curChal && not loneMode
-          then "Being a lone wolf, you start without companions."
-          else ""
+    msgAdd MsgWarning $ "New game started in" <+> mname mode <+> "mode."
+    msgAdd MsgAdmin $ mdesc mode
+    let desc = cdesc $ okind cocave $ lkind lvl
+    unless (T.null desc) $ do
+      msgAdd MsgFocus "You take in your surroundings."
+      msgAdd MsgLandscape desc
+    -- We can fool the player only once (per scenario).
+    msgAdd MsgWarning "You think you can see movement."
+    when (cwolf curChal && not loneMode) $
+      msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
     when (isAIFact fact) $ do
@@ -410,9 +414,13 @@ displayRespUpdAtomicUI cmd = case cmd of
       lid <- getArenaUI
       lvl <- getLevel lid
       mode <- getGameMode
-      promptAdd0 $ "Continuing" <+> mname mode <> "."
-                   <+> mdesc mode <+> cdesc (okind cocave $ lkind lvl)
-                   <+> "Are you up for the challenge?"
+      msgAdd MsgAlert $ "Continuing" <+> mname mode <> "."
+      msgAdd MsgPrompt $ mdesc mode
+      let desc = cdesc $ okind cocave $ lkind lvl
+      unless (T.null desc) $ do
+        msgAdd MsgPromptFocus "You remember your surroundings."
+        msgAdd MsgPrompt desc
+      msgAdd MsgAlert "Are you up for the challenge?"
       slides <- reportToSlideshow [K.spaceKM, K.escKM]
       km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
       if km == K.escKM
@@ -1189,7 +1197,10 @@ displayRespSfxAtomicUI sfx = case sfx of
             case destinations of
               (lid, _) : _ -> do  -- only works until different levels possible
                 lvl <- getLevel lid
-                msgAdd MsgLandscape $ cdesc $ okind cocave $ lkind lvl
+                let desc = cdesc $ okind cocave $ lkind lvl
+                unless (T.null desc) $ do
+                  msgAdd MsgLandscape desc
+                  msgAdd MsgFocus "You turn your attention to nearby positions."
               [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side

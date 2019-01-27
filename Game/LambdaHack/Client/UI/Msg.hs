@@ -101,6 +101,7 @@ data MsgClass =
   | MsgMisc
   | MsgHeardClose
   | MsgHeard
+  | MsgFocus
   | MsgWarning
   | MsgRangedPowerfulGood
   | MsgRangedPowerfulBad
@@ -117,6 +118,7 @@ data MsgClass =
   | MsgNumeric
   | MsgSpam
   | MsgPrompt
+  | MsgPromptFocus
   | MsgAlert
  deriving (Show, Read, Eq, Enum, Generic)
 
@@ -128,6 +130,7 @@ isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgNumeric = False
 isSavedToHistory MsgSpam = False
 isSavedToHistory MsgPrompt = False
+isSavedToHistory MsgPromptFocus = False
 isSavedToHistory MsgAlert = False
 isSavedToHistory _ = True
 
@@ -166,6 +169,7 @@ msgColor MsgEffectMinor = Color.White
 msgColor MsgMisc = Color.White
 msgColor MsgHeardClose = Color.BrYellow
 msgColor MsgHeard = Color.Brown
+msgColor MsgFocus = Color.Green
 msgColor MsgWarning = Color.BrYellow
 msgColor MsgRangedPowerfulGood = Color.Green
 msgColor MsgRangedPowerfulBad = Color.Red
@@ -182,6 +186,7 @@ msgColor MsgAtFeet = Color.White
 msgColor MsgNumeric = Color.White
 msgColor MsgSpam = Color.White
 msgColor MsgPrompt = Color.White
+msgColor MsgPromptFocus = Color.Green
 msgColor MsgAlert = Color.BrYellow
 
 -- * Report
