@@ -395,7 +395,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgFocus "You take in your surroundings."
       msgAdd MsgLandscape desc
     -- We can fool the player only once (per scenario).
-    msgAdd MsgWarning "You think you can see movement."
+    msgAdd MsgWarning "You think you saw movement."
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
@@ -570,11 +570,11 @@ createActorUI born aid body = do
     modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   factionD <- getsState sfactionD
   let fact = factionD EM.! bfid body
-  globalTime <- getsState stime
   localTime <- getsState $ getLocalTime $ blid body
   itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
+  actorUI <- getsSession sactorUI
   let arItem = aspectRecordFull itemFull
-  mbUI <- getsSession $ EM.lookup aid . sactorUI
+      mbUI = EM.lookup aid actorUI
   bUI <- case mbUI of
     Just bUI -> return bUI
     Nothing -> do
@@ -598,10 +598,9 @@ createActorUI born aid body = do
                                       else '*')
            | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
            | otherwise -> do
-             sactorUI <- getsSession sactorUI
              let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
                                   && bcolor bUI == gcolor fact
-                 findHeroK k = isJust $ find (hasNameK k) (EM.elems sactorUI)
+                 findHeroK k = isJust $ find (hasNameK k) (EM.elems actorUI)
                  mhs = map findHeroK [0..]
                  n = fromJust $ elemIndex False mhs
              return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
@@ -629,13 +628,11 @@ createActorUI born aid body = do
                  | otherwise = baseColor
           bUI = ActorUI{..}
       modifySession $ \sess ->
-        sess {sactorUI = EM.insert aid bUI $ sactorUI sess}
+        sess {sactorUI = EM.insert aid bUI actorUI}
       return bUI
   let verb = MU.Text $
         if born
-        then if globalTime == timeZero
-             then "be here"
-             else "appear" <+> if bfid body == side then "" else "suddenly"
+        then if bfid body == side then "join you" else "appear suddenly"
         else "be spotted"
   mapM_ (\(iid, store) -> do
            let c = if not (bproj body) && iid == btrunk body
@@ -649,7 +646,9 @@ createActorUI born aid body = do
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
   lastLost <- getsSession slastLost
-  if | born && bproj body -> pushFrame  -- make sure first position displayed
+  if | EM.null actorUI && bfid body == side ->
+       return ()  -- don't speak about yourself in 3rd person
+     | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        actorVerbMU MsgActorSpot aid bUI verb
