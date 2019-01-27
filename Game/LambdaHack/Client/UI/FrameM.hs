@@ -85,7 +85,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
     _ : _ -> do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       stopPlayBack
-      discardPressedKey
+      resetPressedKeys
       let ov2 = [stringToAL "*interrupted*" | keyPressed] ++ ov
       frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
       connFrontendFrontKey frontKeyKeys frontKeyFrame
@@ -95,6 +95,9 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
+      when (dm /= ColorFull) $
+        -- Forget the furious keypresses just before a special event.
+        resetPressedKeys
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
   let slastRecord = LastRecord (km : seqCurrent) seqPrevious k

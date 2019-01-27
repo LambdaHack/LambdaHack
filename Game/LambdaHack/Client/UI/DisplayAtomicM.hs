@@ -404,6 +404,8 @@ displayRespUpdAtomicUI cmd = case cmd of
       -- Prod the frontend to flush frames and start showing them continuously.
       slides <- reportToSlideshow []
       void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
+    -- Forget the furious keypresses when dying in the previous game.
+    resetPressedKeys
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
