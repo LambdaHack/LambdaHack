@@ -51,7 +51,9 @@ data FrontReq :: * -> * where
   -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
   -- | Discard a key in the queue, if any.
-  FrontDiscard :: FrontReq ()
+  FrontDiscardKey :: FrontReq ()
+  -- | Discard all keys in the queue.
+  FrontResetKeys :: FrontReq ()
   -- | Add a key to the queue.
   FrontAdd :: KMP -> FrontReq ()
   -- | Set in the frontend that it should auto-answer prompts.
@@ -116,8 +118,9 @@ fchanFrontend fs@FrontSetup{..} rf =
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending
-    FrontDiscard ->
+    FrontDiscardKey ->
       void $ STM.atomically $ STM.tryReadTQueue (fchanKey rf)
+    FrontResetKeys -> resetChanKey (fchanKey rf)
     FrontAdd kmp -> STM.atomically $ STM.writeTQueue (fchanKey rf) kmp
     FrontAutoYes b -> writeIORef fautoYesRef b
     FrontShutdown -> do

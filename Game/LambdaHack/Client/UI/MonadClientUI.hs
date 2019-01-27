@@ -10,8 +10,9 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Assorted primitives
   , clientPrintUI, mapStartY, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
-  , chanFrontend, anyKeyPressed, discardPressedKey, addPressedControlEsc
-  , revCmdMap, getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
+  , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
+  , addPressedControlEsc, revCmdMap
+  , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, xhairToPos, clearAimMode, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart
@@ -163,7 +164,10 @@ anyKeyPressed :: MonadClientUI m => m Bool
 anyKeyPressed = connFrontend FrontPressed
 
 discardPressedKey :: MonadClientUI m => m ()
-discardPressedKey = connFrontend FrontDiscard
+discardPressedKey = connFrontend FrontDiscardKey
+
+resetPressedKeys :: MonadClientUI m => m ()
+resetPressedKeys = connFrontend FrontResetKeys
 
 addPressedKey :: MonadClientUI m => K.KMP -> m ()
 addPressedKey = connFrontend . FrontAdd
