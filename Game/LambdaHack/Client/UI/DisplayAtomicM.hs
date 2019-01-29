@@ -65,6 +65,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -396,8 +397,19 @@ displayRespUpdAtomicUI cmd = case cmd of
     unless (T.null desc) $ do
       msgAdd MsgFocus "You take in your surroundings."
       msgAdd MsgLandscape desc
-    -- We can fool the player only once (per scenario).
-    msgAdd MsgWarning "You think you saw movement."
+    -- We can fool the player only once (per scenario), but let's not do it
+    -- in the same way each time. TODO: PCG
+    blurb <- rndToActionForget $ oneOf
+      [ "You think you saw movement."
+      , "Something catches your peripherial vision."
+      , "You think you felt a tremor with your feet."
+      , "A whiff of chilly air passes around you."
+      , "You notice a draft and then it dies down."
+      , "The ground nearby is stained along some faint lines."
+      , "Some black motes slowly settle on the ground."
+      , "The immediate area seems empty, as if just swiped."
+      ]
+    msgAdd MsgWarning blurb
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
