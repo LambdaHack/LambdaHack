@@ -217,9 +217,10 @@ displayRespUpdAtomicUI cmd = case cmd of
              when currentWarning $ do
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
-               unless previousWarning $
+               unless previousWarning $ do
                  aidVerbMU0 MsgDeathThreat aid
                             "be down to a dangerous health level"
+                 stopPlayBack
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
@@ -1277,7 +1278,10 @@ displayRespSfxAtomicUI sfx = case sfx of
                  "The fragrance quells all scents in the vicinity."
         IK.OneOf{} -> return ()
         IK.OnSmash{} -> error $ "" `showFailure` sfx
-        IK.VerbMsg t -> actorVerbMU MsgNoLonger aid bUI $ MU.Text t
+        IK.VerbMsg t -> do
+          actorVerbMU MsgNoLonger aid bUI $ MU.Text t
+          stopPlayBack  -- usually something important, e.g., can move again,
+                        -- so interrupt resting
         IK.Composite{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
