@@ -5,7 +5,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , updateItemSlot, markDisplayNeeded, lookAtMove
-  , actorVerbMU, aidVerbMU, aidVerbDuplicateMU, itemVerbMU, itemAidVerbMU
+  , actorVerbMU, aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
+  , itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI, displayGameOverLoot, displayGameOverAnalytics
   , discover, ppSfxMsg, strike
@@ -217,8 +218,8 @@ displayRespUpdAtomicUI cmd = case cmd of
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
                unless previousWarning $
-                 aidVerbMU MsgDeathThreat aid
-                           "be down to a dangerous health level"
+                 aidVerbMU0 MsgDeathThreat aid
+                            "be down to a dangerous health level"
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
@@ -251,8 +252,8 @@ displayRespUpdAtomicUI cmd = case cmd of
           unless previousWarning $
             -- This messages is not shown if impression happens after
             -- Calm is low enough. However, this is rare and HUD shows the red.
-            aidVerbMU MsgDeathThreat aid
-                      "have grown agitated and impressed enough to be in danger of defecting"
+            aidVerbMU0 MsgDeathThreat aid
+                       "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
@@ -506,6 +507,12 @@ aidVerbMU msgClass aid verb = do
   bUI <- getsSession $ getActorUI aid
   actorVerbMU msgClass aid bUI verb
 
+aidVerbMU0 :: MonadClientUI m => MsgClass -> ActorId -> MU.Part -> m ()
+aidVerbMU0 msgClass aid verb = do
+  bUI <- getsSession $ getActorUI aid
+  subject <- partActorLeader aid bUI
+  msgAdd0 msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
+
 aidVerbDuplicateMU :: MonadClientUI m
                    => MsgClass -> ActorId -> MU.Part -> m Bool
 aidVerbDuplicateMU msgClass aid verb = do
@@ -665,7 +672,7 @@ createActorUI born aid body = do
       modifySession $ \sess -> sess {sxhair = Just $ TEnemy aid}
       foes <- getsState $ foeRegularList side (blid body)
       unless (ES.member aid lastLost || length foes > 1) $
-        msgAdd MsgFirstEnemySpot "You are not alone!"
+        msgAdd0 MsgFirstEnemySpot "You are not alone!"
     stopPlayBack
 
 destroyActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()

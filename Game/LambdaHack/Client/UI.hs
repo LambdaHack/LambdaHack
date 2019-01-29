@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI
   , CCUI(..)
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
     -- * Operations exposed for "Game.LambdaHack.Client.LoopM"
-  , ChanFrontend, chanFrontend, promptAdd1, tryRestore
+  , ChanFrontend, chanFrontend, promptAdd, tryRestore
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , humanCommand
@@ -181,7 +181,7 @@ humanCommand = do
             stopPlayBack
             -- Avoid "*never mind*<x4>".
             let t = showFailError err
-            if t == "*never mind*" then void $ msgAddDuplicate t MsgAlert 0
-                                   else promptAdd1 t
+            if t == "*never mind*" then msgAdd0 MsgAlert t
+                                   else msgAdd MsgAlert t
             loop
   loop

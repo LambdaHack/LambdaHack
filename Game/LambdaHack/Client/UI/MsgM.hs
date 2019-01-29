@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAdd, promptAdd1, promptAdd0
+  ( msgAddDuplicate, msgAdd, msgAdd0, promptAdd, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -40,14 +40,19 @@ msgAddDuplicate msg msgClass n = do
 msgAdd :: MonadClientUI m => MsgClass -> Text -> m ()
 msgAdd msgClass msg = void $ msgAddDuplicate msg msgClass 1
 
+-- | Add a message to the current report with 0 copies for the purpose
+-- of collating duplicates. Do not report if it was a duplicate.
+msgAdd0 :: MonadClientUI m => MsgClass -> Text -> m ()
+msgAdd0 msgClass msg = void $ msgAddDuplicate msg msgClass 0
+
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
-promptAdd1 :: MonadClientUI m => Text -> m ()
-promptAdd1 msg = void $ msgAddDuplicate msg MsgAlert 1
+promptAdd :: MonadClientUI m => Text -> m ()
+promptAdd = msgAdd MsgAlert
 
 -- | Add a prompt to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 promptAdd0 :: MonadClientUI m => Text -> m ()
-promptAdd0 msg = void $ msgAddDuplicate msg MsgPrompt 0
+promptAdd0 = msgAdd0 MsgPrompt
 
 -- | Add a prompt with basic keys description.
 promptMainKeys :: MonadClientUI m => m ()

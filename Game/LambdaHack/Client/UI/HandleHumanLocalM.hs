@@ -91,14 +91,14 @@ macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   UIOptions{uRunStopMsgs} <- getsSession sUIOptions
   when uRunStopMsgs $
-    promptAdd1 $ "Macro activated:" <+> T.pack (intercalate " " kms)
+    promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * SortSlots
 
 sortSlotsHuman :: MonadClientUI m => m ()
 sortSlotsHuman = do
   sortSlots
-  promptAdd1 "Items sorted by kind and rolled aspects."
+  promptAdd "Items sorted by kind and rolled aspects."
 
 -- * ChooseItem
 
@@ -605,9 +605,9 @@ selectAid leader = do
             else ES.insert leader
   modifySession $ \sess -> sess {sselected = upd $ sselected sess}
   let subject = partActor bodyUI
-  promptAdd1 $ makeSentence [subject, if wasMemeber
-                                      then "deselected"
-                                      else "selected"]
+  promptAdd $ makeSentence [subject, if wasMemeber
+                                     then "deselected"
+                                     else "selected"]
 
 -- * SelectNone
 
@@ -624,9 +624,9 @@ selectNoneHuman = do
             else ES.difference
   modifySession $ \sess -> sess {sselected = upd (sselected sess) ours}
   let subject = "all party members on the level"
-  promptAdd1 $ makeSentence [subject, if wasNone
-                                      then "selected"
-                                      else "deselected"]
+  promptAdd $ makeSentence [subject, if wasNone
+                                     then "selected"
+                                     else "deselected"]
 
 -- * SelectWithPointer
 
@@ -776,7 +776,7 @@ markSuspectHuman = do
 -- * PrintScreen
 printScreenHuman :: MonadClientUI m => m ()
 printScreenHuman = do
-  promptAdd1 "Screenshot printed."
+  promptAdd "Screenshot printed."
   printScreen
 
 -- * Cancel
@@ -811,7 +811,7 @@ endAimingMsg = do
   (mtargetMsg, _) <- targetDesc tgt
   let targetMsg = fromJust mtargetMsg
   subject <- partAidLeader leader
-  promptAdd1 $
+  promptAdd $
     makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * ClearTargetIfItemClear
