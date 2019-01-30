@@ -180,8 +180,9 @@ humanCommand = do
           Left (Just err) -> do
             stopPlayBack
             -- Avoid "*never mind*<x4>".
-            let t = showFailError err
-            if t == "*never mind*" then msgAdd0 MsgAlert t
-                                   else msgAdd MsgAlert t
+            let l0 = ["*never mind*", "*aiming started*"]
+                t = showFailError err
+            if t `elem` l0 then msgAdd0 MsgAlert t
+                           else msgAdd MsgAlert t
             loop
   loop
