@@ -1587,8 +1587,10 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | hurtMult > 70 = twirlSplash coscreen ps Color.BrRed Color.Red
           | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
           | otherwise = blockMiss coscreen ps
-        targetIsFoe = isFoe (bfid tb) tfact side
+        targetIsFoe = bfid sb == side  -- no big news if others hit our foes
+                      && isFoe (bfid tb) tfact side
         targetIsFriend = isFriend (bfid tb) tfact side
+                           -- warning if anybody hits our friends
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1659,7 +1661,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                                  | otherwise = MsgMelee
              msgMeleePowerful | targetIsFoe = MsgMeleePowerfulGood
                               | targetIsFriend = MsgMeleePowerfulBad
-                              | otherwise = MsgRanged
+                              | otherwise = MsgMelee
              attackParts =
                [ MU.SubjectVerbSg spart verb, sleepy, tpart, strongly
                , "with", weaponName ]
