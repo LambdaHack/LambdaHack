@@ -1431,16 +1431,24 @@ ppSfxMsg sfxMsg = case sfxMsg of
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
+      side <- getsClient sside
       let kit = (1, [])
           (name, powers) = partItem (bfid b) factionD localTime itemFull kit
           storeOwn = ppCStoreWownW True cstore aidPhrase
           cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
-      return $
-        Just ( MsgLonger
-             , makeSentence $
-                 ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
-                 ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"] )
+          -- Note that when enemy actor causes the extension to himsefl,
+          -- the player is not notified at all. So the shorter blurb below
+          -- is the middle ground.
+          parts | bfid b == side =
+            ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
+            ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"]
+                | otherwise =  -- avoid TMI for not our actors
+            ["the"]
+            ++ [partItemShortWownW side factionD aidPhrase localTime
+                                        itemFull (1, [])]
+            ++ cond ++ ["is extended"]
+      return $ Just (MsgLonger, makeSentence parts)
     else return Nothing
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid

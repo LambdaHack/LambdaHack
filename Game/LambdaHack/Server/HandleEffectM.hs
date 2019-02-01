@@ -1256,9 +1256,12 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
         execUpdAtomic $ UpdTimeItem iid c afterIt newIt
         -- It's hard for the client to tell this timer change from charge use,
         -- timer reset on pickup, etc., so we create the msg manually.
+        -- Sending to both involved factions lets the player notice
+        -- both the extensions he caused and suffered. Other faction causing
+        -- that on themselves or on others won't be noticed. TMI.
         execSfxAtomic $ SfxMsgFid (bfid sb)
                       $ SfxTimerExtended (blid tb) target iid store delta
-        when (source /= target) $
+        when (bfid sb /= bfid tb) $
           execSfxAtomic $ SfxMsgFid (bfid tb)
                         $ SfxTimerExtended (blid tb) target iid store delta
         return UseUp
