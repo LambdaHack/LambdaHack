@@ -88,7 +88,12 @@ reinitGame = do
   modifyServer $ \ser -> ser {sclientStates = EM.map (const defLocal) factionD}
   let updRestart fid = UpdRestart fid (pers EM.! fid) defLocal
                                   scurChalSer sclientOptions
-  mapWithKeyM_ (\fid _ -> execUpdAtomic $ updRestart fid) factionD
+  mapWithKeyM_ (\fid _ -> do
+    -- Different seed for each client, to make sure behaviour is varied.
+    gen1 <- getsServer srandom
+    let (clientRandomSeed, gen2) = R.split gen1
+    modifyServer $ \ser -> ser {srandom = gen2}
+    execUpdAtomic $ updRestart fid clientRandomSeed) factionD
   dungeon <- getsState sdungeon
   let sactorTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD
       strajTime = EM.map (const (EM.map (const EM.empty) dungeon)) factionD

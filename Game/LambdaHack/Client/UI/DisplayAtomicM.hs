@@ -369,7 +369,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception{} -> return ()
-  UpdRestart fid _ _ _ _ -> do
+  UpdRestart fid _ _ _ _ _ -> do
     COps{cocave, corule} <- getsState scops
     sstart <- getsSession sstart
     when (sstart == 0) resetSessionStart

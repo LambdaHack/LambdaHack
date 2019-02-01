@@ -216,7 +216,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDiscoverServer{} -> error "server command leaked to client"
   UpdCoverServer{} -> error "server command leaked to client"
   UpdPerception lid outPer inPer -> perception lid outPer inPer
-  UpdRestart side sfper s scurChal soptions -> do
+  UpdRestart side sfper s scurChal soptions srandom -> do
     COps{cocave, comode} <- getsState scops
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
@@ -236,8 +236,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
         sexplored = EM.keysSet $ EM.filter h $ sdungeon s
         cli = emptyStateClient side
     putClient cli { sexplored
-                  , sfper
                   -- , sundo = [UpdAtomic cmd]
+                  , sfper
+                  , srandom
                   , scurChal
                   , snxtChal
                   , snxtScenario

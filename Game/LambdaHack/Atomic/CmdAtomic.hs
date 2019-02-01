@@ -20,7 +20,8 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
-import Data.Int (Int64)
+import           Data.Int (Int64)
+import qualified System.Random as R
 
 -- Dependence on ClientOptions is an anomaly. Instead, probably the raw
 -- remaining commandline should be passed and parsed by the client to extract
@@ -118,7 +119,7 @@ data UpdAtomic =
   | UpdDiscoverServer ItemId IA.AspectRecord
   | UpdCoverServer ItemId IA.AspectRecord
   | UpdPerception LevelId Perception Perception
-  | UpdRestart FactionId PerLid State Challenge ClientOptions
+  | UpdRestart FactionId PerLid State Challenge ClientOptions R.StdGen
   | UpdRestartServer State
   | UpdResume FactionId PerLid
   | UpdResumeServer State

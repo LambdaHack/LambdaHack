@@ -120,7 +120,7 @@ handleUpdAtomic cmd = case cmd of
   UpdCoverServer iid arItem -> updCoverServer iid arItem
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) (return ())
-  UpdRestart _ _ s _ _ -> updRestart s
+  UpdRestart _ _ s _ _ _ -> updRestart s
   UpdRestartServer s -> updRestartServer s
   UpdResume{} -> return ()
   UpdResumeServer s -> updResumeServer s

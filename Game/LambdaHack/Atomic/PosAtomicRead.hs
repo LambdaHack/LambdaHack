@@ -151,7 +151,7 @@ posUpdAtomic cmd = case cmd of
   UpdDiscoverServer{} -> return PosSer
   UpdCoverServer{} -> return PosSer
   UpdPerception{} -> return PosNone
-  UpdRestart fid _ _ _ _ -> return $! PosFid fid
+  UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer
   UpdResume _ _ -> return PosNone
   UpdResumeServer _ -> return PosSer
