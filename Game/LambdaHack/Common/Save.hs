@@ -37,6 +37,13 @@ saveToChan toSave s = do
   putMVar toSave $ Just s
 
 -- | Repeatedly save serialized snapshots of current state.
+--
+-- Running with @-N2@ ca reduce @Max pause@ from 0.2s to 0.01s
+-- and @bytes copied during GC@ 10-fold, but framerate nor the frequency
+-- of not making a backup save are unaffected (at standard backup settings),
+-- even with null frontend, because saving takes so few resources.
+-- So, generally, backup save settings are relevant only due to latency
+-- impact on very slow computers or in JS.
 loopSave :: Binary a => COps -> (a -> FilePath) -> ChanSave a -> IO ()
 loopSave cops stateToFileName toSave =
   loop
