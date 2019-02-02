@@ -28,7 +28,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State

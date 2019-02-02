@@ -32,9 +32,9 @@ import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Frequency
-import           Game.LambdaHack.Common.Misc
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Types
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16

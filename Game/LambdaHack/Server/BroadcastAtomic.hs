@@ -33,6 +33,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import           Game.LambdaHack.Server.MonadServer

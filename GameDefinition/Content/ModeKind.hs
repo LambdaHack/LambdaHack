@@ -9,7 +9,7 @@ import Game.LambdaHack.Common.Prelude
 
 import Content.ModeKindPlayer
 import Game.LambdaHack.Common.Dice
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
 

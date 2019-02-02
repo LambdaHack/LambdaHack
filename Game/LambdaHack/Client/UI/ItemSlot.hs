@@ -23,7 +23,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Content.ItemKind as IK
 

@@ -25,7 +25,7 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 

@@ -28,6 +28,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 
 -- | Actor attributes that are changing throughout the game.

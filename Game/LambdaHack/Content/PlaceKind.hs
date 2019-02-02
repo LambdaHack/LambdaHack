@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Content.TileKind (TileKind)
 

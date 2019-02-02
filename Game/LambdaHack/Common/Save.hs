@@ -25,7 +25,8 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Kind
-import Game.LambdaHack.Common.Misc (FactionId, appDataDir)
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.RuleKind
 
 type ChanSave a = MVar (Maybe a)

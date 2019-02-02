@@ -26,7 +26,7 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Client (ClientOptions (..))
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.ServerOptions
 

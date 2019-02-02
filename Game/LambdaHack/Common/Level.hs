@@ -33,7 +33,7 @@ import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random

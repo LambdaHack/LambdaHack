@@ -37,7 +37,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure

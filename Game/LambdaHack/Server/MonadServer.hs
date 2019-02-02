@@ -45,6 +45,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Server.ServerOptions

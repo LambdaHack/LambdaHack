@@ -12,7 +12,7 @@ import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Container
 import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Flavour
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]

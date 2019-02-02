@@ -29,6 +29,7 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
 -- | The part of speech describing the item parameterized by the number

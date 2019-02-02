@@ -201,6 +201,7 @@ library
                       Game.LambdaHack.Common.Thread
                       Game.LambdaHack.Common.Tile
                       Game.LambdaHack.Common.Time
+                      Game.LambdaHack.Common.Types
                       Game.LambdaHack.Common.Vector
                       Game.LambdaHack.Content.CaveKind
                       Game.LambdaHack.Content.ItemKind

@@ -18,7 +18,7 @@ import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)

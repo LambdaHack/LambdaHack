@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
-  ( -- * Game object identifiers
-    FactionId, LevelId, ActorId
-    -- * Assorted
-  , GroupName
-  , toGroupName, fromGroupName, makePhrase, makeSentence, squashedWWandW
-  , appDataDir, xM, xD, minusM, minusM1, minusM2, oneM, tenthM, show64With2
+  ( makePhrase, makeSentence, squashedWWandW
+  , appDataDir
+  , xM, xD, minusM, minusM1, minusM2, oneM, tenthM
+  , show64With2
   , workaroundOnMainThreadMVar
   ) where
 
@@ -15,50 +12,13 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Control.Concurrent
-import           Control.DeepSeq
-import           Data.Binary
 import qualified Data.Char as Char
-import           Data.Hashable
 import           Data.Int (Int64)
 import qualified Data.Map as M
-import           Data.String (IsString (..))
-import qualified Data.Text as T
-import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import           System.Directory (getAppUserDataDirectory)
 import           System.Environment (getProgName)
 import           System.IO.Unsafe (unsafePerformIO)
-
--- | A unique identifier of a faction in a game.
-newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
-
--- | Abstract level identifiers.
-newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Hashable, Binary)
-
-instance Enum LevelId where
-  fromEnum (LevelId n) = n
-  toEnum = LevelId  -- picks the main branch of the dungeon
-
--- | A unique identifier of an actor in the dungeon.
-newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum, Binary)
-
--- If ever needed, we can use a symbol table here, since content
--- is never serialized. But we'd need to cover the few cases
--- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
-newtype GroupName a = GroupName {fromGroupName :: Text}
-  deriving (Show, Eq, Ord, Hashable, Binary, Generic)
-
-instance IsString (GroupName a) where
-  fromString = GroupName . T.pack
-
-instance NFData (GroupName a)
-
-toGroupName :: Text -> GroupName a
-{-# INLINE toGroupName #-}
-toGroupName = GroupName
 
 -- | Re-exported English phrase creation functions, applied to our custom
 -- irregular word sets.

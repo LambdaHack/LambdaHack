@@ -22,6 +22,7 @@ import           Game.LambdaHack.Common.Container
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind
 
 data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll

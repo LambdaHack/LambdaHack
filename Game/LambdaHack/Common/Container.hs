@@ -14,7 +14,7 @@ import Control.DeepSeq
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.Point
 
 -- | Actor's item stores.

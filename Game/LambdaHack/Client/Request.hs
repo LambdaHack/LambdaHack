@@ -14,7 +14,7 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind

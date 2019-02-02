@@ -27,6 +27,7 @@ import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Pick a new leader from among the actors on the current level.

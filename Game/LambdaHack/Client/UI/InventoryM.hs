@@ -41,6 +41,7 @@ import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 
 data ItemDialogState = ISuitable | IAll
   deriving (Show, Eq)

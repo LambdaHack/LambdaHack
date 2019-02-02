@@ -10,7 +10,7 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.TileKind
 
 content :: [TileKind]
