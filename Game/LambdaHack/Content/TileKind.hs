@@ -1,9 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), makeData
-  , Feature(..), TileSpeedup(..), Tab(..)
-  , emptyTileSpeedup, emptyTab
+  ( TileKind(..), Feature(..)
+  , makeData
   , actionFeatures, isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
@@ -24,7 +23,6 @@ import qualified Data.Char as Char
 import           Data.Hashable
 import qualified Data.IntSet as IS
 import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
@@ -99,51 +97,6 @@ instance Binary Feature
 instance Hashable Feature
 
 instance NFData Feature
-
--- | A lot of tabulated maps from tile kind identifier to a property
--- of the tile kind.
-data TileSpeedup = TileSpeedup
-  { isClearTab         :: Tab Bool
-  , isLitTab           :: Tab Bool
-  , isWalkableTab      :: Tab Bool
-  , isDoorTab          :: Tab Bool
-  , isChangableTab     :: Tab Bool
-  , isSuspectTab       :: Tab Bool
-  , isHideAsTab        :: Tab Bool
-  , consideredByAITab  :: Tab Bool
-  , isVeryOftenItemTab :: Tab Bool
-  , isCommonItemTab    :: Tab Bool
-  , isOftenActorTab    :: Tab Bool
-  , isNoItemTab        :: Tab Bool
-  , isNoActorTab       :: Tab Bool
-  , isEasyOpenTab      :: Tab Bool
-  , isEmbedTab         :: Tab Bool
-  , isAquaticTab       :: Tab Bool
-  , alterMinSkillTab   :: Tab Word8
-  , alterMinWalkTab    :: Tab Word8
-  }
-  deriving Generic
-
-instance NFData TileSpeedup
-
--- Vectors of booleans can be slower than arrays, because they are not packed,
--- but with growing cache sizes they may as well turn out faster at some point.
--- The advantage of vectors are exposed internals, in particular unsafe
--- indexing. Also, in JS, bool arrays are obviously not packed.
--- | A map morally indexed by @ContentId TileKind@.
-newtype Tab a = Tab (U.Vector a)
-  deriving Generic
-
-instance NFData (Tab a)
-
-emptyTileSpeedup :: TileSpeedup
-emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab
-
-emptyTab :: U.Unbox a => Tab a
-emptyTab = Tab $! U.empty
 
 -- | Validate a single tile kind.
 validateSingle :: TileKind -> [Text]

@@ -37,28 +37,27 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
-import           Game.LambdaHack.Content.TileKind (TileKind, TileSpeedup (..),
-                                                   isUknownSpace)
+import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 
-createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> TK.Tab a
-createTab cotile prop = TK.Tab $ U.convert $ omapVector cotile prop
+createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> Tab a
+createTab cotile prop = Tab $ U.convert $ omapVector cotile prop
 
 createTabWithKey :: U.Unbox a
                  => ContentData TileKind
                  -> (ContentId TileKind -> TileKind -> a)
-                 -> TK.Tab a
-createTabWithKey cotile prop = TK.Tab $ U.convert $ oimapVector cotile prop
+                 -> Tab a
+createTabWithKey cotile prop = Tab $ U.convert $ oimapVector cotile prop
 
 -- Unsafe indexing is pretty safe here, because we guard the vector
 -- with the newtype.
-accessTab :: U.Unbox a => TK.Tab a -> ContentId TileKind -> a
+accessTab :: U.Unbox a => Tab a -> ContentId TileKind -> a
 {-# INLINE accessTab #-}
-accessTab (TK.Tab tab) ki = tab `U.unsafeIndex` contentIdIndex ki
+accessTab (Tab tab) ki = tab `U.unsafeIndex` contentIdIndex ki
 
 speedupTile :: Bool -> ContentData TileKind -> TileSpeedup
 speedupTile allClear cotile =

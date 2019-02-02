@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( ContentData, COps(..)
   , emptyCOps
   , ItemSpeedup
   , emptyItemSpeedup, getKindMean, speedupItem
+  , TileSpeedup(..), Tab(..)
+  , emptyTileSpeedup, emptyTab
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
   , olength, linearInterpolation
@@ -13,7 +16,11 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as U
+import           Data.Word (Word8)
+import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -25,7 +32,6 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
-import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Operations for all content types, gathered together.
 data COps = COps
@@ -36,7 +42,7 @@ data COps = COps
   , corule        :: RuleContent
   , cotile        :: ContentData TileKind
   , coItemSpeedup :: ItemSpeedup
-  , coTileSpeedup :: TK.TileSpeedup
+  , coTileSpeedup :: TileSpeedup
   }
 
 instance Show COps where
@@ -54,7 +60,7 @@ emptyCOps = COps
   , corule  = emptyRuleContent
   , cotile  = emptyContentData
   , coItemSpeedup = emptyItemSpeedup
-  , coTileSpeedup = TK.emptyTileSpeedup
+  , coTileSpeedup = emptyTileSpeedup
   }
 
 -- | Map from an item kind identifier to the mean aspect value for the kind.
@@ -76,3 +82,48 @@ speedupItem coitem =
             kmConst = not $ IA.aspectsRandom (IK.iaspects kind)
         in IA.KindMean{..}
   in ItemSpeedup $ omapVector coitem f
+
+-- | A lot of tabulated maps from tile kind identifier to a property
+-- of the tile kind.
+data TileSpeedup = TileSpeedup
+  { isClearTab         :: Tab Bool
+  , isLitTab           :: Tab Bool
+  , isWalkableTab      :: Tab Bool
+  , isDoorTab          :: Tab Bool
+  , isChangableTab     :: Tab Bool
+  , isSuspectTab       :: Tab Bool
+  , isHideAsTab        :: Tab Bool
+  , consideredByAITab  :: Tab Bool
+  , isVeryOftenItemTab :: Tab Bool
+  , isCommonItemTab    :: Tab Bool
+  , isOftenActorTab    :: Tab Bool
+  , isNoItemTab        :: Tab Bool
+  , isNoActorTab       :: Tab Bool
+  , isEasyOpenTab      :: Tab Bool
+  , isEmbedTab         :: Tab Bool
+  , isAquaticTab       :: Tab Bool
+  , alterMinSkillTab   :: Tab Word8
+  , alterMinWalkTab    :: Tab Word8
+  }
+  deriving Generic
+
+instance NFData TileSpeedup
+
+-- Vectors of booleans can be slower than arrays, because they are not packed,
+-- but with growing cache sizes they may as well turn out faster at some point.
+-- The advantage of vectors are exposed internals, in particular unsafe
+-- indexing. Also, in JS, bool arrays are obviously not packed.
+-- | A map morally indexed by @ContentId TileKind@.
+newtype Tab a = Tab (U.Vector a)
+  deriving Generic
+
+instance NFData (Tab a)
+
+emptyTileSpeedup :: TileSpeedup
+emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab
+
+emptyTab :: U.Unbox a => Tab a
+emptyTab = Tab $! U.empty
