@@ -1,6 +1,6 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( ContentId, ContentData, COps(..)
+  ( ContentData, COps(..)
   , emptyCOps
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector

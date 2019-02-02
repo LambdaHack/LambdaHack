@@ -22,8 +22,8 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of small areas within a dungeon level.
@@ -78,7 +78,7 @@ type EntryMap = EM.EnumMap Point PlaceEntry
 
 deadEndId :: ContentId PlaceKind
 {-# INLINE deadEndId #-}
-deadEndId = ContentId 0
+deadEndId = toContentId 0
 
 validateOverride :: [(Char, GroupName TileKind)] -> [Text]
 validateOverride ov =

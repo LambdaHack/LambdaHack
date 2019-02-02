@@ -283,11 +283,11 @@ actionFeatures markSuspect t =
 
 isUknownSpace :: ContentId TileKind -> Bool
 {-# INLINE isUknownSpace #-}
-isUknownSpace tt = ContentId 0 == tt
+isUknownSpace tt = toContentId 0 == tt
 
 unknownId :: ContentId TileKind
 {-# INLINE unknownId #-}
-unknownId = ContentId 0
+unknownId = toContentId 0
 
 isSuspectKind :: TileKind -> Bool
 isSuspectKind t =

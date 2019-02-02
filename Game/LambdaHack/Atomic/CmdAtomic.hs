@@ -36,13 +36,12 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK

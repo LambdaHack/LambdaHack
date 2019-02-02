@@ -21,6 +21,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind

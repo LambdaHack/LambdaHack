@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -9,8 +9,8 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentId(ContentId), ContentData, Freqs, Rarity
-  , contentIdIndex, validateRarity, validFreqs
+  ( ContentData, Freqs, Rarity
+  , validateRarity, validFreqs
   , emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
   , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
@@ -22,32 +22,16 @@ import Prelude ()
 import Game.LambdaHack.Common.Prelude
 
 import           Control.DeepSeq
-import           Data.Binary
 import           Data.Function
-import           Data.Hashable (Hashable)
 import qualified Data.Map.Strict as M
 import           Data.Ord (comparing)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Frequency
-import qualified Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Common.Random
-import           Game.LambdaHack.Common.Types
-
--- | Content identifiers for the content type @c@.
-newtype ContentId c = ContentId Word16
-  deriving (Show, Eq, Ord, Enum, Binary, Generic)
-
-instance PointArray.UnboxRepClass (ContentId k) where
-  type UnboxRep (ContentId k) = Word16
-  toUnboxRepUnsafe (ContentId k) = k
-  fromUnboxRep = ContentId
-
-instance NFData (ContentId c)
-
-instance Hashable (ContentId c)
+import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Types
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData
@@ -67,11 +51,7 @@ type Freqs a = [(GroupName a, Int)]
 type Rarity = [(Double, Int)]
 
 maxContentId :: ContentId k
-maxContentId = ContentId maxBound
-
-contentIdIndex :: ContentId k -> Int
-{-# INLINE contentIdIndex #-}
-contentIdIndex (ContentId k) = fromEnum k
+maxContentId = toContentId maxBound
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
@@ -112,7 +92,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
   let contentVector = V.fromList content
       groupFreq =
         let tuples = [ (cgroup, (n, (i, k)))
-                     | (i, k) <- zip (map ContentId [0..]) content
+                     | (i, k) <- zip (map toContentId [0..]) content
                      , (cgroup, n) <- getFreq k
                      , n > 0 ]
             f !m (!cgroup, !nik) = M.insertWith (++) cgroup [nik] m
@@ -180,7 +160,7 @@ opick ContentData{groupFreq} !cgroup !p =
 -- | Fold strictly over all content @a@.
 ofoldlWithKey' :: ContentData a -> (b -> ContentId a -> a -> b) -> b -> b
 ofoldlWithKey' ContentData{contentVector} f z =
-  V.ifoldl' (\ !a !i !c -> f a (ContentId $ toEnum i) c) z contentVector
+  V.ifoldl' (\ !a !i !c -> f a (toContentId $ toEnum i) c) z contentVector
 
 -- | Fold over the given group only.
 ofoldlGroup' :: ContentData a
@@ -198,7 +178,7 @@ omapVector :: ContentData a -> (a -> b) -> V.Vector b
 omapVector d f = V.map f $ contentVector d
 
 oimapVector :: ContentData a -> (ContentId a -> a -> b) -> V.Vector b
-oimapVector d f = V.imap (\i a -> f (ContentId $ toEnum i) a) $ contentVector d
+oimapVector d f = V.imap (\i a -> f (toContentId $ toEnum i) a) $ contentVector d
 
 -- | Size of content @a@.
 olength :: ContentData a -> Int
