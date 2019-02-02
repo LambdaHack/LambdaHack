@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TupleSections #-}
 -- | Weapons, treasure and all the other items in the game.
 module Game.LambdaHack.Common.Item
-  ( ItemId, Item(..), ItemIdentity(..)
+  ( Item(..), ItemIdentity(..)
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
   , ItemTimer, ItemQuant, ItemBag, ItemDict
@@ -32,13 +32,9 @@ import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
-
--- | A unique identifier of an item in the dungeon.
-newtype ItemId = ItemId Int
-  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The information contained in this time is available to the player

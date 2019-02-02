@@ -40,6 +40,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind

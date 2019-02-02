@@ -15,11 +15,10 @@ import qualified Data.HashMap.Strict as HM
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Analytics
-import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ItemRev
 import Game.LambdaHack.Server.ServerOptions

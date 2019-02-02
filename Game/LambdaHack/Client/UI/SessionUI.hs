@@ -24,10 +24,9 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
