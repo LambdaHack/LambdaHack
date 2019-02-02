@@ -1,10 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.ItemAspect
-  ( AspectRecord(..), KindMean(..), ItemSpeedup
+  ( AspectRecord(..), KindMean(..)
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
-  , aspectRecordToList, rollAspectRecord
-  , getSkill, checkFlag, emptyItemSpeedup, getKindMean, speedupItem
+  , aspectRecordToList, rollAspectRecord, getSkill, checkFlag
   , onlyMinorEffects, itemTrajectory, totalRange, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
@@ -22,18 +21,16 @@ import           Data.Binary
 import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
-import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
@@ -63,13 +60,6 @@ data KindMean = KindMean
   , kmMean  :: AspectRecord  -- ^ mean value of item's possible aspect records
   }
   deriving (Show, Eq, Ord, Generic)
-
--- | Map from an item kind identifier to the mean aspect value for the kind.
---
--- Significant portions of this map are unused and so intentially kept
--- unevaluated.
-newtype ItemSpeedup = ItemSpeedup (V.Vector KindMean)
-  deriving (Show, Eq, Generic)
 
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
@@ -163,20 +153,6 @@ getSkill sk ar = Ability.getSk sk $ aSkills ar
 checkFlag :: Ability.Flag -> AspectRecord -> Bool
 {-# INLINE checkFlag #-}
 checkFlag flag ar = Ability.checkFl flag (aFlags ar)
-
-emptyItemSpeedup :: ItemSpeedup
-emptyItemSpeedup = ItemSpeedup V.empty
-
-getKindMean :: ContentId IK.ItemKind -> ItemSpeedup -> KindMean
-getKindMean kindId (ItemSpeedup is) = is V.! contentIdIndex kindId
-
-speedupItem :: ContentData IK.ItemKind -> ItemSpeedup
-speedupItem coitem =
-  let f !kind =
-        let kmMean = meanAspect kind
-            kmConst = not $ aspectsRandom (IK.iaspects kind)
-        in KindMean{..}
-  in ItemSpeedup $ omapVector coitem f
 
 meanAspect :: IK.ItemKind -> AspectRecord
 meanAspect kind = foldl' addMeanAspect emptyAspectRecord (IK.iaspects kind)

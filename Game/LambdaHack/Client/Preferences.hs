@@ -281,7 +281,7 @@ recBenefit :: GroupName ItemKind -> COps -> FactionId -> FactionDict
            -> (Double, Int)
 recBenefit grp cops@COps{coitem, coItemSpeedup} fid factionD =
   let f (!sacc, !pacc) !p !kindId !kind =
-        let km = IA.getKindMean kindId coItemSpeedup
+        let km = getKindMean kindId coItemSpeedup
             recPickup =
               benPickup $ totalUsefulness cops fid factionD
                                           (fakeItem kindId kind km)

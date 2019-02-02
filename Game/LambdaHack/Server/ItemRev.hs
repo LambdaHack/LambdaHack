@@ -30,9 +30,9 @@ import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 
@@ -89,7 +89,7 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
         -- Don't consider lvlSpawned for uniques, except those that have
         -- @Unique@ under @Odds@.
         let ld = if IA.checkFlag Ability.Unique
-                    $ IA.kmMean $ IA.getKindMean ik coItemSpeedup
+                    $ IA.kmMean $ getKindMean ik coItemSpeedup
                  then ldepth
                  else ldSpawned
             rarity = linearInterpolation ld totalDepth (IK.irarity kind)

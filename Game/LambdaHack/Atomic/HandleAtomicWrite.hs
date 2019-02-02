@@ -41,7 +41,6 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
@@ -49,6 +48,7 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.ModeKind
@@ -607,7 +607,7 @@ updDiscover :: MonadStateWrite m
 updDiscover _c iid ik arItem = do
   itemD <- getsState sitemD
   COps{coItemSpeedup} <- getsState scops
-  let kmIsConst = IA.kmConst $ IA.getKindMean ik coItemSpeedup
+  let kmIsConst = IA.kmConst $ getKindMean ik coItemSpeedup
   discoKind <- getsState sdiscoKind
   let discoverAtMostAspect = do
         discoAspect <- getsState sdiscoAspect
@@ -659,7 +659,7 @@ updDiscoverAspect _c iid arItem = do
       -- Here the kind information is exact, hence @getItemKindIdServer@.
       kindId <- getsState $ getItemKindIdServer item
       discoAspect <- getsState sdiscoAspect
-      let kmIsConst = IA.kmConst $ IA.getKindMean kindId coItemSpeedup
+      let kmIsConst = IA.kmConst $ getKindMean kindId coItemSpeedup
       if kmIsConst || iid `EM.member` discoAspect
       then atomicFail "item arItem already discovered"
       else do

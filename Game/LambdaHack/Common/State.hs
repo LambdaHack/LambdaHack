@@ -286,7 +286,7 @@ aspectRecordFromItem iid item s =
         IdentityObvious ik -> ik
         IdentityCovered ix ik -> fromMaybe ik $ ix `EM.lookup` sdiscoKind s
       COps{coItemSpeedup} = scops s
-      mean = IA.kmMean $ IA.getKindMean kindId coItemSpeedup
+      mean = IA.kmMean $ getKindMean kindId coItemSpeedup
   in fromMaybe mean $ EM.lookup iid $ sdiscoAspect s
 
 aspectRecordFromIid :: ItemId -> State -> IA.AspectRecord

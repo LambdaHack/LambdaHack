@@ -17,7 +17,6 @@ import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
-import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -66,7 +65,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
-      coItemSpeedup = IA.speedupItem coitem
+      coItemSpeedup = speedupItem coitem
       cotile = TK.makeData coitem Content.TileKind.content
       coTileSpeedup = Tile.speedupTile sallClear cotile
       coplace = PK.makeData cotile Content.PlaceKind.content

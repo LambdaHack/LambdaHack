@@ -162,7 +162,7 @@ itemToFull6 COps{coitem, coItemSpeedup} discoKind discoAspect iid itemBase =
         IdentityCovered ix ik ->
           maybe (ik, True) (, False) $ ix `EM.lookup` discoKind
       itemKind = okind coitem itemKindId
-      km = IA.getKindMean itemKindId coItemSpeedup
+      km = getKindMean itemKindId coItemSpeedup
       -- If the kind is not identified, we know nothing about the real
       -- aspect record, so we at least assume they are variable.
       itemAspectMean | itemSuspect = km {IA.kmConst = False}

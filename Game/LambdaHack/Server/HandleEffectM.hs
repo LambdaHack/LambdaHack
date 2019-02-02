@@ -1449,7 +1449,7 @@ effectRerollItem execSfx iidId target = do
       return UseId
     (iid, ( ItemFull{itemBase, itemKindId, itemKind, itemDisco}
           , (_, itemTimer) )) : _ ->
-      if | IA.kmConst $ IA.getKindMean itemKindId coItemSpeedup -> do
+      if | IA.kmConst $ getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
            return UseId
          | otherwise -> do
@@ -1530,7 +1530,7 @@ effectIdentify execSfx iidId target = do
              || IA.isHumanTrinket itemKind  -- hack; keep them non-identified
              || store == CGround && IA.onlyMinorEffects arItem itemKind
                -- will be identified when picked up, so don't bother
-             || IA.kmConst (IA.getKindMean itemKindId coItemSpeedup)
+             || IA.kmConst (getKindMean itemKindId coItemSpeedup)
                 && kindIsKnown
                -- constant aspects and known kind; no need to identify further;
                -- this should normally not be needed, since clients should

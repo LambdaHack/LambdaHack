@@ -47,7 +47,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
@@ -70,7 +69,6 @@ import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
-
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
