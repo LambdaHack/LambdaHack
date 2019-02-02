@@ -9,12 +9,11 @@
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
 module Game.LambdaHack.Common.ContentData
-  ( ContentData, Freqs, Rarity
+  ( ContentData
   , validateRarity, validFreqs
   , emptyContentData, makeContentData
   , okind, omemberGroup, oisSingletonGroup, ouniqGroup, opick
-  , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector
-  , olength, linearInterpolation
+  , ofoldlWithKey', ofoldlGroup', omapVector, oimapVector, olength
   ) where
 
 import Prelude ()
@@ -29,9 +28,9 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Types
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData
@@ -41,14 +40,6 @@ data ContentData c = ContentData
   deriving Generic
 
 instance NFData c => NFData (ContentData c)
-
--- | For each group that the kind belongs to, denoted by a @GroupName@
--- in the first component of a pair, the second component of a pair shows
--- how common the kind is within the group.
-type Freqs a = [(GroupName a, Int)]
-
--- | Rarity on given depths.
-type Rarity = [(Double, Int)]
 
 maxContentId :: ContentId k
 maxContentId = toContentId maxBound
@@ -183,19 +174,3 @@ oimapVector d f = V.imap (\i a -> f (toContentId $ toEnum i) a) $ contentVector 
 -- | Size of content @a@.
 olength :: ContentData a -> Int
 olength ContentData{contentVector} = V.length contentVector
-
--- We assume @dataset@ is sorted and between 0 and 10.
-linearInterpolation :: Int -> Int -> Rarity -> Int
-linearInterpolation !levelDepth !totalDepth !dataset =
-  let findInterval :: (Double, Int) -> Rarity -> ((Double, Int), (Double, Int))
-      findInterval x1y1 [] = (x1y1, (11, 0))
-      findInterval !x1y1 ((!x, !y) : rest) =
-        if fromIntegral levelDepth * 10 <= x * fromIntegral totalDepth
-        then (x1y1, (x, y))
-        else findInterval (x, y) rest
-      ((x1, y1), (x2, y2)) = findInterval (0, 0) dataset
-  in ceiling
-     $ fromIntegral y1
-       + fromIntegral (y2 - y1)
-         * (fromIntegral levelDepth * 10 - x1 * fromIntegral totalDepth)
-         / ((x2 - x1) * fromIntegral totalDepth)

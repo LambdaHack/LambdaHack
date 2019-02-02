@@ -21,10 +21,10 @@ import           Data.Time.LocalTime
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
                                          ModeKind, Outcome (..))

@@ -30,15 +30,16 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK

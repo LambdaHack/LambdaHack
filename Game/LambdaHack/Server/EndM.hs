@@ -18,10 +18,11 @@ import Game.LambdaHack.Client (sbenchmark)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Container
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.Fov

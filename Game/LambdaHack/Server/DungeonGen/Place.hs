@@ -19,11 +19,10 @@ import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.ContentData
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Frequency
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile

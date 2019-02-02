@@ -25,8 +25,8 @@ import qualified System.Random as R
 -- client and ui options from and singnal an error if anything was left.
 
 import Game.LambdaHack.Client (ClientOptions (..))
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.ServerOptions
 

@@ -25,15 +25,16 @@ import           System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.PlaceKind as PK

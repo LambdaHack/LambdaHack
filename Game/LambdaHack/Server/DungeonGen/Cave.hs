@@ -16,12 +16,12 @@ import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind

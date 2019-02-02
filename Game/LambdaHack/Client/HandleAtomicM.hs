@@ -33,15 +33,16 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)

@@ -22,6 +22,7 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Perception

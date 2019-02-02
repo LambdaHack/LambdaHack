@@ -11,8 +11,8 @@ import           Data.Binary
 import qualified System.Random as R
 
 import Game.LambdaHack.Client (ClientOptions (..), defClientOptions)
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
 
 -- | Options that affect the behaviour of the server (including game rules).

@@ -37,9 +37,9 @@ import Game.LambdaHack.Common.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Random
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK

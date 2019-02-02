@@ -23,7 +23,7 @@ import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.ContentData
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import           Game.LambdaHack.Common.Frequency

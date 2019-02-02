@@ -28,6 +28,7 @@ import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Ability (EqpSlot (..))
 import qualified Game.LambdaHack.Common.Ability as Ability
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA

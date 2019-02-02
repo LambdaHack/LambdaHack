@@ -47,6 +47,7 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item

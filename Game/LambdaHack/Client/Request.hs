@@ -12,6 +12,7 @@ import Game.LambdaHack.Common.Prelude
 
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Types

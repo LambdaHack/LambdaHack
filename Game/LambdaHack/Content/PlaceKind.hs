@@ -22,8 +22,8 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.ContentData
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of small areas within a dungeon level.

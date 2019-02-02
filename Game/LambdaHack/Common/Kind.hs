@@ -23,8 +23,8 @@ import           Data.Word (Word8)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.ContentData
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.ItemAspect as IA
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK

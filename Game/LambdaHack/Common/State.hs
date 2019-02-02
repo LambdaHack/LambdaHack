@@ -30,6 +30,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore

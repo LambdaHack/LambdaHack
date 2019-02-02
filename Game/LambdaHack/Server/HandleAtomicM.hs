@@ -24,15 +24,16 @@ import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Server.Fov
 import           Game.LambdaHack.Server.MonadServer

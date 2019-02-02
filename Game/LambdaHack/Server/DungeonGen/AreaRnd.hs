@@ -23,7 +23,7 @@ import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Common.ContentData
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Vector

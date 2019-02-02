@@ -177,6 +177,7 @@ library
                       Game.LambdaHack.Common.Color
                       Game.LambdaHack.Common.Container
                       Game.LambdaHack.Common.ContentData
+                      Game.LambdaHack.Common.Defs
                       Game.LambdaHack.Common.Dice
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.File
