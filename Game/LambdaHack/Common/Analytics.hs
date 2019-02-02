@@ -18,10 +18,9 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Container
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Misc
 
 -- | Summary analytics data for each faction.
 type FactionAnalytics = EM.EnumMap FactionId Analytics

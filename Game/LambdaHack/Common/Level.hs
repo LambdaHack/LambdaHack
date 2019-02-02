@@ -3,8 +3,7 @@
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
-    LevelId, Dungeon
-  , dungeonBounds, ascendInBranch, whereTo
+    Dungeon, dungeonBounds, ascendInBranch, whereTo
     -- * The @Level@ type and its components
   , ItemFloor, BigActorMap, ProjectileMap, TileMap, SmellMap, Level(..)
     -- * Component updates
@@ -30,7 +29,6 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
-import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Dice as Dice
 import           Game.LambdaHack.Common.Item

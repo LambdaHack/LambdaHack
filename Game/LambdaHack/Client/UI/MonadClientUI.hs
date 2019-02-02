@@ -66,7 +66,6 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point

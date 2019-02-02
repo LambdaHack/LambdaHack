@@ -25,6 +25,7 @@ import           GHC.Generics (Generic)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import           Game.LambdaHack.Common.ContentData
 import qualified Game.LambdaHack.Common.Dice as Dice
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 

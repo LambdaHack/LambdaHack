@@ -14,16 +14,17 @@ import Prelude ()
 
 import Game.LambdaHack.Common.Prelude
 
+import           Control.DeepSeq
 import           Data.Binary
 import           Data.Char (chr)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+import           GHC.Generics (Generic)
 
-import Control.DeepSeq
 import Game.LambdaHack.Common.ContentData
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Content.TileKind (TileKind)
-import GHC.Generics (Generic)
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind

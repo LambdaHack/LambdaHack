@@ -35,8 +35,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- | Visible positions.

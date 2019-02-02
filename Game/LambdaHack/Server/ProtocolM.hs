@@ -33,7 +33,6 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (RequestAI, RequestUI, Response (..),
                                          sbenchmark)
-import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind

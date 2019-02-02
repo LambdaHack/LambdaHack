@@ -19,7 +19,7 @@ import qualified NLP.Miniutter.English as MU
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.State
 
 data ActorUI = ActorUI

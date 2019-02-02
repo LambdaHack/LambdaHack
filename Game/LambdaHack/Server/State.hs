@@ -14,11 +14,9 @@ import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Analytics
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time

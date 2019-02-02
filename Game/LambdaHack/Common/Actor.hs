@@ -1,10 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Actors in the game: heroes, monsters, etc.
 module Game.LambdaHack.Common.Actor
-  ( -- * Actor identifiers
-    ActorId
-    -- * The@ Acto@r type, its components and operations on them
-  , Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
+  ( -- * The@ Acto@r type, its components and operations on them
+    Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltasSerious, deltasHears, deltaBenign, deltaWasBenign, actorCanMelee
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep

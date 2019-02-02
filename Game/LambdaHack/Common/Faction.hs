@@ -2,7 +2,7 @@
 -- | Factions taking part in the game, e.g., a hero faction, a monster faction
 -- and an animal faction.
 module Game.LambdaHack.Common.Faction
-  ( FactionId, FactionDict, Faction(..), Diplomacy(..)
+  ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
   , gleader, isHorrorFact, noRunWithMulti, isAIFact, autoDungeonLevel
   , automatePlayer, isFoe, isFriend
@@ -24,7 +24,6 @@ import qualified Data.IntMap.Strict as IM
 import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind

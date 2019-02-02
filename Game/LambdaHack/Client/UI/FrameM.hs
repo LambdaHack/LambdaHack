@@ -32,7 +32,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 
