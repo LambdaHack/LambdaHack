@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.RingBuffer
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude hiding (length, uncons)
+import Game.LambdaHack.Core.Prelude hiding (length, uncons)
 
 import           Data.Binary
 import qualified Data.Foldable as Foldable

@@ -10,17 +10,17 @@ module Game.LambdaHack.Content.CaveKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)

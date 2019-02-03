@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Sdl
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import qualified Data.Char as Char
@@ -44,11 +44,11 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
@@ -521,7 +521,7 @@ keyTranslate shiftPressed n = case n of
 sDL_ALPHA_OPAQUE :: Word8
 sDL_ALPHA_OPAQUE = 255
 
--- This code is sadly duplicated from "Game.LambdaHack.Common.Color".
+-- This code is sadly duplicated from "Game.LambdaHack.Definition.Color".
 colorToRGBA :: Color.Color -> SDL.V4 Word8
 colorToRGBA Color.Black     = SDL.V4 0 0 0 sDL_ALPHA_OPAQUE
 colorToRGBA Color.Red       = SDL.V4 0xD5 0x05 0x05 sDL_ALPHA_OPAQUE

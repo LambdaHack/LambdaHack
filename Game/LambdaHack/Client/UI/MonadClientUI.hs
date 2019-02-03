@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
@@ -59,7 +59,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -68,8 +68,8 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time

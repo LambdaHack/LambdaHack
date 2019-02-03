@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.Kind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import qualified Data.Vector as V
@@ -22,8 +22,8 @@ import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Defs
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)

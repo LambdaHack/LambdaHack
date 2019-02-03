@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Thread
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.Concurrent.Async
 import Control.Concurrent.MVar

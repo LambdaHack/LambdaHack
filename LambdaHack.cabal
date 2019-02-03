@@ -169,20 +169,20 @@ library
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
-                      Game.LambdaHack.Common.Ability
+                      Game.LambdaHack.Definition.Ability
                       Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
-                      Game.LambdaHack.Common.Color
+                      Game.LambdaHack.Definition.Color
                       Game.LambdaHack.Common.Container
-                      Game.LambdaHack.Common.ContentData
-                      Game.LambdaHack.Common.Defs
-                      Game.LambdaHack.Common.Dice
+                      Game.LambdaHack.Definition.ContentData
+                      Game.LambdaHack.Definition.Defs
+                      Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.File
-                      Game.LambdaHack.Common.Flavour
-                      Game.LambdaHack.Common.Frequency
+                      Game.LambdaHack.Definition.Flavour
+                      Game.LambdaHack.Core.Frequency
                       Game.LambdaHack.Common.HighScore
                       Game.LambdaHack.Common.Item
                       Game.LambdaHack.Common.ItemAspect
@@ -191,10 +191,10 @@ library
                       Game.LambdaHack.Common.Misc
                       Game.LambdaHack.Common.MonadStateRead
                       Game.LambdaHack.Common.Perception
-                      Game.LambdaHack.Common.PointArray
-                      Game.LambdaHack.Common.Point
-                      Game.LambdaHack.Common.Prelude
-                      Game.LambdaHack.Common.Random
+                      Game.LambdaHack.Core.PointArray
+                      Game.LambdaHack.Core.Point
+                      Game.LambdaHack.Core.Prelude
+                      Game.LambdaHack.Core.Random
                       Game.LambdaHack.Common.ReqFailure
                       Game.LambdaHack.Common.RingBuffer
                       Game.LambdaHack.Common.Save

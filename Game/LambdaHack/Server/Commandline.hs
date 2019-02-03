@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Commandline
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
@@ -25,7 +25,7 @@ import qualified System.Random as R
 -- client and ui options from and singnal an error if anything was left.
 
 import Game.LambdaHack.Client (ClientOptions (..))
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.ServerOptions

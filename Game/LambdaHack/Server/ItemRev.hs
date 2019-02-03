@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.ItemRev
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -21,16 +21,16 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Flavour
-import           Game.LambdaHack.Common.Frequency
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Definition.Flavour
+import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)

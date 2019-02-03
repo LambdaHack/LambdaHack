@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
 import           Data.Char (chr, ord)
@@ -20,9 +20,9 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession

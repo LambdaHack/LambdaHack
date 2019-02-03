@@ -6,7 +6,7 @@ module Main
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex

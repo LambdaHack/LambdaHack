@@ -12,7 +12,7 @@ module Game.LambdaHack.Content.PlaceKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -21,9 +21,9 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.ContentData
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Definition.ContentData
+import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of small areas within a dungeon level.

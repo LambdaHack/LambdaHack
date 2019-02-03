@@ -6,7 +6,7 @@ module Content.RuleKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Language.Haskell.TH.Syntax
 import System.FilePath

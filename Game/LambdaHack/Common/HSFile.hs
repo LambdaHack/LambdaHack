@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.HSFile
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Codec.Compression.Zlib as Z
 import qualified Control.Exception as Ex

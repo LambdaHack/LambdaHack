@@ -6,13 +6,13 @@ module Client.UI.Content.Input
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Definition.Defs
 
 -- | Description of default key-command bindings.
 --

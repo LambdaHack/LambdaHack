@@ -11,12 +11,12 @@ module Game.LambdaHack.Common.ReqFailure
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 import GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Time

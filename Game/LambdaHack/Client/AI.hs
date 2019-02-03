@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.AI
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
@@ -22,7 +22,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.State
 
 -- | Handle the move of an actor under AI control (regardless if the whole

@@ -9,7 +9,7 @@ module Game.LambdaHack.Server.EndM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
@@ -17,7 +17,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client (sbenchmark)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State

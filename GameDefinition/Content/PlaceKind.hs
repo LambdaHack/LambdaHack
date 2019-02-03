@@ -5,11 +5,11 @@ module Content.PlaceKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 

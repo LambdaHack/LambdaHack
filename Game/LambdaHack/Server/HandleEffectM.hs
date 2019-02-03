@@ -25,7 +25,7 @@ module Game.LambdaHack.Server.HandleEffectM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
@@ -37,13 +37,13 @@ import qualified Data.Ord as Ord
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Atomic
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -52,8 +52,8 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile

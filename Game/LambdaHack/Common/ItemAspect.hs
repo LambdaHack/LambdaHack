@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.ItemAspect
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Binary
@@ -24,12 +24,12 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK

@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.DrawM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
 import qualified Data.Char as Char
@@ -42,12 +42,12 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -56,8 +56,8 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time

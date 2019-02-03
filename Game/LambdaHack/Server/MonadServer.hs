@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.MonadServer
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
@@ -42,7 +42,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types

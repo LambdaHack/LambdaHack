@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The appearance of in-game items, as communicated to the player.
-module Game.LambdaHack.Common.Flavour
+module Game.LambdaHack.Definition.Flavour
   ( -- * The @Flavour@ type
     Flavour(Flavour)
   , -- * Constructors
@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.Flavour
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.DeepSeq
 import Data.Binary
@@ -25,7 +25,7 @@ import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Hashable (Hashable (hashWithSalt), hashUsing)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Definition.Color
 
 data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)

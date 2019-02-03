@@ -9,11 +9,11 @@ module Game.LambdaHack.Content.RuleKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Data.Version
 
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent

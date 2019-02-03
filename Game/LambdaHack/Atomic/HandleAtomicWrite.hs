@@ -25,18 +25,18 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Data.Int (Int64)
 
 import           Game.LambdaHack.Atomic.CmdAtomic
 import           Game.LambdaHack.Atomic.MonadStateWrite
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -44,8 +44,8 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time

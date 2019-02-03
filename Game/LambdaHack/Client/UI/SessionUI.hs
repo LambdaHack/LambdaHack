@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.SessionUI
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -23,8 +23,8 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Common.Defs
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 

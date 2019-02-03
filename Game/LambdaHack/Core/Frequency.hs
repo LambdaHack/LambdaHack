@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable, TupleSections #-}
 -- | A list of entities with relative frequencies of appearance.
-module Game.LambdaHack.Common.Frequency
+module Game.LambdaHack.Core.Frequency
   ( -- * The @Frequency@ type
     Frequency
     -- * Construction
@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.Frequency
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.Applicative
 import Data.Int (Int32)

@@ -10,7 +10,7 @@ module Game.LambdaHack.Server.DebugM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Int (Int64)
 import qualified Data.Text as T

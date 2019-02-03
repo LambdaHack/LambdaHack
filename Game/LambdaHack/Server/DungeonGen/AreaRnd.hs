@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -23,9 +23,9 @@ import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Core.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.PlaceKind
 

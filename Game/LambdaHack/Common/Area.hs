@@ -6,11 +6,11 @@ module Game.LambdaHack.Common.Area
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 
 -- | The type of areas. The bottom left and the top right points.
 data Area = Area X Y X Y

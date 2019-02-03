@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Abilities of items, actors and factions.
-module Game.LambdaHack.Common.Ability
+module Game.LambdaHack.Definition.Ability
   ( Skill(..), Skills, Flag(..), Flags(..), Tactic(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
   , zeroSkills, addSkills, sumScaledSkills
@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.Ability
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary

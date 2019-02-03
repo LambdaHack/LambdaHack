@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.LoopM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.ClientOptions

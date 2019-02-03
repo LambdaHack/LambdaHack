@@ -19,7 +19,7 @@ module Game.LambdaHack.Common.Time
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.Char as Char

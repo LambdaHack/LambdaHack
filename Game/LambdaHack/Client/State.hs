@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.State
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -22,12 +22,12 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Defs
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector

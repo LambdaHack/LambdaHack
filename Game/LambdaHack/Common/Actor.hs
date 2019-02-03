@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.Actor
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -21,12 +21,12 @@ import           Data.Int (Int64)
 import           Data.Ratio
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector

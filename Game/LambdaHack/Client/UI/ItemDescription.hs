@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.ItemDescription
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
@@ -19,12 +19,12 @@ import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Common.Ability as Ability
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Definition.Flavour
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc

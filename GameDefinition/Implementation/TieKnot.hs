@@ -6,7 +6,7 @@ module Implementation.TieKnot
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import           Control.Concurrent.Async
@@ -19,7 +19,7 @@ import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK

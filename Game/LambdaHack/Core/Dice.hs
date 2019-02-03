@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Representation of dice scaled with current level depth.
-module Game.LambdaHack.Common.Dice
+module Game.LambdaHack.Core.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
     Dice, AbsDepth(..), castDice, d, dL, z, zL, intToDice, minDice, maxDice
   , infsupDice, supDice, infDice, meanDice, reduceDice
@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Dice
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.DeepSeq
 import Data.Binary

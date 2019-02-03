@@ -9,18 +9,18 @@ module Game.LambdaHack.Server.DungeonGen.Cave
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind

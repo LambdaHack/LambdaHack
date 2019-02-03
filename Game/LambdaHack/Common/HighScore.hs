@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.HighScore
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -21,7 +21,7 @@ import           Data.Time.LocalTime
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time

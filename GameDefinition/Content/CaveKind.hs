@@ -5,11 +5,11 @@ module Content.CaveKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
-import Game.LambdaHack.Common.Dice
+import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Content.CaveKind
 
 content :: [CaveKind]

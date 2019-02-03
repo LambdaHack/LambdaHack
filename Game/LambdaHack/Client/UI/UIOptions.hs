@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.UI.UIOptions
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -26,7 +26,7 @@ import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc

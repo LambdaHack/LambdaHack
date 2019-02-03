@@ -9,12 +9,12 @@ module Game.LambdaHack.Client.AI.Strategy
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.Applicative
 import Data.Int (Int32)
 
-import Game.LambdaHack.Common.Frequency as Frequency
+import Game.LambdaHack.Core.Frequency as Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.

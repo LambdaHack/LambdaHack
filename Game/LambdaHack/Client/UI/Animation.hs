@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.Animation
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
@@ -20,9 +20,9 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Client.UI.Content.Screen
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Definition.Color
+import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Core.Random
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

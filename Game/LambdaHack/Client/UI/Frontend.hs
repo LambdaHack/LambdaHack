@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.Frontend
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import           Control.Concurrent.Async
@@ -34,9 +34,9 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- | The instructions sent by clients to the raw frontend, indexed
 -- by the returned value.

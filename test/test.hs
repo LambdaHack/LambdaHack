@@ -3,7 +3,7 @@ import Prelude ()
 import Options.Applicative
 
 import Game.LambdaHack.Client.UI.Frontend.Chosen
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 import Game.LambdaHack.Server
 
 import Implementation.TieKnot

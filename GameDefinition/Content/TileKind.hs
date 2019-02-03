@@ -5,12 +5,12 @@ module Content.TileKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Color
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Content.TileKind
 
 content :: [TileKind]

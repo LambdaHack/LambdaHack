@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.Content.Input
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Char as Char
 import qualified Data.Map.Strict as M
@@ -25,7 +25,7 @@ import qualified NLP.Miniutter.English as MU
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Common.Defs
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Misc
 
 -- | Key-command mappings to be specified in content and used for the UI.

@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Save
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import           Control.Concurrent.Async

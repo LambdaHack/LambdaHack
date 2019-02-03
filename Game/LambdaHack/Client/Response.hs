@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Response
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Types

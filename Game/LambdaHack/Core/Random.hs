@@ -1,5 +1,5 @@
 -- | Representation of probabilities and random computations.
-module Game.LambdaHack.Common.Random
+module Game.LambdaHack.Core.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
@@ -18,14 +18,14 @@ module Game.LambdaHack.Common.Random
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Ratio
 import qualified System.Random as R
 
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Frequency
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
 
 -- | The monad of computations with random generator state.
 type Rnd a = St.State R.StdGen a

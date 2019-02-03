@@ -18,7 +18,7 @@ module Game.LambdaHack.Atomic.CmdAtomic
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Int (Int64)
 import qualified System.Random as R
@@ -28,17 +28,17 @@ import qualified System.Random as R
 -- client and ui options from and singnal an error if anything was left.
 
 import           Game.LambdaHack.Client.ClientOptions
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Analytics
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time

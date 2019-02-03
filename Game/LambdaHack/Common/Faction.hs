@@ -16,16 +16,16 @@ module Game.LambdaHack.Common.Faction
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Defs
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)

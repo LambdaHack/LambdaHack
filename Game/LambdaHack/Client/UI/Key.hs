@@ -21,14 +21,14 @@ module Game.LambdaHack.Client.UI.Key
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude hiding (Left, Right)
+import Game.LambdaHack.Core.Prelude hiding (Left, Right)
 
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.

@@ -9,12 +9,12 @@ module Game.LambdaHack.Client.UI.Content.Screen
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent

@@ -5,13 +5,13 @@ module Game.LambdaHack.Server.ServerOptions
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified System.Random as R
 
 import Game.LambdaHack.Client (ClientOptions (..), defClientOptions)
-import Game.LambdaHack.Common.Defs
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 

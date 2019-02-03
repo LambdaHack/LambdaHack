@@ -8,7 +8,7 @@
 -- Content of a given kind is just a list of content items.
 -- After the list is verified and the data preprocessed, it's held
 -- in the @ContentData@ datatype.
-module Game.LambdaHack.Common.ContentData
+module Game.LambdaHack.Definition.ContentData
   ( ContentData
   , validateRarity, validFreqs
   , emptyContentData, makeContentData
@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.ContentData
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Function
@@ -28,9 +28,9 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Core.Frequency
+import Game.LambdaHack.Core.Random
+import Game.LambdaHack.Definition.Defs
 
 -- | Verified and preprocessed content data of a particular kind.
 data ContentData c = ContentData

@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.HandleResponseM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic (UpdAtomic)
 import Game.LambdaHack.Client.AI

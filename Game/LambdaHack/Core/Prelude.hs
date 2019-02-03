@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- | Custom Prelude, compatible across many GHC versions.
-module Game.LambdaHack.Common.Prelude
+module Game.LambdaHack.Core.Prelude
   ( module Prelude.Compat
 
   , module Control.Monad.Compat

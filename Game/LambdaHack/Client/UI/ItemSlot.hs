@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.ItemSlot
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR)

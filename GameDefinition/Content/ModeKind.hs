@@ -5,11 +5,11 @@ module Content.ModeKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Content.ModeKindPlayer
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Dice
+import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
 

@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.Frame
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
 import qualified Data.Vector.Generic as G
@@ -22,9 +22,9 @@ import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 

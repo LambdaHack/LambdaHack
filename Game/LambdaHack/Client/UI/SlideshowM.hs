@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.SlideshowM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Either
 import qualified Data.Map.Strict as M
@@ -22,8 +22,8 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Core.Point
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.

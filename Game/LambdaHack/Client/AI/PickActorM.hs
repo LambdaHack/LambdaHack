@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.AI.PickActorM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Data.Ratio
@@ -16,15 +16,15 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Common.Ability as Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Frequency
+import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Common.Random
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types

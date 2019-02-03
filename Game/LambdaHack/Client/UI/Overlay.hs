@@ -16,12 +16,12 @@ module Game.LambdaHack.Client.UI.Overlay
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import qualified Game.LambdaHack.Common.Color as Color
-import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Core.Point
 
 -- * AttrLine
 

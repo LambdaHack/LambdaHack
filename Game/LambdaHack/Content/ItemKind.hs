@@ -17,7 +17,7 @@ module Game.LambdaHack.Content.ItemKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -26,11 +26,11 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Definition.Flavour
 
 -- | Item properties that are fixed for a given kind of items.
 -- Of these, aspects and effects are jointly called item powers.

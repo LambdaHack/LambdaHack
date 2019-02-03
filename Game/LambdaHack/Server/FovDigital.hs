@@ -19,13 +19,13 @@ module Game.LambdaHack.Server.FovDigital
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude hiding (intersect)
+import Game.LambdaHack.Core.Prelude hiding (intersect)
 
 import qualified Data.EnumSet as ES
 import qualified Data.IntSet as IS
 
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int

@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Item
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -26,11 +26,11 @@ import qualified Data.Ix as Ix
 import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Ability (EqpSlot (..))
-import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
-import           Game.LambdaHack.Common.Flavour
+import           Game.LambdaHack.Definition.Ability (EqpSlot (..))
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Definition.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Time

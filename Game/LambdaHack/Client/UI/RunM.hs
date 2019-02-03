@@ -20,7 +20,7 @@ module Game.LambdaHack.Client.UI.RunM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
@@ -37,7 +37,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector

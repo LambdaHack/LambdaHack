@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Misc
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import qualified Data.Char as Char

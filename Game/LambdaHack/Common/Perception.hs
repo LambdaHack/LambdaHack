@@ -28,7 +28,7 @@ module Game.LambdaHack.Common.Perception
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -36,7 +36,7 @@ import qualified Data.EnumSet as ES
 import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 
 -- | Visible positions.
 newtype PerVisible = PerVisible {pvisible :: ES.EnumSet Point}

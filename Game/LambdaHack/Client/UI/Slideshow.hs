@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.Slideshow
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Data.Time.LocalTime
 
@@ -19,9 +19,9 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Core.Point
 
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))

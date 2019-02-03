@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.MonadClient
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.Text.IO as T
@@ -21,7 +21,7 @@ import           System.IO (hFlush, stdout)
 import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Core.Random
 
 -- | Monad for reading client state.
 class MonadStateRead m => MonadClientRead m where

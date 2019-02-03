@@ -6,7 +6,7 @@ module Client.UI.Content.Screen
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import           Language.Haskell.TH.Syntax

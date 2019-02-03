@@ -20,7 +20,7 @@ module Game.LambdaHack.Client.UI.Msg
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -30,7 +30,7 @@ import           Data.Word (Word32)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import           Game.LambdaHack.Common.Time
 

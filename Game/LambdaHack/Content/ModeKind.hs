@@ -15,17 +15,17 @@ module Game.LambdaHack.Content.ModeKind
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.ContentData
-import           Game.LambdaHack.Common.Defs
-import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.JSFile
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
 import qualified Data.ByteString.Lazy.Char8 as LBS

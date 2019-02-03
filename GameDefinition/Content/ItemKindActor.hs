@@ -5,12 +5,12 @@ module Content.ItemKindActor
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Definition.Ability
+import Game.LambdaHack.Definition.Color
+import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Definition.Flavour
 import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]

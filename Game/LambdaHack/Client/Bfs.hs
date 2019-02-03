@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.Bfs
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
 import           Data.Binary
@@ -24,8 +24,8 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.Vector
 
 -- | Weighted distance between points along shortest paths.

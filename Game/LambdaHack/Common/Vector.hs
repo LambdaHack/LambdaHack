@@ -19,7 +19,7 @@ module Game.LambdaHack.Common.Vector
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -30,7 +30,7 @@ import qualified Data.IntSet as IS
 
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.Time
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right

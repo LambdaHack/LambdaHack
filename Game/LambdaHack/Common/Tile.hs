@@ -32,17 +32,17 @@ module Game.LambdaHack.Common.Tile
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
-import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Defs
 
 createTab :: U.Unbox a => ContentData TileKind -> (TileKind -> a) -> Tab a
 createTab cotile prop = Tab $ U.convert $ omapVector cotile prop

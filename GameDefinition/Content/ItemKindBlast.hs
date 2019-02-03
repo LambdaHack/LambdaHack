@@ -5,13 +5,13 @@ module Content.ItemKindBlast
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
-import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Dice
-import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Definition.Ability
+import Game.LambdaHack.Definition.Color
+import Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Core.Dice
+import Game.LambdaHack.Definition.Flavour
 import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]

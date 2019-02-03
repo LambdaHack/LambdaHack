@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | Basic types for content definitions.
-module Game.LambdaHack.Common.Defs
+module Game.LambdaHack.Definition.Defs
   ( GroupName, toGroupName, fromGroupName
   , Freqs, Rarity, linearInterpolation
   , ContentId, toContentId, contentIdIndex
@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Defs
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -18,7 +18,7 @@ import           Data.String (IsString (..))
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases

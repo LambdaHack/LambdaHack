@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.KeyBindings
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -19,7 +19,7 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.RuleKind
 

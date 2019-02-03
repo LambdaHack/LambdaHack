@@ -9,9 +9,9 @@ module Content.ModeKindPlayer
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
-import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Content.ModeKind
 
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player

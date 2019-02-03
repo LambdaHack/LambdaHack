@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HumanCmd
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -17,7 +17,7 @@ import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Defs
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 

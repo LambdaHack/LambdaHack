@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHumanM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request

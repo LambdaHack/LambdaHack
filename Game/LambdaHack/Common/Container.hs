@@ -8,15 +8,15 @@ module Game.LambdaHack.Common.Container
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import Control.DeepSeq
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Defs
-import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Core.Point
 
 -- | Item container type.
 data Container =

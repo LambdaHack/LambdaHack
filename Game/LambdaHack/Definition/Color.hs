@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, MagicHash,
              TypeFamilies #-}
 -- | Colours and text attributes.
-module Game.LambdaHack.Common.Color
+module Game.LambdaHack.Definition.Color
   ( -- * Colours
     Color(..)
   , defFG, isBright, darkCol, brightCol, stdCol, legalFgCol, colorToRGB
@@ -17,7 +17,7 @@ module Game.LambdaHack.Common.Color
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import           Control.DeepSeq
 import           Data.Binary
@@ -30,7 +30,7 @@ import           GHC.Generics (Generic)
 import           GHC.Prim (int2Word#)
 import           GHC.Word (Word32 (W32#))
 
-import qualified Game.LambdaHack.Common.PointArray as PointArray
+import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- | Colours supported by the major frontends.
 data Color =

@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.FrameM
 
 import Prelude ()
 
-import Game.LambdaHack.Common.Prelude
+import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Vector.Unboxed as U
@@ -30,7 +30,7 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
