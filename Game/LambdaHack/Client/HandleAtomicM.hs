@@ -32,8 +32,6 @@ import           Game.LambdaHack.Client.Preferences
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
@@ -46,6 +44,7 @@ import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Definition.Defs
 
 -- | Client monad for saving and restarting games.
 class MonadClient m => MonadClientSetup m where

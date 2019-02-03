@@ -169,20 +169,12 @@ library
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
-                      Game.LambdaHack.Definition.Ability
                       Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
-                      Game.LambdaHack.Definition.Color
-                      Game.LambdaHack.Common.Container
-                      Game.LambdaHack.Definition.ContentData
-                      Game.LambdaHack.Definition.Defs
-                      Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.File
-                      Game.LambdaHack.Definition.Flavour
-                      Game.LambdaHack.Core.Frequency
                       Game.LambdaHack.Common.HighScore
                       Game.LambdaHack.Common.Item
                       Game.LambdaHack.Common.ItemAspect
@@ -191,10 +183,6 @@ library
                       Game.LambdaHack.Common.Misc
                       Game.LambdaHack.Common.MonadStateRead
                       Game.LambdaHack.Common.Perception
-                      Game.LambdaHack.Core.PointArray
-                      Game.LambdaHack.Core.Point
-                      Game.LambdaHack.Core.Prelude
-                      Game.LambdaHack.Core.Random
                       Game.LambdaHack.Common.ReqFailure
                       Game.LambdaHack.Common.RingBuffer
                       Game.LambdaHack.Common.Save
@@ -210,6 +198,17 @@ library
                       Game.LambdaHack.Content.PlaceKind
                       Game.LambdaHack.Content.RuleKind
                       Game.LambdaHack.Content.TileKind
+                      Game.LambdaHack.Core.Dice
+                      Game.LambdaHack.Core.Frequency
+                      Game.LambdaHack.Core.PointArray
+                      Game.LambdaHack.Core.Point
+                      Game.LambdaHack.Core.Prelude
+                      Game.LambdaHack.Core.Random
+                      Game.LambdaHack.Definition.Ability
+                      Game.LambdaHack.Definition.Color
+                      Game.LambdaHack.Definition.ContentData
+                      Game.LambdaHack.Definition.Defs
+                      Game.LambdaHack.Definition.Flavour
                       Game.LambdaHack.Server
                       Game.LambdaHack.Server.BroadcastAtomic
                       Game.LambdaHack.Server.Commandline

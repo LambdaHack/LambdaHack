@@ -22,14 +22,13 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Container
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Definition.Defs
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.

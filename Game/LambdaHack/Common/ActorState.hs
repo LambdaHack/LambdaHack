@@ -31,16 +31,12 @@ import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
 import           GHC.Exts (inline)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -49,6 +45,9 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 fidActorNotProjGlobalAssocs :: FactionId -> State -> [(ActorId, Actor)]
 fidActorNotProjGlobalAssocs fid s =

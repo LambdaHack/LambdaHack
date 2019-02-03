@@ -17,11 +17,10 @@ import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Common.Actor
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 data ActorUI = ActorUI
   { bsymbol  :: Char         -- ^ individual map symbol

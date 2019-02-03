@@ -20,10 +20,9 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Definition.Defs
 
 -- | Add a message to the current report.
 msgAddDuplicate :: MonadClientUI m => Text -> MsgClass -> Int -> m Bool

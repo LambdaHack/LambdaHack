@@ -16,10 +16,9 @@ import           Data.Binary
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Definition.Defs
 
 data CmdCategory =
     CmdMainMenu | CmdDashboard | CmdItemMenu

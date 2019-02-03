@@ -1,10 +1,11 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Abstract identifiers for the main types in the engine. This is imported
 -- by modules that don't need to know the internal structure
 -- of the types. As a side effect, this prevents mutual dependencies
 -- among modules.
 module Game.LambdaHack.Common.Types
   ( ItemId, FactionId, LevelId, ActorId
+  , Container(..), ppContainer
   ) where
 
 import Prelude ()
@@ -13,6 +14,10 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 import Data.Hashable
+import GHC.Generics (Generic)
+
+import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Definition.Defs
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
@@ -33,3 +38,19 @@ instance Enum LevelId where
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
   deriving (Show, Eq, Ord, Enum, Binary)
+
+-- | Item container type.
+data Container =
+    CFloor LevelId Point
+  | CEmbed LevelId Point
+  | CActor ActorId CStore
+  | CTrunk FactionId LevelId Point   -- ^ for bootstrapping actor bodies
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Container
+
+ppContainer :: Container -> Text
+ppContainer CFloor{} = "nearby"
+ppContainer CEmbed{} = "embedded nearby"
+ppContainer (CActor _ cstore) = ppCStoreIn cstore
+ppContainer c@CTrunk{} = error $ "" `showFailure` c

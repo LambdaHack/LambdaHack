@@ -24,15 +24,15 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Common.Time
+import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Core.Random
-import           Game.LambdaHack.Common.Time
-import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | Record of skills conferred by an item as well as of item flags
 -- and other item aspects.

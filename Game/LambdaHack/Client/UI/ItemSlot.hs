@@ -21,11 +21,11 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.Item
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import           Game.LambdaHack.Definition.Defs
 
 -- | Slot label. Usually just a character. Sometimes with a numerical prefix.
 data SlotChar = SlotChar {slotPrefix :: Int, slotChar :: Char}
