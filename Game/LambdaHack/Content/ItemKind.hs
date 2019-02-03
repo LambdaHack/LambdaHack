@@ -27,7 +27,6 @@ import           GHC.Generics (Generic)
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Ability as Ability
-import           Game.LambdaHack.Common.Container
 import           Game.LambdaHack.Common.ContentData
 import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Common.Dice as Dice

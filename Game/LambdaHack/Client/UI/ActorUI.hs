@@ -19,8 +19,9 @@ import qualified NLP.Miniutter.English as MU
 import           Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import           Game.LambdaHack.Common.Container
-import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 
 data ActorUI = ActorUI
   { bsymbol  :: Char         -- ^ individual map symbol

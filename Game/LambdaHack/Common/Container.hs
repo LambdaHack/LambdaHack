@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of item aspects and its operations.
 module Game.LambdaHack.Common.Container
-  ( CStore(..), Container(..), SLore(..), ItemDialogMode(..)
-  , ppCStore, ppCStoreIn, verbCStore, ppContainer, ppSLore, headingSLore
+  ( Container(..), SLore(..), ItemDialogMode(..)
+  , ppContainer, ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
   ) where
 
@@ -14,21 +14,9 @@ import Control.DeepSeq
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Point
-
--- | Actor's item stores.
-data CStore =
-    CGround
-  | COrgan
-  | CEqp
-  | CInv
-  | CSha
-  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
-
-instance Binary CStore
-
-instance NFData CStore
+import Game.LambdaHack.Common.Types
 
 -- | Item container type.
 data Container =
@@ -66,23 +54,6 @@ data ItemDialogMode =
 instance NFData ItemDialogMode
 
 instance Binary ItemDialogMode
-
-ppCStore :: CStore -> (Text, Text)
-ppCStore CGround = ("on", "the ground")
-ppCStore COrgan = ("in", "body")
-ppCStore CEqp = ("in", "equipment")
-ppCStore CInv = ("in", "pack")  -- "inventory pack" overflows text too easily
-ppCStore CSha = ("in", "shared stash")
-
-ppCStoreIn :: CStore -> Text
-ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
-
-verbCStore :: CStore -> Text
-verbCStore CGround = "drop"
-verbCStore COrgan = "implant"
-verbCStore CEqp = "equip"
-verbCStore CInv = "pack"
-verbCStore CSha = "stash"
 
 ppContainer :: Container -> Text
 ppContainer CFloor{} = "nearby"

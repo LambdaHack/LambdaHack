@@ -23,7 +23,7 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types

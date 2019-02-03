@@ -23,12 +23,13 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Container
+import Game.LambdaHack.Common.Defs
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.

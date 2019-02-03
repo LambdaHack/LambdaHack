@@ -11,6 +11,7 @@ import Game.LambdaHack.Common.Prelude
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import qualified Game.LambdaHack.Content.TileKind as TK
 
 -- | Description of default key-command bindings.

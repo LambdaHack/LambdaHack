@@ -4,6 +4,7 @@ module Game.LambdaHack.Common.Defs
   ( GroupName, toGroupName, fromGroupName
   , Freqs, Rarity, linearInterpolation
   , ContentId, toContentId, contentIdIndex
+  , CStore(..), ppCStore, ppCStoreIn, verbCStore
   ) where
 
 import Prelude ()
@@ -78,3 +79,33 @@ toContentId = ContentId
 contentIdIndex :: ContentId k -> Int
 {-# INLINE contentIdIndex #-}
 contentIdIndex (ContentId k) = fromEnum k
+
+-- | Actor's item stores.
+data CStore =
+    CGround
+  | COrgan
+  | CEqp
+  | CInv
+  | CSha
+  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
+
+instance Binary CStore
+
+instance NFData CStore
+
+ppCStore :: CStore -> (Text, Text)
+ppCStore CGround = ("on", "the ground")
+ppCStore COrgan = ("in", "body")
+ppCStore CEqp = ("in", "equipment")
+ppCStore CInv = ("in", "pack")  -- "inventory pack" overflows text too easily
+ppCStore CSha = ("in", "shared stash")
+
+ppCStoreIn :: CStore -> Text
+ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
+
+verbCStore :: CStore -> Text
+verbCStore CGround = "drop"
+verbCStore COrgan = "implant"
+verbCStore CEqp = "equip"
+verbCStore CInv = "pack"
+verbCStore CSha = "stash"

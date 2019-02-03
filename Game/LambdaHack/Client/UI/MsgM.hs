@@ -21,6 +21,7 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Container
+import           Game.LambdaHack.Common.Defs
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 
