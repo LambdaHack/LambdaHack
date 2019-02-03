@@ -3,12 +3,12 @@
 module Game.LambdaHack.Common.ItemAspect
   ( AspectRecord(..), KindMean(..)
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
-  , aspectRecordToList, rollAspectRecord, getSkill, checkFlag
+  , aspectRecordToList, rollAspectRecord, getSkill, checkFlag, meanAspect
   , onlyMinorEffects, itemTrajectory, totalRange, isHumanTrinket
   , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , ceilingMeanDice, meanAspect
+  , ceilingMeanDice
 #endif
   ) where
 
