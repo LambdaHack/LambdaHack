@@ -30,9 +30,9 @@ import           Data.Word (Word32)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Definition.Color as Color
 import qualified Game.LambdaHack.Common.RingBuffer as RB
 import           Game.LambdaHack.Common.Time
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- * UAttrLine
 
@@ -145,14 +145,14 @@ msgColor MsgAdmin = Color.White
 msgColor MsgBecome = Color.BrBlue  -- similar color to cyan and role to Effect
 msgColor MsgNoLonger = Color.Blue
 msgColor MsgLonger = Color.White  -- not important enough
-msgColor MsgItemCreation = Color.BrMagenta  -- discovery of new item created
-msgColor MsgItemDestruction = Color.Magenta
+msgColor MsgItemCreation = Color.BrBlue
+msgColor MsgItemDestruction = Color.Blue
 msgColor MsgDeathGood = Color.BrGreen
 msgColor MsgDeathBad = Color.BrRed
 msgColor MsgDeath = Color.White
 msgColor MsgDeathThreat = Color.BrRed
 msgColor MsgLeader = Color.White
-msgColor MsgDiplomacy = Color.BrMagenta  -- discovery of relations
+msgColor MsgDiplomacy = Color.BrYellow
 msgColor MsgOutcome = Color.White
 msgColor MsgPlot = Color.White
 msgColor MsgLandscape = Color.White
