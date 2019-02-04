@@ -845,7 +845,7 @@ quitFactionUI fid toSt manalytics = do
       person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
   side <- getsClient sside
-  when (side == fid && maybe False ((/= Camping) . stOutcome) toSt) $ do
+  when (fid == side && maybe False ((/= Camping) . stOutcome) toSt) $ do
     tellGameClipPS
     resetGameStart
   mode <- getGameMode
@@ -872,8 +872,10 @@ quitFactionUI fid toSt manalytics = do
         Nothing -> Nothing
   case startingPart of
     Nothing -> return ()
-    Just sp -> msgAdd MsgOutcome $
-                 makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
+    Just sp ->
+      let msgClass = if fid == side then MsgOutcome else MsgDiplomacy
+      in msgAdd msgClass
+         $ makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
