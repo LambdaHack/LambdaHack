@@ -403,12 +403,12 @@ displayRespUpdAtomicUI cmd = case cmd of
     blurb <- rndToActionForget $ oneOf
       [ "You think you saw movement."
       , "Something catches your peripherial vision."
-      , "You think you felt a tremor with your feet."
+      , "You think you felt a tremor under your feet."
       , "A whiff of chilly air passes around you."
-      , "You notice a draft and then it dies down."
+      , "You notice a draft just when it dies down."
       , "The ground nearby is stained along some faint lines."
-      , "Some black motes slowly settle on the ground."
-      , "The immediate area seems empty, as if just swiped."
+      , "Scarce black motes slowly settle on the ground."
+      , "The ground in the immediate area is empty, as if just swiped."
       ]
     msgAdd MsgWarning blurb
     when (cwolf curChal && not loneMode) $
