@@ -173,7 +173,7 @@ Go-to with LMB (left mouse button). Run collectively with RMB.
 In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
 Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
 damage taken and prevents displacement by foes. Press `C-KP_5` (the same key
-with Control) to wait 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
+with Control) to lurk 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
 to yell/yawn, taunting and waking up enemies/yourself. You displace enemies
 by running into them with Shift/Control or RMB. Search, open, descend and
 attack by bumping into walls, doors, stairs and enemies. The best melee weapon

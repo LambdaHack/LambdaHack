@@ -19,7 +19,7 @@ Minimal cheat sheet for casual play.
  In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
  Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
  damage taken and prevents displacement by foes. Press `C-KP_5` (the same key
- with Control) to wait 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
+ with Control) to lurk 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
  to yell/yawn, taunting and waking up enemies/yourself. You displace enemies
  by running into them with Shift/Control or RMB. Search, open, descend and
  attack by bumping into walls, doors, stairs and enemies. The best melee weapon
@@ -101,7 +101,7 @@ All terrain exploration and alteration commands.
  x            explore nearest unknown spot
  X            autoexplore 25 times
  R            rest (wait 25 times)
- C-R          lurk (wait 0.1 turns 100 times)
+ C-R          heed (lurk 0.1 turns 100 times)
  0, 1 ... 6   pick a particular actor as the new leader
 
 Aiming commands.
@@ -155,8 +155,8 @@ Mouse in exploration and aiming modes.
  x-hair info    cycle x-hair among enemies       cycle x-hair among items
  party roster   pick new leader on screen        select party member on screen
  Calm value     yell/yawn                        yell/yawn
- HP gauge       rest (wait 25 times)             lurk (wait 0.1 turns 100 times)
- HP Value       wait a turn, bracing for impact  wait 0.1 of a turn
+ HP gauge       rest (wait 25 times)             heed (lurk 0.1 turns 100 times)
+ HP Value       wait a turn, bracing for impact  lurk 0.1 of a turn
  leader info    fling without aiming             clear chosen item and x-hair
 
  aiming mode    LMB (left mouse button)          RMB (right mouse button)

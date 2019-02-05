@@ -415,7 +415,7 @@ findEntryPoss COps{coTileSpeedup}
             nps <- tryFind (np : ps) (n - 1)
             return $! np : nps
           Nothing -> return []
-      -- Only consider deeper stairs to avoid leaderless spawners that lurk near
+      -- Only consider deeper stairs to avoid leaderless spawners that stay near
       -- their starting stairs ambushing explorers that enter the level,
       -- unless the staircase has both sets of stairs.
       deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair

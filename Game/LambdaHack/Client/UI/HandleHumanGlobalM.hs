@@ -507,7 +507,7 @@ moveSearchAlter run dir = do
            -- e.g., hidden in a wall. If server performed an attack for free
            -- on the invisible actor anyway, the player (or AI)
            -- would be tempted to repeatedly hit random walls
-           -- in hopes of killing a monster lurking within.
+           -- in hopes of killing a monster residing within.
            -- If the action had a cost, misclicks would incur the cost, too.
            -- Right now the player may repeatedly alter tiles trying to learn
            -- about invisible pass-wall actors, but when an actor detected,
