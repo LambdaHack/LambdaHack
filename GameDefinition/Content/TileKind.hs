@@ -9,9 +9,9 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Content.TileKind
 
 content :: [TileKind]
 content =
@@ -609,27 +609,27 @@ shallowWaterSpice = shallowWater
 floorRed = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "brick pavement"
-  , tfreq    = [("trailLit", 30), ("alarmingTrailLit", 70)]
+  , tfreq    = [("trailLit", 70), ("safeTrailLit", 70)]
   , tcolor   = BrRed
   , tcolor2  = Red
   , tfeature = [Embed "straight path", Trail, Walkable, Clear]
   }
 floorBlue = floorRed
   { tname    = "frozen trail"
-  , tfreq    = [("trailLit", 70)]
+  , tfreq    = [("trailLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , tfeature = [Embed "frozen ground", Trail, Walkable, Clear]
   }
 floorGreen = floorRed
   { tname    = "mossy stone path"
-  , tfreq    = [("trailLit", 100)]
+  , tfreq    = [("trailLit", 70), ("safeTrailLit", 70)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   }
 floorBrown = floorRed
   { tname    = "rotting mahogany deck"
-  , tfreq    = [("trailLit", 10), ("alarmingTrailLit", 30)]
+  , tfreq    = [("trailLit", 50), ("safeTrailLit", 50)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   }
