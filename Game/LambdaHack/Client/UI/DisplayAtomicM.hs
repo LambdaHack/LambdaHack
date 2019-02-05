@@ -1482,7 +1482,10 @@ strike catch source target iid cstore = assert (source /= target) $ do
     sMaxSk <- getsState $ getActorMaxSkills source
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
-    tpart <- partActorLeader target tbUI
+    tpartRaw <- partActorLeader target tbUI
+    let tpart = MU.Phrase $ if bhp tb <= 0 && tpart /= "you"
+                            then ["fallen", tpartRaw]
+                            else [tpartRaw]
     spronoun <- partPronounLeader source sbUI
     tpronoun <- partPronounLeader target tbUI
     localTime <- getsState $ getLocalTime (blid tb)
@@ -1511,7 +1514,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
         weaponName = partItemChoice itemFullWeapon kitWeapon
-        sleepy = if bwatch tb `elem` [WSleep, WWake] && tpart /= "you"
+        sleepy = if bwatch tb `elem` [WSleep, WWake]
+                    && tpart /= "you"
+                    && bhp tb > 0
                  then "the sleepy"
                  else ""
         -- For variety, attack adverb is based on attacker's and weapon's
@@ -1528,7 +1533,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           in min 0 speedDeltaHP
         deadliness = 1000 * (- sDamage) `div` max oneM (bhp tb)
         strongly
-          | bhp tb <= 0 = ""  -- no kudos for kicking the dead
+          | bhp tb <= 0 = "cruelly"
           | deadliness >= 10000 = "artfully"
           | deadliness >= 5000 = "madly"
           | deadliness >= 2000 = "mercilessly"
