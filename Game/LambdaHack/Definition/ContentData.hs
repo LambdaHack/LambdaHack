@@ -49,7 +49,7 @@ validateRarity rarity =
   let sortedRarity = sortBy (comparing fst) rarity
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
-        | nubBy ((==) `on` fst) sortedRarity /= sortedRarity ]
+        | map head (groupBy ((==) `on` fst) sortedRarity) /= sortedRarity ]
      ++ [ "rarity depth not between 0 and 10"
         | case (sortedRarity, reverse sortedRarity) of
             ((lowest, _) : _, (highest, _) : _) ->

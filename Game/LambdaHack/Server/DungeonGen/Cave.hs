@@ -16,16 +16,16 @@ import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Core.Point
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Place
 
@@ -233,7 +233,8 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         addedConnects <- do
           let cauxNum =
                 round $ cauxConnects * fromIntegral (fst lgrid * snd lgrid)
-          cns <- nub . sort <$> replicateM cauxNum (randomConnection lgrid)
+          cns <- map head . group . sort
+                 <$> replicateM cauxNum (randomConnection lgrid)
           -- This allows connections through a single void room,
           -- if a non-void room on both ends.
           let notDeadEnd (p, q) =

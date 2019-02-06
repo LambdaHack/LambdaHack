@@ -9,6 +9,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Char as Char
+import           Data.Containers.ListUtils
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
@@ -501,7 +502,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
       wrapB s = "[" <> s <> "]"
       (keyLabelsRaw, keys) = partitionEithers $ map (defLabel . snd) keyDefs
       keyLabels = filter (not . T.null) keyLabelsRaw
-      choice = T.intercalate " " $ map wrapB $ nub keyLabels
+      choice = T.intercalate " " $ map wrapB $ nubOrd keyLabels
   promptAdd0 $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
