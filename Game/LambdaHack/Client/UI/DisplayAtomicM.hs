@@ -1483,7 +1483,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
     sbUI <- getsSession $ getActorUI source
     spart <- partActorLeader source sbUI
     tpartRaw <- partActorLeader target tbUI
-    let tpart = MU.Phrase $ if bhp tb <= 0 && tpart /= "you"
+    let tpart = MU.Phrase $ if bhp tb <= 0 && tpartRaw /= "you"
                             then ["fallen", tpartRaw]
                             else [tpartRaw]
     spronoun <- partPronounLeader source sbUI
@@ -1515,7 +1515,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
           else partItemShortAW side factionD localTime
         weaponName = partItemChoice itemFullWeapon kitWeapon
         sleepy = if bwatch tb `elem` [WSleep, WWake]
-                    && tpart /= "you"
+                    && tpartRaw /= "you"
                     && bhp tb > 0
                  then "the sleepy"
                  else ""
@@ -1568,7 +1568,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
               -- 1% always gets through, but if fast missile, can be deadly
-        blockPhrase = MU.SubjectVerbSg tpart
+        blockPhrase = MU.SubjectVerbSg tpartRaw
                       $ if bproj sb
                         then if actorWaits tb
                              then "deflect it"
@@ -1615,7 +1615,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
     -- not be able to block.
     if | catch -> do  -- charge not needed when catching
          let msg = makeSentence
-                     [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
+                     [MU.SubjectVerbSg spart "catch", tpartRaw, "skillfully"]
          msgAdd MsgVeryRare msg
          animate (blid tb) $ blockHit coscreen ps Color.BrGreen Color.Green
        | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
@@ -1637,7 +1637,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
        | bproj sb && bproj tb -> do  -- server sends only if neither is blast
          -- Short message.
          msgAdd MsgVeryRare $
-           makeSentence $ [MU.SubjectVerbSg spart "intercept", tpart]
+           makeSentence $ [MU.SubjectVerbSg spart "intercept", tpartRaw]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit coscreen ps Color.BrBlue Color.Blue
        | IK.idamage (itemKind itemFullWeapon) == 0 -> do
