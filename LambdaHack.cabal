@@ -139,7 +139,6 @@ common exe-options
 -- which fortunately sometimes fits into idle time between turns):
   ghc-options:        -with-rtsopts=-A99m
 
-common ghcjs-handling
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
@@ -198,7 +197,7 @@ library definition
                       ,vector-binary-instances
 
 library
-  import: options, ghcjs-handling
+  import: options
   hs-source-dirs:     engine-src
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic
@@ -376,10 +375,10 @@ library
   } } } }
 
   if impl(ghcjs) {
-    exposed-modules:    Game.LambdaHack.Common.JSFile
+    other-modules:    Game.LambdaHack.Common.JSFile
     cpp-options:      -DUSE_JSFILE
   } else {
-    exposed-modules:    Game.LambdaHack.Common.HSFile
+    other-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
   }
 
@@ -431,7 +430,7 @@ library this-game-content
                       ,vector-binary-instances
 
 executable LambdaHack
-  import: options, exe-options, ghcjs-handling
+  import: options, exe-options
   hs-source-dirs:     GameDefinition/src
   main-is:            Main.hs
   other-modules:      Client.UI.Content.Input
@@ -473,7 +472,7 @@ executable LambdaHack
                       ,vector-binary-instances
 
 test-suite test
-  import: options, exe-options, ghcjs-handling
+  import: options, exe-options
   type:               exitcode-stdio-1.0
   hs-source-dirs:     GameDefinition/src, test
   main-is:            test.hs
