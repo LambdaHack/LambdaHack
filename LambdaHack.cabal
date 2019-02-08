@@ -170,25 +170,17 @@ library definition
                       Game.LambdaHack.Content.TileKind
   build-depends:
                       ,assert-failure
-                      ,async
                       ,base
                       ,base-compat
                       ,binary
-                      ,bytestring
                       ,containers
                       ,deepseq
-                      ,directory
                       ,enummapset
-                      ,filepath
                       ,ghc-prim
                       ,hashable
-                      ,hsini
                       ,keys
                       ,miniutter
-                      ,optparse-applicative
-                      ,pretty-show
                       ,random
-                      ,stm
                       ,time
                       ,text
                       ,transformers
@@ -400,116 +392,48 @@ library this-game-content
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      ,definition
-                      ,template-haskell >= 2.6
-
-                      ,assert-failure
-                      ,async
                       ,base
-                      ,base-compat
-                      ,binary
-                      ,bytestring
-                      ,containers
-                      ,deepseq
-                      ,directory
-                      ,enummapset
                       ,filepath
-                      ,ghc-prim
-                      ,hashable
-                      ,hsini
-                      ,keys
-                      ,miniutter
-                      ,optparse-applicative
-                      ,pretty-show
-                      ,random
-                      ,stm
-                      ,time
+                      ,template-haskell >= 2.6
                       ,text
-                      ,transformers
-                      ,unordered-containers
-                      ,vector
-                      ,vector-binary-instances
 
-executable LambdaHack
-  import: options, exe-options
+library this-game-src
+  import: options
   hs-source-dirs:     GameDefinition/src
-  main-is:            Main.hs
+  exposed-modules:    Implementation.TieKnot
   other-modules:      Client.UI.Content.Input
                       Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
-                      Implementation.TieKnot
-                      Paths_LambdaHack
-  autogen-modules:    Paths_LambdaHack
   build-depends:      ,LambdaHack
                       ,this-game-content
-                      ,template-haskell >= 2.6
-
-                      ,assert-failure
                       ,async
                       ,base
-                      ,base-compat
-                      ,binary
-                      ,bytestring
-                      ,containers
-                      ,deepseq
-                      ,directory
                       ,enummapset
                       ,filepath
-                      ,ghc-prim
-                      ,hashable
-                      ,hsini
-                      ,keys
-                      ,miniutter
                       ,optparse-applicative
-                      ,pretty-show
                       ,random
-                      ,stm
-                      ,time
+                      ,template-haskell >= 2.6
                       ,text
                       ,transformers
-                      ,unordered-containers
-                      ,vector
-                      ,vector-binary-instances
+
+executable LambdaHack
+  import: options, exe-options
+  main-is:            GameDefinition/src/Main.hs
+  build-depends:      ,LambdaHack
+                      ,this-game-src
+                      ,async
+                      ,base
+                      ,filepath
+                      ,optparse-applicative
 
 test-suite test
   import: options, exe-options
   type:               exitcode-stdio-1.0
-  hs-source-dirs:     GameDefinition/src, test
-  main-is:            test.hs
-  other-modules:      Client.UI.Content.Input
-                      Client.UI.Content.Screen
-                      Implementation.MonadClientImplementation
-                      Implementation.MonadServerImplementation
-                      Implementation.TieKnot
-                      Paths_LambdaHack
-  autogen-modules:    Paths_LambdaHack
+  main-is:            test/test.hs
   build-depends:      ,LambdaHack
-                      ,this-game-content
-                      ,template-haskell >= 2.6
-
-                      ,assert-failure
+                      ,this-game-src
                       ,async
                       ,base
-                      ,base-compat
-                      ,binary
-                      ,bytestring
-                      ,containers
-                      ,deepseq
-                      ,directory
-                      ,enummapset
                       ,filepath
-                      ,ghc-prim
-                      ,hashable
-                      ,hsini
-                      ,keys
-                      ,miniutter
                       ,optparse-applicative
-                      ,pretty-show
-                      ,random
-                      ,stm
-                      ,time
-                      ,text
-                      ,transformers
-                      ,unordered-containers
-                      ,vector
-                      ,vector-binary-instances
