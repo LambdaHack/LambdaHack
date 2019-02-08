@@ -139,7 +139,6 @@ common exe-options
 -- which fortunately sometimes fits into idle time between turns):
   ghc-options:        -with-rtsopts=-A99m
 
-
 common ghcjs-handling
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
@@ -152,6 +151,7 @@ common ghcjs-handling
 
 library definition
   import: options
+  hs-source-dirs:     definition-src
   exposed-modules:    Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Core.Frequency
                       Game.LambdaHack.Core.PointArray
@@ -305,25 +305,23 @@ library
                       Game.LambdaHack.Server.ServerOptions
                       Game.LambdaHack.Server.StartM
                       Game.LambdaHack.Server.State
-
-                      Game.LambdaHack.Core.Dice
-                      Game.LambdaHack.Core.Frequency
-                      Game.LambdaHack.Core.PointArray
-                      Game.LambdaHack.Core.Point
-                      Game.LambdaHack.Core.Prelude
-                      Game.LambdaHack.Core.Random
-                      Game.LambdaHack.Definition.Ability
-                      Game.LambdaHack.Definition.Color
-                      Game.LambdaHack.Definition.ContentData
-                      Game.LambdaHack.Definition.Defs
-                      Game.LambdaHack.Definition.Flavour
-                      Game.LambdaHack.Content.CaveKind
-                      Game.LambdaHack.Content.ItemKind
-                      Game.LambdaHack.Content.ModeKind
-                      Game.LambdaHack.Content.PlaceKind
-                      Game.LambdaHack.Content.RuleKind
-                      Game.LambdaHack.Content.TileKind
-
+  reexported-modules: ,Game.LambdaHack.Core.Dice
+                      ,Game.LambdaHack.Core.Frequency
+                      ,Game.LambdaHack.Core.PointArray
+                      ,Game.LambdaHack.Core.Point
+                      ,Game.LambdaHack.Core.Prelude
+                      ,Game.LambdaHack.Core.Random
+                      ,Game.LambdaHack.Definition.Ability
+                      ,Game.LambdaHack.Definition.Color
+                      ,Game.LambdaHack.Definition.ContentData
+                      ,Game.LambdaHack.Definition.Defs
+                      ,Game.LambdaHack.Definition.Flavour
+                      ,Game.LambdaHack.Content.CaveKind
+                      ,Game.LambdaHack.Content.ItemKind
+                      ,Game.LambdaHack.Content.ModeKind
+                      ,Game.LambdaHack.Content.PlaceKind
+                      ,Game.LambdaHack.Content.RuleKind
+                      ,Game.LambdaHack.Content.TileKind
   other-modules:      Paths_LambdaHack
   autogen-modules:    Paths_LambdaHack
   build-depends:      definition,
@@ -478,7 +476,9 @@ test-suite test
   type:               exitcode-stdio-1.0
   hs-source-dirs:     GameDefinition/src, test
   main-is:            test.hs
-  other-modules:      Implementation.MonadClientImplementation
+  other-modules:      Client.UI.Content.Input
+                      Client.UI.Content.Screen
+                      Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
                       Implementation.TieKnot
                       Paths_LambdaHack
