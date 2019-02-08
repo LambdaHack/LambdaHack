@@ -202,6 +202,7 @@ library
                       Game.LambdaHack.Client.UI.Slideshow
                       Game.LambdaHack.Client.UI.SlideshowM
                       Game.LambdaHack.Client.UI.UIOptions
+                      Game.LambdaHack.Client.UI.UIOptionsParse
                       Game.LambdaHack.Common.Analytics
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
