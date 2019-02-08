@@ -433,7 +433,7 @@ library this-game-content
 
 executable LambdaHack
   import: options, exe-options, ghcjs-handling
-  hs-source-dirs:     GameDefinition
+  hs-source-dirs:     GameDefinition/src
   main-is:            Main.hs
   other-modules:      Client.UI.Content.Input
                       Client.UI.Content.Screen
@@ -476,7 +476,7 @@ executable LambdaHack
 test-suite test
   import: options, exe-options, ghcjs-handling
   type:               exitcode-stdio-1.0
-  hs-source-dirs:     GameDefinition, test
+  hs-source-dirs:     GameDefinition/src, test
   main-is:            test.hs
   other-modules:      Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
