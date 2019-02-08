@@ -1,3 +1,4 @@
+cabal-version: 2.2
 name:           LambdaHack
 -- The package version. See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
@@ -43,7 +44,7 @@ description:   LambdaHack is a Haskell game engine library for ASCII roguelike
                no position to guess their particular needs.
 homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
-license:       BSD3
+license:       BSD-3-Clause
 license-file:  COPYLEFT
 tested-with:   GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.3
 data-files:    GameDefinition/config.ui.default,
@@ -69,7 +70,6 @@ author:        Andres Loeh, Mikolaj Konarski and others
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine, Game
 build-type:    Simple
-cabal-version: >= 1.10
 
 source-repository head
   type:               git
@@ -110,7 +110,40 @@ flag release
   default:            True
   manual:             True
 
+common options
+  default-language:   Haskell2010
+  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
+                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
+                      LambdaCase, DefaultSignatures, InstanceSigs,
+                      MonadFailDesugaring, StrictData, CPP
+  other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
+                      TypeFamilies, FlexibleContexts, FlexibleInstances,
+                      DeriveFunctor, FunctionalDependencies,
+                      GeneralizedNewtypeDeriving, TupleSections,
+                      DeriveFoldable, DeriveTraversable,
+                      ExistentialQuantification, GADTs, StandaloneDeriving,
+                      DataKinds, KindSignatures, DeriveGeneric
+  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
+  ghc-options:        -Wall-missed-specialisations
+  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
+
+common exe-options
+  ghc-options:        -threaded -rtsopts
+-- Minimize median lag at the cost of occasional bigger GC lag,
+-- which fortunately sometimes fits into idle time between turns):
+  ghc-options:        -with-rtsopts=-A99m
+
+  if impl(ghcjs) {
+-- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
+-- on my machine with default --maxFps.
+    cpp-options:      -DGHCJS_BUSY_YIELD=50
+    cpp-options:      -DUSE_JSFILE
+  } else {
+    build-depends:    zlib >= 0.5.3.1
+  }
+
 library
+  import: options
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic
                       Game.LambdaHack.Atomic.HandleAtomicWrite
@@ -235,6 +268,7 @@ library
                       Game.LambdaHack.Server.State
 
   other-modules:      Paths_LambdaHack
+  autogen-modules:    Paths_LambdaHack
   build-depends:
                       assert-failure >= 0.1.2 && < 0.2,
                       async      >= 2,
@@ -262,22 +296,6 @@ library
                       unordered-containers >= 0.2.3,
                       vector     >= 0.11,
                       vector-binary-instances >= 0.2.3.1
-
-  default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, DefaultSignatures, InstanceSigs,
-                      MonadFailDesugaring, StrictData, CPP
-  other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
-                      TypeFamilies, FlexibleContexts, FlexibleInstances,
-                      DeriveFunctor, FunctionalDependencies,
-                      GeneralizedNewtypeDeriving, TupleSections,
-                      DeriveFoldable, DeriveTraversable,
-                      ExistentialQuantification, GADTs, StandaloneDeriving,
-                      DataKinds, KindSignatures, DeriveGeneric
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
-  ghc-options:        -Wall-missed-specialisations
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively -fsimpl-tick-factor=200
 
   if impl(ghcjs) || flag(jsaddle) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
@@ -316,6 +334,7 @@ library
     cpp-options:      -DEXPOSE_INTERNAL
 
 executable LambdaHack
+  import: options, exe-options
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
   other-modules:      Client.UI.Content.Input,
@@ -336,6 +355,7 @@ executable LambdaHack
                       Implementation.MonadServerImplementation,
                       Implementation.TieKnot,
                       Paths_LambdaHack
+  autogen-modules:    Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
@@ -366,30 +386,8 @@ executable LambdaHack
                       vector     >= 0.11,
                       vector-binary-instances >= 0.2.3.1
 
-  default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, DefaultSignatures, InstanceSigs,
-                      MonadFailDesugaring, StrictData, CPP
-  other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
-  ghc-options:        -Wall-missed-specialisations
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
-  ghc-options:        -threaded -rtsopts
--- Minimize median lag at the cost of occasional bigger GC lag,
--- which fortunately sometimes fits into idle time between turns):
-  ghc-options:        -with-rtsopts=-A99m
-
-  if impl(ghcjs) {
--- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
--- on my machine with default --maxFps.
-    cpp-options:      -DGHCJS_BUSY_YIELD=50
-    cpp-options:      -DUSE_JSFILE
-  } else {
-    build-depends:    zlib >= 0.5.3.1
-  }
-
 test-suite test
+  import: options, exe-options
   type:               exitcode-stdio-1.0
   hs-source-dirs:     GameDefinition, test
   main-is:            test.hs
@@ -411,6 +409,7 @@ test-suite test
                       Implementation.MonadServerImplementation,
                       Implementation.TieKnot,
                       Paths_LambdaHack
+  autogen-modules:    Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6,
 
@@ -440,25 +439,3 @@ test-suite test
                       unordered-containers >= 0.2.3,
                       vector     >= 0.11,
                       vector-binary-instances >= 0.2.3.1
-
-  default-language:   Haskell2010
-  default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
-                      BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
-                      LambdaCase, DefaultSignatures, InstanceSigs,
-                      MonadFailDesugaring, StrictData, CPP
-  other-extensions:   TemplateHaskell
-  ghc-options:        -Wall -Wcompat -Worphans -Wincomplete-uni-patterns -Wincomplete-record-updates -Wimplicit-prelude -Wmissing-home-modules -Widentities -Wredundant-constraints
-  ghc-options:        -fno-ignore-asserts -fexpose-all-unfoldings -fspecialise-aggressively
-  ghc-options:        -threaded -rtsopts
--- Minimize median lag at the cost of occasional bigger GC lag,
--- which fortunately sometimes fits into idle time between turns):
-  ghc-options:        -with-rtsopts=-A99m
-
-  if impl(ghcjs) {
--- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
--- on my machine with default --maxFps.
-    cpp-options:      -DGHCJS_BUSY_YIELD=50
-    cpp-options:      -DUSE_JSFILE
-  } else {
-    build-depends:    zlib >= 0.5.3.1
-  }
