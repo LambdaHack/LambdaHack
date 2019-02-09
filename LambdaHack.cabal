@@ -399,8 +399,8 @@ library this-game-content
 
 library this-game-src
   import: options
-  hs-source-dirs:     GameDefinition/src
-  exposed-modules:    Implementation.TieKnot
+  hs-source-dirs:     GameDefinition/game-src
+  exposed-modules:    TieKnot
   other-modules:      Client.UI.Content.Input
                       Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
@@ -419,7 +419,7 @@ library this-game-src
 
 executable LambdaHack
   import: options, exe-options
-  main-is:            GameDefinition/src/Main.hs
+  main-is:            GameDefinition/Main.hs
   build-depends:      ,LambdaHack
                       ,this-game-src
                       ,async

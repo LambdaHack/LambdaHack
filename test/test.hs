@@ -6,7 +6,7 @@ import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Core.Prelude
 import Game.LambdaHack.Server
 
-import Implementation.TieKnot
+import TieKnot
 
 main :: IO ()
 main = do
