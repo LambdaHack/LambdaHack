@@ -6,14 +6,14 @@ Source: https://hackage.haskell.org/package/LambdaHack
 Files: *
 Copyright: 2008-2011 Andres Loeh
            2010-2019 Mikolaj Konarski and others (see git history)
-License: BSD-3-clause
+License: BSD-3-Clause
 
 Files: GameDefinition/fonts/{*.fnt,*.bdf,16x16xw.woff}
 Copyright: 1997-2016 Leon Marrick
            1997-2016 Sheldon Simms III
            1997-2016 Nick McConnell
            2016-2019 Mikolaj Konarski
-License: GPL-2
+License: GPL-2.0-or-later
 
 Files: GameDefinition/fonts/Fix15Mono-Bold.woff
 Copyright: 2012-2015 The Mozilla Foundation and Telefonica S.A
@@ -22,9 +22,9 @@ License: OFL-1.1
 
 Files: debian/*
 Copyright: held by the contributors mentioned in debian/changelog
-License: BSD-3-clause
+License: BSD-3-Clause
 
-License: BSD-3-clause
+License: BSD-3-Clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions
  are met:
@@ -48,7 +48,7 @@ License: BSD-3-clause
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-License: GPL-2
+License: GPL-2.0-or-later
  This program is free software; you can redistribute it
  and/or modify it under the terms of the GNU General Public
  License, version 2, as published by the Free Software Foundation

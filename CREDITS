@@ -13,7 +13,9 @@ Fonts 16x16xw.woff, 16x16xw.bdf, 16x16x.fnt, 8x8x.fnt and 8x8xb.fnt
 are are derived from fonts taken from
 https://github.com/angband/angband, copyrighted by Leon Marrick,
 Sheldon Simms III and Nick McConnell and released by them under
-GNU GPL version 2. Any further modifications by authors of LambdaHack
+GNU GPL, version 2 or any later version (confirmed at
+http://www.thangorodrim.net/development/opensource.html).
+Any further modifications by authors of LambdaHack
 are also released under GNU GPL version 2. The licence file is at
 GameDefinition/fonts/LICENSE.16x16x in the source code tree.
 Font 16x16xw.bdf is derived from 16x16x.fon by changing all but
