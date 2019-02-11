@@ -379,6 +379,12 @@ resetGameStart = do
         , snframes = 0
         , sallNframes = sallNframes cli + nframes }
 
+partActorLeaderCommon :: Maybe ActorId -> ActorUI -> ActorId -> MU.Part
+partActorLeaderCommon mleader bUI aid =
+  case mleader of
+    Just leader | aid == leader -> "you"
+    _ -> partActor bUI
+
 -- | The part of speech describing the actor (designated by actor id
 -- and present in the dungeon) or a special name if a leader belongs
 -- to the observer's faction.
@@ -386,18 +392,13 @@ partActorLeader :: MonadClientUI m => ActorId -> m MU.Part
 partActorLeader aid = do
   mleader <- getsClient sleader
   bUI <- getsSession $ getActorUI aid
-  return $! case mleader of
-    Just leader | aid == leader -> "you"
-    _ -> partActor bUI
+  return $! partActorLeaderCommon mleader bUI aid
 
 partActorLeaderFun :: MonadClientUI m => m (ActorId -> MU.Part)
 partActorLeaderFun = do
   mleader <- getsClient sleader
   sess <- getSession
-  return $! \aid ->
-    if mleader == Just aid
-    then "you"
-    else partActor $ getActorUI aid sess
+  return $! \aid -> partActorLeaderCommon mleader (getActorUI aid sess) aid
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
 -- of the client's faction.
