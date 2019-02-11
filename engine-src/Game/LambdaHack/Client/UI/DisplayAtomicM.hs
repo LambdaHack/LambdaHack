@@ -1410,7 +1410,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidSeen <- getsState $ memActor aid lid
     if aidSeen then do
       b <- getsState $ getActorBody aid
-      aidPhrase <- partActorLeader aid
+      aidPhrase <- partPronounLeader aid
+        -- assume almost always a prior message mentions the object
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
