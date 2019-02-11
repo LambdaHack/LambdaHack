@@ -173,14 +173,18 @@ displayRespUpdAtomicUI cmd = case cmd of
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
                (True, True) -> ("drop down", "tumble down")
-               (True, False) -> ("fall down", "fall to pieces")
+               (True, False) -> ("fall down", "break into pieces")
                (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
              alreadyDeadBefore = bhp b - hpDelta <= 0
-         subject <- partActorLeader aid
          tfact <- getsState $ (EM.! bfid b) . sfactionD
-         let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+         bUI <- getsSession $ getActorUI aid
+         subjectRaw <- partActorLeader aid
+         let subject = if alreadyDeadBefore || subjectRaw == "you"
+                       then subjectRaw
+                       else partActor bUI  -- avoid "fallen"
+             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
              targetIsFoe = isFoe (bfid b) tfact side
              targetIsFriend = isFriend (bfid b) tfact side
              msgClass | bproj b = MsgDeath
