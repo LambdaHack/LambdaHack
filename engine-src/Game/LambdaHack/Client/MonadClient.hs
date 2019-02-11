@@ -15,12 +15,15 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
+import           Data.Bits (xor)
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
+import qualified System.Random as R
 
 import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Core.Random
 
 -- | Monad for reading client state.
@@ -56,7 +59,11 @@ rndToAction r = do
   return a
 
 -- | Invoke pseudo-random computation, don't change generator kept in state.
+-- Modify the used generator by @xoring@ with current global game time.
 rndToActionForget :: MonadClientRead m => Rnd a -> m a
 rndToActionForget r = do
   gen <- getsClient srandom
-  return $! St.evalState r gen
+  let i = fst $ R.next gen
+  time <- getsState stime
+  let genNew = R.mkStdGen $ i `xor` fromEnum time
+  return $! St.evalState r genNew
