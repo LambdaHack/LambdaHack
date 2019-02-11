@@ -342,23 +342,19 @@ populateDungeon = do
         when (length entryPoss < length arenaAlliances) $
           debugPossiblyPrint
             "Server: populateDungeon: failed to find enough alliance positions"
-        let usedPoss = zip3 arenaAlliances entryPoss [0..]
+        let usedPoss = zip arenaAlliances entryPoss
         return $! (lid, usedPoss)
       initialActors (lid, usedPoss) = do
         let arenaFactions = filter (hasActorsOnArena lid) needInitialCrew
-            placeAlliance ((fid3, _), ppos, timeOffset) =
+            placeAlliance ((fid3, _), ppos) =
               mapM_ (\(fid4, fact4) ->
                       when (isFriend fid4 fact4 fid3) $
-                        placeActors lid ((fid4, fact4), ppos, timeOffset))
+                        placeActors lid ((fid4, fact4), ppos))
                     arenaFactions
         mapM_ placeAlliance usedPoss
-      placeActors lid ((fid3, fact3), ppos, timeOffset) = do
+      placeActors lid ((fid3, fact3), ppos) = do
         lvl <- getLevel lid
-        localTime <- getsState $ getLocalTime lid
-        let clipInTurn = timeTurn `timeFit` timeClip
-            nmult = 1 + timeOffset `mod` clipInTurn
-            ntime = timeShift localTime (timeDeltaScale (Delta timeClip) nmult)
-            validTile t = not $ Tile.isNoActor coTileSpeedup t
+        let validTile t = not $ Tile.isNoActor coTileSpeedup t
             initActors = ginitialWolf fact3
             initGroups = concat [ replicate n actorGroup
                                 | ln3@(_, n, actorGroup) <- initActors
@@ -368,8 +364,11 @@ populateDungeon = do
           debugPossiblyPrint
             "Server: populateDungeon: failed to find enough actor positions"
         let ps = zip initGroups psFree
+        localTime <- getsState $ getLocalTime lid
         forM_ ps $ \ (actorGroup, p) -> do
-          maid <- addActorFromGroup actorGroup fid3 p lid ntime
+          rndDelay <- rndToAction $ randomR (0, fromEnum timeTurn)
+          let rndTime = timeShift localTime (toEnum rndDelay)
+          maid <- addActorFromGroup actorGroup fid3 p lid rndTime
           case maid of
             Nothing -> error $ "can't spawn initial actors"
                                `showFailure` (lid, (fid3, fact3))
@@ -379,7 +378,7 @@ populateDungeon = do
               return True
   lposs <- mapM initialActorPositions arenas
   let alliancePositions =
-        EM.fromList $ map (second $ map $ \(_, l, _) -> l) lposs
+        EM.fromList $ map (second $ map $ \(_, l) -> l) lposs
   placeItemsInDungeon alliancePositions
   embedItemsInDungeon
   mapM_ initialActors lposs
