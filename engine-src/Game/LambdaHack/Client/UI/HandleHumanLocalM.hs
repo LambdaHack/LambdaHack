@@ -811,7 +811,7 @@ endAimingMsg = do
   tgt <- getsClient $ getTarget leader
   (mtargetMsg, _) <- targetDesc tgt
   let targetMsg = fromJust mtargetMsg
-  subject <- partAidLeader leader
+  subject <- partActorLeader leader
   promptAdd $
     makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 

@@ -16,7 +16,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , leaderTgtToPos, xhairToPos, clearAimMode, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart
-  , partActorLeader, partActorLeaderFun, partPronounLeader, partAidLeader
+  , partActorLeader, partActorLeaderFun, partPronounLeader
   , tryRestore, leaderSkillsClientUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -59,7 +59,6 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -68,14 +67,15 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
@@ -379,11 +379,13 @@ resetGameStart = do
         , snframes = 0
         , sallNframes = sallNframes cli + nframes }
 
--- | The part of speech describing the actor or "you" if a leader
--- of the client's faction. The actor may be not present in the dungeon.
-partActorLeader :: MonadClientUI m => ActorId -> ActorUI -> m MU.Part
-partActorLeader aid bUI = do
+-- | The part of speech describing the actor (designated by actor id
+-- and present in the dungeon) or a special name if a leader belongs
+-- to the observer's faction.
+partActorLeader :: MonadClientUI m => ActorId -> m MU.Part
+partActorLeader aid = do
   mleader <- getsClient sleader
+  bUI <- getsSession $ getActorUI aid
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partActor bUI
@@ -398,21 +400,14 @@ partActorLeaderFun = do
     else partActor $ getActorUI aid sess
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
--- of the client's faction. The actor may be not present in the dungeon.
-partPronounLeader :: MonadClientRead m => ActorId -> ActorUI -> m MU.Part
-partPronounLeader aid b = do
+-- of the client's faction.
+partPronounLeader :: MonadClientUI m => ActorId -> m MU.Part
+partPronounLeader aid = do
   mleader <- getsClient sleader
+  bUI <- getsSession $ getActorUI aid
   return $! case mleader of
     Just leader | aid == leader -> "you"
-    _ -> partPronoun b
-
--- | The part of speech describing the actor (designated by actor id
--- and present in the dungeon) or a special name if a leader
--- of the observer's faction.
-partAidLeader :: MonadClientUI m => ActorId -> m MU.Part
-partAidLeader aid = do
-  b <- getsSession $ getActorUI aid
-  partActorLeader aid b
+    _ -> partPronoun bUI
 
 -- | Try to read saved client game state from the file system.
 tryRestore :: MonadClientUI m => m (Maybe (StateClient, Maybe SessionUI))

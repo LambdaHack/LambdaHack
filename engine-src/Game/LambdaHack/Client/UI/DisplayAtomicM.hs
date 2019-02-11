@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , updateItemSlot, markDisplayNeeded, lookAtMove
-  , actorVerbMU, aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
+  , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI, displayGameOverLoot, displayGameOverAnalytics
@@ -165,7 +165,6 @@ displayRespUpdAtomicUI cmd = case cmd of
                              $ (if hpDelta > 0 then "heal" else "lose")
                                <+> tshow (abs hpDelta `divUp` oneM) <> "HP"
     b <- getsState $ getActorBody aid
-    bUI <- getsSession $ getActorUI aid
     arena <- getArenaUI
     side <- getsClient sside
     if | bproj b && (EM.null (beqp b) || isNothing (btrajectory b)) ->
@@ -179,7 +178,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
              alreadyDeadBefore = bhp b - hpDelta <= 0
-         subject <- partActorLeader aid bUI
+         subject <- partActorLeader aid
          tfact <- getsState $ (EM.! bfid b) . sfactionD
          let msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
              targetIsFoe = isFoe (bfid b) tfact side
@@ -198,7 +197,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
          when (hpDelta >= bhp b && bhp b > 0) $
-           actorVerbMU MsgWarning aid bUI "return from the brink of death"
+           aidVerbMU MsgWarning aid "return from the brink of death"
          mleader <- getsClient sleader
          when (Just aid == mleader) $ do
            actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -332,7 +331,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdAlterGold{} -> return ()  -- not displayed on HUD
   UpdSearchTile aid _p toTile -> do
     COps{cotile} <- getsState scops
-    subject <- partAidLeader aid
+    subject <- partActorLeader aid
     let fromTile = fromJust $ Tile.hideAs cotile toTile
         subject2 = MU.Text $ TK.tname $ okind cotile fromTile
         object = MU.Text $ TK.tname $ okind cotile toTile
@@ -510,28 +509,20 @@ lookAtMove aid = do
         adjOur = filter our adjBigAssocs
     unless (null adjOur) stopPlayBack
 
-actorVerbMU :: MonadClientUI m
-            => MsgClass -> ActorId -> ActorUI -> MU.Part -> m ()
-actorVerbMU msgClass aid bUI verb = do
-  subject <- partActorLeader aid bUI
-  msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
-
 aidVerbMU :: MonadClientUI m => MsgClass -> ActorId -> MU.Part -> m ()
 aidVerbMU msgClass aid verb = do
-  bUI <- getsSession $ getActorUI aid
-  actorVerbMU msgClass aid bUI verb
+  subject <- partActorLeader aid
+  msgAdd msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
 aidVerbMU0 :: MonadClientUI m => MsgClass -> ActorId -> MU.Part -> m ()
 aidVerbMU0 msgClass aid verb = do
-  bUI <- getsSession $ getActorUI aid
-  subject <- partActorLeader aid bUI
+  subject <- partActorLeader aid
   msgAdd0 msgClass $ makeSentence [MU.SubjectVerbSg subject verb]
 
 aidVerbDuplicateMU :: MonadClientUI m
                    => MsgClass -> ActorId -> MU.Part -> m Bool
 aidVerbDuplicateMU msgClass aid verb = do
-  bUI <- getsSession $ getActorUI aid
-  subject <- partActorLeader aid bUI
+  subject <- partActorLeader aid
   msgAddDuplicate (makeSentence [MU.SubjectVerbSg subject verb]) msgClass 1
 
 itemVerbMU :: MonadClientUI m
@@ -567,7 +558,7 @@ itemAidVerbMU msgClass aid verb iid ek cstore = do
       itemFull <- getsState $ itemToFull iid
       let lid = blid body
       localTime <- getsState $ getLocalTime lid
-      subject <- partAidLeader aid
+      subject <- partActorLeader aid
       let object = case ek of
             Left (Just n) ->
               assert (n <= k `blame` (aid, verb, iid, cstore))
@@ -597,62 +588,58 @@ createActorUI born aid body = do
   itemFull@ItemFull{itemBase, itemKind} <- getsState $ itemToFull (btrunk body)
   actorUI <- getsSession sactorUI
   let arItem = aspectRecordFull itemFull
-      mbUI = EM.lookup aid actorUI
-  bUI <- case mbUI of
-    Just bUI -> return bUI
-    Nothing -> do
-      UIOptions{uHeroNames} <- getsSession sUIOptions
-      let baseColor = flavourToColor $ jflavour itemBase
-          basePronoun | not (bproj body)
-                        && IK.isymbol itemKind == '@'
-                        && fhasGender (gplayer fact) = "he"
-                      | otherwise = "it"
-          nameFromNumber fn k = if k == 0
-                                then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
-                                else fn <+> tshow k
-          heroNamePronoun k =
-            if gcolor fact /= Color.BrWhite
-            then (nameFromNumber (fname $ gplayer fact) k, "he")
-            else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
-                 $ lookup k uHeroNames
-      (n, bsymbol) <-
-        if | bproj body -> return (0, if IA.checkFlag Ability.Blast arItem
-                                      then IK.isymbol itemKind
-                                      else '*')
-           | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
-           | otherwise -> do
-             let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
-                                  && bcolor bUI == gcolor fact
-                 findHeroK k = isJust $ find (hasNameK k) (EM.elems actorUI)
-                 mhs = map findHeroK [0..]
-                 n = fromJust $ elemIndex False mhs
-             return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
-      let (bname, bpronoun) =
-            if | bproj body ->
-                 let adj = case btrajectory body of
-                       Just (tra, _) | length tra < 5 -> "falling"
-                       _ -> "flying"
-                     -- Not much detail about a fast flying item.
-                     (object1, object2) =
-                       partItemActor (bfid body) factionD localTime
-                                     itemFull (1, [])
-                 in (makePhrase [adj, object1, object2], basePronoun)
-               | baseColor /= Color.BrWhite ->
-                 let name = IK.iname itemKind <+> IA.aELabel arItem
-                 in ( if IA.checkFlag Ability.Unique arItem
-                      then makePhrase [MU.Capitalize $ MU.Text $ "the" <+> name]
-                      else name
-                    , basePronoun )
-               | otherwise -> heroNamePronoun n
-          bcolor | bproj body = if IA.checkFlag Ability.Blast arItem
-                                then baseColor
-                                else Color.BrWhite
-                 | baseColor == Color.BrWhite = gcolor fact
-                 | otherwise = baseColor
-          bUI = ActorUI{..}
-      modifySession $ \sess ->
-        sess {sactorUI = EM.insert aid bUI actorUI}
-      return bUI
+  unless (aid `EM.member` actorUI) $ do
+    UIOptions{uHeroNames} <- getsSession sUIOptions
+    let baseColor = flavourToColor $ jflavour itemBase
+        basePronoun | not (bproj body)
+                      && IK.isymbol itemKind == '@'
+                      && fhasGender (gplayer fact) = "he"
+                    | otherwise = "it"
+        nameFromNumber fn k = if k == 0
+                              then makePhrase [MU.Ws $ MU.Text fn, "Captain"]
+                              else fn <+> tshow k
+        heroNamePronoun k =
+          if gcolor fact /= Color.BrWhite
+          then (nameFromNumber (fname $ gplayer fact) k, "he")
+          else fromMaybe (nameFromNumber (fname $ gplayer fact) k, "he")
+               $ lookup k uHeroNames
+    (n, bsymbol) <-
+      if | bproj body -> return (0, if IA.checkFlag Ability.Blast arItem
+                                    then IK.isymbol itemKind
+                                    else '*')
+         | baseColor /= Color.BrWhite -> return (0, IK.isymbol itemKind)
+         | otherwise -> do
+           let hasNameK k bUI = bname bUI == fst (heroNamePronoun k)
+                                && bcolor bUI == gcolor fact
+               findHeroK k = isJust $ find (hasNameK k) (EM.elems actorUI)
+               mhs = map findHeroK [0..]
+               n = fromJust $ elemIndex False mhs
+           return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
+    let (bname, bpronoun) =
+          if | bproj body ->
+               let adj = case btrajectory body of
+                     Just (tra, _) | length tra < 5 -> "falling"
+                     _ -> "flying"
+                   -- Not much detail about a fast flying item.
+                   (object1, object2) =
+                     partItemActor (bfid body) factionD localTime
+                                   itemFull (1, [])
+               in (makePhrase [adj, object1, object2], basePronoun)
+             | baseColor /= Color.BrWhite ->
+               let name = IK.iname itemKind <+> IA.aELabel arItem
+               in ( if IA.checkFlag Ability.Unique arItem
+                    then makePhrase [MU.Capitalize $ MU.Text $ "the" <+> name]
+                    else name
+                  , basePronoun )
+             | otherwise -> heroNamePronoun n
+        bcolor | bproj body = if IA.checkFlag Ability.Blast arItem
+                              then baseColor
+                              else Color.BrWhite
+               | baseColor == Color.BrWhite = gcolor fact
+               | otherwise = baseColor
+        bUI = ActorUI{..}
+    modifySession $ \sess ->
+      sess {sactorUI = EM.insert aid bUI actorUI}
   let verb = MU.Text $
         if born
         then if bfid body == side then "join you" else "appear suddenly"
@@ -674,7 +661,7 @@ createActorUI born aid body = do
      | born && bproj body -> pushFrame  -- make sure first position displayed
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
-       actorVerbMU MsgActorSpot aid bUI verb
+       aidVerbMU MsgActorSpot aid verb
        animate (blid body) $ actorX coscreen (bpos body)
   when (bfid body /= side) $ do
     when (not (bproj body) && isFoe (bfid body) fact side) $ do
@@ -760,8 +747,7 @@ spotItem verbose iid kit c = do
   when verbose $ case c of
     CActor aid store | store `elem` [CEqp, CInv, CGround, CSha] -> do
       -- Actor fetching an item from or to shared stash, most probably.
-      bUI <- getsSession $ getActorUI aid
-      subject <- partActorLeader aid bUI
+      subject <- partActorLeader aid
       let ownW = ppCStoreWownW False store subject
           verb = MU.Text $ makePhrase $ "be added to" : ownW
       itemVerbMU MsgItemMove iid kit verb c
@@ -796,11 +782,9 @@ displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
   CCUI{coscreen} <- getsSession sccui
   sb <- getsState $ getActorBody source
-  sbUI <- getsSession $ getActorUI source
   tb <- getsState $ getActorBody target
-  tbUI <- getsSession $ getActorUI target
-  spart <- partActorLeader source sbUI
-  tpart <- partActorLeader target tbUI
+  spart <- partActorLeader source
+  tpart <- partActorLeader target
   let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd MsgAction msg
   when (bfid sb /= bfid tb) $ do
@@ -1037,8 +1021,7 @@ discover c iid = do
   (noMsg, nameWhere) <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
-      bOwnerUI <- getsSession $ getActorUI aidOwner
-      partOwner <- partActorLeader aidOwner bOwnerUI
+      partOwner <- partActorLeader aidOwner
       let name = if bproj bOwner
                  then []
                  else ppCStoreWownW True storeOwner partOwner
@@ -1104,15 +1087,15 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxStrike source target iid store ->
     strike False source target iid store
   SfxRecoil source target _ _ -> do
-    spart <- partAidLeader source
-    tpart <- partAidLeader target
+    spart <- partActorLeader source
+    tpart <- partActorLeader target
     msgAdd MsgAction $
       makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   SfxSteal source target iid store ->
     strike True source target iid store
   SfxRelease source target _ _ -> do
-    spart <- partAidLeader source
-    tpart <- partAidLeader target
+    spart <- partActorLeader source
+    tpart <- partActorLeader target
     msgAdd MsgAction $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
   SfxProject aid iid cstore ->
     itemAidVerbMU MsgAction aid "fling" iid (Left $ Just 1) cstore
@@ -1155,7 +1138,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           when (bhp b > 0) $ feelLook MsgEffectMinor adjective
         feelLook msgClass adjective =
           let verb = if isOurCharacter then "feel" else "look"
-          in actorVerbMU msgClass aid bUI $ MU.Text $ verb <+> adjective
+          in aidVerbMU msgClass aid $ MU.Text $ verb <+> adjective
     case effect of
         IK.Burn{} -> do
           feelLookHP "burned"
@@ -1202,18 +1185,18 @@ displayRespSfxAtomicUI sfx = case sfx of
             msgAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
           stopPlayBack
-        IK.Impress -> actorVerbMU MsgEffectMinor aid bUI "be awestruck"
-        IK.PutToSleep -> actorVerbMU MsgEffectMajor aid bUI "be put to sleep"
-        IK.Yell -> actorVerbMU MsgMisc aid bUI "start"
+        IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
+        IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
+        IK.Yell -> aidVerbMU MsgMisc aid "start"
         IK.Summon grp p -> do
           let verb = if bproj b then "lure" else "summon"
               object = (if p == 1  -- works, because exact number sent, not dice
                         then MU.AW
                         else MU.Ws) $ MU.Text $ fromGroupName grp
-          actorVerbMU MsgEffectMajor aid bUI $ MU.Phrase [verb, object]
+          aidVerbMU MsgEffectMajor aid $ MU.Phrase [verb, object]
         IK.Ascend up -> do
           COps{cocave} <- getsState scops
-          actorVerbMU MsgEffectMajor aid bUI $ MU.Text $
+          aidVerbMU MsgEffectMajor aid $ MU.Text $
             "find a way" <+> if up then "upstairs" else "downstairs"
           when isOurLeader $ do
             destinations <- getsState $ whereTo (blid b) (bpos b) up
@@ -1238,55 +1221,55 @@ displayRespSfxAtomicUI sfx = case sfx of
               <> ", forms a perimeter, repacks its belongings"
               <> farewells <+> "and leaves triumphant."
         IK.Escape{} -> return ()
-        IK.Paralyze{} -> actorVerbMU MsgEffect aid bUI "be paralyzed"
+        IK.Paralyze{} -> aidVerbMU MsgEffect aid "be paralyzed"
         IK.ParalyzeInWater{} ->
-          actorVerbMU MsgEffectMinor aid bUI "move with difficulty"
+          aidVerbMU MsgEffectMinor aid "move with difficulty"
         IK.InsertMove d ->
           if Dice.supDice d >= 10
-          then actorVerbMU MsgEffect aid bUI "act with extreme speed"
-          else actorVerbMU MsgEffectMinor aid bUI "move swiftly"
+          then aidVerbMU MsgEffect aid "act with extreme speed"
+          else aidVerbMU MsgEffectMinor aid "move swiftly"
         IK.Teleport t | Dice.supDice t <= 9 ->
-          actorVerbMU MsgEffectMinor aid bUI "blink"
-        IK.Teleport{} -> actorVerbMU MsgEffect aid bUI "teleport"
+          aidVerbMU MsgEffectMinor aid "blink"
+        IK.Teleport{} -> aidVerbMU MsgEffect aid "teleport"
         IK.CreateItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
-        IK.DropItem{} -> actorVerbMU MsgEffect aid bUI "be stripped"
+        IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
         IK.PolyItem -> do
-          subject <- partActorLeader aid bUI
+          subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd MsgEffect $ makeSentence
             [ MU.SubjectVerbSg subject "repurpose", "what lies", ppstore
             , "to a common item of the current level" ]
         IK.RerollItem -> do
-          subject <- partActorLeader aid bUI
+          subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd MsgEffect $ makeSentence
             [ MU.SubjectVerbSg subject "reshape", "what lies", ppstore
             , "striving for the highest possible standards" ]
         IK.DupItem -> do
-          subject <- partActorLeader aid bUI
+          subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
           msgAdd MsgEffect $ makeSentence
             [MU.SubjectVerbSg subject "multiply", "what lies", ppstore]
         IK.Identify -> do
-          subject <- partActorLeader aid bUI
-          pronoun <- partPronounLeader aid bUI
+          subject <- partActorLeader aid
+          pronoun <- partPronounLeader aid
           msgAdd MsgEffectMinor $ makeSentence
             [ MU.SubjectVerbSg subject "look at"
             , MU.WownW pronoun $ MU.Text "inventory"
             , "intensely" ]
         IK.Detect d _ -> do
-          subject <- partActorLeader aid bUI
+          subject <- partActorLeader aid
           let verb = MU.Text $ detectToVerb d
               object = MU.Ws $ MU.Text $ detectToObject d
           msgAdd MsgEffectMinor $
             makeSentence [MU.SubjectVerbSg subject verb, object]
           unless (d == IK.DetectHidden) $  -- too common and too weak
             displayMore ColorFull ""
-        IK.SendFlying{} -> actorVerbMU MsgEffect aid bUI "be sent flying"
-        IK.PushActor{} -> actorVerbMU MsgEffect aid bUI "be pushed"
-        IK.PullActor{} -> actorVerbMU MsgEffect aid bUI "be pulled"
-        IK.DropBestWeapon -> actorVerbMU MsgEffectMajor aid bUI "be disarmed"
+        IK.SendFlying{} -> aidVerbMU MsgEffect aid "be sent flying"
+        IK.PushActor{} -> aidVerbMU MsgEffect aid "be pushed"
+        IK.PullActor{} -> aidVerbMU MsgEffect aid "be pulled"
+        IK.DropBestWeapon -> aidVerbMU MsgEffectMajor aid "be disarmed"
         IK.ActivateInv{} -> return ()
         IK.ApplyPerfume ->
           msgAdd MsgEffectMinor
@@ -1294,7 +1277,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.OneOf{} -> return ()
         IK.OnSmash{} -> error $ "" `showFailure` sfx
         IK.VerbMsg t -> do
-          actorVerbMU MsgNoLonger aid bUI $ MU.Text t
+          aidVerbMU MsgNoLonger aid $ MU.Text t
           stopPlayBack  -- usually something important, e.g., can move again,
                         -- so interrupt resting
         IK.Composite{} -> error $ "" `showFailure` sfx
@@ -1316,14 +1299,12 @@ displayRespSfxAtomicUI sfx = case sfx of
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source
     lvl <- getLevel $ blid sb
-    sbUI <- getsSession $ getActorUI source
-    spart <- partActorLeader source sbUI
+    spart <- partActorLeader source
     let object = MU.AW $ MU.Text $ TK.tname $ okind cotile $ lvl `at` pos
     msgAdd MsgVeryRare $! makeSentence
       [MU.SubjectVerbSg spart "collide", "painfully with", object]
   SfxTaunt voluntary aid -> do
-    sbUI <- getsSession $ getActorUI aid
-    spart <- partActorLeader aid sbUI
+    spart <- partActorLeader aid
     (_heardSubject, verb) <- displayTaunt voluntary rndToActionForget aid
     msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
@@ -1429,8 +1410,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidSeen <- getsState $ memActor aid lid
     if aidSeen then do
       b <- getsState $ getActorBody aid
-      bUI <- getsSession $ getActorUI aid
-      aidPhrase <- partActorLeader aid bUI
+      aidPhrase <- partActorLeader aid
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
@@ -1457,10 +1437,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
     sourceSeen <- getsState $ memActor source lid
     targetSeen <- getsState $ memActor target lid
     if sourceSeen && targetSeen then do
-      sbUI <- getsSession $ getActorUI source
-      tbUI <- getsSession $ getActorUI target
-      spart <- partActorLeader source sbUI
-      tpart <- partActorLeader target tbUI
+      spart <- partActorLeader source
+      tpart <- partActorLeader target
       return $
         Just ( MsgWarning
              , makeSentence
@@ -1476,18 +1454,16 @@ strike catch source target iid cstore = assert (source /= target) $ do
   if not sourceSeen then
     animate (blid tb) $ subtleHit coscreen (bpos tb)
   else do
-    tbUI <- getsSession $ getActorUI target
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
     sMaxSk <- getsState $ getActorMaxSkills source
-    sbUI <- getsSession $ getActorUI source
-    spart <- partActorLeader source sbUI
-    tpartRaw <- partActorLeader target tbUI
+    spart <- partActorLeader source
+    tpartRaw <- partActorLeader target
     let tpart = MU.Phrase $ if bhp tb <= 0 && tpartRaw /= "you"
                             then ["fallen", tpartRaw]
                             else [tpartRaw]
-    spronoun <- partPronounLeader source sbUI
-    tpronoun <- partPronounLeader target tbUI
+    spronoun <- partPronounLeader source
+    tpronoun <- partPronounLeader target
     localTime <- getsState $ getLocalTime (blid tb)
     bag <- getsState $ getBodyStoreBag sb cstore
     itemFullWeapon <- getsState $ itemToFull iid
