@@ -70,6 +70,7 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -1484,10 +1485,19 @@ strike catch source target iid cstore = assert (source /= target) $ do
           ( k * IA.getSkill Ability.SkArmorMelee (aspectRecordFull itemFull2)
           , ( iidArmor
             , itemKind itemFull2 ) )
-        eqpAndOrgArmor = map rateArmor $ filter notCond eqpOrgKit
         abs15 (v, _) = abs v >= 15
         condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
-        verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
+        fstG0 (v, _) = v > 0
+        eqpAndOrgArmor = filter fstG0 $ map rateArmor $ filter notCond eqpOrgKit
+    blockWithWhat <- case eqpAndOrgArmor of
+      [] -> return []
+      _ -> do
+        (iidArmor, itemKind) <- rndToActionForget $ frequency
+                                $ toFreq "msg armor" eqpAndOrgArmor
+        let name | iidArmor == btrunk tb = "trunk"
+                 | otherwise = MU.Text $ IK.iname itemKind
+        return ["with", MU.WownW tpronoun name]
+    let verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
@@ -1562,15 +1572,6 @@ strike catch source target iid cstore = assert (source /= target) $ do
                                 then "avert it"
                                 else "ward it off")
           in MU.SubjectVerbSg subjectBlock verbBlock
-        blockWithWhat | null eqpAndOrgArmor = []
-                      | otherwise =
-          let (armor, (iidArmor, itemKind)) =
-                maximumBy (Ord.comparing fst) eqpAndOrgArmor
-          in if armor >= 15
-             then let name | iidArmor == btrunk tb = "trunk"
-                           | otherwise = MU.Text $ IK.iname itemKind
-                  in [ "with", MU.WownW tpronoun name ]
-             else []
         yetButAnd
           | deadliness >= 20 && hurtMult <= 70 = ", but"
               -- strong attack, but defence surprisingly effective
