@@ -163,7 +163,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     CCUI{coscreen} <- getsSession sccui
     aidVerbMU MsgNumeric aid $ MU.Text
                              $ (if hpDelta > 0 then "heal" else "lose")
-                               <+> tshow (abs hpDelta `divUp` oneM) <> "HP"
+                               <+> tshow (abs hpDelta `divUp` oneM) <+> "HP"
     b <- getsState $ getActorBody aid
     arena <- getArenaUI
     side <- getsClient sside
@@ -1572,7 +1572,12 @@ strike catch source target iid cstore = assert (source /= target) $ do
           | deadliness < 20 && hurtMult > 70 = ", yet"
               -- weak attack, yet surprisingly defense not too successful
           | otherwise = " and"  -- no surprises
-        msgArmor = if hurtMult > 90 && (null condArmor || deadliness < 100)
+        projectileHitsWeakly = bproj sb && deadliness < 20
+        msgArmor = if not projectileHitsWeakly
+                        -- ensures if attack msg terse, armor message
+                        -- mentions object, so we know who is hit
+                      && hurtMult > 90
+                      && (null condArmor || deadliness < 100)
                    then ""  -- at most minor armor, relatively to skill
                             -- of the hit, so we don't talk about blocking,
                             -- unless a condition is at play, too
@@ -1633,16 +1638,16 @@ strike catch source target iid cstore = assert (source /= target) $ do
                                | targetIsFriend = MsgRangedPowerfulBad
                                | otherwise = MsgRanged
              (attackParts, msgRanged)
+               | projectileHitsWeakly =
+                 ( [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
+                 , MsgRanged )
                | deadliness >= 300 =
                  ( [MU.SubjectVerbSg spart verb, tpart, "powerfully"]
                  , if targetIsFriend || deadliness >= 700
                    then msgRangedPowerful
                    else MsgRanged )
-               | deadliness >= 20 =
-                 ( [MU.SubjectVerbSg spart verb, tpart]  -- strong, for a proj
-                 , MsgRanged )
                | otherwise =
-                 ( [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
+                 ( [MU.SubjectVerbSg spart verb, tpart]  -- strong, for a proj
                  , MsgRanged )
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
