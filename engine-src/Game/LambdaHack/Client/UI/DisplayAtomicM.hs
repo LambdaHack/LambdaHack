@@ -1563,7 +1563,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
                      (tpronoun, if actorWaits tb
                                 then "block"
                                 else "parry")
-                   | tpronoun == "it" ->
+                   | tpronoun == "it"
+                     || projectileHitsWeakly && tpronoun /= "you" ->
+                     -- Avoid ambiguity.
                      (partActor tbUI, if actorWaits tb
                                       then "deflect it"
                                       else "fend it off")
