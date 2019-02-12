@@ -179,7 +179,7 @@ minDice :: Dice -> Dice -> Dice
 minDice = DiceMin
 
 maxDice :: Dice -> Dice -> Dice
-maxDice = DiceMin
+maxDice = DiceMax
 
 -- | Minimal and maximal possible value of the dice.
 --
