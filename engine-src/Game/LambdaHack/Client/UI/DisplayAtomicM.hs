@@ -1489,15 +1489,18 @@ strike catch source target iid cstore = assert (source /= target) $ do
         condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
         fstG0 (v, _) = v > 0
         eqpAndOrgArmor = filter fstG0 $ map rateArmor $ filter notCond eqpOrgKit
-    blockWithWhat <- case eqpAndOrgArmor of
-      [] -> return []
-      _ -> do
-        (iidArmor, itemKind) <- rndToActionForget $ frequency
-                                $ toFreq "msg armor" eqpAndOrgArmor
-        let name | iidArmor == btrunk tb = "trunk"
-                 | otherwise = MU.Text $ IK.iname itemKind
-        return ["with", MU.WownW tpronoun name]
-    let verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
+    mblockArmor <- case eqpAndOrgArmor of
+      [] -> return Nothing
+      _ -> Just
+           <$> rndToActionForget (frequency $ toFreq "msg armor" eqpAndOrgArmor)
+    let (blockWithWhat, blockWithWeapon) = case mblockArmor of
+          Nothing -> ([], False)
+          Just (iidArmor, itemKind) ->
+            let name | iidArmor == btrunk tb = "trunk"
+                     | otherwise = MU.Text $ IK.iname itemKind
+            in ( ["with", MU.WownW tpronoun name]
+               , Dice.supDice (IK.idamage itemKind) > 0 )
+        verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
@@ -1560,9 +1563,9 @@ strike catch source target iid cstore = assert (source /= target) $ do
         blockPhrase =
           let (subjectBlock, verbBlock) =
                 if | not $ bproj sb ->
-                     (tpronoun, if actorWaits tb
-                                then "block"
-                                else "parry")
+                     (tpronoun, if blockWithWeapon
+                                then "parry"
+                                else "block")
                    | tpronoun == "it"
                      || projectileHitsWeakly && tpronoun /= "you" ->
                      -- Avoid ambiguity.
