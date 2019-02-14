@@ -236,8 +236,9 @@ renderRepetition (RepMsgN s 0) = msgLine s
 renderRepetition (RepMsgN s 1) = msgLine s
 renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 
-findInReport :: (AttrLine -> Bool) -> Report -> Maybe Msg
-findInReport f (Report xns) = find (f . msgLine) $ map repMsg xns
+findInReport :: (String -> Bool) -> Report -> Maybe Msg
+findInReport f (Report xns) =
+  find (f . map Color.charFromW32 . msgLine) $ map repMsg xns
 
 -- * History
 

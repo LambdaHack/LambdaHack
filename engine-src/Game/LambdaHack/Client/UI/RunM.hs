@@ -29,19 +29,18 @@ import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
-import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Core.Point
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientUI m
@@ -111,9 +110,8 @@ continueRunDir params = case params of
            , runMembers = aid : _
            , runInitial } -> do
     report <- getsSession $ newReport . shistory
-    let boringMsgs = map stringToAL
-          [ "You hear a distant"
-          , "You hear distant"
+    let boringMsgs =
+          [ "You hear"
           , "You overhear"
           , "You move with difficulty."
           , "You move swiftly."
