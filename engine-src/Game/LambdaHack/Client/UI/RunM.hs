@@ -110,19 +110,8 @@ continueRunDir params = case params of
            , runMembers = aid : _
            , runInitial } -> do
     report <- getsSession $ newReport . shistory
-    let boringMsgs =
-          [ "You hear"
-          , "You overhear"
-          , "You move with difficulty."
-          , "You move swiftly."
-          , "walk over"
-          , "reveals that the"
-          , "Macro will be recorded"
-          , "Macro activated"
-          , "Voicing '" ]
-        boring l = any (`isInfixOf` l) boringMsgs
-        msgShown = isJust $ findInReport (not . boring) report
-    if msgShown then return $ Left "message shown"
+    let msgInterrupts = anyInReport interruptsRunning report
+    if msgInterrupts then return $ Left "message shown"
     else do
       cops@COps{cotile} <- getsState scops
       rbody <- getsState $ getActorBody runLeader

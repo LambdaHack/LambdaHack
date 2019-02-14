@@ -3,9 +3,10 @@
 -- and then saved to player history.
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
-    Msg, toMsg, MsgClass(..)
+    Msg, toMsg
+  , MsgClass(..), interruptsRunning
     -- * Report
-  , Report, nullReport, consReport, renderReport, findInReport
+  , Report, nullReport, consReport, renderReport, anyInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
   , renderHistory
@@ -95,6 +96,7 @@ data MsgClass =
   | MsgItemSpot
   | MsgItemMove
   | MsgAction
+  | MsgActionMinor
   | MsgEffectMajor
   | MsgEffect
   | MsgEffectMinor
@@ -139,6 +141,17 @@ isDisplayed MsgNumeric = False
 isDisplayed MsgSpam = False
 isDisplayed _ = True
 
+interruptsRunning :: MsgClass -> Bool
+interruptsRunning MsgHeard = False
+interruptsRunning MsgEffectMinor = False
+interruptsRunning MsgActionMinor = False
+interruptsRunning MsgNumeric = False
+interruptsRunning MsgSpam = False
+interruptsRunning MsgPrompt = False
+interruptsRunning MsgPromptFocus = False
+interruptsRunning MsgAlert = False
+interruptsRunning _ = True
+
 -- Only @White@ color gets replaced by this one.
 msgColor :: MsgClass -> Color.Color
 msgColor MsgAdmin = Color.White
@@ -163,6 +176,7 @@ msgColor MsgFirstEnemySpot = Color.Red
 msgColor MsgItemSpot = Color.White
 msgColor MsgItemMove = Color.White
 msgColor MsgAction = Color.White
+msgColor MsgActionMinor = Color.White
 msgColor MsgEffectMajor = Color.BrCyan
 msgColor MsgEffect = Color.Cyan
 msgColor MsgEffectMinor = Color.White
@@ -236,9 +250,8 @@ renderRepetition (RepMsgN s 0) = msgLine s
 renderRepetition (RepMsgN s 1) = msgLine s
 renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
 
-findInReport :: (String -> Bool) -> Report -> Maybe Msg
-findInReport f (Report xns) =
-  find (f . map Color.charFromW32 . msgLine) $ map repMsg xns
+anyInReport :: (MsgClass -> Bool) -> Report -> Bool
+anyInReport f (Report xns) = any (f . msgClass . repMsg) xns
 
 -- * History
 

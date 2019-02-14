@@ -1120,12 +1120,14 @@ displayRespSfxAtomicUI sfx = case sfx of
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
     let name = TK.tname $ okind cotile $ lvl `at` p
-        verb = if p == bpos b then "walk over" else "exploit"
+        (msgClass, verb) = if p == bpos b
+                           then (MsgActionMinor, "walk over")
+                           else (MsgAction, "exploit")
           -- TODO: "struggle" when harmful, "wade through" when deep, etc.
           -- possibly use the verb from the first embedded item,
           -- but it's meant to go with the item as subject, no the actor
           -- TODO: "harass" when somebody else suffers the effect
-    aidVerbMU MsgAction aid $ MU.Text $ verb <+> name
+    aidVerbMU msgClass aid $ MU.Text $ verb <+> name
   SfxShun aid _p ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
