@@ -1062,11 +1062,8 @@ alterWithPointerHuman ts = do
       t = lvl `at` tpos
   if px >= 0 && py - mapStartY >= 0
      && px < rXmax && py - mapStartY < rYmax
-  then
-    alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
-  else do
-    stopPlayBack
-    failWith "never mind"
+  then alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
+  else failWith "never mind"
 
 -- * Help
 

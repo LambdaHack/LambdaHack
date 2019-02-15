@@ -143,24 +143,27 @@ isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
 interruptsRunning MsgHeard = False
+  -- MsgHeardClose interrupts, even if running started while hearing close
 interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgNumeric = False
 interruptsRunning MsgSpam = False
 interruptsRunning MsgPrompt = False
 interruptsRunning MsgPromptFocus = False
-interruptsRunning MsgAlert = False
+  -- MsgAlert means something went wrong, so alarm
 interruptsRunning _ = True
 
 disturbsResting :: MsgClass -> Bool
 disturbsResting MsgHeard = False
+disturbsResting MsgHeardClose = False -- handled separately
+disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgEffectMinor = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgNumeric = False
 disturbsResting MsgSpam = False
 disturbsResting MsgPrompt = False
 disturbsResting MsgPromptFocus = False
-disturbsResting MsgAlert = False
+  -- MsgAlert means something went wrong, so alarm
 disturbsResting _ = True
 
 -- Only @White@ color gets replaced by this one.

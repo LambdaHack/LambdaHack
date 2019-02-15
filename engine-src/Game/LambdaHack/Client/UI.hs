@@ -179,7 +179,6 @@ humanCommand = do
             return cmdS
           Left Nothing -> loop
           Left (Just err) -> do
-            stopPlayBack
             -- Avoid "*never mind*<x4>".
             let l0 = ["*never mind*", "*aiming started*"]
                 t = showFailError err

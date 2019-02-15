@@ -128,7 +128,6 @@ displayRespUpdAtomicUI cmd = case cmd of
                    (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> error $ "" `showFailure` c
-    stopPlayBack
   UpdDestroyItem iid _ kit c -> do
     itemVerbMU MsgItemDestruction iid kit "disappear" c
     lid <- getsState $ lidFromC c
@@ -211,9 +210,8 @@ displayRespUpdAtomicUI cmd = case cmd of
            -- Also, no spam for non-leaders.
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
                  && bhp b - hpDelta < xM (Ability.getSk Ability.SkMaxHP
-                                                  actorMaxSk)) $ do
+                                                  actorMaxSk)) $
              msgAdd MsgVeryRare "You recover your health fully."
-             stopPlayBack
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
@@ -223,10 +221,9 @@ displayRespUpdAtomicUI cmd = case cmd of
              when currentWarning $ do
                previousWarning <-
                  getsState $ checkWarningHP sUIOptions aid (bhp b - hpDelta)
-               unless previousWarning $ do
+               unless previousWarning $
                  aidVerbMU0 MsgDeathThreat aid
                             "be down to a dangerous health level"
-                 stopPlayBack
   UpdRefillCalm _ 0 -> return ()
   UpdRefillCalm aid calmDelta -> do
     side <- getsClient sside
@@ -745,7 +742,6 @@ spotItem verbose iid kit c = do
                 modifySession $ \sess ->
                   sess {sxhair = Just $ TPoint (TItem bag) lidV p}
           itemVerbMU MsgItemSpot iid kit "be located" c
-          stopPlayBack
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
@@ -791,7 +787,7 @@ displaceActorUI source target = do
   spart <- partActorLeader source
   tpart <- partActorLeader target
   let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
-  msgAdd MsgAction msg
+  msgAdd MsgActionMinor msg
   when (bfid sb /= bfid tb) $ do
     lookAtMove source
     lookAtMove target
@@ -1191,7 +1187,6 @@ displayRespSfxAtomicUI sfx = case sfx of
             let verb = "be now under"
             msgAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
-          stopPlayBack
         IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
         IK.PutToSleep -> aidVerbMU MsgEffectMajor aid "be put to sleep"
         IK.Yell -> aidVerbMU MsgMisc aid "start"
@@ -1283,10 +1278,7 @@ displayRespSfxAtomicUI sfx = case sfx of
                  "The fragrance quells all scents in the vicinity."
         IK.OneOf{} -> return ()
         IK.OnSmash{} -> error $ "" `showFailure` sfx
-        IK.VerbMsg t -> do
-          aidVerbMU MsgNoLonger aid $ MU.Text t
-          stopPlayBack  -- usually something important, e.g., can move again,
-                        -- so interrupt resting
+        IK.VerbMsg t -> aidVerbMU MsgNoLonger aid $ MU.Text t
         IK.Composite{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
