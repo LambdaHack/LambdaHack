@@ -141,17 +141,20 @@ isSavedToHistory MsgAlert = False
 isSavedToHistory _ = True
 
 isDisplayed :: MsgClass -> Bool
+isDisplayed MsgRunStop = False
 isDisplayed MsgNumeric = False
 isDisplayed MsgSpam = False
 isDisplayed MsgMacro = False
-isDisplayed MsgRunStop = False
 isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
 interruptsRunning MsgHeard = False
   -- MsgHeardClose interrupts, even if running started while hearing close
 interruptsRunning MsgEffectMinor = False
+interruptsRunning MsgItemDisco = False
+interruptsRunning MsgItemMove = False
 interruptsRunning MsgActionMinor = False
+interruptsRunning MsgAtFeet = False
 interruptsRunning MsgNumeric = False
 interruptsRunning MsgSpam = False
 interruptsRunning MsgMacro = False
@@ -166,7 +169,10 @@ disturbsResting MsgHeard = False
 disturbsResting MsgHeardClose = False -- handled separately
 disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgEffectMinor = False
+disturbsResting MsgItemDisco = False
+disturbsResting MsgItemMove = False
 disturbsResting MsgActionMinor = False
+disturbsResting MsgAtFeet = False
 disturbsResting MsgNumeric = False
 disturbsResting MsgSpam = False
 disturbsResting MsgMacro = False

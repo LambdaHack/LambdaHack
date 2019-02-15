@@ -41,6 +41,7 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientUI m
@@ -180,7 +181,7 @@ tryTurning aid = do
 checkAndRun :: MonadClientRead m
             => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
-  COps{cotile} <- getsState scops
+  COps{cotile, coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
@@ -218,13 +219,20 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      featAt = TK.actionFeatures (smarkSuspect > 0) . okind cotile
-      terrainChangeMiddle =
-        featAt tileThere `notElem` map featAt [tileLast, tileHere]
-      terrainChangeLeft = featAt leftForwardTileHere
-                          `notElem` map featAt leftTilesLast
-      terrainChangeRight = featAt rightForwardTileHere
-                           `notElem` map featAt rightTilesLast
+      attrCharAt tile =  -- copied from @drawFrameTerrain@ and simplified
+        let TK.TileKind{tsymbol, tcolor} = okind cotile tile
+            fg | smarkSuspect > 0
+                 && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
+               | smarkSuspect > 1
+                 && Tile.isHideAs coTileSpeedup tile = Color.Magenta
+               | otherwise = tcolor  -- disregarding tcolor2
+        in Color.attrChar2ToW32 fg tsymbol
+      terrainChangeMiddle = attrCharAt tileThere
+                            `notElem` map attrCharAt [tileLast, tileHere]
+      terrainChangeLeft = attrCharAt leftForwardTileHere
+                          `notElem` map attrCharAt leftTilesLast
+      terrainChangeRight = attrCharAt rightForwardTileHere
+                           `notElem` map attrCharAt rightTilesLast
       itemChangeLeft = posHasItems leftForwardPosHere
                        `notElem` map posHasItems leftPsLast
       itemChangeRight = posHasItems rightForwardPosHere

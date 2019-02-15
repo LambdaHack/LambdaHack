@@ -3,7 +3,7 @@
 module Game.LambdaHack.Content.TileKind
   ( TileKind(..), Feature(..)
   , makeData
-  , actionFeatures, isUknownSpace, unknownId
+  , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
   , talterForStairs, floorSymbol
 #ifdef EXPOSE_INTERNAL
@@ -21,14 +21,12 @@ import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Char as Char
 import           Data.Hashable
-import qualified Data.IntSet as IS
-import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
+import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.ContentData
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -199,40 +197,6 @@ hardwiredTileGroups :: [GroupName TileKind]
 hardwiredTileGroups =
   [ "unknown space", "legendLit", "legendDark", "unknown outer fence"
   , "basic outer fence" ]
-
--- | Features of tiles that differentiate them substantially from one another.
--- The intention is the player can easily tell such tiles apart by their
--- behaviour and only looking at the map, not tile name nor description.
--- So if running uses this function, it won't stop at places that the player
--- can't himself tell from other places, and so running does not confer
--- any advantages, except UI convenience. Hashes are accurate enough
--- for our purpose, given that we use arbitrary heuristics anyway.
-actionFeatures :: Bool -> TileKind -> IS.IntSet
-actionFeatures markSuspect t =
-  let stripLight grp = maybe grp toGroupName
-                       $ maybe (T.stripSuffix "Dark" $ fromGroupName grp) Just
-                       $ T.stripSuffix "Lit" $ fromGroupName grp
-      f feat = case feat of
-        Embed{} -> Just feat
-        OpenTo grp -> Just $ OpenTo $ stripLight grp
-        CloseTo grp -> Just $ CloseTo $ stripLight grp
-        ChangeTo grp -> Just $ ChangeTo $ stripLight grp
-        Walkable -> Just feat
-        Clear -> Just feat
-        HideAs{} -> Nothing
-        BuildAs{} -> Nothing
-        RevealAs{} -> if markSuspect then Just feat else Nothing
-        ObscureAs{} -> if markSuspect then Just feat else Nothing
-        Dark -> Nothing  -- not important any longer, after FOV computed
-        VeryOftenItem -> Nothing
-        OftenItem -> Nothing
-        OftenActor -> Nothing
-        NoItem -> Nothing
-        NoActor -> Nothing
-        ConsideredByAI -> Nothing
-        Trail -> Just feat  -- doesn't affect tile behaviour, but important
-        Spice -> Nothing
-  in IS.fromList $ map hash $ mapMaybe f $ tfeature t
 
 isUknownSpace :: ContentId TileKind -> Bool
 {-# INLINE isUknownSpace #-}

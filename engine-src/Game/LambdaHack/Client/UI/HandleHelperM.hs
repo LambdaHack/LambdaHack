@@ -546,7 +546,6 @@ lookAtItems canSee p aid = do
           MU.Phrase [nWs ii, "and other items"]
           -- the actor is ours, so can see details with inventory commands
         iis -> MU.WWandW $ map nWs iis
-
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>
