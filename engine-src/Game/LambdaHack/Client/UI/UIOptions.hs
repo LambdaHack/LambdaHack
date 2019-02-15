@@ -34,7 +34,6 @@ data UIOptions = UIOptions
   , uHistoryMax         :: Int
   , uMaxFps             :: Int
   , uNoAnim             :: Bool
-  , uRunStopMsgs        :: Bool
   , uhpWarningPercent   :: Int
       -- ^ HP percent at which warning is emitted.
   , uMessageColors      :: Maybe [(MsgClass, Color.Color)]

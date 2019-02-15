@@ -79,7 +79,6 @@ parseConfig cfg =
       uHistoryMax = getOption "historyMax"
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
-      uRunStopMsgs = getOption "runStopMsgs"
       uhpWarningPercent = getOption "hpWarningPercent"
       uMessageColors = getOptionMaybe "messageColors"
       uCmdline = words $ getOption "overrideCmdline"

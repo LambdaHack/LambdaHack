@@ -44,7 +44,7 @@ sdlBitmapSizeAdd = 0
 historyMax = 5000
 maxFps = 30
 noAnim = False
-runStopMsgs = False
+; runStopMsgs is now ignored
 hpWarningPercent = 20
 ; Uncomment to make all messages white.
 ; messageColors = []

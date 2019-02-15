@@ -61,7 +61,6 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.SlideshowM
-import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
@@ -90,9 +89,7 @@ import           Game.LambdaHack.Definition.Defs
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
-  UIOptions{uRunStopMsgs} <- getsSession sUIOptions
-  when uRunStopMsgs $
-    promptAdd $ "Macro activated:" <+> T.pack (intercalate " " kms)
+  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * SortSlots
 

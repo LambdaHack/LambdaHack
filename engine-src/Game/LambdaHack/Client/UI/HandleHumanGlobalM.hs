@@ -522,7 +522,6 @@ runOnceAheadHuman = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
-  UIOptions{uRunStopMsgs} <- getsSession sUIOptions
   keyPressed <- anyKeyPressed
   srunning <- getsSession srunning
   -- When running, stop if disturbed. If not running, stop at once.
@@ -533,24 +532,21 @@ runOnceAheadHuman = do
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
-      if uRunStopMsgs
-      then weaveJust <$> failWith "run stop: automatic leader change"
-      else return $ Left Nothing
+      msgAdd MsgRunStop "run stop: automatic leader change"
+      return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
       stopPlayBack
-      if uRunStopMsgs
-      then weaveJust <$> failWith "run stop: key pressed"
-      else weaveJust <$> failWith "interrupted"
+      msgAdd MsgRunStop "run stop: key pressed"
+      weaveJust <$> failWith "interrupted"
     Just runParams -> do
       arena <- getArenaUI
       runOutcome <- continueRun arena runParams
       case runOutcome of
         Left stopMsg -> do
           stopPlayBack
-          if uRunStopMsgs
-          then weaveJust <$> failWith ("run stop:" <+> stopMsg)
-          else return $ Left Nothing
+          msgAdd MsgRunStop ("run stop:" <+> stopMsg)
+          return $ Left Nothing
         Right runCmd ->
           return $ Right runCmd
 

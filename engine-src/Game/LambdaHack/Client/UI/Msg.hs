@@ -119,6 +119,8 @@ data MsgClass =
   | MsgAtFeet
   | MsgNumeric
   | MsgSpam
+  | MsgMacro
+  | MsgRunStop
   | MsgPrompt
   | MsgPromptFocus
   | MsgAlert
@@ -131,6 +133,8 @@ instance Binary MsgClass
 isSavedToHistory :: MsgClass -> Bool
 isSavedToHistory MsgNumeric = False
 isSavedToHistory MsgSpam = False
+isSavedToHistory MsgMacro = False
+isSavedToHistory MsgRunStop = False
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgPromptFocus = False
 isSavedToHistory MsgAlert = False
@@ -139,6 +143,8 @@ isSavedToHistory _ = True
 isDisplayed :: MsgClass -> Bool
 isDisplayed MsgNumeric = False
 isDisplayed MsgSpam = False
+isDisplayed MsgMacro = False
+isDisplayed MsgRunStop = False
 isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
@@ -148,6 +154,8 @@ interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgActionMinor = False
 interruptsRunning MsgNumeric = False
 interruptsRunning MsgSpam = False
+interruptsRunning MsgMacro = False
+interruptsRunning MsgRunStop = False
 interruptsRunning MsgPrompt = False
 interruptsRunning MsgPromptFocus = False
   -- MsgAlert means something went wrong, so alarm
@@ -161,6 +169,8 @@ disturbsResting MsgEffectMinor = False
 disturbsResting MsgActionMinor = False
 disturbsResting MsgNumeric = False
 disturbsResting MsgSpam = False
+disturbsResting MsgMacro = False
+disturbsResting MsgRunStop = False
 disturbsResting MsgPrompt = False
 disturbsResting MsgPromptFocus = False
   -- MsgAlert means something went wrong, so alarm
@@ -213,6 +223,8 @@ msgColor MsgDone = Color.White
 msgColor MsgAtFeet = Color.White
 msgColor MsgNumeric = Color.White
 msgColor MsgSpam = Color.White
+msgColor MsgMacro = Color.White
+msgColor MsgRunStop = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgPromptFocus = Color.Green
 msgColor MsgAlert = Color.BrYellow

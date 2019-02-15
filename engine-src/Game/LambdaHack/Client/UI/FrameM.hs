@@ -28,7 +28,6 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
@@ -82,8 +81,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
-      UIOptions{uRunStopMsgs} <- getsSession sUIOptions
-      when uRunStopMsgs $ promptAdd0 $ "Voicing '" <> tshow km <> "'."
+      msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
       return km
     _ : _ -> do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
