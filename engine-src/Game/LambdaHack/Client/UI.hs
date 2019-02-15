@@ -150,13 +150,13 @@ humanCommand = do
               | k == 0 = LastRecord [] seqCurrent 0
               | otherwise = LastRecord [] (seqCurrent ++ seqPrevious) (k - 1)
         modifySession $ \sess -> sess {slastRecord}
-        lastPlay <- getsSession slastPlay
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         when (bhp b <= 0) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
         km <- promptGetKey ColorFull over False []
         -- Messages shown, so update history and reset current report.
+        lastPlay <- getsSession slastPlay
         when (null lastPlay) recordHistory
         abortOrCmd <- do
           -- Look up the key.
