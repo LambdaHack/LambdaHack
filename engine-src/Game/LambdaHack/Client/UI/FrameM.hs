@@ -30,11 +30,11 @@ import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Draw the current level with the overlay on top.
 -- If the overlay is too long, it's truncated.
@@ -72,10 +72,13 @@ promptGetKey :: MonadClientUI m
 promptGetKey dm ov onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
+  report <- getsSession $ newReport . shistory
+  let msgDisturbs = anyInReport disturbsResting report
   lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
-    km : kms | not keyPressed && (null frontKeyKeys
-                                  || km `elem` frontKeyKeys) -> do
+    km : kms | not keyPressed
+               && (null frontKeyKeys || km `elem` frontKeyKeys)
+               && not msgDisturbs -> do
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}

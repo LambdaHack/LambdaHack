@@ -4,7 +4,7 @@
 module Game.LambdaHack.Client.UI.Msg
   ( -- * Msg
     Msg, toMsg
-  , MsgClass(..), interruptsRunning
+  , MsgClass(..), interruptsRunning, disturbsResting
     -- * Report
   , Report, nullReport, consReport, renderReport, anyInReport
     -- * History
@@ -151,6 +151,17 @@ interruptsRunning MsgPrompt = False
 interruptsRunning MsgPromptFocus = False
 interruptsRunning MsgAlert = False
 interruptsRunning _ = True
+
+disturbsResting :: MsgClass -> Bool
+disturbsResting MsgHeard = False
+disturbsResting MsgEffectMinor = False
+disturbsResting MsgActionMinor = False
+disturbsResting MsgNumeric = False
+disturbsResting MsgSpam = False
+disturbsResting MsgPrompt = False
+disturbsResting MsgPromptFocus = False
+disturbsResting MsgAlert = False
+disturbsResting _ = True
 
 -- Only @White@ color gets replaced by this one.
 msgColor :: MsgClass -> Color.Color
