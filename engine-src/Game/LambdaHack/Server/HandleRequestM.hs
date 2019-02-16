@@ -130,12 +130,13 @@ processWatchfulness mwait aid = do
              || uneasy  -- spooked
              || not (deltaBenign $ bhpDelta b))  -- any HP lost
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
-      else execUpdAtomic $ UpdRefillHP aid 1000
+      else execUpdAtomic $ UpdRefillHP aid 10000
              -- no @xM@, so slow, but each turn HP gauge green;
-             -- this is 1HP per 1000 turns, so it's 100 slower than a necklace
+             -- this is 1HP per 100 turns, so it's 10 slower than a necklace
              -- that gives 1HP per 10 turns;
-             -- so if an actor sleeps for the duration of a 10000 turns
-             -- 10-level run, 10HP would be gained, so weak actors would wake up
+             -- so if an actor sleeps for the duration of a 1000 turns,
+             -- which may be the time it takes to fully explore a level,
+             -- 10HP would be gained, so weak actors would wake up
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
     WWait 0 -> case mwait of  -- actor couldn't brace last time
