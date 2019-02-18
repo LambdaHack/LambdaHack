@@ -1064,7 +1064,7 @@ xhairItemHuman = do
   b <- getsState $ getActorBody leader
   items <- closestItems leader
   case items of
-    [] -> failMsg "no more items remembered or visible"
+    [] -> failMsg "no more reachable items remembered or visible"
     _ -> do
       let (_, (p, bag)) = maximumBy (comparing fst) items
           sxhair = Just $ TPoint (TItem bag) (blid b) p
@@ -1080,7 +1080,7 @@ xhairStairHuman up = do
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (if up then ViaStairsUp else ViaStairsDown) leader
   case stairs of
-    [] -> failMsg $ "no stairs" <+> if up then "up" else "down"
+    [] -> failMsg $ "no reachable stairs" <+> if up then "up" else "down"
     _ -> do
       let (_, (p, (p0, bag))) = maximumBy (comparing fst) stairs
           sxhair = Just $ TPoint (TEmbed bag p0) (blid b) p

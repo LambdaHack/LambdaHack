@@ -27,19 +27,14 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -49,6 +44,11 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
@@ -480,9 +480,9 @@ closestItems aid = do
       bfs <- getCacheBfs aid
       let mix pbag dist =
             let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
-                -- Bewqre of overflowing 32-bit integers here.
-                -- Here distance is the only factor influencing frequency,
-                -- unless item not desirable, which is checked later on.
+                -- Beware of overflowing 32-bit integers.
+                -- Here distance is the only factor influencing frequency.
+                -- Whether item is desirable is checked later on.
                 v = (maxd * 10) `div` (dist + 1)
             in (v, pbag)
       return $! mapMaybe (\(p, bag) ->
