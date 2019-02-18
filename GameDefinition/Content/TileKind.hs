@@ -235,7 +235,8 @@ tree = TileKind
   { tsymbol  = '0'
   , tname    = "tree"
   , tfreq    = [ ("brawlSetLit", 140), ("shootoutSetLit", 10)
-               , ("escapeSetLit", 35), ("treeShadeOver_0_Lit", 1) ]
+               , ("escapeSetLit", 35), ("ambushSetLit", 3)
+               , ("treeShadeOver_0_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -251,7 +252,7 @@ treeBurnt = tree
   }
 treeBurning = tree
   { tname    = "burning tree"
-  , tfreq    = [ ("ambushSetDark", 30), ("zooSetDark", 70)
+  , tfreq    = [ ("ambushSetDark", 15), ("zooSetDark", 70)
                , ("tree with fire", 70) ]
   , tcolor   = BrRed
   , tcolor2  = Red
@@ -267,7 +268,7 @@ rubble = TileKind
                , ("stair terminal Lit", 4), ("stair terminal Dark", 4)
                , ("emptySetLit", 10), ("emptySetDark", 10)
                , ("noiseSetLit", 50), ("powerSetDark", 50)
-               , ("zooSetDark", 100), ("ambushSetDark", 20) ]
+               , ("zooSetDark", 100), ("ambushSetDark", 10) ]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
@@ -457,7 +458,7 @@ bush = TileKind
   { tsymbol  = '%'
   , tname    = "bush"
   , tfreq    = [ ("bush Lit", 1), ("shootoutSetLit", 30), ("escapeSetLit", 40)
-               , ("bushClumpOver_f_Lit", 1) ]
+               , ("ambushSetLit", 3), ("bushClumpOver_f_Lit", 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 10
@@ -465,7 +466,7 @@ bush = TileKind
   }
 bushBurnt = bush
   { tname    = "burnt bush"
-  , tfreq    = [ ("battleSetDark", 30), ("ambushSetDark", 4), ("zooSetDark", 30)
+  , tfreq    = [ ("battleSetDark", 30), ("zooSetDark", 30), ("ambushSetDark", 3)
                , ("bush with fire", 70) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
@@ -473,7 +474,7 @@ bushBurnt = bush
   }
 bushBurning = bush
   { tname    = "burning bush"
-  , tfreq    = [ ("ambushSetDark", 40), ("zooSetDark", 300)
+  , tfreq    = [ ("ambushSetDark", 15), ("zooSetDark", 300)
                , ("bush with fire", 30) ]
   , tcolor   = BrRed
   , tcolor2  = Red
@@ -517,7 +518,7 @@ smoke = TileKind
   }
 smokeDark = smoke
   { tname    = "lingering smoke"
-  , tfreq    = [ ("stair terminal Dark", 4), ("ambushSetDark", 60)
+  , tfreq    = [ ("stair terminal Dark", 4), ("ambushSetDark", 40)
                , ("zooSetDark", 20), ("battleSetDark", 5) ]
   , tfeature = Dark : tfeature smoke
   }
