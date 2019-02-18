@@ -2,7 +2,7 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
-    AttrLine, emptyAttrLine, textToAL, fgToAL, stringToAL, (<+:>)
+    AttrLine, emptyAttrLine, textToAL, textFgToAL, stringToAL, (<+:>)
     -- * Overlay
   , Overlay, IntOverlay
   , splitAttrLine, indentSplitAttrLine, glueLines, updateLines
@@ -20,8 +20,8 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- * AttrLine
 
@@ -37,10 +37,11 @@ textToAL !t =
               in ac : l
   in T.foldr f [] t
 
--- | Render line of text in the given foreground colour.
-fgToAL :: Color.Color -> Text -> AttrLine
-fgToAL !fg !t =
-  let f c l = let !ac = Color.attrChar2ToW32 fg c
+textFgToAL :: Color.Color -> Text -> AttrLine
+textFgToAL !fg !t =
+  let f ' ' l = Color.spaceAttrW32 : l
+                  -- for speed and simplicity we always keep the space @White@
+      f c l = let !ac = Color.attrChar2ToW32 fg c
               in ac : l
   in T.foldr f [] t
 

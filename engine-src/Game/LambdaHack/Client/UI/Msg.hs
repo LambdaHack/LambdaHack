@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , colorAttrChar, isSavedToHistory, isDisplayed, msgColor
+  , isSavedToHistory, isDisplayed, msgColor
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
   , emptyReport, snocReport, renderWholeReport, renderRepetition
   , scrapRepetition, renderTimeReport
@@ -57,21 +57,12 @@ data Msg = Msg
 
 instance Binary Msg
 
-toMsg :: Maybe (EM.EnumMap MsgClass Color.Color) -> MsgClass -> AttrLine -> Msg
+toMsg :: Maybe (EM.EnumMap MsgClass Color.Color) -> MsgClass -> Text -> Msg
 toMsg mem msgClass l =
   let findColorInConfig = EM.findWithDefault Color.White msgClass
       color = maybe (msgColor msgClass) findColorInConfig mem
-      msgLine = if color == Color.White then l else map (colorAttrChar color) l
+      msgLine = textFgToAL color l
   in Msg {..}
-
-colorAttrChar :: Color.Color -> Color.AttrCharW32 -> Color.AttrCharW32
-colorAttrChar color w =
-  -- Only @White@ color gets replaced.
-  -- For speed and simplicity we always keep the space @White@.
-  let acChar = Color.charFromW32 w
-  in if Color.fgFromW32 w == Color.White && acChar /= ' '
-     then Color.attrChar2ToW32 color acChar
-     else w
 
 data MsgClass =
     MsgAdmin

@@ -55,7 +55,6 @@ import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
-import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
@@ -193,7 +192,7 @@ getReportUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
-      promptAI = toMsg mem MsgPrompt $ stringToAL "[press ESC for main menu]"
+      promptAI = toMsg mem MsgPrompt "[press ESC for main menu]"
   return $! if underAI then consReport promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
@@ -310,11 +309,11 @@ defaultHistory = do
   liftIO $ do
     utcTime <- getCurrentTime
     timezone <- getTimeZone utcTime
-    let curDate = take 19 $ show $ utcToLocalTime timezone utcTime
+    let curDate = T.pack $ take 19 $ show $ utcToLocalTime timezone utcTime
         emptyHist = emptyHistory $ uHistoryMax sUIOptions
         mem = EM.fromList <$> uMessageColors sUIOptions
-        msg = toMsg mem MsgAdmin $ stringToAL
-              $ "History log started on " ++ curDate ++ "."
+        msg = toMsg mem MsgAdmin
+              $ "History log started on " <> curDate <> "."
     return $! fst $ addToReport emptyHist msg 0 timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()

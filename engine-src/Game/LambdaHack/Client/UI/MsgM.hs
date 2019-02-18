@@ -16,7 +16,6 @@ import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
-import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.ActorState
@@ -32,7 +31,7 @@ msgAddDuplicate msg msgClass n = do
   history <- getsSession shistory
   let mem = EM.fromList <$> uMessageColors sUIOptions
       (nhistory, duplicate) =
-        addToReport history (toMsg mem msgClass $ textToAL msg) n time
+        addToReport history (toMsg mem msgClass msg) n time
   modifySession $ \sess -> sess {shistory = nhistory}
   return duplicate
 

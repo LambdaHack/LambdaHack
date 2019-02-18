@@ -19,9 +19,9 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Produce a set of help/menu screens from the key bindings.
 keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
@@ -279,5 +279,5 @@ okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
       f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))
       kxs = zipWith f keys [offset + length header..]
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
-      greyToAL (b, t) = if b then fgToAL Color.BrBlack t else textToAL t
+      greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
   in (map greyToAL ts, kxs)
