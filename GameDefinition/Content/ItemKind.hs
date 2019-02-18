@@ -1608,14 +1608,14 @@ halberd = ItemKind
   , iweight  = 3000
   , idamage  = 12 `d` 1
   , iaspects = [ Timeout 10
-               , AddSkill SkHurtMelee $ (-6 + 1 `dL` 4) * 5
+               , AddSkill SkHurtMelee $ (-5 + 1 `dL` 3) * 5
                    -- useless against armor at game start
                , AddSkill SkArmorMelee 20
                , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotWeaponBig
                , toVelocity 20 ]  -- not balanced
   , ieffects = []
-  , idesc    = "An improvised weapon made of scythe's blade attached to a long pole. Not often one succeeds in making enough space to swing it freely, but even when stuck between terrain obstacles it blocks approaches effectively."
+  , idesc    = "An improvised weapon made of scythe's blade attached to a long pole. Not often one succeeds in making enough space to swing it freely, but even when stuck between terrain obstacles it blocks approaches effectively and makes using other weapons difficult, both by friends and foes."
   , ikit     = []
   }
 halberd2 = halberd
