@@ -107,6 +107,7 @@ data MsgClass =
   | MsgMeleeInterestingBad
   | MsgMelee
   | MsgDone
+  | MsgAtFeetMajor
   | MsgAtFeet
   | MsgNumeric
   | MsgSpam
@@ -217,6 +218,7 @@ msgColor MsgMeleeInterestingGood = Color.Green
 msgColor MsgMeleeInterestingBad = Color.Red
 msgColor MsgMelee = Color.White
 msgColor MsgDone = Color.White
+msgColor MsgAtFeetMajor = Color.White
 msgColor MsgAtFeet = Color.White
 msgColor MsgNumeric = Color.White
 msgColor MsgSpam = Color.White

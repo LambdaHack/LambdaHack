@@ -491,6 +491,7 @@ markDisplayNeeded lid = do
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
+  mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   aimMode <- getsSession saimMode
@@ -498,7 +499,8 @@ lookAtMove aid = do
         && bfid body == side
         && isNothing aimMode) $ do  -- aiming does a more extensive look
     itemsBlurb <- lookAtItems True (bpos body) aid
-    msgAdd MsgAtFeet itemsBlurb
+    let msgClass = if Just aid == mleader then MsgAtFeetMajor else MsgAtFeet
+    msgAdd msgClass itemsBlurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
   adjProjAssocs <- getsState $ adjacentProjAssocs body
