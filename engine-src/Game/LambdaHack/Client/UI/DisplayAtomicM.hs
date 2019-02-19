@@ -1429,9 +1429,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
             ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
             ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"]
                 | otherwise =  -- avoid TMI for not our actors
-            ["the"]
-            ++ [partItemShortWownW side factionD aidPhrase localTime
-                                        itemFull (1, [])]
+            [partItemShortWownW side factionD aidPhrase localTime
+                                     itemFull (1, [])]
             ++ cond ++ ["is extended"]
       return $ Just (MsgLonger, makeSentence parts)
     else return Nothing
