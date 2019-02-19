@@ -459,8 +459,8 @@ reqMeleeChecked voluntary source target iid cstore = do
                       | otherwise = KillKineticRanged
           haltTrajectory killHow target tb
         -- Avoid spam when two explosions collide.
-        when (not (IA.checkFlag Ability.Blast arWeapon)
-              && not (IA.checkFlag Ability.Blast arTrunk)) $
+        unless (IA.checkFlag Ability.Blast arWeapon
+                && IA.checkFlag Ability.Blast arTrunk) $
           execSfxAtomic $ SfxStrike source target iid cstore
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe

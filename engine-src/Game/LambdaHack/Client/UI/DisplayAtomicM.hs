@@ -1630,7 +1630,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
                           , weaponName ]
                         <> ", but it may be not readied yet."
          msgAdd MsgVeryRare msg  -- and no animation
-       | bproj sb && bproj tb -> do  -- server sends only if neither is blast
+       | bproj sb && bproj tb -> do  -- server sends unless both are blasts
          -- Short message.
          msgAdd MsgVeryRare $
            makeSentence $ [MU.SubjectVerbSg spart "intercept", tpart]
