@@ -173,7 +173,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
                (True, True) -> ("drop down", "tumble down")
-               (True, False) -> ("fall down", "break into pieces")
+               (True, False) -> ("fall down", "suffers woeful mutilation")
                (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
@@ -1576,11 +1576,11 @@ strike catch source target iid cstore = assert (source /= target) $ do
                                 then "avert it"
                                 else "ward it off")
           in MU.SubjectVerbSg subjectBlock verbBlock
+        surprisinglyGoodDefense = deadliness >= 20 && hurtMult <= 70
+        surprisinglyBadDefense = deadliness < 20 && hurtMult > 70
         yetButAnd
-          | deadliness >= 20 && hurtMult <= 70 = ", but"
-              -- strong attack, but defence surprisingly effective
-          | deadliness < 20 && hurtMult > 70 = ", yet"
-              -- weak attack, yet surprisingly defense not too successful
+          | surprisinglyGoodDefense = ", but"
+          | surprisinglyBadDefense = ", yet"
           | otherwise = " and"  -- no surprises
         projectileHitsWeakly = bproj sb && deadliness < 20
         msgArmor = if not projectileHitsWeakly
@@ -1678,23 +1678,24 @@ strike catch source target iid cstore = assert (source /= target) $ do
                [ MU.SubjectVerbSg spart verb, sleepy, tpart, strongly
                , "with", weaponName ]
              (tmpInfluenceBlurb, msgClassInfluence) =
-               if null condArmor || T.null msgArmor then ("", MsgMelee)
-               else let (armor, (_, itemKind)) =
-                           maximumBy (Ord.comparing $ abs . fst) condArmor
-                        name = IK.iname itemKind
-                    in if hurtMult > 20
-                       then ( (if armor <= -15
-                               then ", due to being"
-                               else assert (armor >= 15)
-                                           ", regardless of being")
-                              <+> name
-                            , msgMeleeInteresting )
-                       else ( (if armor >= 15
-                               then ", thanks to being"
-                               else assert (armor <= -15)
-                                           ", despite being")
-                              <+> name
-                            , msgMeleeInteresting )
+               if null condArmor || T.null msgArmor
+               then ("", MsgMelee)
+               else
+                 let (armor, (_, itemKind)) =
+                       maximumBy (Ord.comparing $ abs . fst) condArmor
+                     name = IK.iname itemKind
+                     msgText =
+                       if hurtMult > 20 && not surprisinglyGoodDefense
+                          || surprisinglyBadDefense
+                       then (if armor <= -15
+                             then ", due to being"
+                             else assert (armor >= 15) ", regardless of being")
+                            <+> name
+                       else (if armor >= 15
+                             then ", thanks to being"
+                             else assert (armor <= -15) ", despite being")
+                            <+> name
+                 in (msgText, msgMeleeInteresting)
              msgClass = if targetIsFriend && deadliness >= 300
                            || deadliness >= 2000
                         then msgMeleePowerful
