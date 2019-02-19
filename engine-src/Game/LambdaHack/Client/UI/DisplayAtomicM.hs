@@ -1411,7 +1411,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
     aidSeen <- getsState $ memActor aid lid
     if aidSeen then do
       b <- getsState $ getActorBody aid
-      aidPhrase <- partPronounLeader aid
+      bUI <- getsSession $ getActorUI aid
+      aidPronoun <- partPronounLeader aid
         -- assume almost always a prior message mentions the object
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
@@ -1419,7 +1420,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
       side <- getsClient sside
       let kit = (1, [])
           (name, powers) = partItem (bfid b) factionD localTime itemFull kit
-          storeOwn = ppCStoreWownW True cstore aidPhrase
+          storeOwn = ppCStoreWownW True cstore aidPronoun
           cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
           -- Note that when enemy actor causes the extension to himsefl,
@@ -1429,7 +1430,10 @@ ppSfxMsg sfxMsg = case sfxMsg of
             ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
             ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"]
                 | otherwise =  -- avoid TMI for not our actors
-            [partItemShortWownW side factionD aidPhrase localTime
+            -- Ideally we'd use a pronoun here, but the action (e.g., hit)
+            -- that caused this extension can be invisible to some onlookers.
+            -- So their narrative context needs to be taken into account.
+            [partItemShortWownW side factionD (partActor bUI) localTime
                                      itemFull (1, [])]
             ++ cond ++ ["is extended"]
       return $ Just (MsgLonger, makeSentence parts)
