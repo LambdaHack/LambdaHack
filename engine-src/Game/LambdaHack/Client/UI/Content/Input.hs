@@ -119,21 +119,21 @@ repeatTriple n = ( [CmdMeta]
 
 -- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.
 mouseLMB :: CmdTriple
-mouseLMB =
-  ( [CmdMouse]
-  , "set x-hair to enemy/go to pointer for 25 steps"
-  , ByAimMode $ AimModeCmd
-      { exploration = ByArea $ common ++  -- exploration mode
-          [ (CaMapLeader, grabCmd)
-          , (CaMapParty, PickLeaderWithPointer)
-          , (CaMap, goToCmd)
-          , (CaArenaName, Dashboard)
-          , (CaPercentSeen, autoexploreCmd) ]
-      , aiming = ByArea $ common ++  -- aiming mode
-          [ (CaMap, AimPointerEnemy)
-          , (CaArenaName, Accept)
-          , (CaPercentSeen, XhairStair True) ] } )
+mouseLMB = ( [CmdMouse]
+           , "set x-hair to enemy/go to pointer for 25 steps"
+           , ByAimMode aimMode )
  where
+  aimMode = AimModeCmd
+    { exploration = ByArea $ common ++  -- exploration mode
+        [ (CaMapLeader, grabCmd)
+        , (CaMapParty, PickLeaderWithPointer)
+        , (CaMap, goToCmd)
+        , (CaArenaName, Dashboard)
+        , (CaPercentSeen, autoexploreCmd) ]
+    , aiming = ByArea $ common ++  -- aiming mode
+        [ (CaMap, AimPointerEnemy)
+        , (CaArenaName, Accept)
+        , (CaPercentSeen, XhairStair True) ] }
   common =
     [ (CaMessage, ExecuteIfClear LastHistory)
     , (CaLevelNumber, AimAscend 1)
@@ -151,21 +151,21 @@ mouseMMB = ( [CmdMouse]
            , XhairPointerFloor )
 
 mouseRMB :: CmdTriple
-mouseRMB =
-  ( [CmdMouse]
-  , "fling at enemy/run to pointer collectively for 25 steps"
-  , ByAimMode $ AimModeCmd
-      { exploration = ByArea $ common ++
-          [ (CaMapLeader, dropCmd)
-          , (CaMapParty, SelectWithPointer)
-          , (CaMap, runToAllCmd)
-          , (CaArenaName, MainMenu)
-          , (CaPercentSeen, autoexplore25Cmd) ]
-      , aiming = ByArea $ common ++
-          [ (CaMap, aimFlingCmd)
-          , (CaArenaName, Cancel)
-          , (CaPercentSeen, XhairStair False) ] } )
+mouseRMB = ( [CmdMouse]
+           , "fling at enemy/run to pointer collectively for 25 steps"
+           , ByAimMode aimMode )
  where
+  aimMode = AimModeCmd
+    { exploration = ByArea $ common ++
+        [ (CaMapLeader, dropCmd)
+        , (CaMapParty, SelectWithPointer)
+        , (CaMap, runToAllCmd)
+        , (CaArenaName, MainMenu)
+        , (CaPercentSeen, autoexplore25Cmd) ]
+    , aiming = ByArea $ common ++
+        [ (CaMap, aimFlingCmd)
+        , (CaArenaName, Cancel)
+        , (CaPercentSeen, XhairStair False) ] }
   common =
     [ (CaMessage, Hint)
     , (CaLevelNumber, AimAscend (-1))
