@@ -49,7 +49,9 @@ attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine  :: AttrLine  -- ^ the colours and characters of the message
+  { msgLine  :: AttrLine  -- ^ the colours and characters of the message;
+                          --   not just text, in case there was some colour
+                          --   unrelated to msg class
   , msgClass :: MsgClass  -- ^ whether message should be displayed,
                           --   recorded in history, with what color, etc.
   }
@@ -330,19 +332,21 @@ scrapRepetition History{ newReport = Report newMsgs
     -- along many reports.
     RepMsgN s1 n1 : rest1 ->
       let immovable = bindsPronouns (msgClass s1)
-          f (RepMsgN s2 _) = s1 == s2
+          f (RepMsgN s2 _) = msgLine s1 == msgLine s2
       in case break f rest1 of
         (_, []) | not immovable -> case break f oldMsgs of
-          (noDup, RepMsgN _ n2 : rest2) ->
+          (noDup, RepMsgN s2 n2 : rest2) ->
             -- We keep the occurence of the message in the new report only.
-            let newReport = Report $ RepMsgN s1 (n1 + n2) : rest1
+            -- This may bring together immovable occurences in the old report,
+            -- but we don't attempt to merge them.
+            let newReport = Report $ RepMsgN s2 (n1 + n2) : rest1
                 oldReport = Report $ noDup ++ rest2
             in Just History{..}
           _ -> Nothing
-        (noDup, RepMsgN _ n2 : rest2) | not immovable || null noDup ->
+        (noDup, RepMsgN s2 n2 : rest2) | not immovable || null noDup ->
           -- We keep the older (and so, oldest) occurence of the message,
           -- to avoid visual disruption by moving the message around.
-          let newReport = Report $ noDup ++ RepMsgN s1 (n1 + n2) : rest2
+          let newReport = Report $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
               oldReport = Report oldMsgs
           in Just History{..}
         _ -> Nothing
