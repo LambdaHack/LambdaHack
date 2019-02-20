@@ -12,7 +12,7 @@
 ; C:\Users\<username>\AppData\Roaming\LambdaHack\config.ui.ini
 ; or elsewhere.
 
-[extra_commands]
+[additional_commands]
 ; Angband compatibility (accept target)
 Cmd_2 = ("KP_Insert", ([CmdAim], "", ByAimMode AimModeCmd {exploration = ExecuteIfClear Dashboard, aiming = Accept}))
 

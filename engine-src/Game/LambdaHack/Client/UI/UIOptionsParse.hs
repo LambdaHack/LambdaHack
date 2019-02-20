@@ -44,7 +44,7 @@ parseConfig cfg =
                   let (key, def) = readError keydef
                   in (K.mkKM key, def :: CmdTriple)
                 Nothing -> configError $ "wrong macro id" `showFailure` ident
-            section = Ini.allItems "extra_commands" cfg
+            section = Ini.allItems "additional_commands" cfg
         in map mkCommand section
       uHeroNames =
         let toNumber (ident, nameAndPronoun) =
