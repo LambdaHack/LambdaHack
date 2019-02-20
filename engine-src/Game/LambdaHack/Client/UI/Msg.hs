@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.UI.Msg
   , renderHistory
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , isSavedToHistory, isDisplayed, msgColor
+  , isSavedToHistory, isDisplayed, bindsPronouns, msgColor
   , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
   , emptyReport, snocReport, renderWholeReport, renderRepetition
   , scrapRepetition, renderTimeReport
@@ -96,16 +96,18 @@ data MsgClass =
   | MsgHeard
   | MsgFocus
   | MsgWarning
-  | MsgRangedPowerfulGood
-  | MsgRangedPowerfulBad
-  | MsgRanged
+  | MsgRangedPowerfulWe
+  | MsgRangedPowerfulUs
+  | MsgRanged  -- our non-projectile actors are not hit
+  | MsgRangedUs
   | MsgRare
   | MsgVeryRare
-  | MsgMeleePowerfulGood
-  | MsgMeleePowerfulBad
-  | MsgMeleeInterestingGood
-  | MsgMeleeInterestingBad
-  | MsgMelee
+  | MsgMeleePowerfulWe
+  | MsgMeleePowerfulUs
+  | MsgMeleeInterestingWe
+  | MsgMeleeInterestingUs
+  | MsgMelee  -- our non-projectile actors are not hit
+  | MsgMeleeUs
   | MsgDone
   | MsgAtFeetMajor
   | MsgAtFeet
@@ -174,6 +176,20 @@ disturbsResting MsgPromptFocus = False
   -- MsgAlert means something went wrong, so alarm
 disturbsResting _ = True
 
+-- Only player's non-projectile actors getting hit introduce subjects,
+-- because only such hits are guaranteed to be perceived.
+-- Here we also mark friends being hit, but that's a safe approximation.
+-- We also mark the messages that use the introduced subjects
+-- by referring to them via pronouns. They can't be moved freely either.
+bindsPronouns :: MsgClass -> Bool
+bindsPronouns MsgRangedPowerfulUs = True
+bindsPronouns MsgRangedUs = True
+bindsPronouns MsgMeleePowerfulUs = True
+bindsPronouns MsgMeleeInterestingUs = True
+bindsPronouns MsgMeleeUs = True
+bindsPronouns MsgLonger = True
+bindsPronouns _ = False
+
 -- Only @White@ color gets replaced by this one.
 msgColor :: MsgClass -> Color.Color
 msgColor MsgAdmin = Color.White
@@ -207,16 +223,18 @@ msgColor MsgHeardClose = Color.BrYellow
 msgColor MsgHeard = Color.Brown
 msgColor MsgFocus = Color.Green
 msgColor MsgWarning = Color.BrYellow
-msgColor MsgRangedPowerfulGood = Color.Green
-msgColor MsgRangedPowerfulBad = Color.Red
+msgColor MsgRangedPowerfulWe = Color.Green
+msgColor MsgRangedPowerfulUs = Color.Red
 msgColor MsgRanged = Color.White
+msgColor MsgRangedUs = Color.White
 msgColor MsgRare = Color.Cyan
 msgColor MsgVeryRare = Color.BrCyan
-msgColor MsgMeleePowerfulGood = Color.Green
-msgColor MsgMeleePowerfulBad = Color.Red
-msgColor MsgMeleeInterestingGood = Color.Green
-msgColor MsgMeleeInterestingBad = Color.Red
+msgColor MsgMeleePowerfulWe = Color.Green
+msgColor MsgMeleePowerfulUs = Color.Red
+msgColor MsgMeleeInterestingWe = Color.Green
+msgColor MsgMeleeInterestingUs = Color.Red
 msgColor MsgMelee = Color.White
+msgColor MsgMeleeUs = Color.White
 msgColor MsgDone = Color.White
 msgColor MsgAtFeetMajor = Color.White
 msgColor MsgAtFeet = Color.White
@@ -309,24 +327,25 @@ scrapRepetition History{ newReport = Report newMsgs
     -- because others were deduplicated as they were added.
     -- We keep the message in the new report, because it should not
     -- vanish from the screen. In this way the message may be passed
-    -- along many reports and, e.g., reduce disturbance over many turns,
-    -- as for "X hears something".
+    -- along many reports.
     RepMsgN s1 n1 : rest1 ->
-      let f (RepMsgN s2 _) = s1 == s2
+      let immovable = bindsPronouns (msgClass s1)
+          f (RepMsgN s2 _) = s1 == s2
       in case break f rest1 of
-        (_, []) -> case break f oldMsgs of
-          (_, []) -> Nothing
+        (_, []) | not immovable -> case break f oldMsgs of
           (noDup, RepMsgN _ n2 : rest2) ->
             -- We keep the occurence of the message in the new report only.
             let newReport = Report $ RepMsgN s1 (n1 + n2) : rest1
                 oldReport = Report $ noDup ++ rest2
             in Just History{..}
-        (noDup, RepMsgN _ n2 : rest2) ->
+          _ -> Nothing
+        (noDup, RepMsgN _ n2 : rest2) | not immovable || null noDup ->
           -- We keep the older (and so, oldest) occurence of the message,
           -- to avoid visual disruption by moving the message around.
           let newReport = Report $ noDup ++ RepMsgN s1 (n1 + n2) : rest2
               oldReport = Report oldMsgs
           in Just History{..}
+        _ -> Nothing
     _ -> Nothing  -- empty new report
 
 -- | Add a message to the new report of history, eliminating a possible

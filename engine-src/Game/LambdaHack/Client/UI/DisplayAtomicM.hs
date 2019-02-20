@@ -1603,6 +1603,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
                       && isFoe (bfid tb) tfact side
         targetIsFriend = isFriend (bfid tb) tfact side
                            -- warning if anybody hits our friends
+        msgClassMelee = if targetIsFriend then MsgMeleeUs else MsgMelee
+        msgClassRanged = if targetIsFriend then MsgRangedUs else MsgRanged
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1641,24 +1643,24 @@ strike catch source target iid cstore = assert (source /= target) $ do
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else ["with", weaponName]
-         msgAdd MsgMelee msg  -- too common for color
+         msgAdd msgClassMelee msg  -- too common for color
          animate (blid tb) $ subtleHit coscreen (bpos sb)
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
-         let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulGood
-                               | targetIsFriend = MsgRangedPowerfulBad
-                               | otherwise = MsgRanged
+         let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulWe
+                               | targetIsFriend = MsgRangedPowerfulUs
+                               | otherwise = msgClassRanged
              (attackParts, msgRanged)
                | projectileHitsWeakly =
                  ( [MU.SubjectVerbSg spart "connect"]  -- weak, so terse
-                 , MsgRanged )
+                 , msgClassRanged )
                | deadliness >= 300 =
                  ( [MU.SubjectVerbSg spart verb, tpart, "powerfully"]
                  , if targetIsFriend || deadliness >= 700
                    then msgRangedPowerful
-                   else MsgRanged )
+                   else msgClassRanged )
                | otherwise =
                  ( [MU.SubjectVerbSg spart verb, tpart]  -- strong, for a proj
-                 , MsgRanged )
+                 , msgClassRanged )
          msgAdd msgRanged $ makePhrase [MU.Capitalize $ MU.Phrase attackParts]
                             <> msgArmor <> "."
          animate (blid tb) basicAnim
@@ -1668,18 +1670,18 @@ strike catch source target iid cstore = assert (source /= target) $ do
          msgAdd MsgMelee $ makeSentence attackParts
          animate (blid tb) basicAnim
        | otherwise -> do  -- ordinary melee
-         let msgMeleeInteresting | targetIsFoe = MsgMeleeInterestingGood
-                                 | targetIsFriend = MsgMeleeInterestingBad
-                                 | otherwise = MsgMelee
-             msgMeleePowerful | targetIsFoe = MsgMeleePowerfulGood
-                              | targetIsFriend = MsgMeleePowerfulBad
-                              | otherwise = MsgMelee
+         let msgMeleeInteresting | targetIsFoe = MsgMeleeInterestingWe
+                                 | targetIsFriend = MsgMeleeInterestingUs
+                                 | otherwise = msgClassMelee
+             msgMeleePowerful | targetIsFoe = MsgMeleePowerfulWe
+                              | targetIsFriend = MsgMeleePowerfulUs
+                              | otherwise = msgClassMelee
              attackParts =
                [ MU.SubjectVerbSg spart verb, sleepy, tpart, strongly
                , "with", weaponName ]
              (tmpInfluenceBlurb, msgClassInfluence) =
                if null condArmor || T.null msgArmor
-               then ("", MsgMelee)
+               then ("", msgClassMelee)
                else
                  let (armor, (_, itemKind)) =
                        maximumBy (Ord.comparing $ abs . fst) condArmor
