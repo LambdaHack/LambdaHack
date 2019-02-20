@@ -196,7 +196,7 @@ createPath aid tapTgt = do
                                  , pathGoal = newGoal
                                  , pathLen = length walkable + 1 }
             in TgtAndPath{tapTgt = newTgt, tapPath = Just newPath}
-      stopAtUnwalkable tapPath@Nothing = TgtAndPath{..}
+      stopAtUnwalkable Nothing = TgtAndPath{tapTgt, tapPath=Nothing}
   mpos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
   case mpos of
     Nothing -> return TgtAndPath{tapTgt, tapPath=Nothing}

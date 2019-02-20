@@ -94,29 +94,29 @@ computeTarget aid = do
       actorMaxSk = actorMaxSkills EM.! aid
       alterSkill = Ability.getSk Ability.SkAlter actorMaxSk
   lvl <- getLevel $ blid b
-  let stepAccesible :: AndPath -> Bool
-      stepAccesible AndPath{pathList=q : _} =
+  let stepAccesible :: [Point] -> Bool
+      stepAccesible (q : _) =
         -- Effectively, only @alterMinWalk@ is checked, because real altering
         -- is not done via target path, but action after end of path.
         alterSkill >= fromEnum (lalter PointArray.! q)
-      stepAccesible _ = False
+      stepAccesible [] = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just TgtAndPath{tapTgt,tapPath=Nothing} ->
       -- This case is especially for TEnemyPos that would be lost otherwise.
       -- This is also triggered by @UpdLeadFaction@.
       Just <$> createPath aid tapTgt
-    Just tap@TgtAndPath{tapTgt,tapPath=Just andPath} -> do
+    Just tap@TgtAndPath{tapTgt,tapPath=Just AndPath{..}} -> do
       mvalidPos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
-      if | isNothing mvalidPos -> return Nothing  -- wrong level
-         | bpos b == pathGoal andPath ->
-             return mtgtMPath  -- goal reached; stay there picking up items
-         | otherwise -> return $! case andPath of
-             AndPath{..} | pathSource == bpos b ->  -- no move
+      return $!
+        if | isNothing mvalidPos -> Nothing  -- wrong level
+           | bpos b == pathGoal->
+               mtgtMPath  -- goal reached; stay there picking up items
+           | pathSource == bpos b ->  -- no move
                -- If next step not accessible, something serious happened,
                -- so reconsider the target, not only path.
-               if stepAccesible andPath then mtgtMPath else Nothing
-             AndPath{..} -> case break (== bpos b) pathList of
+               if stepAccesible pathList then mtgtMPath else Nothing
+           | otherwise -> case break (== bpos b) pathList of
                (crossed, _ : rest) ->  -- step or many steps along path
                  if null rest
                  then Nothing  -- path to the goal was partial, so tiles
@@ -126,7 +126,7 @@ computeTarget aid = do
                                    , pathList = rest
                                    , pathGoal
                                    , pathLen = pathLen - length crossed - 1 }
-                      in if stepAccesible newPath
+                      in if stepAccesible rest
                          then Just tap{tapPath=Just newPath}
                          else Nothing
                (_, []) -> Nothing  -- veered off the path, e.g., due to push
