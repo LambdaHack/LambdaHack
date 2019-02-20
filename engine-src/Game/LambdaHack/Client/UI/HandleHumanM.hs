@@ -61,7 +61,7 @@ cmdAction :: (MonadClient m, MonadClientUI m)
 cmdAction cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
-  ByAimMode{..} ->
+  ByAimMode AimModeCmd{..} ->
     byAimModeHuman (cmdAction exploration) (cmdAction aiming)
   ComposeIfLocal cmd1 cmd2 ->
     composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)

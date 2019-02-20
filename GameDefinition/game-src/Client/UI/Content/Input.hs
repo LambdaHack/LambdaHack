@@ -44,14 +44,14 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
                , "finish aiming/open main menu"
-               , ByAimMode { exploration = ExecuteIfClear MainMenu
-                           , aiming = Cancel } ))
+               , ByAimMode AimModeCmd { exploration = ExecuteIfClear MainMenu
+                                      , aiming = Cancel } ))
   , ("C-Escape", ([CmdNoHelp], "", MainMenu))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
                , "accept target/open dashboard"
-               , ByAimMode { exploration = ExecuteIfClear Dashboard
-                           , aiming = Accept } ))
+               , ByAimMode AimModeCmd { exploration = ExecuteIfClear Dashboard
+                                      , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdMeta]
               , "clear messages/display history"
               , ExecuteIfClear LastHistory ))

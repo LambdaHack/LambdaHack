@@ -57,7 +57,7 @@ invalidateBfsAid aid =
 invalidateBfsPathAid :: MonadClient m => ActorId -> m ()
 invalidateBfsPathAid aid = do
   let f BfsInvalid = BfsInvalid
-      f BfsAndPath{..} = BfsAndPath{bfsPath = EM.empty, ..}
+      f (BfsAndPath bfsArr _) = BfsAndPath bfsArr EM.empty
   modifyClient $ \cli -> cli {sbfsD = EM.adjust f aid (sbfsD cli)}
 
 invalidateBfsLid :: MonadClient m => LevelId -> m ()
@@ -83,7 +83,7 @@ invalidateBfsAll =
 invalidateBfsPathAll :: MonadClient m => m ()
 invalidateBfsPathAll = do
   let f BfsInvalid = BfsInvalid
-      f BfsAndPath{..} = BfsAndPath{bfsPath = EM.empty, ..}
+      f (BfsAndPath bfsArr _) = BfsAndPath bfsArr EM.empty
   modifyClient $ \cli -> cli {sbfsD = EM.map f (sbfsD cli)}
 
 createBfs :: MonadClientRead m
@@ -105,15 +105,15 @@ createBfs canMove alterSkill aid = do
 
 updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
-                  -> m (PointArray.Array BfsDistance, AndPath)
+                  -> m (PointArray.Array BfsDistance, Maybe AndPath)
 updatePathFromBfs canMove bfsAndPathOld aid !target = do
   COps{coTileSpeedup} <- getsState scops
   let (oldBfsArr, oldBfsPath) = case bfsAndPathOld of
-        BfsAndPath{bfsArr, bfsPath} -> (bfsArr, bfsPath)
+        (BfsAndPath bfsArr bfsPath) -> (bfsArr, bfsPath)
         BfsInvalid -> error $ "" `showFailure` (bfsAndPathOld, aid, target)
   let bfsArr = oldBfsArr
   if not canMove
-  then return (bfsArr, NoPath)
+  then return (bfsArr, Nothing)
   else do
     b <- getsState $ getActorBody aid
     let lid = blid b
@@ -127,50 +127,52 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
         !mpath =
           findPathBfs (EM.delete source $ lbig lvl)  -- don't sidestep oneself
                       lalter fovLit source target seps bfsArr
-        !bfsPath = EM.insert target mpath oldBfsPath
-        bap = BfsAndPath{..}
+        !bfsPath =
+          maybe oldBfsPath (\path -> EM.insert target path oldBfsPath) mpath
+        bap = BfsAndPath bfsArr bfsPath
     modifyClient $ \cli -> cli {sbfsD = EM.insert aid bap $ sbfsD cli}
     return (bfsArr, mpath)
 
 -- | Get cached BFS array and path or, if not stored, generate and store first.
 getCacheBfsAndPath :: forall m. MonadClient m
                    => ActorId -> Point
-                   -> m (PointArray.Array BfsDistance, AndPath)
+                   -> m (PointArray.Array BfsDistance, Maybe AndPath)
 getCacheBfsAndPath aid target = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just bap@BfsAndPath{..} ->
+    Just bap@(BfsAndPath bfsArr bfsPath) ->
       case EM.lookup target bfsPath of
         Nothing -> do
           (!canMove, _) <- condBFS aid
           updatePathFromBfs canMove bap aid target
-        Just mpath -> return (bfsArr, mpath)
+        mpath@Just{} -> return (bfsArr, mpath)
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
       let bfsPath = EM.empty
-      updatePathFromBfs canMove BfsAndPath{..} aid target
+      updatePathFromBfs canMove (BfsAndPath bfsArr bfsPath) aid target
 
 -- | Get cached BFS array or, if not stored, generate and store first.
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just BfsAndPath{bfsArr} -> return bfsArr
+    Just (BfsAndPath bfsArr _) -> return bfsArr
     _ -> do
       (!canMove, !alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
       let bfsPath = EM.empty
       modifyClient $ \cli ->
-        cli {sbfsD = EM.insert aid BfsAndPath{..} (sbfsD cli)}
+        cli {sbfsD = EM.insert aid (BfsAndPath bfsArr bfsPath) (sbfsD cli)}
       return bfsArr
 
 -- | Get cached BFS path or, if not stored, generate and store first.
-getCachePath :: MonadClient m => ActorId -> Point -> m AndPath
+getCachePath :: MonadClient m => ActorId -> Point -> m (Maybe AndPath)
 getCachePath aid target = do
   b <- getsState $ getActorBody aid
   let source = bpos b
-  if | source == target -> return $! AndPath (bpos b) [] target 0  -- speedup
+  if | source == target ->
+       return $ Just $ AndPath (bpos b) [] target 0  -- speedup
      | otherwise -> snd <$> getCacheBfsAndPath aid target
 
 createPath :: MonadClient m => ActorId -> Target -> m TgtAndPath
@@ -178,7 +180,7 @@ createPath aid tapTgt = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  let stopAtUnwalkable tapPath@AndPath{..} =
+  let stopAtUnwalkable tapPath@(Just AndPath{..}) =
         let (walkable, rest) =
               -- Unknown tiles are not walkable, so path stops at first such.
               -- which is good, because by the time actor reaches the tile,
@@ -193,11 +195,11 @@ createPath aid tapTgt = do
                                  , pathList = walkable ++ [newGoal]
                                  , pathGoal = newGoal
                                  , pathLen = length walkable + 1 }
-            in TgtAndPath{tapTgt = newTgt, tapPath = newPath}
-      stopAtUnwalkable tapPath@NoPath = TgtAndPath{..}
+            in TgtAndPath{tapTgt = newTgt, tapPath = Just newPath}
+      stopAtUnwalkable tapPath@Nothing = TgtAndPath{..}
   mpos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
   case mpos of
-    Nothing -> return TgtAndPath{tapTgt, tapPath=NoPath}
+    Nothing -> return TgtAndPath{tapTgt, tapPath=Nothing}
     Just p -> do
       path <- getCachePath aid p
       return $! stopAtUnwalkable path

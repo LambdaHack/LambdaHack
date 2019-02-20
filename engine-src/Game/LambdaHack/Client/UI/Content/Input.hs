@@ -25,8 +25,8 @@ import qualified NLP.Miniutter.English as MU
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Definition.Defs
 
 -- | Key-command mappings to be specified in content and used for the UI.
 newtype InputContentRaw = InputContentRaw [(K.KM, CmdTriple)]
@@ -48,8 +48,8 @@ makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       yellTriple = ([CmdMove], "", Yell)
-      moveXhairOr n cmd v = ByAimMode { exploration = cmd v
-                                      , aiming = MoveXhair v n }
+      moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
+                                                   , aiming = MoveXhair v n }
       bcmdList =
         (if | uVi -> filter (\(k, _) ->
               k `notElem` [K.mkKM "period", K.mkKM "C-period"])
@@ -122,7 +122,7 @@ mouseLMB :: CmdTriple
 mouseLMB =
   ( [CmdMouse]
   , "set x-hair to enemy/go to pointer for 25 steps"
-  , ByAimMode
+  , ByAimMode $ AimModeCmd
       { exploration = ByArea $ common ++  -- exploration mode
           [ (CaMapLeader, grabCmd)
           , (CaMapParty, PickLeaderWithPointer)
@@ -154,7 +154,7 @@ mouseRMB :: CmdTriple
 mouseRMB =
   ( [CmdMouse]
   , "fling at enemy/run to pointer collectively for 25 steps"
-  , ByAimMode
+  , ByAimMode $ AimModeCmd
       { exploration = ByArea $ common ++
           [ (CaMapLeader, dropCmd)
           , (CaMapParty, SelectWithPointer)
@@ -199,8 +199,10 @@ projectI :: [TriggerItem] -> CmdTriple
 projectI ts = ([], descIs ts, projectICmd ts)
 
 projectA :: [TriggerItem] -> CmdTriple
-projectA ts = replaceCmd ByAimMode { exploration = AimTgt
-                                   , aiming = projectICmd ts } (projectI ts)
+projectA ts =
+  replaceCmd (ByAimMode AimModeCmd { exploration = AimTgt
+                                   , aiming = projectICmd ts })
+             (projectI ts)
 
 flingTs :: [TriggerItem]
 flingTs = [TriggerItem { tiverb = "fling"

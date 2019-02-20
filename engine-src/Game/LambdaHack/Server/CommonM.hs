@@ -483,11 +483,10 @@ addActorIid :: MonadServerAtomic m
             => ItemId -> ItemFull -> Bool -> FactionId -> Point -> LevelId
             -> (Actor -> Actor)
             -> m ActorId
-addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
+addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
             bproj fid pos lid tweakBody = do
   -- Initial HP and Calm is based only on trunk and ignores organs.
-  let arItem = itemAspect itemDisco
-      trunkMaxHP = max 2 $ IA.getSkill Ability.SkMaxHP arItem
+  let trunkMaxHP = max 2 $ IA.getSkill Ability.SkMaxHP arItem
       hp = xM trunkMaxHP `div` 2
       -- Hard to auto-id items that refill Calm, but reduced sight at game
       -- start is more confusing and frustrating:
@@ -537,6 +536,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco}
           -- so we have to discover them now, if eligible.
           discoverIfMinorEffects container iid (itemKindId itemFull2)
   return aid
+addActorIid _ _ _ _ _ _ _ = error "addActorIid: server ignorant about an item"
 
 discoverIfMinorEffects :: MonadServerAtomic m
                        => Container -> ItemId -> ContentId ItemKind -> m ()

@@ -94,7 +94,7 @@ class MonadClientRead m => MonadClientUI m where
   modifySession :: (SessionUI -> SessionUI) -> m ()
   updateClientLeader :: ActorId -> m ()
   getCacheBfs :: ActorId -> m (PointArray.Array BfsDistance)
-  getCachePath :: ActorId -> Point -> m AndPath
+  getCachePath :: ActorId -> Point -> m (Maybe AndPath)
 
 getSession :: MonadClientUI m => m SessionUI
 getSession = getsSession id
@@ -140,7 +140,7 @@ displayFrames lid frs = do
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame -> m K.KM
 connFrontendFrontKey frontKeyKeys (bfr, ffr) = do
   let frontKeyFrame = (FrameBase $ U.unsafeThaw bfr, ffr)
-  kmp <- connFrontend FrontKey{..}
+  kmp <- connFrontend $ FrontKey frontKeyKeys frontKeyFrame
   modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
   return $! K.kmpKeyMod kmp
 

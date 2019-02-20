@@ -26,16 +26,16 @@ import qualified Data.Ix as Ix
 import qualified Data.Ord as Ord
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Definition.Ability (EqpSlot (..))
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Definition.Flavour
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Definition.Ability (EqpSlot (..))
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.Flavour
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The information contained in this time is available to the player
@@ -92,7 +92,7 @@ newtype ItemKindIx = ItemKindIx Word16
 -- The @itemAspect@ accessor it to be used unconditionally only on the server
 -- where it's guaranteed to be safe.
 data ItemDisco =
-    ItemDiscoFull {itemAspect :: IA.AspectRecord}
+    ItemDiscoFull IA.AspectRecord
   | ItemDiscoMean IA.KindMean
  deriving (Show, Eq, Ord)
 

@@ -36,18 +36,14 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -57,6 +53,10 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- All conditions are (partially) lazy, because they are not always
 -- used in the strict monadic computations they are in.
@@ -109,11 +109,11 @@ condAimCrucialM aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   return $ case mtgtMPath of
     Just TgtAndPath{tapTgt=TEnemy _} -> True
-    Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath=AndPath{pathLen}} ->
+    Just TgtAndPath{tapTgt=TPoint tgoal lid _, tapPath=Just AndPath{pathLen}} ->
       lid == blid b
       && (pathLen < 10  -- close enough to get there first
           || tgoal `notElem` [TUnknown, TKnown])
-    Just TgtAndPath{tapTgt=TVector{}, tapPath=AndPath{pathLen}} ->
+    Just TgtAndPath{tapTgt=TVector{}, tapPath=Just AndPath{pathLen}} ->
       pathLen < 7  -- the constant in @vToTgt@, where only
                    -- non-crucial targets are produced; this will also
                    -- prevent animals from sleep close to cave edges
@@ -181,7 +181,8 @@ condBlocksFriendsM aid = do
   targetD <- getsClient stargetD
   let blocked aid2 = aid2 /= aid &&
         case EM.lookup aid2 targetD of
-          Just TgtAndPath{tapPath=AndPath{pathList=q : _}} | q == bpos b -> True
+          Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}} | q == bpos b ->
+            True
           _ -> False
   any blocked <$> getsState (fidActorRegularIds (bfid b) (blid b))
 
@@ -366,7 +367,7 @@ fleeList aid = do
   -- Prefer fleeing along the path to target, unless the target is a foe,
   -- in which case flee in the opposite direction.
   let etgtPath = case mtgtMPath of
-        Just TgtAndPath{ tapPath=AndPath{pathList, pathGoal}
+        Just TgtAndPath{ tapPath=Just AndPath{pathList, pathGoal}
                        , tapTgt } -> case tapTgt of
           TEnemy{} -> Left pathGoal
           TPoint TEnemyPos{} _ _ -> Left pathGoal

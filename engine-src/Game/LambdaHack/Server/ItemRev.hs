@@ -21,20 +21,20 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector.Unboxed as U
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Definition.Flavour
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.Flavour
 
 -- | The essential item properties, used for the @ItemRev@ hash table
 -- from items to their ids, needed to assign ids to newly generated items.
@@ -120,7 +120,7 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
           -- delay first discharge of single organs
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
-    let itemDisco = ItemDiscoFull {itemAspect = arItem, ..}
+    let itemDisco = ItemDiscoFull arItem
         itemFull = ItemFull {..}
     return $ Just ( ItemKnown itemIdentity arItem (jfid itemBase)
                   , (itemFull, (itemK, itemTimer)) )

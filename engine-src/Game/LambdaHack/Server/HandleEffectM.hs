@@ -221,7 +221,9 @@ effectAndDestroy onSmashOnly kineticPerformed
   let effs = if onSmashOnly
              then IK.strengthOnSmash itemKind
              else IK.ieffects itemKind
-      arItem = itemAspect itemDisco
+      arItem = case itemDisco of
+        ItemDiscoFull itemAspect -> itemAspect
+        _ -> error "effectAndDestroy: server ignorant about an item"
       timeout = IA.aTimeout arItem
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
@@ -1447,7 +1449,8 @@ effectRerollItem execSfx iidId target = do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNothing
       -- Do not spam the source actor player about the failures.
       return UseId
-    (iid, ( ItemFull{itemBase, itemKindId, itemKind, itemDisco}
+    (iid, ( ItemFull{ itemBase, itemKindId, itemKind
+                    , itemDisco=ItemDiscoFull itemAspect }
           , (_, itemTimer) )) : _ ->
       if | IA.kmConst $ getKindMean itemKindId coItemSpeedup -> do
            execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNotRandom
@@ -1469,12 +1472,13 @@ effectRerollItem execSfx iidId target = do
                    Nothing ->
                      error "effectRerollItem: can't create rerolled item"
                    Just i2@(ItemKnown _ ar2 _, _) ->
-                     if ar2 == itemAspect itemDisco && n > 0
+                     if ar2 == itemAspect && n > 0
                      then roll100 (n - 1)
                      else return i2
            (itemKnown, (itemFull, _)) <- roll100 100
            void $ registerItem (itemFull, kit) itemKnown c True
            return UseUp
+    _ -> error "effectRerollItem: server ignorant about an item"
 
 -- ** DupItem
 

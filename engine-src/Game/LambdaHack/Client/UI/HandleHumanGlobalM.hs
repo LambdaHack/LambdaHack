@@ -591,9 +591,9 @@ goToXhair initialStep run = do
               _ | initialStep && adjacent (bpos b) c -> do
                 let dir = towards (bpos b) c
                 moveRunHuman initialStep True run False dir
-              NoPath -> failWith "no route to crosshair"
-              AndPath{pathList=[]} -> failWith "almost there"
-              AndPath{pathList = p1 : _} -> do
+              Nothing -> failWith "no route to crosshair"
+              Just AndPath{pathList=[]} -> failWith "almost there"
+              Just AndPath{pathList = p1 : _} -> do
                 let finalGoal = p1 == c
                     dir = towards (bpos b) p1
                 moveRunHuman initialStep finalGoal run False dir
@@ -620,9 +620,9 @@ multiActorGoTo arena c paramOld =
         case mpath of
           _ | xhairMoused && isNothing (accessBfs bfs c) ->
             failWith "no route to crosshair (press again to go there anyway)"
-          NoPath -> failWith "no route to crosshair"
-          AndPath{pathList=[]} -> failWith "almost there"
-          AndPath{pathList = p1 : _} -> do
+          Nothing -> failWith "no route to crosshair"
+          Just AndPath{pathList=[]} -> failWith "almost there"
+          Just AndPath{pathList = p1 : _} -> do
             let finalGoal = p1 == c
                 dir = towards (bpos b) p1
             tgts <- getsState $ posToAids p1 arena
@@ -1180,7 +1180,8 @@ itemMenuHuman cmdAction = do
           actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b actorMaxSk
               greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
-                ByAimMode{..} -> greyedOut exploration || greyedOut aiming
+                ByAimMode AimModeCmd{..} ->
+                  greyedOut exploration || greyedOut aiming
                 ComposeIfLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
                 ComposeUnlessError cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
                 Compose2ndLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2

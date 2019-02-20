@@ -289,7 +289,7 @@ createActor aid b ais = do
         TPoint (TEnemyPos a) _ _ | a == aid ->
           let tgt | isFoe side fact (bfid b) = TEnemy a  -- still a foe
                   | otherwise = TPoint TKnown (blid b) (bpos b)
-          in TgtAndPath tgt NoPath
+          in TgtAndPath tgt Nothing
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
@@ -313,7 +313,7 @@ destroyActor aid b destroy = do
         _ -> tgt
       affect3 TgtAndPath{..} =
         let newMPath = case tapPath of
-              AndPath{pathGoal} | pathGoal /= bpos b -> NoPath
+              Just AndPath{pathGoal} | pathGoal /= bpos b -> Nothing
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
@@ -418,7 +418,7 @@ killExit = do
         (canMove, alterSkill) <- condBFS aid
         bfsArr <- createBfs canMove alterSkill aid
         let bfsPath = EM.empty
-        return (aid, BfsAndPath{..})
+        return (aid, BfsAndPath bfsArr bfsPath)
   actorD <- getsState sactorD
   lbfsD <- mapM f $ EM.keys actorD
   -- Some freshly generated bfses are not used for comparison, but at least
@@ -426,7 +426,7 @@ killExit = do
   let bfsD = EM.fromDistinctAscList lbfsD
       g BfsInvalid !_ = True
       g _ BfsInvalid = False
-      g bap1 bap2 = bfsArr bap1 == bfsArr bap2
+      g (BfsAndPath bfsArr1 _) (BfsAndPath bfsArr2 _) = bfsArr1 == bfsArr2
       subBfs = EM.isSubmapOfBy g
   let !_A1 = assert (salter == alter
                      `blame` "wrong accumulated salter on side"

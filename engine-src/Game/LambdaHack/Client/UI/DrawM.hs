@@ -42,12 +42,8 @@ import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.UIOptions
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
@@ -56,8 +52,6 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -69,6 +63,12 @@ import qualified Game.LambdaHack.Content.ModeKind as MK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 targetDesc :: MonadClientUI m => Maybe Target -> m (Maybe Text, Maybe Text)
 targetDesc mtarget = do
@@ -232,17 +232,14 @@ drawFramePath drawnLevelId = do
                 then []
                 else fromMaybe [] $ bla rXmax rYmax seps bpos xhairPos
     _ -> return []
-  mpath <- maybe (return Nothing) (\aid -> Just <$> do
+  mpath <- maybe (return Nothing) (\aid -> do
     mtgtMPath <- getsClient $ EM.lookup aid . stargetD
     case mtgtMPath of
-      Just TgtAndPath{tapPath=tapPath@AndPath{pathGoal}}
+      Just TgtAndPath{tapPath=tapPath@(Just AndPath{pathGoal})}
         | pathGoal == xhairPos -> return tapPath
       _ -> getCachePath aid xhairPos) mleader
   assocsAtxhair <- getsState $ posToAidAssocs xhairPos drawnLevelId
-  let lpath = if null bline then []
-              else maybe [] (\case
-                NoPath -> []
-                AndPath {pathList} -> pathList) mpath
+  let lpath = if null bline then [] else maybe [] pathList mpath
       shiftedBTrajectory = case assocsAtxhair of
         (_, Actor{btrajectory = Just p, bpos = prPos}) : _->
           trajectoryToPath prPos (fst p)

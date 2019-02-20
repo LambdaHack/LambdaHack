@@ -102,20 +102,20 @@ computeTarget aid = do
       stepAccesible _ = False
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
-    Just TgtAndPath{tapTgt,tapPath=NoPath} ->
+    Just TgtAndPath{tapTgt,tapPath=Nothing} ->
       -- This case is especially for TEnemyPos that would be lost otherwise.
       -- This is also triggered by @UpdLeadFaction@.
       Just <$> createPath aid tapTgt
-    Just tap@TgtAndPath{..} -> do
+    Just tap@TgtAndPath{tapTgt,tapPath=Just andPath} -> do
       mvalidPos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
       if | isNothing mvalidPos -> return Nothing  -- wrong level
-         | bpos b == pathGoal tapPath ->
+         | bpos b == pathGoal andPath ->
              return mtgtMPath  -- goal reached; stay there picking up items
-         | otherwise -> return $! case tapPath of
+         | otherwise -> return $! case andPath of
              AndPath{..} | pathSource == bpos b ->  -- no move
                -- If next step not accessible, something serious happened,
                -- so reconsider the target, not only path.
-               if stepAccesible tapPath then mtgtMPath else Nothing
+               if stepAccesible andPath then mtgtMPath else Nothing
              AndPath{..} -> case break (== bpos b) pathList of
                (crossed, _ : rest) ->  -- step or many steps along path
                  if null rest
@@ -127,12 +127,11 @@ computeTarget aid = do
                                    , pathGoal
                                    , pathLen = pathLen - length crossed - 1 }
                       in if stepAccesible newPath
-                         then Just tap{tapPath=newPath}
+                         then Just tap{tapPath=Just newPath}
                          else Nothing
                (_, []) -> Nothing  -- veered off the path, e.g., due to push
                                    -- by enemy or congestion, so serious,
                                    -- so reconsider target, not only path
-             NoPath -> error $ "" `showFailure` tap
     Nothing -> return Nothing  -- no target assigned yet
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
@@ -226,7 +225,7 @@ computeTarget aid = do
       setPath tgt = do
         let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
-            take7 tap@TgtAndPath{tapPath=AndPath{..}} =
+            take7 tap@TgtAndPath{tapPath=Just AndPath{..}} =
               -- Best path only followed 7 moves; then straight on. Cheaper.
               let path7 = take 7 pathList
                   vOld = towards (bpos b) pathGoal
@@ -236,7 +235,8 @@ computeTarget aid = do
               in if bpos b == pathGoal  -- goal reached, so better know the tgt
                     || not walkable  -- can't walk, so don't chase a vector
                  then tap
-                 else TgtAndPath{tapTgt, tapPath=AndPath{pathList=path7, ..}}
+                 else TgtAndPath{ tapTgt
+                                , tapPath=Just AndPath{pathList=path7, ..} }
             take7 tap = tap
         tgtpath <- createPath aid tgt
         return $ Just $ if slackTactic then take7 tgtpath else tgtpath
@@ -284,8 +284,8 @@ computeTarget aid = do
                             TgtAndPath
                               { tapTgt = TVector v
                               , tapPath = if pathLen == 0
-                                          then NoPath
-                                          else AndPath{..} }
+                                          then Nothing
+                                          else Just AndPath{..} }
                         oldpos = fromMaybe (bpos b) (boldpos b)
                         vOld = bpos b `vectorToFrom` oldpos
                         pNew = shiftBounded rXmax rYmax (bpos b) vOld
@@ -333,8 +333,8 @@ computeTarget aid = do
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
       updateTgt :: TgtAndPath -> m (Maybe TgtAndPath)
-      updateTgt TgtAndPath{tapPath=NoPath} = pickNewTarget
-      updateTgt tap@TgtAndPath{tapPath=AndPath{..},tapTgt} = case tapTgt of
+      updateTgt TgtAndPath{tapPath=Nothing} = pickNewTarget
+      updateTgt tap@TgtAndPath{tapPath=Just AndPath{..},tapTgt} = case tapTgt of
         TEnemy a -> do
           body <- getsState $ getActorBody a
           if | (condInMelee  -- fight close foes or nobody at all
@@ -353,11 +353,11 @@ computeTarget aid = do
                -- unwalkable tiles, for as long as they remain. Harmless quirk.
                mpath <- getCachePath aid $ bpos body
                case mpath of
-                 NoPath -> pickNewTargetIgnore (Just a)
+                 Nothing -> pickNewTargetIgnore (Just a)
                    -- enemy became unreachable
-                 AndPath{pathList=[]} -> pickNewTargetIgnore (Just a)
+                 Just AndPath{pathList=[]} -> pickNewTargetIgnore (Just a)
                    -- he is his own enemy
-                 AndPath{pathList= q : _} ->
+                 Just AndPath{pathList= q : _} ->
                    -- If in melee and path blocked by actors (even proj.)
                    -- change target for this turn due to urgency.
                    -- Because of @condInMelee@ new target will be enemy,
@@ -461,8 +461,8 @@ computeTarget aid = do
           -- Update path. If impossible, pick another target.
           mpath <- getCachePath aid $ bpos body
           case mpath of
-            NoPath -> pickNewTarget
-            AndPath{pathList=[]} -> pickNewTarget
+            Nothing -> pickNewTarget
+            Just AndPath{pathList=[]} -> pickNewTarget
             _ -> return $ Just tap{tapPath=mpath}
         TVector{} -> if pathLen > 1
                      then return $ Just tap
@@ -471,4 +471,4 @@ computeTarget aid = do
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $ Just $ TgtAndPath (TPoint TKnown (blid b) (bpos b)) NoPath
+  else return $ Just $ TgtAndPath (TPoint TKnown (blid b) (bpos b)) Nothing

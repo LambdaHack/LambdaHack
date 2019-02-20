@@ -34,20 +34,19 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | The instructions sent by clients to the raw frontend, indexed
 -- by the returned value.
 data FrontReq :: * -> * where
   -- | Show a frame.
-  FrontFrame :: {frontFrame :: Frame} -> FrontReq ()
+  FrontFrame :: Frame -> FrontReq ()
   -- | Perform an explicit delay of the given length.
   FrontDelay :: Int -> FrontReq ()
   -- | Flush frames, display a frame and ask for a keypress.
-  FrontKey :: { frontKeyKeys  :: [K.KM]
-              , frontKeyFrame :: Frame } -> FrontReq KMP
+  FrontKey :: [K.KM] -> Frame -> FrontReq KMP
   -- | Tell if a keypress is pending.
   FrontPressed :: FrontReq Bool
   -- | Discard a key in the queue, if any.
@@ -112,9 +111,10 @@ getKey fs rf@RawFrontend{fchanKey} keys frame = do
 fchanFrontend :: FrontSetup -> RawFrontend -> ChanFrontend
 fchanFrontend fs@FrontSetup{..} rf =
   ChanFrontend $ \case
-    FrontFrame{..} -> display rf frontFrame
+    FrontFrame frontFrame -> display rf frontFrame
     FrontDelay k -> modifyMVar_ fdelay $ return . (+ k)
-    FrontKey{..} -> getKey fs rf frontKeyKeys frontKeyFrame
+    FrontKey frontKeyKeys frontKeyFrame ->
+      getKey fs rf frontKeyKeys frontKeyFrame
     FrontPressed -> do
       noKeysPending <- STM.atomically $ STM.isEmptyTQueue (fchanKey rf)
       return $! not noKeysPending

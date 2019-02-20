@@ -111,13 +111,14 @@ randomResetTimeout k iid itemFull beforeIt toC = do
     Nothing -> return ()  -- no @Timeout@ aspect; don't touch
 
 computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
-computeRndTimeout localTime ItemFull{itemDisco} = do
-  let t = IA.aTimeout $ itemAspect itemDisco
+computeRndTimeout localTime ItemFull{itemDisco=ItemDiscoFull itemAspect} = do
+  let t = IA.aTimeout itemAspect
   if t /= 0 then do
     rndT <- randomR (0, t)
     let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
     return $ Just $ timeShift localTime rndTurns
   else return Nothing
+computeRndTimeout _ _ = error "computeRndTimeout: server ignorant about an item"
 
 createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
 createLevelItem pos lid = do

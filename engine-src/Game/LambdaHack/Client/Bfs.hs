@@ -24,9 +24,9 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Level
+import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Common.Vector
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
@@ -135,13 +135,12 @@ fillBfs lalter alterSkill source arr@PointArray.Array{..} =
            else bfs (succ distance) succK4
   in bfs (succ minKnownBfs) [fromEnum source]
 
-data AndPath =
-    AndPath { pathSource :: Point    -- never included in @pathList@
-            , pathList   :: [Point]
-            , pathGoal   :: Point    -- needn't be @last pathList@
-            , pathLen    :: Int      -- needn't be @length pathList@
-            }
-  | NoPath
+data AndPath = AndPath
+  { pathSource :: Point    -- never included in @pathList@
+  , pathList   :: [Point]
+  , pathGoal   :: Point    -- needn't be @last pathList@
+  , pathLen    :: Int      -- needn't be @length pathList@
+  }
   deriving (Show, Generic)
 
 instance Binary AndPath
@@ -166,7 +165,7 @@ actorsAvoidedDist = BfsDistance 5
 findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (PointI -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
-            -> AndPath
+            -> Maybe AndPath
 {-# INLINE findPathBfs #-}
 findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
             arr@PointArray.Array{..} =
@@ -222,7 +221,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
   in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
              == minKnownBfs) $
      if goalDist /= apartBfs && pathLen < 2 * chessDist pathSource pathGoal
-     then andPath
+     then Just andPath
      else let f :: (Point, Int, Int, Int) -> Point -> BfsDistance
                 -> (Point, Int, Int, Int)
               f acc@(pAcc, dAcc, chessAcc, sumAcc) p d =
@@ -248,10 +247,10 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
               (pRes, dRes, _, sumRes) = PointArray.ifoldlA' f initAcc arr
           in if sumRes == maxBound
                 || goalDist /= apartBfs && pathLen < sumRes
-             then if goalDist /= apartBfs then andPath else NoPath
+             then if goalDist /= apartBfs then Just andPath else Nothing
              else let pathList2 = track (fromEnum pRes)
                                         (toEnum dRes .|. minKnownBfs) []
-                  in AndPath{pathList = pathList2, pathLen = sumRes, ..}
+                  in Just AndPath{pathList = pathList2, pathLen = sumRes, ..}
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int

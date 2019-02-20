@@ -154,7 +154,7 @@ keyHelp COps{corule}
             Just (_, _, cmd2) -> cmd2
             Nothing -> error $ "" `showFailure` key
           caCmds = case cmd of
-            ByAimMode{exploration=ByArea lexp, aiming=ByArea laim} ->
+            ByAimMode AimModeCmd{exploration=ByArea lexp, aiming=ByArea laim} ->
               sort $ sel (lexp, laim \\ lexp)
             _ -> error $ "" `showFailure` cmd
           caMakeChoice (ca, cmd2) =

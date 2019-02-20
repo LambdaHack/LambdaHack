@@ -16,19 +16,19 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- | Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
@@ -77,7 +77,7 @@ pickActorToMove maidToAvoid = do
       oursTgtRaw <- mapM refresh oursNotSleeping
       fleeD <- getsClient sfleeD
       let goodGeneric (_, Nothing) = Nothing
-          goodGeneric (_, Just TgtAndPath{tapPath=NoPath}) = Nothing
+          goodGeneric (_, Just TgtAndPath{tapPath=Nothing}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
             -- will never flee if melee is happening; but this is rare;
             -- this also ensures even if a lone actor melees and nobody
@@ -159,10 +159,10 @@ pickActorToMove maidToAvoid = do
               && condCanFlee
           actorFled ((aid, _), _) = EM.member aid fleeD
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
-                                      , tapPath=NoPath }) =
+                                      , tapPath=Nothing }) =
             return False
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
-                                      , tapPath=AndPath{pathLen} })
+                                      , tapPath=Just AndPath{pathLen} })
             | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
@@ -198,7 +198,7 @@ pickActorToMove maidToAvoid = do
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
           notSwapReady abt@((_, b), _)
                        (ab2, Just t2@TgtAndPath{tapPath=
-                                       AndPath{pathList=q : _}}) =
+                                       Just AndPath{pathList=q : _}}) =
             let source = bpos b
                 tenemy = targetTEnemy abt
                 tenemy2 = targetTEnemy (ab2, t2)
@@ -211,7 +211,7 @@ pickActorToMove maidToAvoid = do
           -- As soon as friends move, path is recalcuated and they may
           -- become unstuck.
           targetBlocked abt@((aid, _), TgtAndPath{tapPath}) = case tapPath of
-            AndPath{pathList= q : _} ->
+            Just AndPath{pathList= q : _} ->
               any (\abt2@((aid2, body2), _) ->
                      aid2 /= aid  -- in case pushed on goal
                      && bpos body2 == q
@@ -232,10 +232,11 @@ pickActorToMove maidToAvoid = do
             partition targetBlocked $ oursRanged ++ oursOther
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
-          overheadOurs ((aid, _), TgtAndPath{tapPath=NoPath}) =
+          overheadOurs ((aid, _), TgtAndPath{tapPath=Nothing}) =
             100 + if aid == oldAid then 1 else 0
-          overheadOurs abt@( (aid, b)
-                           , TgtAndPath{tapPath=AndPath{pathLen=d,pathGoal}} ) =
+          overheadOurs
+            abt@( (aid, b)
+                , TgtAndPath{tapPath=Just AndPath{pathLen=d,pathGoal}} ) =
             -- Keep proper formation. Too dense and exploration takes
             -- too long; too sparse and actors fight alone.
             -- Note that right now, while we set targets separately for each
@@ -312,7 +313,7 @@ setTargetFromTactics oldAid = do
         Just TgtAndPath{tapTgt} -> do
           tap <- createPath oldAid tapTgt
           case tap of
-            TgtAndPath{tapPath=NoPath} -> return False
+            TgtAndPath{tapPath=Nothing} -> return False
             _ -> do
               modifyClient $ \cli ->
                 cli {stargetD = EM.insert oldAid tap (stargetD cli)}
@@ -330,7 +331,7 @@ setTargetFromTactics oldAid = do
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
             let enemyPath = Just TgtAndPath{ tapTgt = TNonEnemy leader
-                                           , tapPath = NoPath }
+                                           , tapPath = Nothing }
             unless tgtPathSet $ do
                enemyPathSet <- setPath enemyPath
                unless enemyPathSet

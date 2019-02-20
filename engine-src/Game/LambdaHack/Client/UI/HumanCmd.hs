@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), categoryDescription
   , CmdArea(..), areaDescription
-  , CmdTriple, HumanCmd(..)
+  , CmdTriple, AimModeCmd(..), HumanCmd(..)
   , TriggerItem(..), TriggerTile(..)
   ) where
 
@@ -92,12 +92,19 @@ areaDescription ca = case ca of
 -- mouse click or chosen from a menu.
 type CmdTriple = ([CmdCategory], Text, HumanCmd)
 
+data AimModeCmd = AimModeCmd {exploration :: HumanCmd, aiming :: HumanCmd}
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance NFData AimModeCmd
+
+instance Binary AimModeCmd
+
 -- | Abstract syntax of human player commands.
 data HumanCmd =
     -- Meta.
     Macro [String]
   | ByArea [(CmdArea, HumanCmd)]  -- if outside the areas, do nothing
-  | ByAimMode {exploration :: HumanCmd, aiming :: HumanCmd}
+  | ByAimMode AimModeCmd
   | ComposeIfLocal HumanCmd HumanCmd
   | ComposeUnlessError HumanCmd HumanCmd
   | Compose2ndLocal HumanCmd HumanCmd

@@ -22,16 +22,16 @@ import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import           Game.LambdaHack.Definition.Defs
 
 -- | Client state, belonging to a single faction.
 data StateClient = StateClient
@@ -75,13 +75,12 @@ type AlterLid = EM.EnumMap LevelId (PointArray.Array Word8)
 -- and a shortest paths to some of the positions.
 data BfsAndPath =
     BfsInvalid
-  | BfsAndPath { bfsArr  :: PointArray.Array BfsDistance
-               , bfsPath :: EM.EnumMap Point AndPath
-               }
+  | BfsAndPath (PointArray.Array BfsDistance)
+               (EM.EnumMap Point AndPath)
   deriving Show
 
 -- | Actor's target and a path to it, if any.
-data TgtAndPath = TgtAndPath {tapTgt :: Target, tapPath :: AndPath}
+data TgtAndPath = TgtAndPath {tapTgt :: Target, tapPath :: Maybe AndPath}
   deriving (Show, Generic)
 
 instance Binary TgtAndPath
@@ -149,7 +148,7 @@ updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
 updateTarget aid f cli =
   let f2 tp = case f $ fmap tapTgt tp of
         Nothing -> Nothing
-        Just tgt -> Just $ TgtAndPath tgt NoPath  -- reset path
+        Just tgt -> Just $ TgtAndPath tgt Nothing  -- reset path
   in cli {stargetD = EM.alter f2 aid (stargetD cli)}
 
 -- | Get target parameters from client state.

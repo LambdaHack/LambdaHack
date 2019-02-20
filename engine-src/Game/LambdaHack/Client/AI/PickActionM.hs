@@ -31,22 +31,15 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
-import           Game.LambdaHack.Definition.Ability
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -55,6 +48,13 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Ability
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m => ActorId -> Bool -> m RequestTimed
@@ -605,9 +605,9 @@ meleeBlocker aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
-                   , tapPath=AndPath{pathList=q : _, pathGoal} }
+                   , tapPath=Just AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal -> return reject  -- not a real blocker, but goal enemy
-    Just TgtAndPath{tapPath=AndPath{pathList=q : _, pathGoal}} -> do
+    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, pathGoal}} -> do
       -- We prefer the goal position, so that we can kill the foe and enter it,
       -- but we accept any @q@ as well.
       lvl <- getLevel (blid b)
@@ -903,12 +903,12 @@ displaceBlocker aid retry = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
-                   , tapPath=AndPath{pathList=q : _, pathGoal} }
+                   , tapPath=Just AndPath{pathList=q : _, pathGoal} }
       | q == pathGoal  -- not a real blocker but goal; only displace if can't
                        -- melee (e.g., followed leader) and desperate
         && not (retry && condCanMelee) ->
         return reject
-    Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
+    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target too much
         displaceTgt aid q retry
     _ -> return reject  -- goal reached
@@ -936,7 +936,7 @@ displaceTgt source tpos retry = do
         enemyTgt2 <- condAimEnemyPresentM aid2
         enemyPos2 <- condAimEnemyRememberedM aid2
         case mtgtMPath of
-          Just TgtAndPath{tapPath=AndPath{pathList=q : _}}
+          Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
             | q == bpos b  -- friend wants to swap
               || bwatch b2 `elem` [WSleep, WWake]  -- friend sleeps, not cares
               || retry  -- desperate
@@ -971,7 +971,7 @@ chase aid avoidAmbient retry = do
                       && Tile.isWalkable coTileSpeedup (lvl `at` pos)
                         -- if solid, will be altered and perhaps darkened
   str <- case mtgtMPath of
-    Just TgtAndPath{tapPath=AndPath{pathList=q : _, ..}}
+    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}}
       | pathGoal == bpos body -> return reject  -- shortcut and just to be sure
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
