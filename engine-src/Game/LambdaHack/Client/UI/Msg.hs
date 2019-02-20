@@ -331,19 +331,18 @@ scrapRepetition History{ newReport = Report newMsgs
     -- vanish from the screen. In this way the message may be passed
     -- along many reports.
     RepMsgN s1 n1 : rest1 ->
-      let immovable = bindsPronouns (msgClass s1)
+      let commutative s = not $ bindsPronouns $ msgClass s
           f (RepMsgN s2 _) = msgLine s1 == msgLine s2
       in case break f rest1 of
-        (_, []) | not immovable -> case break f oldMsgs of
+        (_, []) | commutative s1 -> case break f oldMsgs of
           (noDup, RepMsgN s2 n2 : rest2) ->
             -- We keep the occurence of the message in the new report only.
-            -- This may bring together immovable occurences in the old report,
-            -- but we don't attempt to merge them.
             let newReport = Report $ RepMsgN s2 (n1 + n2) : rest1
                 oldReport = Report $ noDup ++ rest2
             in Just History{..}
           _ -> Nothing
-        (noDup, RepMsgN s2 n2 : rest2) | not immovable || null noDup ->
+        (noDup, RepMsgN s2 n2 : rest2) | commutative s1
+                                         || all (commutative . repMsg) noDup ->
           -- We keep the older (and so, oldest) occurence of the message,
           -- to avoid visual disruption by moving the message around.
           let newReport = Report $ noDup ++ RepMsgN s2 (n1 + n2) : rest2
