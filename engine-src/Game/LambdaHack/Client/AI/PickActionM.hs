@@ -89,6 +89,7 @@ actionStrategy aid retry = do
   condAimEnemyPresent <- condAimEnemyPresentM aid
   condAimEnemyNoMelee <- condAimEnemyNoMeleeM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
+  condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
   condAimCrucial <- condAimCrucialM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- getsState $ meleeThreatDistList aid
@@ -291,7 +292,9 @@ actionStrategy aid retry = do
                          && aCanDeLight) retry
           , condCanMelee
             && (if condInMelee then condAimEnemyPresent
-                else (condAimEnemyPresent || condAimEnemyRemembered)
+                else (condAimEnemyPresent
+                      || condAimEnemyRemembered
+                      || condAimNonEnemyPresent)
                      && (not (condThreat 2)
                          || heavilyDistressed  -- if under fire, do something!
                          || not condMeleeBad)
@@ -328,8 +331,8 @@ actionStrategy aid retry = do
                   -- Also, this is what non-leader heroes do, unless they melee.
         [ ( [SkWait]
           , case bwatch body of
-              WSleep -> yellNow  -- we know that @not mayContinueSleep@;
-                                 -- celebrate wake up with a bang
+              WSleep -> yellNow  -- we know actor doesn't want to sleep,
+                                 -- so celebrate wake up with a bang
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something

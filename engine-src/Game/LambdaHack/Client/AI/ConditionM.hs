@@ -2,6 +2,7 @@
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyPresentM
   , condAimEnemyRememberedM
+  , condAimNonEnemyPresentM
   , condAimEnemyNoMeleeM
   , condInMeleeM
   , condAimCrucialM
@@ -76,6 +77,14 @@ condAimEnemyRememberedM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
     Just (TPoint (TEnemyPos _) lid _) -> lid == blid b
+    _ -> False
+
+-- | Require that the target non-enemy is visible by the party.
+condAimNonEnemyPresentM :: MonadClient m => ActorId -> m Bool
+condAimNonEnemyPresentM aid = do
+  btarget <- getsClient $ getTarget aid
+  return $ case btarget of
+    Just (TNonEnemy _) -> True
     _ -> False
 
 -- | Require that the target enemy is visible by the party and doesn't melee.
