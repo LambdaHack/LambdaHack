@@ -171,7 +171,7 @@ for teletype terminals or a keyboard and a printer (but it's going to use
 a lot of paper, unless you disable animations with `--noAnim`). To compile
 with one of the less rudimentary terminal frontends (in which case you are
 on your own regarding font choice and color setup and you won't have
-the spiffy colorful squares around special positions that exist in SDL2
+the spiffy colorful squares outlining special positions that exist in SDL2
 frontend, but only crude cursor highlights), use Cabal flags, e.g,
 
     cabal install -fvty

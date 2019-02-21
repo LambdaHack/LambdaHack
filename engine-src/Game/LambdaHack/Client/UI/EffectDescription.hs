@@ -16,13 +16,13 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Common.Actor
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Content.ItemKind
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Definition.Ability
+import           Game.LambdaHack.Definition.Defs
 
 data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
   deriving (Eq, Ord, Enum, Bounded)
@@ -92,14 +92,15 @@ effectToSuffix detailLevel effect =
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"
     DropItem n k store grp ->
-      let ntxt = if | n == 1 && k == maxBound -> "one kind of"
-                    | n == maxBound && k == maxBound -> "all kinds of"
-                    | otherwise -> ""
+      let (preT, postT) =
+            if | n == 1 && k == maxBound -> ("one", "kind")
+               | n == maxBound && k == maxBound -> ("all", "kinds")
+               | otherwise -> ("", "")
           (verb, fromStore) =
             if store == COrgan
             then ("nullify", "")
             else ("drop", "from" <+> snd (ppCStore store))
-      in "of" <+> verb <+> ntxt <+> fromGroupName grp <+> fromStore
+      in "of" <+> verb <+> preT <+> fromGroupName grp <+> postT <+> fromStore
     PolyItem -> "of repurpose on the ground"
     RerollItem -> "of deeply reshape on the ground"
     DupItem -> "of multiplication on the ground"
