@@ -1426,17 +1426,19 @@ ppSfxMsg sfxMsg = case sfxMsg of
           -- Note that when enemy actor causes the extension to himsefl,
           -- the player is not notified at all. So the shorter blurb below
           -- is the middle ground.
-          parts | bfid b == side =
-            ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
-            ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"]
+          (msgClass, parts) | bfid b == side =
+            ( MsgLongerUs
+            , ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
+              ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"] )
                 | otherwise =  -- avoid TMI for not our actors
             -- Ideally we'd use a pronoun here, but the action (e.g., hit)
             -- that caused this extension can be invisible to some onlookers.
             -- So their narrative context needs to be taken into account.
-            [partItemShortWownW side factionD (partActor bUI) localTime
-                                     itemFull (1, [])]
-            ++ cond ++ ["is extended"]
-      return $ Just (MsgLonger, makeSentence parts)
+            ( MsgLonger
+            , [partItemShortWownW side factionD (partActor bUI) localTime
+                                       itemFull (1, [])]
+              ++ cond ++ ["is extended"] )
+      return $ Just (msgClass, makeSentence parts)
     else return Nothing
   SfxCollideActor lid source target -> do
     sourceSeen <- getsState $ memActor source lid

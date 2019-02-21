@@ -70,6 +70,7 @@ data MsgClass =
     MsgAdmin
   | MsgBecome
   | MsgNoLonger
+  | MsgLongerUs
   | MsgLonger
   | MsgItemCreation
   | MsgItemDestruction
@@ -189,7 +190,7 @@ bindsPronouns MsgRangedUs = True
 bindsPronouns MsgMeleePowerfulUs = True
 bindsPronouns MsgMeleeInterestingUs = True
 bindsPronouns MsgMeleeUs = True
-bindsPronouns MsgLonger = True
+bindsPronouns MsgLongerUs = True
 bindsPronouns _ = False
 
 -- Only @White@ color gets replaced by this one.
@@ -197,6 +198,7 @@ msgColor :: MsgClass -> Color.Color
 msgColor MsgAdmin = Color.White
 msgColor MsgBecome = Color.BrBlue  -- similar color to cyan and role to Effect
 msgColor MsgNoLonger = Color.Blue
+msgColor MsgLongerUs = Color.White  -- not important enough
 msgColor MsgLonger = Color.White  -- not important enough
 msgColor MsgItemCreation = Color.BrBlue
 msgColor MsgItemDestruction = Color.Blue
