@@ -16,11 +16,11 @@ import Game.LambdaHack.Core.Prelude
 import Data.Binary
 import GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- | Possible causes of failure of request.
 data ReqFailure =
@@ -32,7 +32,7 @@ data ReqFailure =
   | DisplaceUnskilled
   | DisplaceDistant
   | DisplaceAccess
-  | DisplaceProjectiles
+  | DisplaceMultiple
   | DisplaceDying
   | DisplaceBraced
   | DisplaceImmobile
@@ -80,7 +80,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   DisplaceUnskilled -> False  -- unidentified skill items
   DisplaceDistant -> True
   DisplaceAccess -> True
-  DisplaceProjectiles -> True
+  DisplaceMultiple -> True
   DisplaceDying -> True
   DisplaceBraced -> True
   DisplaceImmobile -> False  -- unidentified skill items
@@ -117,31 +117,31 @@ impossibleReqFailure reqFailure = case reqFailure of
 
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
-  MoveUnskilled -> "unskilled actors cannot move"
+  MoveUnskilled -> "too low movement stat"
   MoveNothing -> "wasting time on moving into obstacle"
-  MeleeUnskilled -> "unskilled actors cannot melee"
+  MeleeUnskilled -> "too low melee combat stat"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
-  DisplaceUnskilled -> "unskilled actors cannot displace"
+  DisplaceUnskilled -> "too low actor displacing stat"
   DisplaceDistant -> "trying to displace a distant actor"
   DisplaceAccess -> "trying to switch places without access"
-  DisplaceProjectiles -> "trying to displace multiple actors"
+  DisplaceMultiple -> "trying to displace multiple actors"
   DisplaceDying -> "trying to displace a dying foe"
   DisplaceBraced -> "trying to displace a braced foe"
   DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a foe supported by teammates"
-  AlterUnskilled -> "unskilled actors cannot alter tiles"
-  AlterUnwalked -> "unskilled actors cannot enter tiles"
-  AlterDistant -> "trying to alter a distant tile"
+  AlterUnskilled -> "alter stat is needed to search or exploit terrain"
+  AlterUnwalked -> "too low altering stat to enter or exploit terrain"
+  AlterDistant -> "trying to alter distant terrain"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
-  WaitUnskilled -> "unskilled actors cannot wait"
+  WaitUnskilled -> "too low wait stat"
   YellUnskilled -> "actors unskilled in waiting cannot yell/yawn"
-  MoveItemUnskilled -> "unskilled actors cannot move items"
+  MoveItemUnskilled -> "too low item moving stat"
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
-  ApplyUnskilled -> "unskilled actors cannot apply items"
+  ApplyUnskilled -> "too low item applying stat"
   ApplyFood -> "eating food requires apply stat 2"
   ApplyRead -> "activating cultural artifacts requires apply stat 3"
   ApplyPeriodic -> "manually activating periodic items requires apply stat 4"
@@ -151,7 +151,7 @@ showReqFailure reqFailure = case reqFailure of
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you are too alarmed to use the shared stash"
   NotCalmPrecious -> "you are too alarmed to handle such an exquisite item"
-  ProjectUnskilled -> "unskilled actors cannot aim"
+  ProjectUnskilled -> "too low item flinging stat"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"

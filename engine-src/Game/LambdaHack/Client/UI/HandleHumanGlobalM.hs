@@ -336,7 +336,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
     _ : _ : _ | run
                 && initialStep
                 && Ability.getSk Ability.SkDisplace actorSk > 0 ->
-      failSer DisplaceProjectiles
+      failSer DisplaceMultiple
     (target, tb) : _ | not run
                        && initialStep && finalGoal
                        && bfid tb == bfid sb && not (bproj tb) -> do
@@ -429,7 +429,7 @@ displaceAid target = do
          case posToAidsLvl tpos lvl of
            [] -> error $ "" `showFailure` (leader, sb, target, tb)
            [_] -> return $ Right $ ReqDisplace target
-           _ -> failSer DisplaceProjectiles
+           _ -> failSer DisplaceMultiple
        else failSer DisplaceAccess
 
 -- | Leader moves or searches or alters. No visible actor at the position.

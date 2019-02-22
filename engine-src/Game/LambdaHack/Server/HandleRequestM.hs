@@ -563,7 +563,7 @@ reqDisplaceGeneric voluntary source target = do
              void $ reqAlterFail voluntary source tpos
                -- possibly alter or activate
              void $ reqAlterFail voluntary target spos
-           _ -> execFailure source req DisplaceProjectiles
+           _ -> execFailure source req DisplaceMultiple
        else
          -- Client foolishly tries to displace an actor without access.
          execFailure source req DisplaceAccess

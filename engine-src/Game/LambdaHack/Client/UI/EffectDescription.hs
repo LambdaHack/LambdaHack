@@ -145,13 +145,13 @@ detectToVerb d = case d of
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of
-  EqpSlotMove -> "Those unskilled in movement equip it."
-  EqpSlotMelee -> "Those unskilled in melee equip it."
-  EqpSlotDisplace -> "Those unskilled in displacing equip it."
-  EqpSlotAlter -> "Those unskilled in alteration equip it."
+  EqpSlotMove -> "Those unskilled in locomotion equip it."
+  EqpSlotMelee -> "Those unskilled in close combat equip it."
+  EqpSlotDisplace -> "Those unskilled in moving in crowds equip it."
+  EqpSlotAlter -> "Those unskilled in terrain alteration equip it."
   EqpSlotWait -> "Those unskilled in watchfulness equip it."
   EqpSlotMoveItem -> "Those unskilled in inventory management equip it."
-  EqpSlotProject -> "Those unskilled in flinging equip it."
+  EqpSlotProject -> "Those unskilled in item flinging equip it."
   EqpSlotApply -> "Those unskilled in applying items equip it."
   EqpSlotSwimming -> "Useful to any that wade or swim in water."
   EqpSlotFlying -> "Those not afraid to fly, put it on."
