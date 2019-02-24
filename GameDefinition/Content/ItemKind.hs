@@ -950,7 +950,7 @@ sharpeningTool = ItemKind
   , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 7) * 5
                , SetFlag Equipable, EqpSlot EqpSlotHurtMelee ]
   , ieffects = []
-  , idesc    = "A portable sharpening stone that lets you fix your weapons between or even during fights, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
+  , idesc    = "A portable sharpening stone for keeping your weapons keen and true, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
   , ikit     = []
   }
 seeingItem = ItemKind
