@@ -24,6 +24,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
+import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
@@ -39,9 +40,10 @@ import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Definition.Color as Color
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientUI m
@@ -181,7 +183,8 @@ tryTurning aid = do
 checkAndRun :: MonadClientRead m
             => ActorId -> Vector -> m (Either Text Vector)
 checkAndRun aid dir = do
-  COps{cotile, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
+  actorSk <- currentSkillsClient aid
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
@@ -219,20 +222,21 @@ checkAndRun aid dir = do
       rightTilesLast = map (lvl `at`) rightPsLast
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
-      attrCharAt tile =  -- copied from @drawFrameTerrain@ and simplified
-        let TK.TileKind{tsymbol, tcolor} = okind cotile tile
-            fg | smarkSuspect > 0
-                 && Tile.isSuspect coTileSpeedup tile = Color.BrMagenta
-               | smarkSuspect > 1
-                 && Tile.isHideAs coTileSpeedup tile = Color.Magenta
-               | otherwise = tcolor  -- disregarding tcolor2
-        in Color.attrChar2ToW32 fg tsymbol
-      terrainChangeMiddle = attrCharAt tileThere
-                            `notElem` map attrCharAt [tileLast, tileHere]
-      terrainChangeLeft = attrCharAt leftForwardTileHere
-                          `notElem` map attrCharAt leftTilesLast
-      terrainChangeRight = attrCharAt rightForwardTileHere
-                           `notElem` map attrCharAt rightTilesLast
+      tilePropAt :: ContentId TileKind -> (Bool, Bool, Bool)
+      tilePropAt tile =
+        let suspect =
+              smarkSuspect > 0 && Tile.isSuspect coTileSpeedup tile
+              || smarkSuspect > 1 && Tile.isHideAs coTileSpeedup tile
+            alterSkill = Ability.getSk Ability.SkAlter actorSk
+            alterable = alterSkill >= Tile.alterMinSkill coTileSpeedup tile
+            walkable = Tile.isWalkable coTileSpeedup tile
+        in (suspect, alterable, walkable)
+      terrainChangeMiddle = tilePropAt tileThere
+                            `notElem` map tilePropAt [tileLast, tileHere]
+      terrainChangeLeft = tilePropAt leftForwardTileHere
+                          `notElem` map tilePropAt leftTilesLast
+      terrainChangeRight = tilePropAt rightForwardTileHere
+                           `notElem` map tilePropAt rightTilesLast
       itemChangeLeft = posHasItems leftForwardPosHere
                        `notElem` map posHasItems leftPsLast
       itemChangeRight = posHasItems rightForwardPosHere
