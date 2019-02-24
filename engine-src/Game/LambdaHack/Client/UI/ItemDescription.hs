@@ -19,18 +19,18 @@ import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Definition.Flavour
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.Flavour
 
 -- | The part of speech describing the item parameterized by the number
 -- of effects/aspects to show.
@@ -157,7 +157,9 @@ textAllPowers detailLevel skipRecharging
               Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
-       in (if periodic then [] else [damageText, timeoutText])
+       in (if periodic || detLev <= DetailNone
+           then []
+           else [damageText, timeoutText])
           ++ if detLev >= DetailHigh
                 || detLev >= DetailMedium && T.null elab
              then aes ++ [onSmash | detLev >= DetailAll]
@@ -178,9 +180,9 @@ textAllPowers detailLevel skipRecharging
       splitTry ass =
         let splits = map (\det -> splitA det ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
-        in case filter (/= []) splitsToTry of
-             detNonEmpty : _ -> detNonEmpty
-             [] -> []
+            splitsValid | T.null elab = filter (/= []) splitsToTry
+                        | otherwise = splitsToTry
+        in concat $ take 1 splitsValid
       aspectDescs =
         let aMain IK.AddSkill{} = True
             aMain _ = False
@@ -204,7 +206,7 @@ partItemShort side factionD = partItemN side factionD False DetailLow 4
 
 partItemActor :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
               -> (MU.Part, MU.Part)
-partItemActor side factionD = partItemN side factionD False DetailLow 0
+partItemActor side factionD = partItemN side factionD False DetailNone 1
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (MU.Part, MU.Part)
