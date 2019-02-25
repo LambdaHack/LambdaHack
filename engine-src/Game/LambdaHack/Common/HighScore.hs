@@ -21,13 +21,13 @@ import           Data.Time.LocalTime
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind (ItemKind)
 import Game.LambdaHack.Content.ModeKind (HiCondPoly, HiIndeterminant (..),
                                          ModeKind, Outcome (..))
+import Game.LambdaHack.Definition.Defs
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -110,8 +110,8 @@ register table total dungeonTotal time status@Status{stOutcome}
   in (points > 0, insertPos score table)
 
 -- | Show a single high score, from the given ranking in the high score table.
-showScore :: TimeZone -> (Int, ScoreRecord) -> [Text]
-showScore tz (pos, score) =
+showScore :: TimeZone -> Int -> ScoreRecord -> [Text]
+showScore tz pos score =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
         Killed   -> "perished on level" <+> tshow (abs stDepth)

@@ -42,12 +42,12 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
@@ -171,7 +171,7 @@ registerScore status fid = do
         -- In particular don't register score for the auto-* scenarios.
         if bench || noConfirmsGame || isAIFact fact then
           debugPossiblyPrint $ T.intercalate "\n"
-          $ HighScore.showScore tz (pos, HighScore.getRecord pos ntable)
+          $ HighScore.showScore tz pos (HighScore.getRecord pos ntable)
         else
           let nScoreDict = EM.insert gameModeId ntable scoreDict
           in when worthMentioning $ liftIO $

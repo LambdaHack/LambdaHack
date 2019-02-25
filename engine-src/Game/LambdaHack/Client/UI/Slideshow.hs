@@ -19,9 +19,9 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Definition.Color as Color
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
@@ -149,20 +149,24 @@ highSlideshow width height table pos gameModeName tz =
       al = textToAL msg
       splitScreen ts =
         splitOKX width height al [K.spaceKM, K.escKM] (ts, [])
-  in toSlideshow $ concat $ map (splitScreen . map textToAL) tts
+  in toSlideshow $ concat $ map splitScreen tts
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.
-showTable :: TimeZone -> HighScore.ScoreTable -> Int -> Int -> [Text]
-showTable tz table start entries =
+showTable :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> Int -> [AttrLine]
+showTable tz pos table start entries =
   let zipped    = zip [1..] $ HighScore.unTable table
       screenful = take entries . drop (start - 1) $ zipped
-  in "" : intercalate [""] (map (HighScore.showScore tz) screenful)
+      renderScore (pos1, score1) =
+        map (if pos1 == pos then textFgToAL Color.BrWhite else textToAL)
+        $ HighScore.showScore tz pos1 score1
+  in [] : intercalate [] (map renderScore screenful)
 
 -- | Produce a couple of renderings of the high scores table.
-showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> [[Text]]
+showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int
+                 -> [[AttrLine]]
 showNearbyScores tz pos h entries =
   if pos <= entries
-  then [showTable tz h 1 entries]
-  else [showTable tz h 1 entries,
-        showTable tz h (max (entries + 1) (pos - entries `div` 2)) entries]
+  then [showTable tz pos h 1 entries]
+  else [showTable tz pos h 1 entries,
+        showTable tz pos h (max (entries + 1) (pos - entries `div` 2)) entries]
