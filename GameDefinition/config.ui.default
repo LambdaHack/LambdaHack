@@ -42,7 +42,7 @@ sdlBitmapSizeAdd = 0
 ;sdlBitmapSizeAdd = 2
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
-maxFps = 30
+maxFps = 24
 noAnim = False
 ; runStopMsgs is now ignored
 hpWarningPercent = 20

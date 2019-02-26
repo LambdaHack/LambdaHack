@@ -143,7 +143,7 @@ display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
   fdisplay rf $ SingleFrame singleFrame
 
 defaultMaxFps :: Int
-defaultMaxFps = 30
+defaultMaxFps = 24
 
 microInSec :: Int
 microInSec = 1000000
