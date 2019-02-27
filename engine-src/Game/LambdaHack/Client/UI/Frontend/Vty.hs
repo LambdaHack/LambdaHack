@@ -58,14 +58,13 @@ display coscreen FrontendSession{svty} SingleFrame{singleFrame} = do
                      . map (\w -> char (setAttr $ Color.attrFromW32 w)
                                        (Color.charFromW32 w)))
             $ chunk $ PointArray.toListA singleFrame
-      pic = picForImage img
+      pic1 = picForImage img
+      Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleFrame
+      pic2 = pic1 {picCursor = AbsoluteCursor px py}
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
-  update svty pic
-  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleFrame
-  setCursorPos (outputIface svty) px py
-  showCursor $ outputIface svty
+  update svty pic2
 
 keyTranslate :: Key -> K.Key
 keyTranslate n =
