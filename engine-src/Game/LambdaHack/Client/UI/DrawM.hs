@@ -283,6 +283,7 @@ drawFrameActor drawnLevelId = do
   SessionUI{sactorUI, sselected, sUIOptions} <- getSession
   -- Not @ScreenContent@, because indexing in level's data.
   Level{lbig, lproj} <- getLevel drawnLevelId
+  SessionUI{saimMode} <- getSession
   side <- getsClient sside
   mleader <- getsClient sleader
   s <- getState
@@ -294,8 +295,11 @@ drawFrameActor drawnLevelId = do
               symbol | bhp > 0 = bsymbol
                      | otherwise = '%'
               dominated = maybe False (/= bfid) jfid
+              leaderColor = if isJust saimMode
+                            then Color.HighlightYellowAim
+                            else Color.HighlightYellow
               bg = case mleader of
-                Just leader | aid == leader -> Color.HighlightYellow
+                Just leader | aid == leader -> leaderColor
                 _ -> if | bwatch == WSleep -> Color.HighlightGreen
                         | aid `ES.member` sselected -> Color.HighlightBlue
                         | dominated -> if bfid == side  -- dominated by us
@@ -376,6 +380,9 @@ drawFrameExtra dm drawnLevelId = do
       -- Here @rXmax@ and @rYmax@ are correct, because we are not
       -- turning the whole screen into black&white, but only the level map.
       lDungeon = [0..rXmax * rYmax - 1]
+      xhairColor = if isJust saimMode
+                   then Color.HighlightRedAim
+                   else Color.HighlightRed
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
@@ -385,7 +392,7 @@ drawFrameExtra dm drawnLevelId = do
                           [fromEnum p] v
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
-          Just p -> mapVL (writeSquare Color.HighlightRed)
+          Just p -> mapVL (writeSquare xhairColor)
                           [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd

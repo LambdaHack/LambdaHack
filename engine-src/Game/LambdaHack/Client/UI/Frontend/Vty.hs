@@ -115,10 +115,7 @@ setAttr Color.Attr{..} =
 --  else
   let (fg1, bg1) = case bg of
         Color.HighlightNone -> (fg, Color.Black)
-        Color.HighlightRed ->
-          if fg /= Color.Red
-          then (fg, Color.Red)
-          else (fg, Color.defFG)
+        Color.HighlightGreen -> (fg, Color.Black)
         Color.HighlightBlue ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
@@ -127,8 +124,18 @@ setAttr Color.Attr{..} =
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
+        Color.HighlightWhite -> (fg, Color.Black)
+        Color.HighlightMagenta -> (fg, Color.Black)
+        Color.HighlightRed ->
+          if fg /= Color.Red
+          then (fg, Color.Red)
+          else (fg, Color.defFG)
         Color.HighlightYellow -> (Color.Black, Color.defFG)
-        _ -> (fg, Color.Black)
+        Color.HighlightYellowAim -> (Color.Black, Color.defFG)
+        Color.HighlightRedAim ->
+          if fg /= Color.Red
+          then (fg, Color.Red)
+          else (fg, Color.defFG)
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
                , attrBackColor = SetTo (aToc bg1) }
