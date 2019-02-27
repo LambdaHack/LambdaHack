@@ -6,8 +6,8 @@ module Game.LambdaHack.Core.PointArray
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
   , mapA, imapA, imapMA_, safeSetA, unsafeSetA
-  , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxLastIndexA, forceA
-  , fromListA, toListA
+  , minIndexA, minLastIndexA, minIndexesA, maxIndexA, maxIndexByA, maxLastIndexA
+  , forceA, fromListA, toListA
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , toUnboxRep
@@ -281,6 +281,14 @@ minIndexesA Array{..} =
 maxIndexA :: UnboxRepClass c => Array c -> Point
 {-# INLINE maxIndexA #-}
 maxIndexA Array{..} = toEnum $ U.maxIndex avector
+
+-- | Yield the point coordinates of the first maximum element of the array.
+-- The array may not be empty.
+maxIndexByA :: UnboxRepClass c => (c -> c -> Ordering) -> Array c -> Point
+{-# INLINE maxIndexByA #-}
+maxIndexByA f Array{..} =
+  let g a b = f (fromUnboxRep a) (fromUnboxRep b)
+  in toEnum $ U.maxIndexBy g avector
 
 -- | Yield the point coordinates of the last maximum element of the array.
 -- The array may not be empty.

@@ -8,6 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent.Async
+import           Data.Ord (comparing)
 import           Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -16,9 +17,9 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
 newtype FrontendSession = FrontendSession
@@ -51,7 +52,7 @@ display :: ScreenContent
         -> FrontendSession
         -> SingleFrame
         -> IO ()
-display coscreen FrontendSession{svty} SingleFrame{singleFrame} =
+display coscreen FrontendSession{svty} SingleFrame{singleFrame} = do
   let img = foldr (<->) emptyImage
             . map (foldr (<|>) emptyImage
                      . map (\w -> char (setAttr $ Color.attrFromW32 w)
@@ -61,7 +62,10 @@ display coscreen FrontendSession{svty} SingleFrame{singleFrame} =
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
-  in update svty pic
+  update svty pic
+  let Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleFrame
+  setCursorPos (outputIface svty) px py
+  showCursor $ outputIface svty
 
 keyTranslate :: Key -> K.Key
 keyTranslate n =

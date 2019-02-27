@@ -121,26 +121,29 @@ _olorToRGB BrWhite   = "#FFFFFF"
 
 -- | Additional map cell highlight, e.g., a colorful square around the cell
 -- or a colorful background.
+--
+-- Note: the highlight underscored by the terminal cursor is
+-- the maximal element of this type present of this screen.
 data Highlight =
     HighlightNone
-  | HighlightRed
   | HighlightGreen
   | HighlightBlue
-  | HighlightMagenta
   | HighlightGrey
   | HighlightWhite
+  | HighlightMagenta
+  | HighlightRed
   | HighlightYellow
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 highlightToColor :: Highlight -> Color
 highlightToColor hi = case hi of
   HighlightNone -> White -- rather fake
-  HighlightRed -> Red
   HighlightGreen -> Green
   HighlightBlue -> Blue
-  HighlightMagenta -> BrMagenta  -- usually around white, so bright is fine
   HighlightGrey -> BrBlack
   HighlightWhite -> White  -- bright, but no saturation, so doesn't obscure
+  HighlightMagenta -> BrMagenta  -- usually around white, so bright is fine
+  HighlightRed -> Red
   HighlightYellow -> BrYellow  -- obscures, but mostly used around bright white
 
 -- | Text attributes: foreground color and highlight.
