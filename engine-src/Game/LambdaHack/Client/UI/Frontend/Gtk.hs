@@ -23,8 +23,8 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -48,25 +48,29 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
-  let emulateBox attr = case attr of
-        Color.Attr{bg=Color.HighlightNone,fg} ->
-          (fg, Color.Black)
-        Color.Attr{bg=Color.HighlightRed,fg} ->
-          if fg /= Color.Red
-          then (fg, Color.Red)
-          else (fg, Color.defFG)
-        Color.Attr{bg=Color.HighlightBlue,fg} ->
+  let emulateBox Color.Attr{..} = case bg of
+        Color.HighlightNone -> (fg, Color.Black)
+        Color.HighlightGreen -> (fg, Color.Black)
+        Color.HighlightBlue ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
           else (fg, Color.BrBlack)
-        Color.Attr{bg=Color.HighlightGrey,fg} ->
+        Color.HighlightGrey ->
           if fg /= Color.BrBlack
           then (fg, Color.BrBlack)
           else (fg, Color.defFG)
-        Color.Attr{bg=Color.HighlightYellow} ->
-          (Color.Black, Color.defFG)
-        Color.Attr{fg} ->
-          (fg, Color.Black)
+        Color.HighlightWhite -> (fg, Color.Black)
+        Color.HighlightMagenta -> (fg, Color.Black)
+        Color.HighlightRed ->
+          if fg /= Color.Red
+          then (fg, Color.Red)
+          else (fg, Color.defFG)
+        Color.HighlightYellow -> (Color.Black, Color.defFG)
+        Color.HighlightYellowAim -> (Color.Black, Color.defFG)
+        Color.HighlightRedAim ->
+          if fg /= Color.Red
+          then (fg, Color.Red)
+          else (fg, Color.defFG)
   ttt <- textTagTableNew
   stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do

@@ -20,9 +20,9 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -91,10 +91,7 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
             , let acAttr2 = case bg of
                     Color.HighlightNone -> (fg, Color.Black)
-                    Color.HighlightRed ->
-                      if fg /= Color.Red
-                      then (fg, Color.Red)
-                      else (fg, Color.defFG)
+                    Color.HighlightGreen -> (fg, Color.Black)
                     Color.HighlightBlue ->
                       if fg /= Color.Blue
                       then (fg, Color.Blue)
@@ -103,8 +100,18 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
                       if fg /= Color.BrBlack
                       then (fg, Color.BrBlack)
                       else (fg, Color.defFG)
+                    Color.HighlightWhite -> (fg, Color.Black)
+                    Color.HighlightMagenta -> (fg, Color.Black)
+                    Color.HighlightRed ->
+                      if fg /= Color.Red
+                      then (fg, Color.Red)
+                      else (fg, Color.defFG)
                     Color.HighlightYellow -> (Color.Black, Color.defFG)
-                    _ -> (fg, Color.Black) ]
+                    Color.HighlightYellowAim -> (Color.Black, Color.defFG)
+                    Color.HighlightRedAim ->
+                      if fg /= Color.Red
+                      then (fg, Color.Red)
+                      else (fg, Color.defFG) ]
   C.refresh
 
 keyTranslate :: C.Key -> K.KM
