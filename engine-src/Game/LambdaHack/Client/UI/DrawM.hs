@@ -37,6 +37,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Overlay
@@ -543,7 +544,8 @@ drawHudFrame dm drawnLevelId = do
   updExtra <- drawFrameExtra dm drawnLevelId
   let upd = FrameForall $ \v -> do
         unFrameForall updContent v
-        unFrameForall updPath v
+        -- vty frontend is screen-reader friendly, so avoid visual fluff
+        unless (frontendName == "vty") $ unFrameForall updPath v
         unFrameForall updActor v
         unFrameForall updExtra v
   return (baseTerrain, upd)

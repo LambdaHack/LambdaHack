@@ -76,7 +76,7 @@ source-repository head
   location:           git://github.com/LambdaHack/LambdaHack.git
 
 flag vty
-  description:        switch to the vty frontend
+  description:        switch to the vty frontend (screen reader friendly)
   default:            False
   manual:             True
 
@@ -86,7 +86,7 @@ flag curses
   manual:             True
 
 flag gtk
-  description:        switch to the GTK frontend
+  description:        switch to the GTK frontend (not fully supported)
   default:            False
   manual:             True
 
