@@ -784,16 +784,19 @@ moveActor aid source target = do
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
   CCUI{coscreen} <- getsSession sccui
+  mleader <- getsClient sleader
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   spart <- partActorLeader source
   tpart <- partActorLeader target
-  let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
-  msgAdd MsgActionMinor msg
+  let msgClass = if mleader `elem` map Just [source, target]
+                 then MsgAction  -- to avoid run after displace; configurable
+                 else MsgActionMinor
+      msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
+  msgAdd msgClass msg
   when (bfid sb /= bfid tb) $ do
     lookAtMove source
     lookAtMove target
-  mleader <- getsClient sleader
   side <- getsClient sside
   -- Ours involved, but definitely not requested by player via UI.
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
