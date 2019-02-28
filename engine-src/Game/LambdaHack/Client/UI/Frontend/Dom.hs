@@ -48,10 +48,10 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Area
-import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Content.TileKind (floorSymbol)
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -249,13 +249,14 @@ display FrontendSession{..}
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             (!cell, !style) = scharCells V.! i
         if | acChar == ' ' -> setTextContent cell $ Just [Char.chr 160]
-           | acChar == floorSymbol && not (isBright fg) ->
+           | acChar == floorSymbol && not (Color.isBright fg) ->
              setTextContent cell $ Just [Char.chr 8901]
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
         case bg of
           Color.HighlightNone -> setProp style "border-color" "transparent"
-          _ -> setProp style "border-color" $ Color.highlightToColor bg
+          _ -> setProp style "border-color" $ Color.colorToRGB
+                                            $ Color.highlightToColor bg
         return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
