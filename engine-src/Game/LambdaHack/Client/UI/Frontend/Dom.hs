@@ -240,13 +240,15 @@ flattenTable coscreen table = do
 display :: FrontendSession  -- ^ frontend session data
         -> SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display FrontendSession{..}
-        !curFrame = flip runDOM undefined $ do
+display FrontendSession{..} !curFrame = flip runDOM undefined $ do
   let setChar :: Int -> (Word32, Word32) -> DOM Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
       setChar i (w, _) = do
-        let Color.AttrChar{acAttr=Color.Attr{..}, acChar} =
+        let Point{..} = toEnum i
+            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
+            fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
             (!cell, !style) = scharCells V.! i
         if | acChar == ' ' -> setTextContent cell $ Just [Char.chr 160]
            | acChar == floorSymbol && not (Color.isBright fg) ->

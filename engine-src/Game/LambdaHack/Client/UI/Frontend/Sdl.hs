@@ -44,12 +44,12 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Content.TileKind (floorSymbol)
+import qualified Game.LambdaHack.Definition.Color as Color
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -316,7 +316,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
       setChar i (w, _) = do
         atlas <- readIORef satlas
         let Point{..} = toEnum i
-            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,..}, acChar=acCharRaw} =
+            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar=acCharRaw} =
               Color.attrCharFromW32 $ Color.AttrCharW32 w
             fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
