@@ -19,7 +19,6 @@ import qualified Game.LambdaHack.Client.UI.Content.Screen as SC
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Common.Tile as Tile
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -27,6 +26,7 @@ import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
+import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input
@@ -103,6 +103,10 @@ tieKnotForAsync options@ServerOptions{ sallClear
 -- | Runs tieKnotForAsync in an async and applies the main thread workaround.
 tieKnot :: ServerOptions -> IO ()
 tieKnot serverOptions = do
+#ifdef USE_JSFILE
+  a <- async $ tieKnotForAsync serverOptions
+  wait a
+#else
   let fillWorkaround =
         -- Set up void workaround if nothing specific required.
         void $ tryPutMVar workaroundOnMainThreadMVar $ return ()
@@ -116,3 +120,4 @@ tieKnot serverOptions = do
   workaround <- takeMVar workaroundOnMainThreadMVar
   workaround
   wait a
+#endif
