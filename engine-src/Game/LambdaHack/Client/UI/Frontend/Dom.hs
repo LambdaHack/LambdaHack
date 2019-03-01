@@ -61,7 +61,7 @@ data FrontendSession = FrontendSession
   }
 
 extraBlankMargin :: Int
-extraBlankMargin = 1
+extraBlankMargin = 0
 
 -- | The name of the frontend.
 frontendName :: String
@@ -99,7 +99,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   setProp scharStyle "table-layout" "fixed"
   setProp scharStyle "font-family" "lambdaHackFont"
   setProp scharStyle "font-size" $ tshow (fromJust sscalableFontSize) <> "px"
-  setProp scharStyle "outline" "1px solid grey"
+  -- setProp scharStyle "outline" "1px solid grey"
   setProp scharStyle "border-collapse" "collapse"
   setProp scharStyle "margin-left" "auto"
   setProp scharStyle "margin-right" "auto"
