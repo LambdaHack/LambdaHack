@@ -82,7 +82,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   body <- getBodyUnchecked doc
   pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
-  setProp pageStyle "color" (Color.colorToRGB Color.White)
+  setProp pageStyle "color" (Color.colorToRGB Color.AltWhite)
   divBlockRaw <- createElement doc ("div" :: Text)
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
   divStyle <- getStyle divBlock
