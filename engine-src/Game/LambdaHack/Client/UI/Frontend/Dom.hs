@@ -83,33 +83,19 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   pageStyle <- getStyle body
   setProp pageStyle "background-color" (Color.colorToRGB Color.Black)
   setProp pageStyle "color" (Color.colorToRGB Color.AltWhite)
+  -- Create the session record.
   divBlockRaw <- createElement doc ("div" :: Text)
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
-  divStyle <- getStyle divBlock
-  setProp divStyle "text-align" "center"
   let cell = "<td>" ++ [Char.chr 160]
       row = "<tr>"
             ++ concat (replicate (rwidth coscreen + extraBlankMargin * 2) cell)
       rows = concat (replicate (rheight coscreen + extraBlankMargin * 2) row)
   tableElemRaw <- createElement doc ("table" :: Text)
   tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
-  appendChild_ divBlock tableElem
-  scharStyle <- getStyle tableElem
-  -- Speed: <http://www.w3.org/TR/CSS21/tables.html#fixed-table-layout>
-  setProp scharStyle "table-layout" "fixed"
-  setProp scharStyle "font-family" "lambdaHackFont"
-  setProp scharStyle "font-size" $ tshow (fromJust sscalableFontSize) <> "px"
-  -- setProp scharStyle "outline" "1px solid grey"
-  setProp scharStyle "border-collapse" "collapse"
-  setProp scharStyle "margin-left" "auto"
-  setProp scharStyle "margin-right" "auto"
-  -- Get rid of table spacing. Tons of spurious hacks just in case.
+  -- Get rid of table spacing. Spurious hacks just in case.
   setCellPadding tableElem ("0" :: Text)
   setCellSpacing tableElem ("0" :: Text)
-  setProp scharStyle "padding" "0 0 0 0"
-  setProp scharStyle "border-spacing" "0"
-  setProp scharStyle "border" "none"
-  -- Create the session record.
+  appendChild_ divBlock tableElem
   setInnerHTML tableElem rows
   scharCells <- flattenTable coscreen tableElem
   spreviousFrame <- newIORef $ blankSingleFrame coscreen
@@ -152,8 +138,9 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         in handleMouse rf a px py
   V.imapM_ setupMouse scharCells
   -- Display at the end to avoid redraw. Replace "Please wait".
+  gameMap <- getElementByIdUnsafe doc ("gameMap" :: Text)
   pleaseWait <- getElementByIdUnsafe doc ("pleaseWait" :: Text)
-  replaceChild_ body divBlock pleaseWait
+  replaceChild_ gameMap divBlock pleaseWait
   IO.liftIO $ putMVar rfMVar rf
     -- send to client only after the whole webpage is set up
     -- because there is no @mainGUI@ to start accepting
@@ -255,10 +242,8 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
              setTextContent cell $ Just [Char.chr 8901]
            | otherwise -> setTextContent cell $ Just [acChar]
         setProp style "color" $ Color.colorToRGB fg
-        case bg of
-          Color.HighlightNone -> setProp style "border-color" "transparent"
-          _ -> setProp style "border-color" $ Color.colorToRGB
-                                            $ Color.highlightToColor bg
+        setProp style "border-color" $ Color.colorToRGB
+                                     $ Color.highlightToColor bg
         return $! i + 1
   !prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame

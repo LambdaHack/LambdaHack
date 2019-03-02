@@ -139,7 +139,7 @@ data Highlight =
 
 highlightToColor :: Highlight -> Color
 highlightToColor hi = case hi of
-  HighlightNone -> White -- rather fake
+  HighlightNone -> Black  -- should be transparent, but is OK in web frontend
   HighlightGreen -> Green
   HighlightBlue -> Blue
   HighlightGrey -> BrBlack
