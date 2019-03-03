@@ -42,6 +42,8 @@ and the issue tracker for short-term plans. Long term goals
 include multiplayer tactical squad combat, in-game content
 creation, auto-balancing and persistent content modification
 based on player behaviour. Contributions are welcome.
+Please offer feedback to mikolaj.konarski@funktory.com or, preferably,
+at any of the public forums.
 
 Other games known to use the LambdaHack library:
 

@@ -24,6 +24,8 @@ mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
 for this modest sample game, but it has its own distinct quirky mood
 and is playable and winnable. Contributions are welcome.
+Please offer feedback to mikolaj.konarski@funktory.com or, preferably,
+at any of the public forums.
 
 If the game window is too large for your screen or you experience
 other technical issues, please consult
