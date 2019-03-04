@@ -87,7 +87,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
-      let ov2 = [stringToAL "*interrupted*" | keyPressed] ++ ov
+      let ov2 = [textFgToAL Color.BrYellow "*interrupted*" | keyPressed] ++ ov
       frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
