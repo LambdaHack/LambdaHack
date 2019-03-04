@@ -118,10 +118,11 @@ factionArena fact = case gleader fact of
   Just leader -> do
     b <- getsState $ getActorBody leader
     return $ Just $ blid b
-  Nothing -> if fleaderMode (gplayer fact) == LeaderNull
-                || EM.null (gvictims fact)  -- not in-between spawns
-             then return Nothing
-             else Just <$> getEntryArena fact
+  Nothing -> return Nothing
+    -- This means Allure heroes can kill all aliens on lvl 4, retreat,
+    -- hide and sleep on lvl 3 and they are guaranteed aliens don't spawn.
+    -- However, animals still spawn, if slowly, and aliens resume
+    -- spawning when heroes move on again.
 
 arenasForLoop :: MonadStateRead m => m [LevelId]
 {-# INLINE arenasForLoop #-}
