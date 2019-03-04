@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.FrameM
   ( pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , drawOverlay, renderFrames
+  , drawOverlay, renderFrames, resetPlayBack
 #endif
   ) where
 
@@ -85,10 +85,11 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       return km
     _ : _ -> do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
-      stopPlayBack
+      resetPlayBack
       resetPressedKeys
       let ov2 = [stringToAL "*interrupted*" | keyPressed] ++ ov
       frontKeyFrame <- drawOverlay dm onBlank ov2 lidV
+      recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
       -- If we ask for a key, then we don't want to run any more
@@ -99,6 +100,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       when (dm /= ColorFull) $
         -- Forget the furious keypresses just before a special event.
         resetPressedKeys
+      recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
   let slastRecord = LastRecord (km : seqCurrent) seqPrevious k
@@ -107,7 +109,10 @@ promptGetKey dm ov onBlank frontKeyKeys = do
   return km
 
 stopPlayBack :: MonadClientUI m => m ()
-stopPlayBack = do
+stopPlayBack = msgAdd0 MsgStopPlayback "!"
+
+resetPlayBack :: MonadClientUI m => m ()
+resetPlayBack = do
   lastPlayOld <- getsSession slastPlay
   unless (null lastPlayOld) $ do
     modifySession $ \sess -> sess {slastPlay = []}

@@ -151,9 +151,6 @@ humanCommand = do
               | k == 0 = LastRecord [] seqCurrent 0
               | otherwise = LastRecord [] (seqCurrent ++ seqPrevious) (k - 1)
         modifySession $ \sess -> sess {slastRecord}
-        -- Messages shown, so update history and reset current report.
-        lastPlay <- getsSession slastPlay
-        when (null lastPlay) recordHistory
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW

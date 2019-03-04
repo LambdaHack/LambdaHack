@@ -121,6 +121,7 @@ data MsgClass =
   | MsgPrompt
   | MsgPromptFocus
   | MsgAlert
+  | MsgStopPlayback
  deriving (Show, Read, Eq, Enum, Generic)
 
 instance NFData MsgClass
@@ -135,6 +136,7 @@ isSavedToHistory MsgRunStop = False
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgPromptFocus = False
 isSavedToHistory MsgAlert = False
+isSavedToHistory MsgStopPlayback = False
 isSavedToHistory _ = True
 
 isDisplayed :: MsgClass -> Bool
@@ -142,6 +144,7 @@ isDisplayed MsgRunStop = False
 isDisplayed MsgNumeric = False
 isDisplayed MsgSpam = False
 isDisplayed MsgMacro = False
+isDisplayed MsgStopPlayback = False
 isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
@@ -249,6 +252,7 @@ msgColor MsgRunStop = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgPromptFocus = Color.Green
 msgColor MsgAlert = Color.BrYellow
+msgColor MsgStopPlayback = Color.BrYellow
 
 -- * Report
 
