@@ -8,10 +8,10 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Content.ModeKindPlayer
-import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Core.Dice
+import Game.LambdaHack.Definition.Defs
 
 content :: [ModeKind]
 content =
@@ -446,11 +446,11 @@ rosterSafari = Roster
   { rosterList = [ ( playerMonsterTourist
                    , [(-4, 15, "monster")] )
                  , ( playerHunamConvict
-                   , [(-4, 3, "civilian")] )
+                   , [(-4, 2, "civilian")] )
                  , ( playerAnimalMagnificent
-                   , [(-7, 20, "mobile animal")] )
+                   , [(-7, 15, "mobile animal")] )
                  , ( playerAnimalExquisite  -- start on escape
-                   , [(-10, 30, "mobile animal")] ) ]
+                   , [(-10, 20, "mobile animal")] ) ]
   , rosterEnemy = [ ("Monster Tourist Office", "Hunam Convict")
                   , ( "Monster Tourist Office"
                     , "Animal Magnificent Specimen Variety" )

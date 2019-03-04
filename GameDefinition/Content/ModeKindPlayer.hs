@@ -11,8 +11,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Definition.Ability
 
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player
 
@@ -113,9 +113,7 @@ playerHunamConvict =
 
 playerAnimalMagnificent =
   playerAnimal { fname = "Animal Magnificent Specimen Variety"
-               , fneverEmpty = True
-               , fleaderMode = -- False to move away from stairs
-                               LeaderAI $ AutoLeader True False }
+               , fneverEmpty = True }
 
 playerAnimalExquisite =
   playerAnimal { fname = "Animal Exquisite Herds and Packs Galore"

@@ -22,12 +22,12 @@ import           Data.Binary
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
+import           Game.LambdaHack.Content.CaveKind (CaveKind)
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
 
 -- | Game mode specification.
 data ModeKind = ModeKind
