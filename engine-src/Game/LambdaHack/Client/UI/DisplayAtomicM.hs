@@ -900,7 +900,8 @@ quitFactionUI fid toSt manalytics = do
       -- The last prompt stays onscreen during shutdown, etc.
       promptAdd0 pp
       partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+      unless isNoConfirms $
+        void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
