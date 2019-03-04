@@ -140,7 +140,7 @@ computeTarget aid = do
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
                 || Ability.getSk Ability.SkProject actorMaxSk > 0
-      canAlterLabyrinth = Ability.getSk Ability.SkAlter actorMaxSk >= 4
+      canAlter = Ability.getSk Ability.SkAlter actorMaxSk >= 4
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
@@ -301,7 +301,7 @@ computeTarget aid = do
                         Nothing -> do
                           -- If can't move (and so no BFS data), no info gained.
                           -- Or if can't alter and possibly stuck among rubble.
-                          when (canMove && canAlterLabyrinth) $
+                          when (canMove && canAlter) $
                             modifyClient $ \cli -> cli {sexplored =
                               ES.insert (blid b) (sexplored cli)}
                           ctriggersRaw2 <- closestTriggers ViaExit aid
