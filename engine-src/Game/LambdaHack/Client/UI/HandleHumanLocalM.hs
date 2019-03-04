@@ -805,12 +805,14 @@ endAiming = do
 endAimingMsg :: MonadClientUI m => m ()
 endAimingMsg = do
   leader <- getLeaderUI
+  subject <- partActorLeader leader
   tgt <- getsClient $ getTarget leader
   (mtargetMsg, _) <- targetDesc tgt
-  let targetMsg = fromJust mtargetMsg
-  subject <- partActorLeader leader
-  promptAdd $
-    makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
+  promptAdd $ case mtargetMsg of
+    Nothing ->
+      makeSentence [MU.SubjectVerbSg subject "clear target"]
+    Just targetMsg ->
+      makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * ClearTargetIfItemClear
 
