@@ -54,6 +54,7 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a human player.
@@ -118,8 +119,8 @@ humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
   modifySession $ \sess -> sess { slastLost = ES.empty
                                 , shintMode = HintAbsent }
-  let loop :: m ReqUI
-      loop = do
+  let loop :: Maybe ActorId -> m ReqUI
+      loop mOldLeader = do
         report <- getsSession $ newReport . shistory
         hintMode <- getsSession shintMode
         -- Hints are not considered non-empty reports.
@@ -155,7 +156,7 @@ humanCommand = do
         when (null lastPlay) recordHistory
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
-        when (bhp b <= 0) $ displayMore ColorBW
+        when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
         km <- promptGetKey ColorFull over False []
         abortOrCmd <- do
@@ -177,12 +178,12 @@ humanCommand = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no report could have been generated.
             return cmdS
-          Left Nothing -> loop
+          Left Nothing -> loop $ Just leader
           Left (Just err) -> do
             -- Avoid "*never mind*<x4>".
             let l0 = ["*never mind*", "*aiming started*"]
                 t = showFailError err
             if t `elem` l0 then msgAdd0 MsgAlert t
                            else msgAdd MsgAlert t
-            loop
-  loop
+            loop $ Just leader
+  loop Nothing
