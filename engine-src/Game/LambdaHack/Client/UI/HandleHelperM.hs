@@ -636,7 +636,8 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
       allOKX = concatMap snd $ slideshow itemSlides
       keysMain = keysPre ++ concatMap (keyOfEKM . fst) allOKX
       viewAtSlot slot = do
-        let ix0 = fromJust $ findIndex (== slot) $ EM.keys lSlots
+        let ix0 = fromMaybe (error $ show slot)
+                            (findIndex (== slot) $ EM.keys lSlots)
         go2 <- examItem ix0 lSlots
         if go2
         then viewLoreItems enableSorting menuName lSlots

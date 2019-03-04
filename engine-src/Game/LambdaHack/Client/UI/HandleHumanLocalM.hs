@@ -190,7 +190,8 @@ chooseItemDialogMode c = do
               promptFun _ itemFull _ =
                 makeSentence [ partActor bUI, "can't remove"
                              , MU.AW $ blurb itemFull ]
-              ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
+              ix0 = fromMaybe (error $ show iid)
+                    $ findIndex (== iid) $ EM.elems lSlots
           go <- displayItemLore itemBag meleeSkill promptFun ix0 lSlots
           if go then chooseItemDialogMode c2 else failWith "never mind"
         MOwned -> do
@@ -216,7 +217,8 @@ chooseItemDialogMode c = do
                return $ Right c2
         MSkills -> error $ "" `showFailure` ggi
         MLore slore -> do
-          let ix0 = fromJust $ findIndex (== iid) $ EM.elems lSlots
+          let ix0 = fromMaybe (error $ show iid)
+                    $ findIndex (== iid) $ EM.elems lSlots
               promptFun _ _ _ =
                 makeSentence [ MU.SubjectVerbSg (partActor bUI) "remember"
                              , MU.AW $ MU.Text (headingSLore slore) ]
@@ -229,7 +231,8 @@ chooseItemDialogMode c = do
             displayOneSlot slotIndex = do
               b <- getsState $ getActorBody leader
               let slot = allSlots !! slotIndex
-                  skill = skillSlots !! fromJust (elemIndex slot allSlots)
+                  skill = skillSlots !! fromMaybe (error $ show slot)
+                                                  (elemIndex slot allSlots)
                   valueText =
                     skillToDecorator skill b $ Ability.getSk skill actorMaxSk
                   prompt2 = makeSentence
@@ -262,7 +265,8 @@ chooseItemDialogMode c = do
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
                   (pk, figures@(es, _, _, _)) =
-                    places !! fromJust (elemIndex slot allSlots)
+                    places !! fromMaybe (error $ show slot)
+                                        (elemIndex slot allSlots)
                   pkind = okind coplace pk
                   partsPhrase = makePhrase $ placeParts figures
                   prompt2 = makeSentence

@@ -334,7 +334,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdSearchTile aid _p toTile -> do
     COps{cotile} <- getsState scops
     subject <- partActorLeader aid
-    let fromTile = fromJust $ Tile.hideAs cotile toTile
+    let fromTile = fromMaybe (error $ show toTile) $ Tile.hideAs cotile toTile
         subject2 = MU.Text $ TK.tname $ okind cotile fromTile
         object = MU.Text $ TK.tname $ okind cotile toTile
     let msg = makeSentence [ MU.SubjectVerbSg subject "reveal"
@@ -617,7 +617,7 @@ createActorUI born aid body = do
                                 && bcolor bUI == gcolor fact
                findHeroK k = isJust $ find (hasNameK k) (EM.elems actorUI)
                mhs = map findHeroK [0..]
-               n = fromJust $ elemIndex False mhs
+               n = fromMaybe (error $ show mhs) $ elemIndex False mhs
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
     let (bname, bpronoun) =
           if | bproj body ->

@@ -407,7 +407,8 @@ getIidKind iid s = getItemKind (getItemBody iid s) s
 getItemKindIdServer :: Item -> State -> ContentId IK.ItemKind
 getItemKindIdServer item s = case jkind item of
   IdentityObvious ik -> ik
-  IdentityCovered ix _ik -> fromJust $ EM.lookup ix $ sdiscoKind s
+  IdentityCovered ix _ik -> fromMaybe (error $ show $ jkind item)
+                                      (EM.lookup ix $ sdiscoKind s)
 
 getIidKindIdServer :: ItemId -> State -> ContentId IK.ItemKind
 getIidKindIdServer iid s = getItemKindIdServer (getItemBody iid s) s

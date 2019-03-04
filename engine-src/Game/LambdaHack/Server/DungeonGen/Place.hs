@@ -19,17 +19,17 @@ import qualified Data.EnumSet as ES
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Core.Point
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
@@ -206,8 +206,10 @@ olegend COps{cotile} cgroup =
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
             -- Unlikely, but possible that ordinary legend has spice.
-            let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
-                k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
+            let n = fromMaybe (error $ show cgroup)
+                              (lookup cgroup (TK.tfreq (okind cotile tk)))
+                k = fromMaybe (error $ show cgroup)
+                              (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
             in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
       legend = ES.foldr' getLegend (return (EM.empty, EM.empty)) symbols
   in legend
@@ -225,8 +227,10 @@ pover COps{cotile} poverride =
           Nothing -> (mOneIn, EM.insert s tk m)
           Just tkSpice ->
             -- Very likely that overrides have spice.
-            let n = fromJust (lookup cgroup (TK.tfreq (okind cotile tk)))
-                k = fromJust (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
+            let n = fromMaybe (error $ show cgroup)
+                              (lookup cgroup (TK.tfreq (okind cotile tk)))
+                k = fromMaybe (error $ show cgroup)
+                              (lookup cgroup (TK.tfreq (okind cotile tkSpice)))
             in (EM.insert s (k, n, tkSpice) mOneIn, EM.insert s tk m)
   in foldr getLegend (return (EM.empty, EM.empty)) poverride
 
