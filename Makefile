@@ -19,14 +19,14 @@ configure-debug:
 configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions -frelease
 
-ghcjs-configure:
-	cabal configure --disable-library-profiling --disable-profiling --ghcjs --ghcjs-option=-dedupe -f-release
+ghcjs-new-build:
+	cabal new-build -j1 --ghcjs --ghcjs-option=-dedupe --disable-library-profiling --disable-profiling -f-release .
 
 chrome-prof:
 	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" ../lambdahack.github.io/index.html
 
 minific:
-	ccjs dist/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --jscomp_off="*" --externs=node --externs=dist/build/LambdaHack/LambdaHack.jsexe/all.js.externs > ../lambdahack.github.io/lambdahack.all.js
+	npx google-closure-compiler /home/mikolaj/r/LambdaHack/dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/LambdaHack-0.9.1.0/x/LambdaHack/build/LambdaHack/LambdaHack.jsexe/all.js --compilation_level=ADVANCED_OPTIMIZATIONS --isolation_mode=IIFE --assume_function_wrapper --externs=/home/mikolaj/r/LambdaHack/dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/LambdaHack-0.9.1.0/x/LambdaHack/build/LambdaHack/LambdaHack.jsexe/all.js.externs --jscomp_off="*" > ../lambdahack.github.io/lambdahack.all.js
 
 # Low delay to display animations swiftly and not bore the public too much.
 # Delay can't be lower than 2, because browsers sometimes treat delay 1
