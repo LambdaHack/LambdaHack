@@ -88,9 +88,6 @@ newtype ItemKindIx = ItemKindIx Word16
 -- Items that don't need second identification (the @kmConst@ flag is set)
 -- may be identified or not and both cases are OK (their display flavour
 -- will differ and that may be the point).
---
--- The @itemAspect@ accessor it to be used unconditionally only on the server
--- where it's guaranteed to be safe.
 data ItemDisco =
     ItemDiscoFull IA.AspectRecord
   | ItemDiscoMean IA.KindMean

@@ -41,7 +41,7 @@ data StateServer = StateServer
                                     -- ^ reverse map, used for item creation
   , suniqueSet    :: UniqueSet      -- ^ already generated unique items
   , sitemRev      :: ItemRev        -- ^ reverse id map, used for item creation
-  , sflavour      :: FlavourMap     -- ^ association of flavour to items
+  , sflavour      :: FlavourMap     -- ^ association of flavour to item kinds
   , sacounter     :: ActorId        -- ^ stores next actor index
   , sicounter     :: ItemId         -- ^ stores next item index
   , snumSpawned   :: EM.EnumMap LevelId Int
