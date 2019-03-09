@@ -91,7 +91,11 @@ tieKnotForAsync options@ServerOptions{ sallClear
   --
   -- Not using @compactWithSharing@, because it helps with residency,
   -- but nothing else and costs a bit at startup.
+#ifdef USE_JSFILE
+  let cops = copsRaw  -- until GHCJS implements GHC.Compact
+#else
   cops <- getCompact <$> compact copsRaw
+#endif
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,
