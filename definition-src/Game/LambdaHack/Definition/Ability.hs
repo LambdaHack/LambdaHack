@@ -16,7 +16,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -63,7 +62,7 @@ data Skill =
 --
 -- The tree is by construction sparse, so the derived equality is semantical.
 newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
-  deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
+  deriving (Show, Eq, Ord, Generic, Hashable, Binary)
 
 -- | Item flag aspects.
 data Flag =
@@ -98,7 +97,7 @@ data Flag =
   deriving (Show, Eq, Ord, Generic, Enum, Bounded)
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
-  deriving (Show, Eq, Ord, Generic, Hashable, Binary, NFData)
+  deriving (Show, Eq, Ord, Generic, Hashable, Binary)
 
 -- | Tactic of non-leader actors. Apart of determining AI operation,
 -- each tactic implies a skill modifier, that is added to the non-leader skills
@@ -118,8 +117,6 @@ data Tactic =
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Tactic
-
-instance NFData Tactic
 
 instance Hashable Tactic
 
@@ -146,12 +143,6 @@ data EqpSlot =
   | EqpSlotWeaponFast
   | EqpSlotWeaponBig
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
-instance NFData Skill
-
-instance NFData Flag
-
-instance NFData EqpSlot
 
 instance Binary Skill where
   put = putWord8 . toEnum . fromEnum

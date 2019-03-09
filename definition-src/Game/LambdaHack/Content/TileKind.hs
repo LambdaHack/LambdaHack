@@ -46,9 +46,7 @@ data TileKind = TileKind
   , talter   :: Word8        -- ^ minimal skill needed to alter the tile
   , tfeature :: [Feature]    -- ^ properties
   }
-  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
-
-instance NFData TileKind
+  deriving Show  -- No Eq and Ord to make extending logically sound
 
 -- | All possible terrain tile features.
 data Feature =

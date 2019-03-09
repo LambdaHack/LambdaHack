@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | A game requires the engine provided by the library, perhaps customized,
 -- and game content, defined completely afresh for the particular game.
 -- The possible kinds of content are fixed in the library and all defined
@@ -20,13 +19,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Function
 import qualified Data.Map.Strict as M
 import           Data.Ord (comparing)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Core.Frequency
 import Game.LambdaHack.Core.Random
@@ -37,9 +34,6 @@ data ContentData c = ContentData
   { contentVector :: V.Vector c
   , groupFreq     :: M.Map (GroupName c) [(Int, (ContentId c, c))]
   }
-  deriving Generic
-
-instance NFData c => NFData (ContentData c)
 
 maxContentId :: ContentId k
 maxContentId = toContentId maxBound
@@ -65,7 +59,7 @@ validFreqs freqs = all ((> 0) . snd) freqs
 emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty
 
-makeContentData :: (NFData c, Show c)
+makeContentData :: Show c
                 => String
                 -> (c -> Text)
                      -- ^ name of the content itme, used for validation
@@ -89,9 +83,7 @@ makeContentData contentName getName getFreq validateSingle validateAll content =
                      , n > 0 ]
             f !m (!cgroup, !nik) = M.insertWith (++) cgroup [nik] m
         in foldl' f M.empty tuples
-      cd = ContentData {..}
-      -- Catch all kinds of errors in content ASAP, even in unused items.
-      contentData = deepseq cd cd
+      contentData = ContentData {..}
       singleOffenders = [ (offences, a)
                         | a <- content
                         , let offences = validateSingle a

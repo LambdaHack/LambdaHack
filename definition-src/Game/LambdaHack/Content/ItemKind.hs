@@ -19,17 +19,16 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Binary
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
+import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.Flavour
 
 -- | Item properties that are fixed for a given kind of items.
@@ -177,18 +176,6 @@ data ThrowMod = ThrowMod
   , throwHP       :: Int  -- ^ start flight with this many HP
   }
   deriving (Show, Eq, Ord, Generic)
-
-instance NFData ItemKind
-
-instance NFData Aspect
-
-instance NFData Effect
-
-instance NFData DetectKind
-
-instance NFData TimerDice
-
-instance NFData ThrowMod
 
 instance Binary Effect
 

@@ -17,7 +17,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Binary
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
@@ -41,9 +40,7 @@ data ModeKind = ModeKind
                                --   if no message, the screen is skipped
   , mdesc   :: Text            -- ^ description
   }
-  deriving (Show, Generic)
-
-instance NFData ModeKind
+  deriving Show
 
 -- | Requested cave groups for particular level intervals.
 type Caves = [([Int], [GroupName CaveKind])]
@@ -56,9 +53,7 @@ data Roster = Roster
   , rosterEnemy :: [(Text, Text)]  -- ^ the initial enmity matrix
   , rosterAlly  :: [(Text, Text)]  -- ^ the initial aliance matrix
   }
-  deriving (Show, Generic)
-
-instance NFData Roster
+  deriving Show
 
 -- | Outcome of a game.
 data Outcome =
@@ -71,8 +66,6 @@ data Outcome =
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary Outcome
-
-instance NFData Outcome
 
 -- | Conditional polynomial representing score calculation for this player.
 type HiCondPoly = [HiSummand]
@@ -92,8 +85,6 @@ data HiIndeterminant =
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary HiIndeterminant
-
-instance NFData HiIndeterminant
 
 -- | Properties of a particular player.
 data Player = Player
@@ -121,8 +112,6 @@ data Player = Player
 
 instance Binary Player
 
-instance NFData Player
-
 -- | If a faction with @LeaderUI@ and @LeaderAI@ has any actor, it has a leader.
 data LeaderMode =
     LeaderNull  -- ^ faction can have no leader, is whole under AI control
@@ -131,8 +120,6 @@ data LeaderMode =
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary LeaderMode
-
-instance NFData LeaderMode
 
 data AutoLeader = AutoLeader
   { autoDungeon :: Bool
@@ -156,8 +143,6 @@ data AutoLeader = AutoLeader
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary AutoLeader
-
-instance NFData AutoLeader
 
 horrorGroup :: GroupName ItemKind
 horrorGroup = "horror"

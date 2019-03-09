@@ -30,8 +30,8 @@ import qualified Data.IntSet as IS
 
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Core.Point
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right
 -- and down, so that the (1, 1) vector points to the bottom-right corner

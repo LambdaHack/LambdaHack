@@ -19,7 +19,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Control.DeepSeq
 import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Hashable (Hashable (hashWithSalt), hashUsing)
@@ -29,8 +28,6 @@ import Game.LambdaHack.Definition.Color
 
 data FancyName = Plain | Fancy | Liquid | GlassPlain | GlassFancy
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
-
-instance NFData FancyName
 
 -- | The type of item flavours.
 data Flavour = Flavour
@@ -51,8 +48,6 @@ instance Hashable Flavour where
 instance Binary Flavour where
   put = put . (fromIntegral :: Int -> Word16) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Word16 -> Int)) get
-
-instance NFData Flavour
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy, zipLiquid, zipGlassPlain, zipGlassFancy :: [Color] -> [Flavour]

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), makeData
@@ -12,18 +11,16 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import qualified Data.Text as T
-import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Definition.ContentData
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Core.Point
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
 
 -- | Parameters for the generation of dungeon levels.
 -- Warning: for efficiency, avoid embedded items in any of the common tiles.
@@ -73,9 +70,7 @@ data CaveKind = CaveKind
   , cstairAllowed   :: Freqs PlaceKind     -- ^ extra groups for inherited
   , cdesc           :: Text                -- ^ full cave description
   }
-  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
-
-instance NFData CaveKind
+  deriving Show  -- No Eq and Ord to make extending logically sound
 
 -- | Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen. Etc.

@@ -70,8 +70,6 @@ instance PointArray.UnboxRepClass (ContentId k) where
   toUnboxRepUnsafe (ContentId k) = k
   fromUnboxRep = ContentId
 
-instance NFData (ContentId c)
-
 instance Hashable (ContentId c)
 
 toContentId :: Word16 -> ContentId c

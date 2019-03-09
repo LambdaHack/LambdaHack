@@ -14,17 +14,16 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import           Data.Binary
 import           Data.Char (chr)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
+import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Definition.ContentData
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Point
-import Game.LambdaHack.Content.TileKind (TileKind)
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind
@@ -38,9 +37,7 @@ data PlaceKind = PlaceKind
   , poverrideDark :: [(Char, GroupName TileKind)]  -- ^ dark legend override
   , poverrideLit  :: [(Char, GroupName TileKind)]  -- ^ lit legend override
   }
-  deriving (Show, Generic)  -- No Eq and Ord to make extending logically sound
-
-instance NFData PlaceKind
+  deriving Show  -- No Eq and Ord to make extending logically sound
 
 -- | A method of filling the whole area (except for CVerbatim and CMirror,
 -- which are just placed in the middle of the area) by transforming
@@ -51,9 +48,7 @@ data Cover =
   | CReflect    -- ^ tile separately and symmetrically quarters of the place
   | CVerbatim   -- ^ just build the given interior, without filling the area
   | CMirror     -- ^ build the given interior in one of 4 mirrored variants
-  deriving (Show, Eq, Generic)
-
-instance NFData Cover
+  deriving (Show, Eq)
 
 -- | The choice of a fence type for the place.
 data Fence =
@@ -61,9 +56,7 @@ data Fence =
   | FFloor  -- ^ leave an empty space, like the room's floor
   | FGround -- ^ leave an empty space, like the cave's ground
   | FNone   -- ^ skip the fence and fill all with the place proper
-  deriving (Show, Eq, Generic)
-
-instance NFData Fence
+  deriving (Show, Eq)
 
 data PlaceEntry =
     PEntry (ContentId PlaceKind)

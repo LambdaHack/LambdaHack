@@ -28,8 +28,8 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Core.Point
 
 -- | Frontend-independent datatype to represent keys.
 data Key =

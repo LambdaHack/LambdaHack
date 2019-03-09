@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( ContentData, COps(..)
@@ -16,11 +15,9 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
-import           GHC.Generics (Generic)
 
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Content.CaveKind
@@ -105,9 +102,6 @@ data TileSpeedup = TileSpeedup
   , alterMinSkillTab   :: Tab Word8
   , alterMinWalkTab    :: Tab Word8
   }
-  deriving Generic
-
-instance NFData TileSpeedup
 
 -- Vectors of booleans can be slower than arrays, because they are not packed,
 -- but with growing cache sizes they may as well turn out faster at some point.
@@ -115,9 +109,6 @@ instance NFData TileSpeedup
 -- indexing. Also, in JS, bool arrays are obviously not packed.
 -- | A map morally indexed by @ContentId TileKind@.
 newtype Tab a = Tab (U.Vector a)
-  deriving Generic
-
-instance NFData (Tab a)
 
 emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab

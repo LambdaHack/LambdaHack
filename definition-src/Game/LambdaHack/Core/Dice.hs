@@ -12,7 +12,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Control.DeepSeq
 import Data.Binary
 import Data.Hashable (Hashable)
 import GHC.Generics (Generic)
@@ -73,8 +72,6 @@ wrapInParens "" = ""
 wrapInParens t = "(" <> t <> ")"
 
 instance Binary Dice
-
-instance NFData Dice
 
 instance Num Dice where
   d1 + d2 = DicePlus d1 d2
@@ -255,8 +252,6 @@ data DiceXY = DiceXY Dice Dice
   deriving (Show, Generic)
 
 instance Binary DiceXY
-
-instance NFData DiceXY
 
 -- | Maximal value of DiceXY.
 supDiceXY :: DiceXY -> (Int, Int)
