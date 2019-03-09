@@ -138,6 +138,9 @@ common exe-options
 -- Minimize median lag at the cost of occasional bigger GC lag,
 -- which fortunately sometimes fits into idle time between turns):
   ghc-options:        -with-rtsopts=-A99m
+-- Avoid frequent GCs. Only idle-GC when a break in the game (5s), not between
+-- slow keystrokes.
+  ghc-options:        -with-rtsopts=-I5
 
   if impl(ghcjs) {
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
