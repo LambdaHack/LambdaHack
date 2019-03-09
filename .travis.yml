@@ -32,28 +32,6 @@ before_cache:
 matrix:
   include:
     - env: GTKVTY=noopt
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-#    - env: GTKVTY=opt2
-#      compiler: "ghc-8.0.2"
-#      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-    - env: GTKVTY=asserts
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-    - env: GTKVTY=vty
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-    - env: GTKVTY=curses
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-    - env: GTKVTY=gtk
-      compiler: "ghc-8.0.2"
-      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-#    - env: GTKVTY=sdl
-#      compiler: "ghc-8.0.2"
-#      addons: {apt: {packages: [ghc-ppa-tools,libsdl2-dev,libsdl2-ttf-dev,cabal-install-2.2,ghc-8.0.2], sources: [hvr-ghc]}}
-
-    - env: GTKVTY=noopt
       compiler: "ghc-8.2.2"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
 #    - env: GTKVTY=opt2
@@ -98,34 +76,34 @@ matrix:
 #      addons: {apt: {packages: [ghc-ppa-tools,libsdl2-dev,libsdl2-ttf-dev, cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
 
     - env: GTKVTY=noopt
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=opt2
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=vty
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=curses
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
 #    - env: GTKVTY=gtk
-#      compiler: "ghc-8.6.3"
-#      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+#      compiler: "ghc-8.6.4"
+#      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
 #    - env: GTKVTY=sdl
-#      compiler: "ghc-8.6.3"
-#      addons: {apt: {packages: [ghc-ppa-tools,libsdl2-dev,libsdl2-ttf-dev, cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+#      compiler: "ghc-8.6.4"
+#      addons: {apt: {packages: [ghc-ppa-tools,libsdl2-dev,libsdl2-ttf-dev, cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
 
     - env: GTKVTY=asserts-osx
       compiler: "ghc-8.4.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
       os: osx
     - env: GTKVTY=asserts-osx
-      compiler: "ghc-8.6.3"
-      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
       os: osx
 
 before_install:
