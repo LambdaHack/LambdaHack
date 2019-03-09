@@ -411,6 +411,7 @@ library this-game-src
                       ,base
                       ,enummapset
                       ,filepath
+                      ,ghc-compact
                       ,optparse-applicative
                       ,random
                       ,template-haskell >= 2.6

@@ -80,7 +80,8 @@ makeContentData :: (NFData c, Show c)
                 -> ContentData c
 {-# INLINE makeContentData #-}
 makeContentData contentName getName getFreq validateSingle validateAll content =
-  let contentVector = V.fromList content
+  -- The @force@ is needed for @GHC.Compact@.
+  let contentVector = V.force $ V.fromList content
       groupFreq =
         let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- zip (map toContentId [0..]) content

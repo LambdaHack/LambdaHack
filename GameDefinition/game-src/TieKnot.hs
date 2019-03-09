@@ -11,6 +11,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
+import           GHC.Compact
 import qualified System.Random as R
 
 import           Game.LambdaHack.Client
@@ -74,7 +75,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
-      !cops = COps
+      copsRaw = COps
         { cocave
         , coitem
         , comode  = MK.makeData cocave coitem Content.ModeKind.content
@@ -85,6 +86,12 @@ tieKnotForAsync options@ServerOptions{ sallClear
         , coTileSpeedup
         }
       benchmark = sbenchmark $ sclientOptions soptionsNxt
+  -- Evaluating for compact regions catches all kinds of errors in content ASAP,
+  -- even in unused items.
+  --
+  -- Not using @compactWithSharing@, because it helps with residency,
+  -- but nothing else and costs a bit at startup.
+  cops <- getCompact <$> compact copsRaw
   -- Parse UI client configuration file.
   -- It is reparsed at each start of the game executable.
   -- Fail here, not inside client code, so that savefiles are not removed,

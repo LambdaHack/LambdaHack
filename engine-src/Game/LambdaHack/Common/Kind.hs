@@ -22,8 +22,6 @@ import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Definition.ContentData
-import           Game.LambdaHack.Definition.Defs
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
@@ -32,6 +30,8 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import           Game.LambdaHack.Definition.ContentData
+import           Game.LambdaHack.Definition.Defs
 
 -- | Operations for all content types, gathered together.
 data COps = COps
