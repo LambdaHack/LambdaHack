@@ -31,7 +31,6 @@ import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
 import           GHC.Exts (inline)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Item
@@ -40,12 +39,13 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Server.FovDigital
 
 -- * Perception cache types
@@ -320,10 +320,9 @@ perceptionCacheFromLevel fovClearLid fid lid s =
 type Matrix = (Int, Int, Int, Int)
 
 -- | Perform a full scan for a given position. Returns the positions
--- that are currently in the field of view. The Field of View
--- algorithm to use is passed in the second argument.
--- The actor's own position is considred reachable by him.
-fullscan :: FovClear  -- ^ the array with clear points
+-- that are currently in the field of view.
+-- The actor's own position is considred in his field of view.
+fullscan :: FovClear  -- ^ the array with clear positions
          -> Int       -- ^ scanning radius
          -> Point     -- ^ position of the spectator
          -> ES.EnumSet Point
