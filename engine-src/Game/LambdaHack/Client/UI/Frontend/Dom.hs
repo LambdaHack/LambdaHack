@@ -60,9 +60,6 @@ data FrontendSession = FrontendSession
   , spreviousFrame :: IORef SingleFrame
   }
 
-extraBlankMargin :: Int
-extraBlankMargin = 0
-
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "browser"
@@ -87,9 +84,8 @@ runWeb coscreen ClientOptions{..} rfMVar = do
   divBlockRaw <- createElement doc ("div" :: Text)
   divBlock <- unsafeCastTo HTMLDivElement divBlockRaw
   let cell = "<td>" ++ [Char.chr 160]
-      row = "<tr>"
-            ++ concat (replicate (rwidth coscreen + extraBlankMargin * 2) cell)
-      rows = concat (replicate (rheight coscreen + extraBlankMargin * 2) row)
+      row = "<tr>" ++ concat (replicate (rwidth coscreen) cell)
+      rows = concat (replicate (rheight coscreen) row)
   tableElemRaw <- createElement doc ("table" :: Text)
   tableElem <- unsafeCastTo HTMLTableElement tableElemRaw
   -- Get rid of table spacing. Spurious hacks just in case.
@@ -207,8 +203,7 @@ flattenTable coscreen table = do
   let f y = do
         rowsItem <- itemUnsafe rows y
         unsafeCastTo HTMLTableRowElement rowsItem
-  lrow <- mapM f [toEnum extraBlankMargin
-                  .. toEnum (rheight coscreen - 1 + extraBlankMargin)]
+  lrow <- mapM f [0 .. toEnum (rheight coscreen - 1)]
   let getC :: HTMLTableRowElement
            -> DOM [(HTMLTableCellElement, CSSStyleDeclaration)]
       getC row = do
@@ -218,8 +213,7 @@ flattenTable coscreen table = do
               cell <- unsafeCastTo HTMLTableCellElement cellsItem
               style <- getStyle cell
               return (cell, style)
-        mapM g [toEnum extraBlankMargin
-                .. toEnum (rwidth coscreen - 1 + extraBlankMargin)]
+        mapM g [0 .. toEnum (rwidth coscreen - 1)]
   lrc <- mapM getC lrow
   return $! V.fromListN (rwidth coscreen * rheight coscreen) $ concat lrc
 
