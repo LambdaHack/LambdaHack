@@ -135,17 +135,21 @@ common options
 
 common exe-options
   ghc-options:        -threaded -rtsopts
--- Minimize median lag at the cost of occasional bigger GC lag,
--- which fortunately sometimes fits into idle time between turns):
+-- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
+-- GC lag, which fortunately sometimes fits into idle time between turns):
   ghc-options:        -with-rtsopts=-A99m
--- Avoid frequent GCs. Only idle-GC when a break in the game (5s), not between
--- slow keystrokes.
+-- (Ignored by GHCJS) Avoid frequent GCs. Only idle-GC during a break in
+-- gameplay (5s), not between slow keystrokes.
   ghc-options:        -with-rtsopts=-I5
 
-  if impl(ghcjs) {
+-- Haskell GC in GHCJS every 30s.
+  ghcjs-options:      -DGHCJS_GC_INTERVAL=30000
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
-    cpp-options:      -DGHCJS_BUSY_YIELD=50
+  ghcjs-options:      -DGHCJS_BUSY_YIELD=50
+  ghcjs-options:      -dedupe
+
+  if impl(ghcjs) {
     cpp-options:      -DUSE_JSFILE
   } else {
     build-depends:    zlib >= 0.5.3.1
