@@ -141,14 +141,13 @@ instance MonadServerAtomic SerImplementation where
 -- initial states, in the @IO@ monad.
 executorSer :: COps -> CCUI -> ServerOptions -> UIOptions -> IO ()
 executorSer cops ccui soptionsNxtCmdline sUIOptions = do
-  soptionsNxt <- case uCmdline sUIOptions of
+  soptionsNxtRaw <- case uCmdline sUIOptions of
     []   -> return soptionsNxtCmdline
     args -> handleParseResult $ execParserPure defaultPrefs serverOptionsPI args
   -- Options for the clients modified with the configuration file.
-  -- The client debug inside server debug only holds the client commandline
-  -- options and is never updated with config options, etc.
   let clientOptions = applyUIOptions cops sUIOptions
-                      $ sclientOptions soptionsNxt
+                      $ sclientOptions soptionsNxtRaw
+      soptionsNxt = soptionsNxtRaw {sclientOptions = clientOptions}
       -- Partially applied main loop of the clients.
       executorClient = executorCli ccui sUIOptions clientOptions cops
   -- Wire together game content, the main loop of game clients
