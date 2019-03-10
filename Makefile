@@ -17,7 +17,7 @@ configure-debug:
 	cabal configure --enable-profiling --profiling-detail=all-functions -fwith_expensive_assertions --disable-optimization
 
 configure-prof:
-	cabal configure --enable-profiling --profiling-detail=exported-functions -frelease
+	cabal configure --enable-profiling --profiling-detail=exported-functions
 
 ghcjs-new-build:
 	cabal new-build -j1 --ghcjs --disable-library-profiling --disable-profiling .
@@ -231,8 +231,8 @@ version:
 	dist/build/LambdaHack/LambdaHack --version
 
 build-binary-common:
-	cabal install --disable-library-profiling --disable-profiling --disable-documentation -frelease --only-dependencies
-	cabal configure --disable-library-profiling --disable-profiling -frelease --prefix=/ --datadir=. --datasubdir=.
+	cabal install --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies
+	cabal configure --disable-library-profiling --disable-profiling --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=LambdaHackTheGameInstall
