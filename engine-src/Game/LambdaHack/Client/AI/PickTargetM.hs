@@ -45,9 +45,9 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m => (ActorId, Actor) -> m (Maybe TgtAndPath)
--- This inline speeds up execution by 5% and decreases allocation by 10%,
--- despite probably bloating executable:
-{-# INLINE refreshTarget #-}
+-- This inline would speeds up execution by 5% and decreases allocation by 10%,
+-- but it'd bloat JS code without speeding it up.
+-- {-# INLINE refreshTarget #-}
 refreshTarget (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side

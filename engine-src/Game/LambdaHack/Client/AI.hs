@@ -20,10 +20,10 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Core.Point
 
 -- | Handle the move of an actor under AI control (regardless if the whole
 -- faction is under human or computer control).
@@ -60,9 +60,9 @@ queryAI aid = do
 pickActorAndAction :: MonadClient m
                    => Maybe ActorId -> ActorId
                    -> m (ActorId, RequestTimed, Maybe Point)
--- This inline speeds up execution by 15% and decreases allocation by 15%,
--- despite probably bloating executable:
-{-# INLINE pickActorAndAction #-}
+-- This inline would speeds up execution by 15% and decreases allocation by 15%,
+-- but it'd bloat JS code without speeding it up.
+-- {-# INLINE pickActorAndAction #-}
 pickActorAndAction maid aid = do
   mleader <- getsClient sleader
   aidToMove <-
