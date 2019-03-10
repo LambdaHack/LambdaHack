@@ -20,7 +20,7 @@ configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions -frelease
 
 ghcjs-new-build:
-	cabal new-build -j1 --ghcjs --ghcjs-option=-dedupe --disable-library-profiling --disable-profiling -f-release .
+	cabal new-build -j1 --ghcjs --disable-library-profiling --disable-profiling .
 
 chrome-prof:
 	google-chrome --no-sandbox --js-flags="--logfile=%t.log --prof" ../lambdahack.github.io/index.html
@@ -231,8 +231,8 @@ version:
 	dist/build/LambdaHack/LambdaHack --version
 
 build-binary-common:
-	cabal install --disable-library-profiling --disable-profiling --disable-documentation -f-release --only-dependencies
-	cabal configure --disable-library-profiling --disable-profiling -f-release --prefix=/ --datadir=. --datasubdir=.
+	cabal install --disable-library-profiling --disable-profiling --disable-documentation -frelease --only-dependencies
+	cabal configure --disable-library-profiling --disable-profiling -frelease --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
 	cabal copy --destdir=LambdaHackTheGameInstall
