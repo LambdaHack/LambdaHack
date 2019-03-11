@@ -340,7 +340,7 @@ fullscan FovClear{fovClear} radius spectatorPos =
      | otherwise -> ES.empty
       where
   mapTr :: Matrix -> [PointI]
-  mapTr m@(!_, !_, !_, !_) = scan (radius - 1) fovClear (trV m)
+  mapTr m@(!_, !_, !_, !_) = scan (radius - 1) isClear (trV m)
 
   trV :: Matrix -> Bump -> PointI
   {-# INLINE trV #-}
@@ -348,3 +348,7 @@ fullscan FovClear{fovClear} radius spectatorPos =
     spectatorI + fromEnum (Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by))
 
   spectatorI = fromEnum spectatorPos
+
+  isClear :: PointI -> Bool
+  {-# INLINE isClear #-}
+  isClear = PointArray.accessI fovClear

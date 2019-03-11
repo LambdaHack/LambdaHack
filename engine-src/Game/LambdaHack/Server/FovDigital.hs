@@ -21,8 +21,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude hiding (intersect)
 
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
+import Game.LambdaHack.Core.Point (PointI)
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int
@@ -56,20 +55,16 @@ type EdgeInterval = (Edge, Edge)
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.
-scan :: Distance         -- ^ visiblity distance
-     -> PointArray.Array Bool
+scan :: Distance          -- ^ visiblity distance
+     -> (PointI -> Bool)  -- ^ position visually clear predicate
      -> (Bump -> PointI)  -- ^ coordinate transformation
      -> [PointI]
 {-# INLINE scan #-}
-scan r fovClear tr = assert (r > 0 `blame` r) $
+scan r isClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
           , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
-  isClear :: PointI -> Bool
-  {-# INLINE isClear #-}
-  isClear = PointArray.accessI fovClear
-
   dscan :: Distance -> EdgeInterval -> [PointI]
   dscan !d ( s0@(!sl{-shallow line-}, !sHull)
            , e0@(!el{-steep line-}, !eHull) ) =
