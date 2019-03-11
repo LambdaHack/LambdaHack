@@ -29,6 +29,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
+import qualified Data.IntSet as IS
 import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Common.Actor
@@ -328,18 +329,18 @@ fullscan :: FovClear  -- ^ the array with clear positions
          -> ES.EnumSet Point
 fullscan FovClear{fovClear} radius spectatorPos =
   if | radius == 2 -> inline squareUnsafeSet spectatorPos
-     | radius > 2 ->
-         mapTr (1, 0, 0, -1)   -- quadrant I
-       $ mapTr (0, 1, 1, 0)    -- II (counter-clockwise)
-       $ mapTr (-1, 0, 0, 1)   -- III
-       $ mapTr (0, -1, -1, 0)  -- IV
-       $ ES.singleton spectatorPos
+     | radius > 2 -> ES.intSetToEnumSet $ IS.fromList $
+         [spectatorI]
+         ++ mapTr (1, 0, 0, -1)   -- quadrant I
+         ++ mapTr (0, 1, 1, 0)    -- II (counter-clockwise)
+         ++ mapTr (-1, 0, 0, 1)   -- III
+         ++ mapTr (0, -1, -1, 0)  -- IV
      -- Very rare:
      | radius == 1 -> ES.singleton spectatorPos
      | otherwise -> ES.empty
       where
-  mapTr :: Matrix -> ES.EnumSet Point -> ES.EnumSet Point
-  mapTr m@(!_, !_, !_, !_) es = scan es (radius - 1) fovClear (trV m)
+  mapTr :: Matrix -> [PointI]
+  mapTr m@(!_, !_, !_, !_) = scan (radius - 1) fovClear (trV m)
 
   trV :: Matrix -> Bump -> PointI
   {-# INLINE trV #-}

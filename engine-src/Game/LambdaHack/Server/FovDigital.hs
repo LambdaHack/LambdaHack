@@ -21,9 +21,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude hiding (intersect)
 
-import qualified Data.EnumSet as ES
-import qualified Data.IntSet as IS
-
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
 
@@ -59,29 +56,23 @@ type EdgeInterval = (Edge, Edge)
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.
-scan :: ES.EnumSet Point
-     -> Distance         -- ^ visiblity distance
+scan :: Distance         -- ^ visiblity distance
      -> PointArray.Array Bool
      -> (Bump -> PointI)  -- ^ coordinate transformation
-     -> ES.EnumSet Point
+     -> [PointI]
 {-# INLINE scan #-}
-scan accScan r fovClear tr = assert (r > 0 `blame` r) $
+scan r fovClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan accScan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
-                  , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
+  dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
+          , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
   isClear :: PointI -> Bool
   {-# INLINE isClear #-}
   isClear = PointArray.accessI fovClear
 
-  fastSetInsert :: PointI -> ES.EnumSet Point -> ES.EnumSet Point
-  {-# INLINE fastSetInsert #-}
-  fastSetInsert pI set =
-    ES.intSetToEnumSet $ IS.insert pI $ ES.enumSetToIntSet set
-
-  dscan :: ES.EnumSet Point -> Distance -> EdgeInterval -> ES.EnumSet Point
-  dscan !accDscan !d ( s0@(!sl{-shallow line-}, !sHull)
-                     , e0@(!el{-steep line-}, !eHull) ) =
+  dscan :: Distance -> EdgeInterval -> [PointI]
+  dscan !d ( s0@(!sl{-shallow line-}, !sHull)
+           , e0@(!el{-steep line-}, !eHull) ) =
 
     let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
                in n `div` k
@@ -94,24 +85,21 @@ scan accScan r fovClear tr = assert (r > 0 `blame` r) $
         outside =
           if d < r
           then let !trBump = bump ps0
-                   !accBump = fastSetInsert trBump accDscan
                in if isClear trBump
-                  then mscanVisible accBump s0 (ps0+1)  -- start visible
-                  else mscanShadowed accBump (ps0+1)    -- start in shadow
-          else foldl' (\acc ps -> fastSetInsert (bump ps) acc)
-                      accDscan [ps0..pe]
+                  then trBump : mscanVisible s0 (ps0+1)  -- start visible
+                  else trBump : mscanShadowed (ps0+1)    -- start in shadow
+          else map bump [ps0..pe]
 
         bump :: Progress -> PointI
         bump px = tr $ B px d
 
         -- We're in a visible interval.
-        mscanVisible :: ES.EnumSet Point -> Edge -> Progress -> ES.EnumSet Point
-        mscanVisible !acc s@(!_line, !hull) !ps =
+        mscanVisible :: Edge -> Progress -> [PointI]
+        mscanVisible s@(!_line, !hull) !ps =
           if ps <= pe
           then let !trBump = bump ps
-                   !accBump = fastSetInsert trBump acc
                in if isClear trBump  -- not entering shadow
-                  then mscanVisible accBump s (ps+1)
+                  then trBump : mscanVisible s (ps+1)
                   else let steepBump = B ps d
                            cmp :: Bump -> Bump -> Ordering
                            {-# INLINE cmp #-}
@@ -119,18 +107,16 @@ scan accScan r fovClear tr = assert (r > 0 `blame` r) $
                            nep = maximumBy cmp hull
                            neHull = addHull cmp steepBump eHull
                            ne = (dline nep steepBump, neHull)
-                           accNew = dscan accBump (d+1) (s, ne)
-                       in mscanShadowed accNew (ps+1)
-          else dscan acc (d+1) (s, e0)  -- reached end, scan next
+                       in trBump : dscan (d+1) (s, ne) ++ mscanShadowed (ps+1)
+          else dscan (d+1) (s, e0)  -- reached end, scan next
 
         -- We're in a shadowed interval.
-        mscanShadowed :: ES.EnumSet Point -> Progress -> ES.EnumSet Point
-        mscanShadowed !acc !ps =
+        mscanShadowed :: Progress -> [PointI]
+        mscanShadowed !ps =
           if ps <= pe
           then let !trBump = bump ps
-                   !accBump = fastSetInsert trBump acc
                in if not $ isClear trBump  -- not moving out of shadow
-                  then mscanShadowed accBump (ps+1)
+                  then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
                            cmp :: Bump -> Bump -> Ordering
                            {-# INLINE cmp #-}
@@ -138,8 +124,8 @@ scan accScan r fovClear tr = assert (r > 0 `blame` r) $
                            nsp = maximumBy cmp eHull
                            nsHull = addHull cmp shallowBump sHull
                            ns = (dline nsp shallowBump, nsHull)
-                       in mscanVisible accBump ns (ps+1)
-          else acc  -- reached end while in shadow
+                       in trBump : mscanVisible ns (ps+1)
+          else []  -- reached end while in shadow
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
          outside
