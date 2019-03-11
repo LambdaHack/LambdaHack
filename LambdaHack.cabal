@@ -139,10 +139,9 @@ common exe-options
   ghc-options:        -threaded -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
 -- GC lag, which fortunately sometimes fits into idle time between turns):
-  ghc-options:        -with-rtsopts=-A99m
 -- (Ignored by GHCJS) Avoid frequent GCs. Only idle-GC during a break in
 -- gameplay (5s), not between slow keystrokes.
-  ghc-options:        -with-rtsopts=-I5
+  ghc-options:        "-with-rtsopts=-A99m -I5"
 
 -- Haskell GC in GHCJS every 30s.
   ghcjs-options:      -DGHCJS_GC_INTERVAL=30000
