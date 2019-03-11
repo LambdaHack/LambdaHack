@@ -133,6 +133,8 @@ common options
   if flag(release)
     cpp-options:      -DEXPOSE_INTERNAL
 
+  ghcjs-options:      -DUSE_JSFILE
+
 common exe-options
   ghc-options:        -threaded -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
@@ -148,12 +150,6 @@ common exe-options
 -- on my machine with default --maxFps.
   ghcjs-options:      -DGHCJS_BUSY_YIELD=50
   ghcjs-options:      -dedupe
-
-  if impl(ghcjs) {
-    cpp-options:      -DUSE_JSFILE
-  } else {
-    build-depends:    zlib >= 0.5.3.1
-  }
 
 library definition
   import: options
@@ -375,7 +371,6 @@ library
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
-    cpp-options:      -DUSE_JSFILE
   } else {
     other-modules:    Game.LambdaHack.Common.HSFile
     build-depends:    zlib >= 0.5.3.1
