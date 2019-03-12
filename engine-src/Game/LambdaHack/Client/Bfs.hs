@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, RankNTypes,
              TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
@@ -24,6 +25,7 @@ import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word (Word16)
+import           GHC.Exts (inline)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Level
@@ -76,7 +78,8 @@ abortedUnknownBfs = pred apartBfs
 
 maxBfsBorderSize :: Int
 {-# INLINE maxBfsBorderSize #-}
-maxBfsBorderSize = 1000  -- only very fractal borders could exceed this
+maxBfsBorderSize = 4096 -- only very fractal borders could exceed this
+                        -- and with Allure dungeon size, nothing can
 
 -- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
 tabA :: PA.PrimArray Word16
@@ -134,14 +137,11 @@ fillBfs !lalter !alterSkill !source PointArray.Array{..} = do
             processKnown !posIx !acc1 =
               if posIx >= 0 then do
                 !pos <- unsafeReadCurrent posIx
-                let fKnown :: Int -> VectorI -> ST s Int
-                    fKnown !acc2 !move = do
+                let fKnown :: VectorI -> Int -> ST s Int
+                    fKnown !move !acc2 = do
                       let p = pos + move
                       pDist <- unsafeReadI p
-                      let visitedMove = pDist /= apartBfs
-                      if visitedMove
-                      then return acc2
-                      else do
+                      if pDist == apartBfs then do  -- not visited yet
                         let alter :: Word8
                             !alter = lalter `PointArray.accessI` p
                         if | alterSkill < alter -> return acc2
@@ -153,8 +153,21 @@ fillBfs !lalter !alterSkill !source PointArray.Array{..} = do
                              unsafeWriteI p distance
                              unsafeWriteNext acc2 p
                              return $! min (maxBfsBorderSize - 1) (acc2 + 1)
-                !acc3 <- foldM fKnown acc1 movesI
-                processKnown (posIx - 1) acc3
+                      else return acc2
+                -- Innermost loop over @moves@ manually unrolled for (JS) speed:
+                let f :: (X, Y) -> PointI
+                    {-# INLINE f #-}
+                    f (vx, vy) = inline fromEnum $ Vector{..}
+                return acc1
+                  >>= fKnown (f (-1, -1))
+                  >>= fKnown (f (0, -1))
+                  >>= fKnown (f (1, -1))
+                  >>= fKnown (f (1, 0))
+                  >>= fKnown (f (1, 1))
+                  >>= fKnown (f (0, 1))
+                  >>= fKnown (f (-1, 1))
+                  >>= fKnown (f (-1, 0))
+                  >>= processKnown (posIx - 1)
               else return acc1
         acc4 <- processKnown (prevMaxPosIx - 1) 0
         if acc4 == 0 || distance == abortedKnownBfs

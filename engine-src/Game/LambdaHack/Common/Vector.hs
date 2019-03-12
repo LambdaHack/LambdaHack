@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), VectorI
   , isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
-  , moves, movesI, movesCardinal, movesCardinalI, movesDiagonal, movesDiagonalI
+  , moves, movesCardinal, movesCardinalI, movesDiagonal, movesDiagonalI
   , compassText, vicinityBounded, vicinityUnsafe
   , vicinityCardinal, vicinityCardinalUnsafe, squareUnsafeSet
   , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
@@ -100,9 +100,6 @@ moves :: [Vector]
 moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-
-movesI :: [VectorI]
-movesI = map fromEnum moves
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]
