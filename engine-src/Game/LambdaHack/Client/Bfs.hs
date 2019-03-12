@@ -20,6 +20,7 @@ import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word (Word16)
@@ -93,13 +94,17 @@ fillBfs =
   let maxBfsBorderSize :: Int
       {-# INLINE maxBfsBorderSize #-}
       maxBfsBorderSize = 1000  -- only very fractal borders could exceed this
-      -- Instead of a queue (list) using these two vectors, for (JS) speed.
-      tabA :: U.Vector Word16
+      -- Instead of a queue (list) using these two arrays, for (JS) speed.
+      tabA :: PA.PrimArray Word16
       {-# NOINLINE tabA #-}
-      tabA = U.replicate maxBfsBorderSize 0
-      tabB :: U.Vector Word16
+      tabA = runST $ do
+        tab <- PA.newPrimArray maxBfsBorderSize
+        PA.unsafeFreezePrimArray tab
+      tabB :: PA.PrimArray Word16
       {-# NOINLINE tabB #-}
-      tabB = U.replicate maxBfsBorderSize 0
+      tabB = runST $ do
+        tab <- PA.newPrimArray maxBfsBorderSize
+        PA.unsafeFreezePrimArray tab
       fillBfsInST :: forall s.
                      PointArray.Array Word8
                   -> Word8
@@ -114,8 +119,8 @@ fillBfs =
             unsafeWriteI :: PointI -> BfsDistance -> ST s ()
             {-# INLINE unsafeWriteI #-}
             unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
-            bfs :: VM.MVector s Word16
-                -> VM.MVector s Word16
+            bfs :: PA.MutablePrimArray s Word16
+                -> PA.MutablePrimArray s Word16
                 -> BfsDistance
                 -> Int
                 -> ST s ()
@@ -123,11 +128,11 @@ fillBfs =
               let unsafeReadCurrent :: Int -> ST s PointI
                   {-# INLINE unsafeReadCurrent #-}
                   unsafeReadCurrent ix =
-                    fromEnum <$> VM.unsafeRead tabReadThawed ix
+                    fromEnum <$> PA.readPrimArray tabReadThawed ix
                   unsafeWriteNext :: Int -> PointI -> ST s ()
                   {-# INLINE unsafeWriteNext #-}
                   unsafeWriteNext ix p =
-                    VM.unsafeWrite tabWriteThawed ix (toEnum p)
+                    PA.writePrimArray tabWriteThawed ix (toEnum p)
                   processKnown :: Int -> Int -> ST s Int
                   processKnown !posIx !acc1 =
                     if posIx >= 0 then do
@@ -160,12 +165,12 @@ fillBfs =
               if acc4 == 0 || distance == abortedKnownBfs
               then return () -- no more close enough dungeon positions
               else bfs tabWriteThawed tabReadThawed (succ distance) acc4
-        let tabAInitial = tabA U.// [(0, toEnum $ fromEnum source)]
-        tabAInitialThawed <- U.unsafeThaw tabAInitial
-        tabBThawed <- U.unsafeThaw tabB
-        bfs tabAInitialThawed tabBThawed (succ minKnownBfs) 1
-        void $ U.unsafeFreeze tabAInitialThawed
-        void $ U.unsafeFreeze tabBThawed
+        tabAThawed <- PA.unsafeThawPrimArray tabA
+        PA.writePrimArray tabAThawed 0 (toEnum $ fromEnum source)
+        tabBThawed <- PA.unsafeThawPrimArray tabB
+        bfs tabAThawed tabBThawed (succ minKnownBfs) 1
+        void $ PA.unsafeFreezePrimArray tabAThawed
+        void $ PA.unsafeFreezePrimArray tabBThawed
         void $ U.unsafeFreeze vThawed
   in \lalter alterSkill source arr ->
        runST $ fillBfsInST lalter alterSkill source arr
