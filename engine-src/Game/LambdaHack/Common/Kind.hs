@@ -61,9 +61,6 @@ emptyCOps = COps
   }
 
 -- | Map from an item kind identifier to the mean aspect value for the kind.
---
--- Significant portions of this map are unused and so intentially kept
--- unevaluated.
 newtype ItemSpeedup = ItemSpeedup (V.Vector IA.KindMean)
 
 emptyItemSpeedup :: ItemSpeedup

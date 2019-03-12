@@ -107,8 +107,6 @@ fillBfs =
                   -> PointArray.Array BfsDistance
                   -> ST s ()
       fillBfsInST !lalter !alterSkill !source PointArray.Array{..} = do
-        tabAThawed <- U.unsafeThaw tabA
-        tabBThawed <- U.unsafeThaw tabB
         vThawed <- U.unsafeThaw avector
         let unsafeReadI :: PointI -> ST s BfsDistance
             {-# INLINE unsafeReadI #-}
@@ -116,24 +114,21 @@ fillBfs =
             unsafeWriteI :: PointI -> BfsDistance -> ST s ()
             {-# INLINE unsafeWriteI #-}
             unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
-            bfs :: VM.MVector s Word16
-                -> VM.MVector s Word16
+            bfs :: U.Vector Word16
+                -> U.Vector Word16
                 -> BfsDistance
                 -> Int
                 -> ST s ()
-            bfs !tabReadThawed !tabWriteThawed !distance !predK = do
-              let unsafeReadCurrent :: Int -> ST s PointI
-                  {-# INLINE unsafeReadCurrent #-}
-                  unsafeReadCurrent ix =
-                    fromEnum <$> VM.unsafeRead tabReadThawed ix
-                  unsafeWriteNext :: Int -> PointI -> ST s ()
+            bfs !tabRead !tabWrite !distance !predK = do
+              tabWriteThawed <- U.unsafeThaw tabWrite
+              let unsafeWriteNext :: Int -> PointI -> ST s ()
                   {-# INLINE unsafeWriteNext #-}
                   unsafeWriteNext ix p =
                     VM.unsafeWrite tabWriteThawed ix (toEnum p)
-                  processKnown :: Int -> Int -> ST s Int
-                  processKnown !succK2 !posIx = do
-                    !pos <- unsafeReadCurrent posIx
-                    let fKnown :: Int -> VectorI -> ST s Int
+                  processKnown :: Int -> Word16 -> ST s Int
+                  processKnown !succK2 !posW16 = do
+                    let !pos = fromEnum posW16
+                        fKnown :: Int -> VectorI -> ST s Int
                         fKnown !ix !move = do
                           let p = pos + move
                           pDist <- unsafeReadI p
@@ -153,18 +148,15 @@ fillBfs =
                                  unsafeWriteI p distance
                                  unsafeWriteNext ix p
                                  return $! min (maxBfsBorderSize - 1) (ix + 1)
-                    !succK3 <- foldM fKnown succK2 movesI
-                    if posIx > 0
-                    then processKnown succK3 (posIx - 1)
-                    else return succK3
-              succK4 <- processKnown 0 (predK - 1)
+                    foldM fKnown succK2 movesI
+              let tabReadSlice = U.unsafeTake predK tabRead
+              succK4 <- U.foldM' processKnown 0 tabReadSlice
+              tabWriteFrozen <- U.unsafeFreeze tabWriteThawed
               if succK4 == 0 || distance == abortedKnownBfs
               then return () -- no more close enough dungeon positions
-              else bfs tabWriteThawed tabReadThawed (succ distance) succK4
-        VM.unsafeWrite tabAThawed 0 (toEnum $ fromEnum source)
-        bfs tabAThawed tabBThawed (succ minKnownBfs) 1
-        void $ U.unsafeFreeze tabAThawed
-        void $ U.unsafeFreeze tabBThawed
+              else bfs tabWriteFrozen tabRead (succ distance) succK4
+        let tabAInitial = tabA U.// [(0, toEnum $ fromEnum source)]
+        bfs tabAInitial tabB (succ minKnownBfs) 1
         void $ U.unsafeFreeze vThawed
   in \lalter alterSkill source arr ->
        runST $ fillBfsInST lalter alterSkill source arr
