@@ -15,7 +15,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Monad.ST.Strict
+import           Control.Monad.ST.Strict (ST, runST)
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
@@ -74,6 +74,23 @@ abortedKnownBfs = pred maxBfsDistance
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
+maxBfsBorderSize :: Int
+{-# INLINE maxBfsBorderSize #-}
+maxBfsBorderSize = 1000  -- only very fractal borders could exceed this
+
+-- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
+tabA :: PA.PrimArray Word16
+{-# NOINLINE tabA #-}
+tabA = runST $ do
+  tab <- PA.newPrimArray maxBfsBorderSize
+  PA.unsafeFreezePrimArray tab
+
+tabB :: PA.PrimArray Word16
+{-# NOINLINE tabB #-}
+tabB = runST $ do
+  tab <- PA.newPrimArray maxBfsBorderSize
+  PA.unsafeFreezePrimArray tab
+
 -- | Fill out the given BFS array (not all cells are overwritten,
 -- so we assume the array is previously filled with @apartBfs@).
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
@@ -84,96 +101,72 @@ abortedUnknownBfs = pred apartBfs
 -- because other actors use them, too, so the cost is shared and the extra
 -- visiblity is valuable, too. We treat unknown tiles specially.
 -- Whether suspect tiles are considered openable depends on @smarkSuspect@.
-fillBfs :: PointArray.Array Word8
+fillBfs :: forall s.
+           PointArray.Array Word8
         -> Word8
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
-        -> ()
-{-# NOINLINE fillBfs #-}
-fillBfs =
-  let maxBfsBorderSize :: Int
-      {-# INLINE maxBfsBorderSize #-}
-      maxBfsBorderSize = 1000  -- only very fractal borders could exceed this
-      -- Instead of a queue (list) using these two arrays, for (JS) speed.
-      tabA :: PA.PrimArray Word16
-      {-# NOINLINE tabA #-}
-      tabA = runST $ do
-        tab <- PA.newPrimArray maxBfsBorderSize
-        PA.unsafeFreezePrimArray tab
-      tabB :: PA.PrimArray Word16
-      {-# NOINLINE tabB #-}
-      tabB = runST $ do
-        tab <- PA.newPrimArray maxBfsBorderSize
-        PA.unsafeFreezePrimArray tab
-      fillBfsInST :: forall s.
-                     PointArray.Array Word8
-                  -> Word8
-                  -> Point
-                  -> PointArray.Array BfsDistance
-                  -> ST s ()
-      fillBfsInST !lalter !alterSkill !source PointArray.Array{..} = do
-        vThawed <- U.unsafeThaw avector
-        let unsafeReadI :: PointI -> ST s BfsDistance
-            {-# INLINE unsafeReadI #-}
-            unsafeReadI p = BfsDistance <$> VM.unsafeRead vThawed p
-            unsafeWriteI :: PointI -> BfsDistance -> ST s ()
-            {-# INLINE unsafeWriteI #-}
-            unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
-            bfs :: PA.MutablePrimArray s Word16
-                -> PA.MutablePrimArray s Word16
-                -> BfsDistance
-                -> Int
-                -> ST s ()
-            bfs !tabReadThawed !tabWriteThawed !distance !prevMaxPosIx = do
-              let unsafeReadCurrent :: Int -> ST s PointI
-                  {-# INLINE unsafeReadCurrent #-}
-                  unsafeReadCurrent ix =
-                    fromEnum <$> PA.readPrimArray tabReadThawed ix
-                  unsafeWriteNext :: Int -> PointI -> ST s ()
-                  {-# INLINE unsafeWriteNext #-}
-                  unsafeWriteNext ix p =
-                    PA.writePrimArray tabWriteThawed ix (toEnum p)
-                  processKnown :: Int -> Int -> ST s Int
-                  processKnown !posIx !acc1 =
-                    if posIx >= 0 then do
-                      !pos <- unsafeReadCurrent posIx
-                      let fKnown :: Int -> VectorI -> ST s Int
-                          fKnown !acc2 !move = do
-                            let p = pos + move
-                            pDist <- unsafeReadI p
-                            let visitedMove = pDist /= apartBfs
-                            if visitedMove
-                            then return acc2
-                            else do
-                              let alter :: Word8
-                                  !alter = lalter `PointArray.accessI` p
-                              if | alterSkill < alter -> return acc2
-                                 | alter == 1 -> do
-                                   let distCompl =
-                                         distance .&. complement minKnownBfs
-                                   unsafeWriteI p distCompl
-                                   return acc2
-                                 | otherwise -> do
-                                   unsafeWriteI p distance
-                                   unsafeWriteNext acc2 p
-                                   return $! min (maxBfsBorderSize - 1)
-                                                 (acc2 + 1)
-                      !acc3 <- foldM fKnown acc1 movesI
-                      processKnown (posIx - 1) acc3
-                    else return acc1
-              acc4 <- processKnown (prevMaxPosIx - 1) 0
-              if acc4 == 0 || distance == abortedKnownBfs
-              then return () -- no more close enough dungeon positions
-              else bfs tabWriteThawed tabReadThawed (succ distance) acc4
-        tabAThawed <- PA.unsafeThawPrimArray tabA
-        PA.writePrimArray tabAThawed 0 (toEnum $ fromEnum source)
-        tabBThawed <- PA.unsafeThawPrimArray tabB
-        bfs tabAThawed tabBThawed (succ minKnownBfs) 1
-        void $ PA.unsafeFreezePrimArray tabAThawed
-        void $ PA.unsafeFreezePrimArray tabBThawed
-        void $ U.unsafeFreeze vThawed
-  in \lalter alterSkill source arr ->
-       runST $ fillBfsInST lalter alterSkill source arr
+        -> ST s ()
+{-# INLINE fillBfs #-}
+fillBfs !lalter !alterSkill !source PointArray.Array{..} = do
+  vThawed <- U.unsafeThaw avector
+  let unsafeReadI :: PointI -> ST s BfsDistance
+      {-# INLINE unsafeReadI #-}
+      unsafeReadI p = BfsDistance <$> VM.unsafeRead vThawed p
+      unsafeWriteI :: PointI -> BfsDistance -> ST s ()
+      {-# INLINE unsafeWriteI #-}
+      unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
+      bfs :: PA.MutablePrimArray s Word16
+          -> PA.MutablePrimArray s Word16
+          -> BfsDistance
+          -> Int
+          -> ST s ()
+      bfs !tabReadThawed !tabWriteThawed !distance !prevMaxPosIx = do
+        let unsafeReadCurrent :: Int -> ST s PointI
+            {-# INLINE unsafeReadCurrent #-}
+            unsafeReadCurrent ix =
+              fromEnum <$> PA.readPrimArray tabReadThawed ix
+            unsafeWriteNext :: Int -> PointI -> ST s ()
+            {-# INLINE unsafeWriteNext #-}
+            unsafeWriteNext ix p =
+              PA.writePrimArray tabWriteThawed ix (toEnum p)
+            processKnown :: Int -> Int -> ST s Int
+            processKnown !posIx !acc1 =
+              if posIx >= 0 then do
+                !pos <- unsafeReadCurrent posIx
+                let fKnown :: Int -> VectorI -> ST s Int
+                    fKnown !acc2 !move = do
+                      let p = pos + move
+                      pDist <- unsafeReadI p
+                      let visitedMove = pDist /= apartBfs
+                      if visitedMove
+                      then return acc2
+                      else do
+                        let alter :: Word8
+                            !alter = lalter `PointArray.accessI` p
+                        if | alterSkill < alter -> return acc2
+                           | alter == 1 -> do
+                             let distCompl = distance .&. complement minKnownBfs
+                             unsafeWriteI p distCompl
+                             return acc2
+                           | otherwise -> do
+                             unsafeWriteI p distance
+                             unsafeWriteNext acc2 p
+                             return $! min (maxBfsBorderSize - 1) (acc2 + 1)
+                !acc3 <- foldM fKnown acc1 movesI
+                processKnown (posIx - 1) acc3
+              else return acc1
+        acc4 <- processKnown (prevMaxPosIx - 1) 0
+        if acc4 == 0 || distance == abortedKnownBfs
+        then return () -- no more close enough dungeon positions
+        else bfs tabWriteThawed tabReadThawed (succ distance) acc4
+  tabAThawed <- PA.unsafeThawPrimArray tabA
+  PA.writePrimArray tabAThawed 0 (toEnum $ fromEnum source)
+  tabBThawed <- PA.unsafeThawPrimArray tabB
+  bfs tabAThawed tabBThawed (succ minKnownBfs) 1
+  void $ PA.unsafeFreezePrimArray tabAThawed
+  void $ PA.unsafeFreezePrimArray tabBThawed
+  void $ U.unsafeFreeze vThawed
 
 data AndPath = AndPath
   { pathSource :: Point    -- never included in @pathList@

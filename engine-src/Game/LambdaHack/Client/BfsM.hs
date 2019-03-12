@@ -18,6 +18,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Monad.ST.Strict (runST)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Ord
@@ -99,7 +100,7 @@ createBfs canMove alterSkill aid = do
     let !lalter = salter EM.! blid b
         -- We increase 0 skill to 1, to also path through unknown tiles.
         -- Since there are not other tiles that require skill 1, this is safe.
-        !_a = fillBfs lalter (max 1 alterSkill) source aInitial
+        !_a = runST $ fillBfs lalter (max 1 alterSkill) source aInitial
     return ()
   return aInitial
 
