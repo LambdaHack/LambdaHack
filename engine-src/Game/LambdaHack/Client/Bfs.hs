@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, RankNTypes,
+             TypeFamilies #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
@@ -87,53 +88,44 @@ fillBfs :: PointArray.Array Word8
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> ()
 {-# INLINE fillBfs #-}
-fillBfs lalter alterSkill source arr@PointArray.Array{..} =
-  let unsafeWriteI :: PointI -> BfsDistance -> ()
-      {-# INLINE unsafeWriteI #-}
-      unsafeWriteI p c = runST $ do
+fillBfs lalter alterSkill source PointArray.Array{..} =
+  let fillBfsInST :: forall s. ST s ()
+      fillBfsInST = do
         vThawed <- U.unsafeThaw avector
-        VM.unsafeWrite vThawed p (bfsDistance c)
-        void $ U.unsafeFreeze vThawed
-      bfs :: BfsDistance -> [PointI] -> ()  -- modifies the vector
-      bfs !distance !predK =
-        let processKnown :: PointI -> [PointI] -> [PointI]
-            processKnown !pos !succK2 =
-              -- Terrible hack trigger warning!
-              -- Unsafe ops inside @fKnown@ seem to be OK, for no particularly
-              -- clear reason. The array value given to each p depends on
-              -- array value only at p (it's not overwritten if already there).
-              -- So the only problem with the unsafe ops writing at p is
-              -- if one with higher depth (dist) is evaluated earlier
-              -- than another with lower depth. The particular pattern of
-              -- laziness and order of list elements below somehow
-              -- esures the lowest possible depth is always written first.
-              -- The code also doesn't keep a wholly evaluated list of all p
-              -- at a given depth, but generates them on demand, unlike a fully
-              -- strict version inside the ST monad. So it uses little memory
-              -- and is fast.
-              let fKnown :: [PointI] -> VectorI -> [PointI]
-                  fKnown !l !move =
-                    let !p = pos + move
-                        visitedMove =
-                          BfsDistance (arr `PointArray.accessI` p) /= apartBfs
-                    in if visitedMove
-                       then l
-                       else let alter :: Word8
+        let unsafeWriteI :: PointI -> BfsDistance -> ST s ()
+            {-# INLINE unsafeWriteI #-}
+            unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
+            bfs :: BfsDistance -> [PointI] -> ST s ()
+            bfs !distance !predK = do
+              let processKnown :: [PointI] -> PointI -> ST s [PointI]
+                  processKnown !succK2 !pos  = do
+                    let fKnown :: [PointI] -> VectorI -> ST s [PointI]
+                        fKnown !l !move = do
+                          let !p = pos + move
+                          w <- VM.unsafeRead vThawed p
+                          let visitedMove = BfsDistance w /= apartBfs
+                          if visitedMove
+                          then return l
+                          else do
+                            let alter :: Word8
                                 !alter = lalter `PointArray.accessI` p
-                            in if | alterSkill < alter -> l
-                                  | alter == 1 ->
-                                      let distCompl =
-                                            distance .&. complement minKnownBfs
-                                      in unsafeWriteI p distCompl
-                                         `seq` l
-                                  | otherwise -> unsafeWriteI p distance
-                                                 `seq` p : l
-              in foldl' fKnown succK2 movesI
-            succK4 = foldr processKnown [] predK
-        in if null succK4 || distance == abortedKnownBfs
-           then () -- no more dungeon positions to check, or we delved too deep
-           else bfs (succ distance) succK4
-  in bfs (succ minKnownBfs) [fromEnum source]
+                            if | alterSkill < alter -> return l
+                               | alter == 1 -> do
+                                 let distCompl =
+                                       distance .&. complement minKnownBfs
+                                 unsafeWriteI p distCompl
+                                 return l
+                               | otherwise -> do
+                                 unsafeWriteI p distance
+                                 return $ p : l
+                    foldM fKnown succK2 movesI
+              succK4 <- foldM processKnown [] predK
+              if null succK4 || distance == abortedKnownBfs
+              then return () -- no more close enough dungeon positions
+              else bfs (succ distance) succK4
+        bfs (succ minKnownBfs) [fromEnum source]
+        void $ U.unsafeFreeze vThawed
+  in runST fillBfsInST
 
 data AndPath = AndPath
   { pathSource :: Point    -- never included in @pathList@
