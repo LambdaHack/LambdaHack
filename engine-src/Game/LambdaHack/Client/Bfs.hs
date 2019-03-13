@@ -3,7 +3,8 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
+  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance
+  , maxBfsBorderSize, fillBfs
   , AndPath(..), actorsAvoidedDist, findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
@@ -16,7 +17,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Monad.ST.Strict (ST, runST)
+import           Control.Monad.ST.Strict (ST)
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
@@ -81,19 +82,6 @@ maxBfsBorderSize :: Int
 maxBfsBorderSize = 4096 -- only very fractal borders could exceed this
                         -- and with Allure dungeon size, nothing can
 
--- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
-tabA :: PA.PrimArray Word16
-{-# NOINLINE tabA #-}
-tabA = runST $ do
-  tab <- PA.newPrimArray maxBfsBorderSize
-  PA.unsafeFreezePrimArray tab
-
-tabB :: PA.PrimArray Word16
-{-# NOINLINE tabB #-}
-tabB = runST $ do
-  tab <- PA.newPrimArray maxBfsBorderSize
-  PA.unsafeFreezePrimArray tab
-
 -- | Fill out the given BFS array (not all cells are overwritten,
 -- so we assume the array is previously filled with @apartBfs@).
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
@@ -104,14 +92,18 @@ tabB = runST $ do
 -- because other actors use them, too, so the cost is shared and the extra
 -- visiblity is valuable, too. We treat unknown tiles specially.
 -- Whether suspect tiles are considered openable depends on @smarkSuspect@.
+--
+-- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
 fillBfs :: forall s.
            PointArray.Array Word8
         -> Word8
-        -> Point                          -- ^ starting position
-        -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
+        -> Point                         -- ^ starting position
+        -> (PA.PrimArray Word16, PA.PrimArray Word16)
+                                         -- ^ tabs in place of a queue
+        -> PointArray.Array BfsDistance  -- ^ initial array, with @apartBfs@
         -> ST s ()
 {-# INLINE fillBfs #-}
-fillBfs !lalter !alterSkill !source PointArray.Array{..} = do
+fillBfs !lalter !alterSkill !source (tabA, tabB) PointArray.Array{..} = do
   vThawed <- U.unsafeThaw avector
   let unsafeReadI :: PointI -> ST s BfsDistance
       {-# INLINE unsafeReadI #-}

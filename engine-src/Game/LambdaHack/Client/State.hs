@@ -11,10 +11,12 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Monad.ST.Strict (ST, runST)
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import qualified Data.Primitive.PrimArray as PA
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -66,6 +68,10 @@ data StateClient = StateClient
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options
+  , stabs         :: (PA.PrimArray Word16, PA.PrimArray Word16)
+      -- ^ Instead of a BFS queue (list) we use these two arrays,
+      --   for (JS) speed. They need to be per-client distinct,
+      --   because sometimes multiple clients interleave BFS computation.
   }
   deriving Show
 
@@ -135,7 +141,19 @@ emptyStateClient _sside =
     , scondInMelee = EM.empty
     , svictories = EM.empty
     , soptions = defClientOptions
+    , stabs = runST tabsBFS
     }
+
+-- This is, sadly, fragile. If compiler decides to move @runST tabsBFS@
+-- to the top-level then all clients get the same arrays and it crashes.
+-- Another fragile trick would be @oneShot@, but this one works for now.
+tabsBFS :: ST s (PA.PrimArray Word16, PA.PrimArray Word16)
+tabsBFS = do
+  tabAMutable <- PA.newPrimArray maxBfsBorderSize
+  tabA <- PA.unsafeFreezePrimArray tabAMutable
+  tabBMutable <- PA.newPrimArray maxBfsBorderSize
+  tabB <- PA.unsafeFreezePrimArray tabBMutable
+  return (tabA, tabB)
 
 -- | Cycle the 'smarkSuspect' setting.
 cycleMarkSuspect :: StateClient -> StateClient
@@ -210,6 +228,7 @@ instance Binary StateClient where
         srandom = read g
         squit = False
         soptions = defClientOptions
+        stabs = runST tabsBFS
 #ifndef WITH_EXPENSIVE_ASSERTIONS
         sfper = EM.empty
 #else

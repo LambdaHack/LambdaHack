@@ -97,10 +97,11 @@ createBfs canMove alterSkill aid = do
       !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
   when canMove $ do
     salter <- getsClient salter
+    stabs <- getsClient stabs
     let !lalter = salter EM.! blid b
         -- We increase 0 skill to 1, to also path through unknown tiles.
         -- Since there are not other tiles that require skill 1, this is safe.
-        !_a = runST $ fillBfs lalter (max 1 alterSkill) source aInitial
+        !_a = runST $ fillBfs lalter (max 1 alterSkill) source stabs aInitial
     return ()
   return aInitial
 
