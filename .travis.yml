@@ -34,10 +34,16 @@ matrix:
     - env: GTKVTY=noopt
       compiler: "ghc-8.2.2"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
-#    - env: GTKVTY=opt2
-#      compiler: "ghc-8.2.2"
-#      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+    - env: GTKVTY=opt2
+      compiler: "ghc-8.2.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
+      compiler: "ghc-8.2.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_noopt
+      compiler: "ghc-8.2.2"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_opt2
       compiler: "ghc-8.2.2"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.2.2], sources: [hvr-ghc]}}
     - env: GTKVTY=vty
@@ -56,10 +62,16 @@ matrix:
     - env: GTKVTY=noopt
       compiler: "ghc-8.4.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
-#    - env: GTKVTY=opt2
-#      compiler: "ghc-8.4.4"
-#      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=opt2
+      compiler: "ghc-8.4.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
     - env: GTKVTY=asserts
+      compiler: "ghc-8.4.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_noopt
+      compiler: "ghc-8.4.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_opt2
       compiler: "ghc-8.4.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
     - env: GTKVTY=vty
@@ -84,15 +96,21 @@ matrix:
     - env: GTKVTY=asserts
       compiler: "ghc-8.6.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_noopt
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=asserts_opt2
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=vty
       compiler: "ghc-8.6.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
     - env: GTKVTY=curses
       compiler: "ghc-8.6.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
-#    - env: GTKVTY=gtk
-#      compiler: "ghc-8.6.4"
-#      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
+    - env: GTKVTY=gtk
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,libgtk-3-dev,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
 #    - env: GTKVTY=sdl
 #      compiler: "ghc-8.6.4"
 #      addons: {apt: {packages: [ghc-ppa-tools,libsdl2-dev,libsdl2-ttf-dev, cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
@@ -183,6 +201,12 @@ script:
     elif [ $GTKVTY = "asserts" ]; then
       cabal new-build --only-dependencies -fvty -w ${HC} -j2 all;
       cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j1 all;
+    elif [ $GTKVTY = "asserts_noopt" ]; then
+      cabal new-build --only-dependencies -fcurses --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} -j2 all;
+      cabal new-build -fcurses -fwith_expensive_assertions --ghc-options="-O0 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j1 all;
+    elif [ $GTKVTY = "asserts_opt2" ]; then
+      cabal new-build --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} -j2 all;
+      cabal new-build -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j1 all;
     elif [ $GTKVTY = "asserts-osx" ]; then
       cabal new-build --only-dependencies -fvty -w ${HC} -j2 all;
       cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j1 all;
