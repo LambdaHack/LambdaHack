@@ -17,6 +17,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Primitive.PrimArray as PA
+import           GHC.Exts (oneShot)
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -141,14 +142,15 @@ emptyStateClient _sside =
     , scondInMelee = EM.empty
     , svictories = EM.empty
     , soptions = defClientOptions
-    , stabs = runST tabsBFS
+    , stabs = runST $ oneShot tabsBFS ()
     }
 
 -- This is, sadly, fragile. If compiler decides to move @runST tabsBFS@
 -- to the top-level then all clients get the same arrays and it crashes.
--- Another fragile trick would be @oneShot@, but this one works for now.
-tabsBFS :: ST s (PA.PrimArray Word16, PA.PrimArray Word16)
-tabsBFS = do
+-- Another fragile trick to augment the solution is @oneShot@.
+tabsBFS :: () -> ST s (PA.PrimArray Word16, PA.PrimArray Word16)
+{-# NOINLINE tabsBFS #-}
+tabsBFS () = do
   tabAMutable <- PA.newPrimArray maxBfsBorderSize
   tabA <- PA.unsafeFreezePrimArray tabAMutable
   tabBMutable <- PA.newPrimArray maxBfsBorderSize
@@ -228,7 +230,7 @@ instance Binary StateClient where
         srandom = read g
         squit = False
         soptions = defClientOptions
-        stabs = runST tabsBFS
+        stabs = runST $ oneShot tabsBFS ()
 #ifndef WITH_EXPENSIVE_ASSERTIONS
         sfper = EM.empty
 #else
