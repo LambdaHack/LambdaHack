@@ -19,16 +19,17 @@ module Game.LambdaHack.Server.FovDigital
     -- * Current scan parameters
   , Distance, Progress
     -- * Geometry in system @Bump@
-  , Line(..), ConvexHull, Edge, EdgeInterval
+  , Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
     -- * Internal operations
-  , addHull, createLine, steeper, shallower, intersect
+  , maximumByHull, foldlCHull', addToHull, createLine
+  , steeper, shallower, intersect
   , _debugSteeper, _debugLine
 #endif
   ) where
 
 import Prelude ()
 
-import Game.LambdaHack.Core.Prelude hiding (intersect, maximumBy)
+import Game.LambdaHack.Core.Prelude hiding (intersect)
 
 import Game.LambdaHack.Core.Point (PointI)
 
@@ -54,11 +55,19 @@ data Bump = B
 data Line = Line Bump Bump
   deriving Show
 
--- | Convex hull represented as a list of points.
-type ConvexHull   = [Bump]
+-- | Convex hull represented as a non-empty list of points.
+data ConvexHull = ConvexHull Bump CHull
+  deriving Show
+
+data CHull =
+    CHNil
+  | CHCons Bump CHull
+  deriving Show
+
 -- | An edge (comprising of a line and a convex hull)
 -- of the area to be scanned.
-type Edge         = (Line, ConvexHull)
+type Edge = (Line, ConvexHull)
+
 -- | The area left to be scanned, delimited by edges.
 type EdgeInterval = (Edge, Edge)
 
@@ -71,8 +80,8 @@ scan :: Distance          -- ^ visiblity distance
 {-# INLINE scan #-}
 scan r isClear tr = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
-          , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
+  dscan 1 ( (Line (B 1 0) (B (-r) r), ConvexHull (B 0 0) CHNil)
+          , (Line (B 0 0) (B (r+1) r), ConvexHull (B 1 0) CHNil) )
  where
   dscan :: Distance -> EdgeInterval -> [PointI]
   dscan !d ( s0@(!sl{-shallow line-}, !sHull)
@@ -105,9 +114,9 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                in if isClear trBump  -- not entering shadow
                   then trBump : mscanVisible s (ps+1)
                   else let steepBump = B ps d
-                           nep = maximumBy (shallower steepBump) hull
-                           neHull =
-                             addHull (shallower steepBump) steepBump eHull
+                           cmp = shallower steepBump
+                           nep = maximumByHull cmp hull
+                           neHull = addToHull cmp steepBump eHull
                            ne = (createLine nep steepBump, neHull)
                        in trBump : dscan (d+1) (s, ne) ++ mscanShadowed (ps+1)
                             -- note how we recursively scan more and more
@@ -123,9 +132,9 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                in if not $ isClear trBump  -- not moving out of shadow
                   then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
-                           nsp = maximumBy (steeper shallowBump) eHull
-                           nsHull =
-                             addHull (steeper shallowBump) shallowBump sHull
+                           cmp = steeper shallowBump
+                           nsp = maximumByHull cmp eHull
+                           nsHull = addToHull cmp shallowBump sHull
                            ns = (createLine nsp shallowBump, nsHull)
                        in trBump : mscanVisible ns (ps+1)
           else []  -- reached end while in shadow
@@ -133,25 +142,36 @@ scan r isClear tr = assert (r > 0 `blame` r) $
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
          outside
 
--- | Custom, inlined implementation, for speed in the inner loop.
-maximumBy :: (a -> a -> Ordering) -> [a] -> a
-{-# INLINE maximumBy #-}
-maximumBy cmp = foldl1' max'
-  where max' !x !y = case cmp x y of
-                       GT -> x
-                       _  -> y
+-- | Specialized implementation for speed in the inner loop. Not partial.
+maximumByHull :: (Bump -> Bump -> Ordering) -> ConvexHull -> Bump
+{-# INLINE maximumByHull #-}
+maximumByHull cmp (ConvexHull b ch) = foldlCHull' max' b ch
+ where max' !x !y = case cmp x y of
+                      GT -> x
+                      _  -> y
+
+-- | Standard @foldl'@ over @CHull@.
+foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
+{-# INLINE foldlCHull' #-}
+foldlCHull' f z0 ch0 = go z0 ch0
+ where go !z CHNil = z
+       go z (CHCons b ch) = go (f z b) ch
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
 -- if the new bump already lies within the hull. The comparing function is
 -- either `steeper` or shallower`, in each case applied to the second argument.
-addHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
-        -> Bump                        -- ^ a new bump to consider
-        -> ConvexHull  -- ^ a convex hull of bumps represented as a list
-        -> ConvexHull
-{-# INLINE addHull #-}
-addHull cmp new = (new :) . go
+--
+-- The recursive @go@ seems spurious, but it's called each time with
+-- potentially different comparison predicate, so it's necessary.
+addToHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
+          -> Bump                        -- ^ a new bump to consider
+          -> ConvexHull  -- ^ a convex hull of bumps represented as a list
+          -> ConvexHull
+{-# INLINE addToHull #-}
+addToHull cmp new (ConvexHull old ch) = ConvexHull new $ go $ CHCons old ch
  where
-  go (a:b:cs) | cmp b a /= GT = go (b:cs)
+  go :: CHull -> CHull
+  go (CHCons a (CHCons b cs)) | cmp a b /= LT = go (CHCons b cs)
   go l = l
 
 -- | Create a line from two points.
