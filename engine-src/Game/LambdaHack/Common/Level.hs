@@ -30,13 +30,8 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Core.Point
-import qualified Game.LambdaHack.Core.PointArray as PointArray
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
@@ -46,6 +41,11 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Core.PointArray as PointArray
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Defs
 
 -- | The complete dungeon is a map from level identifiers to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -225,20 +225,25 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
                  -> (Point -> ContentId TileKind -> Bool)
                  -> [Point -> ContentId TileKind -> Bool]
                  -> Rnd (Maybe Point)
-      accomodate fallback _ [] = fallback
-      accomodate fallback m (hd : tl) =
-        let search 0 = accomodate fallback m tl
-            search !k = do
-              pxyRelative <- randomR (0, xspan * yspan - 1)
-              -- Here we can't use @fromEnum@ and/or work with the @Int@
-              -- representation, because the span is different than @rXmax@.
-              let Point{..} = punindex xspan pxyRelative
-                  pos = Point (x0 + px) (y0 + py)
-                  tile = ltile PointArray.! pos
-              if m pos tile && hd pos tile
-              then return $ Just pos
-              else search (k - 1)
-        in search numTries
+      {-# INLINE accomodate #-}
+      accomodate fallback m l0 = go l0
+       where
+        go :: [Point -> ContentId TileKind -> Bool]
+           -> Rnd (Maybe Point)
+        go [] = fallback
+        go (hd : tl) = search numTries
+         where
+          search 0 = go tl
+          search !k = do
+            pxyRelative <- randomR (0, xspan * yspan - 1)
+            -- Here we can't use @fromEnum@ and/or work with the @Int@
+            -- representation, because the span is different than @rXmax@.
+            let Point{..} = punindex xspan pxyRelative
+                pos = Point (x0 + px) (y0 + py)
+                tile = ltile PointArray.! pos
+            if m pos tile && hd pos tile
+            then return $ Just pos
+            else search (k - 1)
       rAndOnceOnlym0 = r ++ [\_ _ -> True]
   in accomodate (accomodate (return Nothing) m0 rAndOnceOnlym0)
                 -- @pos@ and @tile@ not always needed, so not strict;
