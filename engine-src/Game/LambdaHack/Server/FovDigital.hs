@@ -1,6 +1,15 @@
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
+--
+-- The map is processed in depth-first-search manner, that is, as soon
+-- as we detect on obstacle we move away from the viewer up to the
+-- FOV radius and then restart on the other side of the obstacle.
+-- This has better cache behaviour than breadth-firsts-search,
+-- where we would process all tiles equally distant from the viewer
+-- in the same round, because then we'd need to keep the many convex hulls
+-- and edges, not just a single set, and we'd potentially traverse all
+-- of them each round.
 module Game.LambdaHack.Server.FovDigital
   ( scan
     -- * Scanning coordinate system
@@ -103,6 +112,9 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                            neHull = addHull cmp steepBump eHull
                            ne = (dline nep steepBump, neHull)
                        in trBump : dscan (d+1) (s, ne) ++ mscanShadowed (ps+1)
+                            -- note how we recursively scan more and more
+                            -- distant tiles, up to the FOV radius,
+                            -- before starting to process the shadow
           else dscan (d+1) (s, e0)  -- reached end, scan next
 
         -- We're in a shadowed interval.
