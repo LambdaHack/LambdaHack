@@ -21,14 +21,14 @@ module Game.LambdaHack.Server.FovDigital
     -- * Geometry in system @Bump@
   , Line(..), ConvexHull, Edge, EdgeInterval
     -- * Internal operations
-  , steeper, addHull
-  , dline, dsteeper, intersect, _debugSteeper, _debugLine
+  , addHull, createLine, steeper, shallower, intersect
+  , _debugSteeper, _debugLine
 #endif
   ) where
 
 import Prelude ()
 
-import Game.LambdaHack.Core.Prelude hiding (intersect)
+import Game.LambdaHack.Core.Prelude hiding (intersect, maximumBy)
 
 import Game.LambdaHack.Core.Point (PointI)
 
@@ -105,12 +105,10 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                in if isClear trBump  -- not entering shadow
                   then trBump : mscanVisible s (ps+1)
                   else let steepBump = B ps d
-                           cmp :: Bump -> Bump -> Ordering
-                           {-# INLINE cmp #-}
-                           cmp = flip $ dsteeper steepBump
-                           nep = maximumBy cmp hull
-                           neHull = addHull cmp steepBump eHull
-                           ne = (dline nep steepBump, neHull)
+                           nep = maximumBy (shallower steepBump) hull
+                           neHull =
+                             addHull (shallower steepBump) steepBump eHull
+                           ne = (createLine nep steepBump, neHull)
                        in trBump : dscan (d+1) (s, ne) ++ mscanShadowed (ps+1)
                             -- note how we recursively scan more and more
                             -- distant tiles, up to the FOV radius,
@@ -125,30 +123,27 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                in if not $ isClear trBump  -- not moving out of shadow
                   then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
-                           cmp :: Bump -> Bump -> Ordering
-                           {-# INLINE cmp #-}
-                           cmp = dsteeper shallowBump
-                           nsp = maximumBy cmp eHull
-                           nsHull = addHull cmp shallowBump sHull
-                           ns = (dline nsp shallowBump, nsHull)
+                           nsp = maximumBy (steeper shallowBump) eHull
+                           nsHull =
+                             addHull (steeper shallowBump) shallowBump sHull
+                           ns = (createLine nsp shallowBump, nsHull)
                        in trBump : mscanVisible ns (ps+1)
           else []  -- reached end while in shadow
 
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
          outside
 
--- | Check if the line from the second point to the first is more steep
--- than the line from the third point to the first. This is related
--- to the formal notion of gradient (or angle), but hacked wrt signs
--- to work fast in this particular setup. Returns True for ill-defined lines.
-steeper :: Bump -> Bump -> Bump -> Ordering
-{-# INLINE steeper #-}
-steeper (B xf yf) (B x1 y1) (B x2 y2) =
-  compare ((yf - y2)*(xf - x1)) ((yf - y1)*(xf - x2))
+-- | Custom, inlined implementation, for speed in the inner loop.
+maximumBy :: (a -> a -> Ordering) -> [a] -> a
+{-# INLINE maximumBy #-}
+maximumBy cmp = foldl1' max'
+  where max' !x !y = case cmp x y of
+                       GT -> x
+                       _  -> y
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
--- if the new bump already lies within the hull. The first argument is
--- typically `steeper`, optionally negated, applied to the second argument.
+-- if the new bump already lies within the hull. The comparing function is
+-- either `steeper` or shallower`, in each case applied to the second argument.
 addHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
         -> Bump                        -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list
@@ -159,10 +154,12 @@ addHull cmp new = (new :) . go
   go (a:b:cs) | cmp b a /= GT = go (b:cs)
   go l = l
 
--- | Create a line from two points. Debug: check if well-defined.
-dline :: Bump -> Bump -> Line
-{-# INLINE dline #-}
-dline p1 p2 =
+-- | Create a line from two points.
+--
+-- Debug: check if well-defined.
+createLine :: Bump -> Bump -> Line
+{-# INLINE createLine #-}
+createLine p1 p2 =
   let line = Line p1 p2
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -170,21 +167,38 @@ dline p1 p2 =
 #endif
       line
 
--- | Compare steepness of @(p1, f)@ and @(p2, f)@.
+-- | Compare steepness of @(p1, f)@ and @(p2, f)@, that is,
+-- check if the line from the second point to the first is more steep
+-- than the line from the third point to the first. This is related
+-- to the formal notion of gradient (or angle), but hacked wrt signs
+-- to work fast in this particular setup. Returns True for ill-defined lines.
+--
 -- Debug: Verify that the results of 2 independent checks are equal.
-dsteeper :: Bump -> Bump -> Bump -> Ordering
-{-# INLINE dsteeper #-}
-dsteeper = \f p1 p2 ->
-  let res = steeper f p1 p2
+--
+-- It really won't inline except in `shallower`,
+-- because it's never fully applied in the code above.
+steeper :: Bump -> Bump -> Bump -> Ordering
+{-# INLINE steeper #-}
+steeper (B xf yf) (B x1 y1) (B x2 y2) =
+  let res = compare ((yf - y2)*(xf - x1)) ((yf - y1)*(xf - x2))
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-     assert (res == _debugSteeper f p1 p2)
+     assert (res == _debugSteeper (B xf yf) (B x1 y1) (B x2 y2))
 #endif
      res
+
+-- | Negated `steeper`.
+--
+-- It really won't inline, because it's never fully applied in the code above.
+shallower :: Bump -> Bump -> Bump -> Ordering
+{-# INLINE shallower #-}
+shallower f p1 p2 = flip steeper f p1 p2
 
 -- | The X coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance
 -- @d@ from (0, 0).
+--
+-- Debug: check that the line fits in the upper half-plane.
 intersect :: Line -> Distance -> (Int, Int)
 {-# INLINE intersect #-}
 intersect (Line (B x y) (B xf yf)) d =
