@@ -110,6 +110,11 @@ flag release
   default:            True
   manual:             True
 
+flag supportNodeJS
+  description:        compile so that the JS blob works in terminal with NodeJS
+  default:            True
+  manual:             True
+
 common options
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
@@ -135,6 +140,9 @@ common options
 
   ghcjs-options:      -DUSE_JSFILE
 
+  if !flag(supportNodeJS)
+    ghcjs-options:    -DREMOVE_TELETYPE
+
 common exe-options
   ghc-options:        -threaded -rtsopts
 -- (Ignored by GHCJS) Minimize median lag at the cost of occasional bigger
@@ -149,6 +157,9 @@ common exe-options
 -- on my machine with default --maxFps.
   ghcjs-options:      -DGHCJS_BUSY_YIELD=50
   ghcjs-options:      -dedupe
+
+  if !flag(supportNodeJS)
+    ghcjs-options:    -DGHCJS_BROWSER
 
 library definition
   import: options
