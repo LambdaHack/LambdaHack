@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.Bfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , succBfsDistance, predBfsDistance, abortedKnownBfs, abortedUnknownBfs
+  , succBfsDistance, predBfsDistance, abortedUnknownBfs
 #endif
   ) where
 
@@ -72,14 +72,6 @@ maxBfsDistance = BfsDistance (maxBound :: Word8)
 
 -- | The distance value that denotes that path search was aborted
 -- at this tile due to too large actual distance
--- and that the tile was known and not blocked.
--- It is also a true distance value for this tile
--- (shifted by minKnownBfs, as all distances of known tiles).
-abortedKnownBfs :: BfsDistance
-abortedKnownBfs = predBfsDistance maxBfsDistance
-
--- | The distance value that denotes that path search was aborted
--- at this tile due to too large actual distance
 -- and that the tile was unknown.
 -- It is also a true distance value for this tile.
 abortedUnknownBfs :: BfsDistance
@@ -128,7 +120,8 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
             unsafeWriteNext ix p = PA.writePrimArray tabWriteThawed ix p
             processKnown :: Int -> Int -> ST s Int
             processKnown !posIx !acc1 =
-              if posIx == -1 then return acc1
+              if posIx == -1
+              then return acc1  -- all queued positions inspected
               else do
                 pos <- unsafeReadCurrent posIx
                 let fKnown :: (X, Y) -> Int -> ST s Int
@@ -136,8 +129,9 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                     fKnown move acc2 = do
                       let p = pos + inline fromEnum (uncurry Vector move)
                       pDist <- unsafeReadI p
-                      if pDist /= apartBfs then return acc2
-                      else do  -- not visited yet
+                      if pDist /= apartBfs
+                      then return acc2  -- the position visited already
+                      else do
                         let alter :: Word8
                             !alter = lalter `PointArray.accessI` p
                         if | alterSkill < alter -> return acc2
@@ -161,9 +155,10 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                   >>= fKnown (-1, 0)
                   >>= processKnown (posIx - 1)
         acc3 <- processKnown (prevMaxPosIx - 1) 0
-        if acc3 == 0 || distance == abortedKnownBfs
+        let distanceNew = succBfsDistance distance
+        if acc3 == 0 || distanceNew == maxBfsDistance
         then return () -- no more close enough dungeon positions
-        else bfs tabWriteThawed tabReadThawed (succBfsDistance distance) acc3
+        else bfs tabWriteThawed tabReadThawed distanceNew acc3
   tabAThawed <- PA.unsafeThawPrimArray tabA
   PA.writePrimArray tabAThawed 0 (fromEnum source)
   tabBThawed <- PA.unsafeThawPrimArray tabB
