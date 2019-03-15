@@ -3,12 +3,13 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
+  ( BfsDistance, MoveLegal(..)
+  , subtractBfsDistance, minKnownBfs, apartBfs, maxBfsDistance, fillBfs
   , AndPath(..), actorsAvoidedDist, findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , abortedKnownBfs, abortedUnknownBfs
+  , succBfsDistance, predBfsDistance, abortedKnownBfs, abortedUnknownBfs
 #endif
   ) where
 
@@ -34,7 +35,7 @@ import qualified Game.LambdaHack.Core.PointArray as PointArray
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}
-  deriving (Show, Eq, Ord, Enum, Bits)
+  deriving (Show, Eq, Ord, Bits)
 
 instance PointArray.UnboxRepClass BfsDistance where
   type UnboxRep BfsDistance = Word8
@@ -45,6 +46,15 @@ instance PointArray.UnboxRepClass BfsDistance where
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToClosed | MoveToUnknown
   deriving Eq
 
+succBfsDistance :: BfsDistance -> BfsDistance
+succBfsDistance d = BfsDistance $ bfsDistance d + 1
+
+predBfsDistance :: BfsDistance -> BfsDistance
+predBfsDistance d = BfsDistance $ bfsDistance d - 1
+
+subtractBfsDistance :: BfsDistance -> BfsDistance -> Int
+subtractBfsDistance d1 d2 = fromEnum $ bfsDistance d1 - bfsDistance d2
+
 -- | The minimal distance value assigned to paths that don't enter
 -- any unknown tiles.
 minKnownBfs :: BfsDistance
@@ -54,7 +64,7 @@ minKnownBfs = BfsDistance 128
 -- either due to blocked tiles or pathfinding aborted at earlier tiles,
 -- e.g., due to unknown tiles.
 apartBfs :: BfsDistance
-apartBfs = pred minKnownBfs
+apartBfs = predBfsDistance minKnownBfs
 
 -- | Maximum value of the type.
 maxBfsDistance :: BfsDistance
@@ -66,14 +76,14 @@ maxBfsDistance = BfsDistance (maxBound :: Word8)
 -- It is also a true distance value for this tile
 -- (shifted by minKnownBfs, as all distances of known tiles).
 abortedKnownBfs :: BfsDistance
-abortedKnownBfs = pred maxBfsDistance
+abortedKnownBfs = predBfsDistance maxBfsDistance
 
 -- | The distance value that denotes that path search was aborted
 -- at this tile due to too large actual distance
 -- and that the tile was unknown.
 -- It is also a true distance value for this tile.
 abortedUnknownBfs :: BfsDistance
-abortedUnknownBfs = pred apartBfs
+abortedUnknownBfs = predBfsDistance apartBfs
 
 -- | Fill out the given BFS array (not all cells are overwritten,
 -- so we assume the array is previously filled with @apartBfs@).
@@ -126,7 +136,8 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                     fKnown move acc2 = do
                       let p = pos + inline fromEnum (uncurry Vector move)
                       pDist <- unsafeReadI p
-                      if pDist == apartBfs then do  -- not visited yet
+                      if pDist /= apartBfs then return acc2
+                      else do  -- not visited yet
                         let alter :: Word8
                             !alter = lalter `PointArray.accessI` p
                         if | alterSkill < alter -> return acc2
@@ -138,7 +149,6 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                              unsafeWriteI p distance
                              unsafeWriteNext acc2 p
                              return $! acc2 + 1
-                      else return acc2
                 -- Innermost loop over @moves@ manually unrolled for (JS) speed:
                 return acc1
                   >>= fKnown (-1, -1)
@@ -150,14 +160,14 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                   >>= fKnown (-1, 1)
                   >>= fKnown (-1, 0)
                   >>= processKnown (posIx - 1)
-        acc4 <- processKnown (prevMaxPosIx - 1) 0
-        if acc4 == 0 || distance == abortedKnownBfs
+        acc3 <- processKnown (prevMaxPosIx - 1) 0
+        if acc3 == 0 || distance == abortedKnownBfs
         then return () -- no more close enough dungeon positions
-        else bfs tabWriteThawed tabReadThawed (succ distance) acc4
+        else bfs tabWriteThawed tabReadThawed (succBfsDistance distance) acc3
   tabAThawed <- PA.unsafeThawPrimArray tabA
   PA.writePrimArray tabAThawed 0 (fromEnum source)
   tabBThawed <- PA.unsafeThawPrimArray tabB
-  bfs tabAThawed tabBThawed (succ minKnownBfs) 1
+  bfs tabAThawed tabBThawed (succBfsDistance minKnownBfs) 1
   void $ PA.unsafeFreezePrimArray tabAThawed
   void $ PA.unsafeFreezePrimArray tabBThawed
   void $ U.unsafeFreeze vThawed
@@ -172,8 +182,8 @@ data AndPath = AndPath
 
 instance Binary AndPath
 
-actorsAvoidedDist :: BfsDistance
-actorsAvoidedDist = BfsDistance 5
+actorsAvoidedDist :: Int
+actorsAvoidedDist = 5
 
 -- | Find a path, without the source position, with the smallest length.
 -- The @eps@ coefficient determines which direction (of the closest
@@ -207,11 +217,11 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
       track :: PointI -> BfsDistance -> [Point] -> [Point]
       track !pos !oldDist !suffix | oldDist == minKnownBfs =
         assert (pos == pathSourceI) suffix
-      track pos oldDist suffix | oldDist == succ minKnownBfs =
+      track pos oldDist suffix | oldDist == succBfsDistance minKnownBfs =
         let !posP = toEnum pos
         in posP : suffix  -- avoid calculating minP and dist for the last call
       track pos oldDist suffix =
-        let !dist = pred oldDist
+        let !dist = predBfsDistance oldDist
             minChild :: PointI -> Bool -> Word8 -> [VectorI] -> PointI
             minChild !minP _ _ [] = minP
             minChild minP maxDark minAlter (mv : mvs) =
@@ -220,7 +230,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let free = dist < actorsAvoidedDist
+                 else let free = fromEnum (bfsDistance dist) < actorsAvoidedDist
                                  || p `IM.notMember` EM.enumMapToIntMap lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster
@@ -242,7 +252,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
             !posP = toEnum pos
         in track newPos dist (posP : suffix)
       !goalDist = BfsDistance $ arr `PointArray.accessI` pathGoalI
-      pathLen = fromEnum $ goalDist .&. complement minKnownBfs
+      pathLen = fromEnum $ bfsDistance $ goalDist .&. complement minKnownBfs
       pathList = track pathGoalI (goalDist .|. minKnownBfs) []
       andPath = AndPath{..}
   in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
@@ -254,7 +264,8 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
               f acc@(pAcc, dAcc, chessAcc, sumAcc) p d =
                 if d <= abortedUnknownBfs  -- works in visible secrets mode only
                    || d /= apartBfs && adjacent p pathGoal  -- works for stairs
-                then let dist = fromEnum $ d .&. complement minKnownBfs
+                then let dist = fromEnum $ bfsDistance
+                                $ d .&. complement minKnownBfs
                          chessNew = chessDist p pathGoal
                          sumNew = dist + 2 * chessNew
                          resNew = (p, dist, chessNew, sumNew)
@@ -275,8 +286,9 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
           in if sumRes == maxBound
                 || goalDist /= apartBfs && pathLen < sumRes
              then if goalDist /= apartBfs then Just andPath else Nothing
-             else let pathList2 = track (fromEnum pRes)
-                                        (toEnum dRes .|. minKnownBfs) []
+             else let pathList2 =
+                        track (fromEnum pRes)
+                              (BfsDistance (toEnum dRes) .|. minKnownBfs) []
                   in Just AndPath{pathList = pathList2, pathLen = sumRes, ..}
 
 -- | Access a BFS array and interpret the looked up distance value.
@@ -285,4 +297,4 @@ accessBfs bfs p =
   let dist = bfs PointArray.! p
   in if dist == apartBfs
      then Nothing
-     else Just $ fromEnum $ dist .&. complement minKnownBfs
+     else Just $ fromEnum $ bfsDistance $ dist .&. complement minKnownBfs

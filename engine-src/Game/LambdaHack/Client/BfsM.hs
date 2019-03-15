@@ -72,7 +72,7 @@ invalidateBfsPathLid :: MonadClient m => LevelId -> Point -> m ()
 invalidateBfsPathLid lid pos = do
   side <- getsClient sside
   let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
-                 && chessDist pos (bpos b) < fromEnum actorsAvoidedDist
+                 && chessDist pos (bpos b) < actorsAvoidedDist
                       -- rough approximation, but kicks in well before blockage
   as <- getsState $ filter f . EM.assocs . sactorD
   mapM_ (invalidateBfsPathAid . fst) as
@@ -433,7 +433,7 @@ closestTriggers fleeVia aid = do
       vicAll = concatMap vicTrigger efeat
   return $!
     let mix (benefit, ppbag) dist =
-          let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
+          let maxd = subtractBfsDistance maxBfsDistance apartBfs
               v = fromIntegral $ (1 + maxd - dist) ^ (2 :: Int)
           in (ceiling $ benefit * v, ppbag)
     in mapMaybe (\bpp@(_, (p, _)) ->
@@ -483,7 +483,7 @@ closestItems aid = do
     if EM.null lfloor then return [] else do
       bfs <- getCacheBfs aid
       let mix pbag dist =
-            let maxd = fromEnum maxBfsDistance - fromEnum apartBfs
+            let maxd = subtractBfsDistance maxBfsDistance apartBfs
                 -- Beware of overflowing 32-bit integers.
                 -- Here distance is the only factor influencing frequency.
                 -- Whether item is desirable is checked later on.
