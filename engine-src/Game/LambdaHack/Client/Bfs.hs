@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, RankNTypes,
              TypeFamilies #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance
@@ -25,7 +25,6 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
-import           Data.Word (Word16)
 import           GHC.Exts (inline)
 import           GHC.Generics (Generic)
 
@@ -50,7 +49,7 @@ data MoveLegal = MoveBlocked | MoveToOpen | MoveToClosed | MoveToUnknown
 -- | The minimal distance value assigned to paths that don't enter
 -- any unknown tiles.
 minKnownBfs :: BfsDistance
-minKnownBfs = BfsDistance $ toEnum $ (1 + fromEnum (maxBound :: Word8)) `div` 2
+minKnownBfs = BfsDistance 128
 
 -- | The distance value that denotes no legal path between points,
 -- either due to blocked tiles or pathfinding aborted at earlier tiles,
@@ -103,7 +102,7 @@ fillBfs :: forall s.
         -> PointArray.Array BfsDistance  -- ^ initial array, with @apartBfs@
         -> ST s ()
 {-# INLINE fillBfs #-}
-fillBfs !lalter !alterSkill !source (tabA, tabB) PointArray.Array{..} = do
+fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
   vThawed <- U.unsafeThaw avector
   let unsafeReadI :: PointI -> ST s BfsDistance
       {-# INLINE unsafeReadI #-}
@@ -127,11 +126,13 @@ fillBfs !lalter !alterSkill !source (tabA, tabB) PointArray.Array{..} = do
               PA.writePrimArray tabWriteThawed ix (toEnum p)
             processKnown :: Int -> Int -> ST s Int
             processKnown !posIx !acc1 =
-              if posIx >= 0 then do
-                !pos <- unsafeReadCurrent posIx
-                let fKnown :: VectorI -> Int -> ST s Int
-                    fKnown !move !acc2 = do
-                      let p = pos + move
+              if posIx == -1 then return acc1
+              else do
+                pos <- unsafeReadCurrent posIx
+                let fKnown :: (X, Y) -> Int -> ST s Int
+                    {-# INLINE fKnown #-}
+                    fKnown move acc2 = do
+                      let p = pos + inline fromEnum (uncurry Vector move)
                       pDist <- unsafeReadI p
                       if pDist == apartBfs then do  -- not visited yet
                         let alter :: Word8
@@ -147,20 +148,16 @@ fillBfs !lalter !alterSkill !source (tabA, tabB) PointArray.Array{..} = do
                              return $! min (maxBfsBorderSize - 1) (acc2 + 1)
                       else return acc2
                 -- Innermost loop over @moves@ manually unrolled for (JS) speed:
-                let f :: (X, Y) -> PointI
-                    {-# INLINE f #-}
-                    f (vx, vy) = inline fromEnum $ Vector{..}
                 return acc1
-                  >>= fKnown (f (-1, -1))
-                  >>= fKnown (f (0, -1))
-                  >>= fKnown (f (1, -1))
-                  >>= fKnown (f (1, 0))
-                  >>= fKnown (f (1, 1))
-                  >>= fKnown (f (0, 1))
-                  >>= fKnown (f (-1, 1))
-                  >>= fKnown (f (-1, 0))
+                  >>= fKnown (-1, -1)
+                  >>= fKnown (0, -1)
+                  >>= fKnown (1, -1)
+                  >>= fKnown (1, 0)
+                  >>= fKnown (1, 1)
+                  >>= fKnown (0, 1)
+                  >>= fKnown (-1, 1)
+                  >>= fKnown (-1, 0)
                   >>= processKnown (posIx - 1)
-              else return acc1
         acc4 <- processKnown (prevMaxPosIx - 1) 0
         if acc4 == 0 || distance == abortedKnownBfs
         then return () -- no more close enough dungeon positions
