@@ -3,8 +3,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
-  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance
-  , maxBfsBorderSize, fillBfs
+  ( BfsDistance, MoveLegal(..), minKnownBfs, apartBfs, maxBfsDistance, fillBfs
   , AndPath(..), actorsAvoidedDist, findPathBfs
   , accessBfs
 #ifdef EXPOSE_INTERNAL
@@ -76,11 +75,6 @@ abortedKnownBfs = pred maxBfsDistance
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = pred apartBfs
 
-maxBfsBorderSize :: Int
-{-# INLINE maxBfsBorderSize #-}
-maxBfsBorderSize = 4096 -- only very fractal borders could exceed this
-                        -- and with Allure dungeon size, nothing can
-
 -- | Fill out the given BFS array (not all cells are overwritten,
 -- so we assume the array is previously filled with @apartBfs@).
 -- Unsafe @PointArray@ operations are OK here, because the intermediate
@@ -145,7 +139,7 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
                            | otherwise -> do
                              unsafeWriteI p distance
                              unsafeWriteNext acc2 p
-                             return $! min (maxBfsBorderSize - 1) (acc2 + 1)
+                             return $! acc2 + 1
                       else return acc2
                 -- Innermost loop over @moves@ manually unrolled for (JS) speed:
                 return acc1

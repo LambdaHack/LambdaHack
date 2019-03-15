@@ -151,9 +151,9 @@ emptyStateClient _sside =
 tabsBFS :: () -> ST s (PA.PrimArray Word16, PA.PrimArray Word16)
 {-# NOINLINE tabsBFS #-}
 tabsBFS () = do
-  tabAMutable <- PA.newPrimArray maxBfsBorderSize
+  tabAMutable <- PA.newPrimArray 4096
   tabA <- PA.unsafeFreezePrimArray tabAMutable
-  tabBMutable <- PA.newPrimArray maxBfsBorderSize
+  tabBMutable <- PA.newPrimArray 4096
   tabB <- PA.unsafeFreezePrimArray tabBMutable
   return (tabA, tabB)
 
