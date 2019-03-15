@@ -69,7 +69,7 @@ data StateClient = StateClient
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options
-  , stabs         :: (PA.PrimArray Word16, PA.PrimArray Word16)
+  , stabs         :: (PA.PrimArray Int, PA.PrimArray Int)
       -- ^ Instead of a BFS queue (list) we use these two arrays,
       --   for (JS) speed. They need to be per-client distinct,
       --   because sometimes multiple clients interleave BFS computation.
@@ -148,7 +148,7 @@ emptyStateClient _sside =
 -- This is, sadly, fragile. If compiler decides to move @runST tabsBFS@
 -- to the top-level then all clients get the same arrays and it crashes.
 -- Another fragile trick to augment the solution is @oneShot@.
-tabsBFS :: () -> ST s (PA.PrimArray Word16, PA.PrimArray Word16)
+tabsBFS :: () -> ST s (PA.PrimArray Int, PA.PrimArray Int)
 {-# NOINLINE tabsBFS #-}
 tabsBFS () = do
   tabAMutable <- PA.newPrimArray 4096

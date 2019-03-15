@@ -91,7 +91,7 @@ fillBfs :: forall s.
            PointArray.Array Word8
         -> Word8
         -> Point                         -- ^ starting position
-        -> (PA.PrimArray Word16, PA.PrimArray Word16)
+        -> (PA.PrimArray Int, PA.PrimArray Int)
                                          -- ^ tabs in place of a queue
         -> PointArray.Array BfsDistance  -- ^ initial array, with @apartBfs@
         -> ST s ()
@@ -104,20 +104,18 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
       unsafeWriteI :: PointI -> BfsDistance -> ST s ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
-      bfs :: PA.MutablePrimArray s Word16
-          -> PA.MutablePrimArray s Word16
+      bfs :: PA.MutablePrimArray s Int
+          -> PA.MutablePrimArray s Int
           -> BfsDistance
           -> Int
           -> ST s ()
       bfs !tabReadThawed !tabWriteThawed !distance !prevMaxPosIx = do
         let unsafeReadCurrent :: Int -> ST s PointI
             {-# INLINE unsafeReadCurrent #-}
-            unsafeReadCurrent ix =
-              fromEnum <$> PA.readPrimArray tabReadThawed ix
+            unsafeReadCurrent ix = PA.readPrimArray tabReadThawed ix
             unsafeWriteNext :: Int -> PointI -> ST s ()
             {-# INLINE unsafeWriteNext #-}
-            unsafeWriteNext ix p =
-              PA.writePrimArray tabWriteThawed ix (toEnum p)
+            unsafeWriteNext ix p = PA.writePrimArray tabWriteThawed ix p
             processKnown :: Int -> Int -> ST s Int
             processKnown !posIx !acc1 =
               if posIx == -1 then return acc1
@@ -157,7 +155,7 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
         then return () -- no more close enough dungeon positions
         else bfs tabWriteThawed tabReadThawed (succ distance) acc4
   tabAThawed <- PA.unsafeThawPrimArray tabA
-  PA.writePrimArray tabAThawed 0 (toEnum $ fromEnum source)
+  PA.writePrimArray tabAThawed 0 (fromEnum source)
   tabBThawed <- PA.unsafeThawPrimArray tabB
   bfs tabAThawed tabBThawed (succ minKnownBfs) 1
   void $ PA.unsafeFreezePrimArray tabAThawed
