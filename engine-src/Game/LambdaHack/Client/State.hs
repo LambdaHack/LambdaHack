@@ -11,13 +11,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Monad.ST.Strict (ST, runST)
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Primitive.PrimArray as PA
-import           GHC.Exts (oneShot)
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -142,20 +140,8 @@ emptyStateClient _sside =
     , scondInMelee = EM.empty
     , svictories = EM.empty
     , soptions = defClientOptions
-    , stabs = runST $ oneShot tabsBFS ()
+    , stabs = (undefined, undefined)
     }
-
--- This is, sadly, fragile. If compiler decides to move @runST tabsBFS@
--- to the top-level then all clients get the same arrays and it crashes.
--- Another fragile trick to augment the solution is @oneShot@.
-tabsBFS :: () -> ST s (PA.PrimArray Int, PA.PrimArray Int)
-{-# NOINLINE tabsBFS #-}
-tabsBFS () = do
-  tabAMutable <- PA.newPrimArray 4096
-  tabA <- PA.unsafeFreezePrimArray tabAMutable
-  tabBMutable <- PA.newPrimArray 4096
-  tabB <- PA.unsafeFreezePrimArray tabBMutable
-  return (tabA, tabB)
 
 -- | Cycle the 'smarkSuspect' setting.
 cycleMarkSuspect :: StateClient -> StateClient
@@ -230,7 +216,7 @@ instance Binary StateClient where
         srandom = read g
         squit = False
         soptions = defClientOptions
-        stabs = runST $ oneShot tabsBFS ()
+        stabs = (undefined, undefined)
 #ifndef WITH_EXPENSIVE_ASSERTIONS
         sfper = EM.empty
 #else

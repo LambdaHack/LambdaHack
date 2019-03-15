@@ -222,6 +222,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     fact <- getsState $ (EM.! side) . sfactionD
     snxtChal <- getsClient snxtChal
     svictories <- getsClient svictories
+    stabs <- getsClient stabs
     let f !acc _p !i _a = i : acc
         modes = zip [0..] $ ofoldlGroup' comode "campaign scenario" f []
         g :: (Int, ContentId ModeKind) -> Int
@@ -245,17 +246,19 @@ cmdAtomicSemCli oldState cmd = case cmd of
                   , snxtScenario
                   , scondInMelee = EM.empty
                   , svictories
-                  , soptions }
+                  , soptions
+                  , stabs }
     salter <- getsState createSalter
     modifyClient $ \cli1 -> cli1 {salter}
     restartClient
   UpdRestartServer{} -> return ()
-  UpdResume _fid sfperNew -> do
+  UpdResume _side sfperNew -> do
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     sfperOld <- getsClient sfper
-    let !_A = assert (sfperNew == sfperOld `blame` (sfperNew, sfperOld)) ()
+    let !_A = assert (sfperNew == sfperOld
+                      `blame` (_side, sfperNew, sfperOld)) ()
 #endif
-    modifyClient $ \cli -> cli {sfper=sfperNew}
+    modifyClient $ \cli -> cli {sfper = sfperNew}
     salter <- getsState createSalter
     modifyClient $ \cli -> cli {salter}
   UpdResumeServer{} -> return ()

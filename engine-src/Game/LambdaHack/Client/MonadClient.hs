@@ -7,23 +7,27 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, rndToAction, rndToActionForget
+  , debugPossiblyPrint, createTabBFS, rndToAction, rndToActionForget
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Bits (xor)
+import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Random
 
 -- | Monad for reading client state.
@@ -49,6 +53,13 @@ debugPossiblyPrint t = do
   when sdbgMsgCli $ liftIO $ do
     T.hPutStrLn stdout t
     hFlush stdout
+
+createTabBFS :: MonadClient m => m (PA.PrimArray Int)
+createTabBFS = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+  liftIO $ stToIO $ do
+    tabAMutable <- PA.newPrimArray (rXmax * rYmax)  -- always enough
+    PA.unsafeFreezePrimArray tabAMutable
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

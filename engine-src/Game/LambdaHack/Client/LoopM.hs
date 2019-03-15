@@ -77,6 +77,10 @@ loopCli ccui sUIOptions soptions = do
         sess {shistory = shistory sessR}) msessR
       return False
     _ -> return False
+  -- At this point @ClientState@ not overriten dumbly and @State@ valid.
+  tabA <- createTabBFS
+  tabB <- createTabBFS
+  modifyClient $ \cli -> cli {stabs = (tabA, tabB)}
   side <- getsClient sside
   cmd1 <- receiveResponse
   case (restored, cmd1) of
