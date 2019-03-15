@@ -17,7 +17,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.Monad.ST.Strict (ST)
+import           Control.Monad.ST.Strict (ST, runST)
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
@@ -89,17 +89,34 @@ abortedUnknownBfs = predBfsDistance apartBfs
 -- Whether suspect tiles are considered openable depends on @smarkSuspect@.
 --
 -- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
-fillBfs :: forall s.
-           PointArray.Array Word8
+fillBfs :: PointArray.Array Word8
         -> Word8
         -> Point                         -- ^ starting position
         -> (PA.PrimArray Int, PA.PrimArray Int)
                                          -- ^ tabs in place of a queue
         -> PointArray.Array BfsDistance  -- ^ initial array, with @apartBfs@
-        -> ST s ()
+        -> ()
 {-# INLINE fillBfs #-}
-fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
+fillBfs lalter alterSkill source
+        (tabA, tabB) PointArray.Array{avector} = runST $ do
   vThawed <- U.unsafeThaw avector
+  tabAThawed <- PA.unsafeThawPrimArray tabA
+  tabBThawed <- PA.unsafeThawPrimArray tabB
+  fillBfsThawed lalter alterSkill source (tabAThawed, tabBThawed) vThawed
+  void $ PA.unsafeFreezePrimArray tabAThawed
+  void $ PA.unsafeFreezePrimArray tabBThawed
+  void $ U.unsafeFreeze vThawed
+
+-- The bangs are here only to get a sensible debug output of core.
+fillBfsThawed :: forall s.
+                 PointArray.Array Word8
+              -> Word8
+              -> Point
+              -> (PA.MutablePrimArray s Int, PA.MutablePrimArray s Int)
+              -> U.MVector s Word8
+              -> ST s ()
+fillBfsThawed !lalter !alterSkill !source
+              (!tabAThawed, !tabBThawed) !vThawed = do
   let unsafeReadI :: PointI -> ST s BfsDistance
       {-# INLINE unsafeReadI #-}
       unsafeReadI p = BfsDistance <$> VM.unsafeRead vThawed p
@@ -159,13 +176,8 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) PointArray.Array{..} = do
         if acc3 == 0 || distanceNew == maxBfsDistance
         then return () -- no more close enough dungeon positions
         else bfs tabWriteThawed tabReadThawed distanceNew acc3
-  tabAThawed <- PA.unsafeThawPrimArray tabA
   PA.writePrimArray tabAThawed 0 (fromEnum source)
-  tabBThawed <- PA.unsafeThawPrimArray tabB
   bfs tabAThawed tabBThawed (succBfsDistance minKnownBfs) 1
-  void $ PA.unsafeFreezePrimArray tabAThawed
-  void $ PA.unsafeFreezePrimArray tabBThawed
-  void $ U.unsafeFreeze vThawed
 
 data AndPath = AndPath
   { pathSource :: Point    -- never included in @pathList@
