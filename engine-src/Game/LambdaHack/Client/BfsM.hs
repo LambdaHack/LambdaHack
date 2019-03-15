@@ -88,19 +88,18 @@ invalidateBfsPathAll = do
 
 createBfs :: MonadClientRead m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
-createBfs canMove alterSkill0 aid = do
-  b <- getsState $ getActorBody aid
-  salter <- getsClient salter
-  let !source = bpos b
-      lalter = salter EM.! blid b
-      alterSkill = max 1 alterSkill0
-        -- We increase 0 skill to 1, to also path through unknown tiles.
-        -- Since there are no other tiles that require skill 1, this is safe.
+createBfs canMove alterSkill0 aid =
   if canMove then do
+    b <- getsState $ getActorBody aid
+    salter <- getsClient salter
+    let source = bpos b
+        lalter = salter EM.! blid b
+        alterSkill = max 1 alterSkill0
+          -- We increase 0 skill to 1, to also path through unknown tiles.
+          -- Since there are no other tiles that require skill 1, this is safe.
     stabs <- getsClient stabs
     return $! fillBfs lalter alterSkill source stabs
-  else return $! PointArray.replicateA
-                  (PointArray.axsize lalter) (PointArray.aysize lalter) apartBfs
+  else return PointArray.empty
 
 updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point
@@ -146,7 +145,7 @@ getCacheBfsAndPath aid target = do
           updatePathFromBfs canMove bap aid target
         mpath@Just{} -> return (bfsArr, mpath)
     _ -> do
-      (!canMove, !alterSkill) <- condBFS aid
+      (canMove, alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
       let bfsPath = EM.empty
       updatePathFromBfs canMove (BfsAndPath bfsArr bfsPath) aid target
@@ -158,7 +157,7 @@ getCacheBfs aid = do
   case mbfs of
     Just (BfsAndPath bfsArr _) -> return bfsArr
     _ -> do
-      (!canMove, !alterSkill) <- condBFS aid
+      (canMove, alterSkill) <- condBFS aid
       !bfsArr <- createBfs canMove alterSkill aid
       let bfsPath = EM.empty
       modifyClient $ \cli ->

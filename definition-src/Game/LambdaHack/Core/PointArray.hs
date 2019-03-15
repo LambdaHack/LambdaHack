@@ -2,7 +2,7 @@
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Core.PointArray
   ( UnboxRepClass(..), Array(..)
-  , (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
+  , empty, (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
   , foldrA, foldrA', foldlA', ifoldrA, ifoldrA', ifoldlA', foldMA', ifoldMA'
   , mapA, imapA, imapMA_, safeSetA, unsafeSetA
@@ -74,6 +74,9 @@ toUnboxRep c =
   assert (c <= fromUnboxRep maxBound) $
 #endif
     toUnboxRepUnsafe c
+
+empty :: UnboxRepClass c => Array c
+empty = Array 0 0 U.empty
 
 -- Note: there's no point specializing this to @Point@ arguments,
 -- since the extra few additions in @fromPoint@ may be less expensive than

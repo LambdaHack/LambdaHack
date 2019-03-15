@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, RankNTypes,
              TypeFamilies #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file #-}
 -- | Breadth first search algorithm.
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..)
@@ -93,8 +92,7 @@ fillBfs :: PointArray.Array Word8
         -> Point
         -> (PA.PrimArray Int, PA.PrimArray Int)
         -> PointArray.Array BfsDistance
-{-# INLINE fillBfs #-}
-fillBfs lalter alterSkill source (tabA, tabB) = runST $ do
+fillBfs !lalter !alterSkill !source (!tabA, !tabB) = runST $ do
   let arr = PointArray.replicateA
               (PointArray.axsize lalter) (PointArray.aysize lalter) apartBfs
   vThawed <- U.unsafeThaw $ PointArray.avector arr
@@ -107,7 +105,7 @@ fillBfs lalter alterSkill source (tabA, tabB) = runST $ do
   void $ U.unsafeFreeze vThawed
   return arr
 
--- The bangs are here only to get a sensible debug output of core.
+-- So very low-level that not even under EXPOSE_INTERNAL.
 fillBfsThawed :: forall s.
                  PointArray.Array Word8
               -> Word8
