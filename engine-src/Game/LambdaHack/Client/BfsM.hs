@@ -88,21 +88,19 @@ invalidateBfsPathAll = do
 
 createBfs :: MonadClientRead m
           => Bool -> Word8 -> ActorId -> m (PointArray.Array BfsDistance)
-createBfs canMove alterSkill aid = do
-  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
+createBfs canMove alterSkill0 aid = do
   b <- getsState $ getActorBody aid
-  let !aInitial = PointArray.replicateA rXmax rYmax apartBfs
-      !source = bpos b
-      !_ = PointArray.unsafeWriteA aInitial source minKnownBfs
-  when canMove $ do
-    salter <- getsClient salter
-    stabs <- getsClient stabs
-    let !lalter = salter EM.! blid b
+  salter <- getsClient salter
+  let !source = bpos b
+      lalter = salter EM.! blid b
+      alterSkill = max 1 alterSkill0
         -- We increase 0 skill to 1, to also path through unknown tiles.
         -- Since there are no other tiles that require skill 1, this is safe.
-        !_a = fillBfs lalter (max 1 alterSkill) source stabs aInitial
-    return ()
-  return aInitial
+  if canMove then do
+    stabs <- getsClient stabs
+    return $! fillBfs lalter alterSkill source stabs
+  else return $! PointArray.replicateA
+                  (PointArray.axsize lalter) (PointArray.aysize lalter) apartBfs
 
 updatePathFromBfs :: MonadClient m
                   => Bool -> BfsAndPath -> ActorId -> Point

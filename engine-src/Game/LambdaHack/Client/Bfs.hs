@@ -77,9 +77,8 @@ maxBfsDistance = BfsDistance (maxBound :: Word8)
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = predBfsDistance apartBfs
 
--- | Fill out the given BFS array (not all cells are overwritten,
--- so we assume the array is previously filled with @apartBfs@).
--- Unsafe @PointArray@ operations are OK here, because the intermediate
+-- | Create and fill a BFS array for the given level.
+-- Unsafe array operations are OK here, because the intermediate
 -- values of the vector don't leak anywhere outside nor are kept unevaluated
 -- and so they can't be overwritten by the unsafe side-effect.
 --
@@ -91,31 +90,32 @@ abortedUnknownBfs = predBfsDistance apartBfs
 -- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
 fillBfs :: PointArray.Array Word8
         -> Word8
-        -> Point                         -- ^ starting position
+        -> Point
         -> (PA.PrimArray Int, PA.PrimArray Int)
-                                         -- ^ tabs in place of a queue
-        -> PointArray.Array BfsDistance  -- ^ initial array, with @apartBfs@
-        -> ()
+        -> PointArray.Array BfsDistance
 {-# INLINE fillBfs #-}
-fillBfs lalter alterSkill source
-        (tabA, tabB) PointArray.Array{avector} = runST $ do
-  vThawed <- U.unsafeThaw avector
+fillBfs lalter alterSkill source (tabA, tabB) = runST $ do
+  let arr = PointArray.replicateA
+              (PointArray.axsize lalter) (PointArray.aysize lalter) apartBfs
+  vThawed <- U.unsafeThaw $ PointArray.avector arr
   tabAThawed <- PA.unsafeThawPrimArray tabA
   tabBThawed <- PA.unsafeThawPrimArray tabB
-  fillBfsThawed lalter alterSkill source (tabAThawed, tabBThawed) vThawed
+  fillBfsThawed lalter alterSkill (fromEnum source)
+                (tabAThawed, tabBThawed) vThawed
   void $ PA.unsafeFreezePrimArray tabAThawed
   void $ PA.unsafeFreezePrimArray tabBThawed
   void $ U.unsafeFreeze vThawed
+  return arr
 
 -- The bangs are here only to get a sensible debug output of core.
 fillBfsThawed :: forall s.
                  PointArray.Array Word8
               -> Word8
-              -> Point
+              -> PointI
               -> (PA.MutablePrimArray s Int, PA.MutablePrimArray s Int)
               -> U.MVector s Word8
               -> ST s ()
-fillBfsThawed !lalter !alterSkill !source
+fillBfsThawed !lalter !alterSkill !sourceI
               (!tabAThawed, !tabBThawed) !vThawed = do
   let unsafeReadI :: PointI -> ST s BfsDistance
       {-# INLINE unsafeReadI #-}
@@ -176,7 +176,8 @@ fillBfsThawed !lalter !alterSkill !source
         if acc3 == 0 || distanceNew == maxBfsDistance
         then return () -- no more close enough dungeon positions
         else bfs tabWriteThawed tabReadThawed distanceNew acc3
-  PA.writePrimArray tabAThawed 0 (fromEnum source)
+  VM.unsafeWrite vThawed sourceI (bfsDistance minKnownBfs)
+  PA.writePrimArray tabAThawed 0 sourceI
   bfs tabAThawed tabBThawed (succBfsDistance minKnownBfs) 1
 
 data AndPath = AndPath
