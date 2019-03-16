@@ -21,7 +21,7 @@ module Game.LambdaHack.Server.FovDigital
     -- * Geometry in system @Bump@
   , Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
     -- * Internal operations
-  , maximumByHull, foldlCHull', addToHull, createLine, steepness, intersect
+  , steepestInHull, foldlCHull', addToHull, createLine, steepness, intersect
   , _debugSteeper, _debugLine
 #endif
   ) where
@@ -125,10 +125,9 @@ scan !r isClear tr =
                  in if isClear trBump  -- not entering shadow
                     then trBump : goVisible (ps+1)
                     else let steepBump = B ps d
-                             cmp = steepness steepBump
-                             nep = maximumByHull cmp shallowerSign hull
+                             nep = steepestInHull shallowerSign steepBump  hull
                              neLine = createLine nep steepBump
-                             neHull = addToHull cmp shallowerSign steepBump eHull
+                             neHull = addToHull shallowerSign steepBump eHull
                          in trBump : dgo (d+1) line hull neLine neHull
                             ++ mscanShadowed (ps+1)
                               -- note how we recursively scan more and more
@@ -144,10 +143,9 @@ scan !r isClear tr =
                in if not $ isClear trBump  -- not moving out of shadow
                   then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
-                           cmp = steepness shallowBump
-                           nsp = maximumByHull cmp steeperSign eHull
+                           nsp = steepestInHull steeperSign shallowBump eHull
                            nsLine = createLine nsp shallowBump
-                           nsHull = addToHull cmp steeperSign shallowBump sHull
+                           nsHull = addToHull steeperSign shallowBump sHull
                        in trBump : mscanVisible nsLine nsHull (ps+1)
           else []  -- reached end while in shadow
 
@@ -169,10 +167,10 @@ shallowerSign :: Ordering
 shallowerSign = LT
 
 -- | Specialized implementation for speed in the inner loop. Not partial.
-maximumByHull :: (Bump -> Bump -> Ordering) -> Ordering -> ConvexHull -> Bump
-{-# INLINE maximumByHull #-}
-maximumByHull cmp sign (ConvexHull b ch) = foldlCHull' max' b ch
- where max' !x !y = if cmp x y == sign then x else y
+steepestInHull :: Ordering -> Bump -> ConvexHull -> Bump
+{-# INLINE steepestInHull #-}
+steepestInHull sign new (ConvexHull b ch) = foldlCHull' max' b ch
+ where max' !x !y = if steepness new x y == sign then x else y
 
 -- | Standard @foldl'@ over @CHull@.
 foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
@@ -186,17 +184,15 @@ foldlCHull' f z0 ch0 = fgo z0 ch0
 --
 -- The recursive @go@ seems spurious, but it's called each time with
 -- potentially different comparison predicate, so it's necessary.
-addToHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
-          -> Ordering                    -- ^ desired comparison outcome
-          -> Bump                        -- ^ a new bump to consider
+addToHull :: Ordering    -- ^ desired comparison outcome
+          -> Bump        -- ^ a new bump to consider
           -> ConvexHull  -- ^ a convex hull of bumps represented as a list
           -> ConvexHull
 {-# INLINE addToHull #-}
-addToHull cmp sign new (ConvexHull old ch) =
-  ConvexHull new $ hgo $ CHCons old ch
+addToHull sign new (ConvexHull old ch) = ConvexHull new $ hgo $ CHCons old ch
  where
   hgo :: CHull -> CHull
-  hgo (CHCons !a (CHCons !b cs)) | cmp b a /= sign = hgo (CHCons b cs)
+  hgo (CHCons !a (CHCons !b cs)) | steepness new b a /= sign = hgo (CHCons b cs)
   hgo l = l
 
 -- | Create a line from two points.
