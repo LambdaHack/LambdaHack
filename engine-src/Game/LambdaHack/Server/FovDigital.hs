@@ -78,7 +78,10 @@ scan :: Distance          -- ^ visiblity distance
      -> (Bump -> PointI)  -- ^ coordinate transformation
      -> [PointI]
 {-# INLINE scan #-}
-scan r isClear tr = assert (r > 0 `blame` r) $
+scan r isClear tr =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+ assert (r > 0 `blame` r) $  -- not really expensive, but obfuscates Core
+#endif
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan 1 ( (Line (B 1 0) (B (-r) r), ConvexHull (B 0 0) CHNil)
           , (Line (B 0 0) (B (r+1) r), ConvexHull (B 1 0) CHNil) )
@@ -139,8 +142,11 @@ scan r isClear tr = assert (r > 0 `blame` r) $
                        in trBump : mscanVisible ns (ps+1)
           else []  -- reached end while in shadow
 
-    in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
-         outside
+    in
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+      assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
+#endif
+        outside
 
 -- | Specialized implementation for speed in the inner loop. Not partial.
 maximumByHull :: (Bump -> Bump -> Ordering) -> ConvexHull -> Bump
