@@ -301,6 +301,6 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
 accessBfs bfs p =
   let dist = bfs PointArray.! p
-  in if dist == apartBfs
+  in if PointArray.axsize bfs == 0 || dist == apartBfs
      then Nothing
      else Just $ fromEnum $ bfsDistance $ dist .&. complement minKnownBfs
