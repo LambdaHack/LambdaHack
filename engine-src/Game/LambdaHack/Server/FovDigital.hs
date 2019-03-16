@@ -21,8 +21,7 @@ module Game.LambdaHack.Server.FovDigital
     -- * Geometry in system @Bump@
   , Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
     -- * Internal operations
-  , maximumByHull, foldlCHull', addToHull, createLine
-  , steeper, shallower, intersect
+  , maximumByHull, foldlCHull', addToHull, createLine, steepness, intersect
   , _debugSteeper, _debugLine
 #endif
   ) where
@@ -126,10 +125,10 @@ scan !r isClear tr =
                  in if isClear trBump  -- not entering shadow
                     then trBump : goVisible (ps+1)
                     else let steepBump = B ps d
-                             cmp = shallower steepBump
-                             nep = maximumByHull cmp hull
+                             cmp = steepness steepBump
+                             nep = maximumByHull cmp shallowerSign hull
                              neLine = createLine nep steepBump
-                             neHull = addToHull cmp steepBump eHull
+                             neHull = addToHull cmp shallowerSign steepBump eHull
                          in trBump : dgo (d+1) line hull neLine neHull
                             ++ mscanShadowed (ps+1)
                               -- note how we recursively scan more and more
@@ -145,10 +144,10 @@ scan !r isClear tr =
                in if not $ isClear trBump  -- not moving out of shadow
                   then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
-                           cmp = steeper shallowBump
-                           nsp = maximumByHull cmp eHull
+                           cmp = steepness shallowBump
+                           nsp = maximumByHull cmp steeperSign eHull
                            nsLine = createLine nsp shallowBump
-                           nsHull = addToHull cmp shallowBump sHull
+                           nsHull = addToHull cmp steeperSign shallowBump sHull
                        in trBump : mscanVisible nsLine nsHull (ps+1)
           else []  -- reached end while in shadow
 
@@ -159,13 +158,21 @@ scan !r isClear tr =
 #endif
         outside
 
+-- | Ordering outcome signifying that the first line is steeper than
+-- the second.
+steeperSign :: Ordering
+steeperSign = GT
+
+-- | Ordering outcome signifying that the first line is shallower than
+-- the second.
+shallowerSign :: Ordering
+shallowerSign = LT
+
 -- | Specialized implementation for speed in the inner loop. Not partial.
-maximumByHull :: (Bump -> Bump -> Ordering) -> ConvexHull -> Bump
+maximumByHull :: (Bump -> Bump -> Ordering) -> Ordering -> ConvexHull -> Bump
 {-# INLINE maximumByHull #-}
-maximumByHull cmp (ConvexHull b ch) = foldlCHull' max' b ch
- where max' !x !y = case cmp x y of
-                      GT -> x
-                      _  -> y
+maximumByHull cmp sign (ConvexHull b ch) = foldlCHull' max' b ch
+ where max' !x !y = if cmp x y == sign then x else y
 
 -- | Standard @foldl'@ over @CHull@.
 foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
@@ -175,20 +182,21 @@ foldlCHull' f z0 ch0 = fgo z0 ch0
        fgo z (CHCons b ch) = fgo (f z b) ch
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
--- if the new bump already lies within the hull. The comparing function is
--- either `steeper` or shallower`, in each case applied to the second argument.
+-- if the new bump already lies within the hull.
 --
 -- The recursive @go@ seems spurious, but it's called each time with
 -- potentially different comparison predicate, so it's necessary.
 addToHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
+          -> Ordering                    -- ^ desired comparison outcome
           -> Bump                        -- ^ a new bump to consider
           -> ConvexHull  -- ^ a convex hull of bumps represented as a list
           -> ConvexHull
 {-# INLINE addToHull #-}
-addToHull cmp new (ConvexHull old ch) = ConvexHull new $ hgo $ CHCons old ch
+addToHull cmp sign new (ConvexHull old ch) =
+  ConvexHull new $ hgo $ CHCons old ch
  where
   hgo :: CHull -> CHull
-  hgo (CHCons !a (CHCons !b cs)) | cmp b a /= GT = hgo (CHCons b cs)
+  hgo (CHCons !a (CHCons !b cs)) | cmp b a /= sign = hgo (CHCons b cs)
   hgo l = l
 
 -- | Create a line from two points.
@@ -205,26 +213,21 @@ createLine p1 p2 =
       line
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@, that is,
--- check if the line from the second point to the first is more steep
+-- check if the line from the second point to the first is more or less steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work fast in this particular setup.
 --
 -- Debug: Verify that the results of 2 independent checks are equal.
-steeper :: Bump -> Bump -> Bump -> Ordering
-{-# INLINE steeper #-}
-steeper (B xf yf) (B x1 y1) (B x2 y2) =
+steepness :: Bump -> Bump -> Bump -> Ordering
+{-# INLINE steepness #-}
+steepness (B xf yf) (B x1 y1) (B x2 y2) =
   let res = compare ((yf - y2)*(xf - x1)) ((yf - y1)*(xf - x2))
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
      assert (res == _debugSteeper (B xf yf) (B x1 y1) (B x2 y2))
 #endif
      res
-
--- | Negated `steeper`.
-shallower :: Bump -> Bump -> Bump -> Ordering
-{-# INLINE shallower #-}
-shallower f p1 p2 = flip steeper f p1 p2
 
 -- | The X coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of diamonds at distance
@@ -269,7 +272,7 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 
 -- | Debug functions for DFOV:
 
--- | Debug: calculate steeper for DFOV in another way and compare results.
+-- | Debug: calculate steepness for DFOV in another way and compare results.
 _debugSteeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE _debugSteeper #-}
 _debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
