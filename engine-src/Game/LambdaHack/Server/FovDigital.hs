@@ -78,7 +78,7 @@ scan :: Distance          -- ^ visiblity distance
      -> (Bump -> PointI)  -- ^ coordinate transformation
      -> [PointI]
 {-# INLINE scan #-}
-scan r isClear tr =
+scan !r isClear tr =
 #ifdef WITH_EXPENSIVE_ASSERTIONS
  assert (r > 0 `blame` r) $  -- not really expensive, but obfuscates Core
 #endif
@@ -87,8 +87,13 @@ scan r isClear tr =
           , (Line (B 0 0) (B (r+1) r), ConvexHull (B 1 0) CHNil) )
  where
   dscan :: Distance -> EdgeInterval -> [PointI]
-  dscan !d ( s0@(!sl{-shallow line-}, !sHull)
-           , e0@(!el{-steep line-}, !eHull) ) =
+  {-# INLINE dscan #-}
+  dscan !d ( (sl{-shallow line-}, sHull), (el{-steep line-}, eHull) ) =
+    dgo d sl sHull el eHull
+
+  -- Speed (mosty JS), but generally convincing GHC to unbox stuff.
+  dgo :: Distance -> Line -> ConvexHull -> Line -> ConvexHull -> [PointI]
+  dgo !d !sl sHull !el eHull =  -- @sHull@ and @eHull@ may be unused
 
     let !ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
                in n `div` k
@@ -102,30 +107,35 @@ scan r isClear tr =
           if d < r
           then let !trBump = bump ps0
                in if isClear trBump
-                  then trBump : mscanVisible s0 (ps0+1)  -- start visible
+                  then trBump : mscanVisible sl sHull (ps0+1)  -- start visible
                   else trBump : mscanShadowed (ps0+1)    -- start in shadow
           else map bump [ps0..pe]
 
         bump :: Progress -> PointI
-        bump px = tr $ B px d
+        bump !px = tr $ B px d
 
         -- We're in a visible interval.
-        mscanVisible :: Edge -> Progress -> [PointI]
-        mscanVisible s@(!_line, !hull) !ps =
-          if ps <= pe
-          then let !trBump = bump ps
-               in if isClear trBump  -- not entering shadow
-                  then trBump : mscanVisible s (ps+1)
-                  else let steepBump = B ps d
-                           cmp = shallower steepBump
-                           nep = maximumByHull cmp hull
-                           neHull = addToHull cmp steepBump eHull
-                           ne = (createLine nep steepBump, neHull)
-                       in trBump : dscan (d+1) (s, ne) ++ mscanShadowed (ps+1)
-                            -- note how we recursively scan more and more
-                            -- distant tiles, up to the FOV radius,
-                            -- before starting to process the shadow
-          else dscan (d+1) (s, e0)  -- reached end, scan next
+        mscanVisible :: Line -> ConvexHull -> Progress -> [PointI]
+        {-# INLINE mscanVisible #-}
+        mscanVisible line hull ps1 = goVisible ps1
+         where
+          goVisible :: Progress -> [PointI]
+          goVisible !ps =
+            if ps <= pe
+            then let !trBump = bump ps
+                 in if isClear trBump  -- not entering shadow
+                    then trBump : goVisible (ps+1)
+                    else let steepBump = B ps d
+                             cmp = shallower steepBump
+                             nep = maximumByHull cmp hull
+                             neLine = createLine nep steepBump
+                             neHull = addToHull cmp steepBump eHull
+                         in trBump : dgo (d+1) line hull neLine neHull
+                            ++ mscanShadowed (ps+1)
+                              -- note how we recursively scan more and more
+                              -- distant tiles, up to the FOV radius,
+                              -- before starting to process the shadow
+            else dgo (d+1) line hull el eHull  -- reached end, scan next
 
         -- We're in a shadowed interval.
         mscanShadowed :: Progress -> [PointI]
@@ -137,14 +147,15 @@ scan r isClear tr =
                   else let shallowBump = B ps d
                            cmp = steeper shallowBump
                            nsp = maximumByHull cmp eHull
+                           nsLine = createLine nsp shallowBump
                            nsHull = addToHull cmp shallowBump sHull
-                           ns = (createLine nsp shallowBump, nsHull)
-                       in trBump : mscanVisible ns (ps+1)
+                       in trBump : mscanVisible nsLine nsHull (ps+1)
           else []  -- reached end while in shadow
 
     in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-      assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e0,ps0,pe))
+      assert (r >= d && d >= 0 && pe >= ps0
+              `blame` (r,d,sl,sHull,el,eHull,ps0,pe))
 #endif
         outside
 
@@ -159,9 +170,9 @@ maximumByHull cmp (ConvexHull b ch) = foldlCHull' max' b ch
 -- | Standard @foldl'@ over @CHull@.
 foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
 {-# INLINE foldlCHull' #-}
-foldlCHull' f z0 ch0 = go z0 ch0
- where go !z CHNil = z
-       go z (CHCons b ch) = go (f z b) ch
+foldlCHull' f z0 ch0 = fgo z0 ch0
+ where fgo !z CHNil = z
+       fgo z (CHCons b ch) = fgo (f z b) ch
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
 -- if the new bump already lies within the hull. The comparing function is
@@ -174,11 +185,11 @@ addToHull :: (Bump -> Bump -> Ordering)  -- ^ a comparison function
           -> ConvexHull  -- ^ a convex hull of bumps represented as a list
           -> ConvexHull
 {-# INLINE addToHull #-}
-addToHull cmp new (ConvexHull old ch) = ConvexHull new $ go $ CHCons old ch
+addToHull cmp new (ConvexHull old ch) = ConvexHull new $ hgo $ CHCons old ch
  where
-  go :: CHull -> CHull
-  go (CHCons a (CHCons b cs)) | cmp a b /= LT = go (CHCons b cs)
-  go l = l
+  hgo :: CHull -> CHull
+  hgo (CHCons !a (CHCons !b cs)) | cmp b a /= GT = hgo (CHCons b cs)
+  hgo l = l
 
 -- | Create a line from two points.
 --
@@ -197,12 +208,9 @@ createLine p1 p2 =
 -- check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
--- to work fast in this particular setup. Returns True for ill-defined lines.
+-- to work fast in this particular setup.
 --
 -- Debug: Verify that the results of 2 independent checks are equal.
---
--- It really won't inline except in `shallower`,
--- because it's never fully applied in the code above.
 steeper :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE steeper #-}
 steeper (B xf yf) (B x1 y1) (B x2 y2) =
@@ -214,8 +222,6 @@ steeper (B xf yf) (B x1 y1) (B x2 y2) =
      res
 
 -- | Negated `steeper`.
---
--- It really won't inline, because it's never fully applied in the code above.
 shallower :: Bump -> Bump -> Bump -> Ordering
 {-# INLINE shallower #-}
 shallower f p1 p2 = flip steeper f p1 p2
