@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file #-}
 -- | Field Of View scanning.
 --
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
@@ -161,13 +162,14 @@ cacheBeforeLucidFromActor :: FovClear -> Actor -> Ability.Skills
 cacheBeforeLucidFromActor clearPs body actorMaxSk =
   let radius =
         boundSightByCalm (Ability.getSk Ability.SkSight actorMaxSk) (bcalm body)
-      creachable = PerReachable $ fullscan clearPs radius (bpos body)
-      cnocto = PerVisible
-               $ fullscan clearPs (Ability.getSk Ability.SkNocto actorMaxSk)
-                          (bpos body)
+      spectatorPos = bpos body
+      creachable = PerReachable $ fullscan radius spectatorPos clearPs
+      cnocto = PerVisible $ fullscan (Ability.getSk Ability.SkNocto actorMaxSk)
+                                     spectatorPos
+                                     clearPs
       smellRadius =
         if Ability.getSk Ability.SkSmell actorMaxSk >= 2 then 2 else 0
-      csmell = PerSmelled $ fullscan clearPs smellRadius (bpos body)
+      csmell = PerSmelled $ fullscan smellRadius spectatorPos clearPs
   in CacheBeforeLucid{..}
 
 totalFromPerActor :: PerActor -> CacheBeforeLucid
@@ -240,7 +242,7 @@ floorLightSources discoAspect lvl =
 -- from his or other factions, possibly do).
 lucidFromItems :: FovClear -> [(Point, Int)] -> [FovLucid]
 lucidFromItems clearPs allItems =
-  let lucidPos (p, shine) = FovLucid $ fullscan clearPs shine p
+  let lucidPos (!p, !shine) = FovLucid $ fullscan shine p clearPs
   in map lucidPos allItems
 
 -- * Computation of initial perception and caches
@@ -323,32 +325,30 @@ type Matrix = (Int, Int, Int, Int)
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view.
 -- The actor's own position is considred in his field of view.
-fullscan :: FovClear  -- ^ the array with clear positions
-         -> Int       -- ^ scanning radius
+fullscan :: Int       -- ^ scanning radius
          -> Point     -- ^ position of the spectator
+         -> FovClear  -- ^ the array with clear positions
          -> ES.EnumSet Point
-fullscan FovClear{fovClear} radius spectatorPos =
-  if | radius == 2 -> inline squareUnsafeSet spectatorPos
-     | radius > 2 -> ES.intSetToEnumSet $ IS.fromList $
-         [spectatorI]
+fullscan !radius spectatorPos fc = case radius of
+  2 -> squareUnsafeSet spectatorPos
+  1 -> ES.singleton spectatorPos
+  0 -> ES.empty  -- e.g., smell for non-smelling
+  _ | radius <= 0 -> ES.empty
+  _ ->
+    let !FovClear{fovClear} = fc
+        !spectatorI = fromEnum spectatorPos
+        mapTr :: Matrix -> [PointI]
+        mapTr m@(!_, !_, !_, !_) = scan (radius - 1) isClear (trV m)
+        trV :: Matrix -> Bump -> PointI
+        {-# INLINE trV #-}
+        trV (x1, y1, x2, y2) B{..} =
+          spectatorI + fromEnum (Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by))
+        isClear :: PointI -> Bool
+        {-# INLINE isClear #-}
+        isClear = PointArray.accessI fovClear
+    in ES.intSetToEnumSet $ IS.fromList
+       $ [spectatorI]
          ++ mapTr (1, 0, 0, -1)   -- quadrant I
          ++ mapTr (0, 1, 1, 0)    -- II (counter-clockwise)
          ++ mapTr (-1, 0, 0, 1)   -- III
          ++ mapTr (0, -1, -1, 0)  -- IV
-     -- Very rare:
-     | radius == 1 -> ES.singleton spectatorPos
-     | otherwise -> ES.empty
-      where
-  mapTr :: Matrix -> [PointI]
-  mapTr m@(!_, !_, !_, !_) = scan (radius - 1) isClear (trV m)
-
-  trV :: Matrix -> Bump -> PointI
-  {-# INLINE trV #-}
-  trV (x1, y1, x2, y2) B{..} =
-    spectatorI + fromEnum (Vector (x1 * bx + y1 * by) (x2 * bx + y2 * by))
-
-  spectatorI = fromEnum spectatorPos
-
-  isClear :: PointI -> Bool
-  {-# INLINE isClear #-}
-  isClear = PointArray.accessI fovClear

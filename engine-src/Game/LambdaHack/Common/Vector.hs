@@ -12,8 +12,8 @@ module Game.LambdaHack.Common.Vector
   , RadianAngle, rotate, towards
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , _moveTexts, longMoveTexts, normalize, normalizeVector
-  , pathToTrajectory
+  , _moveTexts, longMoveTexts, movesSquare, pathToTrajectory
+  , normalize, normalizeVector
 #endif
   ) where
 
@@ -161,13 +161,13 @@ vicinityCardinalUnsafe p = [ shift p dxy | dxy <- movesCardinal ]
 
 -- Ascending list; includes the origin.
 movesSquare :: [VectorI]
-movesSquare =
-  map (fromEnum . uncurry Vector)
-    [ (-1, -1), (0, -1), (1, -1)
-    , (-1, 0), (0, 0), (1, 0)
-    , (-1, 1), (0, 1), (1, 1) ]
+movesSquare = map (fromEnum . uncurry Vector)
+                  [ (-1, -1), (0, -1), (1, -1)
+                  , (-1, 0), (0, 0), (1, 0)
+                  , (-1, 1), (0, 1), (1, 1) ]
 
 squareUnsafeSet :: Point -> ES.EnumSet Point
+{-# INLINE squareUnsafeSet #-}
 squareUnsafeSet p =
   ES.intSetToEnumSet $ IS.fromDistinctAscList $ map (fromEnum p +) movesSquare
 
