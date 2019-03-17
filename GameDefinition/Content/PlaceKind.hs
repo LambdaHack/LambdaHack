@@ -9,9 +9,9 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
+import Game.LambdaHack.Definition.Defs
 
 content :: [PlaceKind]
 content =
@@ -451,7 +451,7 @@ bushClump = PlaceKind
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "f;"
-               , ";f"
+               , ";X"  -- one sure exit needed not to block a corner
                , ";f"
                ]
   , poverrideDark = [('f', "bushClumpOver_f_Dark"), (';', "bush Lit")]
