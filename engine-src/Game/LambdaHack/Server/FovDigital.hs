@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file -dsuppress-uniques #-}
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
@@ -21,7 +22,8 @@ module Game.LambdaHack.Server.FovDigital
     -- * Geometry in system @Bump@
   , Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
     -- * Internal operations
-  , steepestInHull, foldlCHull', addToHull, createLine, steepness, intersect
+  , steepestInHull, foldlCHull', addToHull, addToHullGo
+  , createLine, steepness, intersect
   , _debugSteeper, _debugLine
 #endif
   ) where
@@ -168,8 +170,7 @@ shallowerSign = LT
 
 -- | Specialized implementation for speed in the inner loop. Not partial.
 steepestInHull :: Ordering -> Bump -> ConvexHull -> Bump
-{-# INLINE steepestInHull #-}
-steepestInHull sign new (ConvexHull b ch) = foldlCHull' max' b ch
+steepestInHull !sign !new (ConvexHull !b !ch) = foldlCHull' max' b ch
  where max' !x !y = if steepness new x y == sign then x else y
 
 -- | Standard @foldl'@ over @CHull@.
@@ -189,11 +190,17 @@ addToHull :: Ordering    -- ^ desired comparison outcome
           -> ConvexHull  -- ^ a convex hull of bumps represented as a list
           -> ConvexHull
 {-# INLINE addToHull #-}
-addToHull sign new (ConvexHull old ch) = ConvexHull new $ hgo $ CHCons old ch
+addToHull sign new (ConvexHull old ch) =
+  ConvexHull new $ addToHullGo sign new $ CHCons old ch
+
+-- This worker is needed to avoid returing a pair (new, result)
+-- and also packing new (steepBump/shallowBump) twice, losing sharing.
+addToHullGo :: Ordering -> Bump -> CHull -> CHull
+addToHullGo !sign !new = hgo
  where
   hgo :: CHull -> CHull
-  hgo (CHCons !a (CHCons !b cs)) | steepness new b a /= sign = hgo (CHCons b cs)
-  hgo l = l
+  hgo (CHCons a ch@(CHCons b _)) | steepness new b a /= sign = hgo ch
+  hgo ch = ch
 
 -- | Create a line from two points.
 --
