@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file -dsuppress-uniques #-}
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
 -- This fast version of the algorithm, based on "PFOV", has AFAIK
 -- never been described nor implemented before.
@@ -120,7 +119,6 @@ scan !r isClear tr =
 
         -- We're in a visible interval.
         mscanVisible :: Line -> ConvexHull -> Progress -> [PointI]
-        {-# INLINE mscanVisible #-}
         mscanVisible line hull ps1 = goVisible ps1
          where
           goVisible :: Progress -> [PointI]

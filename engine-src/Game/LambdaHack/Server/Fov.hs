@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -ddump-simpl -dsuppress-coercions -dsuppress-type-applications -dsuppress-module-prefixes -ddump-to-file -dsuppress-uniques #-}
 -- | Field Of View scanning.
 --
 -- See <https://github.com/LambdaHack/LambdaHack/wiki/Fov-and-los>
