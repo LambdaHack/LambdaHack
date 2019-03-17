@@ -52,6 +52,9 @@ data Bump = B
   }
   deriving Show
 
+-- | Two strict orderings of lines with a common point.
+data LineOrdering = Steeper | Shallower
+
 -- | Straight line between points.
 data Line = Line Bump Bump
   deriving Show
@@ -127,9 +130,9 @@ scan !r isClear tr =
                  in if isClear trBump  -- not entering shadow
                     then trBump : goVisible (ps+1)
                     else let steepBump = B ps d
-                             nep = steepestInHull shallowerSign steepBump  hull
+                             nep = steepestInHull Shallower steepBump  hull
                              neLine = createLine nep steepBump
-                             neHull = addToHull shallowerSign steepBump eHull
+                             neHull = addToHull Shallower steepBump eHull
                          in trBump : dgo (d+1) line hull neLine neHull
                             ++ mscanShadowed (ps+1)
                               -- note how we recursively scan more and more
@@ -145,9 +148,9 @@ scan !r isClear tr =
                in if not $ isClear trBump  -- not moving out of shadow
                   then trBump : mscanShadowed (ps+1)
                   else let shallowBump = B ps d
-                           nsp = steepestInHull steeperSign shallowBump eHull
+                           nsp = steepestInHull Steeper shallowBump eHull
                            nsLine = createLine nsp shallowBump
-                           nsHull = addToHull steeperSign shallowBump sHull
+                           nsHull = addToHull Steeper shallowBump sHull
                        in trBump : mscanVisible nsLine nsHull (ps+1)
           else []  -- reached end while in shadow
 
@@ -158,20 +161,11 @@ scan !r isClear tr =
 #endif
         outside
 
--- | Ordering outcome signifying that the first line is steeper than
--- the second.
-steeperSign :: Ordering
-steeperSign = GT
-
--- | Ordering outcome signifying that the first line is shallower than
--- the second.
-shallowerSign :: Ordering
-shallowerSign = LT
-
 -- | Specialized implementation for speed in the inner loop. Not partial.
-steepestInHull :: Ordering -> Bump -> ConvexHull -> Bump
-steepestInHull !sign !new (ConvexHull !b !ch) = foldlCHull' max' b ch
- where max' !x !y = if steepness new x y == sign then x else y
+steepestInHull :: LineOrdering -> Bump -> ConvexHull -> Bump
+{-# NOINLINE steepestInHull #-}
+steepestInHull !lineOrdering !new (ConvexHull !b !ch) = foldlCHull' max' b ch
+ where max' !x !y = if steepness lineOrdering new x y then x else y
 
 -- | Standard @foldl'@ over @CHull@.
 foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
@@ -180,26 +174,30 @@ foldlCHull' f z0 ch0 = fgo z0 ch0
  where fgo !z CHNil = z
        fgo z (CHCons b ch) = fgo (f z b) ch
 
--- | Extends a convex hull of bumps with a new bump. Nothing needs to be done
--- if the new bump already lies within the hull.
+-- | Extends a convex hull of bumps with a new bump. The new bump makes
+-- some old bumps unnecessary, e.g. those that are joined with the new steep
+-- bump with lines that are not shallower than any newer lines in the hull.
+-- Removing such unnecessary bumps slightly speeds up computation
+-- of 'steepestInHull'.
 --
 -- The recursive @go@ seems spurious, but it's called each time with
 -- potentially different comparison predicate, so it's necessary.
-addToHull :: Ordering    -- ^ desired comparison outcome
-          -> Bump        -- ^ a new bump to consider
-          -> ConvexHull  -- ^ a convex hull of bumps represented as a list
+addToHull :: LineOrdering  -- ^ the line ordering to use
+          -> Bump          -- ^ a new bump to consider
+          -> ConvexHull    -- ^ a convex hull of bumps represented as a list
           -> ConvexHull
 {-# INLINE addToHull #-}
-addToHull sign new (ConvexHull old ch) =
-  ConvexHull new $ addToHullGo sign new $ CHCons old ch
+addToHull lineOrdering new (ConvexHull old ch) =
+  ConvexHull new $ addToHullGo lineOrdering new $ CHCons old ch
 
 -- This worker is needed to avoid returing a pair (new, result)
 -- and also packing new (steepBump/shallowBump) twice, losing sharing.
-addToHullGo :: Ordering -> Bump -> CHull -> CHull
-addToHullGo !sign !new = hgo
+addToHullGo :: LineOrdering -> Bump -> CHull -> CHull
+{-# NOINLINE addToHullGo #-}
+addToHullGo !lineOrdering !new = hgo
  where
   hgo :: CHull -> CHull
-  hgo (CHCons a ch@(CHCons b _)) | steepness new b a /= sign = hgo ch
+  hgo (CHCons a ch@(CHCons b _)) | not (steepness lineOrdering new b a) = hgo ch
   hgo ch = ch
 
 -- | Create a line from two points.
@@ -215,20 +213,26 @@ createLine p1 p2 =
 #endif
       line
 
--- | Compare steepness of @(p1, f)@ and @(p2, f)@, that is,
--- check if the line from the second point to the first is more or less steep
--- than the line from the third point to the first. This is related
+-- | Strictly compare steepness of @(p1, f)@ and @(p2, f)@,
+-- according to the @LineOrdering@ given. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work fast in this particular setup.
 --
 -- Debug: Verify that the results of 2 independent checks are equal.
-steepness :: Bump -> Bump -> Bump -> Ordering
+steepness :: LineOrdering -> Bump -> Bump -> Bump -> Bool
 {-# INLINE steepness #-}
-steepness (B xf yf) (B x1 y1) (B x2 y2) =
-  let res = compare ((yf - y2)*(xf - x1)) ((yf - y1)*(xf - x2))
+steepness lineOrdering (B xf yf) (B x1 y1) (B x2 y2) =
+  let gradient1 = (yf - y2) * (xf - x1)
+      gradient2 = (yf - y1) * (xf - x2)
+      res = case lineOrdering of
+        Steeper -> gradient1 > gradient2
+        Shallower -> gradient1 < gradient2
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-     assert (res == _debugSteeper (B xf yf) (B x1 y1) (B x2 y2))
+     let sign = case lineOrdering of
+           Steeper -> GT
+           Shallower -> LT
+     in assert (res == (sign == _debugSteeper (B xf yf) (B x1 y1) (B x2 y2)))
 #endif
      res
 
