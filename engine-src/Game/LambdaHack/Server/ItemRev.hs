@@ -138,7 +138,7 @@ serverDiscos :: COps -> Rnd (DiscoveryKind, DiscoveryKindRev)
 serverDiscos COps{coitem} = do
   let ixs = [toEnum 0..toEnum (olength coitem - 1)]
   shuffled <- shuffle ixs
-  let f (!ikMap, !ikRev, !ix : rest) !kmKind _ =
+  let f (!ikMap, !ikRev, (!ix) : rest) !kmKind _ =
         (EM.insert ix kmKind ikMap, EM.insert kmKind ix ikRev, rest)
       f (ikMap, _, []) ik _ =
         error $ "too short ixs" `showFailure` (ik, ikMap)

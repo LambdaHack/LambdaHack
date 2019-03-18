@@ -68,7 +68,7 @@ revealItems fid = do
             itemKind = okind coitem itemKindId
         unless (IA.isHumanTrinket itemKind) $  -- a hack
           execUpdAtomic $ UpdDiscover c iid itemKindId arItem
-      f (aid, b) = do
+      f (aid, b) =
         -- CSha is IDed for each actor of each faction, which is fine,
         -- even though it may introduce a slight lag at gameover.
         join $ getsState $ mapActorItems_ (discover aid) b

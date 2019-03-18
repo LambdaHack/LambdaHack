@@ -470,12 +470,12 @@ lookAtActors p lidV = do
               onlyIs = bwatch body == WWatch && null guardVerbs
           in if | bhp body <= 0 && not (bproj body) ->
                   makeSentence
-                    ([MU.SubjectVerbSg (head subjects) "lie here"]
-                     ++ if null guardVerbs
-                        then []
-                        else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
-                                              "and" guardVerbs
-                             , "any more" ])
+                    (MU.SubjectVerbSg (head subjects) "lie here"
+                     : if null guardVerbs
+                       then []
+                       else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
+                                             "and" guardVerbs
+                            , "any more" ])
                   <+> case subjects of
                         _ : projs@(_ : _) ->
                           let (subjectProjs, personProjs) = squashedWWandW projs

@@ -1008,7 +1008,7 @@ gorget = necklaceTemplate
   , iflavour = zipFancy [BrCyan]  -- looks exactly the same as one of necklaces,
                                   -- but it's OK, it's an artifact
   , iaspects = [ SetFlag Unique
-               , Timeout $ (5 - 1 `dL` 4)
+               , Timeout $ 5 - 1 `dL` 4
                , AddSkill SkArmorMelee 3, AddSkill SkArmorRanged 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate

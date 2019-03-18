@@ -178,7 +178,7 @@ textAllPowers detailLevel skipRecharging
         -- because in case of @MOwned@ the owner is different than leader,
         -- so the value would be different than when viewing the item.
       splitTry ass =
-        let splits = map (\det -> splitA det ass) [minBound..maxBound]
+        let splits = map (`splitA` ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
             splitsValid | T.null elab = filter (/= []) splitsToTry
                         | otherwise = splitsToTry

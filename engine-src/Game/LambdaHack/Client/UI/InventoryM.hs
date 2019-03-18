@@ -381,7 +381,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                     [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
                     c1 : rest -> (c1, rest)
                     [] -> error $ "" `showFailure` cRest
-                  else case (reverse $ mcCur ++ cRest) of
+                  else case reverse $ mcCur ++ cRest of
                     c1@(MStore CSha) : c2 : rest | not calmE ->
                       (c2, reverse $ c1 : rest)
                     [MStore CSha] | not calmE -> error $ "" `showFailure` cRest

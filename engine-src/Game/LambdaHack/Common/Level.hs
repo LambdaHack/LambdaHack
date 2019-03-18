@@ -226,7 +226,7 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
                  -> [Point -> ContentId TileKind -> Bool]
                  -> Rnd (Maybe Point)
       {-# INLINE accomodate #-}
-      accomodate fallback m l0 = go l0
+      accomodate fallback m = go
        where
         go :: [Point -> ContentId TileKind -> Bool]
            -> Rnd (Maybe Point)

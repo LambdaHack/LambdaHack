@@ -55,7 +55,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
                                      , sdungeonRng } = do
   -- Verify the hack ASAP in case points are used soon.
   let !_A = assert (speedupHackXSize
-                    == RK.rXmax (Content.RuleKind.standardRules)) ()
+                    == RK.rXmax Content.RuleKind.standardRules) ()
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.

@@ -404,7 +404,7 @@ fleeList aid = do
       eqVicRaw = filter ((== dist (bpos b)) . fst) accWalkVic
       (eqVicOld, eqVic) = partition ((== boldpos b) . Just . snd) eqVicRaw
       accNonWalkUnocc p = not (Tile.isWalkable coTileSpeedup (lvl `at` p))
-                          && (Tile.isEasyOpen coTileSpeedup (lvl `at` p))
+                          && Tile.isEasyOpen coTileSpeedup (lvl `at` p)
                           && not (occupiedBigLvl p lvl)
                           && not (occupiedProjLvl p lvl)
       accNonWalkVic = filter (accNonWalkUnocc . snd) dVic

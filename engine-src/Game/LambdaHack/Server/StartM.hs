@@ -170,7 +170,7 @@ sampleItems dungeon = do
         m2 <- rollItemAspect freq minLid
         case m2 of
           Nothing -> error "sampleItems: can't create sample item"
-          Just (itemKnown, (itemFull, _kit)) -> do
+          Just (itemKnown, (itemFull, _kit)) ->
             Just <$> registerItem (itemFull, (0, [])) itemKnown c False
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem
@@ -377,8 +377,7 @@ populateDungeon = do
               when (isNothing mleader) $ supplantLeader fid3 aid
               return True
   lposs <- mapM initialActorPositions arenas
-  let alliancePositions =
-        EM.fromList $ map (second $ map $ \(_, l) -> l) lposs
+  let alliancePositions = EM.fromList $ map (second $ map snd) lposs
   placeItemsInDungeon alliancePositions
   embedItemsInDungeon
   mapM_ initialActors lposs

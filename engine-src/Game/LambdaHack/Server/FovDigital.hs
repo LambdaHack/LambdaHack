@@ -120,7 +120,7 @@ scan !r isClear tr =
 
         -- We're in a visible interval.
         mscanVisible :: Line -> ConvexHull -> Progress -> [PointI]
-        mscanVisible line hull ps1 = goVisible ps1
+        mscanVisible line hull = goVisible
          where
           goVisible :: Progress -> [PointI]
           goVisible !ps =
@@ -169,7 +169,7 @@ steepestInHull !lineOrdering !new (ConvexHull !b !ch) = foldlCHull' max' b ch
 -- | Standard @foldl'@ over @CHull@.
 foldlCHull' :: (a -> Bump -> a) -> a -> CHull -> a
 {-# INLINE foldlCHull' #-}
-foldlCHull' f z0 ch0 = fgo z0 ch0
+foldlCHull' f = fgo
  where fgo !z CHNil = z
        fgo z (CHCons b ch) = fgo (f z b) ch
 

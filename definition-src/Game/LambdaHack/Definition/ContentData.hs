@@ -21,7 +21,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Function
 import qualified Data.Map.Strict as M
-import           Data.Ord (comparing)
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
@@ -40,7 +39,7 @@ maxContentId = toContentId maxBound
 
 validateRarity :: Rarity -> [Text]
 validateRarity rarity =
-  let sortedRarity = sortBy (comparing fst) rarity
+  let sortedRarity = sortOn fst rarity
   in [ "rarity not sorted" | sortedRarity /= rarity ]
      ++ [ "rarity depth thresholds not unique"
         | map head (groupBy ((==) `on` fst) sortedRarity) /= sortedRarity ]

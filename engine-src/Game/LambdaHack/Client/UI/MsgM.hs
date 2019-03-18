@@ -59,10 +59,9 @@ promptMainKeys = do
   side <- getsClient sside
   ours <- getsState $ fidActorNotProjGlobalAssocs side
   revCmd <- revCmdMap
-  let kmHelp = revCmd (K.undefinedKM) HumanCmd.Hint
-      kmViewEqp = revCmd (K.undefinedKM)
-                         (HumanCmd.ChooseItemMenu (MStore CEqp))
-      kmItemEqp = revCmd (K.undefinedKM)
+  let kmHelp = revCmd K.undefinedKM HumanCmd.Hint
+      kmViewEqp = revCmd K.undefinedKM (HumanCmd.ChooseItemMenu (MStore CEqp))
+      kmItemEqp = revCmd K.undefinedKM
                          (HumanCmd.MoveItem [CGround, CInv, CSha] CEqp
                                             Nothing False)
   saimMode <- getsSession saimMode

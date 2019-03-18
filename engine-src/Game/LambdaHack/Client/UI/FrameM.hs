@@ -97,7 +97,7 @@ promptGetKey dm ov onBlank frontKeyKeys = do
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
       frontKeyFrame <- drawOverlay dm onBlank ov lidV
-      when (dm /= ColorFull) $
+      when (dm /= ColorFull)
         -- Forget the furious keypresses just before a special event.
         resetPressedKeys
       recordHistory

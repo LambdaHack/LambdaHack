@@ -1101,7 +1101,7 @@ effectParalyzeInWater execSfx nDm source target = do
                                (Ability.getSk Ability.SkFlying actorMaxSk)
     if Dice.supDice nDm > swimmingOrFlying
     then paralyze execSfx nDm source target  -- no help at all
-    else do  -- fully resisted
+    else  -- fully resisted
       -- Don't spam:
       -- sb <- getsState $ getActorBody source
       -- execSfxAtomic $ SfxMsgFid (bfid sb) SfxWaterParalysisResisted
@@ -1557,7 +1557,7 @@ effectIdentify execSfx iidId target = do
 
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> ContentId ItemKind -> ItemKind -> m ()
-identifyIid iid c itemKindId itemKind = do
+identifyIid iid c itemKindId itemKind =
   unless (IA.isHumanTrinket itemKind) $ do
     discoAspect <- getsState sdiscoAspect
     execUpdAtomic $ UpdDiscover c iid itemKindId $ discoAspect EM.! iid
@@ -1858,7 +1858,7 @@ effectVerbMsg :: MonadServerAtomic m
               => m () -> Bool -> ActorId -> ItemId -> Container -> m UseResult
 effectVerbMsg execSfx onSmashOnly source iid c = do
   b <- getsState $ getActorBody source
-  unless (bproj b) $ do  -- don't spam when projectiles activate
+  unless (bproj b) $  -- don't spam when projectiles activate
     if onSmashOnly
     then execSfx
     else do

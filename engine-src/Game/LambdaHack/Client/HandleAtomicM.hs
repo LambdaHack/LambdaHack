@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Handle atomic commands received by the client.
 module Game.LambdaHack.Client.HandleAtomicM
   ( MonadClientSetup(..)

@@ -469,8 +469,7 @@ drawFrameStatus drawnLevelId = do
       leaderName bUI = trimTgtDesc (widthTgt - 8) (bname bUI)
       leaderBlurbLong = maybe fallback (\bUI ->
         "Leader:" <+> leaderName bUI) mbodyUI
-      leaderBlurbShort = maybe fallback (\bUI ->
-        leaderName bUI) mbodyUI
+      leaderBlurbShort = maybe fallback leaderName mbodyUI
   ours <- getsState $ fidActorNotProjGlobalAssocs side
   let na = length ours
       nl = ES.size $ ES.fromList $ map (blid . snd) ours
@@ -505,9 +504,7 @@ drawFrameStatus drawnLevelId = do
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairText, pathXhairOrNull) <- tgtOrItem
-  damageStatus <- maybe (return [])
-                        (\leader -> drawLeaderDamage widthTgt leader)
-                        mleader
+  damageStatus <- maybe (return []) (drawLeaderDamage widthTgt) mleader
   let damageStatusWidth = length damageStatus
       withForLeader = widthTgt - damageStatusWidth - 1
       leaderBottom =

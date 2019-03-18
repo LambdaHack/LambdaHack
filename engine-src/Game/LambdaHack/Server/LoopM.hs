@@ -477,7 +477,7 @@ advanceTrajectory aid b = do
              addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
            let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
                reqMoveHit = reqMoveGeneric False True aid d
-               reqDisp target = reqDisplaceGeneric False aid target
+               reqDisp = reqDisplaceGeneric False aid
            if | bproj b ->
                 -- Projectiles always hit; then can't tell friend from foe.
                 reqMoveHit

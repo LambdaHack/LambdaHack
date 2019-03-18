@@ -490,8 +490,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       -- activations don't consume the item, whether it's durable or not.
       aspectBenefits = aspectRecordToBenefit arItem
       eqpBens =
-        sum $ aspectBenefits
-              ++ if periodic then [scalePeriodic (effSelf + effDice)] else []
+        sum $ aspectBenefits ++ [scalePeriodic (effSelf + effDice) | periodic]
       -- Equipped items may incur crippling maluses via aspects (but rather
       -- not via periodic effects). Examples of crippling maluses are zeroing
       -- melee or move skills. AI can't live with those and can't

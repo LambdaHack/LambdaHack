@@ -883,7 +883,7 @@ quitFactionUI fid toSt manalytics = do
             void $ displaySpaceEsc ColorFull ""
         case manalytics of
           Nothing -> return ()
-          Just (factionAn, generationAn) -> do
+          Just (factionAn, generationAn) ->
             cycleLore []
               [ displayGameOverLoot (itemBag, total) generationAn
               , displayGameOverAnalytics factionAn generationAn
@@ -1142,7 +1142,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurCharacter = fid == side && not (bproj b)
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
-        feelLookHP adjective = feelLook MsgEffect adjective
+        feelLookHP = feelLook MsgEffect
         feelLookCalm adjective =
           when (bhp b > 0) $ feelLook MsgEffectMinor adjective
         feelLook msgClass adjective =
@@ -1641,7 +1641,7 @@ strike catch source target iid cstore = assert (source /= target) $ do
        | bproj sb && bproj tb -> do  -- server sends unless both are blasts
          -- Short message.
          msgAdd MsgVeryRare $
-           makeSentence $ [MU.SubjectVerbSg spart "intercept", tpart]
+           makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit coscreen ps Color.BrBlue Color.Blue
        | IK.idamage (itemKind itemFullWeapon) == 0 -> do

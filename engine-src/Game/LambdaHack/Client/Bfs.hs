@@ -129,10 +129,10 @@ fillBfsThawed !lalter !alterSkill !sourceI
       bfs !tabReadThawed !tabWriteThawed !distance !prevMaxPosIx = do
         let unsafeReadCurrent :: Int -> ST s PointI
             {-# INLINE unsafeReadCurrent #-}
-            unsafeReadCurrent ix = PA.readPrimArray tabReadThawed ix
+            unsafeReadCurrent = PA.readPrimArray tabReadThawed
             unsafeWriteNext :: Int -> PointI -> ST s ()
             {-# INLINE unsafeWriteNext #-}
-            unsafeWriteNext ix p = PA.writePrimArray tabWriteThawed ix p
+            unsafeWriteNext = PA.writePrimArray tabWriteThawed
             processKnown :: Int -> Int -> ST s Int
             processKnown !posIx !acc1 =
               if posIx == -1
