@@ -143,7 +143,7 @@ highSlideshow :: X          -- ^ width of the display area
               -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
 highSlideshow width height table pos gameModeName tz =
-  let entries = (height - 3)`div` 3
+  let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
       tts = showNearbyScores tz pos table entries
       al = textToAL msg
@@ -160,7 +160,7 @@ showTable tz pos table start entries =
       renderScore (pos1, score1) =
         map (if pos1 == pos then textFgToAL Color.BrWhite else textToAL)
         $ HighScore.showScore tz pos1 score1
-  in [] : intercalate [] (map renderScore screenful)
+  in [] : intercalate [[]] (map renderScore screenful)
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int
