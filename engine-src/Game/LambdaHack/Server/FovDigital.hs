@@ -1,5 +1,5 @@
 -- | DFOV (Digital Field of View) implemented according to specification at <http://roguebasin.roguelikedevelopment.org/index.php?title=Digital_field_of_view_implementation>.
--- This fast version of the algorithm, based on "PFOV", has AFAIK
+-- This fast version of the algorithm, based on PFOV, has AFAIK
 -- never been described nor implemented before.
 --
 -- The map is processed in depth-first-search manner, that is, as soon
@@ -19,7 +19,7 @@ module Game.LambdaHack.Server.FovDigital
     -- * Current scan parameters
   , Distance, Progress
     -- * Geometry in system @Bump@
-  , Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
+  , LineOrdering, Line(..), ConvexHull(..), CHull(..), Edge, EdgeInterval
     -- * Internal operations
   , steepestInHull, foldlCHull', addToHull, addToHullGo
   , createLine, steepness, intersect
@@ -35,6 +35,7 @@ import Game.LambdaHack.Core.Point (PointI)
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int
+
 -- | Progress along an arc with a constant distance from (0, 0).
 type Progress = Int
 
@@ -67,17 +68,16 @@ data CHull =
   | CHCons Bump CHull
   deriving Show
 
--- | An edge (comprising of a line and a convex hull)
--- of the area to be scanned.
+-- | An edge (comprising of a line and a convex hull) of the area to be scanned.
 type Edge = (Line, ConvexHull)
 
--- | The area left to be scanned, delimited by edges.
+-- | The contiguous area left to be scanned, delimited by edges.
 type EdgeInterval = (Edge, Edge)
 
--- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
--- within the given sight range.
+-- | Calculates the list of tiles visible from (0, 0) within the given
+-- sight range.
 scan :: Distance          -- ^ visiblity distance
-     -> (PointI -> Bool)  -- ^ position visually clear predicate
+     -> (PointI -> Bool)  -- ^ visually clear position predicate
      -> (Bump -> PointI)  -- ^ coordinate transformation
      -> [PointI]
 {-# INLINE scan #-}
@@ -94,7 +94,7 @@ scan !r isClear tr =
   dscan !d ( (sl{-shallow line-}, sHull), (el{-steep line-}, eHull) ) =
     dgo d sl sHull el eHull
 
-  -- Speed (mosty JS), but generally convincing GHC to unbox stuff.
+  -- Speed (mosty JS) and generally convincing GHC to unbox stuff.
   dgo :: Distance -> Line -> ConvexHull -> Line -> ConvexHull -> [PointI]
   dgo !d !sl sHull !el eHull =  -- @sHull@ and @eHull@ may be unused
 
@@ -103,8 +103,9 @@ scan !r isClear tr =
         !pe = let (n, k) = intersect el d   -- maximal progress to consider
                 -- Corners obstruct view, so the steep line, constructed
                 -- from corners, is itself not a part of the view,
-                -- so if its intersection with the line of diagonals is only
-                -- at a corner, choose the diamond leading to a smaller view.
+                -- so if its intersection with the horizonstal line at distance
+                -- @d@ is only at a corner, we choose the position leading
+                -- to a smaller view.
               in -1 + n `divUp` k
         outside =
           if d < r
@@ -128,7 +129,7 @@ scan !r isClear tr =
                  in if isClear trBump  -- not entering shadow
                     then trBump : goVisible (ps+1)
                     else let steepBump = B ps d
-                             nep = steepestInHull Shallower steepBump  hull
+                             nep = steepestInHull Shallower steepBump hull
                              neLine = createLine nep steepBump
                              neHull = addToHull Shallower steepBump eHull
                          in trBump : dgo (d+1) line hull neLine neHull
@@ -136,7 +137,7 @@ scan !r isClear tr =
                               -- note how we recursively scan more and more
                               -- distant tiles, up to the FOV radius,
                               -- before starting to process the shadow
-            else dgo (d+1) line hull el eHull  -- reached end, scan next
+            else dgo (d+1) line hull el eHull  -- reached end, scan next row
 
         -- We're in a shadowed interval.
         mscanShadowed :: Progress -> [PointI]
@@ -178,7 +179,7 @@ foldlCHull' f z0 ch0 = fgo z0 ch0
 -- Removing such unnecessary bumps slightly speeds up computation
 -- of 'steepestInHull'.
 --
--- The recursive @go@ seems spurious, but it's called each time with
+-- Recursion in @addToHullGo@ seems spurious, but it's called each time with
 -- potentially different comparison predicate, so it's necessary.
 addToHull :: LineOrdering  -- ^ the line ordering to use
           -> Bump          -- ^ a new bump to consider
@@ -188,8 +189,8 @@ addToHull :: LineOrdering  -- ^ the line ordering to use
 addToHull lineOrdering new (ConvexHull old ch) =
   ConvexHull new $ addToHullGo lineOrdering new $ CHCons old ch
 
--- This worker is needed to avoid returing a pair (new, result)
--- and also packing new (steepBump/shallowBump) twice, losing sharing.
+-- This worker is needed to avoid Core returning a pair (new, result)
+-- and also Bump-packing new (steepBump/shallowBump) twice, losing sharing.
 addToHullGo :: LineOrdering -> Bump -> CHull -> CHull
 {-# NOINLINE addToHullGo #-}
 addToHullGo !lineOrdering !new = hgo
@@ -211,34 +212,68 @@ createLine p1 p2 =
 #endif
       line
 
--- | Strictly compare steepness of @(p1, f)@ and @(p2, f)@,
--- according to the @LineOrdering@ given. This is related
--- to the formal notion of gradient (or angle), but hacked wrt signs
+-- | Strictly compare steepness of lines @(b1, bf)@ and @(b2, bf)@,
+-- according to the @LineOrdering@ given. This is related to comparing
+-- the slope (gradient, angle) of two lines, but simplified wrt signs
 -- to work fast in this particular setup.
 --
 -- Debug: Verify that the results of 2 independent checks are equal.
 steepness :: LineOrdering -> Bump -> Bump -> Bump -> Bool
 {-# INLINE steepness #-}
 steepness lineOrdering (B xf yf) (B x1 y1) (B x2 y2) =
-  let gradient1 = (yf - y2) * (xf - x1)
-      gradient2 = (yf - y1) * (xf - x2)
+  let y2x1 = (yf - y2) * (xf - x1)
+      y1x2 = (yf - y1) * (xf - x2)
       res = case lineOrdering of
-        Steeper -> gradient1 > gradient2
-        Shallower -> gradient1 < gradient2
+        Steeper -> y2x1 > y1x2
+        Shallower -> y2x1 < y1x2
   in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-     let sign = case lineOrdering of
-           Steeper -> GT
-           Shallower -> LT
-     in assert (res == (sign == _debugSteeper (B xf yf) (B x1 y1) (B x2 y2)))
+     assert (res == _debugSteeper lineOrdering (B xf yf) (B x1 y1) (B x2 y2))
 #endif
-     res
+       res
 
--- | The X coordinate, represented as a fraction, of the intersection of
--- a given line and the line of diagonals of diamonds at distance
--- @d@ from (0, 0).
---
--- Debug: check that the line fits in the upper half-plane.
+{- |
+A pair @(a, b)@ such that @a@ divided by @b@ is the X coordinate
+of the intersection of a given line and the horizontal line at distance
+@d@ above the X axis.
+
+Derivation of the formula:
+The intersection point @(xt, yt)@ satisfies the following equalities:
+
+> yt = d
+> (yt - y) (xf - x) = (xt - x) (yf - y)
+
+hence
+
+> (yt - y) (xf - x) = (xt - x) (yf - y)
+> (d - y) (xf - x) = (xt - x) (yf - y)
+> (d - y) (xf - x) + x (yf - y) = xt (yf - y)
+> xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
+
+General remarks:
+The FOV agrees with physical properties of tiles as diamonds
+and visibility from any point to any point. A diamond is denoted
+by the left corner of it's encompassing tile. Hero is at (0, 0).
+Order of processing in the first quadrant rotated by 45 degrees is
+
+> 45678
+>  123
+>   @
+
+so the first processed diamond is at (-1, 1). The order is similar
+as for the restrictive shadow casting algorithm and reversed wrt PFOV.
+The fast moving line when scanning is called the shallow line,
+and it's the one that delimits the view from the left, while the steep
+line is on the right, opposite to PFOV. We start scanning from the left.
+
+The 'PointI' ('Enum' representation of 'Point') coordinates are cartesian.
+The 'Bump' coordinates are cartesian, translated so that
+the hero is at (0, 0) and rotated so that he always
+looks at the first (rotated 45 degrees) quadrant. The ('Progress', 'Distance')
+cordinates coincide with the @Bump@ coordinates, unlike in PFOV.
+
+Debug: check that the line fits in the upper half-plane.
+-}
 intersect :: Line -> Distance -> (Int, Int)
 {-# INLINE intersect #-}
 intersect (Line (B x y) (B xf yf)) d =
@@ -246,52 +281,27 @@ intersect (Line (B x y) (B xf yf)) d =
   assert (allB (>= 0) [y, yf])
 #endif
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
-{-
-Derivation of the formula:
-The intersection point (xt, yt) satisfies the following equalities:
-yt = d
-(yt - y) (xf - x) = (xt - x) (yf - y)
-hence
-(yt - y) (xf - x) = (xt - x) (yf - y)
-(d - y) (xf - x) = (xt - x) (yf - y)
-(d - y) (xf - x) + x (yf - y) = xt (yf - y)
-xt = ((d - y) (xf - x) + x (yf - y)) / (yf - y)
-
-General remarks:
-A diamond is denoted by its left corner. Hero at (0, 0).
-Order of processing in the first quadrant rotated by 45 degrees is
- 45678
-  123
-   @
-so the first processed diamond is at (-1, 1). The order is similar
-as for the restrictive shadow casting algorithm and reversed wrt PFOV.
-The line in the curent state of mscan is called the shallow line,
-but it's the one that delimits the view from the left, while the steep
-line is on the right, opposite to PFOV. We start scanning from the left.
-
-The Point coordinates are cartesian. The Bump coordinates are cartesian,
-translated so that the hero is at (0, 0) and rotated so that he always
-looks at the first (rotated 45 degrees) quadrant. The (Progress, Distance)
-cordinates coincide with the Bump coordinates, unlike in PFOV.
--}
 
 -- | Debug functions for DFOV:
 
 -- | Debug: calculate steepness for DFOV in another way and compare results.
-_debugSteeper :: Bump -> Bump -> Bump -> Ordering
+_debugSteeper :: LineOrdering -> Bump -> Bump -> Bump -> Bool
 {-# INLINE _debugSteeper #-}
-_debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
+_debugSteeper lineOrdering f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (Line p1 f) 0
       (n2, k2) = intersect (Line p2 f) 0
-  in compare (k1 * n2) (n1 * k2)
+      sign = case lineOrdering of
+        Steeper -> GT
+        Shallower -> LT
+  in compare (k1 * n2) (n1 * k2) == sign
 
 -- | Debug: check if a view border line for DFOV is legal.
 _debugLine :: Line -> (Bool, String)
 {-# INLINE _debugLine #-}
 _debugLine line@(Line (B x1 y1) (B x2 y2))
   | not (allB (>= 0) [y1, y2]) =
-      (False, "negative coordinates: " ++ show line)
+      (False, "negative Y coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =
       (False, "ill-defined line: " ++ show line)
   | y1 == y2 =
