@@ -98,7 +98,7 @@ newtype AbsDepth = AbsDepth Int
 -- (often they are, to limit the number of distinct item varieties
 -- in inventory), another dice may be added to the result.
 --
--- A different possible implementation, with dice represented as 'Frequency',
+-- A different possible implementation, with dice represented as @Frequency@,
 -- makes only one RNG call per dice, but due to lists lengths proportional
 -- to the maximal value of the dice, it's is intractable for 1000d1000
 -- and problematic already for 100d100.

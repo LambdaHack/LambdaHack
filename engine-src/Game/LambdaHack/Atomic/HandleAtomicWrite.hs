@@ -56,7 +56,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
 -- | The game-state semantics of atomic game commands.
--- There is no corresponding definition for special effects (`SfxAtomic`),
+-- There is no corresponding definition for special effects (@SfxAtomic@),
 -- because they don't modify 'State'.
 --
 -- For each of the commands, we are guaranteed that the client,

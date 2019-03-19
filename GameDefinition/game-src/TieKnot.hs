@@ -43,8 +43,8 @@ import           Implementation.MonadServerImplementation (executorSer)
 -- | Tie the LambdaHack engine client, server and frontend code
 -- with the game-specific content definitions, and run the game.
 --
--- The custom monad types to be used are determined by the 'executorSer'
--- call, which in turn calls 'executorCli'. If other functions are used
+-- The custom monad types to be used are determined by the @executorSer@
+-- call, which in turn calls @executorCli@. If other functions are used
 -- in their place- the types are different and so the whole pattern
 -- of computation differs. Which of the frontends is run inside the UI client
 -- depends on the flags supplied when compiling the engine library.

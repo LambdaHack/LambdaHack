@@ -31,7 +31,7 @@ data RuleContent = RuleContent
   , rwriteSaveClips   :: Int       -- ^ game saved that often (not on browser)
   , rleadLevelClips   :: Int       -- ^ server switches leader level that often
   , rscoresFile       :: FilePath  -- ^ name of the scores file
-  , rnearby           :: Int       -- ^ what distance between actors is 'nearby'
+  , rnearby           :: Int       -- ^ what is a close distance between actors
   , rstairWordCarried :: [Text]    -- ^ words that can't be dropped from stair
                                    --   name as it goes through levels
   , rsymbolProjectile :: Char

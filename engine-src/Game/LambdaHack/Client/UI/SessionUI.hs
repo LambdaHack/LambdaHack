@@ -1,7 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), AimMode(..), RunParams(..), LastRecord(..), HintMode(..)
+  ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..), LastRecord(..)
+  , HintMode(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 

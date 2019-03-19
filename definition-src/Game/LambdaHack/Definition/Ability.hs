@@ -23,7 +23,8 @@ import           Data.Hashable (Hashable)
 import           GHC.Generics (Generic)
 
 -- | Actor and faction skills. They are a subset of actor aspects.
--- See 'skillDesc' for documentation.
+-- See 'Game.LambdaHack.Client.UI.EffectDescription.skillDesc'
+-- for documentation.
 data Skill =
   -- Stats, that is skills affecting permitted actions.
     SkMove
@@ -101,7 +102,7 @@ newtype Flags = Flags {flags :: ES.EnumSet Flag}
 
 -- | Tactic of non-leader actors. Apart of determining AI operation,
 -- each tactic implies a skill modifier, that is added to the non-leader skills
--- defined in 'fskillsOther' field of 'Player'.
+-- defined in @fskillsOther@ field of @Player@.
 data Tactic =
     TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
   | TFollow   -- ^ always follow leader's target or his position if no target

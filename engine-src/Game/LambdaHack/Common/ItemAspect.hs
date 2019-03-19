@@ -52,7 +52,7 @@ instance Hashable AspectRecord
 instance Binary AspectRecord
 
 -- | Partial information about an item, deduced from its item kind.
--- These are assigned to each 'ItemKind'. The @kmConst@ flag says whether
+-- These are assigned to each 'IK.ItemKind'. The @kmConst@ flag says whether
 -- the item's aspect record is constant rather than random or dependent
 -- on item creation dungeon level.
 data KindMean = KindMean

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveTraversable, TupleSections #-}
 -- | AI strategies to direct actors not controlled directly by human players.
--- No operation in this module involves the 'State' tyep or any of our
+-- No operation in this module involves the @State@ type or any of our
 -- client/server monads types.
 module Game.LambdaHack.Client.AI.Strategy
   ( Strategy, nullStrategy, liftFrequency
@@ -14,7 +14,7 @@ import Game.LambdaHack.Core.Prelude
 import Control.Applicative
 import Data.Int (Int32)
 
-import Game.LambdaHack.Core.Frequency as Frequency
+import Game.LambdaHack.Core.Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.

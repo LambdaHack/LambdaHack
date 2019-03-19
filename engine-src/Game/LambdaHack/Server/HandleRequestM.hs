@@ -750,7 +750,7 @@ reqAlterFail voluntary source tpos = do
 
 -- | Do nothing. Wait skill 1 required. Bracing requires 2, sleep 3, lurking 4.
 --
--- Something is sometimes done in 'setWatchfulness'.
+-- Something is sometimes done in 'processWatchfulness'.
 reqWait :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait #-}
 reqWait source = do
@@ -762,7 +762,7 @@ reqWait source = do
 
 -- | Do nothing.
 --
--- Something is sometimes done in 'setWatchfulness'.
+-- Something is sometimes done in 'processWatchfulness'.
 reqWait10 :: MonadServerAtomic m => ActorId -> m ()
 {-# INLINE reqWait10 #-}
 reqWait10 source = do
@@ -779,13 +779,14 @@ reqWait10 source = do
 -- Governed by the waiting skill (because everyone is supposed to have it).
 -- unlike @ReqWait@, induces overhead.
 --
--- This is similar to the effect 'Yell', but always voluntary.
+-- This is similar to the effect @Yell@, but always voluntary.
 reqYell :: MonadServerAtomic m => ActorId -> m ()
 reqYell source = do
   actorSk <- currentSkillsServer source
   if | Ability.getSk Ability.SkWait actorSk > 0 ->
        -- Last yawn before waking up is displayed as a yell, but that's fine.
-       -- To fix that, we'd need to move the @SfxTaunt@ to @setWatchfulness@.
+       -- To fix that, we'd need to move the @SfxTaunt@
+       -- to @processWatchfulness@.
        execSfxAtomic $ SfxTaunt True source
      | Ability.getSk Ability.SkMove actorSk <= 0
        || Ability.getSk Ability.SkDisplace actorSk <= 0

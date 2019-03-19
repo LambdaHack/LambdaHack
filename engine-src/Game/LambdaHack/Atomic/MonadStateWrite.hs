@@ -38,7 +38,7 @@ import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
--- | The monad for writing to the main game state. Atomic updates ('UpdAtomic')
+-- | The monad for writing to the main game state. Atomic updates (@UpdAtomic@)
 -- are given semantics in this monad.
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
