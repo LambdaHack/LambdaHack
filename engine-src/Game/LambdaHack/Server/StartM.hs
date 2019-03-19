@@ -264,11 +264,7 @@ gameReset serverOptions mGameMode mrandom = do
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
   curChalSer <- getsServer $ scurChalSer . soptions
-#ifdef USE_BROWSER
-  let startingModeGroup = "starting JS"
-#else
   let startingModeGroup = "starting"
-#endif
       gameMode = fromMaybe startingModeGroup
                  $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
