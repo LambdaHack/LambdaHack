@@ -87,11 +87,7 @@ instance Binary ServerOptions where
     let sdungeonRng = Nothing
         smainRng = Nothing
         snewGameSer = False
-#ifdef USE_BROWSER
-        sdumpInitRngs = True
-#else
         sdumpInitRngs = False
-#endif
     return $! ServerOptions{..}
 
 instance Binary RNGs where
@@ -121,12 +117,7 @@ defServerOptions = ServerOptions
   , smainRng = Nothing
   , snewGameSer = False
   , scurChalSer = defaultChallenge
--- for debug; hard to set manually in browser:
-#ifdef USE_BROWSER
-  , sdumpInitRngs = True
-#else
   , sdumpInitRngs = False
-#endif
   , ssavePrefixSer = ""
   , sdbgMsgSer = False
   , sshowItemSamples = False
