@@ -87,7 +87,11 @@ instance Binary ServerOptions where
     let sdungeonRng = Nothing
         smainRng = Nothing
         snewGameSer = False
+#ifdef USE_BROWSER
+        sdumpInitRngs = True
+#else
         sdumpInitRngs = False
+#endif
     return $! ServerOptions{..}
 
 instance Binary RNGs where
