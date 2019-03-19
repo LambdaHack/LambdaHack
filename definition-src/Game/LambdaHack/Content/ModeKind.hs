@@ -227,7 +227,7 @@ validateAll cocave coitem content comode =
         | not $ null hardwiredAbsent ]
 
 hardwiredModeGroups :: [GroupName ModeKind]
-hardwiredModeGroups = [ "campaign scenario", "starting", "starting JS" ]
+hardwiredModeGroups = ["campaign scenario", "starting"]
 
 makeData :: ContentData CaveKind
          -> ContentData ItemKind
