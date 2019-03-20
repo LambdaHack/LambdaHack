@@ -23,6 +23,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
@@ -33,6 +34,7 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
@@ -185,14 +187,25 @@ checkAndRun :: MonadClientRead m
 checkAndRun aid dir = do
   COps{coTileSpeedup} <- getsState scops
   actorSk <- currentSkillsClient aid
+  actorMaxSkills <- getsState sactorMaxSkills
   body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
   lvl <- getLevel lid
+  actorD <- getsState sactorD
   let posHere = bpos body
       posHasItems pos = EM.member pos $ lfloor lvl
       posThere = posHere `shift` dir
       bigActorThere = occupiedBigLvl posThere lvl
+      enemyThreatensThere =
+        let f !p = case posToBigLvl p lvl of
+                Nothing -> False
+                Just aid2 -> g aid2 $ actorD EM.! aid2
+            g aid2 !b2 = inline isFoe (bfid body) fact (bfid b2)
+                         && actorCanMelee actorMaxSkills aid2 b2
+                         && bhp b2 > 0  -- uncommon
+        in any f $ vicinityUnsafe posThere
       projsThere = occupiedProjLvl posThere lvl
   let posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
@@ -243,6 +256,7 @@ checkAndRun aid dir = do
                         `notElem` map posHasItems rightPsLast
       check
         | bigActorThere = return $ Left "actor in the way"
+        | enemyThreatensThere = return $ Left "enemy threatens the position"
         | projsThere = return $ Left "projectile in the way"
             -- Actor in possibly another direction tnan original.
             -- (e.g., called from @tryTurning@).

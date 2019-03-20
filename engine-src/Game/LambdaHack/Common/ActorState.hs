@@ -445,31 +445,31 @@ anyFoeAdj aid s =
   let body = getActorBody aid s
       lvl = (EM.! blid body) . sdungeon $ s
       fact = (EM.! bfid body) . sfactionD $ s
-      f !mv = case posToBigLvl (shift (bpos body) mv) lvl of
+      f !p = case posToBigLvl p lvl of
         Nothing -> False
         Just aid2 -> g $ getActorBody aid2 s
       g !b = inline isFoe (bfid body) fact (bfid b)
              && bhp b > 0  -- uncommon
-      h !mv = case posToProjsLvl (shift (bpos body) mv) lvl of
+      h !p = case posToProjsLvl p lvl of
         [] -> False
         aid2 : _ -> g $ getActorBody aid2 s
-  in any f moves || any h moves
+  in any (\ p -> f p || h p) $ vicinityUnsafe $ bpos body
 
 adjacentBigAssocs :: Actor -> State -> [(ActorId, Actor)]
 {-# INLINE adjacentBigAssocs #-}
 adjacentBigAssocs body s =
   let lvl = (EM.! blid body) . sdungeon $ s
-      f !mv = posToBigLvl (shift (bpos body) mv) lvl
+      f !p = posToBigLvl p lvl
       g !aid = (aid, getActorBody aid s)
-  in map g $ mapMaybe f moves
+  in map g $ mapMaybe f $ vicinityUnsafe $ bpos body
 
 adjacentProjAssocs :: Actor -> State -> [(ActorId, Actor)]
 {-# INLINE adjacentProjAssocs #-}
 adjacentProjAssocs body s =
   let lvl = (EM.! blid body) . sdungeon $ s
-      f !mv = posToProjsLvl (shift (bpos body) mv) lvl
+      f !p = posToProjsLvl p lvl
       g !aid = (aid, getActorBody aid s)
-  in map g $ concatMap f moves
+  in map g $ concatMap f $ vicinityUnsafe $ bpos body
 
 armorHurtBonus :: ActorId -> ActorId -> State -> Int
 armorHurtBonus source target s =

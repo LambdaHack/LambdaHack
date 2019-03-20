@@ -145,6 +145,7 @@ vicinityBounded rXmax rYmax p =
              , insideP res (0, 0, rXmax - 1, rYmax - 1) ]
 
 vicinityUnsafe :: Point -> [Point]
+{-# INLINE vicinityUnsafe #-}
 vicinityUnsafe p = [ shift p dxy | dxy <- moves ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
