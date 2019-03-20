@@ -303,6 +303,7 @@ setTargetFromTactics oldAid = do
   mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
+  moldTgt <- getsClient $ EM.lookup oldAid . stargetD
   condInMelee <- condInMeleeM $ blid oldBody
   let side = bfid oldBody
       arena = blid oldBody
@@ -310,14 +311,19 @@ setTargetFromTactics oldAid = do
   let explore = void $ refreshTarget (oldAid, oldBody)
       setPath mtgt = case mtgt of
         Nothing -> return False
-        Just TgtAndPath{tapTgt} -> do
-          tap <- createPath oldAid tapTgt
-          case tap of
-            TgtAndPath{tapPath=Nothing} -> return False
-            _ -> do
-              modifyClient $ \cli ->
-                cli {stargetD = EM.insert oldAid tap (stargetD cli)}
-              return True
+        Just TgtAndPath{tapTgt=leaderTapTgt} ->
+          if Just leaderTapTgt == (tapTgt <$> moldTgt)
+          then do
+            void $ refreshTarget (oldAid, oldBody)
+            return True  -- already on target
+          else do
+            tap <- createPath oldAid leaderTapTgt
+            case tap of
+              TgtAndPath{tapPath=Nothing} -> return False
+              _ -> do
+                modifyClient $ \cli ->
+                  cli {stargetD = EM.insert oldAid tap (stargetD cli)}
+                return True
       follow = case mleader of
         -- If no leader at all (forced @TFollow@ tactic on an actor
         -- from a leaderless faction), fall back to @TExplore@.
@@ -327,16 +333,16 @@ setTargetFromTactics oldAid = do
           -- If leader not on this level, fall back to @TExplore@.
           if not onLevel || condInMelee then explore
           else do
-            -- Copy over the leader's target, if any, or follow his bpos.
+            -- Copy over the leader's target, if any, or follow his position.
             mtgt <- getsClient $ EM.lookup leader . stargetD
             tgtPathSet <- setPath mtgt
-            let enemyPath = Just TgtAndPath{ tapTgt = TNonEnemy leader
-                                           , tapPath = Nothing }
             unless tgtPathSet $ do
-               enemyPathSet <- setPath enemyPath
-               unless enemyPathSet
-                 -- If no path even to the leader himself, explore.
-                 explore
+              let nonEnemyPath = Just TgtAndPath { tapTgt = TNonEnemy leader
+                                                 , tapPath = Nothing }
+              nonEnemyPathSet <- setPath nonEnemyPath
+              unless nonEnemyPathSet
+                -- If no path even to the leader himself, explore.
+                explore
   case ftactic $ gplayer fact of
     Ability.TExplore -> explore
     Ability.TFollow -> follow
