@@ -115,7 +115,9 @@ tieKnotForAsync options@ServerOptions{ sallClear
 tieKnot :: ServerOptions -> IO ()
 tieKnot serverOptions = do
 #ifdef USE_JSFILE
-  a <- async $ tieKnotForAsync serverOptions
+  -- Hard to tweak the config file when in the browser, so hardwire.
+  let serverOptionsJS = serverOptions {sdumpInitRngs = True}
+  a <- async $ tieKnotForAsync serverOptionsJS
   wait a
 #else
   let fillWorkaround =
