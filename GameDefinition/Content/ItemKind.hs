@@ -255,7 +255,7 @@ light1 = ItemKind
                , ("wooden torch", 1) ]
   , iflavour = zipPlain [Brown]
   , icount   = 1 `dL` 4
-  , irarity  = [(1, 30), (4, 1)]
+  , irarity  = [(1, 40), (4, 1)]
   , iverbHit = "scorch"
   , iweight  = 1000
   , idamage  = 0
@@ -275,7 +275,7 @@ light2 = ItemKind
   , ifreq    = [("common item", 100), ("light source", 100)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1 `dL` 2
-  , irarity  = [(6, 10)]
+  , irarity  = [(4, 10)]
   , iverbHit = "burn"
   , iweight  = 1500
   , idamage  = 1 `d` 1

@@ -7,11 +7,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
-import Game.LambdaHack.Content.ItemKind
 
 actors :: [ItemKind]
 actors =
@@ -550,7 +550,7 @@ hornetSwarm = ItemKind
 thornbush = ItemKind
   { isymbol  = 't'
   , iname    = "thornbush"
-  , ifreq    = [("animal", 30), ("immobile animal", 30)]
+  , ifreq    = [("animal", 20), ("immobile animal", 20)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 13)]
