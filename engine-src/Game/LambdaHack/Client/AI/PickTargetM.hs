@@ -61,6 +61,7 @@ refreshTarget (aid, body) = do
     Nothing -> do
       -- Melee in progress and the actor can't contribute
       -- and would slow down others if he acted.
+      -- Or he's just asleep.
       modifyClient $ \cli -> cli {stargetD = EM.delete aid (stargetD cli)}
       return Nothing
     Just tgtMPath -> do
@@ -471,4 +472,4 @@ computeTarget aid = do
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
-  else return $ Just $ TgtAndPath (TPoint TKnown (blid b) (bpos b)) Nothing
+  else return Nothing

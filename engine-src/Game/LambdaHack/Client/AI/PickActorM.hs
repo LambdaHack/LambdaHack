@@ -328,6 +328,9 @@ setTargetFromTactics oldAid = do
         -- If no leader at all (forced @TFollow@ tactic on an actor
         -- from a leaderless faction), fall back to @TExplore@.
         Nothing -> explore
+        _ | bwatch oldBody == WSleep ->
+          -- We could check skills, but it would be more complex.
+          explore
         Just leader -> do
           onLevel <- getsState $ memActor leader arena
           -- If leader not on this level, fall back to @TExplore@.
