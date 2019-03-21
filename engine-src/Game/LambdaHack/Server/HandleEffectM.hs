@@ -670,7 +670,7 @@ dominateFid fid source target = do
                       $ sactorTime ser}
   execUpdAtomic $ UpdSpotActor target bNew aisNew
   -- Focus on the dominated actor, by making him a leader.
-  supplantLeader fid target
+  setFreshLeader fid target
   factionD <- getsState sfactionD
   let inGame fact2 = case gquit fact2 of
         Nothing -> True
@@ -841,7 +841,7 @@ effectSummon grp nDm iid source target periodic = do
            Just aid -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-             when (isNothing mleader) $ supplantLeader (bfid b) aid
+             when (isNothing mleader) $ setFreshLeader (bfid b) aid
              return True
        return $! if or bs then UseUp else UseId
 
@@ -1027,7 +1027,10 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   execUpdAtomic $ UpdCreateActor aid bNew ais
   case mlead of
     Nothing -> return ()
-    Just leader -> supplantLeader side leader
+    Just leader ->
+      -- The leader is fresh in the sense that he's on a new level
+      -- and so doesn't have up to date Perception.
+      setFreshLeader side leader
 
 -- ** Escape
 

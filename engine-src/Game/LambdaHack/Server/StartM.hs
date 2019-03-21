@@ -370,7 +370,8 @@ populateDungeon = do
                                `showFailure` (lid, (fid3, fact3))
             Just aid -> do
               mleader <- getsState $ gleader . (EM.! fid3) . sfactionD
-              when (isNothing mleader) $ supplantLeader fid3 aid
+              -- Sleeping actor may become a leader, but it's quickly corrected.
+              when (isNothing mleader) $ setFreshLeader fid3 aid
               return True
   lposs <- mapM initialActorPositions arenas
   let alliancePositions = EM.fromList $ map (second $ map snd) lposs

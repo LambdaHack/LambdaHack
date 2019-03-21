@@ -20,21 +20,16 @@ import           Data.Int (Int64)
 import           Data.Ord
 
 import           Game.LambdaHack.Atomic
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
-import           Game.LambdaHack.Core.Point
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -43,6 +38,11 @@ import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
@@ -81,7 +81,7 @@ spawnMonster = do
            Just aid -> do
              b <- getsState $ getActorBody aid
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
-             when (isNothing mleader) $ supplantLeader (bfid b) aid
+             when (isNothing mleader) $ setFreshLeader (bfid b) aid
 
 addAnyActor :: MonadServerAtomic m
             => Bool -> Int -> Freqs ItemKind -> LevelId -> Time -> Maybe Point
@@ -336,6 +336,6 @@ leadLevelSwitch = do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
               unless (lid == blid body) $  -- flip levels rather than actors
-                supplantLeader fid a
+                setFreshLeader fid a
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.assocs factionD

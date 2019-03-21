@@ -2,7 +2,7 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
   ( revealItems, moveStores, generalMoveItem
-  , deduceQuits, deduceKilled, electLeader, supplantLeader
+  , deduceQuits, deduceKilled, electLeader, setFreshLeader
   , updatePer, recomputeCachePer, projectFail
   , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
@@ -274,8 +274,8 @@ electLeader fid lid aidToReplace = do
           listToMaybe $ filter (/= aidToReplace) $ map fst $ candidates
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
-supplantLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
-supplantLeader fid aid = do
+setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
+setFreshLeader fid aid = do
   fact <- getsState $ (EM.! fid) . sfactionD
   unless (fleaderMode (gplayer fact) == LeaderNull) $ do
     -- First update and send Perception so that the new leader
