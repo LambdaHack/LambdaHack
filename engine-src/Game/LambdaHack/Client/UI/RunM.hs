@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.RunM
   ( continueRun
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , continueRunDir, enterableDir, tryTurning, checkAndRun
+  , continueRunDir, walkableDir, tryTurning, checkAndRun
 #endif
   ) where
 
@@ -137,7 +137,7 @@ continueRunDir params = case params of
             | bigActorThere = return $ Left "actor in the way"
             | projsThere = return $ Left "projectile in the way"
                 -- don't displace actors, except with leader in step 0
-            | enterableDir cops lvl posHere dir =
+            | walkableDir cops lvl posHere dir =
                 if runInitial && aid /= runLeader
                 then return $ Right dir  -- zeroth step always OK
                 else checkAndRun aid dir
@@ -151,8 +151,8 @@ continueRunDir params = case params of
                 tryTurning aid
       check
 
-enterableDir :: COps -> Level -> Point -> Vector -> Bool
-enterableDir COps{coTileSpeedup} lvl spos dir =
+walkableDir :: COps -> Level -> Point -> Vector -> Bool
+walkableDir COps{coTileSpeedup} lvl spos dir =
   Tile.isWalkable coTileSpeedup $ lvl `at` (spos `shift` dir)
 
 tryTurning :: MonadClientRead m
@@ -166,17 +166,18 @@ tryTurning aid = do
       posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
-      dirEnterable dir = enterableDir cops lvl posHere dir || openableDir dir
-      dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 `elem` [1, 2]
-      dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
+      dirWalkable dir = walkableDir cops lvl posHere dir || openableDir dir
+      dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 == 1
+      -- Distance 2 could be useful, but surprising even to apt players.
+      dirSimilar dir = dirNearby dirLast dir && dirWalkable dir
       dirsSimilar = filter dirSimilar moves
   case dirsSimilar of
     [] -> return $ Left "dead end"
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
       case sortOn (euclidDistSqVector dirLast)
-           $ filter (enterableDir cops lvl posHere) $ d1 : ds of
+           $ filter (walkableDir cops lvl posHere) $ d1 : ds of
         [] ->
-          return $ Left "blocked and all similar directions are closed doors"
+          return $ Left "blocked and all similar directions are non-walkable"
         d : _ -> checkAndRun aid d
     _ -> return $ Left "blocked and many distant similar directions found"
 
