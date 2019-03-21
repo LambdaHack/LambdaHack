@@ -257,9 +257,7 @@ getMandatoryHideAsFromKind :: ItemKind -> Maybe (GroupName ItemKind)
 getMandatoryHideAsFromKind itemKind =
   let f (HideAs grp) = [grp]
       f _ = []
-  in case concatMap f (iaspects itemKind) of
-    [] -> Nothing
-    x : _ -> Just x
+  in listToMaybe $ concatMap f (iaspects itemKind)
 
 damageUsefulness :: ItemKind -> Double
 damageUsefulness itemKind =

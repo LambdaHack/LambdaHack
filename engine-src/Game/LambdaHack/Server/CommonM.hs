@@ -263,14 +263,15 @@ electLeader fid lid aidToReplace = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (mleader == Just aidToReplace) $ do
     allOurs <- getsState $ fidActorNotProjGlobalAssocs fid  -- not only on level
-    let -- Prefer actors on this level and with positive HP.
+    let -- Prefer actors on this level and with positive HP and not sleeping.
         -- Exclude @aidToReplace@, even if not dead (e.g., if being dominated).
         (positive, negative) = partition (\(_, b) -> bhp b > 0) allOurs
-    onThisLevel <- getsState $ fidActorRegularIds fid lid
-    let mleaderNew = case filter (/= aidToReplace)
-                          $ onThisLevel ++ map fst (positive ++ negative) of
-          [] -> Nothing
-          aid : _ -> Just aid
+        (awake, sleeping) = partition (\(_, b) -> bwatch b /= WSleep) positive
+    onThisLevel <- getsState $ fidActorRegularAssocs fid lid
+    let candidates = filter (\(_, b) -> bwatch b /= WSleep) onThisLevel
+                     ++ awake ++ sleeping ++ negative
+        mleaderNew =
+          listToMaybe $ filter (/= aidToReplace) $ map fst $ candidates
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 supplantLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()
