@@ -35,9 +35,9 @@ instance Binary ActorUI
 type ActorDictUI = EM.EnumMap ActorId ActorUI
 
 keySelected :: (ActorId, Actor, ActorUI)
-            -> (Bool, Bool, Char, Color.Color, ActorId)
-keySelected (aid, Actor{bhp}, ActorUI{bsymbol, bcolor}) =
-  (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
+            -> (Bool, Bool, Bool, Char, Color.Color, ActorId)
+keySelected (aid, Actor{bhp, bwatch}, ActorUI{bsymbol, bcolor}) =
+  (bhp > 0, bwatch /= WSleep, bsymbol /= '@', bsymbol, bcolor, aid)
 
 -- | The part of speech describing the actor.
 partActor :: ActorUI -> MU.Part
