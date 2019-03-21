@@ -124,20 +124,22 @@ refillHP source target speedDeltaHP = assert (speedDeltaHP /= 0) $ do
                    | otherwise -> deltaHP0
   execUpdAtomic $ UpdRefillHP target deltaHP
   when serious $ cutCalm target
-  -- If leader just lost all HP, change the leader to let players rescue him,
-  -- especially if he's slowed by the attackers.
   tb <- getsState $ getActorBody target
-  when (bhp tb <= 0 && bhp tbOld > 0) $ do
-    mleader <- getsState $ gleader . (EM.! bfid tb) . sfactionD
-    when (Just target == mleader) $ do
-      allOurs <- getsState $ fidActorNotProjGlobalAssocs (bfid tb)
-      let positiveHP (_, b) = bhp b > 0
-          -- Only consider actors with positive HP.
-          positive = filter positiveHP allOurs
-      onLevel <- getsState $ fidActorRegularIds (bfid tb) (blid tb)
-      case onLevel ++ map fst positive of
-        [] -> return ()
-        aid : _ -> execUpdAtomic $ UpdLeadFaction (bfid tb) mleader $ Just aid
+  fact <- getsState $ (EM.! bfid tb) . sfactionD
+  unless (fleaderMode (gplayer fact) == LeaderNull) $
+    -- If leader just lost all HP, change the leader early (not when destroying
+    -- the actor), to let players rescue him, especially if he's slowed
+    -- by the attackers.
+    when (bhp tb <= 0 && bhp tbOld > 0) $ do
+      -- If all other party members dying, leadership will switch
+      -- to one of them, which seems questionable, but it's rare
+      -- and the disruption servers to underline the dire circumstance.
+      electLeader (bfid tb) (blid tb) target
+      mleader <- getsState $ gleader . (EM.! bfid tb) . sfactionD
+      -- If really nobody else in the party, make him the leader back again
+      -- on the oft chance that he gets revived by a projectile, etc.
+      when (isNothing mleader) $
+        execUpdAtomic $ UpdLeadFaction (bfid tb) Nothing $ Just target
 
 cutCalm :: MonadServerAtomic m => ActorId -> m ()
 cutCalm target = do

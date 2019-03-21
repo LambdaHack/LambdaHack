@@ -259,15 +259,16 @@ anyActorsAlive fid aid = do
   return $! any (\(aid2, b2) -> aid2 /= aid && bhp b2 > 0) as
 
 electLeader :: MonadServerAtomic m => FactionId -> LevelId -> ActorId -> m ()
-electLeader fid lid aidDead = do
+electLeader fid lid aidToReplace = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (mleader == Just aidDead) $ do
+  when (mleader == Just aidToReplace) $ do
     allOurs <- getsState $ fidActorNotProjGlobalAssocs fid  -- not only on level
-    let -- Prefer actors on level and with positive HP.
+    let -- Prefer actors on this level and with positive HP.
+        -- Exclude @aidToReplace@, even if not dead (e.g., if being dominated).
         (positive, negative) = partition (\(_, b) -> bhp b > 0) allOurs
-    onLevel <- getsState $ fidActorRegularIds fid lid
-    let mleaderNew = case filter (/= aidDead)
-                          $ onLevel ++ map fst (positive ++ negative) of
+    onThisLevel <- getsState $ fidActorRegularIds fid lid
+    let mleaderNew = case filter (/= aidToReplace)
+                          $ onThisLevel ++ map fst (positive ++ negative) of
           [] -> Nothing
           aid : _ -> Just aid
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew

@@ -17,12 +17,12 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client (sbenchmark)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Server.CommonM
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
@@ -123,6 +123,8 @@ dieSer aid b = do
     execUpdAtomic $ UpdRecordKill aid kindId 1
     -- At this point the actor's body exists and his items are not dropped.
     deduceKilled aid
+    -- Most probabaly already done, but just in case (e.g., when actor
+    -- created with 0 HP):
     electLeader (bfid b) (blid b) aid
     fact <- getsState $ (EM.! bfid b) . sfactionD
     -- Prevent faction's stash from being lost in case they are not spawners.
