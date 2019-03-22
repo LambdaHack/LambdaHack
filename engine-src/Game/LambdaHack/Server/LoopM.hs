@@ -151,9 +151,14 @@ handleFidUpd updatePerFid fid fact = do
   -- resulting in breaking the displace action and temporary leader loss,
   -- which is fine, though a bit alarming. So, we update it at the end.
   updatePerFid fid
-  -- Move a single actor only. Bail out if immediate loop break
-  -- requested by UI. No check for @sbreakLoop@ needed,
-  -- for the same reasons as in @handleActors@.
+  -- Move a single actor only. Note that the skipped actors are not marked
+  -- as waiting. Normally they will act in the next clip or the next few,
+  -- so that's natural. But if there are dozens of them, this is wierd.
+  -- E.g., they don't move, but still make nearby foes lose Calm.
+  -- However, for KISS, we leave it be.
+  --
+  -- Bail out if immediate loop break- requested by UI. No check
+  -- for @sbreakLoop@ needed, for the same reasons as in @handleActors@.
   let handle :: [LevelId] -> m Bool
       handle [] = return False
       handle (lid : rest) = do
