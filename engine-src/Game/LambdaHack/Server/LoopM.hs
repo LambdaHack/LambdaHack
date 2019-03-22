@@ -151,8 +151,9 @@ handleFidUpd updatePerFid fid fact = do
   -- resulting in breaking the displace action and temporary leader loss,
   -- which is fine, though a bit alarming. So, we update it at the end.
   updatePerFid fid
-  -- Move a single actor only. Bail out if immediate loop break requested by UI.
-  -- No check for @sbreakLoop@ needed, for the same reasons as in @handleActors@.
+  -- Move a single actor only. Bail out if immediate loop break
+  -- requested by UI. No check for @sbreakLoop@ needed,
+  -- for the same reasons as in @handleActors@.
   let handle :: [LevelId] -> m Bool
       handle [] = return False
       handle (lid : rest) = do
@@ -164,6 +165,17 @@ handleFidUpd updatePerFid fid fact = do
           if nonWaitMove
           then return True
           else handle rest
+      killDying :: [LevelId] -> m ()
+      killDying = mapM_ killDyingLid
+      killDyingLid :: LevelId -> m ()
+      killDyingLid lid = do
+        localTime <- getsState $ getLocalTime lid
+        levelTime <- getsServer $ (EM.! lid) . (EM.! fid) . sactorTime
+        let l = filter (\(_, atime) -> atime <= localTime) $ EM.assocs levelTime
+            killAid (aid, _) = do
+              b1 <- getsState $ getActorBody aid
+              when (bhp b1 <= 0) $ dieSer aid b1
+        mapM_ killAid l
   -- Start on arena with leader, if available. This is crucial to ensure
   -- that no actor (even ours) moves before UI declares save(&exit).
   fa <- factionArena fact
@@ -172,6 +184,8 @@ handleFidUpd updatePerFid fid fact = do
         Just myArena -> myArena : delete myArena arenas
         Nothing -> arenas
   nonWaitMove <- handle myArenas
+  breakASAP <- getsServer sbreakASAP
+  unless breakASAP $ killDying myArenas
   -- We update perception at the end, see comment above. This is usually
   -- cheap, and when not, if it's AI faction, it's a waste, but if it's UI,
   -- that's exactly where it prevents lost attack messages, etc.
@@ -553,8 +567,8 @@ hActors [] = return False
 hActors as@(aid : rest) = do
  b1 <- getsState $ getActorBody aid
  let !_A = assert (not $ bproj b1) ()
- if bhp b1 <= 0 then do
-   dieSer aid b1
+ if bhp b1 <= 0 then
+   -- Will be killed in a later pass, making it possible to revive him now.
    hActors rest
  else do
   let side = bfid b1
