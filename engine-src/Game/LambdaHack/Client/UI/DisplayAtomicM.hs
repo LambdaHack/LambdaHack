@@ -617,18 +617,16 @@ createActorUI born aid body = do
                mhs = map findHeroK [0..]
                n = fromMaybe (error $ show mhs) $ elemIndex False mhs
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
-    let (bname, bpronoun) =
+    let (object1, object2) = partItemShortest (bfid body) factionD localTime
+                                              itemFull (1, [])
+        (bname, bpronoun) =
           if | bproj body ->
                let adj = case btrajectory body of
                      Just (tra, _) | length tra < 5 -> "falling"
                      _ -> "flying"
-                   -- Not much detail about a fast flying item.
-                   (object1, object2) =
-                     partItemActor (bfid body) factionD localTime
-                                   itemFull (1, [])
                in (makePhrase [adj, object1, object2], basePronoun)
              | baseColor /= Color.BrWhite ->
-               let name = IK.iname itemKind <+> IA.aELabel arItem
+               let name = makePhrase [object1, object2]
                in ( if IA.checkFlag Ability.Unique arItem
                     then makePhrase [MU.Capitalize $ MU.Text $ "the" <+> name]
                     else name
@@ -908,6 +906,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
   ClientOptions{sexposeItems} <- getsClient soptions
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
+  -- We assume "gold grain", not "grain" with label "of gold":
   let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem "currency"
       lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
@@ -1038,7 +1037,9 @@ discover c iid = do
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag
       knownName = partItemMediumAW side factionD localTime itemFull kit
-      -- Make sure the two names in the message differ.
+      -- Make sure the two names in the message differ. We may end up with
+      -- "the pair turns out to be a pair of trousers of destruction",
+      -- but that's almost sensible. The fun of English.
       name = IK.iname $ okind coitem $ case jkind $ itemBase itemFull of
         IdentityObvious ik -> ik
         IdentityCovered _ix ik -> ik  -- fake kind; we talk about appearances
@@ -1480,29 +1481,34 @@ strike catch source target iid cstore = assert (source /= target) $ do
     tfact <- getsState $ (EM.! bfid tb) . sfactionD
     eqpOrgKit <- getsState $ kitAssocs target [CEqp, COrgan]
     orgKit <- getsState $ kitAssocs target [COrgan]
-    let notCond (_, (itemFull2, _)) =
-          not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFull2
-        isOrdinaryCond (_, (itemFull2, _)) =
-          isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFull2
-        rateArmor (iidArmor, (itemFull2, (k, _))) =
-          ( k * IA.getSkill Ability.SkArmorMelee (aspectRecordFull itemFull2)
+    let notCond (_, (itemFullArmor, _)) =
+          not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
+        isOrdinaryCond (_, (itemFullArmor, _)) =
+          isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFullArmor
+        rateArmor (iidArmor, (itemFullArmor, (k, _))) =
+          ( k * IA.getSkill Ability.SkArmorMelee
+                            (aspectRecordFull itemFullArmor)
           , ( iidArmor
-            , itemKind itemFull2 ) )
+            , itemFullArmor ) )
         abs15 (v, _) = abs v >= 15
         condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
-        fstG0 (v, _) = v > 0
-        eqpAndOrgArmor = filter fstG0 $ map rateArmor $ filter notCond eqpOrgKit
+        fstGt0 (v, _) = v > 0
+        eqpAndOrgArmor = filter fstGt0 $ map rateArmor
+                         $ filter notCond eqpOrgKit
     mblockArmor <- case eqpAndOrgArmor of
       [] -> return Nothing
       _ -> Just
            <$> rndToActionForget (frequency $ toFreq "msg armor" eqpAndOrgArmor)
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Nothing -> ([], False)
-          Just (iidArmor, itemKind) ->
-            let name | iidArmor == btrunk tb = "trunk"
-                     | otherwise = MU.Text $ IK.iname itemKind
+          Just (iidArmor, itemFullArmor) ->
+            let (object1, object2) =
+                  partItemShortest (bfid tb) factionD localTime
+                                   itemFullArmor (1, [])
+                name | iidArmor == btrunk tb = "trunk"
+                     | otherwise = MU.Phrase [object1, object2]
             in ( ["with", MU.WownW tpronoun name]
-               , Dice.supDice (IK.idamage itemKind) > 0 )
+               , Dice.supDice (IK.idamage $ itemKind itemFullArmor) > 0 )
         verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1687,9 +1693,12 @@ strike catch source target iid cstore = assert (source /= target) $ do
                if null condArmor || T.null msgArmor
                then ("", msgClassMelee)
                else
-                 let (armor, (_, itemKind)) =
+                 let (armor, (_, itemFullArmor)) =
                        maximumBy (Ord.comparing $ abs . fst) condArmor
-                     name = IK.iname itemKind
+                     (object1, object2) =
+                       partItemShortest (bfid tb) factionD localTime
+                                        itemFullArmor (1, [])
+                     name = makePhrase [object1, object2]
                      msgText =
                        if hurtMult > 20 && not surprisinglyGoodDefense
                           || surprisinglyBadDefense

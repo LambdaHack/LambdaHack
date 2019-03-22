@@ -33,6 +33,7 @@ import qualified Text.Show.Pretty as Show.Pretty
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ReqAI (..), ReqUI (..),
                                          RequestTimed (..))
+import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
@@ -583,6 +584,7 @@ reqAlterFail voluntary source tpos = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
+  factionD <- getsState sfactionD
   let calmE = calmEnough sb actorMaxSk
       lid = blid sb
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
@@ -604,17 +606,20 @@ reqAlterFail voluntary source tpos = do
       tryApplyEmbeds = mapM_ tryApplyEmbed
                              (sortEmbeds cops getKind serverTile embeds)
       tryApplyEmbed (iid, kit) = do
-        let itemFull@ItemFull{itemKind} = itemToF iid
+        let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
             -- See the note about no skill check when melee triggers effects.
             legal = permittedApply localTime maxBound calmE itemFull kit
+            (object1, object2) = partItemShortest (bfid sb) factionD localTime
+                                                  itemFull (1, [])
+            name = makePhrase [object1, object2]
         case legal of
           Left ApplyNoEffects -> return ()  -- pure flavour embed
           Left reqFail ->
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
-            $ SfxExpected ("embedded" <+> IK.iname itemKind) reqFail
+            $ SfxExpected ("embedded" <+> name) reqFail
           _ -> itemEffectEmbedded voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1

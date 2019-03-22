@@ -1,6 +1,6 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem, partItemShort, partItemActor, partItemHigh, partItemWs
+  ( partItem, partItemShort, partItemShortest, partItemHigh, partItemWs
   , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
@@ -204,9 +204,9 @@ partItemShort :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
               -> (MU.Part, MU.Part)
 partItemShort side factionD = partItemN side factionD False DetailLow 4
 
-partItemActor :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-              -> (MU.Part, MU.Part)
-partItemActor side factionD = partItemN side factionD False DetailNone 1
+partItemShortest :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+                 -> (MU.Part, MU.Part)
+partItemShortest side factionD = partItemN side factionD False DetailNone 1
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (MU.Part, MU.Part)

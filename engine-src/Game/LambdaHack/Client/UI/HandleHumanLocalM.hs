@@ -127,6 +127,7 @@ chooseItemDialogMode c = do
                , nItems, "at"
                , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CSha ->
+          -- We assume "gold grain", not "grain" with label "of gold":
           let currencyName = IK.iname $ okind coitem
                              $ ouniqGroup coitem "currency"
               dungeonTotal = sgold s
