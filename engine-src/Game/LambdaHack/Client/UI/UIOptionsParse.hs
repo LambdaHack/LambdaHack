@@ -76,7 +76,12 @@ parseConfig cfg =
       uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
       uSdlBitmapSizeAdd = getOption "sdlBitmapSizeAdd"
       uScalableFontSize = getOption "scalableFontSize"
+#ifdef USE_JSFILE
+      -- Local storage quota exeeded on Chrome.
+      uHistoryMax = getOption "historyMax" `div` 10
+#else
       uHistoryMax = getOption "historyMax"
+#endif
       uMaxFps = max 1 $ getOption "maxFps"
       uNoAnim = getOption "noAnim"
       uhpWarningPercent = getOption "hpWarningPercent"
