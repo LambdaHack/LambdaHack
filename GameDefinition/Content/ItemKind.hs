@@ -1191,7 +1191,7 @@ ringTemplate = ItemKind
   }
 ring1 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 4)]
+  , irarity  = [(8, 4)]
   , iaspects = [ AddSkill SkSpeed $ 1 `dL` 3, AddSkill SkMaxHP (-10)
                , EqpSlot EqpSlotSpeed ]
                ++ iaspects ringTemplate
@@ -1207,7 +1207,7 @@ ring2 = ringTemplate
   }
 ring3 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(10, 10)]
+  , irarity  = [(10, 8)]
   , iaspects = [ AddSkill SkMaxHP $ 5 + (1 `d` 2 + 1 `dL` 2) * 5
                , AddSkill SkMaxCalm $ -30 + (1 `dL` 3) * 5
                , EqpSlot EqpSlotMaxHP ]
@@ -1215,7 +1215,7 @@ ring3 = ringTemplate
   }
 ring4 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(5, 1), (10, 12)]  -- needed after other rings drop Calm
+  , irarity  = [(5, 1), (10, 9)]  -- needed after other rings drop Calm
   , iaspects = [ AddSkill SkMaxCalm $ 20 + (1 `dL` 4) * 5
                , EqpSlot EqpSlotMiscBonus ]
                ++ iaspects ringTemplate
@@ -1223,7 +1223,7 @@ ring4 = ringTemplate
   }
 ring5 = ringTemplate
   { ifreq    = [("common item", 100), ("any jewelry", 100)]
-  , irarity  = [(3, 4), (10, 6)]
+  , irarity  = [(3, 4), (10, 8)]
   , iaspects = [ AddSkill SkHurtMelee $ (2 + 1 `d` 2 + (1 `dL` 2) * 2 ) * 3
                , AddSkill SkMaxHP $ (-3 + 1 `dL` 3) * 10
                , EqpSlot EqpSlotHurtMelee ]
