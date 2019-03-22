@@ -362,8 +362,9 @@ populateDungeon = do
         let ps = zip initGroups psFree
         localTime <- getsState $ getLocalTime lid
         forM_ ps $ \ (actorGroup, p) -> do
-          rndDelay <- rndToAction $ randomR (0, fromEnum timeTurn)
-          let rndTime = timeShift localTime (toEnum rndDelay)
+          rndDelay <- rndToAction $ randomR (0, clipsInTurn - 1)
+          let delta = timeDeltaScale (Delta timeClip) rndDelay
+              rndTime = timeShift localTime delta
           maid <- addActorFromGroup actorGroup fid3 p lid rndTime
           case maid of
             Nothing -> error $ "can't spawn initial actors"

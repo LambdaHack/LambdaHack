@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
-  ( Time, timeZero, timeEpsilon, timeClip, timeTurn, timeSecond
+  ( Time, timeTicks
+  , timeZero, timeEpsilon, timeClip, timeTurn, timeSecond, clipsInTurn
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
   , timeFit, timeFitUp
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
@@ -31,7 +32,7 @@ import Game.LambdaHack.Common.Misc
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s.
 newtype Time = Time {timeTicks :: Int64}
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
+  deriving (Show, Eq, Ord, Binary)
 
 -- | Start of the game time, or zero lenght time interval.
 timeZero :: Time
@@ -60,13 +61,20 @@ timeClip = Time 50000
 timeTurn :: Time
 timeTurn = Time 500000
 
+-- | This many ticks fits in a single second. Do not export,
+timeSecond :: Time
+timeSecond = Time $ timeTicks timeTurn * turnsInSecond
+
 -- | This many turns fit in a single second.
 turnsInSecond :: Int64
 turnsInSecond = 2
 
--- | This many ticks fits in a single second. Do not export,
-timeSecond :: Time
-timeSecond = Time $ timeTicks timeTurn * turnsInSecond
+-- | This many clips fit in one turn. Determines the resolution
+-- of actor move sampling and display updates.
+clipsInTurn :: Int
+clipsInTurn =
+  let r = timeTurn `timeFit` timeClip
+  in assert (r >= 5) r
 
 -- | Absolute time addition, e.g., for summing the total game session time
 -- from the times of individual games.
@@ -99,7 +107,7 @@ timeFitUp (Time t1) (Time t2) = fromEnum $ t1 `divUp` t2
 -- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
 -- as an absolute game time and as an increment.
 newtype Delta a = Delta a
-  deriving (Show, Eq, Ord, Enum, Bounded, Binary, Functor)
+  deriving (Show, Eq, Ord, Binary, Functor)
 
 -- | Shifting an absolute time by a time vector.
 timeShift :: Time -> Delta Time -> Time

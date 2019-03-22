@@ -16,7 +16,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
-import           Data.Bits (xor)
+import           Data.Bits ((.&.))
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
@@ -27,6 +27,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Random
 
@@ -76,5 +77,6 @@ rndToActionForget r = do
   gen <- getsClient srandom
   let i = fst $ R.next gen
   time <- getsState stime
-  let genNew = R.mkStdGen $ i `xor` fromEnum time
+  -- Not @xor@, but @(.&.)@ to prevent overflow from @Int64@ to @Int@.
+  let genNew = R.mkStdGen $ fromEnum $ toEnum i .&. timeTicks time
   return $! St.evalState r genNew

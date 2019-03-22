@@ -356,9 +356,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     sdisplayNeeded <- getsSession sdisplayNeeded
     time <- getsState stime
     let clipN = time `timeFit` timeClip
-        clipInTurn = let r = timeTurn `timeFit` timeClip
-                     in assert (r >= 5) r
-        clipMod = clipN `mod` clipInTurn
+        clipMod = clipN `mod` clipsInTurn
         ping = clipMod == 0
     when (sdisplayNeeded || ping) pushFrame
   UpdUnAgeGame{} -> return ()

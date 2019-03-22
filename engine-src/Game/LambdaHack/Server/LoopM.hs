@@ -256,8 +256,6 @@ endClip updatePerFid = do
   COps{corule} <- getsState scops
   time <- getsState stime
   let clipN = time `timeFit` timeClip
-      clipInTurn = let r = timeTurn `timeFit` timeClip
-                   in assert (r >= 5) r
   -- No check if @sbreakASAP@ is set, because then the function is not called.
   breakLoop <- getsServer sbreakLoop
   -- We don't send a lot of useless info to the client if the game has already
@@ -277,7 +275,7 @@ endClip updatePerFid = do
     execUpdAtomic $ UpdAgeGame arenas
     -- Perform periodic dungeon maintenance.
     when (clipN `mod` rleadLevelClips corule == 0) leadLevelSwitch
-    case clipN `mod` clipInTurn of
+    case clipN `mod` clipsInTurn of
       2 ->
         -- Periodic activation only once per turn, for speed,
         -- but on all active arenas. Calm updates and domination
