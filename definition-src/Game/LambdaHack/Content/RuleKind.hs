@@ -26,8 +26,6 @@ data RuleContent = RuleContent
   , rexeVersion       :: Version   -- ^ version of the game
   , rcfgUIName        :: FilePath  -- ^ name of the UI config file
   , rcfgUIDefault     :: String    -- ^ the default UI settings config file
-  , rfirstDeathEnds   :: Bool      -- ^ whether first non-spawner actor death
-                                   --   ends the game
   , rwriteSaveClips   :: Int       -- ^ game saved that often (not on browser)
   , rleadLevelClips   :: Int       -- ^ server switches leader level that often
   , rscoresFile       :: FilePath  -- ^ name of the scores file
@@ -46,7 +44,6 @@ emptyRuleContent = RuleContent
   , rexeVersion = makeVersion []
   , rcfgUIName = ""
   , rcfgUIDefault = ""
-  , rfirstDeathEnds = False
   , rwriteSaveClips = 0
   , rleadLevelClips = 0
   , rscoresFile = ""

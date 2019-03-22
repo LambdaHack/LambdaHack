@@ -243,13 +243,11 @@ keepArenaFact fact = fleaderMode (gplayer fact) /= LeaderNull
 -- @bfid@ of the actor body is still the old faction.
 deduceKilled :: MonadServerAtomic m => ActorId -> m ()
 deduceKilled aid = do
-  COps{corule} <- getsState scops
   body <- getsState $ getActorBody aid
-  let firstDeathEnds = rfirstDeathEnds corule
   fact <- getsState $ (EM.! bfid body) . sfactionD
   when (fneverEmpty $ gplayer fact) $ do
     actorsAlive <- anyActorsAlive (bfid body) aid
-    when (not actorsAlive || firstDeathEnds) $
+    when (not actorsAlive) $
       deduceQuits (bfid body) $ Status Killed (fromEnum $ blid body) Nothing
 
 anyActorsAlive :: MonadServer m => FactionId -> ActorId -> m Bool
