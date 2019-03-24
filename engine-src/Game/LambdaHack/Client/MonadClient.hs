@@ -16,7 +16,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
-import           Data.Bits ((.&.))
+import           Data.Bits (complement, xor, zeroBits, (.&.))
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
@@ -77,6 +77,8 @@ rndToActionForget r = do
   gen <- getsClient srandom
   let i = fst $ R.next gen
   time <- getsState stime
-  -- Not @xor@, but @(.&.)@ to prevent overflow from @Int64@ to @Int@.
-  let genNew = R.mkStdGen $ fromEnum $ toEnum i .&. timeTicks time
+  -- Prevent overflow from @Int64@ to @Int@.
+  let oneBits = complement (zeroBits :: Int)
+      timeBounded = fromEnum $ timeTicks time .&. toEnum oneBits
+      genNew = R.mkStdGen $ i `xor` timeBounded
   return $! St.evalState r genNew
