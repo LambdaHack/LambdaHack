@@ -830,8 +830,9 @@ quitFactionUI fid toSt manalytics = do
   let fidName = MU.Text $ gname fact
       person = if fhasGender $ gplayer fact then MU.PlEtc else MU.Sg3rd
       horror = isHorrorFact fact
+      camping = maybe True ((== Camping) . stOutcome) toSt
   side <- getsClient sside
-  when (fid == side && maybe False ((/= Camping) . stOutcome) toSt) $ do
+  when (fid == side && not camping) $ do
     tellGameClipPS
     resetGameStart
   mode <- getGameMode
@@ -894,10 +895,8 @@ quitFactionUI fid toSt manalytics = do
         scoreSlides <- scoreToSlideshow total status
         void $ getConfirms ColorFull [K.spaceKM, K.escKM] scoreSlides
       -- The last prompt stays onscreen during shutdown, etc.
-      promptAdd0 pp
-      partingSlide <- reportToSlideshow [K.spaceKM, K.escKM]
-      unless isNoConfirms $
-        void $ getConfirms ColorFull [K.spaceKM, K.escKM] partingSlide
+      when (not isNoConfirms || camping) $
+        void $ displaySpaceEsc ColorFull pp
     _ -> return ()
 
 displayGameOverLoot :: MonadClientUI m
