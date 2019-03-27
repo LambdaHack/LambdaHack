@@ -67,7 +67,7 @@ data StateClient = StateClient
   , svictories    :: EM.EnumMap (ContentId ModeKind) (M.Map Challenge Int)
                                     -- ^ won games at particular difficulty lvls
   , soptions      :: ClientOptions  -- ^ client options
-  , stabs         :: (PA.PrimArray Int, PA.PrimArray Int)
+  , stabs         :: (PA.PrimArray PointI, PA.PrimArray PointI)
       -- ^ Instead of a BFS queue (list) we use these two arrays,
       --   for (JS) speed. They need to be per-client distinct,
       --   because sometimes multiple clients interleave BFS computation.

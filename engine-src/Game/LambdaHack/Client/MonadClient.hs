@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Core.Point
 import Game.LambdaHack.Core.Random
 
 -- | Monad for reading client state.
@@ -55,7 +56,7 @@ debugPossiblyPrint t = do
     T.hPutStrLn stdout t
     hFlush stdout
 
-createTabBFS :: MonadClient m => m (PA.PrimArray Int)
+createTabBFS :: MonadClient m => m (PA.PrimArray PointI)
 createTabBFS = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   liftIO $ stToIO $ do

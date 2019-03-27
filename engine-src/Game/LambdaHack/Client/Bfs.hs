@@ -86,11 +86,11 @@ abortedUnknownBfs = predBfsDistance apartBfs
 -- visiblity is valuable, too. We treat unknown tiles specially.
 -- Whether suspect tiles are considered openable depends on @smarkSuspect@.
 --
--- Instead of a BFS queue (list) we use these two arrays, for (JS) speed.
+-- Instead of a BFS queue (list) we use the two tabs (arrays), for (JS) speed.
 fillBfs :: PointArray.Array Word8
         -> Word8
         -> Point
-        -> (PA.PrimArray Int, PA.PrimArray Int)
+        -> (PA.PrimArray PointI, PA.PrimArray PointI)
         -> PointArray.Array BfsDistance
 fillBfs !lalter !alterSkill !source (!tabA, !tabB) = runST $ do
   let arr = PointArray.replicateA
@@ -105,12 +105,16 @@ fillBfs !lalter !alterSkill !source (!tabA, !tabB) = runST $ do
   void $ U.unsafeFreeze vThawed
   return arr
 
+type QueueIx = Int
+
+type NextQueueIx = Int
+
 -- So very low-level that not even under EXPOSE_INTERNAL.
 fillBfsThawed :: forall s.
                  PointArray.Array Word8
               -> Word8
               -> PointI
-              -> (PA.MutablePrimArray s Int, PA.MutablePrimArray s Int)
+              -> (PA.MutablePrimArray s PointI, PA.MutablePrimArray s PointI)
               -> U.MVector s Word8
               -> ST s ()
 fillBfsThawed !lalter !alterSkill !sourceI
@@ -121,27 +125,32 @@ fillBfsThawed !lalter !alterSkill !sourceI
       unsafeWriteI :: PointI -> BfsDistance -> ST s ()
       {-# INLINE unsafeWriteI #-}
       unsafeWriteI p c = VM.unsafeWrite vThawed p (bfsDistance c)
-      bfs :: PA.MutablePrimArray s Int
-          -> PA.MutablePrimArray s Int
+      -- The two tabs (arrays) are used as a staged, optimized queue.
+      -- The first tab is for writes, the second one for reads.
+      -- They switch places in each recursive @bfs@ call.
+      bfs :: PA.MutablePrimArray s PointI
+          -> PA.MutablePrimArray s PointI
           -> BfsDistance
-          -> Int
+          -> QueueIx
           -> ST s ()
-      bfs !tabReadThawed !tabWriteThawed !distance !prevMaxPosIx = do
-        let unsafeReadCurrent :: Int -> ST s PointI
+      bfs !tabReadThawed !tabWriteThawed !distance !prevQueueIx = do
+        let unsafeReadCurrent :: QueueIx -> ST s PointI
             {-# INLINE unsafeReadCurrent #-}
             unsafeReadCurrent = PA.readPrimArray tabReadThawed
-            unsafeWriteNext :: Int -> PointI -> ST s ()
+            unsafeWriteNext :: QueueIx -> PointI -> ST s ()
             {-# INLINE unsafeWriteNext #-}
             unsafeWriteNext = PA.writePrimArray tabWriteThawed
-            processKnown :: Int -> Int -> ST s Int
-            processKnown !posIx !acc1 =
-              if posIx == -1
+            -- The accumulator and the result represent the index into the next
+            -- queue tab, incremented after each write.
+            processQueue :: QueueIx -> NextQueueIx -> ST s NextQueueIx
+            processQueue !currentQueueIx !acc1 =
+              if currentQueueIx == -1
               then return acc1  -- all queued positions inspected
               else do
-                pos <- unsafeReadCurrent posIx
-                let fKnown :: (X, Y) -> Int -> ST s Int
-                    {-# INLINE fKnown #-}
-                    fKnown move acc2 = do
+                pos <- unsafeReadCurrent currentQueueIx
+                let processMove :: (X, Y) -> NextQueueIx -> ST s NextQueueIx
+                    {-# INLINE processMove #-}
+                    processMove move acc2 = do
                       let p = pos + inline fromEnum (uncurry Vector move)
                       pDist <- unsafeReadI p
                       if pDist /= apartBfs
@@ -160,16 +169,17 @@ fillBfsThawed !lalter !alterSkill !sourceI
                              return $! acc2 + 1
                 -- Innermost loop over @moves@ manually unrolled for (JS) speed:
                 return acc1
-                  >>= fKnown (-1, -1)
-                  >>= fKnown (0, -1)
-                  >>= fKnown (1, -1)
-                  >>= fKnown (1, 0)
-                  >>= fKnown (1, 1)
-                  >>= fKnown (0, 1)
-                  >>= fKnown (-1, 1)
-                  >>= fKnown (-1, 0)
-                  >>= processKnown (posIx - 1)
-        acc3 <- processKnown (prevMaxPosIx - 1) 0
+                  >>= processMove (-1, -1)
+                  >>= processMove (0, -1)
+                  >>= processMove (1, -1)
+                  >>= processMove (1, 0)
+                  >>= processMove (1, 1)
+                  >>= processMove (0, 1)
+                  >>= processMove (-1, 1)
+                  >>= processMove (-1, 0)
+                  -- Recursive call to process next queue element:
+                  >>= processQueue (currentQueueIx - 1)
+        acc3 <- processQueue (prevQueueIx - 1) 0
         let distanceNew = succBfsDistance distance
         if acc3 == 0 || distanceNew == maxBfsDistance
         then return () -- no more close enough dungeon positions
