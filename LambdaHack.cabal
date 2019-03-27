@@ -151,7 +151,7 @@ common exe-options
 -- gameplay (5s), not between slow keystrokes.
   ghc-options:        "-with-rtsopts=-A99m -I5"
 
--- Haskell GC in GHCJS every 30s.
+-- Haskell GC in GHCJS every 10s.
   ghcjs-options:      -DGHCJS_GC_INTERVAL=10000
 -- This is the largest GHCJS_BUSY_YIELD value that does not cause dropped frames
 -- on my machine with default --maxFps.
