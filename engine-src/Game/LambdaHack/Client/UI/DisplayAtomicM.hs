@@ -395,8 +395,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd MsgAdmin $ mdesc mode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
-      msgAdd MsgFocus "You take in your surroundings."
-      msgAdd MsgLandscape desc
+      msgAdd0 MsgFocus "You take in your surroundings."
+      msgAdd0 MsgLandscape desc
     -- We can fool the player only once (per scenario), but let's not do it
     -- in the same way each time. TODO: PCG
     blurb <- rndToActionForget $ oneOf
@@ -876,7 +876,7 @@ quitFactionUI fid toSt manalytics = do
         case middlePart of
           Nothing -> return ()
           Just sp -> do
-            msgAdd MsgPlot sp
+            msgAdd0 MsgPlot sp
             void $ displaySpaceEsc ColorFull ""
         case manalytics of
           Nothing -> return ()
@@ -1212,8 +1212,9 @@ displayRespSfxAtomicUI sfx = case sfx of
                 lvl <- getLevel lid
                 let desc = cdesc $ okind cocave $ lkind lvl
                 unless (T.null desc) $ do
-                  msgAdd MsgLandscape desc
-                  msgAdd MsgFocus "You turn your attention to nearby positions."
+                  msgAdd0 MsgLandscape desc
+                  msgAdd0 MsgFocus
+                          "You turn your attention to nearby positions."
               [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side
