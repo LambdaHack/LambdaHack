@@ -31,6 +31,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
+import           Game.LambdaHack.Definition.Defs
 
 -- | Weighted distance between points along shortest paths.
 newtype BfsDistance = BfsDistance {bfsDistance :: Word8}

@@ -1,9 +1,10 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | Basic types for content definitions.
 module Game.LambdaHack.Definition.Defs
-  ( GroupName, toGroupName, fromGroupName
+  ( X, Y
+  , GroupName, toGroupName, fromGroupName
   , Freqs, Rarity, linearInterpolation
-  , ContentId, toContentId, contentIdIndex
+  , ContentId, toContentId, fromContentId, contentIdIndex
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
   , SLore(..), ItemDialogMode(..), ppSLore, headingSLore
   , ppItemDialogMode, ppItemDialogModeIn, ppItemDialogModeFrom
@@ -20,7 +21,11 @@ import           Data.String (IsString (..))
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Core.PointArray as PointArray
+-- | X spacial dimension for points and vectors.
+type X = Int
+
+-- | Y xpacial dimension for points and vectors.
+type Y = Int
 
 -- If ever needed, we can use a symbol table here, since content
 -- is never serialized. But we'd need to cover the few cases
@@ -65,16 +70,15 @@ linearInterpolation !levelDepth !totalDepth !dataset =
 newtype ContentId c = ContentId Word16
   deriving (Show, Eq, Ord, Enum, Binary, Generic)
 
-instance PointArray.UnboxRepClass (ContentId k) where
-  type UnboxRep (ContentId k) = Word16
-  toUnboxRepUnsafe (ContentId k) = k
-  fromUnboxRep = ContentId
-
 instance Hashable (ContentId c)
 
 toContentId :: Word16 -> ContentId c
 {-# INLINE toContentId #-}
 toContentId = ContentId
+
+fromContentId :: ContentId c -> Word16
+{-# INLINE fromContentId #-}
+fromContentId (ContentId k) = k
 
 contentIdIndex :: ContentId k -> Int
 {-# INLINE contentIdIndex #-}

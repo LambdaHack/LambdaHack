@@ -17,7 +17,6 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.PlaceKind (PlaceKind)
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Core.Point
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs

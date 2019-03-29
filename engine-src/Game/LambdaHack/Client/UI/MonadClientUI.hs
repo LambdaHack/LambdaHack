@@ -75,6 +75,7 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.

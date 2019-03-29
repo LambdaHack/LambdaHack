@@ -20,8 +20,8 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 -- * AttrLine
 

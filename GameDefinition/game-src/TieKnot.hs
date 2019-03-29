@@ -11,6 +11,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
+import           Data.IORef
 import           GHC.Compact
 import qualified System.Random as R
 
@@ -27,7 +28,7 @@ import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Point (speedupHackXSize)
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input
@@ -53,9 +54,8 @@ tieKnotForAsync :: ServerOptions -> IO ()
 tieKnotForAsync options@ServerOptions{ sallClear
                                      , sboostRandomItem
                                      , sdungeonRng } = do
-  -- Verify the hack ASAP in case points are used soon.
-  let !_A = assert (speedupHackXSize
-                    == RK.rXmax Content.RuleKind.standardRules) ()
+  -- Set the X size of the dungeon from content ASAP, before it's used.
+  writeIORef speedupHackXSize $ RK.rXmax Content.RuleKind.standardRules
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.

@@ -22,9 +22,9 @@ import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Overlay
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 

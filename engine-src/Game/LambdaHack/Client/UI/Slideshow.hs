@@ -20,8 +20,8 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import           Game.LambdaHack.Core.Point
 import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))

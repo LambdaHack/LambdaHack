@@ -17,6 +17,7 @@ module Game.LambdaHack.Common.Level
   , sortEmbeds
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , EntryMap
   , nearbyPassablePoints, assertSparseItems, assertSparseProjectiles
 #endif
   ) where
@@ -109,6 +110,9 @@ type TileMap = PointArray.Array (ContentId TileKind)
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point Time
+
+-- | Entries of places on the map.
+type EntryMap = EM.EnumMap Point PlaceEntry
 
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.

@@ -14,7 +14,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Definition.Defs
 
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent

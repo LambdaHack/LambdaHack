@@ -26,7 +26,9 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 
-import Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 class ( Ord c, Eq (UnboxRep c), Ord (UnboxRep c), Bounded (UnboxRep c)
       , Binary (UnboxRep c), U.Unbox (UnboxRep c) )
@@ -43,6 +45,16 @@ instance UnboxRepClass Bool where
 instance UnboxRepClass Word8 where
   toUnboxRepUnsafe c = c
   fromUnboxRep c = c
+
+instance UnboxRepClass (ContentId k) where
+  type UnboxRep (ContentId k) = Word16
+  toUnboxRepUnsafe = fromContentId
+  fromUnboxRep = toContentId
+
+instance UnboxRepClass Color.AttrCharW32 where
+  type UnboxRep Color.AttrCharW32 = Word32
+  toUnboxRepUnsafe = Color.attrCharW32
+  fromUnboxRep = Color.AttrCharW32
 
 -- | Arrays indexed by @Point@.
 data Array c = Array

@@ -22,8 +22,9 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Core.Point
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.

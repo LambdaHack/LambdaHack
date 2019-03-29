@@ -34,8 +34,10 @@ data Cave = Cave
   { dkind   :: ContentId CaveKind  -- ^ the kind of the cave
   , darea   :: Area                -- ^ map area of the cave
   , dmap    :: TileMapEM           -- ^ tile kinds in the cave
-  , dstairs :: EM.EnumMap Point Place  -- ^ stair places indexed by their center
-  , dentry  :: EntryMap            -- ^ room entrances in the cave
+  , dstairs :: EM.EnumMap Point Place
+                                   -- ^ stair places indexed by their center
+  , dentry  :: EM.EnumMap Point PlaceEntry
+                                   -- ^ room entrances in the cave
   , dnight  :: Bool                -- ^ whether the cave is dark
   }
   deriving Show

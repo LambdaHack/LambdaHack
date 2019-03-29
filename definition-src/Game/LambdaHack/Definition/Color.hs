@@ -30,8 +30,6 @@ import           GHC.Generics (Generic)
 import           GHC.Prim (int2Word#)
 import           GHC.Word (Word32 (W32#))
 
-import qualified Game.LambdaHack.Core.PointArray as PointArray
-
 -- | Colours supported by the major frontends.
 data Color =
     Black
@@ -173,11 +171,6 @@ data AttrChar = AttrChar
 -- | Optimized representation of 'AttrChar'.
 newtype AttrCharW32 = AttrCharW32 {attrCharW32 :: Word32}
   deriving (Show, Eq, Ord, Enum, Binary)
-
-instance PointArray.UnboxRepClass AttrCharW32 where
-  type UnboxRep AttrCharW32 = Word32
-  toUnboxRepUnsafe = attrCharW32
-  fromUnboxRep = AttrCharW32
 
 attrCharToW32 :: AttrChar -> AttrCharW32
 attrCharToW32 AttrChar{acAttr=Attr{..}, acChar} = AttrCharW32 $ toEnum $

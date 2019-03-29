@@ -13,7 +13,7 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Version
 
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Definition.Defs
 
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent
