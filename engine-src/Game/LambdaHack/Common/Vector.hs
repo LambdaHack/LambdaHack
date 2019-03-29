@@ -33,7 +33,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Definition.Defs
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right

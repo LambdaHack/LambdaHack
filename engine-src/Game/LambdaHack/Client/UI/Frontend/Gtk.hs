@@ -14,7 +14,7 @@ import           Data.Bits (unsafeShiftL)
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import qualified Data.Text as T
-import qualified Game.LambdaHack.Core.PointArray as PointArray
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Graphics.UI.Gtk hiding (Point)
 import           System.Exit (exitFailure)
 
@@ -23,7 +23,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.

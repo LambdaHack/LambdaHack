@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Content.ModeKind as MK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.RuleKind as RK
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Core.Point (speedupHackXSize)
+import           Game.LambdaHack.Common.Point (speedupHackXSize)
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input

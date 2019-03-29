@@ -31,7 +31,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude hiding (intersect)
 
-import Game.LambdaHack.Core.Point (PointI)
+import Game.LambdaHack.Common.Point (PointI)
 
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int

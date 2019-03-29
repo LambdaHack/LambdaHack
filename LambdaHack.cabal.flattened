@@ -169,8 +169,8 @@ library
                       GameDefinition
   exposed-modules:    Game.LambdaHack.Core.Dice
                       Game.LambdaHack.Core.Frequency
-                      Game.LambdaHack.Core.PointArray
-                      Game.LambdaHack.Core.Point
+                      Game.LambdaHack.Common.PointArray
+                      Game.LambdaHack.Common.Point
                       Game.LambdaHack.Core.Prelude
                       Game.LambdaHack.Core.Random
                       Game.LambdaHack.Definition.Ability

@@ -10,7 +10,7 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Binary
 
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Definition.Defs
 
 -- | The type of areas. The bottom left and the top right points.

@@ -16,7 +16,7 @@ import Data.Binary
 import Data.Hashable
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Definition.Defs
 
 -- | A unique identifier of an item in the dungeon.

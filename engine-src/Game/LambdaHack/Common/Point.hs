@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Basic operations on 2D points represented as linear offsets.
-module Game.LambdaHack.Core.Point
+module Game.LambdaHack.Common.Point
   ( Point(..), PointI
   , chessDist, euclidDistSq, adjacent, bla, fromTo
   , originPoint

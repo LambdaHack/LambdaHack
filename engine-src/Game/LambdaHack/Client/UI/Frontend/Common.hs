@@ -17,7 +17,7 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 
 -- | Raw frontend definition. The minimal closed set of values that need
 -- to depend on the specifics of the chosen frontend.

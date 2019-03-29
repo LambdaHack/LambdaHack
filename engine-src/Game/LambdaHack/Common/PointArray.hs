@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, StandaloneDeriving, TypeFamilies #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
-module Game.LambdaHack.Core.PointArray
+module Game.LambdaHack.Common.PointArray
   ( UnboxRepClass(..), Array(..)
   , empty, (!), accessI, (//), unsafeUpdateA, unsafeWriteA, unsafeWriteManyA
   , replicateA, replicateMA, generateA, generateMA, unfoldrNA, sizeA
@@ -26,7 +26,7 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 

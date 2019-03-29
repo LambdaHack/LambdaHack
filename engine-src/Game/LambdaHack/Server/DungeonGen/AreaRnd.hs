@@ -24,7 +24,7 @@ import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Core.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.PlaceKind

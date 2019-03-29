@@ -23,7 +23,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 
 -- | Handle the move of an actor under AI control (regardless if the whole
 -- faction is under human or computer control).

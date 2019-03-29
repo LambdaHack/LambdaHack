@@ -25,7 +25,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types

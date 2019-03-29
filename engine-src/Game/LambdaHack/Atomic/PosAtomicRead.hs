@@ -27,7 +27,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Definition.Defs
 
 -- All functions here that take an atomic action are executed

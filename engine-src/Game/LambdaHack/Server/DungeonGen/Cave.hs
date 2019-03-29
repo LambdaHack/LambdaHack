@@ -23,7 +23,7 @@ import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd

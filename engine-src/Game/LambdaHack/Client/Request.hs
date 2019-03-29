@@ -13,7 +13,7 @@ import Game.LambdaHack.Core.Prelude
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Core.Point
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind

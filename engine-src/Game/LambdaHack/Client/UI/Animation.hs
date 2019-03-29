@@ -21,7 +21,7 @@ import Game.LambdaHack.Client.UI.Content.Screen
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
 import Game.LambdaHack.Definition.Color
-import Game.LambdaHack.Core.Point
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Core.Random
 
 -- | Animation is a list of frame modifications to play one by one,
