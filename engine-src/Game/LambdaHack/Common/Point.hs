@@ -33,7 +33,7 @@ import Game.LambdaHack.Definition.Defs
 -- For now, we need to be careful never to modify this reference,
 -- except for setting it at program start before it's used for the first time.
 -- Which is easy, because @Point@ is never mentioned in content definitions.
-speedupHackXSize :: IORef Int
+speedupHackXSize :: IORef X
 {-# NOINLINE speedupHackXSize #-}
 speedupHackXSize = unsafePerformIO $ newIORef 80  -- updated at program startup
 
