@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -ddump-cmm-verbose #-}
+{-# OPTIONS_GHC -fno-cmm-elim-common-blocks -fno-cmm-sink #-}
 
 -- | Server operations performed periodically in the game loop
 -- and related operations.
