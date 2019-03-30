@@ -15,27 +15,28 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Data.Binary
-import Data.Int (Int32)
-import Data.IORef
-import GHC.Generics (Generic)
-import System.IO.Unsafe (unsafePerformIO)
+import           Data.Binary
+import           Data.Int (Int32)
+import qualified Data.Primitive.PrimArray as PA
+import           GHC.Generics (Generic)
 
 import Game.LambdaHack.Definition.Defs
 
 -- | This is a hack to pass the X size of the dungeon, defined
 -- in game content, to the @Enum@ instances of @Point@ and @Vector@.
--- This is already 3% slower and has 3% higher allocation than
--- hardcoding the value, so passing the value explicitly to a generalization
--- of the @Enum@ conversions is out of the question.
+-- This is already slower and has higher allocation than
+-- hardcoding the value, so passing the value explicitly to
+-- a generalization of the @Enum@ conversions is out of the question.
 -- Perhaps this can be done cleanly and efficiently at link-time
 -- via Backpack, but it's probably not supported yet by GHCJS (not verified).
--- For now, we need to be careful never to modify this reference,
+-- For now, we need to be careful never to modify this array,
 -- except for setting it at program start before it's used for the first time.
 -- Which is easy, because @Point@ is never mentioned in content definitions.
-speedupHackXSize :: IORef X
+-- The @PrimArray@ has much smaller overhead than @IORef@
+-- and reading from it looks cleaner, hence its use.
+speedupHackXSize :: PA.PrimArray X
 {-# NOINLINE speedupHackXSize #-}
-speedupHackXSize = unsafePerformIO $ newIORef 80  -- updated at program startup
+speedupHackXSize = PA.primArrayFromList [80]  -- updated at program startup
 
 -- | 2D points in cartesian representation. Coordinates grow to the right
 -- and down, so that the (0, 0) point is in the top-left corner of the screen.
@@ -61,7 +62,7 @@ instance Binary Point where
 -- @(1, 7)..(10, 9)@.
 instance Enum Point where
   fromEnum Point{..} =
-    let !xsize = unsafePerformIO $ readIORef speedupHackXSize
+    let !xsize = PA.indexPrimArray speedupHackXSize 0
     in
 #ifdef WITH_EXPENSIVE_ASSERTIONS
        assert (px >= 0 && py >= 0 && px < xsize
@@ -69,7 +70,7 @@ instance Enum Point where
               `swith` (px, py))
 #endif
          (px + py * xsize)
-  toEnum n = let !xsize = unsafePerformIO $ readIORef speedupHackXSize
+  toEnum n = let !xsize = PA.indexPrimArray speedupHackXSize 0
                  (py, px) = n `quotRem` xsize
              in Point{..}
 

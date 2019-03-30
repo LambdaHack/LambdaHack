@@ -27,13 +27,11 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Int (Int32)
 import qualified Data.IntSet as IS
-import           Data.IORef
-import           System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Primitive.PrimArray as PA
+import           GHC.Generics (Generic)
 
-import GHC.Generics (Generic)
-
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Definition.Defs
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right
@@ -53,10 +51,10 @@ instance Binary Vector where
 -- to keep it in sync with Point.
 instance Enum Vector where
   fromEnum Vector{..} =
-    let !xsize = unsafePerformIO $ readIORef speedupHackXSize
+    let !xsize = PA.indexPrimArray speedupHackXSize 0
     in vx + vy * xsize
   toEnum n =
-    let !xsize = unsafePerformIO $ readIORef speedupHackXSize
+    let !xsize = PA.indexPrimArray speedupHackXSize 0
         !xsizeHalf = xsize `div` 2
         (!y, !x) = n `quotRem` xsize
         (!vx, !vy) | x >= xsizeHalf = (x - xsize, y + 1)

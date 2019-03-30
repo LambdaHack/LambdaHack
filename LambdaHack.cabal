@@ -424,6 +424,7 @@ library this-game-src
                       ,filepath
                       ,ghc-compact
                       ,optparse-applicative
+                      ,primitive
                       ,random
                       ,template-haskell >= 2.6
                       ,text
