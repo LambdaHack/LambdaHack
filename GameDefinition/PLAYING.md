@@ -195,7 +195,7 @@ Lastly, you can select a command with arrows or mouse directly
 from the help screen or the dashboard and execute it on the spot.
 
     keys         command
-    P or I       manage inventory pack of the leader
+    E            manage equipment of the leader
     g or ,       grab item(s)
     ESC          finish aiming/open main menu
     RET or INS   accept target/open dashboard
