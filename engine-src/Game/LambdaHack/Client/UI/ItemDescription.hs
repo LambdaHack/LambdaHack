@@ -114,12 +114,13 @@ textAllPowers detailLevel skipRecharging
             unSmash eff = eff
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map (ppE . unSmash) smashEffs
-            rechargingTs = T.intercalate " " $ filter (not . T.null)
-                           $ damageText : map ppE noSmashEffs
+            rechargingTs = T.intercalate " "
+                           $ [damageText | IK.idamage itemKind /= 0]
+                             ++ filter (not . T.null) (map ppE noSmashEffs)
             fragile = IA.checkFlag Ability.Fragile arItem
             periodicText =
-              if | skipRecharging || T.null rechargingTs -> ""
-                 | periodic -> case (mtimeout, fragile) of
+              if periodic && not skipRecharging && not (T.null rechargingTs)
+              then case (mtimeout, fragile) of
                      (Nothing, True) ->
                        "(each turn until gone:" <+> rechargingTs <> ")"
                      (Nothing, False) ->
@@ -132,7 +133,7 @@ textAllPowers detailLevel skipRecharging
                      (Just (IK.Timeout t), False) ->
                        "(every" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
                      _ -> error $ "" `showFailure` mtimeout
-                 | otherwise -> ""
+              else ""
             ppERestEs = if periodic then [periodicText] else map ppE noSmashEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
@@ -157,9 +158,9 @@ textAllPowers detailLevel skipRecharging
               Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
-       in (if periodic || detLev <= DetailNone
-           then []
-           else [damageText, timeoutText])
+       in [ damageText
+          | detLev > DetailNone && (not periodic || IK.idamage itemKind == 0) ]
+          ++ [timeoutText | detLev > DetailNone && not periodic]
           ++ if detLev >= DetailHigh
                 || detLev >= DetailMedium && T.null elab
              then aes ++ [onSmash | detLev >= DetailAll]
