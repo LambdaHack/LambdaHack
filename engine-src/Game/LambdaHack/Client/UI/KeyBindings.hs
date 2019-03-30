@@ -24,6 +24,10 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Produce a set of help/menu screens from the key bindings.
+--
+-- When the intro screen mentions KP_5, this really is KP_Begin,
+-- but since that is harder to understand we assume a different, non-default
+-- state of NumLock in the help text than in the code that handles keys.
 keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
 keyHelp COps{corule}
         CCUI{ coinput=coinput@InputContent{..}

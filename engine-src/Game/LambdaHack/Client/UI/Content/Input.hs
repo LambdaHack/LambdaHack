@@ -48,6 +48,7 @@ makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       yellTriple = ([CmdMove], "", Yell)
+      yellTripleNoHelp = ([CmdNoHelp], "", Yell)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
       bcmdList =
@@ -59,12 +60,11 @@ makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
         ++ uCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
-           , (K.mkKM "KP_5", yellTriple)
+           , (K.mkKM "KP_5", yellTripleNoHelp)
            , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ (if | uVi ->
                  [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "C-period", wait10Triple)
-                 , (K.mkKM "%", yellTriple) ]
+                 , (K.mkKM "C-period", wait10Triple) ]  -- yell on % always
                | uLaptop ->
                  [ (K.mkKM "i", waitTriple)
                  , (K.mkKM "C-i", wait10Triple)
@@ -177,17 +177,21 @@ mouseRMB = ( [CmdMouse]
     , (CaHPValue, Wait10)
     , (CaLeaderDesc, ComposeUnlessError ClearTargetIfItemClear ItemClear) ]
 
+-- This is duplicated wrt content, instead of included via @semicolon@,
+-- because the C- commands are less likely to be modified by the player.
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-/", "C-V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-V"]
 
+-- This is duplicated wrt content, instead of included via @colon@,
+-- because the C- commands are less likely to be modified by the player.
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-/", "C-V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "C-V"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["C-?", "C-/", "C-V"]
+autoexploreCmd = Macro ["C-?", "C-quotedbl", "C-V"]
 
 autoexplore25Cmd :: HumanCmd
-autoexplore25Cmd = Macro ["'", "C-?", "C-/", "'", "C-V"]
+autoexplore25Cmd = Macro ["'", "C-?", "C-quotedbl", "'", "C-V"]
 
 aimFlingCmd :: HumanCmd
 aimFlingCmd = ComposeIfLocal AimPointerEnemy (projectICmd flingTs)

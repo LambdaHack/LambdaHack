@@ -115,7 +115,7 @@ Aiming commands.
  -            unswerve the aiming line
  \            cycle aiming modes
  C-?          set x-hair to nearest unknown spot
- C-I          set x-hair to nearest item
+ C-/          set x-hair to nearest item
  C-{          set x-hair to nearest upstairs
  C-}          set x-hair to nearest dnstairs
  <            move aiming one level up
@@ -178,3 +178,4 @@ Assorted commands.
  '            start recording commands
  C-S          save game backup
  C-P          print screen
+ %            yell/yawn

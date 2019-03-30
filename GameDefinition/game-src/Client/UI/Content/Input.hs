@@ -102,10 +102,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
                   , "go to x-hair for 25 steps"
-                  , Macro ["C-semicolon", "C-/", "C-V"] ))
+                  , Macro ["C-semicolon", "C-quotedbl", "C-V"] ))
   , ("colon", ( [CmdMove]
               , "run to x-hair collectively for 25 steps"
-              , Macro ["C-colon", "C-/", "C-V"] ))
+              , Macro ["C-colon", "C-quotedbl", "C-V"] ))
   , ("x", ( [CmdMove]
           , "explore nearest unknown spot"
           , autoexploreCmd ))
@@ -166,7 +166,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-?", ( [CmdAim]
             , "set x-hair to nearest unknown spot"
             , XhairUnknown ))
-  , ("C-I", ( [CmdAim]
+  , ("C-/", ( [CmdAim]
             , "set x-hair to nearest item"
             , XhairItem ))
   , ("C-{", ( [CmdAim]
@@ -197,6 +197,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
+  , ("%", ([CmdMeta], "yell/yawn", Yell))
 
   -- Dashboard, in addition to commands marked above
   , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))
@@ -218,9 +219,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-colon", ( [CmdNoHelp]
                 , "run collectively one step towards the x-hair"
                 , RunOnceToXhair ))
-  , ("C-/", ( [CmdNoHelp]
-            , "continue towards the x-hair"
-            , ContinueToXhair ))
+  , ("C-quotedbl", ( [CmdNoHelp]
+                   , "continue towards the x-hair"
+                   , ContinueToXhair ))
   , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
   , ("safe1", ( [CmdInternal]
               , "go to pointer for 25 steps"
@@ -255,9 +256,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safe11", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
-  , ("safe12", ( [CmdInternal]
-               , "yell/yawn"
-               , Yell ))
   ]
   ++ map defaultHeroSelect [0..6]
 

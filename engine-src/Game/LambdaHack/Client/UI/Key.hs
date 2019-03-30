@@ -28,8 +28,8 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.
 data Key =
@@ -292,7 +292,7 @@ mkKP c = KM NoModifier $ KP c
 -- To be used, in particular, for the command bindings and macros
 -- in the config file.
 --
--- See <https://github.com/twobob/gtk-/blob/master/gdk/keyname-table.h>
+-- See <https://github.com/twobob/gtk-/blob/master/gdk/keynames.txt>
 keyTranslate :: String -> Key
 keyTranslate "less"          = Char '<'
 keyTranslate "greater"       = Char '>'
@@ -329,6 +329,7 @@ keyTranslate "asciitilde"    = Char '~'
 keyTranslate "grave"         = Char '`'
 keyTranslate "exclam"        = Char '!'
 keyTranslate "apostrophe"    = Char '\''
+keyTranslate "quotedbl"      = Char '"'
 keyTranslate "Escape"        = Esc
 keyTranslate "ESC"           = Esc
 keyTranslate "Return"        = Return
