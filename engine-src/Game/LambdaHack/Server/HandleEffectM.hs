@@ -18,8 +18,8 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectPolyItem, effectRerollItem, effectDupItem, effectIdentify
   , identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectActivateInv
-  , effectTransformContainer, effectApplyPerfume, effectOneOf, effectVerbMsg
-  , effectComposite
+  , effectTransformContainer, effectApplyPerfume, effectOneOf
+  , effectVerbNoLonger, effectVerbMsg, effectComposite
 #endif
   ) where
 
@@ -48,6 +48,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -59,7 +60,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -362,6 +362,7 @@ effectSem onSmashOnly source target iid c periodic effect = do
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
+      execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
   case effect of
     IK.Burn nDm -> effectBurn nDm source target
     IK.Explode t -> effectExplode execSfx t source target
@@ -397,9 +398,9 @@ effectSem onSmashOnly source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbMsg _ ->
-      let execSfxSource = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
-      in effectVerbMsg execSfxSource onSmashOnly source iid c
+    IK.VerbNoLonger _ ->
+      effectVerbNoLonger execSfxSource onSmashOnly source iid c
+    IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.Composite l -> effectComposite recursiveCall l
 
 -- * Individual semantic functions for effects
@@ -1857,11 +1858,12 @@ effectOneOf recursiveCall l = do
   foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
 
--- ** VerbMsg
+-- ** VerbNoLonger
 
-effectVerbMsg :: MonadServerAtomic m
-              => m () -> Bool -> ActorId -> ItemId -> Container -> m UseResult
-effectVerbMsg execSfx onSmashOnly source iid c = do
+effectVerbNoLonger :: MonadServerAtomic m
+                   => m () -> Bool -> ActorId -> ItemId -> Container
+                   -> m UseResult
+effectVerbNoLonger execSfx onSmashOnly source iid c = do
   b <- getsState $ getActorBody source
   unless (bproj b) $  -- don't spam when projectiles activate
     if onSmashOnly
@@ -1874,6 +1876,14 @@ effectVerbMsg execSfx onSmashOnly source iid c = do
   return UseUp  -- if the item no longer in the container, doesn't matter;
                 -- otherwise, announcing always successful and this helps
                 -- to destroy the item (e.g., condition)
+
+-- ** VerbMsg
+
+effectVerbMsg :: MonadServerAtomic m => m () -> ActorId -> m UseResult
+effectVerbMsg execSfx source = do
+  b <- getsState $ getActorBody source
+  unless (bproj b) execSfx  -- don't spam when projectiles activate
+  return UseUp
 
 -- ** Composite
 

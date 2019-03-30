@@ -138,10 +138,14 @@ data Effect =
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
+  | VerbNoLonger Text
+      -- ^ a sentence with the actor causing the effect as subject and the given
+      --   text as verb is emitted when the activation causes item to expire;
+      --   no spam is emitted if a projectile
   | VerbMsg Text
-      -- ^ an actor activating this effect utters a sentence with the given
-      --   text as his verb; if the item is fragile, the message appears
-      --   only at the last copy's activation; no spam if a projectile
+      -- ^ a sentence with the actor causing the effect as subject and the given
+      --   text as verb is emitted whenever the item is activated;
+      --   no spam is emitted if a projectile
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -212,6 +216,7 @@ forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
   Composite effs -> any forApplyEffect effs
+  VerbNoLonger{} -> False
   VerbMsg{} -> False
   ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
   _ -> True
@@ -265,7 +270,7 @@ damageUsefulness itemKind =
   in assert (v >= 0) v
 
 verbMsgNoLonger :: Text -> Effect
-verbMsgNoLonger name = VerbMsg $ "be no longer" <+> name
+verbMsgNoLonger name = VerbNoLonger $ "be no longer" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
@@ -354,6 +359,10 @@ validateSingle ik@ItemKind{..} =
           f VerbMsg{} = True
           f _ = False
       in validateOnlyOne ieffects "VerbMsg" f)  -- may be duplicated if nested
+  ++ (let f :: Effect -> Bool
+          f VerbNoLonger{} = True
+          f _ = False
+      in validateOnlyOne ieffects "VerbNoLonger" f)  -- may be duped if nested
   ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
        -- duplicates permitted
 

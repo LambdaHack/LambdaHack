@@ -15,11 +15,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Definition.Flavour
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -29,6 +25,10 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Core.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
+import           Game.LambdaHack.Definition.Flavour
 
 -- | How much AI benefits from applying the effect.
 -- The first component is benefit when applied to self, the second
@@ -167,6 +167,7 @@ effectToBenefit cops fid factionD eff =
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
+    IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.Composite [] -> delta 0
     IK.Composite (eff1 : _) -> effectToBenefit cops fid factionD eff1
