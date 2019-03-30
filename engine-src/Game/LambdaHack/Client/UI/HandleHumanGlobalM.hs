@@ -82,6 +82,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -92,7 +93,6 @@ import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -763,17 +763,22 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   actorMaxSk <- getsState $ getActorMaxSkills leader
   discoBenefit <- getsClient sdiscoBenefit
   let calmE = calmEnough b actorMaxSk
-      ret4 :: [(ItemId, ItemFullKit)]
-           -> Int -> [(ItemId, Int, CStore, CStore)]
-           -> m (FailOrCmd [(ItemId, Int, CStore, CStore)])
-      ret4 [] _ acc = return $ Right $ reverse acc
-      ret4 ((iid, (itemFull, (itemK, _))) : rest) oldN acc = do
+      ret4 :: [(ItemId, ItemFullKit)] -> Int
+           -> m [(ItemId, Int, CStore, CStore)]
+      ret4 [] _ = return []
+      ret4 ((iid, (itemFull, (itemK, _))) : rest) oldN = do
         let k = itemK
             !_A = assert (k > 0) ()
-            retRec toCStore =
-              let n = oldN + if toCStore == CEqp then k else 0
-              in ret4 rest n ((iid, k, fromCStore, toCStore) : acc)
             inEqp = benInEqp $ discoBenefit EM.! iid
+            retRec toCStore = do
+              let n = oldN + if toCStore == CEqp then k else 0
+              l4 <- ret4 rest n
+              return $ (iid, k, fromCStore, toCStore) : l4
+            issueWarning = do
+              let fullWarn = if eqpOverfull b (oldN + 1)
+                             then EqpOverfull
+                             else EqpStackFull
+              msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of  -- @CEqp@ is the implicit default; refine:
           CEqp | calmE && IA.goesIntoSha (aspectRecordFull itemFull) ->
@@ -781,10 +786,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
           CEqp | inEqp && eqpOverfull b (oldN + k) -> do
             -- If this stack doesn't fit, we don't equip any part of it,
             -- but we may equip a smaller stack later in the same pickup.
-            let fullWarn = if eqpOverfull b (oldN + 1)
-                           then EqpOverfull
-                           else EqpStackFull
-            msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
+            issueWarning
             retRec $ if calmE then CSha else CInv
           CEqp | inEqp ->
             retRec CEqp
@@ -796,19 +798,17 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
           CEqp | eqpOverfull b (oldN + k) -> do
             -- If the chosen number from the stack doesn't fit,
             -- we don't equip any part of it and we exit item manipulation.
-            let fullWarn = if eqpOverfull b (oldN + 1)
-                           then EqpOverfull
-                           else EqpStackFull
-            failSer fullWarn
+            issueWarning
+            -- No recursive call here:
+            return []
           _ -> retRec destCStore
   if not calmE && CSha `elem` [fromCStore, destCStore]
   then failSer ItemNotCalm
   else do
-    l4 <- ret4 l 0 []
-    return $! case l4 of
-      Left err -> Left err
-      Right [] -> error $ "" `showFailure` l
-      Right lr -> Right $ ReqMoveItems lr
+    l4 <- ret4 l 0
+    return $! if null l4
+              then error $ "" `showFailure` l
+              else Right $ ReqMoveItems l4
 
 -- * Project
 
