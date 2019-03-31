@@ -25,9 +25,9 @@ cache:
   - "C:\\SR"
 
 install:
+  - which appveyor-retry
   - IF "%build64%"=="true" (
       SETLOCAL ENABLEDELAYEDEXPANSION
-      && which appveyor-retry
       && appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
