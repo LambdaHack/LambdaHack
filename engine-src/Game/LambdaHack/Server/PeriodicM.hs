@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -ddump-stg #-}
+{-# OPTIONS_GHC -ddump-stg -dsuppress-all #-}
 
 -- | Server operations performed periodically in the game loop
 -- and related operations.
