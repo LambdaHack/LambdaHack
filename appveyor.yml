@@ -33,6 +33,7 @@ install:
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
       && which cabal
       && cabal --version
+      && which appveyor-retry
       && appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal %CABOPTS% update
       && cabal %CABOPTS% install happy
@@ -41,7 +42,6 @@ install:
       && cabal %CABOPTS% install -fno-linear
       && cd ..
       && pwd
-      && which appveyor-retry
       && appveyor-retry make build-binary-common
       && ENDLOCAL
     )
