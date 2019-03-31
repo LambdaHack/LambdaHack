@@ -25,24 +25,22 @@ cache:
   - "C:\\SR"
 
 install:
-  - SETLOCAL ENABLEDELAYEDEXPANSION
-  - IF "%build64%"=="true" (
+  - SETLOCAL ENABLEDELAYEDEXPANSION IF "%build64%"=="true" (
       appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
-      && which cabal
       && cabal --version
       && appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
-      && cabal !CABOPTS! update
-      && cabal !CABOPTS! install happy
+      && cabal %CABOPTS% update
+      && cabal %CABOPTS% install happy
       && git clone -q --branch=master https://github.com/haskell-game/sdl2
       && cd sdl2
-      && cabal !CABOPTS! install -fno-linear
+      && cabal %CABOPTS% install -fno-linear
       && cd ..
       && pwd
       && appveyor-retry make build-binary-common
-    )
+    ) ENDLOCAL
 
   - IF "%goal%"=="artifact32and64" (
       cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
@@ -94,7 +92,7 @@ install:
       && echo "no cabal install happy"
       && echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
       && cd sdl2
-      && cabal !CABOPTS! install -fno-linear
+      && cabal %CABOPTS% install -fno-linear
       && cd ..
       && pwd
       && appveyor-retry make build-binary-common
@@ -135,6 +133,5 @@ install:
       && make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
     )
 
-  - ENDLOCAL
 
 build: off
