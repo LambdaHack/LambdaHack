@@ -27,7 +27,6 @@ cache:
 install:
  - IF "%build64%"=="true" (
   appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
-  # breaks appveyor-retry: refreshenv
   SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
   SET XDG_DATA_DIRS=C:\msys64\mingw64\share
@@ -73,7 +72,6 @@ install:
  - IF "%goal%"=="artifact32and64" (
   appveyor-retry cabal %CABOPTS% test --show-details=direct
   make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-#  make nativeBench || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
   mv LambdaHackTheGame LambdaHackTheGame64
   rm -rf LambdaHackTheGameInstall
    )
@@ -87,7 +85,6 @@ install:
 
  - IF "%build32%"=="true" (
   appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
-  # breaks appveyor-retry: refreshenv
   SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
   SET XDG_DATA_DIRS=C:\msys64\mingw32\share
@@ -129,7 +126,6 @@ install:
 
  - IF "%goal%"=="artifact32and64" (
   appveyor-retry cabal %CABOPTS% test --show-details=direct
-#  make benchNull || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
   mv LambdaHackTheGame LambdaHackTheGame32
    )
 
