@@ -26,6 +26,7 @@ cache:
 
 install:
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "%build64%"=="true" (
       choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
@@ -35,7 +36,6 @@ install:
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal %CABOPTS% update
       && cabal %CABOPTS% install happy
-      && git clone -q --branch=master https://github.com/haskell-game/sdl2
       && cd sdl2
       && cabal %CABOPTS% install -fno-linear
       && cd ..
@@ -77,7 +77,9 @@ install:
 
   - IF "%build64%"=="true" (
       cabal %CABOPTS% clean
-      && rm -rf sdl2
+      && cd sdl2
+      && cabal %CABOPTS% clean
+      && cd ..
     )
 
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
@@ -88,9 +90,8 @@ install:
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-      && cabal %CABOPTS% update
-      && cabal %CABOPTS% install happy
-      && git clone -q --branch=master https://github.com/haskell-game/sdl2
+      && IF NOT "%build64%"=="true" cabal %CABOPTS% update
+      && IF NOT "%build64%"=="true" cabal %CABOPTS% install happy
       && cd sdl2
       && cabal %CABOPTS% install -fno-linear
       && cd ..
