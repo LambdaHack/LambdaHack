@@ -41,7 +41,7 @@ install:
       cd ..
       pwd
       appveyor-retry make build-binary-common
-   )
+      )
 
 - cmd: >-
     IF "%goal%"=="artifact32and64" (
@@ -64,7 +64,7 @@ install:
       make version
       SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
       7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
-   )
+      )
 
  - ps: if ($env:goal -eq "artifact32and64") { $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString() }
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
@@ -75,7 +75,7 @@ install:
       make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       mv LambdaHackTheGame LambdaHackTheGame64
       rm -rf LambdaHackTheGameInstall
-   )
+      )
 
 - cmd: >-
     IF "%build64%"=="true" (
@@ -83,7 +83,7 @@ install:
       cd sdl2
       cabal %CABOPTS% clean
       cd ..
-   )
+      )
 
 - cmd: >-
     IF "%build32%"=="true" (
@@ -101,7 +101,7 @@ install:
       cd ..
       pwd
       appveyor-retry make build-binary-common
-   )
+      )
 
 - cmd: >-
     IF "%goal%"=="32and64" (
@@ -122,15 +122,15 @@ install:
       cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
       cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
       7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
-   )
+      )
 
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive" }
 
 - cmd: >-
     IF "%goal%"=="artifact32and64" (
-  appveyor-retry cabal %CABOPTS% test --show-details=direct
-  mv LambdaHackTheGame LambdaHackTheGame32
-   )
+      appveyor-retry cabal %CABOPTS% test --show-details=direct
+      mv LambdaHackTheGame LambdaHackTheGame32
+      )
 
  - ps: if ($env:goal -eq "artifact32and64") { '& "C:\Program Files (x86)\NSIS\makensis.exe" .windows.installer.nsi' }
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
@@ -139,6 +139,6 @@ install:
     IF "%goal%"=="test" (
       make test-travis || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-   )
+      )
 
 build: off
