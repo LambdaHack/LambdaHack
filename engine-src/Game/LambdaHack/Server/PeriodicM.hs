@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -ddump-simpl #-}
+{-# OPTIONS_GHC -dcore-lint -dstg-lint and -dcmm-lint #-}
 
 -- | Server operations performed periodically in the game loop
 -- and related operations.
