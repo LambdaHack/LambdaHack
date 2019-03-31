@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -ddump-simpl #-}
-
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicM
