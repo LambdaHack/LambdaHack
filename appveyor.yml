@@ -82,9 +82,9 @@ install:
       && cd ..
     )
 
-  - IF "%build32%"=="true" (
+  - IF "!build32!"=="true" (
       appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
-      && SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+      && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
       && SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
@@ -93,7 +93,7 @@ install:
       && echo "no cabal install happy"
       && echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
       && cd sdl2
-      && cabal %CABOPTS% install -fno-linear
+      && cabal !CABOPTS! install -fno-linear
       && cd ..
       && pwd
       && appveyor-retry make build-binary-common
