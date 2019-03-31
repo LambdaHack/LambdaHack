@@ -40,12 +40,12 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Server.FovDigital
 
@@ -150,8 +150,7 @@ perActorFromLevel perActorOld getActorB actorMaxSkills fovClear =
   in EM.mapWithKey f perActorOld
 
 boundSightByCalm :: Int -> Int64 -> Int
-boundSightByCalm sight calm =
-  min (fromEnum $ calm `div` (5 * oneM)) sight
+boundSightByCalm sight calm = min (fromEnum $ calm `div` xM 5) sight
 
 -- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.

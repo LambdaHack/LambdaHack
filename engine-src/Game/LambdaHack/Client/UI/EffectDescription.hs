@@ -273,7 +273,7 @@ skillToDecorator skill b t =
     SkMaxCalm -> tshow $ max 0 t
     SkSpeed -> T.pack $ displaySpeed t
     SkSight ->
-      let tcapped = min (fromEnum $ bcalm b `div` (5 * oneM)) t
+      let tcapped = min (fromEnum $ bcalm b `div` xM 5) t
       in tshowRadius tcapped
          <+> if tcapped == t
              then ""

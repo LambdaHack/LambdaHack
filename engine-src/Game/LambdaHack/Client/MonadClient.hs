@@ -16,7 +16,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
-import           Data.Bits (complement, xor, zeroBits, (.&.))
+import           Data.Bits (finiteBitSize, xor, (.&.))
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
@@ -26,10 +26,10 @@ import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Core.Random
 
 -- | Monad for reading client state.
@@ -79,7 +79,8 @@ rndToActionForget r = do
   let i = fst $ R.next gen
   time <- getsState stime
   -- Prevent overflow from @Int64@ to @Int@.
-  let oneBits = complement (zeroBits :: Int)
-      timeBounded = fromEnum $ timeTicks time .&. toEnum oneBits
-      genNew = R.mkStdGen $ i `xor` timeBounded
+  let positiveIntSize = finiteBitSize (1 :: Int) - 1
+      oneBitsPositiveInt = 2 ^ positiveIntSize - 1
+      timeSmallBits = fromEnum $ timeTicks time .&. oneBitsPositiveInt
+      genNew = R.mkStdGen $ i `xor` timeSmallBits
   return $! St.evalState r genNew
