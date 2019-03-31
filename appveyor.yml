@@ -124,8 +124,7 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive" }
 
   - IF "%goal%"=="artifact32and64" (
-      cabal %CABOPTS% test --show-details=direct
-      && mv LambdaHackTheGame LambdaHackTheGame32
+      mv LambdaHackTheGame LambdaHackTheGame32
     )
 
   - ps: if ($env:goal -eq "artifact32and64") { '& "C:\Program Files (x86)\NSIS\makensis.exe" .windows.installer.nsi' }
