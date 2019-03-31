@@ -27,8 +27,7 @@ cache:
 install:
   - SETLOCAL ENABLEDELAYEDEXPANSION
   - IF "!build64!"=="true" (
-      SETLOCAL ENABLEDELAYEDEXPANSION
-      && appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
+      appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
@@ -42,7 +41,6 @@ install:
       && cd ..
       && pwd
       && appveyor-retry make build-binary-common
-      && ENDLOCAL
     )
 
   - IF "%goal%"=="artifact32and64" (
@@ -135,5 +133,7 @@ install:
       make test-travis || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       && make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
     )
+
+  - ENDLOCAL
 
 build: off
