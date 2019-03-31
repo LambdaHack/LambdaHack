@@ -26,96 +26,96 @@ cache:
 
 install:
  - IF "%build64%"=="true" (
-  appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
-  SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
-  SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
-  SET XDG_DATA_DIRS=C:\msys64\mingw64\share
-  cabal --version
-  appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
-  cabal %CABOPTS% update
-  cabal %CABOPTS% install happy
-  git clone -q --branch=master https://github.com/haskell-game/sdl2
-  cd sdl2
-  cabal %CABOPTS% install -fno-linear
-  cd ..
-  pwd
-  appveyor-retry make build-binary-common
+      appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
+      SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+      SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
+      SET XDG_DATA_DIRS=C:\msys64\mingw64\share
+      cabal --version
+      appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
+      cabal %CABOPTS% update
+      cabal %CABOPTS% install happy
+      git clone -q --branch=master https://github.com/haskell-game/sdl2
+      cd sdl2
+      cabal %CABOPTS% install -fno-linear
+      cd ..
+      pwd
+      appveyor-retry make build-binary-common
    )
 
  - IF "%goal%"=="artifact32and64" (
-  cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/SDL2.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/SDL2_ttf.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libfreetype-6.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libgcc_s_seh-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libbz2-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libpng16-16.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libwinpthread-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libharfbuzz-0.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libglib-2.0-0.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libgraphite2.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libintl-8.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
-  cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
-  cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  make version
-  SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
-  7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/SDL2.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/SDL2_ttf.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libfreetype-6.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libgcc_s_seh-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libbz2-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libpng16-16.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libwinpthread-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libharfbuzz-0.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libglib-2.0-0.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libgraphite2.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libintl-8.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
+      cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
+      cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
+      make version
+      SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
+      7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
    )
 
  - ps: if ($env:goal -eq "artifact32and64") { $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString() }
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
  - IF "%goal%"=="artifact32and64" (
-  appveyor-retry cabal %CABOPTS% test --show-details=direct
-  make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-  mv LambdaHackTheGame LambdaHackTheGame64
-  rm -rf LambdaHackTheGameInstall
+      appveyor-retry cabal %CABOPTS% test --show-details=direct
+      make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+      mv LambdaHackTheGame LambdaHackTheGame64
+      rm -rf LambdaHackTheGameInstall
    )
 
  - IF "%build64%"=="true" (
-  cabal %CABOPTS% clean
-  cd sdl2
-  cabal %CABOPTS% clean
-  cd ..
+      cabal %CABOPTS% clean
+      cd sdl2
+      cabal %CABOPTS% clean
+      cd ..
    )
 
  - IF "%build32%"=="true" (
-  appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
-  SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
-  SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
-  SET XDG_DATA_DIRS=C:\msys64\mingw32\share
-  cabal --version
-  appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-  echo "no cabal update"
-  echo "no cabal install happy"
-  echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
-  cd sdl2
-  cabal %CABOPTS% install -fno-linear
-  cd ..
-  pwd
-  appveyor-retry make build-binary-common
+      appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
+      SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+      SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
+      SET XDG_DATA_DIRS=C:\msys64\mingw32\share
+      cabal --version
+      appveyor-retry pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
+      echo "no cabal update"
+      echo "no cabal install happy"
+      echo "no git clone -q --branch=master https://github.com/haskell-game/sdl2"
+      cd sdl2
+      cabal %CABOPTS% install -fno-linear
+      cd ..
+      pwd
+      appveyor-retry make build-binary-common
    )
 
  - IF "%goal%"=="32and64" (
-  cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libwinpthread-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libharfbuzz-0.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libglib-2.0-0.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libgraphite2.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libintl-8.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
-  cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
-  cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
-  7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libfreetype-6.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libgcc_s_dw2-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libbz2-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libpng16-16.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libwinpthread-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libharfbuzz-0.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libglib-2.0-0.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libgraphite2.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libintl-8.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libpcre-1.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libstdc++-6.dll LambdaHackTheGame
+      cp /c/msys64/mingw32/bin/libiconv-2.dll LambdaHackTheGame
+      cp LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame
+      7z a -ssc -tzip LambdaHack_dev_windows-i686.zip LambdaHackTheGame
    )
 
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive" }
@@ -129,8 +129,8 @@ install:
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
  - IF "%goal%"=="test" (
-  make test-travis || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-  make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+      make test-travis || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+      make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
    )
 
 build: off
