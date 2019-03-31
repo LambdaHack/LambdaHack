@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -ddump-cmm-from-stg #-}
+{-# OPTIONS_GHC -ddump-stg #-}
 
 -- | Server operations performed periodically in the game loop
 -- and related operations.
