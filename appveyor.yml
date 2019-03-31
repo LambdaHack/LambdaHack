@@ -25,7 +25,8 @@ cache:
 - "C:\\SR"
 
 install:
- - IF "%build64%"=="true" (
+- cmd: >-
+    IF "%build64%"=="true" (
       appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
       SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
@@ -42,7 +43,8 @@ install:
       appveyor-retry make build-binary-common
    )
 
- - IF "%goal%"=="artifact32and64" (
+- cmd: >-
+    IF "%goal%"=="artifact32and64" (
       cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
       cp /c/msys64/mingw64/bin/SDL2.dll LambdaHackTheGame
       cp /c/msys64/mingw64/bin/SDL2_ttf.dll LambdaHackTheGame
@@ -67,21 +69,24 @@ install:
  - ps: if ($env:goal -eq "artifact32and64") { $env:TIME_STRING=(get-date -UFormat "%Y-%m-%d").ToString() }
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
- - IF "%goal%"=="artifact32and64" (
+- cmd: >-
+    IF "%goal%"=="artifact32and64" (
       appveyor-retry cabal %CABOPTS% test --show-details=direct
       make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       mv LambdaHackTheGame LambdaHackTheGame64
       rm -rf LambdaHackTheGameInstall
    )
 
- - IF "%build64%"=="true" (
+- cmd: >-
+    IF "%build64%"=="true" (
       cabal %CABOPTS% clean
       cd sdl2
       cabal %CABOPTS% clean
       cd ..
    )
 
- - IF "%build32%"=="true" (
+- cmd: >-
+    IF "%build32%"=="true" (
       appveyor-retry choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
       SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
       SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
@@ -98,7 +103,8 @@ install:
       appveyor-retry make build-binary-common
    )
 
- - IF "%goal%"=="32and64" (
+- cmd: >-
+    IF "%goal%"=="32and64" (
       cp /c/msys64/mingw32/bin/zlib1.dll LambdaHackTheGame
       cp /c/msys64/mingw32/bin/SDL2.dll LambdaHackTheGame
       cp /c/msys64/mingw32/bin/SDL2_ttf.dll LambdaHackTheGame
@@ -120,7 +126,8 @@ install:
 
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-i686.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-i686.zip" -DeploymentName "win32 binaries archive" }
 
- - IF "%goal%"=="artifact32and64" (
+- cmd: >-
+    IF "%goal%"=="artifact32and64" (
   appveyor-retry cabal %CABOPTS% test --show-details=direct
   mv LambdaHackTheGame LambdaHackTheGame32
    )
@@ -128,7 +135,8 @@ install:
  - ps: if ($env:goal -eq "artifact32and64") { '& "C:\Program Files (x86)\NSIS\makensis.exe" .windows.installer.nsi' }
  - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
- - IF "%goal%"=="test" (
+- cmd: >-
+    IF "%goal%"=="test" (
       make test-travis || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
    )
