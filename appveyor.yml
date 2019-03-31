@@ -25,11 +25,13 @@ cache:
   - "C:\\SR"
 
 install:
-  - SETLOCAL ENABLEDELAYEDEXPANSION IF "%build64%"=="true" (
-      appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
+  - IF "%build64%"=="true" (
+      SETLOCAL ENABLEDELAYEDEXPANSION
+      && appveyor-retry choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
+      && which cabal
       && cabal --version
       && appveyor-retry pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal %CABOPTS% update
@@ -40,7 +42,8 @@ install:
       && cd ..
       && pwd
       && appveyor-retry make build-binary-common
-    ) ENDLOCAL
+      && ENDLOCAL
+    )
 
   - IF "%goal%"=="artifact32and64" (
       cp /c/msys64/mingw64/bin/zlib1.dll LambdaHackTheGame
