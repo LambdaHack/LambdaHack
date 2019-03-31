@@ -25,10 +25,9 @@ cache:
   - "C:\\SR"
 
 install:
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - IF "%build64%"=="true" (
-      SETLOCAL ENABLEDELAYEDEXPANSION
-      && choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
-      && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
+      choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
       && which cabal
@@ -42,7 +41,6 @@ install:
       && cd ..
       && pwd
       && make build-binary-common
-      && ENDLOCAL
     )
 
   - IF "%goal%"=="artifact32and64" (
@@ -84,10 +82,10 @@ install:
       && cd ..
     )
 
+  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+
   - IF "%build32%"=="true" (
-      SETLOCAL ENABLEDELAYEDEXPANSION
-      && choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
-      && SET PATH=!APPDATA!\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;!PATH!
+      choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
       && SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
@@ -100,7 +98,6 @@ install:
       && cd ..
       && pwd
       && make build-binary-common
-      && ENDLOCAL
     )
 
   - IF "%goal%"=="32and64" (
