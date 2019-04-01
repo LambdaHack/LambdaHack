@@ -40,7 +40,7 @@ install:
       && cabal --version
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal %CABOPTS% new-update
-      && cabal %CABOPTS% new-install happy
+      && cabal %CABOPTS% new-install --install-method=copy happy
     )
   - IF "%build64%"=="true" (
       cd sdl2
@@ -96,7 +96,7 @@ install:
       && cabal --version
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
       && (IF NOT "true"=="true" cabal %CABOPTS% new-update)
-      && (IF NOT "true"=="true" cabal %CABOPTS% new-install happy)
+      && (IF NOT "true"=="true" cabal %CABOPTS% new-install --install-method=copy happy)
       && cd sdl2
       && cabal %CABOPTS% install -fno-linear
       && cd ..
