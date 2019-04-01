@@ -247,7 +247,7 @@ build-binary-common:
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
 	cp LambdaHackTheGameInstall/bin/LambdaHack* LambdaHackTheGame
 #	cabal new-build --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies .
-#	cabal new-install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame exe:LambdaHack
+#	cabal new-install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame --enable-executable-stripping exe:LambdaHack
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16xw.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/16x16xw.bdf LambdaHackTheGame/GameDefinition/fonts
