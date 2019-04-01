@@ -72,7 +72,6 @@ install:
 
   - IF "%goal%"=="artifact32and64" (
       cabal %CABOPTS% test --show-details=direct
-      && make test-short || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
