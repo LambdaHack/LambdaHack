@@ -80,7 +80,7 @@ install:
       && rm -rf LambdaHackTheGameInstall
     )
 
-  - IF "%build64%"=="true" (
+  - IF "%build32%"=="true" (
       cabal %CABOPTS% clean
       && cd sdl2
       && cabal %CABOPTS% clean
