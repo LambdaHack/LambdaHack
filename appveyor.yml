@@ -92,8 +92,8 @@ install:
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-      && IF NOT "true"=="true" cabal %CABOPTS% update
-      && IF NOT "true"=="true" cabal %CABOPTS% install happy
+      && (IF NOT "true"=="true" cabal %CABOPTS% update)
+      && (IF NOT "true"=="true" cabal %CABOPTS% install happy)
       && cd sdl2
       && cabal %CABOPTS% install -fno-linear
       && cd ..
