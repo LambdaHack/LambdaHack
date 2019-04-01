@@ -129,10 +129,9 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
   - IF "%goal%"=="test" (
-      make test-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-      && make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
-      && make testCrawl-long || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt; tail -n 500 %APPDATA%\LambdaHack\stderr.txt; exit 77)
+      make test-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt & tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      && make testDefense-medium || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt & tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+      && make testCrawl-long || (tail -n 500 %APPDATA%\LambdaHack\stdout.txt & tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
     )
-
 
 build: off
