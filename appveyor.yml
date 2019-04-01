@@ -22,7 +22,12 @@ environment:
       build64: true
 
 cache:
+# chocolatey doesn't build, but downloads, so no point; cache would overflow
+#  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+#  - C:\ProgramData\chocolatey\lib -> appveyor.yml
+  - C:\var\cache\pacman\pkg -> appveyor.yml
   - "C:\\SR"
+  - dist-newstyle
 
 install:
   - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
