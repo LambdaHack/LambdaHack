@@ -239,15 +239,13 @@ test-short-load:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --savePrefix battleSurvival --dumpInitRngs --automateAll --keepAutomated --gameMode "battle survival" --frontendTeletype --stopAfterSeconds 2 --setDungeonRng 0 --setMainRng 0 2> /tmp/teletypetest.log
 
 
-version:
-	dist/build/LambdaHack/LambdaHack --version
-
 build-binary-common:
-	cabal install --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies
-	cabal configure --disable-library-profiling --disable-profiling --prefix=/ --datadir=. --datasubdir=.
-	cabal build exe:LambdaHack
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
-	cabal copy --destdir=LambdaHackTheGameInstall
+	cabal v1-install --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies
+	cabal v1-configure --disable-library-profiling --disable-profiling --prefix=/ --datadir=. --datasubdir=.
+	cabal v1-build exe:LambdaHack
+	cabal v1-copy --destdir=LambdaHackTheGameInstall
+	cp LambdaHackTheGameInstall/bin/LambdaHack* LambdaHackTheGame
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16xw.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/16x16xw.bdf LambdaHackTheGame/GameDefinition/fonts
@@ -266,14 +264,12 @@ build-binary-common:
 	cp CREDITS LambdaHackTheGame
 
 build-binary-ubuntu: build-binary-common
-	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
-	dist/build/LambdaHack/LambdaHack --version > /dev/null; \
+	LambdaHackTheGame/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	tar -czf LambdaHack_$${LH_VERSION}_ubuntu-16.04-amd64.tar.gz LambdaHackTheGame
 
 build-binary-macosx: build-binary-common
-	cp LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
-	dist/build/LambdaHack/LambdaHack --version > /dev/null; \
+	LambdaHackTheGame/LambdaHack --version > /dev/null; \
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
