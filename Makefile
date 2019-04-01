@@ -170,9 +170,6 @@ testAmbush-medium:
 testCrawl-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 200 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl 2> /tmp/teletypetest.log
 
-testCrawl-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 1000 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl 2> /tmp/teletypetest.log
-
 testCrawlEmpty-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode "crawl empty" 2> /tmp/teletypetest.log
 
@@ -202,6 +199,12 @@ testDig-medium:
 
 testDefenseEmpty-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 9 --noAnim --maxFps 100000 --frontendTeletype --benchmark --stopAfterSeconds 40 --dumpInitRngs --automateAll --keepAutomated --gameMode "defense empty" 2> /tmp/teletypetest.log
+
+testCrawl-appveyor:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterSeconds 1000 --dumpInitRngs --automateAll --keepAutomated --gameMode crawl
+
+testDefense-appveyor:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 9 --noAnim --maxFps 100000 --frontendLazy --benchmark --stopAfterSeconds 1000 --dumpInitRngs --automateAll --keepAutomated --gameMode defense
 
 test-short-new:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --boostRandomItem --newGame 5 --savePrefix raid --dumpInitRngs --automateAll --keepAutomated --gameMode raid --frontendTeletype --stopAfterSeconds 2 2> /tmp/teletypetest.log
