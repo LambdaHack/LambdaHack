@@ -1,6 +1,4 @@
 environment:
-  global:
-    CABOPTS:  "--store-dir=C:\\SR --http-transport=plain-http"
   matrix:
     - goal: artifact32and64
       build32: true
@@ -22,12 +20,9 @@ environment:
       build64: true
 
 cache:
-# chocolatey doesn't build, but downloads, so no point; cache would overflow
-#  - C:\ProgramData\chocolatey\bin -> appveyor.yml
-#  - C:\ProgramData\chocolatey\lib -> appveyor.yml
-#  - C:\var\cache\pacman\pkg -> appveyor.yml
-  - "C:\\SR"
+  - dist
   - dist-newstyle
+  - C:\Users\appveyor\AppData\Roaming\cabal
 
 install:
   - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
@@ -39,12 +34,12 @@ install:
       && which cabal
       && cabal --version
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
-      && cabal %CABOPTS% new-update
-      && cabal %CABOPTS% v1-install --force-reinstalls happy
+      && cabal new-update
+      && cabal v1-install --force-reinstalls happy
     )
   - IF "%build64%"=="true" (
       cd sdl2
-      && cabal %CABOPTS% v1-install --force-reinstalls -fno-linear
+      && cabal v1-install --force-reinstalls -fno-linear
       && cd ..
       && pwd
       && make build-binary-common
@@ -75,15 +70,15 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
   - IF "%goal%"=="artifact32and64" (
-      cabal %CABOPTS% test --show-details=direct
+      cabal test --show-details=direct
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
 
   - IF "%build32%"=="true" (
-      cabal %CABOPTS% clean
+      cabal clean
       && cd sdl2
-      && cabal %CABOPTS% clean
+      && cabal clean
       && cd ..
     )
 
@@ -95,10 +90,10 @@ install:
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-      && (IF NOT "true"=="true" cabal %CABOPTS% new-update)
-      && (IF NOT "true"=="true" cabal %CABOPTS% v1-install --force-reinstalls happy)
+      && (IF NOT "true"=="true" cabal new-update)
+      && (IF NOT "true"=="true" cabal v1-install --force-reinstalls happy)
       && cd sdl2
-      && cabal %CABOPTS% v1-install --force-reinstalls -fno-linear
+      && cabal v1-install --force-reinstalls -fno-linear
       && cd ..
       && pwd
       && make build-binary-common
