@@ -22,7 +22,8 @@ environment:
 cache:
   - dist
   - dist-newstyle
-  - C:\Users\appveyor\AppData\Roaming\cabal
+  - C:\Users\appveyor\AppData\Roaming\cabal -> appveyor.yml
+  - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
 
 install:
   - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
@@ -33,6 +34,7 @@ install:
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
       && which cabal
       && cabal --version
+      && cabal clean
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
       && cabal new-update
       && cabal v1-install --force-reinstalls happy
@@ -89,6 +91,7 @@ install:
       && SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
+      && cabal clean
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
       && (IF NOT "true"=="true" cabal new-update)
       && (IF NOT "true"=="true" cabal v1-install --force-reinstalls happy)
@@ -134,5 +137,7 @@ install:
   - IF "%goal%"=="test" (
       make testDefense-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
     )
+
+  - cabal clean
 
 build: off
