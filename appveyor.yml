@@ -30,7 +30,7 @@ cache:
   - dist-newstyle
 
 install:
-  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
       choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
@@ -66,7 +66,7 @@ install:
       && cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
-      && LambdaHackTheGame/LambdaHack.exe version
+      && LambdaHack version
       && SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
       && 7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
     )
@@ -87,7 +87,7 @@ install:
       && cd ..
     )
 
-  - SET PATH=%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
+  - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw32\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
 
   - IF "%build32%"=="true" (
       choco install --force --forcex86 ghc --version 8.4.4 | grep -v '^Extracting '
