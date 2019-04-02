@@ -66,7 +66,7 @@ install:
       && cp /c/msys64/mingw64/bin/libpcre-1.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libstdc++-6.dll LambdaHackTheGame
       && cp /c/msys64/mingw64/bin/libiconv-2.dll LambdaHackTheGame
-      && LambdaHack version
+      && LambdaHack --version
       && SET /p LH_VERSION=<%APPDATA%\LambdaHack\stdout.txt
       && 7z a -ssc -tzip LambdaHack_dev_windows-x86_64.zip LambdaHackTheGame
     )
