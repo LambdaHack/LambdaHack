@@ -20,8 +20,8 @@ environment:
       build64: true
 
 cache:
-  - dist
-  - dist-newstyle
+  - dist -> appveyor.yml
+  - dist-newstyle -> appveyor.yml
   - C:\Users\appveyor\AppData\Roaming\cabal -> appveyor.yml
   - C:\Users\appveyor\AppData\Roaming\ghc -> appveyor.yml
 
