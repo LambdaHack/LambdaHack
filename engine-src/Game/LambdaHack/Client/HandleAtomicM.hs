@@ -91,7 +91,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- and so his whole BFS data is invalidated.
     unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
     invalidateInMelee (blid b)
-  UpdWaitActor{} -> return ()
+  UpdWaitActor aid _fromW toW ->
+    -- So that we can later ignore such actors when updating targets
+    -- and not risk they beling pushed/displaces and targets getting wrong.
+    when (toW == WSleep) $
+      modifyClient $ updateTarget aid (const Nothing)
   UpdDisplaceActor source target -> do
     invalidateBfsAid source
     invalidateBfsAid target

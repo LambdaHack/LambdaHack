@@ -39,6 +39,8 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -48,8 +50,6 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Core.Frequency
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Ability
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -974,7 +974,7 @@ chase aid avoidAmbient retry = do
                         -- if solid, will be altered and perhaps darkened
   str <- case mtgtMPath of
     Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}}
-      | pathGoal == bpos body -> return reject  -- shortcut and just to be sure
+      | pathGoal == bpos body -> return reject  -- done; picking up items, etc.
       | not $ avoidAmbient && isAmbient q ->
       -- With no leader, the goal is vague, so permit arbitrary detours.
       moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull
