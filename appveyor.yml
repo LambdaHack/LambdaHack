@@ -25,7 +25,7 @@ cache:
 # chocolatey doesn't build, but downloads, so no point; cache would overflow
 #  - C:\ProgramData\chocolatey\bin -> appveyor.yml
 #  - C:\ProgramData\chocolatey\lib -> appveyor.yml
-  - C:\var\cache\pacman\pkg -> appveyor.yml
+#  - C:\var\cache\pacman\pkg -> appveyor.yml
   - "C:\\SR"
   - dist-newstyle
 
