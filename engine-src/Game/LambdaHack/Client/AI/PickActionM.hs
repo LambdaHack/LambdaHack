@@ -155,7 +155,7 @@ actionStrategy aid retry = do
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
       abInMaxSkill sk = getSk sk actorMaxSk > 0
-      runSkills = [SkMove, SkDisplace, SkAlter]
+      runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
                   -> m (Strategy RequestTimed)
                   -> m (Frequency RequestTimed)
