@@ -185,6 +185,7 @@ script:
   - mv "."/dist/LambdaHack-*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
+  - cd LambdaHack-*
 
   - cp $ROOTDIR/cabal.project .
   - cp $ROOTDIR/Makefile .
