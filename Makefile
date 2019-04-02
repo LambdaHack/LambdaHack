@@ -245,9 +245,9 @@ build-binary-common:
 	cabal v1-configure --disable-library-profiling --disable-profiling --prefix=/ --datadir=. --datasubdir=.
 	cabal v1-build exe:LambdaHack
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
-	[ -f "LambdaHackTheGameInstall/bin/LambdaHack" ] && mv LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
-	[ -f "LambdaHackTheGameInstall/msys64/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys64/LambdaHack.exe LambdaHackTheGame
-	[ -f "LambdaHackTheGameInstall/msys32/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys32/LambdaHack.exe LambdaHackTheGame
+	[ -f "LambdaHackTheGameInstall/bin/LambdaHack" ] || mv LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame
+	[ -f "LambdaHackTheGameInstall/msys64/LambdaHack.exe" ] || mv LambdaHackTheGameInstall/msys64/LambdaHack.exe LambdaHackTheGame
+	[ -f "LambdaHackTheGameInstall/msys32/LambdaHack.exe" ] || mv LambdaHackTheGameInstall/msys32/LambdaHack.exe LambdaHackTheGame
 #	cabal new-build --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies .
 #	cabal new-install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame --enable-executable-stripping exe:LambdaHack
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
