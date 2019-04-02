@@ -161,8 +161,7 @@ textAllPowers detailLevel skipRecharging
        in [ damageText
           | detLev > DetailNone && (not periodic || IK.idamage itemKind == 0) ]
           ++ [timeoutText | detLev > DetailNone && not periodic]
-          ++ if detLev >= DetailHigh
-                || detLev >= DetailMedium && T.null elab
+          ++ if detLev >= DetailMedium
              then aes ++ [onSmash | detLev >= DetailAll]
              else []
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
