@@ -250,8 +250,8 @@ script:
   - find dist-newstyle -wholename '*/build/LambdaHack/LambdaHack' -exec cp '{}' $ROOTDIR2/dist/build/LambdaHack/ \;
 
   - touch /tmp/teletypetest.log;
-  - "if [ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\"]; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
-  - "if [ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\"]; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [ $GTKVTY != \"vty_opt2_lint\" -a $GTKVTY != \"curses_asserts_lint\"]; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [ \"$(uname)\" != \"Darwin\" -a $GTKVTY != \"vty_opt2_lint\" -a $GTKVTY != \"curses_asserts_lint\"]; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 
 # REGENDATA ["--no-no-tests-no-bench","--osx=8.4.4","cabal.project","-o","foo"]
 # EOF
