@@ -193,7 +193,15 @@ script:
   - cat cabal.project.local || true
 
   - |
-    if [ $GTKVTY = "gtk" ]; then
+    if [ $GTKVTY = "vty_opt2_lint" ]; then
+      cabal new-configure --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint"
+      cabal new-build --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j2 .;
+      cabal new-build -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
+    elif [ $GTKVTY = "curses_asserts_lint" ]; then
+      cabal new-configure --ghc-options="-dcore-lint -dstg-lint -dcmm-lint"
+      cabal new-build --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j2 .;
+      cabal new-build -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
+    elif [ $GTKVTY = "gtk" ]; then
       cabal new-build --only-dependencies -fgtk -w ${HC} -j2 .;
       cabal new-build -fgtk -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk-v2" ]; then
@@ -226,12 +234,6 @@ script:
     elif [ $GTKVTY = "asserts_opt2" ]; then
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} -j2 .;
       cabal new-build -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j1 .;
-    elif [ $GTKVTY = "vty_opt2_lint" ]; then
-      cabal new-build --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j2 .;
-      cabal new-build -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
-    elif [ $GTKVTY = "curses_asserts_lint" ]; then
-      cabal new-build --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j2 .;
-      cabal new-build -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx" ]; then
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions -w ${HC} -j2 .;
       cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j1 .;
