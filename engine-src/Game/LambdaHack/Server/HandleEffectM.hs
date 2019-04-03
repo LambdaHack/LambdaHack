@@ -185,21 +185,21 @@ kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
                       | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
-        effectAndDestroyAndAddKill voluntary killer False kineticPerformed
+        effectAndDestroyAndAddKill voluntary killer False True kineticPerformed
                                    source target iid c
                                    False (itemFull, kit) mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId -> Bool -> Bool
-                           -> ActorId -> ActorId -> ItemId -> Container
-                           -> Bool ->  ItemFullKit -> Bool
+                           -> Bool -> ActorId -> ActorId -> ItemId -> Container
+                           -> Bool -> ItemFullKit -> Bool
                            -> m ()
-effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
-                           source target iid container
+effectAndDestroyAndAddKill voluntary killer onSmashOnly useAllCopies
+                           kineticPerformed source target iid container
                            periodic (itemFull, kit) mayDestroy = do
   tbOld <- getsState $ getActorBody target
-  effectAndDestroy onSmashOnly kineticPerformed source target iid container
-                   periodic (itemFull, kit) mayDestroy
+  effectAndDestroy onSmashOnly useAllCopies kineticPerformed source target
+                   iid container periodic (itemFull, kit) mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -213,10 +213,11 @@ effectAndDestroyAndAddKill voluntary killer onSmashOnly kineticPerformed
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
 
 effectAndDestroy :: MonadServerAtomic m
-                 => Bool -> Bool -> ActorId -> ActorId -> ItemId -> Container
+                 => Bool -> Bool -> Bool
+                 -> ActorId -> ActorId -> ItemId -> Container
                  -> Bool -> ItemFullKit -> Bool
                  -> m ()
-effectAndDestroy onSmashOnly kineticPerformed
+effectAndDestroy onSmashOnly useAllCopies kineticPerformed
                  source target iid container periodic
                  ( itemFull@ItemFull{itemBase, itemDisco, itemKindId, itemKind}
                  , (itemK, itemTimer) ) mayDestroy = do
@@ -270,7 +271,7 @@ effectAndDestroy onSmashOnly kineticPerformed
     let effsManual = if not periodic && IA.checkFlag Ability.Periodic arItem
                      then take 1 effs  -- may be empty
                      else effs
-    triggeredEffect <- itemEffectDisco onSmashOnly kineticPerformed
+    triggeredEffect <- itemEffectDisco useAllCopies kineticPerformed
                                        source target iid itemKindId itemKind
                                        container periodic effsManual
     let triggered = if kineticPerformed then UseUp else triggeredEffect
@@ -330,14 +331,14 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
 -- until we want to add sticky armor that can't be easily taken off
 -- (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
-                => Bool -> Bool -> ActorId -> ActorId -> ItemId
+                => Bool -> Bool-> ActorId -> ActorId -> ItemId
                 -> ContentId ItemKind -> ItemKind
                 -> Container -> Bool -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco onSmashOnly kineticPerformed
+itemEffectDisco useAllCopies kineticPerformed
                 source target iid itemKindId itemKind
                 c periodic effs = do
-  urs <- mapM (effectSem onSmashOnly source target iid c periodic) effs
+  urs <- mapM (effectSem useAllCopies source target iid c periodic) effs
   let ur = case urs of
         [] -> UseDud  -- there was no effects
         _ -> maximum urs
@@ -355,8 +356,8 @@ effectSem :: MonadServerAtomic m
           => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
           -> IK.Effect
           -> m UseResult
-effectSem onSmashOnly source target iid c periodic effect = do
-  let recursiveCall = effectSem onSmashOnly source target iid c periodic
+effectSem useAllCopies source target iid c periodic effect = do
+  let recursiveCall = effectSem useAllCopies source target iid c periodic
   sb <- getsState $ getActorBody source
   pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
@@ -398,8 +399,7 @@ effectSem onSmashOnly source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbNoLonger _ ->
-      effectVerbNoLonger execSfxSource onSmashOnly source iid c
+    IK.VerbNoLonger _ -> effectVerbNoLonger useAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.Composite l -> effectComposite recursiveCall l
 
@@ -1371,9 +1371,10 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
         -- it is and we blame @aid@.
         voluntary = True
         onSmashOnly = True
-    effectAndDestroyAndAddKill
-      voluntary aid onSmashOnly False aid aid iid c False (itemFull, kit) True
-    -- Ine copy was destroyed (or none if the item was discharged),
+        useAllCopies = kMax >= k
+    effectAndDestroyAndAddKill voluntary aid onSmashOnly useAllCopies False
+                               aid aid iid c False (itemFull, kit) True
+    -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
     maybe (return ())
@@ -1861,21 +1862,13 @@ effectOneOf recursiveCall l = do
 -- ** VerbNoLonger
 
 effectVerbNoLonger :: MonadServerAtomic m
-                   => m () -> Bool -> ActorId -> ItemId -> Container
-                   -> m UseResult
-effectVerbNoLonger execSfx onSmashOnly source iid c = do
+                   => Bool -> m () -> ActorId -> m UseResult
+effectVerbNoLonger useAllCopies execSfx source = do
   b <- getsState $ getActorBody source
-  unless (bproj b) $  -- don't spam when projectiles activate
-    if onSmashOnly
-    then execSfx
-    else do
-      bag <- getsState $ getContainerBag c
-      case iid `EM.lookup` bag of
-        Just _ -> return ()  -- still some copies left
-        Nothing -> execSfx  -- last copy just destroyed on periodic activation
-  return UseUp  -- if the item no longer in the container, doesn't matter;
-                -- otherwise, announcing always successful and this helps
-                -- to destroy the item (e.g., condition)
+  when (useAllCopies  -- @UseUp@ below ensures that if all used, all destroyed
+        && not (bproj b)) $  -- no spam when projectiles activate
+    execSfx  -- announce that all copies have run out (or whatever message)
+  return UseUp  -- help to destroy the copy, even if not all used up
 
 -- ** VerbMsg
 
@@ -1883,7 +1876,8 @@ effectVerbMsg :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectVerbMsg execSfx source = do
   b <- getsState $ getActorBody source
   unless (bproj b) execSfx  -- don't spam when projectiles activate
-  return UseUp
+  return UseUp  -- announcing always successful and this helps
+                -- to destroy the item
 
 -- ** Composite
 

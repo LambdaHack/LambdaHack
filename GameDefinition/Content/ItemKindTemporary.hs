@@ -7,12 +7,12 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Flavour
-import Game.LambdaHack.Content.ItemKind
 
 temporaries :: [ItemKind]
 temporaries =
@@ -36,8 +36,10 @@ tmpAspects name aspects = ItemKind
   , iaspects = -- timeout is 0; activates and vanishes soon,
                -- depending on initial timer setting
                aspects ++ [SetFlag Periodic, SetFlag Fragile, SetFlag Condition]
-  , ieffects = [ verbMsgNoLonger name
-               , OnSmash $ verbMsgNoLonger name ]
+  , ieffects = [ OnSmash $ verbMsgLess name  -- announce partial neutralization
+               -- not spamming for normal periodic wear each turn
+               , OnSmash $ verbMsgNoLonger name  -- for forced neutralization
+               , verbMsgNoLonger name ]  -- for periodic wear of last copy
                    -- needed also under @OnSmash@ to display when item removed
                    -- via @DropItem@ and not via activating all copies in turn
   , idesc    = ""  -- no description needed; powers are enough

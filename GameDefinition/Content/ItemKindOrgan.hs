@@ -501,7 +501,8 @@ impressed = armoredSkin
                                   -- all impressions gone
                , SetFlag Condition ]  -- this is really a condition,
                                       -- just not a timed condition
-  , ieffects = [OnSmash $ verbMsgNoLonger "impressed"]  -- not Periodic
+  , ieffects = [ OnSmash $ verbMsgLess "impressed"
+               , OnSmash $ verbMsgNoLonger "impressed" ]  -- not Periodic
   , idesc    = "Being impressed by one's adversary sounds like fun, but on battlefield it equals treason. Almost. Throw in depleted battle calm and it leads to mindless desertion outright."
   }
 

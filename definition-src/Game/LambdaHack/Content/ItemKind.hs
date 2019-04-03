@@ -6,8 +6,8 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect
   , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind, isEffEscape
   , isEffEscapeOrAscend, timeoutAspect, onSmashEffect, damageUsefulness
-  , verbMsgNoLonger, toVelocity, toLinger, timerNone, isTimerNone, foldTimer
-  , toOrganBad, toOrganGood, toOrganNoTimer
+  , verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
+  , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , boostItemKind, validateSingle, validateAll, validateDups, validateDamage
@@ -136,7 +136,7 @@ data Effect =
   | ApplyPerfume          -- ^ remove all smell on the level
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect
-      -- ^ trigger the effect when item smashed (not when applied nor meleed)
+      -- ^ trigger the effect when item smashed (not when applied nor meleed);
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
@@ -271,6 +271,9 @@ damageUsefulness itemKind =
 
 verbMsgNoLonger :: Text -> Effect
 verbMsgNoLonger name = VerbNoLonger $ "be no longer" <+> name
+
+verbMsgLess :: Text -> Effect
+verbMsgLess name = VerbMsg $ "look less" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
