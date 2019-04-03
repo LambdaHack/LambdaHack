@@ -369,14 +369,12 @@ applyPeriodicLevel = do
           -- Check if the item is still in the bag (previous items act!).
           b2 <- getsState $ getActorBody aid
           bag <- getsState $ getBodyStoreBag b2 cstore
-          case iid `EM.lookup` bag of
-            Nothing -> return ()  -- item dropped
-            Just kit ->
-              -- Activate even if effects null or vacuous, to possibly
-              -- destroy the item.
-              effectAndDestroyAndAddKill
-                True aid False True False
-                aid aid iid (CActor aid cstore) True (itemFull, kit) True
+          when (iid `EM.member` bag) $  -- check that item not dropped
+            -- Activate even if effects null or vacuous, to possibly
+            -- destroy the item.
+            effectAndDestroyAndAddKill True aid False True False
+                                       aid aid iid (CActor aid cstore)
+                                       True itemFull True
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds

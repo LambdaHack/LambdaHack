@@ -186,20 +186,19 @@ kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         effectAndDestroyAndAddKill voluntary killer False True kineticPerformed
-                                   source target iid c
-                                   False (itemFull, kit) mayDestroy
+                                   source target iid c False itemFull mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId -> Bool -> Bool
                            -> Bool -> ActorId -> ActorId -> ItemId -> Container
-                           -> Bool -> ItemFullKit -> Bool
+                           -> Bool -> ItemFull -> Bool
                            -> m ()
 effectAndDestroyAndAddKill voluntary killer onSmashOnly useAllCopies
                            kineticPerformed source target iid container
-                           periodic (itemFull, kit) mayDestroy = do
+                           periodic itemFull mayDestroy = do
   tbOld <- getsState $ getActorBody target
   effectAndDestroy onSmashOnly useAllCopies kineticPerformed source target
-                   iid container periodic (itemFull, kit) mayDestroy
+                   iid container periodic itemFull mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -215,13 +214,15 @@ effectAndDestroyAndAddKill voluntary killer onSmashOnly useAllCopies
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> Bool -> Bool
                  -> ActorId -> ActorId -> ItemId -> Container
-                 -> Bool -> ItemFullKit -> Bool
+                 -> Bool -> ItemFull -> Bool
                  -> m ()
 effectAndDestroy onSmashOnly useAllCopies kineticPerformed
                  source target iid container periodic
-                 ( itemFull@ItemFull{itemBase, itemDisco, itemKindId, itemKind}
-                 , (itemK, itemTimer) ) mayDestroy = do
-  let effs = if onSmashOnly
+                 itemFull@ItemFull{itemBase, itemDisco, itemKindId, itemKind}
+                 mayDestroy = do
+  bag <- getsState $ getContainerBag container
+  let (itemK, itemTimer) = bag EM.! iid
+      effs = if onSmashOnly
              then IK.strengthOnSmash itemKind
              else IK.ieffects itemKind
       arItem = case itemDisco of
@@ -1358,7 +1359,7 @@ dropCStoreItem :: MonadServerAtomic m
                => Bool -> CStore -> ActorId -> Actor -> Int
                -> ItemId -> ItemQuant
                -> m ()
-dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
+dropCStoreItem verbose store aid b kMax iid (k, _) = do
   itemFull@ItemFull{itemBase} <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       c = CActor aid store
@@ -1373,7 +1374,7 @@ dropCStoreItem verbose store aid b kMax iid kit@(k, _) = do
         onSmashOnly = True
         useAllCopies = kMax >= k
     effectAndDestroyAndAddKill voluntary aid onSmashOnly useAllCopies False
-                               aid aid iid c False (itemFull, kit) True
+                               aid aid iid c False itemFull True
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c

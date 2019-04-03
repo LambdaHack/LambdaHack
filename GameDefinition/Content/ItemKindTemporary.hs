@@ -22,6 +22,8 @@ tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulne
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
+-- The messages are needed also under @OnSmash@ to display when item removed
+-- via @DropItem@ and not via natural periodic activation.
 tmpAspects :: Text -> [Aspect] -> ItemKind
 tmpAspects name aspects = ItemKind
   { isymbol  = '+'
@@ -40,8 +42,6 @@ tmpAspects name aspects = ItemKind
                -- not spamming for normal periodic wear each turn
                , OnSmash $ verbMsgNoLonger name  -- for forced neutralization
                , verbMsgNoLonger name ]  -- for periodic wear of last copy
-                   -- needed also under @OnSmash@ to display when item removed
-                   -- via @DropItem@ and not via activating all copies in turn
   , idesc    = ""  -- no description needed; powers are enough
   , ikit     = []
   }
