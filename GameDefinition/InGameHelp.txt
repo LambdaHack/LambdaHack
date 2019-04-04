@@ -57,7 +57,7 @@ Item menu commands.
  g or ,       grab item(s)
  d or .       drop item(s)
  f            fling projectile
- C-f          fling without aiming
+ C-f          auto-fling and keep choice
  a            apply consumable
  C-a          apply and keep choice
  p or i       pack item

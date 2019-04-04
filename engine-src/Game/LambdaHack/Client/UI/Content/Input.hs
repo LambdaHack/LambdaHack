@@ -204,9 +204,11 @@ projectI ts = ([], descIs ts, projectICmd ts)
 
 projectA :: [TriggerItem] -> CmdTriple
 projectA ts =
-  replaceCmd (ByAimMode AimModeCmd { exploration = AimTgt
-                                   , aiming = projectICmd ts })
-             (projectI ts)
+  let fling = Compose2ndLocal Project ItemClear
+      flingICmd = ComposeUnlessError (ChooseItemProject ts) fling
+  in replaceCmd (ByAimMode AimModeCmd { exploration = AimTgt
+                                      , aiming = flingICmd })
+                (projectI ts)
 
 flingTs :: [TriggerItem]
 flingTs = [TriggerItem { tiverb = "fling"

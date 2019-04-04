@@ -81,7 +81,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("period", dropItems "")
   , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
   , ("C-f", addCmdCategory CmdItemMenu
-            $ replaceDesc "fling without aiming" $ projectI flingTs)
+            $ replaceDesc "auto-fling and keep choice"
+            $ projectI flingTs)
   , ("a", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-a", addCmdCategory CmdItemMenu
             $ replaceDesc "apply and keep choice" $ applyIK applyTs)

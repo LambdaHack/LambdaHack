@@ -334,6 +334,8 @@ chooseItemProjectHuman ts = do
       case itemSel of
         Just (_, _, True) -> return Nothing
         Just (iid, fromCStore, False) -> do
+          -- We don't validate vs @ts@ here, because player has selected
+          -- this item, so he knows what he's doing (unless really absurd).
           itemFull <- getsState $ itemToFull iid
           bag <- getsState $ getBodyStoreBag b fromCStore
           case iid `EM.lookup` bag of
@@ -511,6 +513,8 @@ chooseItemApplyHuman ts = do
   case itemSel of
     Just (_, _, True) -> return Nothing
     Just (iid, fromCStore, False) -> do
+      -- We don't validate vs @ts@ here, because player has selected
+      -- this item, so he knows what he's doing (unless really absurd).
       itemFull <- getsState $ itemToFull iid
       bag <- getsState $ getBodyStoreBag b fromCStore
       mp <- permittedApplyClient
