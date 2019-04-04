@@ -21,12 +21,12 @@ import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Core.Frequency
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 
@@ -309,14 +309,15 @@ setTargetFromTactics oldAid = do
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
   let explore = void $ refreshTarget (oldAid, oldBody)
-      setPath mtgt = case mtgt of
-        Nothing -> return False
-        Just TgtAndPath{tapTgt=leaderTapTgt} ->
-          if Just leaderTapTgt == (tapTgt <$> moldTgt)
-          then do
+      setPath mtgt = case (mtgt, moldTgt) of
+        (Nothing, _) -> return False
+        ( Just TgtAndPath{tapTgt=leaderTapTgt},
+          Just TgtAndPath{tapTgt=oldTapTgt,tapPath=Just oldTapPath} )
+          | leaderTapTgt == oldTapTgt  -- targets agree
+            && bpos oldBody == pathSource oldTapPath -> do  -- nominal path
             void $ refreshTarget (oldAid, oldBody)
             return True  -- already on target
-          else do
+        (Just TgtAndPath{tapTgt=leaderTapTgt}, _) -> do
             tap <- createPath oldAid leaderTapTgt
             case tap of
               TgtAndPath{tapPath=Nothing} -> return False

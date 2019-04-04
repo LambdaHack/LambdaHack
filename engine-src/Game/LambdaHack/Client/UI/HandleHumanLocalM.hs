@@ -70,6 +70,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -80,7 +81,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind (fhasGender)
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -871,7 +871,7 @@ moveXhairHuman dir n = do
   else do
     let sxhair = case xhair of
           Just TVector{} -> Just $ TVector $ newPos `vectorToFrom` lpos
-          _ -> Just $ TPoint TUnknown lidV newPos
+          _ -> Just $ TPoint TKnown lidV newPos
     modifySession $ \sess -> sess {sxhair}
     doLook
     return Nothing
