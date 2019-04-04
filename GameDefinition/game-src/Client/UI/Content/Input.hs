@@ -2,6 +2,10 @@
 -- via macros in the config file.
 module Client.UI.Content.Input
   ( standardKeysAndMouse
+#ifdef EXPOSE_INTERNAL
+    -- * Internal operations
+  , closeDoorTriggers, applyTs
+#endif
   ) where
 
 import Prelude ()
@@ -78,15 +82,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
   , ("C-f", addCmdCategory CmdItemMenu
             $ replaceDesc "fling without aiming" $ projectI flingTs)
-  , ("a", addCmdCategory CmdItemMenu $ applyI [TriggerItem
-            { tiverb = "apply"
-            , tiobject = "consumable"
-            , tisymbols = "!,?/" }])
+  , ("a", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-a", addCmdCategory CmdItemMenu
-            $ replaceDesc "apply and keep choice" $ applyIK [TriggerItem
-              { tiverb = "apply"
-              , tiobject = "consumable"
-              , tisymbols = "!,?/" }])
+            $ replaceDesc "apply and keep choice" $ applyIK applyTs)
   , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
                          "item" False)
   , ("i", replaceDesc "" $ moveItemTriple [CGround, CEqp, CSha] CInv
@@ -274,3 +272,8 @@ closeDoorTriggers =
                 , ttobject = "door"
                 , ttfeature = TK.CloseTo "closed horizontal door Dark" }
   ]
+
+applyTs :: [TriggerItem]
+applyTs = [TriggerItem { tiverb = "apply"
+                       , tiobject = "consumable"
+                       , tisymbols = "!,?/" }]
