@@ -185,8 +185,9 @@ kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
                       | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
-        effectAndDestroyAndAddKill voluntary killer False True kineticPerformed
-                                   source target iid c False itemFull mayDestroy
+        effectAndDestroyAndAddKill
+          voluntary killer False (fst kit <= 1) kineticPerformed
+          source target iid c False itemFull mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> ActorId -> Bool -> Bool
@@ -351,8 +352,6 @@ itemEffectDisco useAllCopies kineticPerformed
 -- | Source actor affects target actor, with a given effect and it strength.
 -- Both actors are on the current level and can be the same actor.
 -- The item may or may not still be in the container.
--- The boolean result indicates if the effect actually fired up,
--- as opposed to fizzled.
 effectSem :: MonadServerAtomic m
           => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
           -> IK.Effect
