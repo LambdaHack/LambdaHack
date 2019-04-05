@@ -394,16 +394,14 @@ projectCheck tpos = do
              then return $ Just ProjectBlockActor
              else return Nothing
 
--- | Check whether one is permitted to aim (for projecting) at a target
--- (this is only checked for actor targets so that the player doesn't miss
--- enemy getting out of sight; but for positions we let player
--- shoot at obstacles, e.g., to destroy them, and shoot at a lying item
--- and then at its posision, after enemy picked up the item).
--- Returns a different @seps@ if needed to reach the target actor.
+-- | Check whether one is permitted to aim (for projecting) at a target.
+-- The check is stricter for actor targets, assuming the player simply wants
+-- to hit a single actor. In order to fine tune trick-shots, e.g., piercing
+-- many actors, other aiming modes should be used.
+-- Returns a different @seps@ if needed to reach the target.
 --
--- Note: Perception is not enough for the check,
--- because the target actor can be obscured by a glass wall
--- or be out of sight range, but in weapon range.
+-- Note: Simple Perception check is not enough for the check,
+-- e.g., because the target actor can be obscured by a glass wall.
 xhairLegalEps :: MonadClientUI m => m (Either Text Int)
 xhairLegalEps = do
   leader <- getLeaderUI
@@ -437,7 +435,7 @@ xhairLegalEps = do
       return $ Left "selected opponent not visible"
     Just (TPoint _ lid pos) ->
       if lid == lidV
-      then findNewEps False pos
+      then findNewEps True pos  -- @True@ to help pierce many foes, etc.
       else return $ Left "can't fling at a target on remote level"
     Just (TVector v) -> do
       -- Not @ScreenContent@, because not drawing here.
@@ -445,7 +443,7 @@ xhairLegalEps = do
       let shifted = shiftBounded rXmax rYmax (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
-      else findNewEps True shifted  -- True, because the goal is vague anyway
+      else findNewEps True shifted  -- @True@, because the goal is vague anyway
 
 posFromXhair :: (MonadClient m, MonadClientUI m) => m (Either Text Point)
 posFromXhair = do
