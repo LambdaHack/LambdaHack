@@ -20,6 +20,7 @@ import qualified Data.Text as T
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
@@ -27,7 +28,6 @@ import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Frequency
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
@@ -142,7 +142,7 @@ buildPlace cops@COps{coplace, coTileSpeedup}
   -- A false positive is walled staircases in LambdaHack, but it's OK.
   dark <- if cpassable
              && not (dnight && Tile.isLit coTileSpeedup darkCorTile)
-                  -- the collonade can be illuminated just as the trail is
+                  -- the colonnade can be illuminated just as the trail is
              && (pfence kr `elem` [FFloor, FGround]
                  || pfence kr == FNone && smallPattern)
           then return dnight

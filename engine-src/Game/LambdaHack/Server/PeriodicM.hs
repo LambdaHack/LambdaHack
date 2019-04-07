@@ -30,6 +30,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -39,7 +40,6 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Core.Frequency
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -311,7 +311,7 @@ leadLevelSwitch = do
                 -- to the frontline level and so prevent human from killing
                 -- monsters at numerical advantage.
                 -- However, an AI boss that can't move between levels
-                -- distrupts this by hogging leadership. To prevent that,
+                -- disrupts this by hogging leadership. To prevent that,
                 -- assuming the boss resides below the frontline level,
                 -- only the two shallowest levels that are not yet fully
                 -- explored are considered to choose the new leader from.
@@ -324,10 +324,10 @@ leadLevelSwitch = do
             -- Actors on desolate levels (not many own or enemy non-projectiles)
             -- tend to become (or stay) leaders so that they can join the main
             -- force where it matters ASAP. Unfortunately, this keeps hero
-            -- scouts as leader, but foes spawn very fast earlyon ,
-            -- so they give back leadership rather quicly to let others follow.
-            -- We could also ignore non-mobile and sleeping actors, but probably
-            -- not too much noise from that.
+            -- scouts as leader, but foes spawn very fast early on ,
+            -- so they give back leadership rather quickly to let others follow.
+            -- We count non-mobile and sleeping actors, because they may
+            -- be dangerous, especially if adjacent to stairs.
             let freqList = [ (k, (lid, aid))
                            | ((lid, lvl), (_, (aid, _) : _)) <- ours
                            , let len = min 20 (EM.size $ lbig lvl)
