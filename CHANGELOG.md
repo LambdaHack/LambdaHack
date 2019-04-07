@@ -1,5 +1,156 @@
 ## [v0.9.3.0, aka 'Velvet smoking jacket'](https://github.com/LambdaHack/LambdaHack/compare/v0.8.3.0...v0.9.3.0)
 
+- Introduce message classes with configurable behaviour
+- Create a new 16x16 font and use it everywhere; tweak smaller fonts
+- Lock some levels or otherwise make ascending tricky
+- Add cooldown to most melee weapons, display that in HUD, adjust AI
+- Add per-scenario and per-outcome end-game messages in content
+- Add duplicate and reroll item effects in preparation for crafting
+- Add actor and item analytics as a preparation for XP gain quests
+- Implement piercing projectiles that may share a tile with a big actor
+- Increase the spawn speed now that monsters sleep a lot
+- Introduce actors falling asleep and yelling
+- Allow any level size and position
+- Mention places when looking at tiles and add place lore menu
+- Expand all kinds of content and rebalance
+- Create and rework all item, cave and plot prose (Dan Keefe @Peritract)
+- Make explosives in cramped spaces twice weaker
+- Tweak player fling command
+- Tweak equipping when equipment overfull
+- Start cycling stores at equipment since that's the one mentioned in help
+- Overhaul CI scripts
+- Restructure and clean up codebase
+- Extend balance debugging tools, using item and actor analytics, places, etc.
+- Drop the gameplay option that first death means defeat
+- Avoid idle-GC between slow keystrokes
+- Put content data into a compact region to limit GC
+- Remove the border around web frontend game screen; seems unneeded now
+- Don't draw aiming line nor path in vty frontend
+- Highlight xhair by cursor in vty frontend
+- Highlight player by cursor in vty frontend
+- Switch the default FPS to 24 for tradition's sake
+- Highlight current high score
+- Remove most stopPlayBack, now spurious, because message classes used
+- Overhaul cabal file: define common options, split into internal libraries
+- Fix confusion of nub and uniq
+- Rename short wait to lurk and many lurks to heed
+- Show a red message when HP or Calm dip too low or when foe appears
+- Lose Calm and so alert AI even at weakest non-zero HP draining attacks
+- Enable screenshots while in menus
+- Rename config options related to fonts
+- Recolour aiming line not to clash with the red crosshair
+- Exchange the functions of yellow and red highlight
+- Tweak all colours, in particular to differentiate blues/cyans
+- Cap bright colours at 85 CIELAB Lightness at D65
+- Normalize dark colours to be between 42 and 57 CIELAB Lightness at D65
+- Get rid of colorIsBold option; KISS
+- Tint white in alternating lines with different hue for long text readability
+- Don't split lines at articles
+- Set xhair to currently meleed foe to see his HP
+- Display speed on HUD; tweak status lines in other ways
+- Don't show description of leader target in HUD; TMI
+- Help AI flee in a consistent direction over many turns
+- Expose the save backup command, for browser games
+- Don't display target info when item selected
+- Let AI actors spawn even quite far from the player
+- Auto-select all new team members, to help new players
+- Replace O by zero on the map display; make zero distinct from O in all fonts
+- Flesh out the initial ? prompt
+- Add 'I' alias for pack-related commands, unless laptop key-scheme used
+- Turn off movementLaptopKeys by default not to confuse new players
+- Make sure AI attacks bosses even if distant and fleeing or non-moving
+- Lower bonus HP at extreme difficulty
+- Add a separate frame for each projectiles start
+- Don't go modal at the frequent and weak hidden tile detection effect
+- Make AI pick closest stairs more often
+- Let apply-unskilled actors activate embedded items
+- Don't boost damage by speed unless actor is projectile
+- If everything else fails, let AI flee by opening doors
+- Help AI actor prevent being dominated
+- Make computing gameplay benefit to items more accurate
+- Rename, clone and fine-tune effect Temporary
+- Simplify code and content by getting rid of Recharging effect
+- Let applying periodic items only produce the first effect
+- Tweak item detection to help in skipping boring level portions and in stealth
+- Invoke and display embedded items in the order specified in tile definitions
+- Let lit trails illuminate colonnades
+- Prevent an exploit for avoiding self-invoked firecrackers
+- Don't let AI attempt summoning if not enough Calm
+- Improve item label bracket codes in menus
+- Pick randomly destination stairs if teleporting level
+- Display the number of items in store
+- Summarize value of player loot in shared stash menu's header
+- Start history menu at the close-up of the last message
+- Make fast-dying insects aggressive
+- Overhaul game score DSL and particular scoring definitions in content
+- Add and extend messages, e.g., tell if victim blocks and with what armor
+- Extend and rework menu manipulation keys
+- Remove specialized quaff, read and throw commands; KISS
+- Split walls of text into more paragraphs and/or make them narrower
+- Extend and update help and manual
+- Don't let AI waste time looting distant lone projectiles
+- Make Enum instances of Point and Vector contiguous, hackily
+- Make dominated actor drop all his items, for ID and in case he defects ASAP
+- Try to find a non-waiting action, if better AI leader can't be found
+- Prevent summoning OoD actors
+- Let animals eat food and add several foods
+- Make Domination effect harder to activate
+- Let only actors and items with SkOdor property leave smell and add perfumes
+- Let spawning rate level out after a few dozen spawns
+- Describe smell, if present in an inspected tile
+- Let pushed actor fly after crashing a door open
+- Show passing time and heard events even if no actors in the UI faction
+- When movement impossible, describe the tile with SHIFT-direction
+- Catch and steal projectiles when braced instead of when weaponless
+- Let actors that are pushed perform any action in addition to movement
+- Improve deduplication of messages
+- When describing actor on map, tell if it has loot
+- Represent being braced as having an organ; also add other pseudo-organs
+- Overhaul hearing to facilitate triangulation based on sound cues
+- Prefer to spawn aquatic actors on aquatic tiles
+- Add swimming and flying skills and shallow water tile features
+- Boost/drain skills via many new items
+- Rework and extend skills and their effects as a preparation for XP rewards
+- Enable specifying each side of outer cave fence separately
+- Make definition of caves of a scenario more precise
+- Specify more properties of levels in content
+- Extend content validation
+- Improve placement and fitting stairs and rooms on levels
+- Don't hardwire level size
+- Simplify game rules content
+- Change the format of game client content
+- Fix an arbitrary delay in killing dying actors
+- Fix arbitrary branch of a corridor chosen when running
+- Fix bush patches blocking off a level's corner
+- Fix config file ignored at game reinit
+- Fix running disturbed by flavours of walls
+- Fix splitting lines one character too early
+- Fix Calm drain from nearby foes occurring only every other turn
+- Fix some AI looping movement, in particular when fleeing
+- Fix running into own periodic explosions, e.g., from necklaces
+- Fix 'she painfullies collide'
+- Fix AI with vector targets unwilling to change them
+- Fix crash when attempting to fling at a target on remote level
+- Fix wrong timestamps in history
+- Fix, again, various kinds of frames intruding between fadeout and fadein
+- Fix wrong pluralization of some item names, compound and exceptions
+- Fix disabled items benefit recalculation after item kind learned
+- Fix in many ways too close initial faction and item positions
+- Fix performance in many ways and places, particularly for JS translation
+- Fix missing perception updates, causing missed AI actions concerning us
+- Fix uninitialized sarenas, which was probably causing resume to change state
+- Fix weak AI actors fleeing even if enemy can't melee
+- Fix and optimize sifting free tiles for spawn/summon location
+- Fix various cases of excessive summoning
+- Fix recording of item first seen level
+- Fix many problems with item descriptions and other messages
+- Fix reporting of reduction and elimination of actor conditions
+- Fix reading and interpreting old format config files
+- Fix synced initial item timeouts and actor times, leading to artificial feel
+- Fix actors erratically following their leader
+- Fix lifts continuing as stars and the other way around
+- Fix various 32bit overflows
+- Fix other errors, probably not present or not visible in previous version
 
 ## [v0.8.3.0](https://github.com/LambdaHack/LambdaHack/compare/v0.8.1.2...v0.8.3.0)
 
