@@ -53,6 +53,8 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -65,8 +67,6 @@ import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -127,10 +127,19 @@ targetDesc mtarget = do
           return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
     Nothing -> return (Nothing, Nothing)
 
-targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe Text)
+targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe (Text, Watchfulness))
 targetDescXhair = do
   sxhair <- getsSession sxhair
-  targetDesc sxhair
+  (mhairDesc, mxhairHP) <- targetDesc sxhair
+  case mxhairHP of
+    Nothing -> return (mhairDesc, Nothing)
+    Just tHP -> do
+      let aid = case sxhair of
+            Just (TEnemy a) -> a
+            Just (TNonEnemy a) -> a
+            _ -> error $ "HP text for non-actor target" `showFailure` sxhair
+      watchfulness <- bwatch <$> getsState (getActorBody aid)
+      return $ (mhairDesc, Just (tHP, watchfulness))
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
@@ -405,7 +414,7 @@ drawFrameStatus drawnLevelId = do
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
-  (mhairDesc, mxhairHP) <- targetDescXhair
+  (mhairDesc, mxhairHPWatchfulness) <- targetDescXhair
   lvl <- getLevel drawnLevelId
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -456,7 +465,7 @@ drawFrameStatus drawnLevelId = do
             text = fromMaybe (pText <+> lText) mt
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText xhairPos mxhairHP
+      pathCsr = displayPathText xhairPos (fst <$> mxhairHPWatchfulness)
       trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
         if T.length t <= n then t else T.take (n - 3) t <> "..."
       -- The indicators must fit, they are the actual information.
@@ -475,15 +484,18 @@ drawFrameStatus drawnLevelId = do
       nl = ES.size $ ES.fromList $ map (blid . snd) ours
       ns = EM.size $ gsha fact
       -- To be replaced by something more useful.
-      teamBlurb = trimTgtDesc widthTgt $
+      teamBlurb = textToAL $ trimTgtDesc widthTgt $
         makePhrase [ "Team:"
                    , MU.CarWs na "actor", "on"
                    , MU.CarWs nl "level" <> ","
                    , "stash", MU.Car ns ]
+      markSleepTgtDesc
+        | (snd <$> mxhairHPWatchfulness) /= Just WSleep = textToAL
+        | otherwise = textFgToAL Color.Green
       xhairBlurb =
         maybe teamBlurb (\t ->
-          (if isJust saimMode then "x-hair>" else "X-hair:")
-          <+> trimTgtDesc widthXhairOrItem t)
+          textToAL (if isJust saimMode then "x-hair>" else "X-hair:")
+          <+:> markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
         mhairDesc
       tgtOrItem
         | Just (iid, fromCStore, _) <- sitemSel
@@ -500,10 +512,10 @@ drawFrameStatus drawnLevelId = do
                 let (name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
-                return ("Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
+                return (textToAL $ "Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
         | otherwise =
             return (xhairBlurb, pathCsr)
-  (xhairText, pathXhairOrNull) <- tgtOrItem
+  (xhairLine, pathXhairOrNull) <- tgtOrItem
   damageStatus <- maybe (return []) (drawLeaderDamage widthTgt) mleader
   let damageStatusWidth = length damageStatus
       withForLeader = widthTgt - damageStatusWidth - 1
@@ -514,8 +526,8 @@ drawFrameStatus drawnLevelId = do
       damageGap = emptyAttrLine
                   $ widthTgt - damageStatusWidth - T.length leaderBottom
       xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
-                                         - T.length xhairText)
-      xhairStatus = textToAL xhairText ++ xhairGap ++ textToAL pathXhairOrNull
+                                         - length xhairLine)
+      xhairStatus = xhairLine ++ xhairGap ++ textToAL pathXhairOrNull
       selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
                                                - selectedStatusWidth
                                                - length speedStatus)
