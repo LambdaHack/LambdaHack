@@ -459,12 +459,15 @@ computeTarget aid = do
           pickNewTarget
         TNonEnemy a -> do
           body <- getsState $ getActorBody a
-          -- Update path. If impossible, pick another target.
-          mpath <- getCachePath aid $ bpos body
-          case mpath of
-            Nothing -> pickNewTarget
-            Just AndPath{pathList=[]} -> pickNewTarget
-            _ -> return $ Just tap{tapPath=mpath}
+          if blid body /= blid b  -- wrong level
+          then pickNewTarget
+          else do
+            -- Update path. If impossible, pick another target.
+            mpath <- getCachePath aid $ bpos body
+            case mpath of
+              Nothing -> pickNewTarget
+              Just AndPath{pathList=[]} -> pickNewTarget
+              _ -> return $ Just tap{tapPath=mpath}
         TVector{} -> if pathLen > 1
                      then return $ Just tap
                      else pickNewTarget

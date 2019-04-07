@@ -691,6 +691,7 @@ destroyActorUI destroy aid b = do
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
             TPoint (TEnemyPos a) (blid b) (bpos b)
+        Just (TNonEnemy a) | a == aid -> Just $ TPoint TKnown (blid b) (bpos b)
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
   unless (bproj b) $
