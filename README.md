@@ -8,7 +8,7 @@ LambdaHack
 LambdaHack is a Haskell[1] game engine library for ASCII roguelike[2]
 games of arbitrary theme, size and complexity, with optional
 tactical squad combat. It's packaged together with a sample
-dungeon crawler in fantasy setting that can be tried out
+dungeon crawler in wierd fantasy setting that can be tried out
 in the browser at http://lambdahack.github.io.
 (It runs fastest on Chrome. Keyboard commands and savefiles
 are supported only on recent enough versions of browsers.
@@ -83,14 +83,13 @@ e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,
 you may prefer to use a native binary for your architecture, if it exists.
 
-Pre-compiled game binaries are available through
-the release page[11] (and, for Windows, continuously from AppVeyor[18]).
+Pre-compiled game binaries are available through the release page[11].
 To use a pre-compiled binary archive, unpack it and run the executable
 in the unpacked directory or use program shortcuts from the installer,
 if available.
 
 On Linux, make sure you have the SDL2 libraries installed on your system
-(e.g., libsdl2-2.0-0, libsdl2-ttf-2.0-0 on Ubuntu).
+(e.g., libsdl2-2.0-0 and libsdl2-ttf-2.0-0 on Ubuntu).
 On Mac OS X, you need SDL2 installed, e.g.,
 from [libsdlorg](https://www.libsdl.org/download-2.0.php).
 For Windows, the SDL2 and all other needed libraries are already
@@ -252,17 +251,16 @@ Have fun!
 
 
 
-[1]: http://www.haskell.org/
+[1]: https://www.haskell.org/
 [2]: http://roguebasin.roguelikedevelopment.org/index.php?title=Berlin_Interpretation
-[3]: http://hackage.haskell.org/package/LambdaHack
+[3]: https://hackage.haskell.org/package/LambdaHack
 [4]: https://github.com/LambdaHack/LambdaHack/wiki
-[5]: http://github.com/LambdaHack/LambdaHack
+[5]: https://github.com/LambdaHack/LambdaHack
 [6]: http://allureofthestars.com
-[7]: http://www.haskell.org/platform
+[7]: https://www.haskell.org/platform
 [8]: https://github.com/tuturto/space-privateers
 [9]: https://github.com/LambdaHack/LambdaHack/wiki/Sample-dungeon-crawler
 [10]: https://github.com/AllureOfTheStars/Allure
 [11]: https://github.com/LambdaHack/LambdaHack/releases
 [15]: https://github.com/ghcjs/ghcjs
 [16]: https://www.npmjs.com/package/google-closure-compiler
-[18]: https://ci.appveyor.com/project/Mikolaj/lambdahack/build/artifacts
