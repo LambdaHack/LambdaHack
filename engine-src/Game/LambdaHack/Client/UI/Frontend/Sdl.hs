@@ -46,9 +46,9 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
@@ -469,6 +469,8 @@ keyTranslate shiftPressed n = case n of
   KeycodeInsert     -> K.Insert
   KeycodeDelete     -> K.Delete
   KeycodePrintScreen -> K.PrintScreen
+  KeycodeClear -> K.Begin
+  KeycodeKPClear -> K.Begin
   KeycodeKPDivide   -> if shiftPressed then K.Char '?' else K.Char '/'
                          -- KP and normal are merged here
   KeycodeKPMultiply -> K.KP '*'
