@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
     -- * Internal operations
   , permittedProjectClient, projectCheck, xhairLegalEps, posFromXhair
   , permittedApplyClient, selectAid, eitherHistory, endAiming, endAimingMsg
-  , doLook, flashAiming, xhairPointerFloor, xhairPointerEnemy
+  , doLook, flashAiming
 #endif
   ) where
 
@@ -1102,11 +1102,21 @@ xhairStairHuman up = do
 xhairPointerFloorHuman :: MonadClientUI m => m ()
 xhairPointerFloorHuman = do
   saimMode <- getsSession saimMode
-  xhairPointerFloor False
+  aimPointerFloorHuman
   modifySession $ \sess -> sess {saimMode}
 
-xhairPointerFloor :: MonadClientUI m => Bool -> m ()
-xhairPointerFloor verbose = do
+-- * XhairPointerEnemy
+
+xhairPointerEnemyHuman :: MonadClientUI m => m ()
+xhairPointerEnemyHuman = do
+  saimMode <- getsSession saimMode
+  aimPointerEnemyHuman
+  modifySession $ \sess -> sess {saimMode}
+
+-- * AimPointerFloor
+
+aimPointerFloorHuman :: MonadClientUI m => m ()
+aimPointerFloorHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1121,19 +1131,13 @@ xhairPointerFloor verbose = do
       sess { saimMode = Just $ AimMode lidV
            , sxhair
            , sxhairMoused }
-    if verbose then doLook else flashAiming
+    doLook
   else stopPlayBack
 
--- * XhairPointerEnemy
+-- * AimPointerEnemy
 
-xhairPointerEnemyHuman :: MonadClientUI m => m ()
-xhairPointerEnemyHuman = do
-  saimMode <- getsSession saimMode
-  xhairPointerEnemy False
-  modifySession $ \sess -> sess {saimMode}
-
-xhairPointerEnemy :: MonadClientUI m => Bool -> m ()
-xhairPointerEnemy verbose = do
+aimPointerEnemyHuman :: MonadClientUI m => m ()
+aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
@@ -1161,15 +1165,5 @@ xhairPointerEnemy verbose = do
       sess { saimMode = Just $ AimMode lidV
            , sxhairMoused
            , sxhair }
-    if verbose then doLook else flashAiming
+    doLook
   else stopPlayBack
-
--- * AimPointerFloor
-
-aimPointerFloorHuman :: MonadClientUI m => m ()
-aimPointerFloorHuman = xhairPointerFloor True
-
--- * AimPointerEnemy
-
-aimPointerEnemyHuman :: MonadClientUI m => m ()
-aimPointerEnemyHuman = xhairPointerEnemy True
