@@ -1534,9 +1534,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
                   - modifyDamageBySpeed rawDeltaHP speed
                 _ -> - rawDeltaHP
           in min 0 speedDeltaHP
-        deadliness = 1000 * (- sDamage) `div` max oneM (bhp tb)
+        deadliness = 1000 * (- sDamage) `div` max 1 (bhp tb)
         strongly
-          | bhp tb <= 0 = "cruelly"
           | deadliness >= 10000 = "artfully"
           | deadliness >= 5000 = "madly"
           | deadliness >= 2000 = "mercilessly"
