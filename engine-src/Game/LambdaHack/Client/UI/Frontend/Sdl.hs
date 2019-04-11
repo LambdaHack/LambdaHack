@@ -218,22 +218,23 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                                || SDL.keyModifierRightShift ksm
                 key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
                 modifier = modTranslate ksm
+                modifierNoShift =  -- to prevent S-!, etc.
+                  if modifier == K.Shift then K.NoModifier else modifier
             p <- SDL.getAbsoluteMouseLocation
             when (key == K.Esc) $ resetChanKey (fchanKey rf)
-            saveKMP rf modifier key (pointTranslate p)
+            saveKMP rf modifierNoShift key (pointTranslate p)
         SDL.MouseButtonEvent mouseButtonEvent
           | SDL.mouseButtonEventMotion mouseButtonEvent == SDL.Released -> do
-            md <- modTranslate <$> SDL.getModState
+            modifier <- modTranslate <$> SDL.getModState
             let key = case SDL.mouseButtonEventButton mouseButtonEvent of
                   SDL.ButtonLeft -> K.LeftButtonRelease
                   SDL.ButtonMiddle -> K.MiddleButtonRelease
                   SDL.ButtonRight -> K.RightButtonRelease
                   _ -> K.LeftButtonRelease  -- any other is spare left
-                modifier = if md == K.Shift then K.NoModifier else md
                 p = SDL.mouseButtonEventPos mouseButtonEvent
             saveKMP rf modifier key (pointTranslate p)
         SDL.MouseWheelEvent mouseWheelEvent -> do
-          md <- modTranslate <$> SDL.getModState
+          modifier <- modTranslate <$> SDL.getModState
           let SDL.V2 _ y = SDL.mouseWheelEventPos mouseWheelEvent
               mkey = case (compare y 0, SDL.mouseWheelEventDirection
                                           mouseWheelEvent) of
@@ -242,7 +243,6 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 (GT, SDL.ScrollNormal) -> Just K.WheelNorth
                 (LT, SDL.ScrollFlipped) -> Just K.WheelNorth
                 (GT, SDL.ScrollFlipped) -> Just K.WheelSouth
-              modifier = if md == K.Shift then K.NoModifier else md
           p <- SDL.getAbsoluteMouseLocation
           maybe (return ())
                 (\key -> saveKMP rf modifier key (pointTranslate p)) mkey
@@ -402,12 +402,12 @@ printScreen FrontendSession{..} = do
     void $! SDL.Raw.Video.saveBMP ptrOut fileNameCString
   SDL.Raw.Video.freeSurface ptrOut
 
--- | Translates modifiers to our own encoding, ignoring Shift.
+-- | Translates modifiers to our own encoding.
 modTranslate :: SDL.KeyModifier -> K.Modifier
 modTranslate m =
   modifierTranslate
     (SDL.keyModifierLeftCtrl m || SDL.keyModifierRightCtrl m)
-    False
+    (SDL.keyModifierLeftShift m || SDL.keyModifierRightShift m)
     (SDL.keyModifierLeftAlt m
      || SDL.keyModifierRightAlt m
      || SDL.keyModifierAltGr m)
