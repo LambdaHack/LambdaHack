@@ -47,17 +47,17 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , ChooseItemMenu (MStore CEqp) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
-               , "finish aiming/open main menu"
+               , "open main menu/finish aiming"
                , ByAimMode AimModeCmd { exploration = ExecuteIfClear MainMenu
                                       , aiming = Cancel } ))
   , ("C-Escape", ([CmdNoHelp], "", MainMenu))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
-               , "accept target/open dashboard"
+               , "open dashboard/accept target"
                , ByAimMode AimModeCmd { exploration = ExecuteIfClear Dashboard
                                       , aiming = Accept } ))
   , ("space", ( [CmdMinimal, CmdMeta]
-              , "clear messages/display history"
+              , "clear messages and show history"
               , ExecuteIfClear LastHistory ))
   , ("Tab", ( [CmdMove]
             , "cycle among party members on the level"
@@ -202,7 +202,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))
 
   -- Mouse
-  , ("LeftButtonRelease", mouseLMB)
+  , ( "LeftButtonRelease"
+    , mouseLMB goToCmd
+               "go to pointer for 25 steps/fling at enemy" )
+  , ( "S-LeftButtonRelease"
+    , mouseLMB runToAllCmd
+               "run to pointer collectively for 25 steps/fling at enemy" )
   , ("RightButtonRelease", mouseRMB)
   , ("C-LeftButtonRelease", replaceDesc "" mouseRMB)  -- Mac convention
   , ( "C-RightButtonRelease"
@@ -255,6 +260,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safe11", ( [CmdInternal]
                , "lurk 0.1 of a turn"
                , Wait10 ))
+  , ("safe12", ( [CmdInternal]
+               , "snap x-hair to enemy"
+               , XhairPointerEnemy ))
   ]
   ++ map defaultHeroSelect [0..6]
 

@@ -104,7 +104,7 @@ The line starts with the list of party members, with the current leader
 highlighted in yellow. Most commands involve only the leader, including
 movement with keyboard's keypad or `LMB` (left mouse button). If more
 heroes are selected (highlighted in blue), they run together
-whenever `:` or `RMB` (right mouse button) over map area is pressed.
+whenever `:` or `S-LMB` (while holding Shift) over map area is pressed.
 
 Next on the bottom-most status line is the leader's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
@@ -169,7 +169,7 @@ A text snapshot of the complete in-game help is in
 Walk throughout a level with mouse or numeric keypad (left diagram below),
 or with its compact laptop replacement (middle) or the Vi editor keys (right)
 selectable in config.ui.ini. Run until disturbed with Shift or Control.
-Go-to with LMB (left mouse button). Run collectively with RMB.
+Go-to with LMB (left mouse button). Run collectively via S-LMB (holding Shift).
 
                7 8 9          7 8 9          y k u
                 \|/            \|/            \|/
@@ -181,8 +181,8 @@ In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
 Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
 damage taken and prevents displacement by foes. Press `C-KP_5` (the same key
 with Control) to lurk 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
-to yell/yawn, taunting and waking up enemies/yourself. You displace enemies
-by running into them with Shift/Control or RMB. Search, open, descend and
+or `%` to yell/yawn, taunting and waking up enemies/yourself. Displace enemies
+by running into them with Shift/Control or S-LMB. Search, open, descend and
 attack by bumping into walls, doors, stairs and enemies. The best melee weapon
 is automatically chosen from your equipment and from among your body parts.
 
@@ -197,9 +197,9 @@ from the help screen or the dashboard and execute it on the spot.
     keys         command
     E            manage equipment of the leader
     g or ,       grab item(s)
-    ESC          finish aiming/open main menu
-    RET or INS   accept target/open dashboard
-    SPACE        clear messages/display history
+    ESC          open main menu/finish aiming
+    RET or INS   open dashboard/accept target
+    SPACE        clear messages and show history
     S-TAB        cycle among all party members
     KP_* or !    cycle x-hair among enemies
     KP_/ or /    cycle x-hair among items
@@ -207,7 +207,7 @@ from the help screen or the dashboard and execute it on the spot.
     +            swerve the aiming line
 
 Screen area and UI mode (exploration/aiming) determine
-mouse click effects. We give an overview
+mouse click effects. First, we give an overview
 of effects of each button over the game map area.
 The list includes not only left and right buttons, but also
 the optional middle mouse button (MMB) and the mouse wheel,
@@ -215,8 +215,9 @@ which is also used over menus, to page-scroll them.
 (For mice without RMB, one can use Control key with LMB.)
 
     keys         command
-    LMB          set x-hair to enemy/go to pointer for 25 steps
-    RMB or C-LMB fling at enemy/run to pointer collectively for 25 steps
+    LMB          go to pointer for 25 steps/fling at enemy
+    S-LMB        run to pointer collectively for 25 steps/fling at enemy
+    RMB or C-LMB start aiming at enemy under pointer
     C-RMB        open or close or alter at pointer
     MMB          snap x-hair to floor under pointer
     WHEEL-UP     swerve the aiming line

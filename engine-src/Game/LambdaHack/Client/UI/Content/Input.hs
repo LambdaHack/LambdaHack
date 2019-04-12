@@ -118,20 +118,19 @@ repeatTriple n = ( [CmdMeta]
                  , Repeat n )
 
 -- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.
-mouseLMB :: CmdTriple
-mouseLMB = ( [CmdMouse]
-           , "set x-hair to enemy/go to pointer for 25 steps"
-           , ByAimMode aimMode )
+mouseLMB :: HumanCmd -> Text -> CmdTriple
+mouseLMB goToOrRunTo desc =
+  ([CmdMouse], desc, ByAimMode aimMode)
  where
   aimMode = AimModeCmd
     { exploration = ByArea $ common ++  -- exploration mode
         [ (CaMapLeader, grabCmd)
         , (CaMapParty, PickLeaderWithPointer)
-        , (CaMap, goToCmd)
+        , (CaMap, goToOrRunTo)
         , (CaArenaName, Dashboard)
         , (CaPercentSeen, autoexploreCmd) ]
     , aiming = ByArea $ common ++  -- aiming mode
-        [ (CaMap, AimPointerEnemy)
+        [ (CaMap, aimFlingCmd)
         , (CaArenaName, Accept)
         , (CaPercentSeen, XhairStair True) ] }
   common =
@@ -152,18 +151,18 @@ mouseMMB = ( [CmdMouse]
 
 mouseRMB :: CmdTriple
 mouseRMB = ( [CmdMouse]
-           , "fling at enemy/run to pointer collectively for 25 steps"
+           , "start aiming at enemy under pointer"
            , ByAimMode aimMode )
  where
   aimMode = AimModeCmd
     { exploration = ByArea $ common ++
         [ (CaMapLeader, dropCmd)
         , (CaMapParty, SelectWithPointer)
-        , (CaMap, runToAllCmd)
+        , (CaMap, AimPointerEnemy)
         , (CaArenaName, MainMenu)
         , (CaPercentSeen, autoexplore25Cmd) ]
     , aiming = ByArea $ common ++
-        [ (CaMap, aimFlingCmd)
+        [ (CaMap, XhairPointerEnemy)  -- hack; same effect, but matches LMB
         , (CaArenaName, Cancel)
         , (CaPercentSeen, XhairStair False) ] }
   common =

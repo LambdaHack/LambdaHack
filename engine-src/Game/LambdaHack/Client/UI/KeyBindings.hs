@@ -180,9 +180,10 @@ keyHelp COps{corule}
     okm sel key1 key2 header footer =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
-          f (ca1, Left km1, _) (ca2, Left km2, _) y = assert (ca1 == ca2)
-            [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
-            , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
+          f (ca1, Left km1, _) (ca2, Left km2, _) y =
+            assert (ca1 == ca2 `blame` (kst1, kst2))
+              [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
+              , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [offset + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
