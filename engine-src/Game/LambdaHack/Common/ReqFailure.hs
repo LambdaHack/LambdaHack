@@ -155,7 +155,7 @@ showReqFailure reqFailure = case reqFailure of
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectLobable -> "lobbing an item at a specific spot requires fling stat 3"
+  ProjectLobable -> "flinging a lobable item that stops at target position requires fling stat 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
   TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
