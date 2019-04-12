@@ -863,7 +863,9 @@ projectItem (fromCStore, (iid, itemFull)) = do
               -- Project.
               eps <- getsClient seps
               return $ Right $ ReqProject pos eps iid fromCStore
-            else failWith "never mind"
+            else do
+              modifySession $ \sess -> sess {sitemSel = Nothing}
+              failWith "never mind"
 
 -- * Apply
 
@@ -917,7 +919,9 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
            | otherwise -> return True
       if go
       then return $ Right $ ReqApply iid fromCStore
-      else failWith "never mind"
+      else do
+        modifySession $ \sess -> sess {sitemSel = Nothing}
+        failWith "never mind"
 
 -- * AlterDir
 
