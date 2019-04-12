@@ -24,7 +24,8 @@ import GHCJS.DOM.ElementCSSInlineStyle (getStyle)
 import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
                          mouseMetaKey, mouseShiftKey, on, preventDefault,
                          stopPropagation)
-import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseUp, wheel)
+import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseDown, mouseUp,
+                                      wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
 import GHCJS.DOM.HTMLTableElement (HTMLTableElement (HTMLTableElement), getRows,
                                    setCellPadding, setCellSpacing)
@@ -48,9 +49,9 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -191,6 +192,10 @@ handleMouse rf (cell, _) cx cy = do
     stopPropagation
   void $ cell `on` mouseUp $ do
     saveMouse
+    preventDefault
+    stopPropagation
+  void $ cell `on` mouseDown $ do
+    -- Just disable selecting a region.
     preventDefault
     stopPropagation
 
