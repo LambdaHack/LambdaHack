@@ -849,14 +849,21 @@ projectItem (fromCStore, (iid, itemFull)) = do
         case psuitReqFun itemFull of
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
-            -- Set personal target to enemy, so that AI, if it takes over
-            -- the actor, is likely to continue the fight even if the foe flees.
-            -- Similarly if the crosshair points at position, etc.
-            sxhair <- getsSession sxhair
-            modifyClient $ updateTarget leader (const sxhair)
-            -- Project.
-            eps <- getsClient seps
-            return $ Right $ ReqProject pos eps iid fromCStore
+            Benefit{benFling} <- getsClient $ (EM.! iid) . sdiscoBenefit
+            go <- if benFling >= 0
+                  then displayYesNo ColorFull
+                         "The item appears beneficial. Do you really want to fling it?"
+                  else return True
+            if go then do
+              -- Set personal target to enemy, so that AI, if it takes over
+              -- the actor, is likely to continue the fight even if the foe
+              -- flees. Similarly if the crosshair points at position, etc.
+              sxhair <- getsSession sxhair
+              modifyClient $ updateTarget leader (const sxhair)
+              -- Project.
+              eps <- getsClient seps
+              return $ Right $ ReqProject pos eps iid fromCStore
+            else failWith "never mind"
 
 -- * Apply
 
