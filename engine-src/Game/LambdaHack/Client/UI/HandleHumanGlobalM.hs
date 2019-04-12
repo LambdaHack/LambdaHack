@@ -896,6 +896,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
   else case permittedApply localTime skill calmE itemFull kit of
     Left reqFail -> failSer reqFail
     Right _ -> do
+      Benefit{benApply} <- getsClient $ (EM.! iid) . sdiscoBenefit
       go <-
         if | IA.checkFlag Ability.Periodic arItem
              && not (IA.checkFlag Ability.Durable arItem) ->
@@ -903,6 +904,9 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
              -- but price low, due to no destruction.
              displayYesNo ColorFull
                           "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+           | benApply <= 0 ->
+             displayYesNo ColorFull
+                          "The item appears harmful. Do you really want to apply it?"
            | otherwise -> return True
       if go
       then return $ Right $ ReqApply iid fromCStore
