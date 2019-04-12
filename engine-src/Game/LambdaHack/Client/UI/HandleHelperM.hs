@@ -51,6 +51,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
@@ -58,7 +59,6 @@ import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -536,7 +536,9 @@ lookAtItems canSee p aid = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   let standingOn = p == bpos b && lidV == blid b
-      verb = MU.Text $ if | standingOn -> "stand on"
+      verb = MU.Text $ if | standingOn -> if bhp b > 0
+                                          then "stand on"
+                                          else "fall over"
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
