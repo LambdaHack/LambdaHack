@@ -896,12 +896,14 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
   else case permittedApply localTime skill calmE itemFull kit of
     Left reqFail -> failSer reqFail
     Right _ -> do
-      -- No warning if item durable, because activation weak, but price low.
-      go <- if IA.checkFlag Ability.Durable arItem
-               || not (IA.checkFlag Ability.Periodic arItem)
-            then return True
-            else displayYesNo ColorFull
-                              "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+      go <-
+        if | IA.checkFlag Ability.Periodic arItem
+             && not (IA.checkFlag Ability.Durable arItem) ->
+             -- No warning if item durable, because activation weak,
+             -- but price low, due to no destruction.
+             displayYesNo ColorFull
+                          "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+           | otherwise -> return True
       if go
       then return $ Right $ ReqApply iid fromCStore
       else failWith "never mind"
