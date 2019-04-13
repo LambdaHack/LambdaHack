@@ -270,7 +270,9 @@ effectAndDestroy onSmashOnly useAllCopies kineticPerformed
     -- If the item activation is not periodic, but the item itself is,
     -- only the first effect gets activated (and the item may be destroyed,
     -- unlike with periodic activations).
-    let effsManual = if not periodic && IA.checkFlag Ability.Periodic arItem
+    let effsManual = if not periodic
+                        && IA.checkFlag Ability.Periodic arItem
+                        && not (IA.checkFlag Ability.Condition arItem)
                      then take 1 effs  -- may be empty
                      else effs
     triggeredEffect <- itemEffectDisco useAllCopies kineticPerformed
