@@ -850,7 +850,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
             Benefit{benFling} <- getsClient $ (EM.! iid) . sdiscoBenefit
-            go <- if benFling >= 0
+            go <- if benFling > 0
                   then displayYesNo ColorFull
                          "The item appears beneficial. Do you really want to fling it?"
                   else return True
@@ -913,7 +913,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
              -- but price low, due to no destruction.
              displayYesNo ColorFull
                           "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
-           | benApply <= 0 ->
+           | benApply < 0 ->
              displayYesNo ColorFull
                           "The item appears harmful. Do you really want to apply it?"
            | otherwise -> return True
