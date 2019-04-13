@@ -789,8 +789,12 @@ effectSummon grp nDm iid source target periodic = do
       -- We put @source@ instead of @target@ and @power@ instead of dice
       -- to make the message more accurate.
       effect = IK.Summon grp $ Dice.intToDice power
-      execSfx = execSfxAtomic $ SfxEffect (bfid sb) source effect 0
       durable = IA.checkFlag Ability.Durable arItem
+      warnBothActors warning =
+       unless (bproj sb) $ do
+         execSfxAtomic $ SfxMsgFid (bfid sb) warning
+         when (source /= target) $
+           execSfxAtomic $ SfxMsgFid (bfid tb) warning
       deltaCalm = - xM 30
   -- Verify Calm only at periodic activations or if the item is durable.
   -- Otherwise summon uses up the item, which prevents summoning getting
@@ -799,31 +803,21 @@ effectSummon grp nDm iid source target periodic = do
   -- has a nasty summoning side-effect (the exploit still works on durables).
   if | (periodic || durable) && not (bproj sb)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sMaxSk)) -> do
-       unless (bproj sb) $ do
-         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonLackCalm source
-         when (source /= target) $
-           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonLackCalm source
+       warnBothActors $ SfxSummonLackCalm source
        return UseId
      | nFriends >= 20 -> do
        -- We assume the actor tries to summon his teammates or allies.
        -- As he repeats such summoning, he is going to bump into this limit.
        -- If he summons others, see the next condition.
-       unless (bproj sb) $ do
-         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyOwn source
-         when (source /= target) $
-           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonTooManyOwn source
+       warnBothActors $ SfxSummonTooManyOwn source
        return UseId
      | EM.size lbig >= 200 -> do  -- lower than the 300 limit for spawning
        -- Even if the actor summons foes, he is prevented from exploiting it
        -- too many times and stopping natural monster spawning on the level
        -- (e.g., by filling the level with harmless foes).
-       unless (bproj sb) $ do
-         execSfxAtomic $ SfxMsgFid (bfid sb) $ SfxSummonTooManyAll source
-         when (source /= target) $
-           execSfxAtomic $ SfxMsgFid (bfid tb) $ SfxSummonTooManyAll source
+       warnBothActors $ SfxSummonTooManyAll source
        return UseId
      | otherwise -> do
-       execSfx
        unless (bproj sb) $ updateCalm source deltaCalm
        let validTile t = not $ Tile.isNoActor coTileSpeedup t
            ps = nearbyFreePoints cops lvl validTile (bpos tb)
@@ -846,7 +840,16 @@ effectSummon grp nDm iid source target periodic = do
              mleader <- getsState $ gleader . (EM.! bfid b) . sfactionD
              when (isNothing mleader) $ setFreshLeader (bfid b) aid
              return True
-       return $! if or bs then UseUp else UseId
+       if or bs then do
+         execSfxAtomic $ SfxEffect (bfid sb) source effect 0
+         return UseUp
+       else do
+         -- We don't display detailed warnings when @addAnyActor@ fails,
+         -- e.g., because the actor groups can't be generated on a given level.
+         -- However, we at least don't claim any summoning happened
+         -- and we offer a general summoning failure messages.
+         warnBothActors $ SfxSummonFailure source
+         return UseId
 
 -- ** Ascend
 

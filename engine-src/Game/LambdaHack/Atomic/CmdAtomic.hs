@@ -34,6 +34,7 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
@@ -44,7 +45,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -169,6 +169,7 @@ data SfxMsg =
   | SfxSummonLackCalm ActorId
   | SfxSummonTooManyOwn ActorId
   | SfxSummonTooManyAll ActorId
+  | SfxSummonFailure ActorId
   | SfxLevelNoMore
   | SfxLevelPushed
   | SfxBracedImmune ActorId

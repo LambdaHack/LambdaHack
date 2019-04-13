@@ -1360,6 +1360,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
         let subject = partActor sbUI
             verb = "can't keep track of everybody around, let alone summon anyone else"
         return $ Just (MsgWarning, makeSentence [subject, verb])
+  SfxSummonFailure aid -> do
+    msbUI <- getsSession $ EM.lookup aid . sactorUI
+    case msbUI of
+      Nothing -> return Nothing
+      Just sbUI -> do
+        let subject = partActor sbUI
+            verb = "fail to summon anything"
+        return $ Just (MsgWarning, makeSentence [MU.SubjectVerbSg subject verb])
   SfxLevelNoMore ->
     return $ Just (MsgWarning, "No more levels in this direction.")
   SfxLevelPushed ->
