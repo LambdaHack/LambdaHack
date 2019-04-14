@@ -501,7 +501,7 @@ moveSearchAlter run dir = do
        | otherwise -> do  -- promising
            verAlters <- verifyAlters (blid sb) tpos
            case verAlters of
-             Right() -> return $ Right $ ReqAlter tpos
+             Right () -> return $ Right $ ReqAlter tpos
              Left err -> return $ Left err
            -- We don't use ReqMove, because we don't hit invisible actors,
            -- e.g., hidden in a wall. If server performed an attack for free
@@ -1002,7 +1002,7 @@ alterTileAtPos ts tpos pText = do
                 tr : _ -> ttverb tr
           verAlters <- verifyAlters (blid b) tpos
           case verAlters of
-            Right() -> do
+            Right () -> do
               let msg = makeSentence ["you", v, MU.Text pText]
               msgAdd MsgDone msg
               return $ Right $ ReqAlter tpos
@@ -1033,22 +1033,25 @@ verifyEscape = do
   fact <- getsState $ (EM.! side) . sfactionD
   if not (fcanEscape $ gplayer fact)
   then failWith
-        "This is the way out, but where would you go in this alien world?"
+         "This is the way out, but where would you go in this alien world?"
   else do
-    go <- displayYesNo ColorFull "This is the way out. Really leave now?"
-    if not go then failWith "game resumed"
-    else do
-      (_, total) <- getsState $ calculateTotal side
-      dungeonTotal <- getsState sgold
-      if total == 0 && dungeonTotal > 0 then do
-        -- The player can back off at this step. We don't insist, because
-        -- possibly the score formula doesn't reward treasure.
-        go1 <- displaySpaceEsc ColorBW
-          "Afraid of the challenge? Leaving so soon and without any treasure?"
-        if not go1
-        then failWith "here's your chance!"
-        else return $ Right ()
-      else return $ Right ()
+    (_, total) <- getsState $ calculateTotal side
+    dungeonTotal <- getsState sgold
+    let prompt | dungeonTotal == 0 =
+                 "You finally reached the way out. Really leave now?"
+               | total == 0 =
+                 "Afraid of the challenge? Leaving so soon and without any treasure? Are you sure?"
+               | total < dungeonTotal =
+                 "You finally found the way out, but still more valuables are rumoured to hide around here. Really leave already?"
+               | otherwise =
+                 "This is the way out and you collected all treasure there is to find. Really leave now?"
+    -- The player can back off, but we never insist,
+    -- because possibly the score formula doesn't reward treasure
+    -- or he is focused on winning only.
+    go <- displayYesNo ColorBW prompt
+    if not go
+    then failWith "here's your chance!"
+    else return $ Right ()
 
 -- | Guess and report why the bump command failed.
 guessAlter :: COps -> [TriggerTile] -> ContentId TileKind -> Text
