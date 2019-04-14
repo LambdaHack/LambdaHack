@@ -1272,7 +1272,8 @@ displayRespSfxAtomicUI sfx = case sfx of
               object = MU.Ws $ MU.Text $ detectToObject d
           msgAdd MsgEffectMinor $
             makeSentence [MU.SubjectVerbSg subject verb, object]
-          unless (d == IK.DetectHidden) $  -- too common and too weak
+          -- Don't make it modal if all info remains after no longer seen.
+          unless (d `elem` [IK.DetectHidden, IK.DetectExit]) $
             displayMore ColorFull ""
         IK.SendFlying{} -> aidVerbMU MsgEffect aid "be sent flying"
         IK.PushActor{} -> aidVerbMU MsgEffect aid "be pushed"
