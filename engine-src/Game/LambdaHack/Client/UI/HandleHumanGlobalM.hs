@@ -491,7 +491,10 @@ moveSearchAlter run dir = do
            promptAdd0 blurb
            failSer AlterUnwalked
        | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds -> do
-           -- Rather rare (charging embeds), so describe the tile.
+           -- Rather rare (charging embeds or too low skill for embeds
+           -- that are, e.g., `?`), so describe the tile.
+           -- Unfortunately this includes cases when an actor can exploit
+           -- signboard when hidden, but can't later on when revealed.
            promptAdd0 blurb
            failWith "unable to exploit the terrain"
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
