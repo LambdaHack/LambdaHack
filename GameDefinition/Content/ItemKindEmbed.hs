@@ -260,7 +260,7 @@ escape = stairsUp
   , iflavour = zipPlain [BrYellow]
   , iaspects = [SetFlag Durable]
   , ieffects = [Escape]
-  , idesc    = ""
+  , idesc    = "May this nightmare have an end?"
   }
 staircaseTrapUp = ItemKind
   { isymbol  = '^'
