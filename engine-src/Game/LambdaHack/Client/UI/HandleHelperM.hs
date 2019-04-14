@@ -678,7 +678,7 @@ cycleLore seen (m : rest) = do  -- @seen@ is needed for SPACE to end cycling
 spoilsBlurb :: Text -> Int -> Int -> Text
 spoilsBlurb currencyName total dungeonTotal =
   if | dungeonTotal == 0 ->  "All your spoils are of the practical kind."
-     | total == 0 -> "You haven't found any genuine treasure."
+     | total == 0 -> "You haven't found any genuine treasure yet."
      | otherwise -> makeSentence
          [ "your spoils are worth"
          , MU.CarAWs total $ MU.Text currencyName
