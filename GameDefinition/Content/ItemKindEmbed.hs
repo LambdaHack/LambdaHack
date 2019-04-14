@@ -7,12 +7,12 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Flavour
-import Game.LambdaHack.Content.ItemKind
 
 embeds :: [ItemKind]
 embeds =
