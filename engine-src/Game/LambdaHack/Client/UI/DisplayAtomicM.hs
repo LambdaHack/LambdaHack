@@ -96,7 +96,10 @@ displayRespUpdAtomicUI cmd = case cmd of
     recordItemLid iid c
     updateItemSlot c iid
     case c of
-      CActor aid store ->
+      CActor aid store -> do
+        side <- getsClient sside
+        b <- getsState $ getActorBody aid
+        when (bfid b == side) sortSlots
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
@@ -636,10 +639,11 @@ createActorUI born aid body = do
            let c = if not (bproj body) && iid == btrunk body
                    then CTrunk (bfid body) (blid body) (bpos body)
                    else CActor aid store
-           void $ updateItemSlot c iid
+           updateItemSlot c iid
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
+  when (bfid body == side) sortSlots
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
@@ -713,7 +717,7 @@ spotItem verbose iid kit c = do
   let slore = IA.loreFromContainer arItem c
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
     Nothing -> do  -- never seen or would have a slot
-      void $ updateItemSlot c iid
+      updateItemSlot c iid
       case c of
         CFloor lid p -> do
           sxhairOld <- getsSession sxhair
@@ -729,6 +733,10 @@ spotItem verbose iid kit c = do
                 modifySession $ \sess ->
                   sess {sxhair = Just $ TPoint (TItem bag) lidV p}
           itemVerbMU MsgItemSpot iid kit "be located" c
+        CActor aid _ -> do
+          side <- getsClient sside
+          b <- getsState $ getActorBody aid
+          when (bfid b == side) sortSlots
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
@@ -792,8 +800,9 @@ moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
-  sortSlots  -- the only place where that happens so that player has control
-             -- and his labels remain stable and no accidental item use
+  sortSlots  -- sorting only happens when the player moves items or they are
+             -- created in player's possesion, so that the player has control
+             -- and his labels remain stable and no accidental item use occurs
   let verb = verbCStore cstore2
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
