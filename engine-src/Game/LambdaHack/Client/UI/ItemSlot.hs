@@ -69,19 +69,16 @@ slotLabel x =
   <> ")"
 
 -- | Assigns a slot to an item, e.g., for inclusion in the inventory of a hero.
-assignSlot :: ES.EnumSet ItemId -> SLore -> ItemSlots -> SlotChar
-assignSlot partySet slore (ItemSlots itemSlots) =
-  head $ freeLowPrefix ++ free
- where
-  lSlots = itemSlots EM.! slore
-  maxPrefix = case EM.maxViewWithKey lSlots of
-    Just ((lm, _), _) -> slotPrefix lm
-    Nothing -> 0
-  slotsUpTo k = concatMap (\n -> map (SlotChar n) allChars) [0..k]
-  f l = maybe True (`ES.notMember` partySet) $ EM.lookup l lSlots
-  free = filter f $ slotsUpTo (maxPrefix + 1)  -- suffices
-  g l = l {slotPrefix = maxPrefix} `EM.notMember` lSlots
-  freeLowPrefix = filter g free
+-- At first, e.g., when item is spotted on the floor, the slot is
+-- not user-friendly. After any player's item manipulation action,
+-- slots are sorted and a fully human-readable slot is then assigned.
+-- Only then the slot can be viewed by the player.
+assignSlot :: SingleItemSlots -> SlotChar
+assignSlot lSlots =
+  let maxPrefix = case EM.maxViewWithKey lSlots of
+        Just ((lm, _), _) -> slotPrefix lm
+        Nothing -> 0
+  in SlotChar (maxPrefix + 1) 'x'
 
 partyItemSet :: SLore -> FactionId -> Maybe Actor -> State -> ES.EnumSet ItemId
 partyItemSet slore fid mbody s =

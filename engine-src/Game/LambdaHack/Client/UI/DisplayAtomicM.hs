@@ -460,26 +460,13 @@ displayRespUpdAtomicUI cmd = case cmd of
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
   arItem <- getsState $ aspectRecordFromIid iid
+  ItemSlots itemSlots <- getsSession sslots
   let slore = IA.loreFromContainer arItem c
-      incrementPrefix l2 iid2 m = EM.insert l2 iid2 $
-        case EM.lookup l2 m of
-          Nothing -> m
-          Just iidOld ->
-            let lNew = SlotChar (slotPrefix l2 + 1) (slotChar l2)
-            in incrementPrefix lNew iidOld m
-  slots@(ItemSlots itemSlots) <- getsSession sslots
-  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! slore of
+      lSlots = itemSlots EM.! slore
+  case lookup iid $ map swap $ EM.assocs lSlots of
     Nothing -> do
-      side <- getsClient sside
-      mbody <- case c of
-        CActor aid _ -> do
-          b <- getsState $ getActorBody aid
-          return $! if bfid b == side then Just b else Nothing
-        _ -> return Nothing
-      partySet <- getsState $ partyItemSet slore side mbody
-      let l = assignSlot partySet slore slots
-          newSlots =
-            ItemSlots $ EM.adjust (incrementPrefix l iid) slore itemSlots
+      let l = assignSlot lSlots
+          newSlots = ItemSlots $ EM.adjust (EM.insert l iid) slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
     Just _l -> return ()  -- slot already assigned
 
