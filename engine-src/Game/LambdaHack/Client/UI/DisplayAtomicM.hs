@@ -8,7 +8,8 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
-  , moveItemUI, quitFactionUI, displayGameOverLoot, displayGameOverAnalytics
+  , moveItemUI, sortSlots, quitFactionUI
+  , displayGameOverLoot, displayGameOverAnalytics
   , discover, ppSfxMsg, strike
 #endif
   ) where
@@ -804,6 +805,8 @@ moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
+  sortSlots  -- the only place where that happens so that player has control
+             -- and his labels remain stable and no accidental item use
   let verb = verbCStore cstore2
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -820,6 +823,13 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU MsgItemMove aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
+
+sortSlots :: MonadClientUI m => m ()
+sortSlots = do
+  itemToF <- getsState $ flip itemToFull
+  ItemSlots itemSlots <- getsSession sslots
+  let newSlots = ItemSlots $ EM.map (sortSlotMap itemToF) itemSlots
+  modifySession $ \sess -> sess {sslots = newSlots}
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status
@@ -947,7 +957,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
                     then "Non-positive count means none held but this many generated."
                     else "")
       examItem = displayItemLore itemBag 0 promptFun
-  viewLoreItems False "GameOverLoot" lSlots itemBag prompt examItem
+  viewLoreItems "GameOverLoot" lSlots itemBag prompt examItem
 
 displayGameOverAnalytics :: MonadClientUI m
                          => FactionAnalytics -> GenerationAnalytics
@@ -986,7 +996,7 @@ displayGameOverAnalytics factionAn generationAn = do
                     then "Non-positive count means none killed but this many reported."
                     else "")
       examItem = displayItemLore trunkBag 0 promptFun
-  viewLoreItems False "GameOverAnalytics" lSlots trunkBag prompt examItem
+  viewLoreItems "GameOverAnalytics" lSlots trunkBag prompt examItem
 
 displayGameOverLore :: MonadClientUI m
                     => SLore -> Bool -> GenerationAnalytics -> m K.KM
@@ -1009,7 +1019,7 @@ displayGameOverLore slore exposeCount generationAn = do
                makeSentence [ "you experienced the following variety of"
                             , MU.CarWs total $ MU.Text (headingSLore slore) ]
       examItem = displayItemLore generationBag 0 promptFun
-  viewLoreItems False ("GameOverLore" ++ show slore)
+  viewLoreItems ("GameOverLore" ++ show slore)
                 slots generationBag prompt examItem
 
 discover :: MonadClientUI m => Container -> ItemId -> m ()
@@ -1301,7 +1311,6 @@ displayRespSfxAtomicUI sfx = case sfx of
       Just (msgClass, msg) -> msgAdd msgClass msg
       Nothing -> return ()
   SfxRestart -> fadeOutOrIn True
-  SfxSortSlots -> sortSlots
   SfxCollideTile source pos -> do
     COps{cotile} <- getsState scops
     sb <- getsState $ getActorBody source

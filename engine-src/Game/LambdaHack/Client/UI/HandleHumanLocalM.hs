@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
     macroHuman
     -- * Local commands
-  , sortSlotsHuman, chooseItemHuman, chooseItemDialogMode
+  , chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
@@ -90,13 +90,6 @@ macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
   modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " kms)
-
--- * SortSlots
-
-sortSlotsHuman :: MonadClientUI m => m ()
-sortSlotsHuman = do
-  sortSlots
-  promptAdd "Items sorted by kind and rolled aspects."
 
 -- * ChooseItem
 

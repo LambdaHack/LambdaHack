@@ -142,7 +142,6 @@ data HumanCmd =
   | Tactic
   | Automate
     -- Local. Below this line, commands do not notify the server.
-  | SortSlots
   | ChooseItem ItemDialogMode
   | ChooseItemMenu ItemDialogMode
   | ChooseItemProject [TriggerItem]

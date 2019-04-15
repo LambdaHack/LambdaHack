@@ -349,17 +349,6 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                  Just{} -> return (Left "not a teammate", (cCur, ekm))
                              -- don't inspect the error, it's expected
            })
-        , let km = revCmd (K.KM K.NoModifier $ K.Char '^') SortSlots
-          in (km, DefItemKey
-           { defLabel = Right km
-           , defCond = cCur /= MOrgans  -- auto-sorted each time
-                       && cCur /= MSkills  -- artificial slots
-                       && cCur /= MPlaces  -- artificial slots
-                       && EM.size bagFiltered > 1  -- no feedback
-           , defAction = \_ -> do
-               sortSlots
-               recCall numPrefix cCur cRest itemDialogState
-           })
         , (K.escKM, DefItemKey
            { defLabel = Right K.escKM
            , defCond = True

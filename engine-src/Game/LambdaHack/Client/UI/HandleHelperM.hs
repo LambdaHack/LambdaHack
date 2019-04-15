@@ -1,7 +1,7 @@
 -- | Helper functions for both inventory management and human commands.
 module Game.LambdaHack.Client.UI.HandleHelperM
   ( FailError, showFailError, MError, mergeMError, FailOrCmd, failWith
-  , failSer, failMsg, weaveJust, sortSlots
+  , failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtItems, lookAtPosition
@@ -30,7 +30,6 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -93,13 +92,6 @@ failMsg err = assert (not $ T.null err) $ return $ Just $ FailError err
 weaveJust :: FailOrCmd a -> Either MError a
 weaveJust (Left ferr) = Left $ Just ferr
 weaveJust (Right a) = Right a
-
-sortSlots :: MonadClientUI m => m ()
-sortSlots = do
-  itemToF <- getsState $ flip itemToFull
-  ItemSlots itemSlots <- getsSession sslots
-  let newSlots = ItemSlots $ EM.map (sortSlotMap itemToF) itemSlots
-  modifySession $ \sess -> sess {sslots = newSlots}
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycle :: MonadClientUI m => Bool -> m MError
@@ -613,23 +605,15 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
     _ -> error $ "" `showFailure` km
 
 viewLoreItems :: MonadClientUI m
-              => Bool -> String -> SingleItemSlots -> ItemBag -> Text
+              => String -> SingleItemSlots -> ItemBag -> Text
               -> (Int -> SingleItemSlots -> m Bool)
               -> m K.KM
-viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
+viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   arena <- getArenaUI
-  revCmd <- revCmdMap
   itemToF <- getsState $ flip itemToFull
-  let caretKey = revCmd (K.KM K.NoModifier $ K.Char '^')
-                        HumanCmd.SortSlots
-      keysPre = [K.spaceKM, K.mkChar '/', K.mkChar '?', K.escKM]
-                ++ [caretKey | enableSorting]
-      -- Here, unlike for inventory items, slots are not sorted persistently
-      -- and only for the single slot category.
-      lSlots = if enableSorting
-               then lSlotsRaw
-               else sortSlotMap itemToF lSlotsRaw
+  let keysPre = [K.spaceKM, K.mkChar '/', K.mkChar '?', K.escKM]
+      lSlots = sortSlotMap itemToF lSlotsRaw
   promptAdd0 prompt
   io <- itemOverlay lSlots arena trunkBag
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
@@ -642,17 +626,13 @@ viewLoreItems enableSorting menuName lSlotsRaw trunkBag prompt examItem = do
                             (findIndex (== slot) $ EM.keys lSlots)
         go2 <- examItem ix0 lSlots
         if go2
-        then viewLoreItems enableSorting menuName lSlots
-                           trunkBag prompt examItem
+        then viewLoreItems menuName lSlots trunkBag prompt examItem
         else return K.escKM
   ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km == K.spaceKM -> return km
     Left km | km == K.mkChar '/' -> return km
     Left km | km == K.mkChar '?' -> return km
-    Left km | km == caretKey ->
-      viewLoreItems False menuName (sortSlotMap itemToF lSlotsRaw)
-                    trunkBag prompt examItem
     Left km | km == K.escKM -> return km
     Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
       -- other prefixes are not accessible via keys; tough luck; waste of effort

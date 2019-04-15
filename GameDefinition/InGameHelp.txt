@@ -76,7 +76,6 @@ Remaining item-related commands.
  A            manage all owned items
  @            describe organs of the leader
  #            show skill summary of the leader
- ^            sort items by kind and rolled aspects
  ~            display known lore
 
  Note how upper case item commands (manage Pack, Equipment,

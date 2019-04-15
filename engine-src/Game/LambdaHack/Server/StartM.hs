@@ -35,6 +35,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -43,7 +44,6 @@ import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -115,7 +115,6 @@ reinitGame = do
   populateDungeon
   mapM_ (\fid -> mapM_ (updatePer fid) (EM.keys dungeon))
         (EM.keys factionD)
-  execSfxAtomic SfxSortSlots
 
 -- For simplicity only spawnable actors are taken into account, not starting
 -- actors of any faction nor summonable actors.

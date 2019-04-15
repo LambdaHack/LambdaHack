@@ -137,7 +137,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("#", ( [CmdItem, CmdDashboard]
           , "show skill summary of the leader"
           , ChooseItemMenu MSkills ))
-  , ("^", ( [CmdItem], "sort items by kind and rolled aspects", SortSlots))
   , ("~", ( [CmdItem]
           , "display known lore"
           , ChooseItemMenu (MLore SItem) ))

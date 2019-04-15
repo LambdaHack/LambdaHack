@@ -25,9 +25,9 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Definition.Defs
 
 -- All functions here that take an atomic action are executed
@@ -187,7 +187,6 @@ posSfxAtomic cmd = case cmd of
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll
-  SfxSortSlots -> return PosAll
   SfxCollideTile aid _ -> singleAid aid
   SfxTaunt _ aid -> singleAid aid
 
