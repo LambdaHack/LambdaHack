@@ -23,14 +23,14 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
@@ -171,13 +171,11 @@ defaultChallenge = Challenge { cdiff = difficultyDefault
                              , cwolf = False
                              , cfish = False }
 
-possibleActorFactions :: ItemKind -> FactionDict -> [FactionId]
+possibleActorFactions :: ItemKind -> FactionDict -> [(FactionId, Faction)]
 possibleActorFactions itemKind factionD =
   let freqNames = map fst $ IK.ifreq itemKind
       f (_, fact) = any (`elem` fgroups (gplayer fact)) freqNames
       fidFactsRaw = filter f $ EM.assocs factionD
-      fidFacts =
-        if null fidFactsRaw
-        then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
-        else fidFactsRaw
-  in map fst fidFacts
+  in if null fidFactsRaw
+     then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
+     else fidFactsRaw

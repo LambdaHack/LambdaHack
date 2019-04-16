@@ -882,8 +882,28 @@ quitFactionUI fid toSt manalytics = do
       when go $ do
         case middlePart of
           Nothing -> return ()
-          Just sp -> do
-            msgAdd0 MsgPlot sp
+          Just sp1 -> do
+            factionD <- getsState sfactionD
+            itemToF <- getsState $ flip itemToFull
+            let getTrunkFull (_, b) = itemToF $ btrunk b
+            ourTrunks <- getsState $ map getTrunkFull
+                                     . fidActorNotProjGlobalAssocs side
+            let smartFaction fact2 = fleaderMode (gplayer fact2) /= LeaderNull
+                smartEnemy trunkFull =
+                  any (smartFaction . snd)
+                  $ filter (\(fid2, _) -> fid2 /= side)
+                  $ possibleActorFactions (itemKind trunkFull) factionD
+                smartEnemyOurs = filter smartEnemy ourTrunks
+                uniqueActor trunkFull = IA.checkFlag Ability.Unique
+                                        $ aspectRecordFull trunkFull
+                smartUniqueEnemyCaptured = any uniqueActor smartEnemyOurs
+                smartEnemyCaptured = not $ null smartEnemyOurs
+                sp2 | smartUniqueEnemyCaptured =
+                  "\nOh, wait, who is this, towering behind your escaping crew? This changes everything. For everybody. Everywhere. Forever. Did you plan for this? What was exactly the idea and who decided to carry it through?"
+                    | smartEnemyCaptured =
+                  "\nOh, wait, who is this, hunched among your escaping crew? Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again. How will you play that move?"
+                    | otherwise = ""
+            msgAdd0 MsgPlot $ sp1 <> sp2
             void $ displaySpaceEsc ColorFull ""
         case manalytics of
           Nothing -> return ()
@@ -1226,14 +1246,10 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side
           when (length ours > 1) $ do
-            -- TODO: only say farewell if nonstandard dominated actors
-            -- in the team. Also react to the only surviving actor being such.
-            let farewells = ", says its farewells"
-                object = partActor bUI
+            let object = partActor bUI
             msgAdd MsgOutcome $
               "The team joins" <+> makePhrase [object]
-              <> ", forms a perimeter, repacks its belongings"
-              <> farewells <+> "and leaves triumphant."
+              <> ", forms a perimeter, repacks its belongings and leaves triumphant."
         IK.Escape{} -> return ()
         IK.Paralyze{} -> aidVerbMU MsgEffect aid "be paralyzed"
         IK.ParalyzeInWater{} ->

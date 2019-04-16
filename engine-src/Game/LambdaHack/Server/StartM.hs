@@ -134,7 +134,7 @@ sampleTrunks dungeon = do
             freq = pure (itemKindId, itemKind)
         case possibleActorFactions itemKind factionD of
           [] -> return Nothing
-          fid : _ -> do
+          (fid, _) : _ -> do
             let c = CTrunk fid minLid originPoint
                 jfid = Just fid
             m2 <- rollItemAspect freq minLid

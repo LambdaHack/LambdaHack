@@ -99,8 +99,8 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
       debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
       return Nothing
     Just (itemKnownRaw, (itemFullRaw, kit)) -> do
-      fid <- rndToAction $ oneOf $
-               possibleActorFactions (itemKind itemFullRaw) factionD
+      (fid, _) <- rndToAction $ oneOf $
+                    possibleActorFactions (itemKind itemFullRaw) factionD
       pers <- getsServer sperFid
       let allPers = ES.unions $ map (totalVisible . (EM.! lid))
                     $ EM.elems $ EM.delete fid pers  -- expensive :(
