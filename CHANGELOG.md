@@ -1,3 +1,6 @@
+## [v0.9.4.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.3.0...v0.9.4.0)
+
+
 ## [v0.9.3.0, aka 'Velvet smoking jacket'](https://github.com/LambdaHack/LambdaHack/compare/v0.8.3.0...v0.9.3.0)
 
 - Introduce message classes with configurable behaviour
