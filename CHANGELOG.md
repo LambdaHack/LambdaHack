@@ -1,5 +1,28 @@
 ## [v0.9.4.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.3.0...v0.9.4.0)
 
+- React specially at gameover under certain special circumstances
+- Auto-sort slots in a few more places
+- Simpliy assignSlot now that slots are auto-sorted
+- Get rid of explicit item sorting
+- Make DetectExit non-modal
+- Mark in a game end confirmation message that more treasure can be found
+- Add a description to the escape embedded item
+- Reword gameover text for raid scenario
+- Be more verbose when confirming escape from the game
+- Don't claim to summon, when not possible on this level
+- Fix missing 'no longer poisoned' when applying antidote
+- Don't ask confirmation for neutral (e.g., not IDed) items
+- Fix 'you fall down; you stand on a sword'
+- Prevent selecting regions via mouse down in web frontend
+- Deselect item if player declines to apply or fling
+- Hand-hold the player, warning if flung item is beneficial
+- Hand-hold the player, warning if applied item is harmful
+- Rewrite the condition in UI applyItem check
+- Improve the lobable item skill failure message
+- Let mouse buttons describe tiles, etc.
+- Unblock S-MouseButton in SDL2 frontend
+- Always describe things under mouse button
+- Make the message when hitting dead foe more varied
 
 ## [v0.9.3.0, aka 'Velvet smoking jacket'](https://github.com/LambdaHack/LambdaHack/compare/v0.8.3.0...v0.9.3.0)
 
