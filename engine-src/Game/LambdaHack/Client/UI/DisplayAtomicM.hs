@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
-  , moveItemUI, sortSlots, quitFactionUI
+  , moveItemUI, quitFactionUI
   , displayGameOverLoot, displayGameOverAnalytics
   , discover, ppSfxMsg, strike
 #endif
@@ -97,9 +97,6 @@ displayRespUpdAtomicUI cmd = case cmd of
     updateItemSlot c iid
     case c of
       CActor aid store -> do
-        side <- getsClient sside
-        b <- getsState $ getActorBody aid
-        when (bfid b == side) sortSlots
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
@@ -469,7 +466,8 @@ updateItemSlot c iid = do
   case lookup iid $ map swap $ EM.assocs lSlots of
     Nothing -> do
       let l = assignSlot lSlots
-          newSlots = ItemSlots $ EM.adjust (EM.insert l iid) slore itemSlots
+          f = EM.insert l iid
+          newSlots = ItemSlots $ EM.adjust f slore itemSlots
       modifySession $ \sess -> sess {sslots = newSlots}
     Just _l -> return ()  -- slot already assigned
 
@@ -643,7 +641,6 @@ createActorUI born aid body = do
            recordItemLid iid c)
         ((btrunk body, CEqp)  -- store will be overwritten, unless projectile
          : filter ((/= btrunk body) . fst) (getCarriedIidCStore body))
-  when (bfid body == side) sortSlots
   -- Don't spam if the actor was already visible (but, e.g., on a tile that is
   -- invisible this turn (in that case move is broken down to lose+spot)
   -- or on a distant tile, via teleport while the observer teleported, too).
@@ -733,10 +730,6 @@ spotItem verbose iid kit c = do
                 modifySession $ \sess ->
                   sess {sxhair = Just $ TPoint (TItem bag) lidV p}
           itemVerbMU MsgItemSpot iid kit "be located" c
-        CActor aid _ -> do
-          side <- getsClient sside
-          b <- getsState $ getActorBody aid
-          when (bfid b == side) sortSlots
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
@@ -800,9 +793,6 @@ moveItemUI :: MonadClientUI m
            => ItemId -> Int -> ActorId -> CStore -> CStore
            -> m ()
 moveItemUI iid k aid cstore1 cstore2 = do
-  sortSlots  -- sorting only happens when the player moves items or they are
-             -- created in player's possesion, so that the player has control
-             -- and his labels remain stable and no accidental item use occurs
   let verb = verbCStore cstore2
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -819,13 +809,6 @@ moveItemUI iid k aid cstore1 cstore2 = do
         itemAidVerbMU MsgItemMove aid (MU.Text verb) iid (Left $ Just k) cstore2
     Nothing -> error $
       "" `showFailure` (iid, k, aid, cstore1, cstore2)
-
-sortSlots :: MonadClientUI m => m ()
-sortSlots = do
-  itemToF <- getsState $ flip itemToFull
-  ItemSlots itemSlots <- getsSession sslots
-  let newSlots = ItemSlots $ EM.map (sortSlotMap itemToF) itemSlots
-  modifySession $ \sess -> sess {sslots = newSlots}
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status

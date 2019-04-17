@@ -240,7 +240,7 @@ transition :: forall m. MonadClientUI m
 transition psuit prompt promptGeneric permitMulitple cLegal
            numPrefix cCur cRest itemDialogState = do
   let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
-  ItemSlots itemSlots <- getsSession sslots
+  ItemSlots itemSlotsPre <- getsSession sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
@@ -253,21 +253,35 @@ transition psuit prompt promptGeneric permitMulitple cLegal
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
     SuitsEverything -> return $ \_ _ -> True
-    SuitsSomething f -> return f
-      -- When throwing, this function takes missile range into accout.
+    SuitsSomething f -> return f  -- When throwing, this function takes
+                                  -- missile range into accout.
+  -- This is the only place slots are sorted. As a side-effect,
+  -- slots in inventories always agree with slots of item lore.
+  -- Not so for organ menu, because many lore maps point there.
+  -- Sorting in @updateItemSlot@ would not be enough, because, e.g.,
+  -- identifying an item should change its slot position.
+  lSlots <- case cCur of
+    MOrgans -> do
+      let newSlots = EM.adjust (sortSlotMap itemToF) SOrgan
+                     $ EM.adjust (sortSlotMap itemToF) STrunk
+                     $ EM.adjust (sortSlotMap itemToF) SCondition itemSlotsPre
+      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
+      return $! mergeItemSlots itemToF [ newSlots EM.! SOrgan
+                                       , newSlots EM.! STrunk
+                                       , newSlots EM.! SCondition ]
+    MSkills -> return EM.empty
+    MPlaces -> return EM.empty
+    _ -> do
+      let slore = IA.loreFromMode cCur
+          newSlots = EM.adjust (sortSlotMap itemToF) slore itemSlotsPre
+      modifySession $ \sess -> sess {sslots = ItemSlots newSlots}
+      return $! newSlots EM.! slore
   let getResult :: Either K.KM SlotChar -> [ItemId]
                 -> ( Either Text ([ItemId], ItemBag, SingleItemSlots)
                    , (ItemDialogMode, Either K.KM SlotChar) )
       getResult ekm iids = (Right (iids, bagAll, bagItemSlotsAll), (cCur, ekm))
       filterP iid = psuitFun (itemToF iid)
       bagAllSuit = EM.filterWithKey filterP bagAll
-      lSlots = case cCur of
-        MOrgans -> mergeItemSlots itemToF [ itemSlots EM.! SOrgan
-                                          , itemSlots EM.! STrunk
-                                          , itemSlots EM.! SCondition ]
-        MSkills -> EM.empty
-        MPlaces -> EM.empty
-        _ -> itemSlots EM.! IA.loreFromMode cCur
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix
       -- is 0, in which case we display all slots, even if they require
