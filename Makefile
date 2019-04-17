@@ -241,8 +241,8 @@ test-short-load:
 
 build-binary-common:
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
-	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies
-	cabal v1-configure --disable-library-profiling --disable-profiling --prefix=/ --datadir=. --datasubdir=.
+	cabal v1-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
+	cabal v1-configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
 	cabal v1-build exe:LambdaHack
 	cabal v1-copy --destdir=LambdaHackTheGameInstall
 	([ -f "LambdaHackTheGameInstall/bin/LambdaHack" ] && mv LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame) || exit 0
