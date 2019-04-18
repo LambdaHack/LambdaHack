@@ -137,6 +137,10 @@ matrix:
       compiler: "ghc-8.4.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
       os: osx
+    - env: GTKVTY=brew-sdl2-osx
+      compiler: "ghc-8.6.4"
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
+      os: osx
     - env: GTKVTY=asserts-osx
       compiler: "ghc-8.6.4"
       addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.4,ghc-8.6.4], sources: [hvr-ghc]}}
@@ -234,6 +238,10 @@ script:
     elif [ $GTKVTY = "asserts_opt2" ]; then
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} -j2 .;
       cabal new-build -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j1 .;
+    elif [ $GTKVTY = "brew-sdl2-osx" ]; then
+      brew install sdl2
+      cabal new-build --only-dependencies -fwith_expensive_assertions -w ${HC} -j2 .;
+      cabal new-build -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx" ]; then
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions -w ${HC} -j2 .;
       cabal new-build -fvty -fwith_expensive_assertions -w ${HC} ${TEST} ${BENCH} -j1 .;
