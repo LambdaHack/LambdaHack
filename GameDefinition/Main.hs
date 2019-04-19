@@ -48,6 +48,9 @@ main = do
     fstderr <- SIO.openFile (dataDir </> "stderr.txt") SIO.WriteMode
     GHC.IO.Handle.hDuplicateTo fstdout SIO.stdout
     GHC.IO.Handle.hDuplicateTo fstderr SIO.stderr
+#else
+  -- Work around display of one character per line.
+  SIO.hSetBuffering SIO.stderr SIO.LineBuffering
 #endif
   -- Fail here, not inside server code, so that savefiles are not removed,
   -- because they are not the source of the failure.
