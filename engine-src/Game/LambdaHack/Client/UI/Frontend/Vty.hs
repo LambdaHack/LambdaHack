@@ -19,6 +19,7 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Session data maintained by the frontend.
@@ -56,7 +57,7 @@ display coscreen FrontendSession{svty} SingleFrame{singleFrame} = do
   let img = foldr (<->) emptyImage
             . map (foldr (<|>) emptyImage
                      . map (\w -> char (setAttr $ Color.attrFromW32 w)
-                                       (Color.charFromW32 w)))
+                                       (squashChar $ Color.charFromW32 w)))
             $ chunk $ PointArray.toListA singleFrame
       pic1 = picForImage img
       Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleFrame
@@ -138,6 +139,9 @@ setAttr Color.Attr{..} =
   in hack fg1 $ hack bg1 $
        defAttr { attrForeColor = SetTo (aToc fg1)
                , attrBackColor = SetTo (aToc bg1) }
+
+squashChar :: Char -> Char
+squashChar c = if c == floorSymbol then '.' else c
 
 aToc :: Color.Color -> Color
 aToc Color.Black     = black
