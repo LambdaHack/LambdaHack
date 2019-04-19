@@ -239,8 +239,8 @@ script:
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} -j2 .;
       cabal new-build -fvty -fwith_expensive_assertions --ghc-options="-O2 -fno-ignore-asserts" -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "brew-sdl2-osx" ]; then
-      brew install sdl2
-      cabal new-build --only-dependencies -fwith_expensive_assertions -w ${HC} -j2 .;
+      brew install sdl2_ttf
+      cabal new-build --only-dependencies -w ${HC} -j2 .;
       cabal new-build -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "asserts-osx" ]; then
       cabal new-build --only-dependencies -fvty -fwith_expensive_assertions -w ${HC} -j2 .;
@@ -257,7 +257,7 @@ script:
   - find dist-newstyle -wholename '*/build/LambdaHack/LambdaHack' -exec cp '{}' $ROOTDIR2/dist/build/LambdaHack/ \;
 
   - touch /tmp/teletypetest.log;
-  - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 
 # REGENDATA ["--no-no-tests-no-bench","--osx=8.4.4","cabal.project","-o","foo"]
