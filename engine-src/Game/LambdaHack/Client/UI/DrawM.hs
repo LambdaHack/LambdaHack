@@ -308,15 +308,13 @@ drawFrameActor drawnLevelId = do
               leaderColor = if isJust saimMode
                             then Color.HighlightYellowAim
                             else Color.HighlightYellow
-              bg = case mleader of
-                Just leader | aid == leader -> leaderColor
-                _ -> if | bwatch == WSleep -> Color.HighlightGreen
-                        | aid `ES.member` sselected -> Color.HighlightBlue
-                        | dominated -> if bfid == side  -- dominated by us
-                                       then Color.HighlightWhite
-                                       else Color.HighlightMagenta
-                        | bwatch == WSleep -> Color.HighlightGreen
-                        | otherwise -> Color.HighlightNone
+              bg = if | mleader == Just aid -> leaderColor
+                      | bwatch == WSleep -> Color.HighlightGreen
+                      | dominated -> if bfid == side  -- dominated by us
+                                     then Color.HighlightWhite
+                                     else Color.HighlightMagenta
+                      | ES.member aid sselected -> Color.HighlightBlue
+                      | otherwise -> Color.HighlightNone
               fg | bfid /= side || bhp <= 0 = bcolor
                  | otherwise =
                 let (hpCheckWarning, calmCheckWarning) =
@@ -712,9 +710,13 @@ drawSelected drawnLevelId width selected = do
                       . inline actorAssocs (== side) drawnLevelId
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewOurs (aid, Actor{bhp, bwatch}, ActorUI{bsymbol, bcolor}) =
+        -- Sleep considered before being selected, because sleeping
+        -- actors can't move, so selection is mostly irrelevant.
+        -- Domination not considered at all, because map already shows it
+        -- and so here is the only place where selection is conveyed.
         let bg = if | mleader == Just aid -> Color.HighlightYellow
-                    | ES.member aid selected -> Color.HighlightBlue
                     | bwatch == WSleep -> Color.HighlightGreen
+                    | ES.member aid selected -> Color.HighlightBlue
                     | otherwise -> Color.HighlightNone
             sattr = Color.Attr {Color.fg = bcolor, bg}
         in Color.attrCharToW32 $ Color.AttrChar sattr
