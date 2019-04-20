@@ -93,7 +93,7 @@ Heroes
 ------
 
 The heroes are displayed on the map with bright white color (red if they are
-about to be lost) and symbols `@` and `1` through `9` (never `0`).
+about to fall down) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party leader is yellow-highlighted on the map
 and his attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
@@ -105,6 +105,8 @@ highlighted in yellow. Most commands involve only the leader, including
 movement with keyboard's keypad or `LMB` (left mouse button). If more
 heroes are selected (highlighted in blue), they run together
 whenever `:` or `S-LMB` (while holding Shift) over map area is pressed.
+Any sleeping hero is highlighted in green and can be woken up
+by yelling with `%`, which also taunts or stresses nearby enemies.
 
 Next on the bottom-most status line is the leader's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
@@ -179,12 +181,12 @@ Go-to with LMB (left mouse button). Run collectively via S-LMB (holding Shift).
 
 In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
 Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
-damage taken and prevents displacement by foes. Press `C-KP_5` (the same key
-with Control) to lurk 0.1 of a turn, without bracing and `S-KP_5` (with Shift)
-or `%` to yell/yawn, taunting and waking up enemies/yourself. Displace enemies
-by running into them with Shift/Control or S-LMB. Search, open, descend and
-attack by bumping into walls, doors, stairs and enemies. The best melee weapon
-is automatically chosen from your equipment and from among your body parts.
+damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`
+(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing.
+Displace enemies by running into them with Shift/Control or S-LMB. Search,
+open, descend and attack by bumping into walls, doors, stairs and enemies.
+The best melee weapon is automatically chosen from your equipment
+and from among your body parts.
 
 The following commands, joined with the basic set above,
 let you accomplish anything in the game, though

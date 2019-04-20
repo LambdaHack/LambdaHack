@@ -47,8 +47,6 @@ makeData :: UIOptions        -- ^ UI client options
 makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
-      yellTriple = ([CmdMove], "", Yell)
-      yellTripleNoHelp = ([CmdNoHelp], "", Yell)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
       bcmdList =
@@ -60,7 +58,7 @@ makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
         ++ uCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
-           , (K.mkKM "KP_5", yellTripleNoHelp)
+           , (K.mkKM "KP_5", wait10Triple)
            , (K.mkKM "C-KP_5", wait10Triple) ]
         ++ (if | uVi ->
                  [ (K.mkKM "period", waitTriple)
@@ -68,7 +66,7 @@ makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
                | uLaptop ->
                  [ (K.mkKM "i", waitTriple)
                  , (K.mkKM "C-i", wait10Triple)
-                 , (K.mkKM "I", yellTriple) ]
+                 , (K.mkKM "I", wait10Triple) ]
                | otherwise ->
                  [])
         ++ K.moveBinding uVi uLaptop
