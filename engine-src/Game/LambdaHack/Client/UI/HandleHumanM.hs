@@ -102,6 +102,7 @@ cmdAction cmd = case cmd of
   GameScenarioIncr -> gameScenarioIncr >> mainMenuHuman cmdAction
 
   GameRestart -> weaveJust <$> gameRestartHuman
+  GameDrop -> weaveJust <$> fmap Right gameDropHuman
   GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
   Tactic -> weaveJust <$> tacticHuman

@@ -44,6 +44,7 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -53,7 +54,6 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
@@ -962,7 +962,8 @@ reqGameDropAndExit aid = do
                     oldSt
                     (Just $ Status Camping (fromEnum $ blid b) Nothing)
                     Nothing
-  modifyServer $ \ser -> ser {sbreakLoop = True}
+  modifyServer $ \ser -> ser { sbreakASAP = True
+                             , sbreakLoop = True }
 
 -- * ReqGameSaveAndExit
 
@@ -975,7 +976,8 @@ reqGameSaveAndExit aid = do
   execUpdAtomic $ UpdQuitFaction
                     (bfid b)
                     oldSt
-                    (Just $ Status Camping (fromEnum $ blid b) Nothing) Nothing
+                    (Just $ Status Camping (fromEnum $ blid b) Nothing)
+                    Nothing
   modifyServer $ \ser -> ser { sbreakASAP = True
                              , swriteSave = True }
 

@@ -137,6 +137,7 @@ data HumanCmd =
   | GameFishToggle
   | GameScenarioIncr
   | GameRestart
+  | GameDrop
   | GameExit
   | GameSave
   | Tactic

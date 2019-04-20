@@ -826,6 +826,7 @@ quitFactionUI fid toSt manalytics = do
     tellGameClipPS
     resetGameStart
   mode <- getGameMode
+  allNframes <- getsSession sallNframes
   let startingPart = case toSt of
         _ | horror -> Nothing  -- Ignore summoned actors' factions.
         Just Status{stOutcome=Killed} -> Just "be eliminated"
@@ -844,7 +845,7 @@ quitFactionUI fid toSt manalytics = do
         Just Status{stOutcome} -> lookup stOutcome $ mendMsg mode
         Nothing -> Nothing
       partingPart = case toSt of
-        _ | fid /= side -> Nothing
+        _ | fid /= side || allNframes == -1 -> Nothing
         Just Status{stOutcome} -> lookup stOutcome genericEndMessages
         Nothing -> Nothing
   case startingPart of

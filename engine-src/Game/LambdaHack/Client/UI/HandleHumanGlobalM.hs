@@ -19,7 +19,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , mainMenuHuman, settingsMenuHuman, challengesMenuHuman
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
-  , gameRestartHuman, gameExitHuman, gameSaveHuman
+  , gameRestartHuman, gameDropHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -1525,6 +1525,16 @@ nxtGameMode COps{comode} snxtScenario =
   let f !acc _p _i !a = a : acc
       campaignModes = ofoldlGroup' comode "campaign scenario" f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
+
+-- * GameDrop
+
+gameDropHuman :: MonadClientUI m => m ReqUI
+gameDropHuman = do
+  modifySession $ \sess -> sess {sallNframes = -1}  -- hack, but we crash anyway
+  promptAdd0 "Interrupt! Trashing the unsaved game. The program exits now."
+  clientPrintUI "Interrupt! Trashing the unsaved game. The program exits now."
+    -- this is not shown by vty frontend, but at least shown by sdl2 one
+  return ReqUIGameDropAndExit
 
 -- * GameExit
 
