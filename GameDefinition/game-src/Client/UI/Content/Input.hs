@@ -96,7 +96,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                          "and share item" False)
 
   -- Terrain exploration and alteration
-  , ("C-c", ([CmdMove], "open or close or alter", AlterDir []))
+  , ("C", ([CmdMove], "open or close or alter", AlterDir []))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]

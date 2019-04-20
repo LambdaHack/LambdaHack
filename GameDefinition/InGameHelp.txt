@@ -91,7 +91,7 @@ All terrain exploration and alteration commands.
  TAB          cycle among party members on the level
  S-TAB        cycle among all party members
  c            close door
- C-c          open or close or alter
+ C            open or close or alter
  =            select (or deselect) party member
  _            deselect (or select) all on the level
  ;            go to x-hair for 25 steps
