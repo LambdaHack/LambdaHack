@@ -70,30 +70,25 @@ display coscreen FrontendSession{svty} SingleFrame{singleFrame} = do
 keyTranslate :: Key -> K.Key
 keyTranslate n =
   case n of
-    KEsc          -> K.Esc
-    KEnter        -> K.Return
-    (KChar ' ')   -> K.Space
-    (KChar '\t')  -> K.Tab
-    KBackTab      -> K.BackTab
-    KBS           -> K.BackSpace
-    KUp           -> K.Up
-    KDown         -> K.Down
-    KLeft         -> K.Left
-    KRight        -> K.Right
-    KHome         -> K.Home
-    KEnd          -> K.End
-    KPageUp       -> K.PgUp
-    KPageDown     -> K.PgDn
-    KBegin        -> K.Begin
-    KCenter       -> K.Begin
-    KIns          -> K.Insert
-    -- C-Home and C-End are the same in vty as Home and End
-    -- on some terminals so we have to use 1--9 for movement instead of
-    -- leader change.
-    (KChar c)
-      | c `elem` ['1'..'9'] -> K.KP c  -- movement, not leader change
-      | otherwise           -> K.Char c
-    _             -> K.Unknown (show n)
+    KEsc         -> K.Esc
+    KEnter       -> K.Return
+    (KChar ' ')  -> K.Space
+    (KChar '\t') -> K.Tab
+    KBackTab     -> K.BackTab
+    KBS          -> K.BackSpace
+    KUp          -> K.Up
+    KDown        -> K.Down
+    KLeft        -> K.Left
+    KRight       -> K.Right
+    KHome        -> K.Home
+    KEnd         -> K.End
+    KPageUp      -> K.PgUp
+    KPageDown    -> K.PgDn
+    KBegin       -> K.Begin
+    KCenter      -> K.Begin
+    KIns         -> K.Insert
+    (KChar c)    -> K.Char c
+    _            -> K.Unknown (show n)
 
 -- | Translates modifiers to our own encoding.
 modTranslate :: [Modifier] -> K.Modifier
