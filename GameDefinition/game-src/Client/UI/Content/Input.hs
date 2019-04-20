@@ -73,7 +73,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("c", ( [CmdMinimal, CmdMove]
           , descTs closeDoorTriggers
           , AlterDir closeDoorTriggers ))
-  , ("+", ([CmdMinimal, CmdAim], "swerve the aiming line", EpsIncr True))
+  , ("%", ([CmdMinimal, CmdMeta], "yell/yawn", Yell))
 
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")
@@ -159,6 +159,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Aiming
   , ("!", ([CmdAim], "", AimEnemy))
   , ("/", ([CmdAim], "", AimItem))
+  , ("+", ([CmdAim], "swerve the aiming line", EpsIncr True))
   , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
   , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
   , ("C-?", ( [CmdAim]
@@ -195,7 +196,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
-  , ("%", ([CmdMeta], "yell/yawn", Yell))
 
   -- Dashboard, in addition to commands marked above
   , ("safeD101", ([CmdInternal, CmdDashboard], "display history", AllHistory))

@@ -206,7 +206,7 @@ from the help screen or the dashboard and execute it on the spot.
     KP_* or !    cycle x-hair among enemies
     KP_/ or /    cycle x-hair among items
     c            close door
-    +            swerve the aiming line
+    %            yell/yawn
 
 Screen area and UI mode (exploration/aiming) determine
 mouse click effects. First, we give an overview

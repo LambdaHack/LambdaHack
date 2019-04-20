@@ -43,7 +43,7 @@ Minimal cheat sheet for casual play.
  KP_* or !    cycle x-hair among enemies
  KP_/ or /    cycle x-hair among items
  c            close door
- +            swerve the aiming line
+ %            yell/yawn
 
 
 Here is the complete list of commands from the snapshot of in-game help.
