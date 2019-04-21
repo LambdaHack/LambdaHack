@@ -51,7 +51,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   -- Text attributes.
   let emulateBox Color.Attr{..} = case bg of
         Color.HighlightNone -> (fg, Color.Black)
-        Color.HighlightGreen -> (fg, Color.Black)
+        Color.HighlightGreen ->
+          if fg /= Color.Green
+          then (fg, Color.Green)
+          else (fg, Color.BrBlack)
         Color.HighlightBlue ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
@@ -66,7 +69,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
           if fg /= Color.Red
           then (fg, Color.Red)
           else (fg, Color.defFG)
-        Color.HighlightYellow -> (Color.Black, Color.defFG)
+        Color.HighlightYellow -> (Color.Black, Color.defFG)  -- no cursor
         Color.HighlightYellowAim -> (Color.Black, Color.defFG)
         Color.HighlightRedAim ->
           if fg /= Color.Red

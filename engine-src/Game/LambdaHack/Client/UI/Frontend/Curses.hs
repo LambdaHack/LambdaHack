@@ -91,7 +91,7 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
             , (x, Color.AttrChar{acAttr=Color.Attr{..}, ..}) <- line
             , let acAttr2 = case bg of
                     Color.HighlightNone -> (fg, Color.Black)
-                    Color.HighlightGreen -> (fg, Color.Black)
+                    Color.HighlightGreen -> (fg, Color.Black)  -- too few bgs
                     Color.HighlightBlue ->
                       if fg /= Color.Blue
                       then (fg, Color.Blue)

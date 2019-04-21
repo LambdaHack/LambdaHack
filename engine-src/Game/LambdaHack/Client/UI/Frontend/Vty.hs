@@ -110,7 +110,10 @@ setAttr Color.Attr{..} =
 --  else
   let (fg1, bg1) = case bg of
         Color.HighlightNone -> (fg, Color.Black)
-        Color.HighlightGreen -> (fg, Color.Black)
+        Color.HighlightGreen ->
+          if fg /= Color.Green
+          then (fg, Color.Green)
+          else (fg, Color.BrBlack)
         Color.HighlightBlue ->
           if fg /= Color.Blue
           then (fg, Color.Blue)
@@ -125,7 +128,7 @@ setAttr Color.Attr{..} =
           if fg /= Color.Red
           then (fg, Color.Red)
           else (fg, Color.defFG)
-        Color.HighlightYellow -> (fg, Color.Black)
+        Color.HighlightYellow -> (fg, Color.Black)  -- cursor used instead
         Color.HighlightYellowAim -> (Color.Black, Color.defFG)
         Color.HighlightRedAim ->
           if fg /= Color.Red
