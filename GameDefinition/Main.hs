@@ -12,11 +12,11 @@ import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Options.Applicative as OA
 import           System.Exit
+import qualified System.IO as SIO
 
 #ifndef USE_JSFILE
 import qualified GHC.IO.Handle
 import           System.FilePath
-import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.File (tryCreateDir)
 import Game.LambdaHack.Common.Misc
