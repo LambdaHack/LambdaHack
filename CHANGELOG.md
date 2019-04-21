@@ -1,5 +1,11 @@
 ## [v0.9.4.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.3.0...v0.9.4.0)
 
+- In vty frontend highlight actors more
+- Clean up actor highlighting
+- Add yell/yawn to minimal command set, remove swerving the aiming line
+- Invoke yell/yawn exclusively with '%', due tor Windows and terminal woes
+- Move C-c command to C, not to mask C-c on console frontends
+- Tweak and fix vty console frontends, for screen-readers
 - React specially at gameover under certain special circumstances
 - Simpliy assignSlot now that slots are auto-sorted
 - Get rid of explicit item sorting; let lore and menu slots agree
