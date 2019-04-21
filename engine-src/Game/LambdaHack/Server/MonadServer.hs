@@ -130,7 +130,7 @@ restoreScore COps{corule} = do
     res <- liftIO $ Ex.try $
       if configExists then do
         (vlib2, s) <- strictDecodeEOF (path "")
-        if vlib2 == Self.version
+        if Save.compatibleVersion vlib2 Self.version
         then return $ Just s
         else do
           let msg = "High score file from old version of game detected."

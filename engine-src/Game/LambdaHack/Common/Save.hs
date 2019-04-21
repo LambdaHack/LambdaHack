@@ -1,9 +1,10 @@
 -- | Saving and restoring game state, used by both server and clients.
 module Game.LambdaHack.Common.Save
   ( ChanSave, saveToChan, wrapInSaves, restoreGame, saveNameCli, saveNameSer
+  , compatibleVersion
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , loopSave, compatibleVersion, delayPrint
+  , loopSave, delayPrint
 #endif
   ) where
 
