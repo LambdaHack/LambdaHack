@@ -259,8 +259,8 @@ build-binary-common:
 	cp GameDefinition/fonts/LICENSE.16x16x LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/Fix15Mono-Bold.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
 	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
+	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
 	cp README.md LambdaHackTheGame
 	cp CHANGELOG.md LambdaHackTheGame
 	cp LICENSE LambdaHackTheGame
