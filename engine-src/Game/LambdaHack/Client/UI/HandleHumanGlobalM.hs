@@ -1325,14 +1325,15 @@ generateMenu :: MonadClientUI m
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
   art <- artWithVersion
-  let bindingLen = 30
+  let bindingLen = 35
       emptyInfo = repeat $ replicate bindingLen ' '
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
               , T.unpack
                 $ T.justifyLeft bindingLen ' '
-                    $ T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
+                    $ " " <> T.justifyLeft 4 ' ' (T.pack $ K.showKM k)
+                      <> " " <> d )
         in map fmt kds
       overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
       overwrite =  -- overwrite the art with key bindings and other lines
@@ -1379,12 +1380,12 @@ mainMenuHuman cmdAction = do
       kds = (K.mkKM "p", (tnextScenario, GameScenarioIncr))
             : [ (km, (desc, cmd))
               | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
-      bindingLen = 30
+      bindingLen = 35
       gameName = mname gameMode
       gameInfo = map T.unpack
                    [ T.justifyLeft bindingLen ' ' ""
                    , T.justifyLeft bindingLen ' '
-                     $ "Now playing:" <+> gameName
+                     $ " Now playing:" <+> gameName
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "main"
 
@@ -1416,10 +1417,10 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "c", (tsmell, MarkSmell))
             , (K.mkKM "t", (thenchmen, Tactic))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      bindingLen = 30
+      bindingLen = 35
       gameInfo = map T.unpack
                    [ T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' "Convenience settings:"
+                   , T.justifyLeft bindingLen ' ' " Convenience settings:"
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "settings"
 
@@ -1433,13 +1434,13 @@ challengesMenuHuman cmdAction = do
   curChal <- getsClient scurChal
   nxtChal <- getsClient snxtChal
   let offOn b = if b then "on" else "off"
-      tcurDiff = "*   difficulty:" <+> tshow (cdiff curChal)
+      tcurDiff = " *   difficulty:" <+> tshow (cdiff curChal)
       tnextDiff = "difficulty:" <+> tshow (cdiff nxtChal)
-      tcurWolf = "*   lone wolf:"
+      tcurWolf = " *   lone wolf:"
                  <+> offOn (cwolf curChal)
       tnextWolf = "lone wolf:"
                   <+> offOn (cwolf nxtChal)
-      tcurFish = "*   cold fish:"
+      tcurFish = " *   cold fish:"
                  <+> offOn (cfish curChal)
       tnextFish = "cold fish:"
                   <+> offOn (cfish nxtChal)
@@ -1448,15 +1449,15 @@ challengesMenuHuman cmdAction = do
             , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      bindingLen = 30
+      bindingLen = 35
       gameInfo = map T.unpack
-                   [ T.justifyLeft bindingLen ' ' "Current challenges:"
+                   [ T.justifyLeft bindingLen ' ' " Current challenges:"
                    , T.justifyLeft bindingLen ' ' ""
                    , T.justifyLeft bindingLen ' ' tcurDiff
                    , T.justifyLeft bindingLen ' ' tcurWolf
                    , T.justifyLeft bindingLen ' ' tcurFish
                    , T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' "Next game challenges:"
+                   , T.justifyLeft bindingLen ' ' " Next game challenges:"
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "challenge"
 
