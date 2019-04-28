@@ -39,7 +39,7 @@ keyHelp COps{corule}
       : map T.pack rintroScreen
       ++
       [ ""
-      , "Press SPACE for help or ESC to see the map again."
+      , "Press SPACE or PGDN for help and ESC to see the map again."
       ]
     movBlurb = map T.pack rmoveKeysScreen
     movBlurbEnd =
