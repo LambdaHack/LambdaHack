@@ -26,7 +26,7 @@ HeroName_5 = ("Roger Robin", "he")
 HeroName_6 = ("Christopher Flatt", "he")
 
 [ui]
-movementViKeys_hjklyubn = False
+movementViKeys_hjklyubn = True
 movementLaptopKeys_uk8o79jl = False
 ; Monospace fonts that have fixed size regardless of boldness (on some OSes at least)
 gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
