@@ -1563,7 +1563,7 @@ gameQuitHuman = do
   if b
   then do
     snxtChal <- getsClient snxtChal
-    return $ Right $ ReqUIGameRestart "starting" snxtChal
+    return $ Right $ ReqUIGameRestart "insert coin" snxtChal
   else do
     msg2 <- rndToActionForget $ oneOf
               [ "yea, would be a pity to leave them to die"

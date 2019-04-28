@@ -254,7 +254,7 @@ screensave auto r =
 
 screensaverRaid = raid
   { mname   = "auto-raid (1)"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterRaid
   }
 
@@ -266,19 +266,19 @@ screensaverBrawl = brawl
 
 screensaverShootout = shootout
   { mname   = "auto-shootout (3)"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterShootout
   }
 
 screensaverHunt = hunt
   { mname   = "auto-hunt (4)"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterHunt
   }
 
 screensaverEscape = escape
   { mname   = "auto-escape (5)"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
   , mroster = screensave (AutoLeader False False) rosterEscape
   }
 
@@ -302,7 +302,7 @@ screensaverCrawl = crawl
 
 screensaverSafari = safari
   { mname   = "auto-safari"
-  , mfreq   = [("starting", 1), ("no confirms", 1)]
+  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
   , mroster = -- changing leader by client needed, because of TFollow
               screensave (AutoLeader False True) rosterSafari
   }

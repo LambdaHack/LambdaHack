@@ -263,7 +263,7 @@ gameReset serverOptions mGameMode mrandom = do
   factionDold <- getsState sfactionD
   gameModeIdOld <- getsState sgameModeId
   curChalSer <- getsServer $ scurChalSer . soptions
-  let startingModeGroup = "starting"
+  let startingModeGroup = "insert coin"
       gameMode = fromMaybe startingModeGroup
                  $ mGameMode `mplus` sgameMode serverOptions
       rnd :: Rnd (FactionDict, FlavourMap, DiscoveryKind, DiscoveryKindRev,
