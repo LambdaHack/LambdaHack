@@ -122,9 +122,9 @@ on the `scalableFontSize` parameter in the config file.
 With `scalableFontSize = 16` it should look almost the same
 as the pixel-perfect `16x16xw.bdf`.
 
-If you don't have a numeric keypad, you can use mouse for movement
-or you can enable the compact laptop keys (uk8o79jl) or the Vi keys
-(aka roguelike keys) in the config file. If numeric keypad doesn't work,
+If you don't have a numeric keypad, you can use the Vi editor keys
+(aka roguelike keys) or mouse for movement or you can enable the compact
+laptop keys (uk8o79jl) in the config file. If numeric keypad doesn't work,
 toggling the Num Lock key sometimes helps. If running with the Shift key
 and keypad keys doesn't work, try Control key instead.
 The game is fully playable with mouse only, as well as with keyboard only,
