@@ -67,7 +67,7 @@ queryUI = do
     keyPressed <- anyKeyPressed
     if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
       discardPressedKey
-      addPressedControlEsc
+      addPressedControlEsc  -- sets @swasAutomated@
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
@@ -124,8 +124,8 @@ humanCommand = do
         report <- getsSession $ newReport . shistory
         hintMode <- getsSession shintMode
         -- Hints are not considered non-empty reports.
-        modifySession $ \sess -> sess {sreportNull =
-          nullReport report || hintMode == HintShown}
+        modifySession $ \sess -> sess
+          {sreportNull = nullReport report || hintMode == HintShown}
         case hintMode of
           HintAbsent -> return ()
           HintShown -> modifySession $ \sess -> sess {shintMode = HintWiped}

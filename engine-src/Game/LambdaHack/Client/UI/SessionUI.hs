@@ -24,10 +24,10 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
+import           Game.LambdaHack.Definition.Defs
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -59,6 +59,7 @@ data SessionUI = SessionUI
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
+  , swasAutomated  :: Bool          -- ^ the player just exited AI automation
   , smarkVision    :: Bool          -- ^ mark leader and party FOV
   , smarkSmell     :: Bool          -- ^ mark smell, if the leader can smell
   , smenuIxMap     :: M.Map String Int
@@ -130,6 +131,7 @@ emptySessionUI sUIOptions =
     , slastPlay = []
     , slastLost = ES.empty
     , swaitTimes = 0
+    , swasAutomated = False
     , smarkVision = False
     , smarkSmell = True
     , smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
@@ -193,6 +195,7 @@ instance Binary SessionUI where
         slastPlay = []
         slastLost = ES.empty
         swaitTimes = 0
+        swasAutomated = False
         smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
         sreportNull = True
         shintMode = HintAbsent

@@ -35,10 +35,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
   , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
-  , ("a", ([CmdMainMenu], "automate faction", Automate))
+  , ("a", ([CmdMainMenu], "toggle autoplay (insert coin)", Automate))
   , ("?", ([CmdMainMenu], "see command help", Help))
   , ("F12", ([CmdMainMenu], "go to dashboard", Dashboard))
-  , ("Escape", ([CmdMainMenu], "back to playing", Cancel))
+  , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))
 
   -- Minimal command set, in the desired presentation order.
   -- A lot of these are not necessary, but may be familiar to new players.
@@ -48,9 +48,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
                , "open main menu/finish aiming"
-               , ByAimMode AimModeCmd { exploration = ExecuteIfClear MainMenu
+               , ByAimMode AimModeCmd { exploration =
+                                          ExecuteIfClear MainMenuAutoOff
                                       , aiming = Cancel } ))
-  , ("C-Escape", ([CmdNoHelp], "", MainMenu))
+  , ("C-Escape", ([CmdNoHelp], "", MainMenuAutoOn))
       -- required by frontends; not shown
   , ("Return", ( [CmdMinimal, CmdAim]
                , "open dashboard/accept target"
@@ -247,7 +248,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , aimFlingCmd ))
   , ("safe7", ( [CmdInternal, CmdDashboard]
               , "open main menu"
-              , MainMenu ))
+              , MainMenuAutoOff ))
   , ("safe8", ( [CmdInternal]
               , "cancel aiming"
               , Cancel ))

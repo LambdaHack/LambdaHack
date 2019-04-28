@@ -437,12 +437,8 @@ displayRespUpdAtomicUI cmd = case cmd of
       unless (T.null desc) $ do
         msgAdd MsgPromptFocus "You remember your surroundings."
         msgAdd MsgPrompt desc
-      msgAdd MsgAlert "Are you up for the challenge?"
-      slides <- reportToSlideshow [K.spaceKM, K.escKM]
-      km <- getConfirms ColorFull [K.spaceKM, K.escKM] slides
-      if km == K.escKM
-      then addPressedControlEsc
-      else promptAdd0 "Prove yourself!"
+      displayMore ColorFull "Are you up for the challenge?"
+      promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."

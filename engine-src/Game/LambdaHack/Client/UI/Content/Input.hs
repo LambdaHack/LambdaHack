@@ -157,7 +157,7 @@ mouseRMB = ( [CmdMouse]
         [ (CaMapLeader, dropCmd)
         , (CaMapParty, SelectWithPointer)
         , (CaMap, AimPointerEnemy)
-        , (CaArenaName, MainMenu)
+        , (CaArenaName, MainMenuAutoOff)
         , (CaPercentSeen, autoexplore25Cmd) ]
     , aiming = ByArea $ common ++
         [ (CaMap, XhairPointerEnemy)  -- hack; same effect, but matches LMB

@@ -130,6 +130,8 @@ data HumanCmd =
   | Hint
   | ItemMenu
   | MainMenu
+  | MainMenuAutoOn
+  | MainMenuAutoOff
   | Dashboard
     -- Below this line, commands do not take time.
   | GameDifficultyIncr
@@ -142,6 +144,7 @@ data HumanCmd =
   | GameSave
   | Tactic
   | Automate
+  | AutomateBack
     -- Local. Below this line, commands do not notify the server.
   | ChooseItem ItemDialogMode
   | ChooseItemMenu ItemDialogMode

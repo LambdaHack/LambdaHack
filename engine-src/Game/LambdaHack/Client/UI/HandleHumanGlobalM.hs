@@ -16,11 +16,12 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , moveItemHuman, projectHuman, applyHuman
   , alterDirHuman, alterWithPointerHuman
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
-  , mainMenuHuman, settingsMenuHuman, challengesMenuHuman
+  , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
+  , settingsMenuHuman, challengesMenuHuman
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
   , gameRestartHuman, gameDropHuman, gameExitHuman, gameSaveHuman
-  , tacticHuman, automateHuman
+  , tacticHuman, automateHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
@@ -1389,6 +1390,26 @@ mainMenuHuman cmdAction = do
                    , T.justifyLeft bindingLen ' ' "" ]
   generateMenu cmdAction kds gameInfo "main"
 
+-- * MainMenuAutoOn
+
+-- | Display the main menu and set @swasAutomated@.
+mainMenuAutoOnHuman :: MonadClientUI m
+                    => (HumanCmd -> m (Either MError ReqUI))
+                    -> m (Either MError ReqUI)
+mainMenuAutoOnHuman cmdAction = do
+  modifySession $ \sess -> sess {swasAutomated = True}
+  mainMenuHuman cmdAction
+
+-- * MainMenuAutoOff
+
+-- | Display the main menu and unset @swasAutomated@.
+mainMenuAutoOffHuman :: MonadClientUI m
+                     => (HumanCmd -> m (Either MError ReqUI))
+                     -> m (Either MError ReqUI)
+mainMenuAutoOffHuman cmdAction = do
+  modifySession $ \sess -> sess {swasAutomated = False}
+  mainMenuHuman cmdAction
+
 -- * SettingsMenu
 
 -- | Display the settings menu.
@@ -1579,9 +1600,21 @@ tacticHuman = do
 
 automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
-  clearAimMode
-  go <- displaySpaceEsc ColorBW
-          "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
-  if not go
-  then failWith "automation canceled"
-  else return $ Right ReqUIAutomate
+  swasAutomated <- getsSession swasAutomated
+  if swasAutomated then failWith "automation canceled"
+  else do
+    clearAimMode
+    go <- displaySpaceEsc ColorBW
+            "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
+    if not go
+    then failWith "automation canceled"
+    else return $ Right ReqUIAutomate
+
+-- * AutomateBack
+
+automateBackHuman :: MonadClientUI m => m (Either MError ReqUI)
+automateBackHuman = do
+  swasAutomated <- getsSession swasAutomated
+  return $! if swasAutomated
+            then Right ReqUIAutomate
+            else Left Nothing
