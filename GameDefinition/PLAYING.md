@@ -168,9 +168,9 @@ not shown here, list all game commands grouped by categories in detail.
 A text snapshot of the complete in-game help is in
 [InGameHelp.txt](InGameHelp.txt).
 
-Walk throughout a level with mouse or numeric keypad (left diagram below),
-or with its compact laptop replacement (middle) or the Vi editor keys (right)
-selectable in config.ui.ini. Run until disturbed with Shift or Control.
+Walk throughout a level with mouse or numeric keypad (left diagram below)
+or the Vi editor keys (right) or with a compact laptop setup (middle) that
+requires enabling in config.ui.ini. Run until disturbed with Shift or Control.
 Go-to with LMB (left mouse button). Run collectively via S-LMB (holding Shift).
 
                7 8 9          7 8 9          y k u
