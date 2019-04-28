@@ -33,11 +33,11 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Main menu
   [ ("e", ([CmdMainMenu], "enter challenges menu>", ChallengesMenu))
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
-  , ("x", ([CmdMainMenu], "exit to desktop", GameExit))
+  , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
   , ("a", ([CmdMainMenu], "toggle autoplay (insert coin)", Automate))
   , ("?", ([CmdMainMenu], "see command help", Help))
-  , ("F12", ([CmdMainMenu], "go to dashboard", Dashboard))
+  , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))
 
   -- Minimal command set, in the desired presentation order.

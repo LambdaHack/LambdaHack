@@ -1424,14 +1424,14 @@ settingsMenuHuman cmdAction = do
   factTactic <- getsState $ ftactic . gplayer . (EM.! side) . sfactionD
   let offOn b = if b then "on" else "off"
       offOnAll n = case n of
-        0 -> "low"
-        1 -> "medium"
-        2 -> "high"
+        0 -> "none"
+        1 -> "untried"
+        2 -> "all"
         _ -> error $ "" `showFailure` n
-      tsuspect = "suspect terrain:" <+> offOnAll markSuspect
-      tvisible = "visible zone:" <+> offOn markVision
-      tsmell = "smell clues:" <+> offOn markSmell
-      thenchmen = "tactic:" <+> Ability.nameTactic factTactic
+      tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
+      tvisible = "show visible zone:" <+> offOn markVision
+      tsmell = "display smell clues:" <+> offOn markSmell
+      thenchmen = "henchmen tactic:" <+> Ability.nameTactic factTactic
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
@@ -1456,14 +1456,14 @@ challengesMenuHuman cmdAction = do
   nxtChal <- getsClient snxtChal
   let offOn b = if b then "on" else "off"
       tcurDiff = " *   difficulty:" <+> tshow (cdiff curChal)
-      tnextDiff = "difficulty:" <+> tshow (cdiff nxtChal)
+      tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tcurWolf = " *   lone wolf:"
                  <+> offOn (cwolf curChal)
-      tnextWolf = "lone wolf:"
+      tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
       tcurFish = " *   cold fish:"
                  <+> offOn (cfish curChal)
-      tnextFish = "cold fish:"
+      tnextFish = "cold fish (hard):"
                   <+> offOn (cfish nxtChal)
       -- Key-description-command tuples.
       kds = [ (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
