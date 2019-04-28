@@ -20,7 +20,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , settingsMenuHuman, challengesMenuHuman
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
-  , gameRestartHuman, gameDropHuman, gameExitHuman, gameSaveHuman
+  , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
   , tacticHuman, automateHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -1547,6 +1547,28 @@ nxtGameMode COps{comode} snxtScenario =
   let f !acc _p _i !a = a : acc
       campaignModes = ofoldlGroup' comode "campaign scenario" f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
+
+-- * GameQuit
+
+-- TODO: deduplicate with gameRestartHuman
+gameQuitHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
+gameQuitHuman = do
+  isNoConfirms <- isNoConfirmsGame
+  gameMode <- getGameMode
+  b <- if isNoConfirms
+       then return True
+       else displayYesNo ColorBW
+            $ "If you quit, the progress of the ongoing" <+> mname gameMode
+              <+> "game will be lost! Are you sure?"
+  if b
+  then do
+    snxtChal <- getsClient snxtChal
+    return $ Right $ ReqUIGameRestart "starting" snxtChal
+  else do
+    msg2 <- rndToActionForget $ oneOf
+              [ "yea, would be a pity to leave them to die"
+              , "yea, a shame to get your team stranded" ]
+    failWith msg2
 
 -- * GameDrop
 

@@ -176,5 +176,7 @@ Assorted commands.
  C-V          voice recorded commands 25 times
  '            start recording commands
  C-S          save game backup
+ C-q          quit game and start autoplay
+ C-c          exit without saving
  C-P          print screen
  %            yell/yawn

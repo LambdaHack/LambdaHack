@@ -196,6 +196,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C-V", repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
+  , ("C-q", ([CmdMeta], "quit game and start autoplay", GameQuit))
   , ("C-c", ([CmdMeta], "exit without saving", GameDrop))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
 
