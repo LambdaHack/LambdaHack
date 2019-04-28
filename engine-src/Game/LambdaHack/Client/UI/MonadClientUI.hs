@@ -66,14 +66,14 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Save as Save
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -193,7 +193,7 @@ getReportUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
-      promptAI = toMsg mem MsgPrompt "[press ESC for main menu]"
+      promptAI = toMsg mem MsgPrompt "[press any key for main menu]"
   return $! if underAI then consReport promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
