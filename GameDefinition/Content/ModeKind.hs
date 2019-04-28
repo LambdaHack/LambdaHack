@@ -34,7 +34,7 @@ raid,    brawl, shootout, hunt, escape, zoo, ambush, crawl, crawlEmpty, crawlSur
 
 raid = ModeKind  -- mini-crawl
   { msymbol = 'r'
-  , mname   = "raid (1)"
+  , mname   = "solo raid (1)"
   , mfreq   = [("raid", 1), ("campaign scenario", 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
@@ -46,7 +46,7 @@ raid = ModeKind  -- mini-crawl
 
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   { msymbol = 'k'
-  , mname   = "brawl (2)"
+  , mname   = "melee brawl (2)"
   , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
@@ -64,7 +64,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
 -- and that's their only role, so a small party makes sense.
 shootout = ModeKind  -- sparse ranged in daylight
   { msymbol = 's'
-  , mname   = "shootout (3)"
+  , mname   = "foggy shootout (3)"
   , mfreq   = [("shootout", 1), ("campaign scenario", 1)]
   , mroster = rosterShootout
   , mcaves  = cavesShootout
@@ -74,7 +74,7 @@ shootout = ModeKind  -- sparse ranged in daylight
 
 hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   { msymbol = 'h'
-  , mname   = "hunt (4)"
+  , mname   = "perilous hunt (4)"
   , mfreq   = [("hunt", 1), ("campaign scenario", 1)]
   , mroster = rosterHunt
   , mcaves  = cavesHunt
@@ -84,7 +84,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
 
 escape = ModeKind  -- asymmetric ranged and stealth race at night
   { msymbol = 'e'
-  , mname   = "escape (5)"
+  , mname   = "night escape (5)"
   , mfreq   = [("escape", 1), ("campaign scenario", 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
@@ -94,7 +94,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
 
 zoo = ModeKind  -- asymmetric crowd melee at night
   { msymbol = 'b'
-  , mname   = "zoo (6)"
+  , mname   = "burning zoo (6)"
   , mfreq   = [("zoo", 1), ("campaign scenario", 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
@@ -112,7 +112,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 -- shoots (and often also scouts) and others just gather ammo.
 ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   { msymbol = 'm'
-  , mname   = "ambush (7)"
+  , mname   = "ranged ambush (7)"
   , mfreq   = [("ambush", 1), ("campaign scenario", 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
@@ -122,7 +122,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
 
 crawl = ModeKind
   { msymbol = 'c'
-  , mname   = "crawl (long)"
+  , mname   = "deep crawl (long)"
   , mfreq   = [("crawl", 1), ("campaign scenario", 1)]
   , mroster = rosterCrawl
   , mcaves  = cavesCrawl
