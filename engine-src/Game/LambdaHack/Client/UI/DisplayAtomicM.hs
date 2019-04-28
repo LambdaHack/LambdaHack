@@ -300,7 +300,9 @@ displayRespUpdAtomicUI cmd = case cmd of
     side <- getsClient sside
     lidV <- viewedLevelUI
     markDisplayNeeded lidV
-    when (fid == side) $ setFrontAutoYes b
+    when (fid == side) $ do
+      unless b $ addPressedControlEsc  -- sets @swasAutomated@, enters main menu
+      setFrontAutoYes b  -- now can stop auto-accepting prompts
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile lid p fromTile toTile -> do

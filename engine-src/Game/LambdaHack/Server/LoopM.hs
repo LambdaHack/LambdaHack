@@ -584,11 +584,10 @@ hActors as@(aid : rest) = do
       mainUIactor = fhasUI (gplayer fact)
                     && (aidIsLeader
                         || fleaderMode (gplayer fact) == LeaderNull)
-      -- Checking squit, to avoid doubly setting faction status to Camping
+      -- Checking @breakLoop@, to avoid doubly setting faction status to Camping
       -- in case AI-controlled UI client asks to exit game at exactly
       -- the same moment as natural game over was detected.
       mainUIunderAI = mainUIactor && isAIFact fact && not breakLoop
-      doQueryAI = not mainUIactor || isAIFact fact
   when mainUIunderAI $ do
     cmdS <- sendQueryUI side aid
     case fst cmdS of
@@ -597,6 +596,8 @@ hActors as@(aid : rest) = do
       ReqUIGameDropAndExit -> reqGameDropAndExit aid
       ReqUIGameSaveAndExit -> reqGameSaveAndExit aid
       _ -> error $ "" `showFailure` cmdS
+  factNew <- getsState $ (EM.! side) . sfactionD
+  let doQueryAI = not mainUIactor || isAIFact factNew
   breakASAP <- getsServer sbreakASAP
   -- If breaking out of the game loop, pretend there was a non-wait move.
   -- we don't need additionally to check @sbreakLoop@, because it occurs alone

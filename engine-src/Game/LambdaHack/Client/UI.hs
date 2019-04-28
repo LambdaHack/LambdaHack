@@ -66,8 +66,8 @@ queryUI = do
     recordHistory
     keyPressed <- anyKeyPressed
     if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
+      -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@.
       discardPressedKey
-      addPressedControlEsc  -- sets @swasAutomated@
       -- Regaining control of faction cancels --stopAfter*.
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
