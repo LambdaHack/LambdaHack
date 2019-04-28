@@ -1493,7 +1493,7 @@ gameScenarioIncr =
 gameDifficultyIncr :: MonadClient m => m ()
 gameDifficultyIncr = do
   nxtDiff <- getsClient $ cdiff . snxtChal
-  let delta = 1
+  let delta = -1
       d | nxtDiff + delta > difficultyBound = 1
         | nxtDiff + delta < 1 = difficultyBound
         | otherwise = nxtDiff + delta
