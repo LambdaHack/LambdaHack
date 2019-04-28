@@ -1581,7 +1581,7 @@ automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
   clearAimMode
   go <- displaySpaceEsc ColorBW
-          "Ceding control to AI (press ESC to regain)."
+          "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
   if not go
   then failWith "automation canceled"
   else return $ Right ReqUIAutomate
