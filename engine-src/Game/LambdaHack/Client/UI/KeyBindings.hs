@@ -203,7 +203,7 @@ keyHelp COps{corule}
       else
         [ ( casualDescription <> "."
           , okxs CmdMinimal
-                 (movText ++ ["", ""] ++ minimalText ++ [keyCaption])
+                 (movText ++ [""] ++ minimalText ++ [keyCaption])
                  casualEnd ) ]
     , if catLength CmdItemMenu + catLength CmdItem
          + 9 > rheight then
