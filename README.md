@@ -83,19 +83,14 @@ e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,
 you may prefer to use a native binary for your architecture, if it exists.
 
-Pre-compiled game binaries are available through the release page[11].
+Pre-compiled game binaries are available through the release page[11]
+(and, for Windows, dev versions continuously from AppVeyor[18]).
 To use a pre-compiled binary archive, unpack it and run the executable
 in the unpacked directory or use program shortcuts from the installer,
-if available.
-
-On Linux, make sure you have the SDL2 libraries installed on your system
-(e.g., libsdl2-2.0-0 and libsdl2-ttf-2.0-0 on Ubuntu).
-On Mac OS X, you need SDL2 installed, e.g.,
-from [libsdlorg](https://www.libsdl.org/download-2.0.php).
-For Windows, the SDL2 and all other needed libraries are already
-contained in the game's binary archive.
-Note that Windows binaries no longer work on Windows XP, since Cygwin
-and MSYS2 dropped support for XP.
+if available. On Linux, make sure you have the SDL2 libraries installed
+on your system (e.g., libsdl2-2.0-0 and libsdl2-ttf-2.0-0 on Ubuntu).
+For Windows (XP no longer supported), the SDL2 and all other needed libraries
+are already contained in the game's binary archive.
 
 
 Screen and keyboard configuration
