@@ -26,26 +26,27 @@ HeroName_5 = ("Roger Robin", "he")
 HeroName_6 = ("Christopher Flatt", "he")
 
 [ui]
+; These two are mutually exclusive:
 movementViKeys_hjklyubn = True
 movementLaptopKeys_uk8o79jl = False
-; Monospace fonts that have fixed size regardless of boldness (on some OSes at least)
-gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
+; The font to use for scaling SDL2 display (best by multiples or 0.5):
 ;sdlFontFile = "16x16xw.woff"
 scalableFontSize = 16
 sdlScalableSizeAdd = 0
 sdlFontFile = "16x16xw.bdf"
 sdlBitmapSizeAdd = 0
-;sdlFonSizeAdd is now ignored
 ;sdlFontFile = "8x8xb.fnt"
-;sdlBitmapSizeAdd = 2
 ;sdlFontFile = "8x8x.fnt"
 ;sdlBitmapSizeAdd = 2
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000
 maxFps = 24
 noAnim = False
-; runStopMsgs is now ignored
 hpWarningPercent = 20
 ; Uncomment to make all messages white.
 ; messageColors = []
 overrideCmdline = ""
+; Legacy: monospace fonts that have fixed size regardless of boldness (on some OSes at least)
+gtkFontFamily = "DejaVu Sans Mono,Consolas,Courier New,Liberation Mono,Courier,FreeMono,Monospace"
+; sdlFonSizeAdd is now ignored
+; runStopMsgs is now ignored
