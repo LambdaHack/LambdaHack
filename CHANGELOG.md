@@ -1,3 +1,15 @@
+## [v0.9.5.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.4.0...v0.9.5.0)
+
+- Clean up the default config file, keeping compatibility
+- Make scenario names longer and slighlty more informative
+- Make Vi movement keys the default in addition to keypad and mouse
+- Fix a bug where death prompt when autoplaying was capturing a keypress
+- Let ESC from main menu return to insert coin mode, if applicable
+- Make various small UI tweaks, especially to main menu and its submenu
+- Let main menu lines have 35, not 30, characters
+- Make the main menu ASCII art less intrusive (and easier for screen readers)
+- Don't invalidate the score file due to game minor (only) version bump
+
 ## [v0.9.4.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.3.0...v0.9.4.0)
 
 - In vty frontend highlight actors more
