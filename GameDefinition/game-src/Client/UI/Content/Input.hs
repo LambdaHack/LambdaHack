@@ -212,9 +212,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                "run to pointer collectively for 25 steps/fling at enemy" )
   , ("RightButtonRelease", mouseRMB)
   , ("C-LeftButtonRelease", replaceDesc "" mouseRMB)  -- Mac convention
-  , ( "C-RightButtonRelease"
+  , ( "S-RightButtonRelease"
     , ([CmdMouse], "open or close or alter at pointer", AlterWithPointer []) )
   , ("MiddleButtonRelease", mouseMMB)
+  , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
   , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 

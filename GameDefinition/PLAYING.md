@@ -221,8 +221,8 @@ which is also used over menus, to page-scroll them.
     LMB          go to pointer for 25 steps/fling at enemy
     S-LMB        run to pointer collectively for 25 steps/fling at enemy
     RMB or C-LMB start aiming at enemy under pointer
-    C-RMB        open or close or alter at pointer
-    MMB          snap x-hair to floor under pointer
+    S-RMB        open or close or alter at pointer
+    MMB or C-RMB snap x-hair to floor under pointer
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
 
