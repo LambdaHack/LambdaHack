@@ -64,6 +64,7 @@ promptMainKeys = do
       kmItemEqp = revCmd K.undefinedKM
                          (HumanCmd.MoveItem [CGround, CInv, CSha] CEqp
                                             Nothing False)
+      kmXhairPointerFloor = revCmd K.undefinedKM HumanCmd.XhairPointerFloor
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
   xhair <- getsSession sxhair
@@ -76,14 +77,19 @@ promptMainKeys = do
       keepTab = if manyTeammates
                 then "Keep TAB of teammates (S-TAB for other levels)."
                 else ""
+      describePos = if mmbIsNormal
+                    then "Describe map position with MMB."
+                    else ""
       viewEquip = if eqpKeysAreNormal
                   then "View (E)quipment and (e)quip items."
                   else ""
       moreHelp = "Press" <+> tshow kmHelp <+> "for help."
+      mmbIsNormal = kmXhairPointerFloor == K.middleButtonReleaseKM
       eqpKeysAreNormal = kmViewEqp == K.mkChar 'E'
                          && kmItemEqp == K.mkChar 'e'
       keys | isNothing saimMode =
         "Explore with" <+> moveKeys <+> "keys or mouse."
+        <+> describePos
         <+> viewEquip
         <+> keepTab
         <+> moreHelp

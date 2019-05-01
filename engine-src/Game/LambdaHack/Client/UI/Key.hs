@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Key
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
   , upKM, downKM, leftKM, rightKM
   , homeKM, endKM, backspaceKM, controlP
-  , leftButtonReleaseKM, rightButtonReleaseKM
+  , leftButtonReleaseKM, middleButtonReleaseKM, rightButtonReleaseKM
   , dirAllKey, handleDir, moveBinding, mkKM, mkChar, mkKP
   , keyTranslate, keyTranslateWeb
 #ifdef EXPOSE_INTERNAL
@@ -195,6 +195,9 @@ controlP = KM Control (Char 'P')
 
 leftButtonReleaseKM :: KM
 leftButtonReleaseKM = KM NoModifier LeftButtonRelease
+
+middleButtonReleaseKM :: KM
+middleButtonReleaseKM = KM NoModifier MiddleButtonRelease
 
 rightButtonReleaseKM :: KM
 rightButtonReleaseKM = KM NoModifier RightButtonRelease

@@ -52,7 +52,8 @@ solid symbol are more likely to be non-passable terrain than items.
 In case of doubt, one of the aiming commands (keypad `/`, with default
 keybinding) cycles through all visible and remembered items on the level
 and another (keypad `*`, with default keybinding) through all foes.
-The basic terrain kinds are as follows.
+Also, pointing at a map position with `MMB` (middle mouse button) displays
+a short description of its contents. The basic terrain kinds are as follows.
 
     terrain type                           on-screen symbol
     wall (horizontal and vertical)         - and |
@@ -240,7 +241,7 @@ The latter is essential in the rare cases when your henchmen
 to more than one enemy, setting his target makes him melee a particular foe.
 
 You can enter the aiming mode with the `*` keypad key that selects
-enemies or the `/` keypad key that cycles among items on the floor
+enemies or the `/` key that cycles among items on the floor
 and marks a tile underneath an item. You can move x-hair
 with direction keys and assign a personal target to the leader
 with a `RET` key (Return, Enter). The details of the shared x-hair mark
