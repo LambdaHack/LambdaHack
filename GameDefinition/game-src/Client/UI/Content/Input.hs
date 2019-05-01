@@ -35,7 +35,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
   , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
-  , ("a", ([CmdMainMenu], "toggle autoplay (insert coin)", Automate))
+  , ("t", ([CmdMainMenu], "toggle autoplay (insert coin)", Automate))
   , ("?", ([CmdMainMenu], "see command help", Help))
   , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))
@@ -186,18 +186,21 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                    , "clear chosen item and x-hair"
                    , ComposeUnlessError ClearTargetIfItemClear ItemClear))
 
-  -- Assorted
-  , ("F12", ([CmdMeta], "open dashboard", Dashboard))
+  -- Assorted (first few cloned from main menu)
+  , ("C-s", ([CmdMeta], "start new game", GameRestart))
+  , ("C-x", ([CmdMeta], "save and exit to desktop", GameExit))
+  , ("C-t", ([CmdMeta], "toggle autoplay (insert coin)", Automate))
+  , ("C-q", ([CmdMeta], "quit game and start autoplay", GameQuit))
+  , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
+  , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
   , ("V", repeatTriple 100)
   , ("C-v", repeatTriple 1000)
   , ("C-V", repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
-  , ("C-q", ([CmdMeta], "quit game and start autoplay", GameQuit))
-  , ("C-c", ([CmdMeta], "exit without saving", GameDrop))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
 
   -- Dashboard, in addition to commands marked above

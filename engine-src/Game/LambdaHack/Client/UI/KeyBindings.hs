@@ -113,9 +113,8 @@ keyHelp COps{corule}
       ]
     lastHelpEnding =
       [ ""
-      , "For more playing instructions see file PLAYING.md."
-      , "Press PGUP or scroll the mouse wheel to return to previous pages"
-      , "and press SPACE or ESC to see the map again."
+      , "For more playing instructions see file PLAYING.md. Press PGUP or scroll"
+      , "mouse wheel for previous pages and press SPACE or ESC to see the map again."
       ]
     keyL = 12
     pickLeaderDescription =

@@ -166,16 +166,19 @@ Assorted commands.
 
  keys         command
  SPACE        clear messages and show history
- F12          open dashboard
+ %            yell/yawn
+ C-s          start new game
+ C-x          save and exit to desktop
+ C-t          toggle autoplay (insert coin)
+ C-q          quit game and start autoplay
+ C-c          exit to desktop without saving
  ?            display help
  F1           display help immediately
+ F12          open dashboard
  v            voice again the recorded commands
  V            voice recorded commands 100 times
  C-v          voice recorded commands 1000 times
  C-V          voice recorded commands 25 times
  '            start recording commands
  C-S          save game backup
- C-q          quit game and start autoplay
- C-c          exit without saving
  C-P          print screen
- %            yell/yawn
