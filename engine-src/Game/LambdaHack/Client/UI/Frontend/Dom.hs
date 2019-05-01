@@ -104,8 +104,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
         modAlt <- ask >>= getAltKey
         modMeta <- ask >>= getMetaKey
         modAltG <- ask >>= getAltGraphKey
-        return $! modifierTranslate
-                    modCtrl modShift (modAlt || modAltG) modMeta
+        return $! modifierTranslate modCtrl modShift (modAlt || modAltG) modMeta
   void $ doc `on` keyDown $ do
     keyId <- ask >>= getKey
     modifier <- readMod
@@ -115,8 +114,10 @@ runWeb coscreen ClientOptions{..} rfMVar = do
 --          3 {-KEY_LOCATION_NUMPAD-} -> True
 --          _ -> False
     let key = K.keyTranslateWeb keyId (modifier == K.Shift)
-        modifierNoShift =  -- to prevent S-!, etc.
-          if modifier == K.Shift then K.NoModifier else modifier
+        modifierNoShift = case modifier of  -- to prevent S-!, etc.
+          K.Shift -> K.NoModifier
+          K.ControlShift -> K.Control
+          _ -> modifier
     -- IO.liftIO $ do
     --   putStrLn $ "keyId: " ++ keyId
     --   putStrLn $ "key: " ++ K.showKey key
@@ -160,7 +161,8 @@ handleMouse rf (cell, _) cx cy = do
         modShift <- mouseShiftKey
         modAlt <- mouseAltKey
         modMeta <- mouseMetaKey
-        return $! modifierTranslate modCtrl modShift modAlt modMeta
+        modAltG <- ask >>= getAltGraphKey
+        return $! modifierTranslate modCtrl modShift (modAlt || modAltG) modMeta
       saveWheel = do
         wheelY <- ask >>= getDeltaY
         modifier <- readMod

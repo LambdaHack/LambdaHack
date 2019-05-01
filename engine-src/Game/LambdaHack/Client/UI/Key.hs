@@ -73,6 +73,7 @@ instance NFData Key
 -- | Our own encoding of modifiers.
 data Modifier =
     NoModifier
+  | ControlShift
   | Shift
   | Control
   | Alt
@@ -134,10 +135,11 @@ showKey DeadKey      = "DEADKEY"
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> String
+showKM KM{modifier=NoModifier, key} = showKey key
+showKM KM{modifier=ControlShift, key} = "C-S-" ++ showKey key
 showKM KM{modifier=Shift, key} = "S-" ++ showKey key
 showKM KM{modifier=Control, key} = "C-" ++ showKey key
 showKM KM{modifier=Alt, key} = "A-" ++ showKey key
-showKM KM{modifier=NoModifier, key} = showKey key
 
 escKM :: KM
 escKM = KM NoModifier Esc
@@ -280,6 +282,8 @@ mkKM s = let mkKey sk =
                  Unknown _ -> error $ "unknown key" `showFailure` s
                  key -> key
          in case s of
+           'C':'-':'S':'-':rest -> KM ControlShift (mkKey rest)
+           'S':'-':'C':'-':rest -> KM ControlShift (mkKey rest)
            'S':'-':rest -> KM Shift (mkKey rest)
            'C':'-':rest -> KM Control (mkKey rest)
            'A':'-':rest -> KM Alt (mkKey rest)

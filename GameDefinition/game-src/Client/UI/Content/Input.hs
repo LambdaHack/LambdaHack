@@ -216,6 +216,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
     , ([CmdMouse], "open or close or alter at pointer", AlterWithPointer []) )
   , ("MiddleButtonRelease", mouseMMB)
   , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
+  , ( "C-S-LeftButtonRelease",
+      addCmdCategory CmdNoHelp $ replaceDesc "" mouseMMB )
   , ("WheelNorth", ([CmdMouse], "swerve the aiming line", Macro ["+"]))
   , ("WheelSouth", ([CmdMouse], "unswerve the aiming line", Macro ["-"]))
 

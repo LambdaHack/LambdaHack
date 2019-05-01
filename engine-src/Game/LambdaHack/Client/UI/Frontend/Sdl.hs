@@ -218,8 +218,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                                || SDL.keyModifierRightShift ksm
                 key = keyTranslate shiftPressed $ SDL.keysymKeycode sym
                 modifier = modTranslate ksm
-                modifierNoShift =  -- to prevent S-!, etc.
-                  if modifier == K.Shift then K.NoModifier else modifier
+                modifierNoShift = case modifier of  -- to prevent S-!, etc.
+                  K.Shift -> K.NoModifier
+                  K.ControlShift -> K.Control
+                  _ -> modifier
             p <- SDL.getAbsoluteMouseLocation
             when (key == K.Esc) $ resetChanKey (fchanKey rf)
             saveKMP rf modifierNoShift key (pointTranslate p)

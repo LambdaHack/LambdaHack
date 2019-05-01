@@ -215,7 +215,8 @@ of effects of each button over the game map area.
 The list includes not only left and right buttons, but also
 the optional middle mouse button (MMB) and the mouse wheel,
 which is also used over menus, to page-scroll them.
-(For mice without RMB, one can use Control key with LMB.)
+(For mice without RMB, one can use Control key with LMB and for mice
+without MMB, one can use C-RMB or C-S-LMB.)
 
     keys         command
     LMB          go to pointer for 25 steps/fling at enemy

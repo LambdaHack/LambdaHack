@@ -105,9 +105,11 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     n <- eventKeyName
     mods <- eventModifier
     let key = K.keyTranslate $ T.unpack n
-        modifier =
-          let md = modTranslate mods
-          in if md == K.Shift then K.NoModifier else md
+        md = modTranslate mods
+        modifier = case modifier of  -- to prevent S-!, etc.
+          K.Shift -> K.NoModifier
+          K.ControlShift -> K.Control
+          _ -> modifier
         pointer = originPoint
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
     IO.liftIO $ saveKMP rf modifier key pointer
