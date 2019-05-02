@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
   , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
-  , tacticHuman, automateHuman, automateBackHuman
+  , tacticHuman, automateHuman, automateToggleHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
@@ -1622,15 +1622,21 @@ tacticHuman = do
 
 automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
+  clearAimMode
+  go <- displaySpaceEsc ColorBW
+          "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
+  if not go
+  then failWith "automation canceled"
+  else return $ Right ReqUIAutomate
+
+-- * AutomateToggle
+
+automateToggleHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
+automateToggleHuman = do
   swasAutomated <- getsSession swasAutomated
-  if swasAutomated then failWith "automation canceled"
-  else do
-    clearAimMode
-    go <- displaySpaceEsc ColorBW
-            "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
-    if not go
-    then failWith "automation canceled"
-    else return $ Right ReqUIAutomate
+  if swasAutomated
+  then failWith "automation canceled"
+  else automateHuman
 
 -- * AutomateBack
 

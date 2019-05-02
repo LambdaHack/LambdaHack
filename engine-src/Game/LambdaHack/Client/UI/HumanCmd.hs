@@ -145,6 +145,7 @@ data HumanCmd =
   | GameSave
   | Tactic
   | Automate
+  | AutomateToggle
   | AutomateBack
     -- Local. Below this line, commands do not notify the server.
   | ChooseItem ItemDialogMode

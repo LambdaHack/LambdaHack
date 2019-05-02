@@ -110,6 +110,7 @@ cmdAction cmd = case cmd of
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
   Tactic -> weaveJust <$> tacticHuman
   Automate -> weaveJust <$> automateHuman
+  AutomateToggle -> weaveJust <$> automateToggleHuman
   AutomateBack -> automateBackHuman
 
   ChooseItem dialogMode -> Left <$> chooseItemHuman dialogMode
