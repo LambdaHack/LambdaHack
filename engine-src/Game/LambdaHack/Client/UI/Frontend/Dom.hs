@@ -127,7 +127,8 @@ runWeb coscreen ClientOptions{..} rfMVar = do
     -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
     let browserKeys = "+-0tTnNdxcv"
     unless (modifier == K.Alt
-            || modifier == K.Control && key `elem` map K.Char browserKeys) $ do
+            || modifier == K.Control && key `elem` map K.Char browserKeys
+            || key == K.DeadKey) $ do  -- NumLock in particular
       preventDefault
       stopPropagation
   -- Handle mouseclicks, per-cell.
@@ -161,8 +162,7 @@ handleMouse rf (cell, _) cx cy = do
         modShift <- mouseShiftKey
         modAlt <- mouseAltKey
         modMeta <- mouseMetaKey
-        modAltG <- ask >>= getAltGraphKey
-        return $! modifierTranslate modCtrl modShift (modAlt || modAltG) modMeta
+        return $! modifierTranslate modCtrl modShift modAlt modMeta
       saveWheel = do
         wheelY <- ask >>= getDeltaY
         modifier <- readMod

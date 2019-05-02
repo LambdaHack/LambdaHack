@@ -1,5 +1,6 @@
 ## [v0.9.5.0](https://github.com/LambdaHack/LambdaHack/compare/v0.9.4.0...v0.9.5.0)
 
+- Fix NumLock disabled in the browser
 - In screen reader frontend, highlight active menu line with the cursor
 - Clone the main main menu commands as map mode commands
 - Add C-RMB and C-S-LMB as alternatives of MMB

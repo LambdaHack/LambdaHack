@@ -436,7 +436,9 @@ keyTranslate "ISO_Level3_Shift" = DeadKey
 keyTranslate "ISO_Level2_Latch" = DeadKey
 keyTranslate "ISO_Level3_Latch" = DeadKey
 keyTranslate "Num_Lock"         = DeadKey
+keyTranslate "NumLock"          = DeadKey
 keyTranslate "Caps_Lock"        = DeadKey
+keyTranslate "CapsLock"         = DeadKey
 keyTranslate "VoidSymbol"       = DeadKey
 -- numeric keypad
 keyTranslate ['K','P','_',c] = KP c
@@ -526,6 +528,8 @@ keyTranslateWeb "ContextMenu" _ = DeadKey
 keyTranslateWeb "Alt"         _ = DeadKey
 keyTranslateWeb "AltGraph"    _ = DeadKey
 keyTranslateWeb "Num_Lock"    _ = DeadKey
+keyTranslateWeb "NumLock"     _ = DeadKey
+keyTranslateWeb "Caps_Lock"   _ = DeadKey
 keyTranslateWeb "CapsLock"    _ = DeadKey
 keyTranslateWeb "Win"         _ = DeadKey
 -- browser quirks
