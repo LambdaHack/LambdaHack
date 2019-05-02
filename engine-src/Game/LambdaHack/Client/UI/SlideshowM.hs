@@ -140,13 +140,22 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               highAttr x | Color.acAttr x `notElem` highableAttrs = x
               highAttr x = x {Color.acAttr =
                                 (Color.acAttr x) {Color.fg = Color.BrWhite}}
+              cursorAttr x = x {Color.acAttr =
+                                  (Color.acAttr x)
+                                    {Color.bg = Color.HighlightNoneCursor}}
               drawHighlight xs =
                 let (xs1, xsRest) = splitAt x1 xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                     highW32 = Color.attrCharToW32
                               . highAttr
                               . Color.attrCharFromW32
-                in xs1 ++ map highW32 xs2 ++ xs3
+                    cursorW32 = Color.attrCharToW32
+                                . cursorAttr
+                                . Color.attrCharFromW32
+                    xs2High = case map highW32 xs2 of
+                      [] -> []
+                      xh : xhrest -> cursorW32 xh : xhrest
+                in xs1 ++ xs2High ++ xs3
               ov1 = updateLines y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs

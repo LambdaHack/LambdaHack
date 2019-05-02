@@ -75,6 +75,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
           if fg /= Color.Red
           then (fg, Color.Red)
           else (fg, Color.defFG)
+        Color.HighlightNoneCursor -> (fg, Color.Black)
   ttt <- textTagTableNew
   stags <- IM.fromDistinctAscList <$>
              mapM (\ak -> do

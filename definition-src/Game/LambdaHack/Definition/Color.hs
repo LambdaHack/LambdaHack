@@ -133,6 +133,7 @@ data Highlight =
   | HighlightYellow
   | HighlightYellowAim
   | HighlightRedAim
+  | HighlightNoneCursor
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
 highlightToColor :: Highlight -> Color
@@ -147,6 +148,7 @@ highlightToColor hi = case hi of
   HighlightYellow -> BrYellow  -- obscures, but mostly used around bright white
   HighlightYellowAim -> BrYellow
   HighlightRedAim -> Red
+  HighlightNoneCursor -> Black
 
 -- | Text attributes: foreground color and highlight.
 data Attr = Attr
