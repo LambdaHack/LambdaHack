@@ -160,7 +160,7 @@ headingSLore SEmbed = "landmark feature"
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOrgans = ("in", "body")
-ppItemDialogMode MOwned = ("in", "our possession")
+ppItemDialogMode MOwned = ("among", "our belongings")
 ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")

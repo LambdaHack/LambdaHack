@@ -148,8 +148,7 @@ chooseItemDialogMode c = do
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MOwned ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
-            , MU.Text tIn
+            [ MU.Capitalize $ MU.SubjectVerbSg subject "inspect"
             , MU.Text t ]
         MSkills ->
           makePhrase
