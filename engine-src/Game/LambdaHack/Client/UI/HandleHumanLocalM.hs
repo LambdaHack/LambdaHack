@@ -157,12 +157,10 @@ chooseItemDialogMode c = do
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MLore{} ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
-            , MU.Text t ]
+            [ MU.Capitalize $ MU.Text t ]
         MPlaces ->
           makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "recall"
-            , MU.Text t ]
+            [ MU.Capitalize $ MU.Text t ]
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
