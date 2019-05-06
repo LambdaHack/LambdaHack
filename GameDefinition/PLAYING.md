@@ -49,9 +49,9 @@ the player visits a level during a single game, its layout is the same.
 Terrain is depicted with non-letter and non-digit (except zero `0`)
 characters, the same as items lying on the ground, though blocky
 solid symbol are more likely to be non-passable terrain than items.
-In case of doubt, one of the aiming commands (keypad `/`, with default
+In case of doubt, one of the aiming commands (`/` and keypad `/`, with default
 keybinding) cycles through all visible and remembered items on the level
-and another (keypad `*`, with default keybinding) through all foes.
+and another (`!` and keypad `*`, with default keybinding) through all foes.
 Also, pointing at a map position with `MMB` (middle mouse button) displays
 a short description of its contents. The basic terrain kinds are as follows.
 
@@ -241,8 +241,8 @@ The latter is essential in the rare cases when your henchmen
 (via innate skills or rare equipment). Also, if your henchman is adjacent
 to more than one enemy, setting his target makes him melee a particular foe.
 
-You can enter the aiming mode with the `*` keypad key that selects
-enemies or the `/` key that cycles among items on the floor
+You can enter the aiming mode with the `*` keypad key or the `!` key
+that selects enemies or the `/` key that cycles among items on the floor
 and marks a tile underneath an item. You can move x-hair
 with direction keys and assign a personal target to the leader
 with a `RET` key (Return, Enter). The details of the shared x-hair mark
