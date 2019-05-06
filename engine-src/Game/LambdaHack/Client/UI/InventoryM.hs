@@ -312,12 +312,10 @@ transition psuit prompt promptGeneric permitMulitple cLegal
       maySwitchLeader _ = True
       keyDefs :: [(K.KM, DefItemKey m)]
       keyDefs = filter (defCond . snd) $
-        [ let km = K.mkChar '/'
-          in (km, changeContainerDef True $ Right km)
-        , (K.mkKP '/', changeContainerDef True $ Left "")
-        , let km = K.mkChar '?'
+        [ let km = K.mkChar '<'
           in (km, changeContainerDef False $ Right km)
-        , (K.mkKP '?', changeContainerDef False $ Left "")
+        , let km = K.mkChar '>'
+          in (km, changeContainerDef True $ Right km)
         , let km = K.mkChar '+'
           in (km, DefItemKey
            { defLabel = Right km
