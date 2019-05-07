@@ -157,8 +157,6 @@ effectToBenefit cops fid factionD eff =
     IK.PushActor _ -> (0, -100)   -- is deadly on some maps, leading to harm;
     IK.PullActor _ -> (0, -100)   -- pushing others may crush them against wall
     IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
-    IK.ActivateInv ' ' -> delta $ -200  -- brutal and deadly
-    IK.ActivateInv _ -> delta $ -50  -- depends on the items
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf efs ->
       let bs = map (effectToBenefit cops fid factionD) efs

@@ -112,8 +112,6 @@ effectToSuffix detailLevel effect =
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
     DropBestWeapon -> "of disarming"
-    ActivateInv ' ' -> "of backpack burst"
-    ActivateInv symbol -> "of burst '" <> T.singleton symbol <> "'"
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"
           header = makePhrase ["of", MU.CardinalWs (length l) subject]

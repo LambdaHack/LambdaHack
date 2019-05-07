@@ -1283,7 +1283,6 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.PushActor{} -> aidVerbMU MsgEffect aid "be pushed"
         IK.PullActor{} -> aidVerbMU MsgEffect aid "be pulled"
         IK.DropBestWeapon -> aidVerbMU MsgEffectMajor aid "be disarmed"
-        IK.ActivateInv{} -> return ()
         IK.ApplyPerfume ->
           msgAdd MsgEffectMinor
                  "The fragrance quells all scents in the vicinity."

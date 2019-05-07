@@ -17,8 +17,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectTeleport, effectCreateItem, effectDropItem, dropCStoreItem
   , effectPolyItem, effectRerollItem, effectDupItem, effectIdentify
   , identifyIid, effectDetect, effectDetectX, effectSendFlying
-  , sendFlyingVector, effectDropBestWeapon, effectActivateInv
-  , effectTransformContainer, effectApplyPerfume, effectOneOf
+  , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectVerbNoLonger, effectVerbMsg, effectComposite
 #endif
   ) where
@@ -397,7 +396,6 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target c (Just False)
     IK.DropBestWeapon -> effectDropBestWeapon execSfx iid target
-    IK.ActivateInv symbol -> effectActivateInv execSfx iid source target symbol
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
@@ -1796,44 +1794,6 @@ effectDropBestWeapon execSfx iidId target = do
         return UseUp
       [] ->
         return UseDud
-
--- ** ActivateInv
-
--- | Activate all items with the given symbol
--- in the target actor's equipment (there's no variant that activates
--- a random one, to avoid the incentive for carrying garbage).
--- Only one item of each stack is activated (and possibly consumed).
--- Won't activate the item itself (any copies).
-effectActivateInv :: MonadServerAtomic m
-                  => m () -> ItemId -> ActorId -> ActorId -> Char -> m UseResult
-effectActivateInv execSfx iidId source target symbol = do
-  let c = CActor target CInv
-  effectTransformContainer execSfx iidId symbol c $ \iid _ ->
-    -- We don't know if it's voluntary, so we conservatively assume it is
-    -- and we blame @source@.
-    kineticEffectAndDestroy True source target target iid c True
-
-effectTransformContainer :: forall m. MonadServerAtomic m
-                         => m () -> ItemId -> Char -> Container
-                         -> (ItemId -> ItemQuant -> m ())
-                         -> m UseResult
-effectTransformContainer execSfx iidId symbol c m = do
-  getKind <- getsState $ flip getIidKindServer
-  let hasSymbol (iid, _kit) = do
-        let jsymbol = IK.isymbol $ getKind iid
-        return $! jsymbol == symbol
-  assocsCStore <- getsState $ EM.assocs . getContainerBag c
-  is <- filter ((/= iidId) . fst) <$> if symbol == ' '
-                                      then return assocsCStore
-                                      else filterM hasSymbol assocsCStore
-  if null is
-  then return UseDud
-  else do
-    execSfx
-    mapM_ (uncurry m) is
-    -- Even if no item produced any visible effect, rummaging through
-    -- the inventory uses up the effect and produced discernible vibrations.
-    return UseUp
 
 -- ** ApplyPerfume
 

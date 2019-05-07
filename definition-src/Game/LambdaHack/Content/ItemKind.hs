@@ -130,9 +130,6 @@ data Effect =
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor
   | DropBestWeapon        -- ^ make the actor drop its best weapon
-  | ActivateInv Char
-      -- ^ activate all items with this symbol in inventory; space character
-      --   means all symbols
   | ApplyPerfume          -- ^ remove all smell on the level
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect
