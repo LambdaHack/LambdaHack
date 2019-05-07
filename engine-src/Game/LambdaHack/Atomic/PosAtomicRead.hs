@@ -96,9 +96,9 @@ posUpdAtomic cmd = case cmd of
               else PosFidAndSight [bfid b] (blid b) [fromP, toP]
   UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
-  UpdMoveItem _ _ _ _ CSha ->
+  UpdMoveItem _ _ _ _ CStash ->
     error $ "" `showFailure` cmd  -- shared stash is private
-  UpdMoveItem _ _ _ CSha _ -> error $ "" `showFailure` cmd
+  UpdMoveItem _ _ _ CStash _ -> error $ "" `showFailure` cmd
   UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
@@ -162,13 +162,13 @@ posUpdAtomic cmd = case cmd of
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
-  SfxStrike _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxStrike _ _ _ CStash -> return PosNone  -- shared stash is private
   SfxStrike _ target _ _ -> singleAid target
-  SfxRecoil _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxRecoil _ _ _ CStash -> return PosNone  -- shared stash is private
   SfxRecoil _ target _ _ -> singleAid target
-  SfxSteal _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxSteal _ _ _ CStash -> return PosNone  -- shared stash is private
   SfxSteal _ target _ _ -> singleAid target
-  SfxRelease _ _ _ CSha -> return PosNone  -- shared stash is private
+  SfxRelease _ _ _ CStash -> return PosNone  -- shared stash is private
   SfxRelease _ target _ _ -> singleAid target
   SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
   SfxReceive aid _ cstore -> singleContainer $ CActor aid cstore
@@ -212,7 +212,7 @@ doubleAid source target = do
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
-singleContainer (CActor aid CSha) = do  -- shared stash is private
+singleContainer (CActor aid CStash) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
   return $! PosFidAndSer (Just $ blid b) (bfid b)
 singleContainer (CActor aid _) = singleAid aid

@@ -36,6 +36,7 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -45,7 +46,6 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -69,7 +69,7 @@ revealItems fid = do
         unless (IA.isHumanTrinket itemKind) $  -- a hack
           execUpdAtomic $ UpdDiscover c iid itemKindId arItem
       f (aid, b) =
-        -- CSha is IDed for each actor of each faction, which is fine,
+        -- CStash is IDed for each actor of each faction, which is fine,
         -- even though it may introduce a slight lag at gameover.
         join $ getsState $ mapActorItems_ (discover aid) b
   -- Don't ID projectiles, their items are not really owned by the party.
@@ -122,7 +122,7 @@ generalMoveItem :: MonadStateRead m
                 => Bool -> ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
 generalMoveItem _ iid k (CActor aid1 cstore1) (CActor aid2 cstore2)
-  | aid1 == aid2 && cstore1 /= CSha && cstore2 /= CSha
+  | aid1 == aid2 && cstore1 /= CStash && cstore2 /= CStash
   = return [UpdMoveItem iid k aid1 cstore1 cstore2]
 generalMoveItem verbose iid k c1 c2 = containerMoveItem verbose iid k c1 c2
 
@@ -316,7 +316,7 @@ projectFail :: MonadServerAtomic m
             -> Int        -- ^ digital line parameter
             -> Bool       -- ^ whether to start at the source position
             -> ItemId     -- ^ the item to be projected
-            -> CStore     -- ^ whether the items comes from floor or inventory
+            -> CStore     -- ^ which store the items comes from
             -> Bool       -- ^ whether the item is a blast
             -> m (Maybe ReqFailure)
 projectFail propeller source tpxy eps center iid cstore blast = do
@@ -375,7 +375,7 @@ projectBla :: MonadServerAtomic m
            -> Point      -- ^ starting point of the projectile
            -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
-           -> CStore     -- ^ whether the items comes from floor or inventory
+           -> CStore     -- ^ which store the items comes from
            -> Bool       -- ^ whether the item is a blast
            -> m ()
 projectBla propeller source pos rest iid cstore blast = do
@@ -532,7 +532,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
       Just (iid, (itemFull2, _)) ->
         when (cstore /= CGround) $
-          -- The items are created in inventory, so won't be picked up,
+          -- The items are created owned by actors, so won't be picked up,
           -- so we have to discover them now, if eligible.
           discoverIfMinorEffects container iid (itemKindId itemFull2)
   return aid

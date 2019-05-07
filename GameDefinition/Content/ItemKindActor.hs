@@ -79,7 +79,7 @@ scout = warrior
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
-                  , ("add nocto 1", CInv) ]
+                  , ("add nocto 1", CStash) ]
   -- , idesc    = ""
   }
 ranger = warrior
@@ -87,7 +87,7 @@ ranger = warrior
   , ifreq    = [("ranger hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior
                ++ [ ("armor ranged", CEqp)
-                  , ("weak arrow", CInv) ]
+                  , ("weak arrow", CStash) ]
   -- , idesc    = ""
   }
 escapist = warrior
@@ -96,10 +96,10 @@ escapist = warrior
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
-                  , ("weak arrow", CInv)  -- mostly for probing
-                  , ("light source", CInv)
-                  , ("wooden torch", CInv)
-                  , ("blanket", CInv) ]
+                  , ("weak arrow", CStash)  -- mostly for probing
+                  , ("light source", CStash)
+                  , ("wooden torch", CStash)
+                  , ("blanket", CStash) ]
   -- , idesc    = ""
   }
 ambusher = warrior
@@ -107,11 +107,11 @@ ambusher = warrior
   , ifreq    = [("ambusher hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
                ++ [ ("ring of opportunity sniper", CEqp)
-                  , ("any arrow", CSha)
-                  , ("weak arrow", CInv)
-                  , ("explosive", CSha)
+                  , ("any arrow", CStash)
+                  , ("weak arrow", CStash)
+                  , ("explosive", CStash)
                   , ("light source", CEqp)
-                  , ("wooden torch", CInv) ]
+                  , ("wooden torch", CStash) ]
   -- , idesc    = ""
   }
 soldier = warrior
@@ -119,7 +119,7 @@ soldier = warrior
   , ifreq    = [("soldier hero", 100), ("mobile", 1)]
   , ikit     = ikit warrior
                ++ [ ("starting weapon", CEqp)
-                  , ("explosive", CSha) ]
+                  , ("explosive", CStash) ]
   -- , idesc    = ""
   }
 
@@ -238,8 +238,8 @@ elbow = ItemKind
                , ("vision 12", COrgan), ("ear 8", COrgan)
                    -- too powerful to get stronger sight
                , ("sapient brain", COrgan)
-               , ("any arrow", CSha), ("any arrow", CInv)
-               , ("weak arrow", CInv), ("weak arrow", CInv) ]
+               , ("any arrow", CStash), ("any arrow", CStash)
+               , ("weak arrow", CStash), ("weak arrow", CStash) ]
   }
 torsor = ItemKind
   { isymbol  = 'T'
@@ -266,7 +266,8 @@ torsor = ItemKind
                , ("pupil", COrgan), ("tentacle", COrgan)
                , ("ear 8", COrgan)
                , ("sapient brain", COrgan)
-               , ("gem", CInv), ("gem", CInv), ("gem", CInv), ("gem", CInv) ]
+               , ("gem", CStash), ("gem", CStash)
+               , ("gem", CStash), ("gem", CStash) ]
   }
 -- "ground x" --- for immovable monster that can only tele or prob travel
 -- pullback

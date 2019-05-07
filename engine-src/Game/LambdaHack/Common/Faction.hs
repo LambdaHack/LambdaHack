@@ -23,7 +23,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Item
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -45,7 +45,9 @@ data Faction = Faction
   , gquit     :: Maybe Status    -- ^ cause of game end/exit
   , _gleader  :: Maybe ActorId   -- ^ the leader of the faction; don't use
                                  --   in place of sleader on clients
-  , gsha      :: ItemBag         -- ^ faction's shared inventory
+  , gstash    :: Maybe (LevelId, Point)
+                                 -- ^ level and position of faction's
+                                 --   shared inventory stash
   , gvictims  :: EM.EnumMap (ContentId ItemKind) Int  -- ^ members killed
   , gvictimsD :: EM.EnumMap (ContentId ModeKind)
                             (IM.IntMap (EM.EnumMap (ContentId ItemKind) Int))

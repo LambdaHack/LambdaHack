@@ -45,6 +45,7 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -55,7 +56,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -247,7 +247,7 @@ projectList discoBenefit skill aid
                     -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedProjectAI skill calmE itemFull
-      stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+      stores = [CEqp, CGround] ++ [CStash | calmE]
   in filter q $ benAvailableItems discoBenefit aid stores s
 
 -- | Produce the list of items from the given stores available to the actor

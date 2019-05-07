@@ -166,7 +166,7 @@ computeTarget aid = do
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             nonmoving = Ability.getSk Ability.SkMove actorMaxSkE <= 0
                         && bwatch body /= WWake  -- will start moving very soon
-            hasLoot = not (EM.null (beqp body)) || not (EM.null (binv body))
+            hasLoot = not (EM.null (beqp body))
               -- even consider "unreported inventory", for speed and KISS
             isHero = fhasGender (gplayer factE)
         return $! not nonmoving || hasLoot || attacksFriends || isHero

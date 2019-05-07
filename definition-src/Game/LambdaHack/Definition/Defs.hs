@@ -89,8 +89,7 @@ data CStore =
     CGround
   | COrgan
   | CEqp
-  | CInv
-  | CSha
+  | CStash
   deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary CStore
@@ -101,8 +100,7 @@ ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
 ppCStore COrgan = ("in", "body")
 ppCStore CEqp = ("in", "equipment")
-ppCStore CInv = ("in", "pack")  -- "inventory pack" overflows text too easily
-ppCStore CSha = ("in", "shared stash")
+ppCStore CStash = ("in", "shared stash")
 
 ppCStoreIn :: CStore -> Text
 ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
@@ -111,8 +109,7 @@ verbCStore :: CStore -> Text
 verbCStore CGround = "drop"
 verbCStore COrgan = "implant"
 verbCStore CEqp = "equip"
-verbCStore CInv = "pack"
-verbCStore CSha = "stash"
+verbCStore CStash = "stash"
 
 -- | Item slot and lore categories.
 data SLore =

@@ -211,19 +211,17 @@ itemOverlay lSlots lid bag = do
   combGround <- getsState $ combinedGround side
   combOrgan <- getsState $ combinedOrgan side
   combEqp <- getsState $ combinedEqp side
-  combInv <- getsState $ combinedInv side
-  shaBag <- getsState $ \s -> gsha $ sfactionD s EM.! side
+  stashBag <- getsState $ getFactionStashBag side
   discoBenefit <- getsClient sdiscoBenefit
   let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t =
         if | (iid `EM.member` combOrgan
              || iid `EM.member` combEqp)
-             && iid `EM.notMember` combInv
-             && iid `EM.notMember` shaBag
+             && iid `EM.notMember` stashBag
              && iid `EM.notMember` combGround -> T.snoc (T.init t) ']'
                -- all ready to fight with
-           | iid `EM.member` shaBag -> T.snoc (T.init t) '}'
+           | iid `EM.member` stashBag -> T.snoc (T.init t) '}'
                -- some spares in shared stash
            | otherwise -> t
       pr (l, iid) =
@@ -490,7 +488,7 @@ lookAtActors p lidV = do
 guardItemVerbs :: Actor -> Faction -> State -> [MU.Part]
 guardItemVerbs body _fact s =
   -- In reality, currently the client knows all the items
-  -- in eqp and inv of the foe, but we may remove the knowledge
+  -- in eqp of the foe, but we may remove the knowledge
   -- in the future and, anyway, it would require a dedicated
   -- UI mode beyond a couple of items per actor.
   --
@@ -500,15 +498,13 @@ guardItemVerbs body _fact s =
   let toReport iid =
         let itemKind = getIidKind iid s
         in fromMaybe 0 (lookup "unreported inventory" (IK.ifreq itemKind)) <= 0
-      itemsSize = length $ filter toReport
-                  $ EM.keys (beqp body) ++ EM.keys (binv body)
+      itemsSize = length $ filter toReport $ EM.keys (beqp body)
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]
                       | otherwise = []
   in if bproj body
      then []
      else belongingsVerbs
---        ++ ["defend a shared stash" | not $ EM.null $ gsha fact]
 
 -- | Produces a textual description of items at a position.
 lookAtItems :: MonadClientUI m

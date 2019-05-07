@@ -53,7 +53,7 @@ ppCStoreWownW addPrepositions store owner =
       prep = [MU.Text preposition | addPrepositions]
   in prep ++ case store of
     CGround -> [MU.Text noun, "under", owner]
-    CSha -> [MU.Text noun]
+    CStash -> [MU.Text noun]
     _ -> [MU.WownW owner (MU.Text noun) ]
 
 ppContainerWownW :: (ActorId -> MU.Part) -> Bool -> Container -> [MU.Part]

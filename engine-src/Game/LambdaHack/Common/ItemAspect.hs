@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ItemAspect
   , emptyAspectRecord, addMeanAspect, castAspect, aspectsRandom
   , aspectRecordToList, rollAspectRecord, getSkill, checkFlag, meanAspect
   , onlyMinorEffects, itemTrajectory, totalRange, isHumanTrinket
-  , goesIntoEqp, goesIntoInv, goesIntoSha, loreFromMode, loreFromContainer
+  , goesIntoEqp, loreFromMode, loreFromContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , ceilingMeanDice
@@ -24,12 +24,12 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
 
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -188,12 +188,6 @@ isHumanTrinket itemKind =
 goesIntoEqp :: AspectRecord -> Bool
 goesIntoEqp ar = checkFlag Ability.Equipable ar
                  || checkFlag Ability.Meleeable ar
-
-goesIntoInv :: AspectRecord -> Bool
-goesIntoInv ar = not (checkFlag Ability.Precious ar) && not (goesIntoEqp ar)
-
-goesIntoSha :: AspectRecord -> Bool
-goesIntoSha ar = checkFlag Ability.Precious ar && not (goesIntoEqp ar)
 
 loreFromMode :: ItemDialogMode -> SLore
 loreFromMode c = case c of

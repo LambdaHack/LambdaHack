@@ -9,9 +9,9 @@ module Game.LambdaHack.Atomic.MonadStateWrite
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , insertItemFloor, insertItemEmbed
-  , insertItemOrgan, insertItemEqp, insertItemInv, insertItemSha
+  , insertItemOrgan, insertItemEqp, insertItemStash
   , deleteItemFloor, deleteItemEmbed
-  , deleteItemOrgan, deleteItemEqp, deleteItemInv, deleteItemSha
+  , deleteItemOrgan, deleteItemEqp, deleteItemStash
   , rmFromBag
 #endif
   ) where
@@ -32,9 +32,9 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -181,13 +181,11 @@ insertItemActor iid kit aid cstore = case cstore of
     insertItemFloor iid kit (blid b) (bpos b)
   COrgan -> insertItemOrgan iid kit aid
   CEqp -> insertItemEqp iid kit aid
-  CInv -> insertItemInv iid kit aid
-  CSha -> do
+  CStash -> do
     b <- getsState $ getActorBody aid
-    insertItemSha iid kit (bfid b)
+    insertItemStash iid kit b
 
-insertItemOrgan :: MonadStateWrite m
-                => ItemId -> ItemQuant -> ActorId -> m ()
+insertItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemOrgan iid kit aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
@@ -198,8 +196,7 @@ insertItemOrgan iid kit aid = do
                   then bweapon b + 1
                   else bweapon b }
 
-insertItemEqp :: MonadStateWrite m
-              => ItemId -> ItemQuant -> ActorId -> m ()
+insertItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemEqp iid kit aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
@@ -210,19 +207,15 @@ insertItemEqp iid kit aid = do
                   then bweapon b + 1
                   else bweapon b }
 
-insertItemInv :: MonadStateWrite m
-              => ItemId -> ItemQuant -> ActorId -> m ()
-insertItemInv iid kit aid = do
-  let bag = EM.singleton iid kit
-      upd = EM.unionWith mergeItemQuant bag
-  updateActor aid $ \b -> b {binv = upd (binv b)}
-
-insertItemSha :: MonadStateWrite m
-              => ItemId -> ItemQuant -> FactionId -> m ()
-insertItemSha iid kit fid = do
-  let bag = EM.singleton iid kit
-      upd = EM.unionWith mergeItemQuant bag
-  updateFaction fid $ \fact -> fact {gsha = upd (gsha fact)}
+insertItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> Actor -> m ()
+insertItemStash iid kit b = do
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! (bfid b)
+  case mstash of
+    Just (lid, pos) ->
+      insertItemFloor iid kit lid pos
+    Nothing -> do
+      updateFaction (bfid b) $ \fact -> fact {gstash = Just (blid b, bpos b)}
+      insertItemFloor iid kit (blid b) (bpos b)
 
 deleteBagContainer :: MonadStateWrite m
                    => ItemBag -> Container -> m ()
@@ -278,10 +271,9 @@ deleteItemActor iid kit aid cstore = case cstore of
     deleteItemFloor iid kit (blid b) (bpos b)
   COrgan -> deleteItemOrgan iid kit aid
   CEqp -> deleteItemEqp iid kit aid
-  CInv -> deleteItemInv iid kit aid
-  CSha -> do
+  CStash -> do
     b <- getsState $ getActorBody aid
-    deleteItemSha iid kit (bfid b)
+    deleteItemStash iid kit (bfid b)
 
 deleteItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemOrgan iid kit aid = do
@@ -301,13 +293,17 @@ deleteItemEqp iid kit aid = do
                   then bweapon b - 1
                   else bweapon b }
 
-deleteItemInv :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
-deleteItemInv iid kit aid =
-  updateActor aid $ \b -> b {binv = rmFromBag kit iid (binv b)}
-
-deleteItemSha :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
-deleteItemSha iid kit fid =
-  updateFaction fid $ \fact -> fact {gsha = rmFromBag kit iid (gsha fact)}
+deleteItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
+deleteItemStash iid kit fid = do
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! fid
+  case mstash of
+    Just (lid, pos) -> do
+      deleteItemFloor iid kit lid pos
+      stashBag <- getsState $ getFloorBag lid pos
+      when (EM.null stashBag) $
+        updateFaction fid $ \fact -> fact {gstash = Nothing}
+    Nothing -> error $ "removing from empty shared stash"
+                       `showFailure` (iid, kit, fid)
 
 -- Removing the part of the kit from the back of the list,
 -- so that @DestroyItem kit (CreateItem kit x) == x@.

@@ -92,7 +92,7 @@ getStoreItem :: MonadClientUI m
              -> m ( Either Text (ItemId, ItemBag, SingleItemSlots)
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
-  let itemCs = map MStore [CEqp, CInv, CGround, CSha]
+  let itemCs = map MStore [CEqp, CStash, CGround]
       loreCs = map MLore [minBound..maxBound] ++ [MPlaces]
       allCs = case cInitial of
         MLore{} -> loreCs
@@ -377,15 +377,15 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 (cCurAfterCalm, cRestAfterCalm) =
                   if forward
                   then case cRest ++ mcCur of
-                    c1@(MStore CSha) : c2 : rest | not calmE ->
+                    c1@(MStore CStash) : c2 : rest | not calmE ->
                       (c2, c1 : rest)
-                    [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CStash] | not calmE -> error $ "" `showFailure` cRest
                     c1 : rest -> (c1, rest)
                     [] -> error $ "" `showFailure` cRest
                   else case reverse $ mcCur ++ cRest of
-                    c1@(MStore CSha) : c2 : rest | not calmE ->
+                    c1@(MStore CStash) : c2 : rest | not calmE ->
                       (c2, reverse $ c1 : rest)
-                    [MStore CSha] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CStash] | not calmE -> error $ "" `showFailure` cRest
                     c1 : rest -> (c1, reverse rest)
                     [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
@@ -480,8 +480,8 @@ legalWithUpdatedLeader cCur cRest = do
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
       legalAfterCalm = case newLegal of
-        c1@(MStore CSha) : c2 : rest | not calmE -> (c2, c1 : rest)
-        [MStore CSha] | not calmE -> (MStore CGround, newLegal)
+        c1@(MStore CStash) : c2 : rest | not calmE -> (c2, c1 : rest)
+        [MStore CStash] | not calmE -> (MStore CGround, newLegal)
         c1 : rest -> (c1, rest)
         [] -> error $ "" `showFailure` (cCur, cRest)
   return legalAfterCalm

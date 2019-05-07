@@ -87,14 +87,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("a", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-a", addCmdCategory CmdItemMenu
             $ replaceDesc "apply and keep choice" $ applyIK applyTs)
-  , ("p", moveItemTriple [CGround, CEqp, CSha] CInv
+  , ("i", moveItemTriple [CGround, CEqp] CStash
                          "item" False)
-  , ("i", replaceDesc "" $ moveItemTriple [CGround, CEqp, CSha] CInv
-                                          "item" False)
-  , ("e", moveItemTriple [CGround, CInv, CSha] CEqp
+  , ("e", moveItemTriple [CGround, CStash] CEqp
                          "item" False)
-  , ("s", moveItemTriple [CGround, CInv, CEqp] CSha
-                         "and share item" False)
 
   -- Terrain exploration and alteration
   , ("C", ([CmdMove], "open or close or alter", AlterDir []))
@@ -117,15 +113,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
-  , ("P", ( [CmdItem, CmdDashboard]
-          , "manage inventory pack of the leader"
-          , ChooseItemMenu (MStore CInv) ))
   , ("I", ( [CmdItem, CmdDashboard]
-          , ""
-          , ChooseItemMenu (MStore CInv) ))
-  , ("S", ( [CmdItem, CmdDashboard]
-          , "manage the shared party stash"
-          , ChooseItemMenu (MStore CSha) ))
+          , "manage the shared inventory stash"
+          , ChooseItemMenu (MStore CStash) ))
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"
           , ChooseItemMenu (MStore CGround) ))

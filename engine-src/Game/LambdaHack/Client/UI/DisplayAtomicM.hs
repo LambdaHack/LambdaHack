@@ -139,8 +139,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   {-
   UpdLoseItem False _ _ _ _ -> return ()
   -- The message is rather cryptic, so let's disable it until it's decided
-  -- if anemy inventories should be displayed, etc.
-  UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CSha -> do
+  -- if anemy equipments should be displayed, etc.
+  UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CStash -> do
     -- Actor putting an item into shared stash, most probably.
     side <- getsClient sside
     b <- getsState $ getActorBody aid
@@ -732,7 +732,7 @@ spotItem verbose iid kit c = do
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
   when verbose $ case c of
-    CActor aid store | store `elem` [CEqp, CInv, CGround, CSha] -> do
+    CActor aid store | store `elem` [CEqp, CGround, CStash] -> do
       -- Actor fetching an item from or to shared stash, most probably.
       subject <- partActorLeader aid
       let ownW = ppCStoreWownW False store subject

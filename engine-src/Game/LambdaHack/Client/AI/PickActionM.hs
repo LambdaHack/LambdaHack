@@ -395,20 +395,12 @@ pickup aid onlyWeapon = do
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
       prepareOne (oldN, l4)
-                 (Benefit{benInEqp}, _, iid, itemFull, (itemK, _)) =
+                 (Benefit{benInEqp}, _, iid, _, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
             n = oldN + itemK
-            arItem = aspectRecordFull itemFull
-        in if | calmE && IA.goesIntoSha arItem && not onlyWeapon ->
-                prep oldN CSha
-              | benInEqp && eqpOverfull b n ->
-                if onlyWeapon then (oldN, l4)
-                else prep oldN (if calmE then CSha else CInv)
-              | benInEqp ->
-                prep n CEqp
-              | not onlyWeapon ->
-                prep oldN CInv
-              | otherwise -> (oldN, l4)
+        in if | benInEqp && not (eqpOverfull b n) -> prep n CEqp
+              | onlyWeapon -> (oldN, l4)
+              | otherwise -> prep n CStash
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
   return $! if null prepared then reject
             else returN "pickup" $ ReqMoveItems prepared
@@ -416,31 +408,29 @@ pickup aid onlyWeapon = do
 -- This only concerns items that can be equipped, that is with a slot
 -- and with @inEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
--- from inv or sha to eqp.
+-- from stash to eqp.
 equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 equipItems aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
-  invAssocs <- getsState $ kitAssocs aid [CInv]
-  shaAssocs <- getsState $ kitAssocs aid [CSha]
+  stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-  let improve :: CStore
-              -> (Int, [(ItemId, Int, CStore, CStore)])
+  let improve :: (Int, [(ItemId, Int, CStore, CStore)])
               -> ( [(Int, (ItemId, ItemFullKit))]
                  , [(Int, (ItemId, ItemFullKit))] )
               -> (Int, [(ItemId, Int, CStore, CStore)])
-      improve fromCStore (oldN, l4) (bestInv, bestEqp) =
+      improve (oldN, l4) (bestStash, bestEqp) =
         let n = 1 + oldN
-        in case (bestInv, bestEqp) of
-          ((_, (iidInv, _)) : _, []) | not (eqpOverfull body n) ->
-            (n, (iidInv, 1, fromCStore, CEqp) : l4)
-          ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
-            | vInv > vEqp && not (eqpOverfull body n) ->
-                (n, (iidInv, 1, fromCStore, CEqp) : l4)
+        in case (bestStash, bestEqp) of
+          ((_, (iidStash, _)) : _, []) | not (eqpOverfull body n) ->
+            (n, (iidStash, 1, CStash, CEqp) : l4)
+          ((vStash, (iidStash, _)) : _, (vEqp, _) : _)
+            | vStash > vEqp && not (eqpOverfull body n) ->
+                (n, (iidStash, 1, CStash, CEqp) : l4)
           _ -> (oldN, l4)
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
@@ -454,17 +444,11 @@ equipItems aid = do
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
                       heavilyDistressed (not calmE) actorMaxSk itemFull
-      bestThree = bestByEqpSlot discoBenefit
-                                (filter filterNeeded eqpAssocs)
-                                (filter filterNeeded invAssocs)
-                                (filter filterNeeded shaAssocs)
-      bEqpInv = foldl' (improve CInv) (0, [])
-                $ map (\(eqp, inv, _) -> (inv, eqp)) bestThree
-      bEqpBoth | calmE =
-                   foldl' (improve CSha) bEqpInv
-                   $ map (\(eqp, _, sha) -> (sha, eqp)) bestThree
-               | otherwise = bEqpInv
-      (_, prepared) = bEqpBoth
+      bestTwo = bestByEqpSlot discoBenefit
+                              (filter filterNeeded stashAssocs)
+                              (filter filterNeeded eqpAssocs)
+      bEqpStash = foldl' improve (0, []) bestTwo
+      (_, prepared) = bEqpStash
   return $! if null prepared
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
@@ -487,13 +471,11 @@ yieldUnneeded aid = do
   -- in play again.
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
-      csha = if calmE then CSha else CInv
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
-        if | harmful discoBenefit iidEqp ->
-             [(iidEqp, itemK, CEqp, CInv)]  -- harmful not shared
-           | hinders condShineWouldBetray condAimEnemyPresent
-                     heavilyDistressed (not calmE) actorMaxSk itemEqp ->
-             [(iidEqp, itemK, CEqp, csha)]
+        if | harmful discoBenefit iidEqp  -- harmful not shared
+             || hinders condShineWouldBetray condAimEnemyPresent
+                        heavilyDistressed (not calmE) actorMaxSk itemEqp ->
+             [(iidEqp, itemK, CEqp, CStash)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
   return $! if null yieldAllUnneeded
@@ -503,59 +485,55 @@ yieldUnneeded aid = do
 -- This only concerns items that can be equipped, that is with a slot
 -- and with @inEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
--- from inv or eqp to sha.
+-- from eqp to stash.
 unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
-  invAssocs <- getsState $ kitAssocs aid [CInv]
-  shaAssocs <- getsState $ kitAssocs aid [CSha]
+  stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
-  let improve :: CStore -> ( [(Int, (ItemId, ItemFullKit))]
-                           , [(Int, (ItemId, ItemFullKit))] )
+  let improve :: ( [(Int, (ItemId, ItemFullKit))]
+                 , [(Int, (ItemId, ItemFullKit))] )
               -> [(ItemId, Int, CStore, CStore)]
-      improve fromCStore (bestSha, bestEOrI) =
-        case bestEOrI of
-          ((vEOrI, (iidEOrI, bei)) : _) | getK bei > 1
-                                          && betterThanSha vEOrI bestSha ->
+      improve (bestStash, bestEqp) =
+        case bestEqp of
+          ((vEqp, (iidEqp, bei)) : _) | getK bei > 1
+                                          && betterThanStash vEqp bestStash ->
             -- To share the best items with others, if they care.
-            [(iidEOrI, getK bei - 1, fromCStore, CSha)]
-          (_ : (vEOrI, (iidEOrI, bei)) : _) | betterThanSha vEOrI bestSha ->
+            [(iidEqp, getK bei - 1, CEqp, CStash)]
+          (_ : (vEqp, (iidEqp, bei)) : _) | betterThanStash vEqp bestStash ->
             -- To share the second best items with others, if they care.
-            [(iidEOrI, getK bei, fromCStore, CSha)]
-          ((vEOrI, (_, _)) : _) | fromCStore == CEqp
-                                  && eqpOverfull body 1
-                                  && worseThanSha vEOrI bestSha ->
+            [(iidEqp, getK bei, CEqp, CStash)]
+          ((vEqp, (_, _)) : _) | eqpOverfull body 1
+                                  && worseThanStash vEqp bestStash ->
             -- To make place in eqp for an item better than any ours.
-            -- Even a minor boost is removed only if sha has a better one.
-            [(fst $ snd $ last bestEOrI, 1, fromCStore, CSha)]
+            -- Even a minor boost is removed only if stash has a better one.
+            [(fst $ snd $ last bestEqp, 1, CEqp, CStash)]
           _ -> []
       getK (_, (itemK, _)) = itemK
-      betterThanSha _ [] = True
-      betterThanSha vEOrI ((vSha, _) : _) = vEOrI > vSha
-      worseThanSha _ [] = False
-      worseThanSha vEOrI ((vSha, _) : _) = vEOrI < vSha
+      betterThanStash _ [] = True
+      betterThanStash vEqp ((vStash, _) : _) = vEqp > vStash
+      worseThanStash _ [] = False
+      worseThanStash vEqp ((vStash, _) : _) = vEqp < vStash
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
-      -- Here we don't need to filter out items that hinder (except in sha)
-      -- because they are moved to sha and will be equipped by another actor
+      -- Here we don't need to filter out items that hinder (except in stash)
+      -- because they are moved to stash and will be equipped by another actor
       -- at another time, where hindering will be completely different.
       -- If they hinder and we unequip them, all the better.
-      -- We filter sha to consider only eligible items in @worseThanSha@.
+      -- We filter stash to consider only eligible items in @worseThanStash@.
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
                       heavilyDistressed (not calmE) actorMaxSk itemFull
-      bestThree = bestByEqpSlot discoBenefit eqpAssocs invAssocs
-                                (filter filterNeeded shaAssocs)
-      bInvSha = concatMap
-                  (improve CInv . (\(_, inv, sha) -> (sha, inv))) bestThree
-      bEqpSha = concatMap
-                  (improve CEqp . (\(eqp, _, sha) -> (sha, eqp))) bestThree
-      prepared = if calmE then bInvSha ++ bEqpSha else []
+      bestTwo = bestByEqpSlot discoBenefit
+                              (filter filterNeeded stashAssocs)
+                              eqpAssocs
+      bEqpStash = concatMap improve bestTwo
+      prepared = if calmE then bEqpStash else []
   return $! if null prepared
             then reject
             else returN "unEquipItems" $ ReqMoveItems prepared
@@ -574,21 +552,16 @@ groupByEqpSlot is =
 bestByEqpSlot :: DiscoveryBenefit
               -> [(ItemId, ItemFullKit)]
               -> [(ItemId, ItemFullKit)]
-              -> [(ItemId, ItemFullKit)]
               -> [( [(Int, (ItemId, ItemFullKit))]
-                  , [(Int, (ItemId, ItemFullKit))]
                   , [(Int, (ItemId, ItemFullKit))] )]
-bestByEqpSlot discoBenefit eqpAssocs invAssocs shaAssocs =
-  let eqpMap = EM.map (\g -> (g, [], [])) $ groupByEqpSlot eqpAssocs
-      invMap = EM.map (\g -> ([], g, [])) $ groupByEqpSlot invAssocs
-      shaMap = EM.map (\g -> ([], [], g)) $ groupByEqpSlot shaAssocs
-      appendThree (g1, g2, g3) (h1, h2, h3) = (g1 ++ h1, g2 ++ h2, g3 ++ h3)
-      eqpInvShaMap = EM.unionsWith appendThree [eqpMap, invMap, shaMap]
+bestByEqpSlot discoBenefit eqpAssocs stashAssocs =
+  let eqpMap = EM.map (\g -> (g, [])) $ groupByEqpSlot eqpAssocs
+      stashMap = EM.map (\g -> ([], g)) $ groupByEqpSlot stashAssocs
+      appendTwo (g1, g2) (h1, h2) = (g1 ++ h1, g2 ++ h2)
+      eqpStashMap = EM.unionsWith appendTwo [eqpMap, stashMap]
       bestSingle = strongestSlot discoBenefit
-      bestThree eqpSlot (g1, g2, g3) = (bestSingle eqpSlot g1,
-                                        bestSingle eqpSlot g2,
-                                        bestSingle eqpSlot g3)
-  in EM.elems $ EM.mapWithKey bestThree eqpInvShaMap
+      bestTwo eqpSlot (g1, g2) = (bestSingle eqpSlot g1, bestSingle eqpSlot g2)
+  in EM.elems $ EM.mapWithKey bestTwo eqpStashMap
 
 harmful :: DiscoveryBenefit -> ItemId -> Bool
 harmful discoBenefit iid =
@@ -709,8 +682,7 @@ projectItem aid = do
               coeff COrgan = error $ "" `showFailure` benList
               coeff CEqp = 1000  -- must hinder currently (or be very potent);
                                  -- note: not larger, to avoid Int32 overflow
-              coeff CInv = 1
-              coeff CSha = 1
+              coeff CStash = 1
               fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
                 -- If the item is discharged, neither the kinetic hit nor
                 -- any effects activate, so no point projecting.
@@ -783,7 +755,7 @@ applyItem aid applyGroup = do
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
-      stores = [CEqp, CInv, CGround] ++ [CSha | calmE]
+      stores = [CEqp, CGround] ++ [CStash | calmE]
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
   getKind <- getsState $ flip getIidKind
@@ -798,8 +770,7 @@ applyItem aid applyGroup = do
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1
-      coeff CInv = 1
-      coeff CSha = 1
+      coeff CStash = 1
       fTool benAv@( Benefit{benApply}, cstore, iid
                   , itemFull@ItemFull{itemKind}, _ ) =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.

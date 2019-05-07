@@ -68,7 +68,7 @@ slotLabel x =
          (slotChar x)
   <> ")"
 
--- | Assigns a slot to an item, e.g., for inclusion in the inventory of a hero.
+-- | Assigns a slot to an item, e.g., for inclusion in equipment of a hero.
 -- At first, e.g., when item is spotted on the floor, the slot is
 -- not user-friendly. After any player's item manipulation action,
 -- slots are sorted and a fully human-readable slot is then assigned.

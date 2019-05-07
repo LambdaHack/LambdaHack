@@ -217,7 +217,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
             _gleader = Nothing
             gvictims = EM.empty
             gvictimsD = gvictimsDnew
-            gsha = EM.empty
+            gstash = Nothing
         return $! Faction{..}
   lUI <- mapM rawCreate $ filter (fhasUI . fst) $ rosterList players
   let !_A = assert (length lUI <= 1

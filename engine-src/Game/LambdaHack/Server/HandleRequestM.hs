@@ -438,10 +438,11 @@ reqMeleeChecked voluntary source target iid cstore = do
       case EM.assocs $ beqp tb of
         [(iid2, (k, _))] -> do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
-                                              (CActor source CInv)
+                                              (CActor source CStash)
           mapM_ execUpdAtomic upds
           itemFull <- getsState $ itemToFull iid2
-          discoverIfMinorEffects (CActor source CInv) iid2 (itemKindId itemFull)
+          discoverIfMinorEffects (CActor source CStash)
+                                 iid2 (itemKindId itemFull)
         err -> error $ "" `showFailure` err
       haltTrajectory KillCatch target tb
     else do
@@ -836,7 +837,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
    | toCStore == CEqp && eqpOverfull b k ->
      execFailure aid req EqpOverfull
-   | (fromCStore == CSha || toCStore == CSha) && not calmE ->
+   | (fromCStore == CStash || toCStore == CStash) && not calmE ->
      execFailure aid req ItemNotCalm
    | otherwise -> do
     upds <- generalMoveItem True iid k fromC toC
@@ -861,7 +862,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     -- Which is not fun at all, but one more thing to remember doing regularly.
     when (toCStore `elem` [CEqp, COrgan]
           && fromCStore `notElem` [CEqp, COrgan]
-          || fromCStore == CSha) $ do
+          || fromCStore == CStash) $ do
       let beforeIt = case iid `EM.lookup` bagBefore of
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
@@ -874,14 +875,14 @@ reqProject :: MonadServerAtomic m
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
-           -> CStore     -- ^ whether the items comes from floor or inventory
+           -> CStore     -- ^ which store the items comes from
            -> m ()
 reqProject source tpxy eps iid cstore = do
   let req = ReqProject tpxy eps iid cstore
   b <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
-  if cstore == CSha && not calmE then execFailure source req ItemNotCalm
+  if cstore == CStash && not calmE then execFailure source req ItemNotCalm
   else do
     mfail <- projectFail source source tpxy eps False iid cstore False
     maybe (return ()) (execFailure source req) mfail
@@ -898,7 +899,7 @@ reqApply aid iid cstore = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
-  if cstore == CSha && not calmE then execFailure aid req ItemNotCalm
+  if cstore == CStash && not calmE then execFailure aid req ItemNotCalm
   else do
     bag <- getsState $ getBodyStoreBag b cstore
     case EM.lookup iid bag of

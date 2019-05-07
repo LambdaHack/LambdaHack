@@ -478,9 +478,9 @@ drawFrameStatus drawnLevelId = do
         "Leader:" <+> leaderName bUI) mbodyUI
       leaderBlurbShort = maybe fallback leaderName mbodyUI
   ours <- getsState $ fidActorNotProjGlobalAssocs side
+  ns <- getsState $ EM.size . getFactionStashBag side
   let na = length ours
       nl = ES.size $ ES.fromList $ map (blid . snd) ours
-      ns = EM.size $ gsha fact
       -- To be replaced by something more useful.
       teamBlurb = textToAL $ trimTgtDesc widthTgt $
         makePhrase [ "Team:"

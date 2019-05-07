@@ -119,19 +119,19 @@ chooseItemDialogMode c = do
                [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
                , nItems, "at"
                , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
-        MStore CSha ->
+        MStore CStash ->
           -- We assume "gold grain", not "grain" with label "of gold":
           let currencyName = IK.iname $ okind coitem
                              $ ouniqGroup coitem "currency"
               dungeonTotal = sgold s
               (_, total) = calculateTotal side s
-              n = countItems CSha
-              verbSha = if | n == 0 -> "find nothing"
-                           | calmEnough body actorMaxSk -> "notice"
-                           | otherwise -> "paw distractedly"
+              n = countItems CStash
+              verbStash = if | n == 0 -> "find nothing"
+                             | calmEnough body actorMaxSk -> "notice"
+                             | otherwise -> "paw distractedly"
           in makePhrase
                [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-               , MU.Capitalize $ MU.SubjectVerbSg subject verbSha
+               , MU.Capitalize $ MU.SubjectVerbSg subject verbStash
                , MU.Text tIn
                , MU.Text t ]
         MStore cstore ->
@@ -308,9 +308,9 @@ chooseItemProjectHuman ts = do
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
-      cLegalRaw = [CGround, CInv, CSha, CEqp]
+      cLegalRaw = [CGround, CStash, CEqp]
       cLegal | calmE = cLegalRaw
-             | otherwise = delete CSha cLegalRaw
+             | otherwise = delete CStash cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (tiverb tr, tiobject tr)
@@ -488,9 +488,9 @@ chooseItemApplyHuman ts = do
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
-      cLegalRaw = [CGround, CInv, CSha, CEqp]
+      cLegalRaw = [CGround, CStash, CEqp]
       cLegal | calmE = cLegalRaw
-             | otherwise = delete CSha cLegalRaw
+             | otherwise = delete CStash cLegalRaw
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (tiverb tr, tiobject tr)

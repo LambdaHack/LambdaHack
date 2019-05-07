@@ -728,8 +728,8 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   lastItemMove <- getsSession slastItemMove
   let calmE = calmEnough b actorMaxSk
       cLegalE | calmE = cLegalRaw
-              | destCStore == CSha = []
-              | otherwise = delete CSha cLegalRaw
+              | destCStore == CStash = []
+              | otherwise = delete CStash cLegalRaw
       cLegal = case lastItemMove of
         Just (lastFrom, lastDest) | lastDest == destCStore
                                     && lastFrom `elem` cLegalE ->
@@ -770,10 +770,9 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
       ret4 :: [(ItemId, ItemFullKit)] -> Int
            -> m [(ItemId, Int, CStore, CStore)]
       ret4 [] _ = return []
-      ret4 ((iid, (itemFull, (itemK, _))) : rest) oldN = do
+      ret4 ((iid, (_, (itemK, _))) : rest) oldN = do
         let k = itemK
             !_A = assert (k > 0) ()
-            inEqp = benInEqp $ discoBenefit EM.! iid
             retRec toCStore = do
               let n = oldN + if toCStore == CEqp then k else 0
               l4 <- ret4 rest n
@@ -785,20 +784,19 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
               msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
         if cLegalRaw == [CGround]  -- normal pickup
         then case destCStore of  -- @CEqp@ is the implicit default; refine:
-          CEqp | calmE && IA.goesIntoSha (aspectRecordFull itemFull) ->
-            retRec CSha
-          CEqp | inEqp && eqpOverfull b (oldN + k) -> do
-            -- If this stack doesn't fit, we don't equip any part of it,
-            -- but we may equip a smaller stack later in the same pickup.
-            issueWarning
-            retRec $ if calmE then CSha else CInv
-          CEqp | inEqp ->
-            retRec CEqp
           CEqp ->
-            retRec CInv
+            if benInEqp $ discoBenefit EM.! iid
+            then if eqpOverfull b (oldN + k)
+                 then do
+                   -- If this stack doesn't fit, we don't equip any part of it,
+                   -- but we may equip a smaller stack later in the same pickup.
+                   issueWarning
+                   retRec CStash
+                 else retRec CEqp
+            else retRec CStash
           _ ->
             retRec destCStore
-        else case destCStore of  -- player forces store, so @inEqp@ ignored
+        else case destCStore of  -- player forces store, so @benInEqp@ ignored
           CEqp | eqpOverfull b (oldN + k) -> do
             -- If the chosen number from the stack doesn't fit,
             -- we don't equip any part of it and we exit item manipulation.
@@ -806,7 +804,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             -- No recursive call here:
             return []
           _ -> retRec destCStore
-  if not calmE && CSha `elem` [fromCStore, destCStore]
+  if not calmE && CStash `elem` [fromCStore, destCStore]
   then failSer ItemNotCalm
   else do
     l4 <- ret4 l 0
@@ -844,7 +842,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
-  if not calmE && fromCStore == CSha then failSer ItemNotCalm
+  if not calmE && fromCStore == CStash then failSer ItemNotCalm
   else do
     mpsuitReq <- psuitReq
     case mpsuitReq of
@@ -904,7 +902,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
   let skill = Ability.getSk Ability.SkApply actorSk
       calmE = calmEnough b actorMaxSk
       arItem = aspectRecordFull itemFull
-  if not calmE && fromCStore == CSha
+  if not calmE && fromCStore == CStash
   then failSer ItemNotCalm
   else case permittedApply localTime skill calmE itemFull kit of
     Left reqFail -> failSer reqFail
@@ -1203,7 +1201,7 @@ itemMenuHuman cmdAction = do
           CCUI{coinput} <- getsSession sccui
           actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b actorMaxSk
-              greyedOut cmd = not calmE && fromCStore == CSha || case cmd of
+              greyedOut cmd = not calmE && fromCStore == CStash || case cmd of
                 ByAimMode AimModeCmd{..} ->
                   greyedOut exploration || greyedOut aiming
                 ComposeIfLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
@@ -1211,7 +1209,7 @@ itemMenuHuman cmdAction = do
                 Compose2ndLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
                 MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
-                  || not calmE && CSha == destCStore
+                  || not calmE && CStash == destCStore
                   || destCStore == CEqp && eqpOverfull b 1
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorSk

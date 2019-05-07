@@ -35,6 +35,8 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -44,8 +46,6 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -449,11 +449,10 @@ condEnoughGearM aid = do
   let followTactic = ftactic (gplayer fact)
                      `elem` [Ability.TFollow, Ability.TFollowNoItems]
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  invAssocs <- getsState $ getActorAssocs aid CInv
   return $ not followTactic  -- keep it lazy
            && (any (IA.checkFlag Ability.Meleeable
                     . aspectRecordFull . snd) eqpAssocs
-               || length eqpAssocs + length invAssocs >= 5)
+               || length eqpAssocs >= 3)
 
 unexploredDepth :: MonadClientRead m => Bool -> LevelId -> m Bool
 unexploredDepth !up !lidCurrent = do

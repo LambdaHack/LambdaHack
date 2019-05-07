@@ -21,15 +21,15 @@ import           Data.Int (Int64)
 import           Data.Ratio
 import           GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- | Actor attributes that are changing throughout the game.
 -- If they appear to be dublets of aspects from actor kinds, e.g. HP,
@@ -64,7 +64,6 @@ data Actor = Actor
     -- Items
   , borgan      :: ItemBag      -- ^ organs
   , beqp        :: ItemBag      -- ^ personal equipment
-  , binv        :: ItemBag      -- ^ personal inventory pack
   , bweapon     :: Int          -- ^ number of weapons among eqp and organs
 
     -- Assorted
@@ -135,7 +134,6 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       boldpos = Nothing
       borgan = EM.empty
       beqp = EM.empty
-      binv = EM.empty
       bweapon = 0
       bwatch = WWatch  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)

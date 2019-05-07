@@ -8,11 +8,11 @@ module Game.LambdaHack.Common.ActorState
   , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
   , posToAids, posToAidAssocs
   , calculateTotal, itemPrice, mergeItemQuant, findIid
-  , combinedGround, combinedOrgan, combinedEqp, combinedInv
+  , combinedGround, combinedOrgan, combinedEqp
   , combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
   , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
-  , getFloorBag, getEmbedBag, getBodyStoreBag
+  , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
@@ -37,6 +37,7 @@ import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -45,7 +46,6 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -153,7 +153,7 @@ findIid leader fid iid s =
         let itemsOfCStore store =
               let bag = getBodyStoreBag b store s
               in map (\iid2 -> (iid2, (aid, (b, store)))) (EM.keys bag)
-            stores = [CInv, CEqp, COrgan] ++ [CSha | aid == leader]
+            stores = [CEqp, COrgan] ++ [CStash | aid == leader]
         in concatMap itemsOfCStore stores
       items = concatMap itemsOfActor actors
   in map snd $ filter ((== iid) . fst) items
@@ -175,17 +175,12 @@ combinedEqp fid s =
   let bs = inline fidActorNotProjGlobalAssocs fid s
   in EM.unionsWith mergeItemQuant $ map (beqp . snd) bs
 
-combinedInv :: FactionId -> State -> ItemBag
-combinedInv fid s =
-  let bs = inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map (binv . snd) bs
-
 -- Trunk not considered (if stolen).
 combinedItems :: FactionId -> State -> ItemBag
 combinedItems fid s =
-  let shaBag = gsha $ sfactionD s EM.! fid
+  let stashBag = getFactionStashBag fid s
       bs = map snd $ inline fidActorNotProjGlobalAssocs fid s
-  in EM.unionsWith mergeItemQuant $ map binv bs ++ map beqp bs ++ [shaBag]
+  in EM.unionsWith mergeItemQuant $ map beqp bs ++ [stashBag]
 
 combinedFromLore :: SLore -> FactionId -> State -> ItemBag
 combinedFromLore slore fid s = case slore of
@@ -240,12 +235,12 @@ getCarriedAssocsAndTrunk b s =
   -- The trunk is important for a case of spotting a caught projectile
   -- with a stolen projecting item. This actually does happen.
   let trunk = EM.singleton (btrunk b) (1, [])
-  in bagAssocs s $ EM.unionsWith const [binv b, beqp b, borgan b, trunk]
+  in bagAssocs s $ EM.unionsWith const [beqp b, borgan b, trunk]
 
 getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
 getCarriedIidCStore b =
   let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
-  in concatMap bagCarried [(CInv, binv b), (CEqp, beqp b), (COrgan, borgan b)]
+  in concatMap bagCarried [(CEqp, beqp b), (COrgan, borgan b)]
 
 getContainerBag :: Container -> State -> ItemBag
 getContainerBag c s = case c of
@@ -269,8 +264,12 @@ getBodyStoreBag b cstore s =
     CGround -> getFloorBag (blid b) (bpos b) s
     COrgan -> borgan b
     CEqp -> beqp b
-    CInv -> binv b
-    CSha -> gsha $ sfactionD s EM.! bfid b
+    CStash -> getFactionStashBag (bfid b) s
+
+getFactionStashBag :: FactionId -> State -> ItemBag
+getFactionStashBag fid s = case gstash $ sfactionD s EM.! fid of
+  Just (lid, pos) -> getFloorBag lid pos s
+  Nothing -> EM.empty
 
 mapActorItems_ :: Monad m
                => (CStore -> ItemId -> ItemQuant -> m a) -> Actor -> State

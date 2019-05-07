@@ -638,14 +638,11 @@ dominateFid fid source target = do
   -- the enemy actor. Then we may never learn. Oh well, that's realism.
   deduceKilled target
   electLeader (bfid tb0) (blid tb0) target
-  fact <- getsState $ (EM.! bfid tb0) . sfactionD
   -- Drop all items so that domiation is not too nasty, especially
   -- if the dominated hero runs off or teleports away with gold
   -- or starts hitting with the most potent artifact weapon in the game.
-  -- Prevent the faction's stash from being lost in case they are
-  -- not spawners. Drop items while still of the original faction
+  -- Drop items while still of the original faction
   -- to mark them on the map for other party members to collect.
-  when (isNothing $ gleader fact) $ moveStores False target CSha CInv
   dropAllItems target tb0
   tb <- getsState $ getActorBody target
   ais <- getsState $ getCarriedAssocsAndTrunk tb
@@ -696,8 +693,7 @@ dominateFid fid source target = do
 
 -- | Drop all actor's items.
 dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
-dropAllItems aid b = do
-  mapActorCStore_ CInv (dropCStoreItem False CInv aid b maxBound) b
+dropAllItems aid b =
   mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b
 
 -- ** Impress
@@ -975,9 +971,9 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   let !_A = assert (lidNew /= lidOld `blame` "stairs looped" `swith` lidNew) ()
   -- Sync actor's items' timeouts with the new local time of the level.
   -- We need to sync organs and equipment due to periodic activations,
-  -- but also inventory pack (as well as some organs and equipment),
-  -- due to timeouts after use, e.g., for some weapons (they recharge also
-  -- in the pack; however, this doesn't encourage micromanagement for periodic
+  -- but also due to timeouts after use, e.g., for some weapons
+  -- (they recharge also in the stash sometimes;
+  -- however, this doesn't encourage micromanagement for periodic
   -- items, because the timeout is randomised upon move to equipment).
   --
   -- We don't rebase timeouts for items in stash, because they are
@@ -988,7 +984,7 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- not anomalously short or long recharge times. If the recharge time
   -- is very long, the player has an option of moving the item from stash
   -- to pack and back, to reset the timeout. An abuse is possible when recently
-  -- used item is put from inventory to stash and at once used on another level
+  -- used item is put from equipment to stash and at once used on another level
   -- taking advantage of local time difference, but this only works once
   -- and using the item back again at the original level makes the recharge
   -- time longer, in turn.
@@ -1004,8 +1000,7 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
                   , bpos = posNew
                   , boldpos = Just posNew  -- new level, new direction
                   , borgan = rebaseTimeout $ borgan bOld
-                  , beqp = rebaseTimeout $ beqp bOld
-                  , binv = rebaseTimeout $ binv bOld }
+                  , beqp = rebaseTimeout $ beqp bOld }
   ais <- getsState $ getCarriedAssocsAndTrunk bOld
   -- Sync the actor time with the level time.
   -- This time shift may cause a double move of a foe of the same speed,
@@ -1318,7 +1313,7 @@ effectDropItem execSfx iidId ngroup kcopy store grp target = do
   let is = filter ((/= iidId) . fst) isRaw
   if | bproj tb || null is -> return UseDud
      | ngroup == maxBound && kcopy == maxBound
-       && store `elem` [CEqp, CInv, CSha]
+       && store `elem` [CEqp, CStash]
        && fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
        && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
            && any (fhasUI . gplayer . snd)
@@ -1563,7 +1558,7 @@ effectIdentify execSfx iidId target = do
           allAssocs <- getsState $ fullAssocs target [store]
           go <- tryFull store allAssocs
           if go then return UseUp else tryStore rest
-  tryStore [CGround, CEqp, CInv, CSha]
+  tryStore [CGround, CEqp, CStash]
 
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> ContentId ItemKind -> ItemKind -> m ()
@@ -1587,7 +1582,7 @@ effectDetect execSfx d radius target pos = do
         || (case posToBigAssoc p (blid b) s of
               Nothing -> False
               Just (_, body) ->
-                let belongings = EM.keys (beqp body) ++ EM.keys (binv body)
+                let belongings = EM.keys (beqp body)
                       -- shared stash ignored, because hard to get
                 in any belongingIsLoot belongings)
         || any embedHasLoot (EM.keys $ getEmbedBag (blid b) p s)
@@ -1596,7 +1591,7 @@ effectDetect execSfx d radius target pos = do
       embedHasLoot iid = any effectHasLoot $ IK.ieffects $ getKind iid
       reported acc _ _ itemKind = acc && itemKindIsLoot itemKind
       effectHasLoot (IK.CreateItem cstore grp _) =
-        cstore `elem` [CGround, CEqp, CInv, CSha]
+        cstore `elem` [CGround, CEqp, CStash]
         && ofoldlGroup' coitem grp reported True
       effectHasLoot IK.PolyItem = True
       effectHasLoot IK.RerollItem = True
@@ -1708,7 +1703,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
     Just [] -> error $ "projecting from the edge of level"
                        `showFailure` (fpos, tb)
     Just (pos : rest) -> do
-      weightAssocs <- getsState $ fullAssocs target [CInv, CEqp, COrgan]
+      weightAssocs <- getsState $ fullAssocs target [CEqp, COrgan]
       let weight = sum $ map (IK.iweight . itemKind . snd) weightAssocs
           path = bpos tb : pos : rest
           (trajectory, (speed, _)) =

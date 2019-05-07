@@ -4,8 +4,8 @@
 --
 -- We try to make atomic commands respect the laws of energy and mass
 -- conservation, unless they really can't, e.g., monster spawning.
--- For example item removal from inventory is not an atomic command,
--- but item dropped from the inventory to the ground is. This makes
+-- For example item removal from equipment, in isolation, is not an atomic
+-- command, but item dropped from equipment to the ground is. This makes
 -- it easier to undo the commands. In principle, the commands are the only
 -- way to affect the basic game state ('State').
 --

@@ -148,7 +148,7 @@ type ItemQuant = (Int, ItemTimer)
 -- on a particular floor position or embedded in a particular map tile.
 type ItemBag = EM.EnumMap ItemId ItemQuant
 
--- | All items in the dungeon (including in actor inventories),
+-- | All items in the dungeon (including those carried by actors),
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
 

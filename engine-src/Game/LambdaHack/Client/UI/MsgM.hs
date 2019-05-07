@@ -62,7 +62,7 @@ promptMainKeys = do
   let kmHelp = revCmd K.undefinedKM HumanCmd.Hint
       kmViewEqp = revCmd K.undefinedKM (HumanCmd.ChooseItemMenu (MStore CEqp))
       kmItemEqp = revCmd K.undefinedKM
-                         (HumanCmd.MoveItem [CGround, CInv, CSha] CEqp
+                         (HumanCmd.MoveItem [CGround, CStash] CEqp
                                             Nothing False)
       kmXhairPointerFloor = revCmd K.undefinedKM HumanCmd.XhairPointerFloor
   saimMode <- getsSession saimMode

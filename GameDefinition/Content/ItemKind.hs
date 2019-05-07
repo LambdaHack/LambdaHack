@@ -1168,7 +1168,7 @@ sightSharpening = ringTemplate  -- small and round, so mistaken for a ring
   }
 -- Don't add standard effects to rings, because they go in and out
 -- of eqp and so activating them would require UI tedium: looking for
--- them in eqp and inv or even activating a wrong item by mistake.
+-- them in eqp and stash or even activating a wrong item by mistake.
 --
 -- By general mechanisms, due to not having effects that could identify
 -- them by observing the effect, rings are identified on pickup.
