@@ -783,8 +783,8 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
                              else EqpStackFull
               msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
         if cLegalRaw == [CGround]  -- normal pickup
-        then case destCStore of  -- @CEqp@ is the implicit default; refine:
-          CEqp ->
+        then case destCStore of  -- @CStash@ is the implicit default; refine:
+          CStash ->
             if benInEqp $ discoBenefit EM.! iid
             then if eqpOverfull b (oldN + k)
                  then do

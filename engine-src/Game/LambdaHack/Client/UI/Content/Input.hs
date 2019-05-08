@@ -222,8 +222,8 @@ applyI ts =
   in ([], descIs ts, ComposeUnlessError (ChooseItemApply ts) apply)
 
 grabCmd :: HumanCmd
-grabCmd = MoveItem [CGround] CEqp (Just "grab") True
-            -- @CEqp@ is the implicit default; refined in HandleHumanGlobalM
+grabCmd = MoveItem [CGround] CStash (Just "grab") True
+            -- @CStash@ is the implicit default; refined in HandleHumanGlobalM
 
 grabItems :: Text -> CmdTriple
 grabItems t = ([CmdItemMenu], t, grabCmd)
