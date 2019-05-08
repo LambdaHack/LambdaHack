@@ -377,15 +377,15 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 (cCurAfterCalm, cRestAfterCalm) =
                   if forward
                   then case cRest ++ mcCur of
-                    c1@(MStore CStash) : c2 : rest | not calmE ->
+                    c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, c1 : rest)
-                    [MStore CStash] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CEqp] | not calmE -> error $ "" `showFailure` cRest
                     c1 : rest -> (c1, rest)
                     [] -> error $ "" `showFailure` cRest
                   else case reverse $ mcCur ++ cRest of
-                    c1@(MStore CStash) : c2 : rest | not calmE ->
+                    c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, reverse $ c1 : rest)
-                    [MStore CStash] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CEqp] | not calmE -> error $ "" `showFailure` cRest
                     c1 : rest -> (c1, reverse rest)
                     [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
@@ -480,8 +480,8 @@ legalWithUpdatedLeader cCur cRest = do
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
       legalAfterCalm = case newLegal of
-        c1@(MStore CStash) : c2 : rest | not calmE -> (c2, c1 : rest)
-        [MStore CStash] | not calmE -> (MStore CGround, newLegal)
+        c1@(MStore CEqp) : c2 : rest | not calmE -> (c2, c1 : rest)
+        [MStore CEqp] | not calmE -> (MStore CGround, newLegal)
         c1 : rest -> (c1, rest)
         [] -> error $ "" `showFailure` (cCur, cRest)
   return legalAfterCalm

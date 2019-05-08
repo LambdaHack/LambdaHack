@@ -398,7 +398,7 @@ pickup aid onlyWeapon = do
                  (Benefit{benInEqp}, _, iid, _, (itemK, _)) =
         let prep newN toCStore = (newN, (iid, itemK, CGround, toCStore) : l4)
             n = oldN + itemK
-        in if | benInEqp && not (eqpOverfull b n) -> prep n CEqp
+        in if | benInEqp && calmE && not (eqpOverfull b n) -> prep n CEqp
               | onlyWeapon -> (oldN, l4)
               | otherwise -> prep n CStash
       (_, prepared) = foldl' prepareOne (0, []) $ filterWeapon benItemL
@@ -449,7 +449,7 @@ equipItems aid = do
                               (filter filterNeeded eqpAssocs)
       bEqpStash = foldl' improve (0, []) bestTwo
       (_, prepared) = bEqpStash
-  return $! if null prepared
+  return $! if not calmE || null prepared
             then reject
             else returN "equipItems" $ ReqMoveItems prepared
 
@@ -478,7 +478,7 @@ yieldUnneeded aid = do
              [(iidEqp, itemK, CEqp, CStash)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
-  return $! if null yieldAllUnneeded
+  return $! if not calmE || null yieldAllUnneeded
             then reject
             else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
 
@@ -533,10 +533,9 @@ unEquipItems aid = do
                               (filter filterNeeded stashAssocs)
                               eqpAssocs
       bEqpStash = concatMap improve bestTwo
-      prepared = if calmE then bEqpStash else []
-  return $! if null prepared
+  return $! if not calmE || null bEqpStash
             then reject
-            else returN "unEquipItems" $ ReqMoveItems prepared
+            else returN "unEquipItems" $ ReqMoveItems bEqpStash
 
 groupByEqpSlot :: [(ItemId, ItemFullKit)]
                -> EM.EnumMap EqpSlot [(ItemId, ItemFullKit)]
@@ -755,7 +754,7 @@ applyItem aid applyGroup = do
       -- Organs are not taken into account, because usually they are either
       -- melee items, so harmful, or periodic, so charging between activations.
       -- The case of a weak weapon curing poison is too rare to incur overhead.
-      stores = [CEqp, CGround] ++ [CStash | calmE]
+      stores = [CStash, CGround] ++ [CEqp | calmE]
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
   getKind <- getsState $ flip getIidKind

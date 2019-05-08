@@ -247,7 +247,7 @@ projectList discoBenefit skill aid
                     -- anything else expendable
                   && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedProjectAI skill calmE itemFull
-      stores = [CEqp, CGround] ++ [CStash | calmE]
+      stores = [CStash, CGround] ++ [CEqp | calmE]
   in filter q $ benAvailableItems discoBenefit aid stores s
 
 -- | Produce the list of items from the given stores available to the actor

@@ -835,10 +835,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   bagBefore <- getsState $ getContainerBag toC
   if
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
+   | (fromCStore == CEqp || toCStore == CEqp) && not calmE ->
+     execFailure aid req ItemNotCalm
    | toCStore == CEqp && eqpOverfull b k ->
      execFailure aid req EqpOverfull
-   | (fromCStore == CStash || toCStore == CStash) && not calmE ->
-     execFailure aid req ItemNotCalm
    | otherwise -> do
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
@@ -882,7 +882,7 @@ reqProject source tpxy eps iid cstore = do
   b <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough b actorMaxSk
-  if cstore == CStash && not calmE then execFailure source req ItemNotCalm
+  if cstore == CEqp && not calmE then execFailure source req ItemNotCalm
   else do
     mfail <- projectFail source source tpxy eps False iid cstore False
     maybe (return ()) (execFailure source req) mfail
@@ -899,7 +899,7 @@ reqApply aid iid cstore = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
-  if cstore == CStash && not calmE then execFailure aid req ItemNotCalm
+  if cstore == CEqp && not calmE then execFailure aid req ItemNotCalm
   else do
     bag <- getsState $ getBodyStoreBag b cstore
     case EM.lookup iid bag of
