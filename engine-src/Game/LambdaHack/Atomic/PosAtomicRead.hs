@@ -44,8 +44,7 @@ data PosAtomic =
                                 -- ^ observers and the faction notice
   | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
   | PosFid FactionId            -- ^ only the faction notices, server doesn't
-  | PosFidAndSer (Maybe LevelId) FactionId
-                                -- ^ faction and server notices
+  | PosFidAndSer FactionId      -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
   | PosAll                      -- ^ everybody notices
   | PosNone                     -- ^ never broadcasted, but sent manually
@@ -104,9 +103,9 @@ posUpdAtomic cmd = case cmd of
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
-  UpdLeadFaction fid _ _ -> return $ PosFidAndSer Nothing fid
+  UpdLeadFaction fid _ _ -> return $ PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
-  UpdTacticFaction fid _ _ -> return $! PosFidAndSer Nothing fid
+  UpdTacticFaction fid _ _ -> return $! PosFidAndSer fid
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
@@ -214,7 +213,10 @@ singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid CStash) = do  -- shared stash is private
   b <- getsState $ getActorBody aid
-  return $! PosFidAndSer (Just $ blid b) (bfid b)
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  case mstash of
+    Just (lid, pos) -> return $! PosFidAndSight [bfid b] lid [pos]
+    Nothing -> return $! PosFidAndSight [bfid b] (blid b) [bpos b]
 singleContainer (CActor aid _) = singleAid aid
 singleContainer (CTrunk fid lid p) =
   return $! PosFidAndSight [fid] lid [p]
@@ -281,7 +283,7 @@ seenAtomicCli knowEvents fid per posAtomic =
       fid `elem` fids || all (`ES.member` totalVisible per) ps || knowEvents
     PosSmell _ ps -> all (`ES.member` totalSmelled per) ps || knowEvents
     PosFid fid2 -> fid == fid2
-    PosFidAndSer _ fid2 -> fid == fid2
+    PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
     PosNone -> error $ "no position possible" `showFailure` fid

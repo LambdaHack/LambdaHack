@@ -27,13 +27,13 @@ import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.MonadServer
@@ -123,11 +123,9 @@ handleAndBroadcast ps atomicBroken atomic = do
       send fid = case ps of
         PosSight lid _ -> posLevel lid fid
         PosFidAndSight _ lid _ -> posLevel lid fid
-        PosFidAndSer (Just lid) _ -> posLevel lid fid
         PosSmell lid _ -> posLevel lid fid
         PosFid fid2 -> when (fid == fid2) $ sendAtomic fid atomic
-        PosFidAndSer Nothing fid2 ->
-          when (fid == fid2) $ sendAtomic fid atomic
+        PosFidAndSer fid2 -> when (fid == fid2) $ sendAtomic fid atomic
         PosSer -> return ()
         PosAll -> sendAtomic fid atomic
         PosNone -> error $ "" `showFailure` (fid, atomic)

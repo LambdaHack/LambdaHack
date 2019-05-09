@@ -209,7 +209,7 @@ insertItemEqp iid kit aid = do
 
 insertItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> Actor -> m ()
 insertItemStash iid kit b = do
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! (bfid b)
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   case mstash of
     Just (lid, pos) ->
       insertItemFloor iid kit lid pos
