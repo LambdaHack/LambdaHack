@@ -211,11 +211,8 @@ insertItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> Actor -> m ()
 insertItemStash iid kit b = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   case mstash of
-    Just (lid, pos) ->
-      insertItemFloor iid kit lid pos
-    Nothing -> do
-      updateFaction (bfid b) $ \fact -> fact {gstash = Just (blid b, bpos b)}
-      insertItemFloor iid kit (blid b) (bpos b)
+    Just (lid, pos) -> insertItemFloor iid kit lid pos
+    Nothing -> error $ "missing gstash" `showFailure` (iid, kit, b)
 
 deleteBagContainer :: MonadStateWrite m
                    => ItemBag -> Container -> m ()
@@ -297,11 +294,7 @@ deleteItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
 deleteItemStash iid kit fid = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! fid
   case mstash of
-    Just (lid, pos) -> do
-      deleteItemFloor iid kit lid pos
-      stashBag <- getsState $ getFloorBag lid pos
-      when (EM.null stashBag) $
-        updateFaction fid $ \fact -> fact {gstash = Nothing}
+    Just (lid, pos) -> deleteItemFloor iid kit lid pos
     Nothing -> error $ "removing from empty shared stash"
                        `showFailure` (iid, kit, fid)
 
