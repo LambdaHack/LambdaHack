@@ -263,6 +263,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
+  UpdStashFaction{} -> return ()
   UpdLeadFaction fid (Just source) (Just target) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     lidV <- viewedLevelUI

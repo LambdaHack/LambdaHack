@@ -11,7 +11,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updSpotItemBag, updLoseItemBag
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
   , updRefillHP, updRefillCalm
-  , updTrajectory, updQuitFaction, updLeadFaction
+  , updTrajectory, updQuitFaction, updStashFaction, updLeadFaction
   , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
   , updAlterTile, updAlterExplorable, updSearchTile, updSpotTile, updLoseTile
   , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
@@ -41,6 +41,8 @@ import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -50,8 +52,6 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -90,6 +90,7 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
+  UpdStashFaction fid fromSt toSt -> updStashFaction fid fromSt toSt
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
@@ -387,6 +388,19 @@ updQuitFaction fid fromSt toSt = do
   let adj fa = fa {gquit = toSt}
   updateFaction fid adj
 
+updStashFaction :: MonadStateWrite m
+                => FactionId
+                -> Maybe (LevelId, Point)
+                -> Maybe (LevelId, Point)
+                -> m ()
+updStashFaction fid fromSt toSt = assert (fromSt /= toSt) $ do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let !_A = assert (fromSt == gstash fact
+                    `blame` "unexpected stash position"
+                    `swith` (fid, fromSt, toSt, fact)) ()
+  let adj fa = fa {gstash = toSt}
+  updateFaction fid adj
+
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadStateWrite m
                => FactionId
@@ -412,10 +426,11 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
     fact1 <- getsState $ (EM.! fid1) . sfactionD
     fact2 <- getsState $ (EM.! fid2) . sfactionD
-    let !_A = assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
-                      && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
-                      `blame` "unexpected actor diplomacy status"
-                      `swith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) ()
+    let !_A =
+          assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
+                  && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
+                  `blame` "unexpected actor diplomacy status"
+                  `swith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) ()
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)

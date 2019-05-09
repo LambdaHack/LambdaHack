@@ -103,6 +103,7 @@ posUpdAtomic cmd = case cmd of
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
+  UpdStashFaction fid _ _ -> return $ PosFidAndSer fid
   UpdLeadFaction fid _ _ -> return $ PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
   UpdTacticFaction fid _ _ -> return $! PosFidAndSer fid

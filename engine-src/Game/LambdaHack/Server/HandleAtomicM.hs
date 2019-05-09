@@ -26,12 +26,12 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.TileKind (TileKind)
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.Fov
@@ -178,6 +178,11 @@ cmdAtomicSemSer oldState cmd = case cmd of
         radiusOld = boundSightByCalm sight (bcalm oldBody)
         radiusNew = boundSightByCalm sight (bcalm body)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
+  UpdStashFaction fid (Just (lid1, _)) (Just (lid2, _)) -> do
+    invalidatePerFidLid fid lid1
+    invalidatePerFidLid fid lid2
+  UpdStashFaction fid (Just (lid, _)) _ -> invalidatePerFidLid fid lid
+  UpdStashFaction fid _ (Just (lid, _)) -> invalidatePerFidLid fid lid
   UpdLeadFaction{} -> invalidateArenas
   UpdRecordKill{} -> invalidateArenas
   UpdAlterTile lid pos fromTile toTile -> do
@@ -325,3 +330,9 @@ invalidatePerLid lid = do
         g _ valid = valid
     in ser { sperCacheFid = perCacheFidNew
            , sperValidFid = EM.mapWithKey g $ sperValidFid ser }
+
+invalidatePerFidLid :: MonadServer m => FactionId -> LevelId -> m ()
+invalidatePerFidLid fid lid = do
+  let adj = EM.insert lid False
+  modifyServer $ \ser ->
+    ser {sperValidFid = EM.adjust adj fid $ sperValidFid ser}
