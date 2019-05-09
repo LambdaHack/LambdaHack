@@ -134,9 +134,11 @@ containerMoveItem verbose iid k c1 c2 = do
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
     Just (_, it) -> do
+      moveStash <- moveStashIfNeeded c2
       item <- getsState $ getItemBody iid
-      return [ UpdLoseItem verbose iid item (k, take k it) c1
-             , UpdSpotItem verbose iid item (k, take k it) c2 ]
+      return $ [UpdLoseItem verbose iid item (k, take k it) c1]
+               ++ moveStash
+               ++ [UpdSpotItem verbose iid item (k, take k it) c2]
 
 quitF :: MonadServerAtomic m => Status -> FactionId -> m ()
 quitF status fid = do

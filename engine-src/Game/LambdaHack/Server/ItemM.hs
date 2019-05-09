@@ -1,7 +1,7 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( registerItem, randomResetTimeout, embedItem, prepareItemKind, rollItemAspect
-  , rollAndRegisterItem
+  ( registerItem, moveStashIfNeeded, randomResetTimeout, embedItem
+  , prepareItemKind, rollItemAspect, rollAndRegisterItem
   , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -22,11 +22,14 @@ import           Data.Ord
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
@@ -36,8 +39,6 @@ import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import           Game.LambdaHack.Core.Frequency
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
@@ -71,6 +72,8 @@ registerItem (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
   modifyServer $ \ser ->
     ser {sgenerationAn = EM.adjust (EM.insertWith (+) iid (fst kit)) slore
                                    (sgenerationAn ser)}
+  moveStash <- moveStashIfNeeded container
+  mapM_  execUpdAtomic moveStash
   let cmd = if verbose then UpdCreateItem else UpdSpotItem False
   execUpdAtomic $ cmd iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
@@ -87,6 +90,19 @@ registerItem (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
       randomResetTimeout (fst kit) iid itemFull [] container
     _ -> return ()
   return iid
+
+moveStashIfNeeded :: MonadStateRead m => Container -> m [UpdAtomic]
+moveStashIfNeeded c = case c of
+  CActor aid CStash -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    let mvStash = UpdStashFaction (bfid b) mstash (Just (blid b, bpos b))
+    case mstash of
+      Just (lid, pos) -> do
+        bagStash <- getsState $ getFloorBag lid pos
+        return [mvStash | EM.null bagStash]
+      Nothing -> return [mvStash]
+  _ -> return []
 
 randomResetTimeout :: MonadServerAtomic m
                    => Int -> ItemId -> ItemFull -> [Time] -> Container
