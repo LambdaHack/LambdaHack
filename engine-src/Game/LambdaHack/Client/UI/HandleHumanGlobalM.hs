@@ -684,7 +684,6 @@ moveOrSelectItem cLegalRaw destCStore mverb auto = do
         Nothing ->  -- the case of old selection or selection from another actor
           moveItemHuman cLegalRaw destCStore mverb auto
         Just (k, it) -> assert (k > 0) $ do
-          itemFull <- getsState $ itemToFull iid
           let eqpFree = eqpFreeN b
               kToPick | destCStore == CEqp = min eqpFree k
                       | otherwise = k
@@ -696,8 +695,7 @@ moveOrSelectItem cLegalRaw destCStore mverb auto = do
               Left Nothing -> moveItemHuman cLegalRaw destCStore mverb auto
               Left (Just err) -> return $ Left err
               Right kChosen ->
-                let is = ( fromCStore
-                         , [(iid, (itemFull, (kChosen, take kChosen it)))] )
+                let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
                 in moveItems cLegalRaw is destCStore
     _ -> do
       mis <- selectItemsToMove cLegalRaw destCStore mverb auto
@@ -711,7 +709,7 @@ moveOrSelectItem cLegalRaw destCStore mverb auto = do
 
 selectItemsToMove :: forall m. MonadClientUI m
                   => [CStore] -> CStore -> Maybe MU.Part -> Bool
-                  -> m (FailOrCmd (CStore, [(ItemId, ItemFullKit)]))
+                  -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
 selectItemsToMove cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
@@ -762,7 +760,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
     _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
-          => [CStore] -> (CStore, [(ItemId, ItemFullKit)]) -> CStore
+          => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
           -> m (FailOrCmd RequestTimed)
 moveItems cLegalRaw (fromCStore, l) destCStore = do
   leader <- getLeaderUI
@@ -770,12 +768,10 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
   actorMaxSk <- getsState $ getActorMaxSkills leader
   discoBenefit <- getsClient sdiscoBenefit
   let calmE = calmEnough b actorMaxSk
-      ret4 :: [(ItemId, ItemFullKit)] -> Int
-           -> m [(ItemId, Int, CStore, CStore)]
+      ret4 :: [(ItemId, ItemQuant)] -> Int -> m [(ItemId, Int, CStore, CStore)]
       ret4 [] _ = return []
-      ret4 ((iid, (_, (itemK, _))) : rest) oldN = do
-        let k = itemK
-            !_A = assert (k > 0) ()
+      ret4 ((iid, (k, _)) : rest) oldN = do
+        let !_A = assert (k > 0) ()
             retRec toCStore = do
               let n = oldN + if toCStore == CEqp then k else 0
               l4 <- ret4 rest n

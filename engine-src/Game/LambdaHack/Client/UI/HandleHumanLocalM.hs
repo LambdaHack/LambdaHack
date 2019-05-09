@@ -355,7 +355,7 @@ chooseItemProjectHuman ts = do
               promptGeneric = "What to fling"
           ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
           case ggi of
-            Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
+            Right (iid, (MStore fromCStore, _)) -> do
               modifySession $ \sess ->
                 sess {sitemSel = Just (iid, fromCStore, False)}
               return Nothing
@@ -534,7 +534,7 @@ chooseItemApplyHuman ts = do
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
       ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
       case ggi of
-        Right ((iid, _itemFull), (MStore fromCStore, _)) -> do
+        Right (iid, (MStore fromCStore, _)) -> do
           modifySession $ \sess ->
             sess {sitemSel = Just (iid, fromCStore, False)}
           return Nothing

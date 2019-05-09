@@ -67,8 +67,7 @@ getGroupItem :: MonadClientUI m
              -> Text      -- ^ generic prompt
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
-             -> m (Either Text ( (ItemId, ItemFull)
-                               , (ItemDialogMode, Either K.KM SlotChar) ))
+             -> m (Either Text (ItemId, (ItemDialogMode, Either K.KM SlotChar)))
 getGroupItem psuit prompt promptGeneric
              cLegalRaw cLegalAfterCalm = do
   soc <- getFull psuit
@@ -77,8 +76,7 @@ getGroupItem psuit prompt promptGeneric
                  cLegalRaw cLegalAfterCalm True False
   case soc of
     Left err -> return $ Left err
-    Right ([(iid, (itemFull, _))], cekm) ->
-      return $ Right ((iid, itemFull), cekm)
+    Right ([(iid, _)], cekm) -> return $ Right (iid, cekm)
     Right _ -> error $ "" `showFailure` soc
 
 -- | Display all items from a store and let the human player choose any
@@ -123,7 +121,7 @@ getFull :: MonadClientUI m
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
-        -> m (Either Text ( [(ItemId, ItemFullKit)]
+        -> m (Either Text ( [(ItemId, ItemQuant)]
                           , (ItemDialogMode, Either K.KM SlotChar) ))
 getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
         askWhenLone permitMulitple = do
@@ -172,7 +170,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
       case res of
         (Left t, _) -> return $ Left t
         (Right (iids, itemBag, _lSlots), cekm) -> do
-          let f iid = (iid, (itemToF iid, itemBag EM.! iid))
+          let f iid = (iid, itemBag EM.! iid)
           return $ Right (map f iids, cekm)
 
 -- | Let the human player choose a single, preferably suitable,
