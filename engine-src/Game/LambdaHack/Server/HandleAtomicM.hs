@@ -68,6 +68,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+  UpdCreateItem{} -> return ()
   UpdDestroyItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -77,6 +78,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+  UpdDestroyItem{} -> return ()
   UpdSpotActor aid b _ -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
     actorMaxSkills <- getsState sactorMaxSkills
@@ -104,6 +106,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+  UpdSpotItem{} -> return ()
   UpdLoseItem _ iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
@@ -113,6 +116,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+  UpdLoseItem{} -> return ()
   UpdSpotItemBag (CFloor lid _) bag _ais -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
@@ -126,6 +130,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (store `elem` [CEqp, COrgan]) $
       when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
+  UpdSpotItemBag{} -> return ()
   UpdLoseItemBag (CFloor lid _) bag _ais -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
@@ -139,10 +144,12 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (store `elem` [CEqp, COrgan]) $
       when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
+  UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do
     actorMaxSkills <- getsState sactorMaxSkills
     when (actorHasShine actorMaxSkills aid) $ invalidateLucidAid aid
     invalidatePerActor aid
+  UpdWaitActor{} -> return ()
   UpdDisplaceActor aid1 aid2 -> do
     actorMaxSkills <- getsState sactorMaxSkills
     when (actorHasShine actorMaxSkills aid1
@@ -170,6 +177,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
       _ -> do
         invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
         when (s2 `elem` [CEqp, COrgan]) invalidatePer
+  UpdRefillHP{} -> return ()
   UpdRefillCalm aid _ -> do
     actorMaxSk <- getsState $ getActorMaxSkills aid
     body <- getsState $ getActorBody aid
@@ -178,19 +186,54 @@ cmdAtomicSemSer oldState cmd = case cmd of
         radiusOld = boundSightByCalm sight (bcalm oldBody)
         radiusNew = boundSightByCalm sight (bcalm body)
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
+  UpdTrajectory{} -> return ()
+  UpdQuitFaction{} -> return ()
   UpdStashFaction fid (Just (lid1, _)) (Just (lid2, _)) -> do
     invalidatePerFidLid fid lid1
     invalidatePerFidLid fid lid2
   UpdStashFaction fid (Just (lid, _)) _ -> invalidatePerFidLid fid lid
   UpdStashFaction fid _ (Just (lid, _)) -> invalidatePerFidLid fid lid
+  UpdStashFaction _ Nothing Nothing -> error "impossible UpdStashFaction"
   UpdLeadFaction{} -> invalidateArenas
+  UpdDiplFaction{} -> return ()
+  UpdTacticFaction{} -> return ()
+  UpdAutoFaction{} -> return ()
   UpdRecordKill{} -> invalidateArenas
   UpdAlterTile lid pos fromTile toTile -> do
     clearChanged <- updateSclear lid pos fromTile toTile
     litChanged <- updateSlit lid pos fromTile toTile
     when (clearChanged || litChanged) $ invalidateLucidLid lid
     when clearChanged $ invalidatePerLid lid
-  _ -> return ()
+  UpdAlterExplorable{} -> return ()
+  UpdAlterGold{} -> return ()
+  UpdSearchTile{} -> return ()
+  UpdHideTile{} -> return ()
+  UpdSpotTile{} -> return ()
+  UpdLoseTile{} -> return ()
+  UpdSpotEntry{} -> return ()
+  UpdLoseEntry{} -> return ()
+  UpdAlterSmell{} -> return ()
+  UpdSpotSmell{} -> return ()
+  UpdLoseSmell{} -> return ()
+  UpdTimeItem{} -> return ()
+  UpdAgeGame{} -> return ()
+  UpdUnAgeGame{} -> return ()
+  UpdDiscover{} -> return ()
+  UpdCover{} -> return ()
+  UpdDiscoverKind{} -> return ()
+  UpdCoverKind{} -> return ()
+  UpdDiscoverAspect{} -> return ()
+  UpdCoverAspect{} -> return ()
+  UpdDiscoverServer{} -> return ()
+  UpdCoverServer{} -> return ()
+  UpdPerception{} -> return ()
+  UpdRestart{} -> return ()
+  UpdRestartServer{} -> return ()
+  UpdResume{} -> return ()
+  UpdResumeServer{} -> return ()
+  UpdKillExit{} -> return ()
+  UpdWriteSave{} -> return ()
+  UpdHearFid{} -> return ()
 
 invalidateArenas :: MonadServer m => m ()
 invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
