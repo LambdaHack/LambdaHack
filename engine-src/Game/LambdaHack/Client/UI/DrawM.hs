@@ -362,6 +362,8 @@ drawFrameExtra dm drawnLevelId = do
       Just leader -> do
         mtgt <- getsClient $ getTarget leader
         getsState $ aidTgtToPos leader drawnLevelId mtgt
+  side <- getsClient sside
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
   let visionMarks =
         if smarkVision
         then IS.toList $ ES.enumSetToIntSet totVisible
@@ -396,12 +398,14 @@ drawFrameExtra dm drawnLevelId = do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()
-          Just p -> mapVL (writeSquare Color.HighlightGrey)
-                          [fromEnum p] v
+          Just p -> mapVL (writeSquare Color.HighlightGrey) [fromEnum p] v
+        case mstash of
+          Just (lid, pos) | lid == drawnLevelId ->
+            mapVL (writeSquare Color.HighlightWhite) [fromEnum pos] v
+          _ ->  return ()
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
-          Just p -> mapVL (writeSquare xhairColor)
-                          [fromEnum p] v
+          Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
 
