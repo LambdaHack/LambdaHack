@@ -188,7 +188,7 @@ actionStrategy aid retry = do
         , ( [SkMoveItem]
           , pickup aid True
           , condNoEqpWeapon  -- we assume organ weapons usually inferior
-            && condFloorWeapon && not condHpTooLow
+            && condDesirableFloorItem && condFloorWeapon && not condHpTooLow
             && abInMaxSkill SkMelee )
         , ( [SkAlter]
           , trigger aid ViaEscape
@@ -307,7 +307,7 @@ actionStrategy aid retry = do
       suffix =
         [ ( [SkMoveItem]
           , pickup aid False  -- e.g., to give to other party members
-          , not condInMelee && not dozes )
+          , not condInMelee && condDesirableFloorItem && not dozes )
         , ( [SkMoveItem]
           , unEquipItems aid  -- late, because these items not bad
           , not condInMelee && not dozes )

@@ -195,7 +195,8 @@ condBlocksFriendsM aid = do
           _ -> False
   any blocked <$> getsState (fidActorRegularIds (bfid b) (blid b))
 
--- | Require the actor stands over a weapon that would be auto-equipped.
+-- | Require the actor stands over a weapon that would be auto-equipped,
+-- if only it was a desirable item (checked elsewhere).
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid =
   any (IA.checkFlag Ability.Meleeable . aspectRecordFull . snd) <$>
@@ -256,10 +257,12 @@ benAvailableItems :: DiscoveryBenefit -> ActorId -> [CStore] -> State
                   -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
 benAvailableItems discoBenefit aid cstores s =
   let b = getActorBody aid s
-      ben cstore bag =
+      mstash = gstash $ sfactionD s EM.! bfid b
+      ben _ CGround | mstash == Just (blid b, bpos b) = []
+      ben bag cstore =
         [ (discoBenefit EM.! iid, cstore, iid, itemToFull iid s, kit)
         | (iid, kit) <- EM.assocs bag]
-      benCStore cs = ben cs $ getBodyStoreBag b cs s
+      benCStore cs = ben (getBodyStoreBag b cs s) cs
   in concatMap benCStore cstores
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Ability.Skills -> ItemFull
