@@ -371,20 +371,32 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         { defLabel
         , defCond = True  -- even if single screen, just reset it
         , defAction = \_ -> do
-            let calmE = calmEnough body actorMaxSk
+            mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
+            let overStash = mstash == Just (blid body, bpos body)
+                calmE = calmEnough body actorMaxSk
                 mcCur = filter (`elem` cLegal) [cCur]
                 (cCurAfterCalm, cRestAfterCalm) =
                   if forward
                   then case cRest ++ mcCur of
                     c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, c1 : rest)
-                    [MStore CEqp] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CEqp] | not calmE ->
+                      error $ "" `showFailure` cRest
+                    c1@(MStore CGround) : c2 : rest | overStash ->
+                      (c2, c1 : rest)
+                    [MStore CGround] | overStash ->
+                      error $ "" `showFailure` cRest
                     c1 : rest -> (c1, rest)
                     [] -> error $ "" `showFailure` cRest
                   else case reverse $ mcCur ++ cRest of
                     c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, reverse $ c1 : rest)
-                    [MStore CEqp] | not calmE -> error $ "" `showFailure` cRest
+                    [MStore CEqp] | not calmE ->
+                      error $ "" `showFailure` cRest
+                    c1@(MStore CGround) : c2 : rest | overStash ->
+                      (c2, reverse $ c1 : rest)
+                    [MStore CGround] | overStash ->
+                      error $ "" `showFailure` cRest
                     c1 : rest -> (c1, reverse rest)
                     [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
@@ -477,10 +489,12 @@ legalWithUpdatedLeader cCur cRest = do
   let newLegal = cCur : cRest  -- not updated in any way yet
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
-  let calmE = calmEnough b actorMaxSk
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  let overStash = mstash == Just (blid b, bpos b)
+      calmE = calmEnough b actorMaxSk
       legalAfterCalm = case newLegal of
         c1@(MStore CEqp) : c2 : rest | not calmE -> (c2, c1 : rest)
-        [MStore CEqp] | not calmE -> (MStore CGround, newLegal)
+        c1@(MStore CGround) : c2 : rest | overStash -> (c2, c1 : rest)
         c1 : rest -> (c1, rest)
         [] -> error $ "" `showFailure` (cCur, cRest)
   return legalAfterCalm
