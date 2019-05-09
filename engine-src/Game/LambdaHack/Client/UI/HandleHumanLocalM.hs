@@ -317,10 +317,11 @@ chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
-  let calmE = calmEnough b actorMaxSk
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  let overStash = mstash == Just (blid b, bpos b)
+      calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CStash, CEqp]
-      cLegal | calmE = cLegalRaw
-             | otherwise = delete CEqp cLegalRaw
+      cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (tiverb tr, tiobject tr)
@@ -497,10 +498,11 @@ chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
-  let calmE = calmEnough b actorMaxSk
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  let overStash = mstash == Just (blid b, bpos b)
+      calmE = calmEnough b actorMaxSk
       cLegalRaw = [CGround, CStash, CEqp]
-      cLegal | calmE = cLegalRaw
-             | otherwise = delete CEqp cLegalRaw
+      cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (tiverb tr, tiobject tr)

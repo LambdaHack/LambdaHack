@@ -37,7 +37,6 @@ import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
-import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -154,7 +153,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
             tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
             ppLegal = makePhrase [MU.WWxW "nor" tLegal]
         return $ Left $ "no items" <+> ppLegal
-      else return $ Left $ showReqFailure ItemNotCalm
+      else return $ Left "no relevant items"
     haveThis@(headThisActor : _) -> do
       itemToF <- getsState $ flip itemToFull
       let suitsThisActor store =

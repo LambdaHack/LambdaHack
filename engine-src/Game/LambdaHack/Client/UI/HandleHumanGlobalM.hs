@@ -725,11 +725,14 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   -- and the server will ignore and warn (and content may avoid that,
   -- e.g., making all rings identified)
   actorMaxSk <- getsState $ getActorMaxSkills leader
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   lastItemMove <- getsSession slastItemMove
-  let calmE = calmEnough b actorMaxSk
-      cLegalE | calmE = cLegalRaw
-              | destCStore == CEqp = []
-              | otherwise = delete CEqp cLegalRaw
+  let overStash = mstash == Just (blid b, bpos b)
+      calmE = calmEnough b actorMaxSk
+      cLegalE | destCStore == CGround && overStash
+                || destCStore == CEqp && not calmE = []
+              | otherwise = cLegalRaw
+                            \\ ([CGround | overStash] ++ [CEqp | not calmE])
       cLegal = case lastItemMove of
         Just (lastFrom, lastDest) | lastDest == destCStore
                                     && lastFrom `elem` cLegalE ->
