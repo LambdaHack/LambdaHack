@@ -475,7 +475,12 @@ closestItems aid = do
   else do
     body <- getsState $ getActorBody aid
     Level{lfloor} <- getLevel $ blid body
-    if EM.null lfloor then return [] else do
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
+    -- Don't consider own stash an ordinary pile of items.
+    let lfloorBarStash = case mstash of
+          Just (lid, pos) | lid == blid body -> EM.delete pos lfloor
+          _ -> lfloor
+    if EM.null lfloorBarStash then return [] else do
       bfs <- getCacheBfs aid
       let mix pbag dist =
             let maxd = subtractBfsDistance maxBfsDistance apartBfs
@@ -485,7 +490,7 @@ closestItems aid = do
                 v = (maxd * 10) `div` (dist + 1)
             in (v, pbag)
       return $! mapMaybe (\(p, bag) ->
-        mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloor)
+        mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloorBarStash)
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
