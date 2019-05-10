@@ -21,6 +21,7 @@ import qualified Data.EnumSet as ES
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
@@ -232,8 +233,8 @@ sendPer fid lid outPer inPer perNew = do
     mapM_ (sendUpdateCheck fid) forget
     mapM_ (sendUpdate fid) remember
 
--- Remembered items, map tiles and smells are not wiped out when they get
--- out of FOV. Clients remember them. Only actors are forgotten.
+-- Remembered items, map tiles, smells and stashes are not wiped out
+-- when they get out of FOV. Clients remember them. Only actors are forgotten.
 atomicForget :: FactionId -> LevelId -> Perception -> State
              -> [UpdAtomic]
 atomicForget side lid outPer sClient =
@@ -253,10 +254,31 @@ atomicForget side lid outPer sClient =
                     $ ES.elems outFov
   in map fActor $ filter ((/= side) . bfid . snd) outPrioBig ++ outPrioProj
 
+-- The second argument are the points newly in FOV.
 atomicRemember :: LevelId -> Perception -> State -> State -> [UpdAtomic]
 {-# INLINE atomicRemember #-}
 atomicRemember lid inPer sClient s =
   let COps{cotile, coTileSpeedup} = scops s
+      locateStash ((fidClient, factClient), (fid, fact)) =
+        assert (fidClient == fid)
+        $ case (gstash factClient, gstash fact) of
+            (Just (lidStash, pos), Nothing)
+              | lidStash == lid && pos `ES.member` totalVisible inPer ->
+                [UpdLoseStashFaction fid lid pos]
+            (Nothing, Just (lidStash, pos))
+              | lidStash == lid && pos `ES.member` totalVisible inPer ->
+                [UpdSpotStashFaction fid lid pos]
+            (Just (lidStash1, pos1), Just (lidStash2, pos2))
+              | gstash factClient /= gstash fact ->
+                if | lidStash2 == lid && pos2 `ES.member` totalVisible inPer ->
+                     [ UpdLoseStashFaction fid lidStash1 pos1
+                     , UpdSpotStashFaction fid lid pos2 ]
+                   | lidStash1 == lid && pos1 `ES.member` totalVisible inPer ->
+                     [UpdLoseStashFaction fid lid pos1]
+                   | otherwise -> []
+            _ -> []
+      atomicStash = concatMap locateStash $ zip (EM.assocs $ sfactionD sClient)
+                                                (EM.assocs $ sfactionD s)
       inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Wipe out remembered items on tiles that now came into view
@@ -344,4 +366,5 @@ atomicRemember lid inPer sClient s =
       fActor (aid, b) = let ais = getCarriedAssocsAndTrunk b s
                         in UpdSpotActor aid b ais
       inActor = map fActor inAssocs
-  in atomicTile ++ inFloor ++ inEmbed ++ inSmell ++ atomicSmell ++ inActor
+  in atomicStash ++ atomicTile ++ inFloor ++ inEmbed ++ inSmell
+     ++ atomicSmell ++ inActor
