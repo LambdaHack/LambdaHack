@@ -434,7 +434,7 @@ reqMeleeChecked voluntary source target iid cstore = do
       -- and blocking can be even more so, depending on powers of the missile.
       -- Missiles are really easy to defend against, but sight (and so, Calm)
       -- is the key, as well as light, ambush around a corner, etc.
-      execSfxAtomic $ SfxSteal source target iid cstore
+      execSfxAtomic $ SfxSteal source target iid
       case EM.assocs $ beqp tb of
         [(iid2, (k, _))] -> do
           upds <- generalMoveItem True iid2 k (CActor target CEqp)
@@ -463,11 +463,11 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- Avoid spam when two explosions collide.
         unless (IA.checkFlag Ability.Blast arWeapon
                 && IA.checkFlag Ability.Blast arTrunk) $
-          execSfxAtomic $ SfxStrike source target iid cstore
+          execSfxAtomic $ SfxStrike source target iid
       else do
         -- Normal hit, with effects. Msgs inside @SfxStrike@ describe
         -- the source part of the strike.
-        execSfxAtomic $ SfxStrike source target iid cstore
+        execSfxAtomic $ SfxStrike source target iid
         let c = CActor source cstore
             mayDestroy = not (bproj sb) || bhp sb <= oneM
               -- piercing projectiles may not have their weapon destroyed

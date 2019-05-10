@@ -376,7 +376,7 @@ projectBla propeller source pos rest iid cstore blast = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
   localTime <- getsState $ getLocalTime lid
-  unless blast $ execSfxAtomic $ SfxProject source iid cstore
+  unless blast $ execSfxAtomic $ SfxProject source iid
   bag <- getsState $ getBodyStoreBag sb cstore
   ItemFull{itemBase, itemKind} <- getsState $ itemToFull iid
   case iid `EM.lookup` bag of

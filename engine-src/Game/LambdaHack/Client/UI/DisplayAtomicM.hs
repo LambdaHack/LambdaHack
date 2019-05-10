@@ -111,7 +111,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                                         <+> tshow k <> "-fold"
               -- This describes all such items already among organs,
               -- which is useful, because it shows "charging".
-              itemAidVerbMU MsgBecome aid verb iid (Left Nothing) COrgan
+              itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
             else do
               ownerFun <- partActorLeaderFun
               let wown = ppContainerWownW ownerFun True c
@@ -537,36 +537,28 @@ itemVerbMU msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
 -- So, this function can't be used for, e.g., @UpdDestroyItem@.
 itemAidVerbMU :: MonadClientUI m
               => MsgClass -> ActorId -> MU.Part
-              -> ItemId -> Either (Maybe Int) Int -> CStore
+              -> ItemId -> Either (Maybe Int) Int
               -> m ()
-itemAidVerbMU msgClass aid verb iid ek cstore = do
+itemAidVerbMU msgClass aid verb iid ek = do
   body <- getsState $ getActorBody aid
-  bag <- getsState $ getBodyStoreBag body cstore
   side <- getsClient sside
   factionD <- getsState sfactionD
   -- The item may no longer be in @c@, but it was
-  case iid `EM.lookup` bag of
-    Nothing -> error $ "" `showFailure` (aid, verb, iid, cstore)
-    Just kit@(k, _) -> do
-      itemFull <- getsState $ itemToFull iid
-      let lid = blid body
-      localTime <- getsState $ getLocalTime lid
-      subject <- partActorLeader aid
-      let object = case ek of
-            Left (Just n) ->
-              assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ partItemWs side factionD n localTime itemFull kit
-            Left Nothing ->
-              let (name, powers) =
-                    partItem side factionD localTime itemFull kit
-              in MU.Phrase [name, powers]
-            Right n ->
-              assert (n <= k `blame` (aid, verb, iid, cstore))
-              $ let (name1, powers) =
-                      partItemShort side factionD localTime itemFull kit
-                in MU.Phrase ["the", MU.Car1Ws n name1, powers]
-          msg = makeSentence [MU.SubjectVerbSg subject verb, object]
-      msgAdd msgClass msg
+  itemFull <- getsState $ itemToFull iid
+  let lid = blid body
+      fakeKit = (1, [])
+  localTime <- getsState $ getLocalTime lid
+  subject <- partActorLeader aid
+  let object = case ek of
+        Left (Just n) -> partItemWs side factionD n localTime itemFull fakeKit
+        Left Nothing -> let (name, powers) =
+                              partItem side factionD localTime itemFull fakeKit
+                        in MU.Phrase [name, powers]
+        Right n -> let (name1, powers) =
+                         partItemShort side factionD localTime itemFull fakeKit
+                   in MU.Phrase ["the", MU.Car1Ws n name1, powers]
+      msg = makeSentence [MU.SubjectVerbSg subject verb, object]
+  msgAdd msgClass msg
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
@@ -1081,32 +1073,32 @@ ppHearMsg hearMsg = case hearMsg of
 displayRespSfxAtomicUI :: MonadClientUI m => SfxAtomic -> m ()
 {-# INLINE displayRespSfxAtomicUI #-}
 displayRespSfxAtomicUI sfx = case sfx of
-  SfxStrike source target iid store ->
-    strike False source target iid store
-  SfxRecoil source target _ _ -> do
+  SfxStrike source target iid ->
+    strike False source target iid
+  SfxRecoil source target _ -> do
     spart <- partActorLeader source
     tpart <- partActorLeader target
     msgAdd MsgAction $
       makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  SfxSteal source target iid store ->
-    strike True source target iid store
-  SfxRelease source target _ _ -> do
+  SfxSteal source target iid ->
+    strike True source target iid
+  SfxRelease source target _ -> do
     spart <- partActorLeader source
     tpart <- partActorLeader target
     msgAdd MsgAction $ makeSentence [MU.SubjectVerbSg spart "release", tpart]
-  SfxProject aid iid cstore ->
-    itemAidVerbMU MsgAction aid "fling" iid (Left $ Just 1) cstore
-  SfxReceive aid iid cstore ->
-    itemAidVerbMU MsgAction aid "receive" iid (Left $ Just 1) cstore
-  SfxApply aid iid cstore -> do
+  SfxProject aid iid ->
+    itemAidVerbMU MsgAction aid "fling" iid (Left $ Just 1)
+  SfxReceive aid iid ->
+    itemAidVerbMU MsgAction aid "receive" iid (Left $ Just 1)
+  SfxApply aid iid -> do
     CCUI{coscreen=ScreenContent{rapplyVerbMap}} <- getsSession sccui
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
           Just verb -> MU.Text verb
           Nothing -> "use"
-    itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1) cstore
-  SfxCheck aid iid cstore ->
-    itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1) cstore
+    itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1)
+  SfxCheck aid iid ->
+    itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
   SfxTrigger aid p -> do
     COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
@@ -1451,9 +1443,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
 
-strike :: MonadClientUI m
-       => Bool -> ActorId -> ActorId -> ItemId -> CStore -> m ()
-strike catch source target iid cstore = assert (source /= target) $ do
+strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
+strike catch source target iid = assert (source /= target) $ do
   CCUI{coscreen} <- getsSession sccui
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ memActor source (blid tb)
@@ -1469,9 +1460,8 @@ strike catch source target iid cstore = assert (source /= target) $ do
     tpronoun <- partPronounLeader target
     tbUI <- getsSession $ getActorUI target
     localTime <- getsState $ getLocalTime (blid tb)
-    bag <- getsState $ getBodyStoreBag sb cstore
     itemFullWeapon <- getsState $ itemToFull iid
-    let kitWeapon = EM.findWithDefault (1, []) iid bag
+    let kitWeapon = (1, [])
     side <- getsClient sside
     factionD <- getsState sfactionD
     tfact <- getsState $ (EM.! bfid tb) . sfactionD

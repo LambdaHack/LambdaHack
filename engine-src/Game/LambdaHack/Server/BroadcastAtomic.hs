@@ -182,7 +182,7 @@ hearSfxAtomic :: MonadServer m
               -> m (Maybe (HearMsg, [ActorId]))
 hearSfxAtomic as cmd =
   case cmd of
-    SfxStrike aid _ iid _ -> do
+    SfxStrike aid _ iid -> do
       -- Only the attacker position considered, for simplicity.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect

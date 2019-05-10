@@ -77,7 +77,7 @@ data UseResult = UseDud | UseId | UseUp
 
 applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
-  execSfxAtomic $ SfxApply aid iid cstore
+  execSfxAtomic $ SfxApply aid iid
   let c = CActor aid cstore
   -- Treated as if the actor hit himself with the item as a weapon,
   -- incurring both the kinetic damage and effect, hence the same call

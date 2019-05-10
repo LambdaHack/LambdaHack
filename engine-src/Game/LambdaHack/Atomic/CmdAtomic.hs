@@ -111,6 +111,8 @@ data UpdAtomic =
   | UpdAgeGame [LevelId]
   | UpdUnAgeGame [LevelId]
   | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord
+      -- Here and below @Container@ is only used for presentation
+      -- and in such a way that @CStash@ won't break anything.
   | UpdCover Container ItemId (ContentId ItemKind) IA.AspectRecord
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
@@ -140,14 +142,14 @@ data HearMsg =
 -- | Abstract syntax of atomic special effects, that is, atomic commands
 -- that only display special effects and don't change 'State' nor client state.
 data SfxAtomic =
-    SfxStrike ActorId ActorId ItemId CStore
-  | SfxRecoil ActorId ActorId ItemId CStore
-  | SfxSteal ActorId ActorId ItemId CStore
-  | SfxRelease ActorId ActorId ItemId CStore
-  | SfxProject ActorId ItemId CStore
-  | SfxReceive ActorId ItemId CStore
-  | SfxApply ActorId ItemId CStore
-  | SfxCheck ActorId ItemId CStore
+    SfxStrike ActorId ActorId ItemId
+  | SfxRecoil ActorId ActorId ItemId
+  | SfxSteal ActorId ActorId ItemId
+  | SfxRelease ActorId ActorId ItemId
+  | SfxProject ActorId ItemId
+  | SfxReceive ActorId ItemId
+  | SfxApply ActorId ItemId
+  | SfxCheck ActorId ItemId
   | SfxTrigger ActorId Point
   | SfxShun ActorId Point
   | SfxEffect FactionId ActorId IK.Effect Int64
@@ -189,6 +191,7 @@ data SfxMsg =
   | SfxDupValuable
   | SfxColdFish
   | SfxTimerExtended LevelId ActorId ItemId CStore (Delta Time)
+      -- This @CStore@ is only printed, so even @CStash@ is safe.
   | SfxCollideActor LevelId ActorId ActorId
   deriving Show
 
@@ -255,14 +258,14 @@ undoUpdAtomic cmd = case cmd of
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  SfxStrike source target iid cstore -> SfxRecoil source target iid cstore
-  SfxRecoil source target iid cstore -> SfxStrike source target iid cstore
-  SfxSteal source target iid cstore -> SfxRelease source target iid cstore
-  SfxRelease source target iid cstore -> SfxSteal source target iid cstore
-  SfxProject aid iid cstore -> SfxReceive aid iid cstore
-  SfxReceive aid iid cstore -> SfxProject aid iid cstore
-  SfxApply aid iid cstore -> SfxCheck aid iid cstore
-  SfxCheck aid iid cstore -> SfxApply aid iid cstore
+  SfxStrike source target iid -> SfxRecoil source target iid
+  SfxRecoil source target iid -> SfxStrike source target iid
+  SfxSteal source target iid -> SfxRelease source target iid
+  SfxRelease source target iid -> SfxSteal source target iid
+  SfxProject aid iid -> SfxReceive aid iid
+  SfxReceive aid iid -> SfxProject aid iid
+  SfxApply aid iid -> SfxCheck aid iid
+  SfxCheck aid iid -> SfxApply aid iid
   SfxTrigger aid p -> SfxShun aid p
   SfxShun aid p -> SfxTrigger aid p
   SfxEffect{} -> cmd  -- not ideal?
