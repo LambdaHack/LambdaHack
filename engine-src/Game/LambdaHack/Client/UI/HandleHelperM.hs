@@ -564,11 +564,15 @@ lookAtPosition lidV p = do
               seconds = t `timeFitUp` timeSecond
           in "A smelly body passed here around" <+> tshow seconds <> "s ago."
         _ -> ""
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
-  let stashBlurb = case mstash of
-        Just (lid, pos) | lid == lidV && pos == p ->
-          "Here is the shared inventory stash of your team."
-        _ -> ""
+  factionD <- getsState sfactionD
+  let locateStash (fid, fact) = case gstash fact of
+        Just (lid, pos) | lid == lidV  && pos == p ->
+          Just $ if fid == side
+                 then "Here is the shared inventory stash of your team."
+                 else gname fact
+                      <+> "set up their shared inventory stash there."
+        _ -> Nothing
+      stashBlurb = T.intercalate " " $ mapMaybe locateStash $ EM.assocs factionD
   return $! tileBlurb <+> stashBlurb <+> actorsBlurb <+> itemsBlurb
             <+> smellBlurb
 
