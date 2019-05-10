@@ -212,7 +212,11 @@ insertItemStash iid kit b = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   case mstash of
     Just (lid, pos) -> insertItemFloor iid kit lid pos
-    Nothing -> error $ "missing gstash" `showFailure` (iid, kit, b)
+      -- may be inserted into outdated or unseen stash position, but it's fine,
+      -- because I can't simultaneously see it added at some other floor
+      -- position, which is the real stash location, since then my @gstash@
+      -- would point to that floor, thanks to atomicRemember
+    Nothing -> return ()  -- stashing seen, but not where to
 
 deleteBagContainer :: MonadStateWrite m
                    => ItemBag -> Container -> m ()
@@ -235,19 +239,23 @@ deleteBagContainer bag c = case c of
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> ItemQuant -> Container -> m ()
 deleteItemContainer iid kit c = case c of
-  CFloor lid pos -> deleteItemFloor iid kit lid pos
+  CFloor lid pos -> deleteItemFloor False iid kit lid pos
   CEmbed lid pos -> deleteItemEmbed iid kit lid pos
   CActor aid store -> deleteItemActor iid kit aid store
   CTrunk{} -> error $ "" `showFailure` c
 
 deleteItemFloor :: MonadStateWrite m
-                => ItemId -> ItemQuant -> LevelId -> Point -> m ()
-deleteItemFloor iid kit lid pos =
+                => Bool -> ItemId -> ItemQuant -> LevelId -> Point -> m ()
+deleteItemFloor permissive iid kit lid pos =
   let rmFromFloor (Just bag) =
-        let nbag = rmFromBag kit iid bag
+        let nbag = if permissive
+                   then rmFromBagPermissive kit iid bag
+                   else rmFromBag kit iid bag
         in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = error $ "item already removed"
-                                    `showFailure` (iid, kit, lid, pos)
+      rmFromFloor Nothing = if permissive
+                            then Nothing
+                            else error $ "item already removed"
+                                         `showFailure` (iid, kit, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemEmbed :: MonadStateWrite m
@@ -265,7 +273,7 @@ deleteItemActor :: MonadStateWrite m
 deleteItemActor iid kit aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
-    deleteItemFloor iid kit (blid b) (bpos b)
+    deleteItemFloor False iid kit (blid b) (bpos b)
   COrgan -> deleteItemOrgan iid kit aid
   CEqp -> deleteItemEqp iid kit aid
   CStash -> do
@@ -294,9 +302,11 @@ deleteItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
 deleteItemStash iid kit fid = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! fid
   case mstash of
-    Just (lid, pos) -> deleteItemFloor iid kit lid pos
-    Nothing -> error $ "removing from empty shared stash"
-                       `showFailure` (iid, kit, fid)
+    Just (lid, pos) -> deleteItemFloor True iid kit lid pos
+      -- may be deleted from outdated or unseen stash position, but it's fine,
+      -- because deletion is performed permissively and so if the remembered
+      -- floor items don't have enough copies, no error is signalled
+    Nothing -> return ()  -- unstashing seen, but not from where
 
 -- Removing the part of the kit from the back of the list,
 -- so that @DestroyItem kit (CreateItem kit x) == x@.
@@ -311,6 +321,16 @@ rmFromBag kit@(k, rmIt) iid bag =
           GT -> assert (rmIt == take k it
                         `blame` (rmIt, take k it, n, kit, iid, bag))
                 $ Just (n - k, take (n - k) it)
+  in EM.alter rfb iid bag
+
+rmFromBagPermissive :: ItemQuant -> ItemId -> ItemBag -> ItemBag
+rmFromBagPermissive (k, _) iid bag =
+  let rfb Nothing = Nothing
+      rfb (Just (n, it)) =
+        case compare n k of
+          LT -> Nothing
+          EQ -> Nothing
+          GT -> Just (n - k, take (n - k) it)
   in EM.alter rfb iid bag
 
 -- Actor's items may or may not be already present in @sitemD@,

@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Definition.Defs
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -205,15 +204,7 @@ doubleAid source target = do
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
-singleContainer (CActor aid cstore) = do
-  b <- getsState $ getActorBody aid
-  case cstore of
-    CStash -> do  -- shared stash is private
-      mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-      case mstash of
-        Just (lid, pos) -> return $! PosFidAndSight (bfid b) lid [pos]
-        Nothing -> return $! PosFidAndSight (bfid b) (blid b) [bpos b]
-    _ -> return $! posProjBody b
+singleContainer (CActor aid _) = singleAid aid
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
 -- | Decompose an atomic action that is outside a client's visiblity.
