@@ -40,7 +40,7 @@ import Game.LambdaHack.Definition.Defs
 -- seeing (and we assume smelling actors get lots of data from smells).
 data PosAtomic =
     PosSight LevelId [Point]    -- ^ whomever sees all the positions, notices
-  | PosFidAndSight [FactionId] LevelId [Point]
+  | PosFidAndSight FactionId LevelId [Point]
                                 -- ^ observers and the faction notice
   | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
   | PosFid FactionId            -- ^ only the faction notices, server doesn't
@@ -92,15 +92,15 @@ posUpdAtomic cmd = case cmd of
     -- they hear, feel air movement, etc.
     return $! if bproj b
               then PosSight (blid b) [fromP, toP]
-              else PosFidAndSight [bfid b] (blid b) [fromP, toP]
+              else PosFidAndSight (bfid b) (blid b) [fromP, toP]
   UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
-  UpdSpotStashFaction fid lid pos -> return $! PosFidAndSight [fid] lid [pos]
-  UpdLoseStashFaction fid lid pos -> return $! PosFidAndSight [fid] lid [pos]
+  UpdSpotStashFaction fid lid pos -> return $! PosFidAndSight fid lid [pos]
+  UpdLoseStashFaction fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
   UpdTacticFaction fid _ _ -> return $! PosFidAndSer fid
@@ -113,10 +113,10 @@ posUpdAtomic cmd = case cmd of
   UpdAlterGold{} -> return PosAll
   UpdSearchTile aid p _ -> do
     b <- getsState $ getActorBody aid
-    return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
+    return $! PosFidAndSight (bfid b) (blid b) [bpos b, p]
   UpdHideTile aid p _ -> do
     b <- getsState $ getActorBody aid
-    return $! PosFidAndSight [bfid b] (blid b) [bpos b, p]
+    return $! PosFidAndSight (bfid b) (blid b) [bpos b, p]
   UpdSpotTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps
@@ -171,12 +171,12 @@ posSfxAtomic cmd = case cmd of
     body <- getsState $ getActorBody aid
     if bproj body
     then return $! PosSight (blid body) [bpos body, p]
-    else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
+    else return $! PosFidAndSight (bfid body) (blid body) [bpos body, p]
   SfxShun aid p -> do
     body <- getsState $ getActorBody aid
     if bproj body
     then return $! PosSight (blid body) [bpos body, p]
-    else return $! PosFidAndSight [bfid body] (blid body) [bpos body, p]
+    else return $! PosFidAndSight (bfid body) (blid body) [bpos body, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll
@@ -187,7 +187,7 @@ posProjBody :: Actor -> PosAtomic
 posProjBody body =
   if bproj body
   then PosSight (blid body) [bpos body]
-  else PosFidAndSight [bfid body] (blid body) [bpos body]
+  else PosFidAndSight (bfid body) (blid body) [bpos body]
 
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
@@ -201,8 +201,8 @@ singleAidStore aid cstore = do
     CStash -> do  -- shared stash is private
       mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
       case mstash of
-        Just (lid, pos) -> return $! PosFidAndSight [bfid b] lid [pos]
-        Nothing -> return $! PosFidAndSight [bfid b] (blid b) [bpos b]
+        Just (lid, pos) -> return $! PosFidAndSight (bfid b) lid [pos]
+        Nothing -> return $! PosFidAndSight (bfid b) (blid b) [bpos b]
     _ -> return $! posProjBody b
 
 doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
@@ -217,7 +217,7 @@ singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid cstore) = singleAidStore aid cstore
-singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
+singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
 -- | Decompose an atomic action that is outside a client's visiblity.
 -- The decomposed actions give less information that the original command,
@@ -277,8 +277,8 @@ seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
     PosSight _ ps -> all (`ES.member` totalVisible per) ps || knowEvents
-    PosFidAndSight fids _ ps ->
-      fid `elem` fids || all (`ES.member` totalVisible per) ps || knowEvents
+    PosFidAndSight fid2 _ ps ->
+      fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
     PosSmell _ ps -> all (`ES.member` totalSmelled per) ps || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer fid2 -> fid == fid2

@@ -121,6 +121,8 @@ handleAndBroadcast ps atomicBroken atomic = do
         else breakSend lid fid perFidLid
       posLevel lid fid =
         anySend lid fid $ sperFidOld EM.! fid EM.! lid
+      -- This can be so simple and fast, because eash @PosAtomic@
+      -- constructor, and so each atomic action, spans only a single level.
       send fid = case ps of
         PosSight lid _ -> posLevel lid fid
         PosFidAndSight _ lid _ -> posLevel lid fid
