@@ -188,12 +188,8 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdTrajectory{} -> return ()
   UpdQuitFaction{} -> return ()
-  UpdStashFaction fid (Just (lid1, _)) (Just (lid2, _)) -> do
-    invalidatePerFidLid fid lid1
-    invalidatePerFidLid fid lid2
-  UpdStashFaction fid (Just (lid, _)) _ -> invalidatePerFidLid fid lid
-  UpdStashFaction fid _ (Just (lid, _)) -> invalidatePerFidLid fid lid
-  UpdStashFaction _ Nothing Nothing -> error "impossible UpdStashFaction"
+  UpdSpotStashFaction fid lid _ -> invalidatePerFidLid fid lid
+  UpdLoseStashFaction fid lid _ -> invalidatePerFidLid fid lid
   UpdLeadFaction{} -> invalidateArenas
   UpdDiplFaction{} -> return ()
   UpdTacticFaction{} -> return ()

@@ -263,7 +263,12 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
-  UpdStashFaction{} -> return ()
+  UpdSpotStashFaction _ lid pos -> do
+    CCUI{coscreen} <- getsSession sccui
+    animate lid $ actorX coscreen pos
+  UpdLoseStashFaction _ lid pos -> do
+    CCUI{coscreen} <- getsSession sccui
+    animate lid $ vanish coscreen pos
   UpdLeadFaction fid (Just source) (Just target) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     lidV <- viewedLevelUI

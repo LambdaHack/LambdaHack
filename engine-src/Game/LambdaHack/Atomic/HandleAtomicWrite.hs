@@ -11,11 +11,11 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updSpotItemBag, updLoseItemBag
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
   , updRefillHP, updRefillCalm
-  , updTrajectory, updQuitFaction, updStashFaction, updLeadFaction
-  , updDiplFaction, updTacticFaction, updAutoFaction, updRecordKill
-  , updAlterTile, updAlterExplorable, updSearchTile, updSpotTile, updLoseTile
-  , updAlterSmell, updSpotSmell, updLoseSmell, updTimeItem
-  , updAgeGame, updUnAgeGame, ageLevel, updDiscover, updCover
+  , updTrajectory, updQuitFaction, updSpotStashFaction, updLoseStashFaction
+  , updLeadFaction, updDiplFaction, updTacticFaction, updAutoFaction
+  , updRecordKill, updAlterTile, updAlterExplorable, updSearchTile
+  , updSpotTile, updLoseTile, updAlterSmell, updSpotSmell, updLoseSmell
+  , updTimeItem, updAgeGame, updUnAgeGame, ageLevel, updDiscover, updCover
   , updDiscoverKind, discoverKind, updCoverKind
   , updDiscoverAspect, discoverAspect, updCoverAspect
   , updDiscoverServer, updCoverServer
@@ -90,7 +90,8 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
-  UpdStashFaction fid fromSt toSt -> updStashFaction fid fromSt toSt
+  UpdSpotStashFaction fid lid pos -> updSpotStashFaction fid lid pos
+  UpdLoseStashFaction fid lid pos -> updLoseStashFaction fid lid pos
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
@@ -388,17 +389,22 @@ updQuitFaction fid fromSt toSt = do
   let adj fa = fa {gquit = toSt}
   updateFaction fid adj
 
-updStashFaction :: MonadStateWrite m
-                => FactionId
-                -> Maybe (LevelId, Point)
-                -> Maybe (LevelId, Point)
-                -> m ()
-updStashFaction fid fromSt toSt = assert (fromSt /= toSt) $ do
-  fact <- getsState $ (EM.! fid) . sfactionD
-  let !_A = assert (fromSt == gstash fact
-                    `blame` "unexpected stash position"
-                    `swith` (fid, fromSt, toSt, fact)) ()
-  let adj fa = fa {gstash = toSt}
+updSpotStashFaction :: MonadStateWrite m
+                    => FactionId -> LevelId -> Point -> m ()
+updSpotStashFaction fid lid pos = do
+  let adj fa = assert (gstash fa == Nothing
+                       `blame` "unexpected full gstash"
+                       `swith` (fid, lid, pos, fa))
+               $ fa {gstash = Just (lid, pos)}
+  updateFaction fid adj
+
+updLoseStashFaction :: MonadStateWrite m
+                    => FactionId -> LevelId -> Point -> m ()
+updLoseStashFaction fid lid pos = do
+  let adj fa = assert (gstash fa == Just (lid, pos)
+                       `blame` "unexpected gstash"
+                       `swith` (fid, lid, pos, fa))
+               $ fa {gstash = Nothing}
   updateFaction fid adj
 
 -- The previous leader is assumed to be alive.

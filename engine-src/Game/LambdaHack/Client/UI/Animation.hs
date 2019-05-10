@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Animation
   ( Animation, renderAnim
   , pushAndDelay, twirlSplash, blockHit, blockMiss, subtleHit
-  , deathBody, shortDeathBody, actorX, teleport, swapPlaces, fadeout
+  , deathBody, shortDeathBody, actorX, teleport, vanish, swapPlaces, fadeout
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , blank, cSym, mapPosToOffset, mzipSingleton, mzipPairs
@@ -20,9 +20,9 @@ import qualified Data.EnumMap.Strict as EM
 import Game.LambdaHack.Client.UI.Content.Screen
 import Game.LambdaHack.Client.UI.Frame
 import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Core.Random
+import Game.LambdaHack.Definition.Color
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -182,6 +182,17 @@ teleport coscreen poss = Animation $ map (mzipPairs coscreen poss)
   , (cSym Magenta   '.', cSym BrMagenta 'o')
   , (cSym Magenta   '.', blank)
   , (blank             , blank)
+  ]
+
+-- | Terrain feature vanishing animation.
+vanish :: ScreenContent -> Point -> Animation
+vanish coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+  [ cSym BrMagenta 'o'
+  , cSym BrMagenta 'O'
+  , cSym Magenta   'o'
+  , cSym Magenta   '.'
+  , cSym Magenta   '.'
+  , blank
   ]
 
 -- | Swap-places animation, both hostile and friendly.

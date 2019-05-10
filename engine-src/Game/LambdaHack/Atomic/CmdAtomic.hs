@@ -87,7 +87,8 @@ data UpdAtomic =
   -- Change faction attributes.
   | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
                    (Maybe (FactionAnalytics, GenerationAnalytics))
-  | UpdStashFaction FactionId (Maybe (LevelId, Point)) (Maybe (LevelId, Point))
+  | UpdSpotStashFaction FactionId LevelId Point
+  | UpdLoseStashFaction FactionId LevelId Point
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
   | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic
@@ -213,7 +214,8 @@ undoUpdAtomic cmd = case cmd of
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdQuitFaction fid fromSt toSt manalytics ->
     Just $ UpdQuitFaction fid toSt fromSt manalytics
-  UpdStashFaction fid fromSt toSt -> Just $ UpdStashFaction fid fromSt toSt
+  UpdSpotStashFaction fid lid pos -> Just $ UpdLoseStashFaction fid lid pos
+  UpdLoseStashFaction fid lid pos -> Just $ UpdSpotStashFaction fid lid pos
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl

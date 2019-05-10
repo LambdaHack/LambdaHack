@@ -122,7 +122,8 @@ cmdAtomicSemCli oldState cmd = case cmd of
             f = M.unionWith (+)
             g = EM.insertWith f gameModeId sing
         modifyClient $ \cli -> cli {svictories = g $ svictories cli}
-  UpdStashFaction{} -> return ()
+  UpdSpotStashFaction{} -> return ()
+  UpdLoseStashFaction{} -> return ()
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do

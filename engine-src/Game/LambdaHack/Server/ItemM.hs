@@ -96,12 +96,14 @@ moveStashIfNeeded c = case c of
   CActor aid CStash -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-    let mvStash = UpdStashFaction (bfid b) mstash (Just (blid b, bpos b))
     case mstash of
       Just (lid, pos) -> do
         bagStash <- getsState $ getFloorBag lid pos
-        return [mvStash | EM.null bagStash]
-      Nothing -> return [mvStash]
+        return $! if EM.null bagStash
+                  then [ UpdLoseStashFaction (bfid b) lid pos
+                       , UpdSpotStashFaction (bfid b) (blid b) (bpos b) ]
+                  else []
+      Nothing -> return [UpdSpotStashFaction (bfid b) (blid b) (bpos b)]
   _ -> return []
 
 randomResetTimeout :: MonadServerAtomic m
