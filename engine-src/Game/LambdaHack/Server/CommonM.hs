@@ -304,8 +304,8 @@ recomputeCachePer :: MonadServer m => FactionId -> LevelId -> m Perception
 recomputeCachePer fid lid = do
   total <- getCacheTotal fid lid
   fovLucid <- getCacheLucid lid
-  let perNew = perceptionFromPTotal fovLucid total
-      fper = EM.adjust (EM.insert lid perNew) fid
+  perNew <- getsState $ perceptionFromPTotal fid lid fovLucid total
+  let fper = EM.adjust (EM.insert lid perNew) fid
   modifyServer $ \ser -> ser {sperFid = fper $ sperFid ser}
   return perNew
 

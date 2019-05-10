@@ -15,8 +15,9 @@ module Game.LambdaHack.Server.Fov
   , totalFromPerActor, lucidFromLevel, perFidInDungeon
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , cacheBeforeLucidFromActor, shineFromLevel, floorLightSources, lucidFromItems
-  , litFromLevel, litInDungeon, clearFromLevel, clearInDungeon, lucidInDungeon
+  , perceptionFromPTotalNoStash, cacheBeforeLucidFromActor, shineFromLevel
+  , floorLightSources, lucidFromItems, litFromLevel
+  , litInDungeon, clearFromLevel, clearInDungeon, lucidInDungeon
   , perLidFromFaction, perceptionCacheFromLevel
   , Matrix, fullscan
 #endif
@@ -34,6 +35,7 @@ import           GHC.Exts (inline)
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -129,8 +131,19 @@ type FovLitLid = EM.EnumMap LevelId FovLit
 -- light source, e.g,, carried by an actor. A reachable and lucid position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-perceptionFromPTotal :: FovLucid -> CacheBeforeLucid -> Perception
-perceptionFromPTotal FovLucid{fovLucid} ptotal =
+perceptionFromPTotal :: FactionId -> LevelId
+                     -> FovLucid -> CacheBeforeLucid -> State
+                     -> Perception
+perceptionFromPTotal fid lidPer fovLucid ptotal s =
+  let per = perceptionFromPTotalNoStash fovLucid ptotal
+  in case gstash $ sfactionD s EM.! fid of
+       Just (lid, pos) | lid == lidPer ->
+         per {psight = (psight per) {pvisible = ES.insert pos
+                                                $ pvisible (psight per)}}
+       _ -> per
+
+perceptionFromPTotalNoStash :: FovLucid -> CacheBeforeLucid -> Perception
+perceptionFromPTotalNoStash FovLucid{fovLucid} ptotal =
   let nocto = pvisible $ cnocto ptotal
       reach = preachable $ creachable ptotal
       psight = PerVisible $ nocto `ES.union` (reach `ES.intersection` fovLucid)
@@ -292,9 +305,9 @@ perLidFromFaction fovLucidLid fovClearLid fid s =
         _ -> error $ "" `showFailure` (lid, fovLucidLid)
       getValid (FovValid pc) = pc
       getValid FovInvalid = error $ "" `showFailure` fid
-  in ( EM.mapWithKey (\lid pc ->
-         perceptionFromPTotal (fovLucid lid) (getValid (ptotal pc))) em
-     , em )
+      per lid pc = perceptionFromPTotal
+                     fid lid (fovLucid lid) (getValid (ptotal pc)) s
+  in (EM.mapWithKey per em, em)
 
 perceptionCacheFromLevel :: FovClearLid -> FactionId -> LevelId -> State
                          -> PerceptionCache
