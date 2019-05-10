@@ -363,7 +363,7 @@ drawFrameExtra dm drawnLevelId = do
         mtgt <- getsClient $ getTarget leader
         getsState $ aidTgtToPos leader drawnLevelId mtgt
   side <- getsClient sside
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
+  factionD <- getsState sfactionD
   let visionMarks =
         if smarkVision
         then IS.toList $ ES.enumSetToIntSet totVisible
@@ -393,16 +393,22 @@ drawFrameExtra dm drawnLevelId = do
       xhairColor = if isJust saimMode
                    then Color.HighlightRedAim
                    else Color.HighlightRed
+      locateStash (fid, fact) = case gstash fact of
+        Just (lid, pos) | lid == drawnLevelId ->
+          let stashColor = if fid == side
+                           then Color.HighlightWhite
+                           else Color.HighlightMagenta
+          in Just (pos, stashColor)
+        _ -> Nothing
+      stashesToDisplay = mapMaybe locateStash $ EM.assocs factionD
       upd :: FrameForall
       upd = FrameForall $ \v -> do
         when (isJust saimMode) $ mapVL backlightVision visionMarks v
         case mtgtPos of
           Nothing -> return ()
           Just p -> mapVL (writeSquare Color.HighlightGrey) [fromEnum p] v
-        case mstash of
-          Just (lid, pos) | lid == drawnLevelId ->
-            mapVL (writeSquare Color.HighlightWhite) [fromEnum pos] v
-          _ ->  return ()
+        mapM_ (\(pos, color) -> mapVL (writeSquare color) [fromEnum pos] v)
+              stashesToDisplay
         case mxhairPos of  -- overwrites target
           Nothing -> return ()
           Just p -> mapVL (writeSquare xhairColor) [fromEnum p] v
