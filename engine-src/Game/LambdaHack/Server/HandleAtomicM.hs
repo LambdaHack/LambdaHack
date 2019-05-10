@@ -157,26 +157,6 @@ cmdAtomicSemSer oldState cmd = case cmd of
       invalidateLucidAid aid1  -- the same lid as aid2
     invalidatePerActor aid1
     invalidatePerActor aid2
-  UpdMoveItem iid _k aid s1 s2 -> do
-    discoAspect <- getsState sdiscoAspect
-    let itemAffectsPer = itemAffectsPerRadius discoAspect iid
-        invalidatePer = when itemAffectsPer $ reconsiderPerActor aid
-        itemAffectsShine = itemAffectsShineRadius discoAspect iid [s1, s2]
-        invalidateLucid = when itemAffectsShine $ invalidateLucidAid aid
-    case s1 of
-      CEqp -> case s2 of
-        COrgan -> return ()
-        _ -> do
-          invalidateLucid
-          invalidatePer
-      COrgan -> case s2 of
-        CEqp -> return ()
-        _ -> do
-          invalidateLucid
-          invalidatePer
-      _ -> do
-        invalidateLucid  -- from itemAffects, s2 provides light or s1 is CGround
-        when (s2 `elem` [CEqp, COrgan]) invalidatePer
   UpdRefillHP{} -> return ()
   UpdRefillCalm aid _ -> do
     actorMaxSk <- getsState $ getActorMaxSkills aid

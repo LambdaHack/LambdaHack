@@ -7,10 +7,9 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   ( handleUpdAtomic
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updCreateActor, updDestroyActor, updCreateItem, updDestroyItem
-  , updSpotItemBag, updLoseItemBag
-  , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
-  , updRefillHP, updRefillCalm
+  , updCreateActor, updDestroyActor
+  , updCreateItem, updDestroyItem, updSpotItemBag, updLoseItemBag
+  , updMoveActor, updWaitActor, updDisplaceActor, updRefillHP, updRefillCalm
   , updTrajectory, updQuitFaction, updSpotStashFaction, updLoseStashFaction
   , updLeadFaction, updDiplFaction, updTacticFaction, updAutoFaction
   , updRecordKill, updAlterTile, updAlterExplorable, updSearchTile
@@ -85,7 +84,6 @@ handleUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid fromWS toWS -> updWaitActor aid fromWS toWS
   UpdDisplaceActor source target -> updDisplaceActor source target
-  UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdRefillHP aid n -> updRefillHP aid n
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
@@ -301,33 +299,6 @@ updDisplaceActor source target = assert (source /= target) $ do
   updateActor source $ const snewBody
   updateActor target $ const tnewBody
   swapActorMap source sbody target tbody
-
-updMoveItem :: MonadStateWrite m
-            => ItemId -> Int -> ActorId -> CStore -> CStore
-            -> m ()
-updMoveItem iid k aid s1 s2 = assert (k > 0 && s1 /= s2) $ do
-  b <- getsState $ getActorBody aid
-  bag <- getsState $ getBodyStoreBag b s1
-  case iid `EM.lookup` bag of
-    Nothing -> error $ "" `showFailure` (iid, k, aid, s1, s2)
-    Just (_, it) -> do
-      deleteItemActor iid (k, take k it) aid s1
-      insertItemActor iid (k, take k it) aid s2
-  case s1 of
-    CEqp -> case s2 of
-      COrgan -> return ()
-      _ -> do
-        itemBase <- getsState $ getItemBody iid
-        addItemToActorMaxSkills iid itemBase (-k) aid
-    COrgan -> case s2 of
-      CEqp -> return ()
-      _ -> do
-        itemBase <- getsState $ getItemBody iid
-        addItemToActorMaxSkills iid itemBase (-k) aid
-    _ ->
-      when (s2 `elem` [CEqp, COrgan]) $ do
-        itemBase <- getsState $ getItemBody iid
-        addItemToActorMaxSkills iid itemBase k aid
 
 updRefillHP :: MonadStateWrite m => ActorId -> Int64 -> m ()
 updRefillHP aid nRaw =

@@ -95,10 +95,6 @@ posUpdAtomic cmd = case cmd of
               else PosFidAndSight [bfid b] (blid b) [fromP, toP]
   UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
-  UpdMoveItem _ _ _ _ CStash ->
-    error $ "" `showFailure` cmd  -- shared stash is private
-  UpdMoveItem _ _ _ CStash _ -> error $ "" `showFailure` cmd
-  UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid

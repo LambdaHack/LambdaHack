@@ -104,7 +104,6 @@ cmdAtomicSemCli oldState cmd = case cmd of
     tb <- getsState $ getActorBody target
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     invalidateInMelee (blid b)
-  UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
   UpdRefillHP{} -> return ()
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()

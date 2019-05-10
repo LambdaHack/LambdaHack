@@ -8,8 +8,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
-  , moveItemUI, quitFactionUI
-  , displayGameOverLoot, displayGameOverAnalytics
+  , quitFactionUI, displayGameOverLoot, displayGameOverAnalytics
   , discover, ppSfxMsg, strike
 #endif
   ) where
@@ -157,7 +156,6 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor{} -> return ()
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k aid c1 c2 -> moveItemUI iid k aid c1 c2
   -- Change actor attributes.
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid hpDelta -> do
@@ -792,27 +790,6 @@ displaceActorUI source target = do
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
   let ps = (bpos tb, bpos sb)
   animate (blid sb) $ swapPlaces coscreen ps
-
-moveItemUI :: MonadClientUI m
-           => ItemId -> Int -> ActorId -> CStore -> CStore
-           -> m ()
-moveItemUI iid k aid cstore1 cstore2 = do
-  let verb = verbCStore cstore2
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let underAI = isAIFact fact
-  mleader <- getsClient sleader
-  ItemSlots itemSlots <- getsSession sslots
-  case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
-    Just _l ->
-      -- So far organs can't be put into backpack, so no need to call
-      -- @updateItemSlot@ to add or reassign lore category.
-      if cstore1 == CGround && Just aid == mleader && not underAI then
-        itemAidVerbMU MsgItemMove aid (MU.Text verb) iid (Right k) cstore2
-      else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
-        itemAidVerbMU MsgItemMove aid (MU.Text verb) iid (Left $ Just k) cstore2
-    Nothing -> error $
-      "" `showFailure` (iid, k, aid, cstore1, cstore2)
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Status

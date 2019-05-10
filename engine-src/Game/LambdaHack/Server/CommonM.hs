@@ -10,7 +10,7 @@ module Game.LambdaHack.Server.CommonM
   , addKillToAnalytics
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , containerMoveItem, quitF, keepArenaFact, anyActorsAlive, projectBla
+  , quitF, keepArenaFact, anyActorsAlive, projectBla
   , addProjectile, addActorIid, getCacheLucid, getCacheTotal
 #endif
   ) where
@@ -121,15 +121,7 @@ moveStores verbose aid fromStore toStore = do
 generalMoveItem :: MonadStateRead m
                 => Bool -> ItemId -> Int -> Container -> Container
                 -> m [UpdAtomic]
-generalMoveItem _ iid k (CActor aid1 cstore1) (CActor aid2 cstore2)
-  | aid1 == aid2 && cstore1 /= CStash && cstore2 /= CStash
-  = return [UpdMoveItem iid k aid1 cstore1 cstore2]
-generalMoveItem verbose iid k c1 c2 = containerMoveItem verbose iid k c1 c2
-
-containerMoveItem :: MonadStateRead m
-                  => Bool -> ItemId -> Int -> Container -> Container
-                  -> m [UpdAtomic]
-containerMoveItem verbose iid k c1 c2 = do
+generalMoveItem verbose iid k c1 c2 = do
   bag <- getsState $ getContainerBag c1
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
