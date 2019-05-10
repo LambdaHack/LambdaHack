@@ -548,6 +548,7 @@ lookAtItems canSee p aid = do
 -- level's position.
 lookAtPosition :: MonadClientUI m => LevelId -> Point -> m Text
 lookAtPosition lidV p = do
+  side <- getsClient sside
   leader <- getLeaderUI
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
@@ -563,7 +564,13 @@ lookAtPosition lidV p = do
               seconds = t `timeFitUp` timeSecond
           in "A smelly body passed here around" <+> tshow seconds <> "s ago."
         _ -> ""
-  return $! tileBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
+  let stashBlurb = case mstash of
+        Just (lid, pos) | lid == lidV && pos == p ->
+          "Here is the shared inventory stash of your team."
+        _ -> ""
+  return $! tileBlurb <+> stashBlurb <+> actorsBlurb <+> itemsBlurb
+            <+> smellBlurb
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
