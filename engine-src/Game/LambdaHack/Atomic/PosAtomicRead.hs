@@ -163,18 +163,14 @@ posUpdAtomic cmd = case cmd of
 -- | Produce the positions where the atomic special effect takes place.
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
-  SfxStrike _ _ _ CStash -> return PosNone  -- shared stash is private
-  SfxStrike _ target _ _ -> singleAid target
-  SfxRecoil _ _ _ CStash -> return PosNone  -- shared stash is private
-  SfxRecoil _ target _ _ -> singleAid target
-  SfxSteal _ _ _ CStash -> return PosNone  -- shared stash is private
-  SfxSteal _ target _ _ -> singleAid target
-  SfxRelease _ _ _ CStash -> return PosNone  -- shared stash is private
-  SfxRelease _ target _ _ -> singleAid target
-  SfxProject aid _ cstore -> singleContainer $ CActor aid cstore
-  SfxReceive aid _ cstore -> singleContainer $ CActor aid cstore
-  SfxApply aid _ cstore -> singleContainer $ CActor aid cstore
-  SfxCheck aid _ cstore -> singleContainer $ CActor aid cstore
+  SfxStrike _ target _ cstore -> singleAidStore target cstore
+  SfxRecoil _ target _ cstore -> singleAidStore target cstore
+  SfxSteal _ target _ cstore -> singleAidStore target cstore
+  SfxRelease _ target _ cstore -> singleAidStore target cstore
+  SfxProject aid _ cstore -> singleAidStore aid cstore
+  SfxReceive aid _ cstore -> singleAidStore aid cstore
+  SfxApply aid _ cstore -> singleAidStore aid cstore
+  SfxCheck aid _ cstore -> singleAidStore aid cstore
   SfxTrigger aid p -> do
     body <- getsState $ getActorBody aid
     if bproj body
@@ -202,6 +198,17 @@ singleAid aid = do
   body <- getsState $ getActorBody aid
   return $! posProjBody body
 
+singleAidStore :: MonadStateRead m => ActorId -> CStore -> m PosAtomic
+singleAidStore aid cstore = do
+  b <- getsState $ getActorBody aid
+  case cstore of
+    CStash -> do  -- shared stash is private
+      mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+      case mstash of
+        Just (lid, pos) -> return $! PosFidAndSight [bfid b] lid [pos]
+        Nothing -> return $! PosFidAndSight [bfid b] (blid b) [bpos b]
+    _ -> return $! posProjBody b
+
 doubleAid :: MonadStateRead m => ActorId -> ActorId -> m PosAtomic
 doubleAid source target = do
   sb <- getsState $ getActorBody source
@@ -213,15 +220,8 @@ doubleAid source target = do
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
-singleContainer (CActor aid CStash) = do  -- shared stash is private
-  b <- getsState $ getActorBody aid
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-  case mstash of
-    Just (lid, pos) -> return $! PosFidAndSight [bfid b] lid [pos]
-    Nothing -> return $! PosFidAndSight [bfid b] (blid b) [bpos b]
-singleContainer (CActor aid _) = singleAid aid
-singleContainer (CTrunk fid lid p) =
-  return $! PosFidAndSight [fid] lid [p]
+singleContainer (CActor aid cstore) = singleAidStore aid cstore
+singleContainer (CTrunk fid lid p) = return $! PosFidAndSight [fid] lid [p]
 
 -- | Decompose an atomic action that is outside a client's visiblity.
 -- The decomposed actions give less information that the original command,
