@@ -71,8 +71,20 @@ handleAndBroadcast ps atomicBroken atomic = do
   knowEvents <- getsServer $ sknowEvents . soptions
   sperFidOld <- getsServer sperFid
   -- Send some actions to the clients, one faction at a time.
-  let sendAtomic fid (UpdAtomic cmd) = sendUpdate fid cmd
-      sendAtomic fid (SfxAtomic sfx) = sendSfx fid sfx
+  let sendItemsFromIids fid iids = do
+        itemDClient <- getsServer $ sitemD . (EM.! fid) . sclientStates
+        let iidsUnknown = filter (\iid -> not $ EM.member iid itemDClient) iids
+        itemD <- getsState sitemD
+        let items = map (\iid -> (iid, itemD EM.! iid)) iidsUnknown
+        sendUpdateCheck fid $ UpdRegisterItems items
+      sendAtomic fid (UpdAtomic cmd) = do
+        iids <- iidUpdAtomic cmd
+        sendItemsFromIids fid iids
+        sendUpdate fid cmd
+      sendAtomic fid (SfxAtomic sfx) = do
+        iids <- iidSfxAtomic sfx
+        sendItemsFromIids fid iids
+        sendSfx fid sfx
       breakSend lid fid perFidLid = do
         let send2 (cmd2, ps2) =
               when (seenAtomicCli knowEvents fid perFidLid ps2) $

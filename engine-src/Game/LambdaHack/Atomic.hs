@@ -8,8 +8,8 @@ module Game.LambdaHack.Atomic
     -- * Re-exported from "Game.LambdaHack.Atomic.HandleAtomicWrite"
   , handleUpdAtomic
     -- * Re-exported from "Game.LambdaHack.Atomic.PosAtomicRead"
-  , PosAtomic(..), posUpdAtomic, posSfxAtomic, breakUpdAtomic
-  , seenAtomicCli, seenAtomicSer
+  , PosAtomic(..), posUpdAtomic, posSfxAtomic, iidUpdAtomic, iidSfxAtomic
+  , breakUpdAtomic, seenAtomicCli, seenAtomicSer
     -- * Re-exported from "Game.LambdaHack.Atomic.MonadStateWrite"
   , MonadStateWrite(..), AtomicFail(..)
   ) where
