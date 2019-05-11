@@ -434,7 +434,7 @@ effectExplode execSfx cgroup source target = do
   let itemFreq = [(cgroup, 1)]
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
-  m2 <- rollAndRegisterItem (blid tb) itemFreq container False Nothing
+  m2 <- rollAndRegisterItem (blid tb) itemFreq container Nothing
   let (iid, (ItemFull{itemBase, itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
@@ -1023,7 +1023,7 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
-  execUpdAtomic $ UpdCreateActor aid bNew ais
+  execUpdAtomic $ UpdSpotActor aid bNew ais
   case mlead of
     Nothing -> return ()
     Just leader ->
@@ -1277,7 +1277,7 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
-      iid <- registerItem (itemFull, kitNew) itemKnown c True
+      iid <- registerItem (itemFull, kitNew) itemKnown c
       -- If created not on the ground, ID it, because it won't be on pickup.
       when (store /= CGround) $
         discoverIfMinorEffects c iid (itemKindId itemFull)
@@ -1481,7 +1481,7 @@ effectRerollItem execSfx iidId target = do
                      then roll100 (n - 1)
                      else return i2
            (itemKnown, (itemFull, _)) <- roll100 100
-           void $ registerItem (itemFull, kit) itemKnown c True
+           void $ registerItem (itemFull, kit) itemKnown c
            return UseUp
     _ -> error "effectRerollItem: server ignorant about an item"
 
@@ -1512,7 +1512,7 @@ effectDupItem execSfx iidId target = do
            let c = CActor target cstore
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdCreateItem iid itemBase (1, []) c
+           execUpdAtomic $ UpdSpotItem True iid itemBase (1, []) c
            return UseUp
 
 -- ** Identify

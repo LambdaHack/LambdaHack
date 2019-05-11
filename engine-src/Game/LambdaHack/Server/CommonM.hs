@@ -414,7 +414,7 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
       jfid = Just bfid
       itemKnown = ItemKnown kindIx ar jfid
       itemFull = itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-  trunkId <- registerItem (itemFull, kit) itemKnown container False
+  trunkId <- registerItem (itemFull, kit) itemKnown container
   aid <- addNonProjectile summoned trunkId (itemFull, kit) bfid pos lid time
   fact <- getsState $ (EM.! bfid) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -521,7 +521,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
         $ \(mk, (ikText, cstore)) -> do
     let container = CActor aid cstore
         itemFreq = [(ikText, 1)]
-    mIidEtc <- rollAndRegisterItem lid itemFreq container False mk
+    mIidEtc <- rollAndRegisterItem lid itemFreq container mk
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
       Just (iid, (itemFull2, _)) ->
@@ -629,7 +629,7 @@ addCondition :: MonadServerAtomic m => GroupName ItemKind -> ActorId -> m ()
 addCondition name aid = do
   b <- getsState $ getActorBody aid
   let c = CActor aid COrgan
-  mresult <- rollAndRegisterItem (blid b) [(name, 1)] c False Nothing
+  mresult <- rollAndRegisterItem (blid b) [(name, 1)] c Nothing
   assert (isJust mresult) $ return ()
 
 removeConditionSingle :: MonadServerAtomic m

@@ -63,10 +63,9 @@ onlyRegisterItem itemKnown@(ItemKnown _ arItem _) = do
       return $! icounter
 
 registerItem :: MonadServerAtomic m
-             => ItemFullKit -> ItemKnown -> Container -> Bool
-             -> m ItemId
+             => ItemFullKit -> ItemKnown -> Container -> m ItemId
 registerItem (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown@(ItemKnown _ arItem _) container verbose = do
+             itemKnown@(ItemKnown _ arItem _) container = do
   iid <- onlyRegisterItem itemKnown
   let slore = IA.loreFromContainer arItem container
   modifyServer $ \ser ->
@@ -74,8 +73,7 @@ registerItem (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
                                    (sgenerationAn ser)}
   moveStash <- moveStashIfNeeded container
   mapM_  execUpdAtomic moveStash
-  let cmd = if verbose then UpdCreateItem else UpdSpotItem False
-  execUpdAtomic $ cmd iid itemBase kit container
+  execUpdAtomic $ UpdCreateItem iid itemBase kit container
   let worth = itemPrice (fst kit) itemKind
   unless (worth == 0) $ execUpdAtomic $ UpdAlterGold worth
   knowItems <- getsServer $ sknowItems . soptions
@@ -144,7 +142,7 @@ createLevelItem pos lid = do
   Level{lkind} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
-  void $ rollAndRegisterItem lid litemFreq container True Nothing
+  void $ rollAndRegisterItem lid litemFreq container Nothing
 
 embedItem :: MonadServerAtomic m
           => LevelId -> Point -> ContentId TileKind -> m ()
@@ -152,7 +150,7 @@ embedItem lid pos tk = do
   COps{cotile} <- getsState scops
   let embeds = Tile.embeddedItems cotile tk
       container = CEmbed lid pos
-      f grp = rollAndRegisterItem lid [(grp, 1)] container False Nothing
+      f grp = rollAndRegisterItem lid [(grp, 1)] container Nothing
   mapM_ f embeds
 
 prepareItemKind :: MonadServerAtomic m
@@ -185,10 +183,9 @@ rollItemAspect freq lid = do
     Nothing -> return Nothing
 
 rollAndRegisterItem :: MonadServerAtomic m
-                    => LevelId -> Freqs ItemKind -> Container -> Bool
-                    -> Maybe Int
+                    => LevelId -> Freqs ItemKind -> Container -> Maybe Int
                     -> m (Maybe (ItemId, ItemFullKit))
-rollAndRegisterItem lid itemFreq container verbose mk = do
+rollAndRegisterItem lid itemFreq container mk = do
   -- Power depth of new items unaffected by number of spawned actors.
   freq <- prepareItemKind 0 lid itemFreq
   m2 <- rollItemAspect freq lid
@@ -196,7 +193,7 @@ rollAndRegisterItem lid itemFreq container verbose mk = do
     Nothing -> return Nothing
     Just (itemKnown, (itemFull, kit)) -> do
       let kit2 = (fromMaybe (fst kit) mk, snd kit)
-      iid <- registerItem (itemFull, kit2) itemKnown container verbose
+      iid <- registerItem (itemFull, kit2) itemKnown container
       return $ Just (iid, (itemFull, kit2))
 
 placeItemsInDungeon :: forall m. MonadServerAtomic m

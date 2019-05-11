@@ -97,38 +97,42 @@ displayRespUpdAtomicUI cmd = case cmd of
     updateItemSlot c iid
     case c of
       CActor aid store -> do
+        b <- getsState $ getActorBody aid
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
-            if IA.checkFlag Ability.Condition arItem then do
-              bag <- getsState $ getContainerBag c
-              let more = case EM.lookup iid bag of
-                    Nothing -> False
-                    Just kit2 -> fst kit2 /= fst kit
-                  verb = MU.Text $
-                    "become" <+> case fst kit of
-                                   1 -> if more then "more" else ""
-                                   k -> (if more then "additionally" else "")
-                                        <+> tshow k <> "-fold"
-              -- This describes all such items already among organs,
-              -- which is useful, because it shows "charging".
-              itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
-            else do
-              ownerFun <- partActorLeaderFun
-              let wown = ppContainerWownW ownerFun True c
-              itemVerbMU MsgItemCreation iid kit
-                         (MU.Text $ makePhrase $ "grow" : wown) c
-          _ -> do
+            if | IA.checkFlag Ability.Blast arItem -> return ()
+               | IA.checkFlag Ability.Condition arItem -> do
+                 bag <- getsState $ getContainerBag c
+                 let more = case EM.lookup iid bag of
+                       Nothing -> False
+                       Just kit2 -> fst kit2 /= fst kit
+                     verb = MU.Text $
+                       "become" <+> case fst kit of
+                                      1 -> if more then "more" else ""
+                                      k -> (if more then "additionally" else "")
+                                           <+> tshow k <> "-fold"
+                 -- This describes all such items already among organs,
+                 -- which is useful, because it shows "charging".
+                 itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
+               | isJust $ boldpos b -> do
+                 ownerFun <- partActorLeaderFun
+                 let wown = ppContainerWownW ownerFun True c
+                 itemVerbMU MsgItemCreation iid kit
+                           (MU.Text $ makePhrase $ "grow" : wown) c
+               | otherwise -> return ()
+          _ | isJust $ boldpos b -> do
             ownerFun <- partActorLeaderFun
             let wown = ppContainerWownW ownerFun True c
             itemVerbMU MsgItemCreation iid kit
                        (MU.Text $ makePhrase $ "appear" : wown) c
+          _ -> return ()
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         itemVerbMU MsgItemCreation iid kit
                    (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
-      CTrunk{} -> error $ "" `showFailure` c
+      CTrunk{} -> return ()
   UpdDestroyItem iid _ kit c -> do
     itemVerbMU MsgItemDestruction iid kit "disappear" c
     lid <- getsState $ lidFromC c

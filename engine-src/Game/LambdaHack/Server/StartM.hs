@@ -144,7 +144,7 @@ sampleTrunks dungeon = do
                 let itemKnown = ItemKnown kindIx ar jfid
                     itemFull =
                       itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
-                Just <$> registerItem (itemFull, kit) itemKnown c False
+                Just <$> registerItem (itemFull, kit) itemKnown c
   miids <- mapM regItem trunkKindIds
   return $! EM.singleton STrunk
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
@@ -170,7 +170,7 @@ sampleItems dungeon = do
         case m2 of
           Nothing -> error "sampleItems: can't create sample item"
           Just (itemKnown, (itemFull, _kit)) ->
-            Just <$> registerItem (itemFull, (0, [])) itemKnown c False
+            Just <$> registerItem (itemFull, (0, [])) itemKnown c
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem
             $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
