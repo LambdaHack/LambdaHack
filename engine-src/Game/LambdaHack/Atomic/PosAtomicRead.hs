@@ -4,7 +4,7 @@
 -- See
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
-  ( PosAtomic(..), posUpdAtomic, posSfxAtomic
+  ( PosAtomic(..), posUpdAtomic, posSfxAtomic, iidUpdAtomic, iidSfxAtomic
   , breakUpdAtomic, seenAtomicCli, seenAtomicSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -88,7 +88,7 @@ posUpdAtomic cmd = case cmd of
   UpdLoseItemBag c _ _ -> singleContainer c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
-    -- Non-projectile actors are never totally isolated from envirnoment;
+    -- Non-projectile actors are never totally isolated from environment;
     -- they hear, feel air movement, etc.
     return $! if bproj b
               then PosSight (blid b) [fromP, toP]
@@ -182,6 +182,85 @@ posSfxAtomic cmd = case cmd of
   SfxRestart -> return PosAll
   SfxCollideTile aid _ -> singleAid aid
   SfxTaunt _ aid -> singleAid aid
+
+-- | All items introduced by the atomic command, to be used in it.
+iidUpdAtomic :: MonadStateRead m => UpdAtomic -> m [ItemId]
+iidUpdAtomic cmd = case cmd of
+  UpdRegisterItems{} -> return []
+  UpdCreateActor{} -> return []  -- iids and items needed even on server
+  UpdDestroyActor{} -> return []
+  UpdCreateItem{} -> return []
+  UpdDestroyItem{} -> return []
+  UpdSpotActor _ body _ -> return $! getCarriedIidsAndTrunk body
+  UpdLoseActor _ body _ -> return $! getCarriedIidsAndTrunk body
+  UpdSpotItem _ iid _ _ _ -> return [iid]
+  UpdLoseItem _ iid _ _ _ -> return [iid]
+  UpdSpotItemBag _ bag _ -> return $! EM.keys bag
+  UpdLoseItemBag _ bag _ -> return $! EM.keys bag
+  UpdMoveActor{} -> return []
+  UpdWaitActor{} -> return []
+  UpdDisplaceActor{} -> return []
+  UpdRefillHP{} -> return []
+  UpdRefillCalm{} -> return []
+  UpdTrajectory{} -> return []
+  UpdQuitFaction{} -> return []
+  UpdSpotStashFaction{} -> return []
+  UpdLoseStashFaction{} -> return []
+  UpdLeadFaction{} -> return []
+  UpdDiplFaction{} -> return []
+  UpdTacticFaction{} -> return []
+  UpdAutoFaction{} -> return []
+  UpdRecordKill{} -> return []
+  UpdAlterTile{} -> return []
+  UpdAlterExplorable{} -> return []
+  UpdAlterGold{} -> return []
+  UpdSearchTile{} -> return []
+  UpdHideTile{} -> return []
+  UpdSpotTile{} -> return []
+  UpdLoseTile{} -> return []
+  UpdSpotEntry{} -> return []
+  UpdLoseEntry{} -> return []
+  UpdAlterSmell{} -> return []
+  UpdSpotSmell{} -> return []
+  UpdLoseSmell{} -> return []
+  UpdTimeItem iid _ _ _ -> return [iid]
+  UpdAgeGame{} -> return []
+  UpdUnAgeGame{} -> return []
+  UpdDiscover _ iid _ _ -> return [iid]
+  UpdCover _ iid _ _ -> return [iid]
+  UpdDiscoverKind{} -> return []
+  UpdCoverKind{} -> return []
+  UpdDiscoverAspect _ iid _ -> return [iid]
+  UpdCoverAspect _ iid _ -> return [iid]
+  UpdDiscoverServer{} -> return []  -- never sent to clients
+  UpdCoverServer{} -> return []
+  UpdPerception{} -> return []
+  UpdRestart{} -> return []
+  UpdRestartServer{} -> return []
+  UpdResume{} -> return []
+  UpdResumeServer{} -> return []
+  UpdKillExit{} -> return []
+  UpdWriteSave -> return []
+  UpdHearFid{} -> return []
+
+-- | All items introduced by the atomic special effect, to be used in it.
+iidSfxAtomic :: MonadStateRead m => SfxAtomic -> m [ItemId]
+iidSfxAtomic cmd = case cmd of
+  SfxStrike _ _ iid ->  return [iid]
+  SfxRecoil _ _ iid ->  return [iid]
+  SfxSteal _ _ iid ->  return [iid]
+  SfxRelease _ _ iid ->  return [iid]
+  SfxProject _ iid ->  return [iid]
+  SfxReceive _ iid ->  return [iid]
+  SfxApply _ iid ->  return [iid]
+  SfxCheck _ iid ->  return [iid]
+  SfxTrigger{} -> return []
+  SfxShun{} -> return []
+  SfxEffect{} -> return []
+  SfxMsgFid{} -> return []
+  SfxRestart{} -> return []
+  SfxCollideTile{} -> return []
+  SfxTaunt{} -> return []
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =

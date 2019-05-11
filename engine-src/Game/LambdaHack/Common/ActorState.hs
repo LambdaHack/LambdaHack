@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Operations on the 'Actor' type, and related, that need the 'State' type,
 -- but not our custom monad types.
 module Game.LambdaHack.Common.ActorState
@@ -11,7 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , combinedGround, combinedOrgan, combinedEqp
   , combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
-  , getCarriedAssocsAndTrunk, getCarriedIidCStore, getContainerBag
+  , getCarriedAssocsAndTrunk, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
   , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
@@ -236,11 +235,6 @@ getCarriedAssocsAndTrunk b s =
   -- with a stolen projecting item. This actually does happen.
   let trunk = EM.singleton (btrunk b) (1, [])
   in bagAssocs s $ EM.unionsWith const [beqp b, borgan b, trunk]
-
-getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
-getCarriedIidCStore b =
-  let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
-  in concatMap bagCarried [(CEqp, beqp b), (COrgan, borgan b)]
 
 getContainerBag :: Container -> State -> ItemBag
 getContainerBag c s = case c of

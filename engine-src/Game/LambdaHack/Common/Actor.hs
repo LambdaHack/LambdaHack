@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, TupleSections #-}
 -- | Actors in the game: heroes, monsters, etc.
 module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
@@ -7,6 +7,7 @@ module Game.LambdaHack.Common.Actor
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
+  , getCarriedIidsAndTrunk, getCarriedIidCStore
     -- * Assorted
   , ActorDict, monsterGenChance, smellTimeout
   ) where
@@ -30,6 +31,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | Actor attributes that are changing throughout the game.
 -- If they appear to be dublets of aspects from actor kinds, e.g. HP,
@@ -197,6 +199,18 @@ eqpFreeN :: Actor -> Int
 eqpFreeN b = let size = sum $ map fst $ EM.elems $ beqp b
              in assert (size <= 10 `blame` (b, size))
                 $ 10 - size
+
+getCarriedIidsAndTrunk :: Actor -> [ItemId]
+getCarriedIidsAndTrunk b =
+  -- The trunk is important for a case of spotting a caught projectile
+  -- with a stolen projecting item. This actually does happen.
+  let trunk = EM.singleton (btrunk b) (1, [])
+  in EM.keys $ EM.unionsWith const [beqp b, borgan b, trunk]
+
+getCarriedIidCStore :: Actor -> [(ItemId, CStore)]
+getCarriedIidCStore b =
+  let bagCarried (cstore, bag) = map (,cstore) $ EM.keys bag
+  in concatMap bagCarried [(CEqp, beqp b), (COrgan, borgan b)]
 
 -- | Chance that a new monster is generated. Depends on the number
 -- of monsters already present, and on the level depth and its cave kind.
