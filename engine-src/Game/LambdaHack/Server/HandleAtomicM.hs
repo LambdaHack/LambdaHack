@@ -80,12 +80,12 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdDestroyItem{} -> return ()
-  UpdSpotActor aid b _ -> do
+  UpdSpotActor aid b -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
     actorMaxSkills <- getsState sactorMaxSkills
     when (actorHasShine actorMaxSkills aid) $ invalidateLucidLid $ blid b
     addPerActor aid b
-  UpdLoseActor aid b _ -> do
+  UpdLoseActor aid b -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
     let actorMaxSkillsOld = sactorMaxSkills oldState
     when (actorHasShine actorMaxSkillsOld aid) $ invalidateLucidLid $ blid b
@@ -98,32 +98,32 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
           , sactorAn = EM.delete aid (sactorAn ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
-  UpdSpotItem _ iid _ _ (CFloor lid _) -> do
+  UpdSpotItem _ iid _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdSpotItem _ iid _ _ (CActor aid store) -> do
+  UpdSpotItem _ iid _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdSpotItem{} -> return ()
-  UpdLoseItem _ iid _ _ (CFloor lid _) -> do
+  UpdLoseItem _ iid _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdLoseItem _ iid _ _ (CActor aid store) -> do
+  UpdLoseItem _ iid _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
       invalidateLucidAid aid
     when (store `elem` [CEqp, COrgan]) $
       when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag (CFloor lid _) bag _ais -> do
+  UpdSpotItemBag (CFloor lid _) bag  -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
       invalidateLucidLid lid
-  UpdSpotItemBag (CActor aid store) bag _ais -> do
+  UpdSpotItemBag (CActor aid store) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
@@ -132,12 +132,12 @@ cmdAtomicSemSer oldState cmd = case cmd of
       when (any (itemAffectsPerRadius discoAspect) iids) $
         reconsiderPerActor aid
   UpdSpotItemBag{} -> return ()
-  UpdLoseItemBag (CFloor lid _) bag _ais -> do
+  UpdLoseItemBag (CFloor lid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
       invalidateLucidLid lid
-  UpdLoseItemBag (CActor aid store) bag _ais -> do
+  UpdLoseItemBag (CActor aid store) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $

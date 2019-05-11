@@ -7,7 +7,8 @@ module Game.LambdaHack.Server.BroadcastAtomic
   ( handleAndBroadcast, sendPer, handleCmdAtomicServer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , hearUpdAtomic, hearSfxAtomic, filterHear, atomicForget, atomicRemember
+  , cmdItemsFromIids, hearUpdAtomic, hearSfxAtomic, filterHear, atomicForget
+  , atomicRemember
 #endif
   ) where
 
@@ -48,7 +49,7 @@ import           Game.LambdaHack.Server.State
 --    $ Nothing   -- undoCmdAtomic atomic
 
 handleCmdAtomicServer :: MonadServerAtomic m
-                       => UpdAtomic -> m (PosAtomic, [UpdAtomic], Bool)
+                      => UpdAtomic -> m (PosAtomic, [UpdAtomic], Bool)
 handleCmdAtomicServer cmd = do
   ps <- posUpdAtomic cmd
   atomicBroken <- breakUpdAtomic cmd
@@ -71,23 +72,25 @@ handleAndBroadcast ps atomicBroken atomic = do
   knowEvents <- getsServer $ sknowEvents . soptions
   sperFidOld <- getsServer sperFid
   -- Send some actions to the clients, one faction at a time.
-  let sendItemsFromIids fid iids = do
-        itemDClient <- getsServer $ sitemD . (EM.! fid) . sclientStates
-        let iidsUnknown = filter (\iid -> not $ EM.member iid itemDClient) iids
-        itemD <- getsState sitemD
-        let items = map (\iid -> (iid, itemD EM.! iid)) iidsUnknown
-        sendUpdateCheck fid $ UpdRegisterItems items
-      sendAtomic fid (UpdAtomic cmd) = do
-        iids <- iidUpdAtomic cmd
-        sendItemsFromIids fid iids
+  let sendAtomic fid (UpdAtomic cmd) = do
+        let iids = iidUpdAtomic cmd
+        s <- getState
+        sClient <- getsServer $ (EM.! fid) . sclientStates
+        mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids sClient s
         sendUpdate fid cmd
       sendAtomic fid (SfxAtomic sfx) = do
-        iids <- iidSfxAtomic sfx
-        sendItemsFromIids fid iids
+        let iids = iidSfxAtomic sfx
+        s <- getState
+        sClient <- getsServer $ (EM.! fid) . sclientStates
+        mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids sClient s
         sendSfx fid sfx
       breakSend lid fid perFidLid = do
         let send2 (cmd2, ps2) =
-              when (seenAtomicCli knowEvents fid perFidLid ps2) $
+              when (seenAtomicCli knowEvents fid perFidLid ps2) $ do
+                let iids2 = iidUpdAtomic cmd2
+                s <- getState
+                sClient <- getsServer $ (EM.! fid) . sclientStates
+                mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids2 sClient s
                 sendUpdate fid cmd2
         psBroken <- mapM posUpdAtomic atomicBroken
         case psBroken of
@@ -148,6 +151,12 @@ handleAndBroadcast ps atomicBroken atomic = do
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
   mapM_ send $ EM.keys factionD
+
+cmdItemsFromIids :: [ItemId] -> State -> State -> [UpdAtomic]
+cmdItemsFromIids iids sClient s =
+  let iidsUnknown = filter (\iid -> EM.notMember iid $ sitemD sClient) iids
+      items = map (\iid -> (iid, sitemD s EM.! iid)) iidsUnknown
+  in if null items then [] else [UpdRegisterItems items]
 
 -- | Messages for some unseen atomic commands.
 hearUpdAtomic :: MonadStateRead m
@@ -241,7 +250,9 @@ sendPer fid lid outPer inPer perNew = do
     let forget = atomicForget fid lid outPer sClient
     remember <- getsState $ atomicRemember lid inPer sClient
     let seenNew = seenAtomicCli False fid perNew
-    psRem <- mapM posUpdAtomic remember
+        notRegister UpdRegisterItems{} = False
+        notRegister _ = True
+    psRem <- mapM posUpdAtomic $ filter notRegister remember
     -- Verify that we remember only currently seen things.
     let !_A = assert (allB seenNew psRem) ()
     mapM_ (sendUpdateCheck fid) forget
@@ -259,7 +270,7 @@ atomicForget side lid outPer sClient =
         -- perception, but still visible, if they belong to our faction,
         -- e.g., if they teleport to outside of current perception
         -- or if they have disabled senses.
-        UpdLoseActor aid b $ getCarriedAssocsAndTrunk b sClient
+        UpdLoseActor aid b
           -- this command always succeeds, the actor can be always removed,
           -- because the actor is taken from the state
       outPrioBig = mapMaybe (\p -> posToBigAssoc p lid sClient)
@@ -302,28 +313,22 @@ atomicRemember lid inPer sClient s =
         let f p = case (EM.lookup p bagEM, EM.lookup p bagEMClient) of
               (Nothing, Nothing) -> []  -- most common, no items ever
               (Just bag, Nothing) ->  -- common, client unaware
-                let ais = map (\iid -> (iid, getItemBody iid s))
-                              (EM.keys bag)
-                in [UpdSpotItemBag (fc lid p) bag ais | allow p]
+                cmdItemsFromIids (EM.keys bag) sClient s
+                ++ [UpdSpotItemBag (fc lid p) bag | allow p]
               (Nothing, Just bagClient) ->  -- uncommon, all items vanished
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to notice.
-               let aisClient = map (\iid -> (iid, getItemBody iid sClient))
-                                    (EM.keys bagClient)
-                in [UpdLoseItemBag (fc lid p) bagClient aisClient]
+                [UpdLoseItemBag (fc lid p) bagClient]
               (Just bag, Just bagClient) ->
                 -- We don't check @allow@, because client sees items there,
                 -- so we assume he's aware of the tile enough to see new items.
                 if bag == bagClient
                 then []  -- common, nothing has changed, so optimized
-                else  -- uncommon, surprise; because it's rare, we send
-                      -- whole bags and don't optimize by sending only delta
-                  let aisClient = map (\iid -> (iid, getItemBody iid sClient))
-                                      (EM.keys bagClient)
-                      ais = map (\iid -> (iid, getItemBody iid s))
-                                (EM.keys bag)
-                  in [ UpdLoseItemBag (fc lid p) bagClient aisClient
-                     , UpdSpotItemBag (fc lid p) bag ais ]
+                else -- uncommon, surprise; because it's rare, we send
+                     -- whole bags and don't optimize by sending only delta
+                     cmdItemsFromIids (EM.keys bag) sClient s
+                     ++ [ UpdLoseItemBag (fc lid p) bagClient
+                        , UpdSpotItemBag (fc lid p) bag ]
         in concatMap f inFov
       inFloor = inContainer (const True) CFloor (lfloor lvl) (lfloor lvlClient)
       -- Check that client may be shown embedded items, assuming he's not seeing
@@ -377,8 +382,8 @@ atomicRemember lid inPer sClient s =
       inAssocs = concatMap (\p -> posToAidAssocs p lid s) inFov
       -- Here, the actor may be already visible, e.g., when teleporting,
       -- so the exception is caught in @sendUpdate@ above.
-      fActor (aid, b) = let ais = getCarriedAssocsAndTrunk b s
-                        in UpdSpotActor aid b ais
-      inActor = map fActor inAssocs
+      fActor (aid, b) = cmdItemsFromIids (getCarriedIidsAndTrunk b) sClient s
+                        ++ [UpdSpotActor aid b]
+      inActor = concatMap fActor inAssocs
   in atomicStash ++ atomicTile ++ inFloor ++ inEmbed ++ inSmell
      ++ atomicSmell ++ inActor

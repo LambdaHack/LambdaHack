@@ -127,10 +127,9 @@ generalMoveItem verbose iid k c1 c2 = do
     Nothing -> error $ "" `showFailure` (iid, k, c1, c2)
     Just (_, it) -> do
       moveStash <- moveStashIfNeeded c2
-      item <- getsState $ getItemBody iid
-      return $ [UpdLoseItem verbose iid item (k, take k it) c1]
+      return $ [UpdLoseItem verbose iid (k, take k it) c1]
                ++ moveStash
-               ++ [UpdSpotItem verbose iid item (k, take k it) c2]
+               ++ [UpdSpotItem verbose iid (k, take k it) c2]
 
 quitF :: MonadServerAtomic m => Status -> FactionId -> m ()
 quitF status fid = do
@@ -152,13 +151,11 @@ quitF status fid = do
                 && fleaderMode (gplayer fact) /= LeaderNull
                 && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
-          itemD <- getsState sitemD
           dungeon <- getsState sdungeon
-          let ais = EM.assocs itemD
-              minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+          let minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
                            $ EM.assocs dungeon
           execUpdAtomic $ UpdSpotItemBag (CTrunk fid minLid originPoint)
-                                         EM.empty ais
+                                         EM.empty
           revealItems fid
           -- Likely, by this time UI faction is no longer AI-controlled,
           -- so the score will get registered.
@@ -378,7 +375,7 @@ projectBla propeller source pos rest iid cstore blast = do
   localTime <- getsState $ getLocalTime lid
   unless blast $ execSfxAtomic $ SfxProject source iid
   bag <- getsState $ getBodyStoreBag sb cstore
-  ItemFull{itemBase, itemKind} <- getsState $ itemToFull iid
+  ItemFull{itemKind} <- getsState $ itemToFull iid
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, pos, rest, iid, cstore)
     Just kit@(_, it) -> do
@@ -389,7 +386,7 @@ projectBla propeller source pos rest iid cstore blast = do
           btime = absoluteTimeAdd delay localTime
       addProjectile propeller pos rest iid kit lid (bfid sb) btime
       let c = CActor source cstore
-      execUpdAtomic $ UpdLoseItem False iid itemBase (1, take 1 it) c
+      execUpdAtomic $ UpdLoseItem False iid (1, take 1 it) c
 
 addActorFromGroup :: MonadServerAtomic m
                   => GroupName ItemKind -> FactionId -> Point -> LevelId -> Time
@@ -639,8 +636,7 @@ removeConditionSingle name aid = do
   is <- allGroupItems COrgan name aid
   case is of
     [(iid, (nAll, itemTimer))] -> do
-      itemBase <- getsState $ getItemBody iid
-      execUpdAtomic $ UpdLoseItem False iid itemBase (1, itemTimer) c
+      execUpdAtomic $ UpdLoseItem False iid (1, itemTimer) c
       return $ nAll - 1
     _ -> error $ "missing or multiple item" `showFailure` (name, is)
 

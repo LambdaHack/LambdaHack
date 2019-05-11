@@ -20,9 +20,9 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client (Response (..))
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -44,7 +44,7 @@ debugResponse fid resp = case resp of
     d <- debugAid aid "UpdCreateActor"
     serverPrint d
     debugPretty fid "RespUpdAtomic" cmd
-  RespUpdAtomic _ cmd@(UpdSpotActor aid _ _) -> do
+  RespUpdAtomic _ cmd@(UpdSpotActor aid _) -> do
     d <- debugAid aid "UpdSpotActor"
     serverPrint d
     debugPretty fid "RespUpdAtomic" cmd

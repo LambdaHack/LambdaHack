@@ -600,10 +600,8 @@ reqAlterFail voluntary source tpos = do
       lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
-      revealEmbeds = unless (EM.null embeds) $ do
-        s <- getState
-        let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys embeds)
-        execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds ais
+      revealEmbeds = unless (EM.null embeds) $
+        execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       tryApplyEmbeds = mapM_ tryApplyEmbed
                              (sortEmbeds cops getKind serverTile embeds)
       tryApplyEmbed (iid, kit) = do
@@ -699,10 +697,7 @@ reqAlterFail voluntary source tpos = do
               -- on the client, without causing any problems. Otherwise,
               -- if the position is in view, client has accurate info.
               case EM.lookup tpos (lembed lvl2) of
-                Just bag -> do
-                  s <- getState
-                  let ais = map (\iid -> (iid, getItemBody iid s)) (EM.keys bag)
-                  execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag ais
+                Just bag -> execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag
                 Nothing -> return ()
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
@@ -926,15 +921,13 @@ reqGameRestart aid groupName scurChalSer = do
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
-  itemD <- getsState sitemD
   dungeon <- getsState sdungeon
-  let ais = EM.assocs itemD
-      minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
+  let minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
                    $ EM.assocs dungeon
   unless isNoConfirms $
     mapM_ (\fid -> do
       execUpdAtomic $ UpdSpotItemBag (CTrunk fid minLid originPoint)
-                                     EM.empty ais
+                                     EM.empty
       revealItems fid) fidsUI
   -- Announcing end of game, we send lore, because game is over.
   b <- getsState $ getActorBody aid

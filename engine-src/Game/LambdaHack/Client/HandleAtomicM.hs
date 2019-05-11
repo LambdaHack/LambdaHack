@@ -66,21 +66,23 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdDestroyItem _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdDestroyItem{} -> return ()
-  UpdSpotActor aid b ais -> createActor aid b ais
-  UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdSpotItem _ iid _ _ (CActor aid store) -> do
+  UpdSpotActor aid b -> do
+    ais <- getsState $ getCarriedAssocsAndTrunk b
+    createActor aid b ais
+  UpdLoseActor aid b -> destroyActor aid b False
+  UpdSpotItem _ iid _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     addItemToDiscoBenefit iid
-  UpdSpotItem _ iid _ _ _ -> addItemToDiscoBenefit iid
-  UpdLoseItem _ _ _ _ (CActor aid store) ->
+  UpdSpotItem _ iid _ _ -> addItemToDiscoBenefit iid
+  UpdLoseItem _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag (CActor aid store) _bag ais -> do
+  UpdSpotItemBag (CActor aid store) bag -> do
     wipeBfsIfItemAffectsSkills [store] aid
-    mapM_ (addItemToDiscoBenefit . fst) ais
-  UpdSpotItemBag _ _ ais ->
-    mapM_ (addItemToDiscoBenefit . fst) ais
-  UpdLoseItemBag (CActor aid store) _bag _ais ->
+    mapM_ addItemToDiscoBenefit $ EM.keys bag
+  UpdSpotItemBag _ bag -> do
+    mapM_ addItemToDiscoBenefit $ EM.keys bag
+  UpdLoseItemBag (CActor aid store) _ ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do

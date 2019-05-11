@@ -70,12 +70,12 @@ data UpdAtomic =
   | UpdDestroyActor ActorId Actor [(ItemId, Item)]
   | UpdCreateItem ItemId Item ItemQuant Container
   | UpdDestroyItem ItemId Item ItemQuant Container
-  | UpdSpotActor ActorId Actor [(ItemId, Item)]
-  | UpdLoseActor ActorId Actor [(ItemId, Item)]
-  | UpdSpotItem Bool ItemId Item ItemQuant Container
-  | UpdLoseItem Bool ItemId Item ItemQuant Container
-  | UpdSpotItemBag Container ItemBag [(ItemId, Item)]
-  | UpdLoseItemBag Container ItemBag [(ItemId, Item)]
+  | UpdSpotActor ActorId Actor
+  | UpdLoseActor ActorId Actor
+  | UpdSpotItem Bool ItemId ItemQuant Container
+  | UpdLoseItem Bool ItemId ItemQuant Container
+  | UpdSpotItemBag Container ItemBag
+  | UpdLoseItemBag Container ItemBag
   -- Move actors and items.
   | UpdMoveActor ActorId Point Point
   | UpdWaitActor ActorId Watchfulness Watchfulness
@@ -198,17 +198,17 @@ data SfxMsg =
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
-  UpdRegisterItems{}  -> Nothing  -- harmless and never forgotten
+  UpdRegisterItems{} -> Nothing  -- harmless and never forgotten
   UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
   UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
   UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c
   UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
-  UpdSpotActor aid body ais -> Just $ UpdLoseActor aid body ais
-  UpdLoseActor aid body ais -> Just $ UpdSpotActor aid body ais
-  UpdSpotItem verbose iid item k c -> Just $ UpdLoseItem verbose iid item k c
-  UpdLoseItem verbose iid item k c -> Just $ UpdSpotItem verbose iid item k c
-  UpdSpotItemBag c bag ais -> Just $ UpdLoseItemBag c bag ais
-  UpdLoseItemBag c bag ais -> Just $ UpdSpotItemBag c bag ais
+  UpdSpotActor aid body -> Just $ UpdLoseActor aid body
+  UpdLoseActor aid body -> Just $ UpdSpotActor aid body
+  UpdSpotItem verbose iid k c -> Just $ UpdLoseItem verbose iid k c
+  UpdLoseItem verbose iid k c -> Just $ UpdSpotItem verbose iid k c
+  UpdSpotItemBag c bag -> Just $ UpdLoseItemBag c bag
+  UpdLoseItemBag c bag -> Just $ UpdSpotItemBag c bag
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid fromWS toWS -> Just $ UpdWaitActor aid toWS fromWS
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source

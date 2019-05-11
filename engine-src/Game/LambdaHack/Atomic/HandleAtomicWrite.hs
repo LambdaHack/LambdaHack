@@ -77,12 +77,12 @@ handleUpdAtomic cmd = case cmd of
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
   UpdCreateItem iid item kit c -> updCreateItem iid item kit c
   UpdDestroyItem iid item kit c -> updDestroyItem iid item kit c
-  UpdSpotActor aid body ais -> updCreateActor aid body ais
-  UpdLoseActor aid body ais -> updDestroyActor aid body ais
-  UpdSpotItem _ iid item kit c -> updCreateItem iid item kit c
-  UpdLoseItem _ iid item kit c -> updDestroyItem iid item kit c
-  UpdSpotItemBag c bag ais -> updSpotItemBag c bag ais
-  UpdLoseItemBag c bag ais -> updLoseItemBag c bag ais
+  UpdSpotActor aid body -> updSpotActor aid body
+  UpdLoseActor aid body -> updLoseActor aid body
+  UpdSpotItem _ iid kit c -> updSpotItem iid kit c
+  UpdLoseItem _ iid kit c -> updLoseItem iid kit c
+  UpdSpotItemBag c bag -> updSpotItemBag c bag
+  UpdLoseItemBag c bag -> updLoseItemBag c bag
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid fromWS toWS -> updWaitActor aid fromWS toWS
   UpdDisplaceActor source target -> updDisplaceActor source target
@@ -154,6 +154,53 @@ updRegisterItems ais = do
 updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updCreateActor aid body ais = do
+  updRegisterItems ais
+  updSpotActor aid body
+
+-- If a leader dies, a new leader should be elected on the server
+-- before this command is executed (not checked).
+updDestroyActor :: MonadStateWrite m
+                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+updDestroyActor aid body ais = do
+  -- Assert that actor's items belong to @sitemD@. Do not remove those
+  -- that do not appear anywhere else, for simplicity and speed.
+  itemD <- getsState sitemD
+  let match (iid, item) = itemsMatch (itemD EM.! iid) item
+  let !_A = assert (allB match ais `blame` "destroyed actor items not found"
+                    `swith` (aid, body, ais, itemD)) ()
+  updLoseActor aid body
+
+-- Create a few copies of an item that is already registered for the dungeon
+-- (in @sitemRev@ field of @StateServer@).
+--
+-- Number of copies may be zero, when the item is only created as a sample
+-- to let the player know what can potentially be genereated in the dungeon.
+updCreateItem :: MonadStateWrite m
+              => ItemId -> Item -> ItemQuant -> Container -> m ()
+updCreateItem iid item kit c = do
+  updRegisterItems [(iid, item)]
+  updSpotItem iid kit c
+
+-- Destroy some copies (possibly not all) of an item.
+updDestroyItem :: MonadStateWrite m
+               => ItemId -> Item -> ItemQuant -> Container -> m ()
+updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
+  -- Do not remove the item from @sitemD@ nor from @sitemRev@
+  -- nor from @DiscoveryAspect@, @ItemIxMap@, etc.
+  -- It's incredibly costly and not particularly noticeable for the player.
+  -- Moreover, copies of the item may reappear in the future
+  -- and then we save computation and the player remembers past discovery.
+  -- However, assert the item is registered in @sitemD@.
+  itemD <- getsState sitemD
+  let !_A = assert ((case iid `EM.lookup` itemD of
+                        Nothing -> False
+                        Just item0 -> itemsMatch item0 item)
+                    `blame` "item already removed"
+                    `swith` (iid, item, itemD)) ()
+  updLoseItem iid kit c
+
+updSpotActor :: MonadStateWrite m => ActorId -> Actor -> m ()
+updSpotActor aid body = do
   -- The exception is possible, e.g., when we teleport and so see our actor
   -- at the new location, but also the location is part of new perception,
   -- so @UpdSpotActor@ is sent.
@@ -175,21 +222,11 @@ updCreateActor aid body ais = do
   updateLevel (blid body) $ if bproj body
                             then updateProjMap (EM.alter g (bpos body))
                             else updateBigMap (EM.alter h (bpos body))
-  updRegisterItems ais
   actorMaxSk <- getsState $ maxSkillsFromActor body
   modifyState $ updateActorMaxSkills $ EM.insert aid actorMaxSk
 
--- If a leader dies, a new leader should be elected on the server
--- before this command is executed (not checked).
-updDestroyActor :: MonadStateWrite m
-                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
-updDestroyActor aid body ais = do
-  -- Assert that actor's items belong to @sitemD@. Do not remove those
-  -- that do not appear anywhere else, for simplicity and speed.
-  itemD <- getsState sitemD
-  let match (iid, item) = itemsMatch (itemD EM.! iid) item
-  let !_A = assert (allB match ais `blame` "destroyed actor items not found"
-                    `swith` (aid, body, ais, itemD)) ()
+updLoseActor :: MonadStateWrite m => ActorId -> Actor ->  m ()
+updLoseActor aid body = do
   -- Remove actor from @sactorD@.
   let f Nothing = error $ "actor already removed" `showFailure` (aid, body)
       f (Just b) = assert (b == body `blame` "inconsistent destroyed actor body"
@@ -217,15 +254,9 @@ updDestroyActor aid body ais = do
                             else updateBigMap (EM.alter h (bpos body))
   modifyState $ updateActorMaxSkills $ EM.delete aid
 
--- Create a few copies of an item that is already registered for the dungeon
--- (in @sitemRev@ field of @StateServer@).
---
--- Number of copies may be zero, when the item is only created as a sample
--- to let the player know what can potentially be genereated in the dungeon.
-updCreateItem :: MonadStateWrite m
-              => ItemId -> Item -> ItemQuant -> Container -> m ()
-updCreateItem iid item kit@(k, _) c = do
-  updRegisterItems [(iid, item)]
+updSpotItem :: MonadStateWrite m => ItemId -> ItemQuant -> Container -> m ()
+updSpotItem iid kit@(k, _) c = do
+  item <- getsState $ getItemBody iid
   when (k > 0) $ do
     insertItemContainer iid kit c
     case c of
@@ -233,58 +264,40 @@ updCreateItem iid item kit@(k, _) c = do
                           $ addItemToActorMaxSkills iid item k aid
       _ -> return ()
 
--- Destroy some copies (possibly not all) of an item.
-updDestroyItem :: MonadStateWrite m
-               => ItemId -> Item -> ItemQuant -> Container -> m ()
-updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
+updLoseItem :: MonadStateWrite m => ItemId -> ItemQuant -> Container -> m ()
+updLoseItem iid kit@(k, _) c = assert (k > 0) $ do
+  item <- getsState $ getItemBody iid
   deleteItemContainer iid kit c
-  -- Do not remove the item from @sitemD@ nor from @sitemRev@
-  -- nor from @DiscoveryAspect@, @ItemIxMap@, etc.
-  -- It's incredibly costly and not particularly noticeable for the player.
-  -- Moreover, copies of the item may reappear in the future
-  -- and then we save computation and the player remembers past discovery.
-  -- However, assert the item is registered in @sitemD@.
-  itemD <- getsState sitemD
-  let !_A = assert ((case iid `EM.lookup` itemD of
-                        Nothing -> False
-                        Just item0 -> itemsMatch item0 item)
-                    `blame` "item already removed"
-                    `swith` (iid, item, itemD)) ()
   case c of
     CActor aid store -> when (store `elem` [CEqp, COrgan])
                         $ addItemToActorMaxSkills iid item (-k) aid
     _ -> return ()
 
-updSpotItemBag :: MonadStateWrite m
-               => Container -> ItemBag -> [(ItemId, Item)] -> m ()
-updSpotItemBag c bag ais = do
-  updRegisterItems ais
+updSpotItemBag :: MonadStateWrite m => Container -> ItemBag -> m ()
+updSpotItemBag c bag = do
   -- The case of empty bag is for a hack to help identifying sample items.
   when (not $ EM.null bag) $ do
-    let !_A = assert (EM.size bag == length ais) ()
     insertBagContainer bag c
     case c of
       CActor aid store ->
-        when (store `elem` [CEqp, COrgan]) $
+        when (store `elem` [CEqp, COrgan]) $ do
+          itemD <- getsState sitemD
+          let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys bag
           forM_ ais $ \(iid, item) ->
             addItemToActorMaxSkills iid item (fst $ bag EM.! iid) aid
       _ -> return ()
 
-updLoseItemBag :: MonadStateWrite m
-               => Container -> ItemBag -> [(ItemId, Item)] -> m ()
-updLoseItemBag c bag ais = assert (EM.size bag > 0
-                                   && EM.size bag == length ais) $ do
+updLoseItemBag :: MonadStateWrite m => Container -> ItemBag -> m ()
+updLoseItemBag c bag = assert (EM.size bag > 0) $ do
   deleteBagContainer bag c
   -- Do not remove the items from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the items are registered in @sitemD@.
-  itemD <- getsState sitemD
-  let match (iid, item) = itemsMatch (itemD EM.! iid) item
-  let !_A = assert (allB match ais `blame` "items already removed"
-                                   `swith` (c, bag, ais, itemD)) ()
   case c of
     CActor aid store ->
-      when (store `elem` [CEqp, COrgan]) $
+      when (store `elem` [CEqp, COrgan]) $ do
+        itemD <- getsState sitemD
+        let ais = map (\iid -> (iid, itemD EM.! iid)) $ EM.keys bag
         forM_ ais $ \(iid, item) ->
           addItemToActorMaxSkills iid item (- (fst $ bag EM.! iid)) aid
     _ -> return ()

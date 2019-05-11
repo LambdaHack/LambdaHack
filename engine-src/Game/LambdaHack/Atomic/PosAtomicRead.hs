@@ -80,12 +80,12 @@ posUpdAtomic cmd = case cmd of
   UpdDestroyActor _ body _ -> return $! posProjBody body
   UpdCreateItem _ _ _ c -> singleContainer c
   UpdDestroyItem _ _ _ c -> singleContainer c
-  UpdSpotActor _ body _ -> return $! posProjBody body
-  UpdLoseActor _ body _ -> return $! posProjBody body
-  UpdSpotItem _ _ _ _ c -> singleContainer c
-  UpdLoseItem _ _ _ _ c -> singleContainer c
-  UpdSpotItemBag c _ _ -> singleContainer c
-  UpdLoseItemBag c _ _ -> singleContainer c
+  UpdSpotActor _ body -> return $! posProjBody body
+  UpdLoseActor _ body -> return $! posProjBody body
+  UpdSpotItem _ _ _ c -> singleContainer c
+  UpdLoseItem _ _ _ c -> singleContainer c
+  UpdSpotItemBag c _ -> singleContainer c
+  UpdLoseItemBag c _ -> singleContainer c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from environment;
@@ -184,83 +184,83 @@ posSfxAtomic cmd = case cmd of
   SfxTaunt _ aid -> singleAid aid
 
 -- | All items introduced by the atomic command, to be used in it.
-iidUpdAtomic :: MonadStateRead m => UpdAtomic -> m [ItemId]
+iidUpdAtomic :: UpdAtomic -> [ItemId]
 iidUpdAtomic cmd = case cmd of
-  UpdRegisterItems{} -> return []
-  UpdCreateActor{} -> return []  -- iids and items needed even on server
-  UpdDestroyActor{} -> return []
-  UpdCreateItem{} -> return []
-  UpdDestroyItem{} -> return []
-  UpdSpotActor _ body _ -> return $! getCarriedIidsAndTrunk body
-  UpdLoseActor _ body _ -> return $! getCarriedIidsAndTrunk body
-  UpdSpotItem _ iid _ _ _ -> return [iid]
-  UpdLoseItem _ iid _ _ _ -> return [iid]
-  UpdSpotItemBag _ bag _ -> return $! EM.keys bag
-  UpdLoseItemBag _ bag _ -> return $! EM.keys bag
-  UpdMoveActor{} -> return []
-  UpdWaitActor{} -> return []
-  UpdDisplaceActor{} -> return []
-  UpdRefillHP{} -> return []
-  UpdRefillCalm{} -> return []
-  UpdTrajectory{} -> return []
-  UpdQuitFaction{} -> return []
-  UpdSpotStashFaction{} -> return []
-  UpdLoseStashFaction{} -> return []
-  UpdLeadFaction{} -> return []
-  UpdDiplFaction{} -> return []
-  UpdTacticFaction{} -> return []
-  UpdAutoFaction{} -> return []
-  UpdRecordKill{} -> return []
-  UpdAlterTile{} -> return []
-  UpdAlterExplorable{} -> return []
-  UpdAlterGold{} -> return []
-  UpdSearchTile{} -> return []
-  UpdHideTile{} -> return []
-  UpdSpotTile{} -> return []
-  UpdLoseTile{} -> return []
-  UpdSpotEntry{} -> return []
-  UpdLoseEntry{} -> return []
-  UpdAlterSmell{} -> return []
-  UpdSpotSmell{} -> return []
-  UpdLoseSmell{} -> return []
-  UpdTimeItem iid _ _ _ -> return [iid]
-  UpdAgeGame{} -> return []
-  UpdUnAgeGame{} -> return []
-  UpdDiscover _ iid _ _ -> return [iid]
-  UpdCover _ iid _ _ -> return [iid]
-  UpdDiscoverKind{} -> return []
-  UpdCoverKind{} -> return []
-  UpdDiscoverAspect _ iid _ -> return [iid]
-  UpdCoverAspect _ iid _ -> return [iid]
-  UpdDiscoverServer{} -> return []  -- never sent to clients
-  UpdCoverServer{} -> return []
-  UpdPerception{} -> return []
-  UpdRestart{} -> return []
-  UpdRestartServer{} -> return []
-  UpdResume{} -> return []
-  UpdResumeServer{} -> return []
-  UpdKillExit{} -> return []
-  UpdWriteSave -> return []
-  UpdHearFid{} -> return []
+  UpdRegisterItems{} -> []
+  UpdCreateActor{} -> []  -- iids and items needed even on server
+  UpdDestroyActor{} -> []
+  UpdCreateItem{} -> []
+  UpdDestroyItem{} -> []
+  UpdSpotActor _ body -> getCarriedIidsAndTrunk body
+  UpdLoseActor{} -> []  -- already seen, so items known
+  UpdSpotItem _ iid _ _ -> [iid]
+  UpdLoseItem{} -> []
+  UpdSpotItemBag _ bag -> EM.keys bag
+  UpdLoseItemBag{} -> []
+  UpdMoveActor{} -> []
+  UpdWaitActor{} -> []
+  UpdDisplaceActor{} -> []
+  UpdRefillHP{} -> []
+  UpdRefillCalm{} -> []
+  UpdTrajectory{} -> []
+  UpdQuitFaction{} -> []
+  UpdSpotStashFaction{} -> []
+  UpdLoseStashFaction{} -> []
+  UpdLeadFaction{} -> []
+  UpdDiplFaction{} -> []
+  UpdTacticFaction{} -> []
+  UpdAutoFaction{} -> []
+  UpdRecordKill{} -> []
+  UpdAlterTile{} -> []
+  UpdAlterExplorable{} -> []
+  UpdAlterGold{} -> []
+  UpdSearchTile{} -> []
+  UpdHideTile{} -> []
+  UpdSpotTile{} -> []
+  UpdLoseTile{} -> []
+  UpdSpotEntry{} -> []
+  UpdLoseEntry{} -> []
+  UpdAlterSmell{} -> []
+  UpdSpotSmell{} -> []
+  UpdLoseSmell{} -> []
+  UpdTimeItem iid _ _ _ -> [iid]
+  UpdAgeGame{} -> []
+  UpdUnAgeGame{} -> []
+  UpdDiscover _ iid _ _ -> [iid]
+  UpdCover _ iid _ _ -> [iid]
+  UpdDiscoverKind{} -> []
+  UpdCoverKind{} -> []
+  UpdDiscoverAspect _ iid _ -> [iid]
+  UpdCoverAspect _ iid _ -> [iid]
+  UpdDiscoverServer{} -> []  -- never sent to clients
+  UpdCoverServer{} -> []
+  UpdPerception{} -> []
+  UpdRestart{} -> []
+  UpdRestartServer{} -> []
+  UpdResume{} -> []
+  UpdResumeServer{} -> []
+  UpdKillExit{} -> []
+  UpdWriteSave -> []
+  UpdHearFid{} -> []
 
 -- | All items introduced by the atomic special effect, to be used in it.
-iidSfxAtomic :: MonadStateRead m => SfxAtomic -> m [ItemId]
+iidSfxAtomic :: SfxAtomic -> [ItemId]
 iidSfxAtomic cmd = case cmd of
-  SfxStrike _ _ iid ->  return [iid]
-  SfxRecoil _ _ iid ->  return [iid]
-  SfxSteal _ _ iid ->  return [iid]
-  SfxRelease _ _ iid ->  return [iid]
-  SfxProject _ iid ->  return [iid]
-  SfxReceive _ iid ->  return [iid]
-  SfxApply _ iid ->  return [iid]
-  SfxCheck _ iid ->  return [iid]
-  SfxTrigger{} -> return []
-  SfxShun{} -> return []
-  SfxEffect{} -> return []
-  SfxMsgFid{} -> return []
-  SfxRestart{} -> return []
-  SfxCollideTile{} -> return []
-  SfxTaunt{} -> return []
+  SfxStrike _ _ iid -> [iid]
+  SfxRecoil _ _ iid -> [iid]
+  SfxSteal _ _ iid -> [iid]
+  SfxRelease _ _ iid -> [iid]
+  SfxProject _ iid -> [iid]
+  SfxReceive _ iid -> [iid]
+  SfxApply _ iid -> [iid]
+  SfxCheck _ iid -> [iid]
+  SfxTrigger{} -> []
+  SfxShun{} -> []
+  SfxEffect{} -> []
+  SfxMsgFid{} -> []
+  SfxRestart{} -> []
+  SfxCollideTile{} -> []
+  SfxTaunt{} -> []
 
 posProjBody :: Actor -> PosAtomic
 posProjBody body =
@@ -304,14 +304,11 @@ breakUpdAtomic cmd = case cmd of
     -- may be inserted between the two below, so the leader doesn't
     -- need to be updated, even when aid is the leader.
     b <- getsState $ getActorBody aid
-    ais <- getsState $ getCarriedAssocsAndTrunk b
-    return [ UpdLoseActor aid b ais
-           , UpdSpotActor aid b {bpos = toP, boldpos = Just fromP} ais ]
+    return [ UpdLoseActor aid b
+           , UpdSpotActor aid b {bpos = toP, boldpos = Just fromP} ]
   UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
-    sais <- getsState $ getCarriedAssocsAndTrunk sb
     tb <- getsState $ getActorBody target
-    tais <- getsState $ getCarriedAssocsAndTrunk tb
     -- The order ensures the invariant that no two big actors occupy the same
     -- position is maintained. The actions about leadership are required
     -- to keep faction data (identify of the leader) consistent with actor
@@ -326,13 +323,12 @@ breakUpdAtomic cmd = case cmd of
              | Just source == msleader ]
              ++ [ UpdLeadFaction (bfid tb) mtleader Nothing
                 | Just target == mtleader ]
-             ++ [ UpdLoseActor source sb sais
-                , UpdLoseActor target tb tais
+             ++ [ UpdLoseActor source sb
+                , UpdLoseActor target tb
                 , UpdSpotActor source sb { bpos = bpos tb
-                                         , boldpos = Just $ bpos sb } sais
+                                         , boldpos = Just $ bpos sb }
                 , UpdSpotActor target tb { bpos = bpos sb
-                                         , boldpos = Just $ bpos tb } tais
-                ]
+                                         , boldpos = Just $ bpos tb } ]
              ++ [ UpdLeadFaction (bfid sb) Nothing msleader
                 | Just source == msleader ]
              ++ [ UpdLeadFaction (bfid tb) Nothing mtleader

@@ -218,7 +218,7 @@ effectAndDestroy :: MonadServerAtomic m
                  -> m ()
 effectAndDestroy onSmashOnly useAllCopies kineticPerformed
                  source target iid container periodic
-                 itemFull@ItemFull{itemBase, itemDisco, itemKindId, itemKind}
+                 itemFull@ItemFull{itemDisco, itemKindId, itemKind}
                  mayDestroy = do
   bag <- getsState $ getContainerBag container
   let (itemK, itemTimer) = bag EM.! iid
@@ -263,7 +263,7 @@ effectAndDestroy onSmashOnly useAllCopies kineticPerformed
     -- so, e.g., the item can be identified after it's removed.
     let imperishable = not mayDestroy || imperishableKit periodic itemFull
     unless imperishable $
-      execUpdAtomic $ UpdLoseItem False iid itemBase kit2 container
+      execUpdAtomic $ UpdLoseItem False iid kit2 container
     -- At this point, the item is potentially no longer in container
     -- @container@, therefore beware of assuming so in the code below.
     -- If the item activation is not periodic, but the item itself is,
@@ -293,7 +293,7 @@ effectAndDestroy onSmashOnly useAllCopies kineticPerformed
     -- Regardless, we don't rewind the time, because some info is gained
     -- (that the item does not exhibit any effects in the given context).
     unless (imperishable || triggered == UseUp) $
-      execUpdAtomic $ UpdSpotItem False iid itemBase kit2 container
+      execUpdAtomic $ UpdSpotItem False iid kit2 container
 
 imperishableKit :: Bool -> ItemFull -> Bool
 imperishableKit periodic itemFull =
@@ -435,7 +435,7 @@ effectExplode execSfx cgroup source target = do
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
   m2 <- rollAndRegisterItem (blid tb) itemFreq container Nothing
-  let (iid, (ItemFull{itemBase, itemKind}, (itemK, _))) =
+  let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
       semirandom = T.length (IK.idesc itemKind)
@@ -506,7 +506,7 @@ effectExplode execSfx cgroup source target = do
   let mn3 = EM.lookup iid bag3
   -- Give up and destroy the remaining particles, if any.
   maybe (return ()) (\kit -> execUpdAtomic
-                             $ UpdLoseItem False iid itemBase kit container) mn3
+                             $ UpdLoseItem False iid kit container) mn3
   return UseUp  -- we neglect verifying that at least one projectile got off
 
 -- ** RefillHP
@@ -645,7 +645,6 @@ dominateFid fid source target = do
   -- to mark them on the map for other party members to collect.
   dropAllItems target tb0
   tb <- getsState $ getActorBody target
-  ais <- getsState $ getCarriedAssocsAndTrunk tb
   actorMaxSk <- getsState $ getActorMaxSkills target
   getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
@@ -655,18 +654,17 @@ dominateFid fid source target = do
   -- Actor is not pushed nor projectile, so @sactorTime@ suffices.
   btime <-
     getsServer $ (EM.! target) . (EM.! blid tb) . (EM.! bfid tb) . sactorTime
-  execUpdAtomic $ UpdLoseActor target tb ais
+  execUpdAtomic $ UpdLoseActor target tb
   let maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
       maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
       bNew = tb { bfid = fid
                 , bcalm = max (xM 10) $ xM maxCalm `div` 2
                 , bhp = min (xM maxHp) $ bhp tb + xM 10
                 , borgan = borganNoImpression}
-  aisNew <- getsState $ getCarriedAssocsAndTrunk bNew
   modifyServer $ \ser ->
     ser {sactorTime = updateActorTime fid (blid tb) target btime
                       $ sactorTime ser}
-  execUpdAtomic $ UpdSpotActor target bNew aisNew
+  execUpdAtomic $ UpdSpotActor target bNew
   -- Focus on the dominated actor, by making him a leader.
   setFreshLeader fid target
   factionD <- getsState sfactionD
@@ -957,8 +955,7 @@ switchLevels1 (aid, bOld) = do
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
   -- @UpdDestroyActor@ is too loud, so use @UpdLoseActor@ instead.
-  ais <- getsState $ getCarriedAssocsAndTrunk bOld
-  execUpdAtomic $ UpdLoseActor aid bOld ais
+  execUpdAtomic $ UpdLoseActor aid bOld
   return mlead
 
 switchLevels2 ::MonadServerAtomic m
@@ -1001,7 +998,6 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
                   , boldpos = Just posNew  -- new level, new direction
                   , borgan = rebaseTimeout $ borgan bOld
                   , beqp = rebaseTimeout $ beqp bOld }
-  ais <- getsState $ getCarriedAssocsAndTrunk bOld
   -- Sync the actor time with the level time.
   -- This time shift may cause a double move of a foe of the same speed,
   -- but this is OK --- the foe didn't have a chance to move
@@ -1023,7 +1019,7 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
-  execUpdAtomic $ UpdSpotActor aid bNew ais
+  execUpdAtomic $ UpdSpotActor aid bNew
   case mlead of
     Nothing -> return ()
     Just leader ->
@@ -1357,7 +1353,7 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m ()
 dropCStoreItem verbose store aid b kMax iid (k, _) = do
-  itemFull@ItemFull{itemBase} <- getsState $ itemToFull iid
+  itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
       c = CActor aid store
       fragile = IA.checkFlag Ability.Fragile arItem
@@ -1381,7 +1377,7 @@ dropCStoreItem verbose store aid b kMax iid (k, _) = do
                  k2 = min (kMax - destroyedSoFar) k1
                  kit2 = (k2, take k2 it)
              in when (k2 > 0)
-                $ execUpdAtomic $ UpdLoseItem False iid itemBase kit2 c)
+                $ execUpdAtomic $ UpdLoseItem False iid kit2 c)
           (EM.lookup iid bag)
   else do
     cDrop <- pickDroppable False aid b  -- drop over fog, etc.
@@ -1499,7 +1495,7 @@ effectDupItem execSfx iidId target = do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxDupNothing
       -- Do not spam the source actor player about the failures.
       return UseId
-    (iid, ( itemFull@ItemFull{itemBase, itemKindId, itemKind}
+    (iid, ( itemFull@ItemFull{itemKindId, itemKind}
           , _ )) : _ -> do
       let arItem = aspectRecordFull itemFull
       if | IA.checkFlag Ability.Unique arItem -> do
@@ -1512,7 +1508,7 @@ effectDupItem execSfx iidId target = do
            let c = CActor target cstore
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdSpotItem True iid itemBase (1, []) c
+           execUpdAtomic $ UpdSpotItem True iid (1, []) c
            return UseUp
 
 -- ** Identify
@@ -1611,10 +1607,8 @@ effectDetect execSfx d radius target pos = do
           let predicateH p = Tile.isHideAs coTileSpeedup $ lvl `at` p
               revealEmbed p = do
                 embeds <- getsState $ getEmbedBag (blid b) p
-                unless (EM.null embeds) $ do
-                  let ais = map (\iid -> (iid, getItemBody iid s))
-                                (EM.keys embeds)
-                  execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds ais
+                unless (EM.null embeds) $
+                  execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds
               actionH l = do
                 let f p = when (p /= pos) $ do
                       let t = lvl `at` p

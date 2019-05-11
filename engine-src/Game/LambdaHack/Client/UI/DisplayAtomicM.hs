@@ -137,9 +137,9 @@ displayRespUpdAtomicUI cmd = case cmd of
     itemVerbMU MsgItemDestruction iid kit "disappear" c
     lid <- getsState $ lidFromC c
     markDisplayNeeded lid
-  UpdSpotActor aid body _ -> createActorUI False aid body
-  UpdLoseActor aid body _ -> destroyActorUI False aid body
-  UpdSpotItem verbose iid _ kit c -> spotItem verbose iid kit c
+  UpdSpotActor aid body -> createActorUI False aid body
+  UpdLoseActor aid body -> destroyActorUI False aid body
+  UpdSpotItem verbose iid kit c -> spotItem verbose iid kit c
   {-
   UpdLoseItem False _ _ _ _ -> return ()
   -- The message is rather cryptic, so let's disable it until it's decided
@@ -154,7 +154,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (bfid b == side) $ itemVerbMU iid kit verb c
   -}
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag c bag _ ->
+  UpdSpotItemBag c bag ->
     mapWithKeyM_ (\iid kit -> spotItem True iid kit c) bag
   UpdLoseItemBag{} -> return ()
   -- Move actors and items.
