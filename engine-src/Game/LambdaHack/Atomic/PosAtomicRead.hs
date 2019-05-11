@@ -75,6 +75,7 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posUpdAtomic :: MonadStateRead m => UpdAtomic -> m PosAtomic
 posUpdAtomic cmd = case cmd of
+  UpdRegisterItems{} -> return PosNone
   UpdCreateActor _ body _ -> return $! posProjBody body
   UpdDestroyActor _ body _ -> return $! posProjBody body
   UpdCreateItem _ _ _ c -> singleContainer c

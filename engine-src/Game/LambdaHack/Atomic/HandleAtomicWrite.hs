@@ -7,7 +7,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   ( handleUpdAtomic
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , updCreateActor, updDestroyActor
+  , updRegisterItems, updCreateActor, updDestroyActor
   , updCreateItem, updDestroyItem, updSpotItemBag, updLoseItemBag
   , updMoveActor, updWaitActor, updDisplaceActor, updRefillHP, updRefillCalm
   , updTrajectory, updQuitFaction, updSpotStashFaction, updLoseStashFaction
@@ -27,6 +27,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
 
 import           Game.LambdaHack.Atomic.CmdAtomic
@@ -71,6 +72,7 @@ import           Game.LambdaHack.Definition.Defs
 -- that can see it, even though not all are able to process it.
 handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
+  UpdRegisterItems ais -> updRegisterItems ais
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
   UpdCreateItem iid item kit c -> updCreateItem iid item kit c
@@ -129,6 +131,24 @@ handleUpdAtomic cmd = case cmd of
   UpdWriteSave -> return ()
   UpdHearFid{} -> return ()
 
+-- Actor's items may or may not be already present in @sitemD@,
+-- regardless if they are already present otherwise in the dungeon.
+-- We re-add them all to save time determining which really need it.
+-- If collision occurs, pick the item found on easier level.
+updRegisterItems :: MonadStateWrite m => [(ItemId, Item)] -> m ()
+updRegisterItems ais = do
+  let h item1 item2 =
+        assert (itemsMatch item1 item2
+                `blame` "inconsistent added items"
+                `swith` (item1, item2, ais))
+               item2 -- keep the first found level
+  forM_ ais $ \(iid, item) -> do
+    let f = case jkind item of
+          IdentityObvious _ -> id
+          IdentityCovered ix _ ->
+            updateItemIxMap $ EM.insertWith ES.union ix (ES.singleton iid)
+    modifyState $ f . updateItemD (EM.insertWith h iid item)
+
 -- Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).
 updCreateActor :: MonadStateWrite m
@@ -155,7 +175,7 @@ updCreateActor aid body ais = do
   updateLevel (blid body) $ if bproj body
                             then updateProjMap (EM.alter g (bpos body))
                             else updateBigMap (EM.alter h (bpos body))
-  addAis ais
+  updRegisterItems ais
   actorMaxSk <- getsState $ maxSkillsFromActor body
   modifyState $ updateActorMaxSkills $ EM.insert aid actorMaxSk
 
@@ -205,7 +225,7 @@ updDestroyActor aid body ais = do
 updCreateItem :: MonadStateWrite m
               => ItemId -> Item -> ItemQuant -> Container -> m ()
 updCreateItem iid item kit@(k, _) c = do
-  addAis [(iid, item)]
+  updRegisterItems [(iid, item)]
   when (k > 0) $ do
     insertItemContainer iid kit c
     case c of
@@ -238,7 +258,7 @@ updDestroyItem iid item kit@(k, _) c = assert (k > 0) $ do
 updSpotItemBag :: MonadStateWrite m
                => Container -> ItemBag -> [(ItemId, Item)] -> m ()
 updSpotItemBag c bag ais = do
-  addAis ais
+  updRegisterItems ais
   -- The case of empty bag is for a hack to help identifying sample items.
   when (not $ EM.null bag) $ do
     let !_A = assert (EM.size bag == length ais) ()

@@ -89,6 +89,7 @@ displayRespUpdAtomicUI :: MonadClientUI m => UpdAtomic -> m ()
 {-# INLINE displayRespUpdAtomicUI #-}
 displayRespUpdAtomicUI cmd = case cmd of
   -- Create/destroy actors and items.
+  UpdRegisterItems{} -> return ()
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
   UpdCreateItem iid _item kit c -> do

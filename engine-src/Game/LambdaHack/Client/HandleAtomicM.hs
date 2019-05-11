@@ -56,6 +56,7 @@ class MonadClient m => MonadClientSetup m where
 cmdAtomicSemCli :: MonadClientSetup m => State -> UpdAtomic -> m ()
 {-# INLINE cmdAtomicSemCli #-}
 cmdAtomicSemCli oldState cmd = case cmd of
+  UpdRegisterItems ais -> mapM_ (addItemToDiscoBenefit . fst) ais
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdCreateItem iid _ _ (CActor aid store) -> do

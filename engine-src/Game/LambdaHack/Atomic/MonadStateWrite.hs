@@ -5,7 +5,7 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   , moveActorMap, swapActorMap
   , insertBagContainer, insertItemContainer, insertItemActor
   , deleteBagContainer, deleteItemContainer, deleteItemActor
-  , addAis, itemsMatch, addItemToActorMaxSkills, resetActorMaxSkills
+  , itemsMatch, addItemToActorMaxSkills, resetActorMaxSkills
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , insertItemFloor, insertItemEmbed
@@ -22,7 +22,6 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Exception as Ex
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM_)
 
 import           Game.LambdaHack.Common.Actor
@@ -332,24 +331,6 @@ rmFromBagPermissive (k, _) iid bag =
           EQ -> Nothing
           GT -> Just (n - k, take (n - k) it)
   in EM.alter rfb iid bag
-
--- Actor's items may or may not be already present in @sitemD@,
--- regardless if they are already present otherwise in the dungeon.
--- We re-add them all to save time determining which really need it.
--- If collision occurs, pick the item found on easier level.
-addAis :: MonadStateWrite m => [(ItemId, Item)] -> m ()
-addAis ais = do
-  let h item1 item2 =
-        assert (itemsMatch item1 item2
-                `blame` "inconsistent added items"
-                `swith` (item1, item2, ais))
-               item2 -- keep the first found level
-  forM_ ais $ \(iid, item) -> do
-    let f = case jkind item of
-          IdentityObvious _ -> id
-          IdentityCovered ix _ ->
-            updateItemIxMap $ EM.insertWith ES.union ix (ES.singleton iid)
-    modifyState $ f . updateItemD (EM.insertWith h iid item)
 
 itemsMatch :: Item -> Item -> Bool
 itemsMatch item1 item2 =

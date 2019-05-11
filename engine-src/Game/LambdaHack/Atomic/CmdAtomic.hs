@@ -65,7 +65,8 @@ data CmdAtomic =
 -- that help clients determine whether and how to communicate it to players.
 data UpdAtomic =
   -- Create/destroy actors and items.
-    UpdCreateActor ActorId Actor [(ItemId, Item)]
+    UpdRegisterItems [(ItemId, Item)]
+  | UpdCreateActor ActorId Actor [(ItemId, Item)]
   | UpdDestroyActor ActorId Actor [(ItemId, Item)]
   | UpdCreateItem ItemId Item ItemQuant Container
   | UpdDestroyItem ItemId Item ItemQuant Container
@@ -197,6 +198,7 @@ data SfxMsg =
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
+  UpdRegisterItems{}  -> Nothing  -- harmless and never forgotten
   UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
   UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
   UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c

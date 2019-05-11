@@ -43,6 +43,7 @@ import           Game.LambdaHack.Server.State
 -- (except where the supplied @oldState@ is used).
 cmdAtomicSemSer :: MonadServer m => State -> UpdAtomic -> m ()
 cmdAtomicSemSer oldState cmd = case cmd of
+  UpdRegisterItems{} -> return ()
   UpdCreateActor aid b _ -> do
     actorMaxSkills <- getsState sactorMaxSkills
     when (actorHasShine actorMaxSkills aid) $ invalidateLucidLid $ blid b
