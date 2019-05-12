@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.HandleAtomicM
   ( cmdAtomicSemSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , invalidateArenas, updateSclear, updateSlit
+  , floorStash, invalidateArenas, updateSclear, updateSlit
   , invalidateLucidLid, invalidateLucidAid
   , actorHasShine, itemAffectsShineRadius, itemAffectsPerRadius
   , addPerActor, addPerActorAny, deletePerActor, deletePerActorAny
@@ -22,6 +22,7 @@ import qualified Data.EnumSet as ES
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
@@ -63,6 +64,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdCreateItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
+  UpdCreateItem iid item kit (CActor aid CStash) -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdCreateItem iid item kit c
   UpdCreateItem iid _ _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
@@ -73,6 +77,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdDestroyItem iid _ _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
+  UpdDestroyItem iid item kit (CActor aid CStash) -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdDestroyItem iid item kit c
   UpdDestroyItem iid _ _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
@@ -101,6 +108,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdSpotItem _ iid _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
+  UpdSpotItem verbose iid kit (CActor aid CStash) -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdSpotItem verbose iid kit c
   UpdSpotItem _ iid _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
@@ -111,6 +121,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdLoseItem _ iid _ (CFloor lid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
+  UpdLoseItem verbose iid kit (CActor aid CStash) -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdLoseItem verbose iid kit c
   UpdLoseItem _ iid _ (CActor aid store) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid [store]) $
@@ -123,6 +136,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
       invalidateLucidLid lid
+  UpdSpotItemBag (CActor aid CStash) bag -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdSpotItemBag c bag
   UpdSpotItemBag (CActor aid store) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
@@ -137,6 +153,9 @@ cmdAtomicSemSer oldState cmd = case cmd of
     let iids = EM.keys bag
     when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
       invalidateLucidLid lid
+  UpdLoseItemBag (CActor aid CStash) bag -> do
+    c <- floorStash aid
+    cmdAtomicSemSer oldState $ UpdLoseItemBag c bag
   UpdLoseItemBag (CActor aid store) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
@@ -211,6 +230,14 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdKillExit{} -> return ()
   UpdWriteSave{} -> return ()
   UpdHearFid{} -> return ()
+
+floorStash :: MonadStateRead m => ActorId -> m Container
+floorStash aid = do
+  b <- getsState $ getActorBody aid
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  case mstash of
+    Just (lid, pos) -> return $! CFloor lid pos
+    Nothing -> error $ "" `showFailure` (aid, b)
 
 invalidateArenas :: MonadServer m => m ()
 invalidateArenas = modifyServer $ \ser -> ser {svalidArenas = False}
