@@ -607,10 +607,14 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Just (k, it) -> do
-      let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
+      let !_A = assert (case c of
+            CActor _ CStash -> True  -- inaccurate stash information; OK
+            _ -> fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
       deleteItemContainer iid (k, fromIt) c
       insertItemContainer iid (k, toIt) c
-    Nothing -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)
+    Nothing -> case c of
+      CActor _ CStash -> return ()  -- inaccurate stash information; OK
+      _ -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)
 
 updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
 updAgeGame lids = do
