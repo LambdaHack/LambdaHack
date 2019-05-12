@@ -43,6 +43,8 @@ data PosAtomic =
   | PosFidAndSight FactionId LevelId [Point]
                                 -- ^ observers and the faction notice
   | PosSmell LevelId [Point]    -- ^ whomever smells all the positions, notices
+  | PosSightLevels [(LevelId, Point)]
+                                -- ^ whomever sees all the positions, notices
   | PosFid FactionId            -- ^ only the faction notices, server doesn't
   | PosFidAndSer FactionId      -- ^ faction and server notices
   | PosSer                      -- ^ only the server notices
@@ -285,7 +287,16 @@ doubleAid source target = do
 singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
-singleContainer (CActor aid _) = singleAid aid
+singleContainer (CActor aid cstore) = do
+  b <- getsState $ getActorBody aid
+  case cstore of
+    CStash -> do  -- shared stash is private
+      mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+      case mstash of
+        Just (lid, pos) ->
+          return $! PosSightLevels [(lid, pos), (blid b, bpos b)]
+        Nothing -> error $ "manipulating void stash" `showFailure` (aid, b)
+    _ -> return $! posProjBody b
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
 -- | Decompose an atomic action that is outside a client's visiblity.
@@ -304,37 +315,37 @@ breakUpdAtomic cmd = case cmd of
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdCreateItem iid item kit (CFloor lid pos)]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, item)
   UpdDestroyItem iid item kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdDestroyItem iid item kit (CFloor lid pos)]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, item)
   UpdSpotItem verbose iid kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdSpotItem verbose iid kit (CFloor lid pos)]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
   UpdLoseItem verbose iid kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdLoseItem verbose iid kit (CFloor lid pos)]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
   UpdSpotItemBag (CActor aid CStash) bag -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdSpotItemBag (CFloor lid pos) bag]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, bag)
   UpdLoseItemBag (CActor aid CStash) bag -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [UpdLoseItemBag (CFloor lid pos) bag]
-      Nothing -> return []
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, bag)
   UpdMoveActor aid fromP toP -> do
     -- We assume other factions don't see leaders and we know the actor's
     -- faction always sees the atomic command and no other commands
@@ -372,13 +383,15 @@ breakUpdAtomic cmd = case cmd of
                 | Just target == mtleader ]
   _ -> return []
 
--- | Which map level the @PosAtomic@ refers to, if any.
+-- | What is the main map level the @PosAtomic@ refers to, if any.
 lidOfPos :: PosAtomic -> Maybe LevelId
 lidOfPos posAtomic =
   case posAtomic of
     PosSight lid _ -> Just lid
     PosFidAndSight _ lid _ -> Just lid
     PosSmell lid _ -> Just lid
+    PosSightLevels [] -> Nothing
+    PosSightLevels ((lid, _) : _) -> Just lid
     PosFid{} -> Nothing
     PosFidAndSer{} -> Nothing
     PosSer -> Nothing
@@ -395,6 +408,9 @@ seenAtomicCli knowEvents fid perLid posAtomic =
     PosFidAndSight fid2 lid ps ->
       fid == fid2 || all (`ES.member` totalVisible (per lid)) ps || knowEvents
     PosSmell lid ps -> all (`ES.member` totalSmelled (per lid)) ps || knowEvents
+    PosSightLevels l ->
+      let visible (lid, pos) = pos `ES.member` totalVisible (per lid)
+      in all visible l || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
