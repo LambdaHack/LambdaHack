@@ -83,8 +83,9 @@ revealItems fid = do
         let arItem = discoAspect EM.! iid
             cdummy = CTrunk fid minLid originPoint  -- only @fid@ matters here
             itemKind = okind coitem itemKindId
-        unless (IA.isHumanTrinket itemKind) $  -- a hack
-          execUpdAtomic $ UpdDiscover cdummy iid itemKindId arItem
+        execUpdAtomic $ if IA.isHumanTrinket itemKind  -- a hack
+                        then UpdSpotItem False iid (1, []) cdummy
+                        else UpdDiscover cdummy iid itemKindId arItem
   generationAn <- getsServer sgenerationAn
   getKindId <- getsState $ flip getIidKindIdServer
   let kindsEqual iid iid2 = getKindId iid == getKindId iid2 && iid /= iid2
@@ -151,11 +152,6 @@ quitF status fid = do
                 && fleaderMode (gplayer fact) /= LeaderNull
                 && not keepAutomated) $
             execUpdAtomic $ UpdAutoFaction fid False
-          dungeon <- getsState sdungeon
-          let minLid = fst $ minimumBy (Ord.comparing (ldepth . snd))
-                           $ EM.assocs dungeon
-          execUpdAtomic $ UpdSpotItemBag (CTrunk fid minLid originPoint)
-                                         EM.empty
           revealItems fid
           -- Likely, by this time UI faction is no longer AI-controlled,
           -- so the score will get registered.
