@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
+import Game.LambdaHack.Definition.Defs
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -298,6 +299,42 @@ singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 -- This is computed in server's @State@ from before performing the command.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
+  UpdCreateItem iid item kit (CActor aid CStash) -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdCreateItem iid item kit (CFloor lid pos)]
+      Nothing -> return []
+  UpdDestroyItem iid item kit (CActor aid CStash) -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdDestroyItem iid item kit (CFloor lid pos)]
+      Nothing -> return []
+  UpdSpotItem verbose iid kit (CActor aid CStash) -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdSpotItem verbose iid kit (CFloor lid pos)]
+      Nothing -> return []
+  UpdLoseItem verbose iid kit (CActor aid CStash) -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdLoseItem verbose iid kit (CFloor lid pos)]
+      Nothing -> return []
+  UpdSpotItemBag (CActor aid CStash) bag -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdSpotItemBag (CFloor lid pos) bag]
+      Nothing -> return []
+  UpdLoseItemBag (CActor aid CStash) bag -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdLoseItemBag (CFloor lid pos) bag]
+      Nothing -> return []
   UpdMoveActor aid fromP toP -> do
     -- We assume other factions don't see leaders and we know the actor's
     -- faction always sees the atomic command and no other commands
