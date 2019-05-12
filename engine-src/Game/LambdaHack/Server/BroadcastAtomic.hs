@@ -84,9 +84,10 @@ handleAndBroadcast ps atomicBroken atomic = do
         sClient <- getsServer $ (EM.! fid) . sclientStates
         mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids sClient s
         sendSfx fid sfx
-      breakSend lid fid perFidLid = do
-        let send2 (cmd2, ps2) =
-              when (seenAtomicCli knowEvents fid perFidLid ps2) $ do
+      breakSend lidOriginal fid = do
+        let send2 (cmd2, ps2) = do
+              let perFid = sperFidOld EM.! fid
+              when (seenAtomicGeneralCli knowEvents fid perFid ps2) $ do
                 let iids2 = iidUpdAtomic cmd2
                 s <- getState
                 sClient <- getsServer $ (EM.! fid) . sclientStates
@@ -109,7 +110,7 @@ handleAndBroadcast ps atomicBroken atomic = do
             -- Projectiles never hear, for speed and simplicity,
             -- even though they sometimes see. There are flying cameras,
             -- but no microphones --- drones make too much noise themselves.
-            as <- getsState $ fidActorRegularAssocs fid lid
+            as <- getsState $ fidActorRegularAssocs fid lidOriginal
             case atomic of
               UpdAtomic cmd -> do
                 maids <- hearUpdAtomic as cmd
@@ -130,12 +131,11 @@ handleAndBroadcast ps atomicBroken atomic = do
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
       -- (e.g., new actor created).
-      anySend lid fid perFidLid =
-        if seenAtomicCli knowEvents fid perFidLid ps
-        then sendAtomic fid atomic
-        else breakSend lid fid perFidLid
       posLevel lid fid =
-        anySend lid fid $ sperFidOld EM.! fid EM.! lid
+        let perFidLid = sperFidOld EM.! fid EM.! lid
+        in if seenAtomicCli knowEvents fid lid perFidLid ps
+           then sendAtomic fid atomic
+           else breakSend lid fid
       -- This can be so simple and fast, because eash @PosAtomic@
       -- constructor, and so each atomic action, spans only a single level.
       send fid = case ps of
@@ -249,10 +249,11 @@ sendPer fid lid outPer inPer perNew = do
     sClient <- getsServer $ (EM.! fid) . sclientStates
     let forget = atomicForget fid lid outPer sClient
     remember <- getsState $ atomicRemember lid inPer sClient
-    let seenNew = seenAtomicCli False fid perNew
-        notRegister UpdRegisterItems{} = False
-        notRegister _ = True
-    psRem <- mapM posUpdAtomic $ filter notRegister remember
+    let seenNew = seenAtomicCli False fid lid perNew
+        onLevel UpdRegisterItems{} = True
+        onLevel UpdLoseStashFaction{} = True
+        onLevel _ = False
+    psRem <- mapM posUpdAtomic $ filter (not . onLevel) remember
     -- Verify that we remember only currently seen things.
     let !_A = assert (allB seenNew psRem) ()
     mapM_ (sendUpdateCheck fid) forget
