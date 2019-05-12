@@ -396,17 +396,21 @@ updQuitFaction fid fromSt toSt = do
 updSpotStashFaction :: MonadStateWrite m
                     => FactionId -> LevelId -> Point -> m ()
 updSpotStashFaction fid lid pos = do
-  let adj fa = assert (gstash fa == Nothing
-                       `blame` "unexpected full gstash"
-                       `swith` (fid, lid, pos, fa))
-               $ fa {gstash = Just (lid, pos)}
+  let adj fa = fa {gstash = Just (lid, pos)}
+    -- the stash may be outdated, but not empty and it's correct,
+    -- because we know stash may be only one, so here it's added,
+    -- the old one is removed, despite us not seeing its location;
+    -- warning: in this form, this is not reversible, no undo,
+    -- so we'd need to add the required @UpdLoseStashFaction@
+    -- elsehwere, similarly as @LoseTile@ is added when FOV
+    -- reveals that tile is different than expected
   updateFaction fid adj
 
 updLoseStashFaction :: MonadStateWrite m
                     => FactionId -> LevelId -> Point -> m ()
 updLoseStashFaction fid lid pos = do
   let adj fa = assert (gstash fa == Just (lid, pos)
-                       `blame` "unexpected gstash"
+                       `blame` "unexpected lack of gstash"
                        `swith` (fid, lid, pos, fa))
                $ fa {gstash = Nothing}
   updateFaction fid adj
