@@ -91,7 +91,7 @@ handleAndBroadcast ps atomicBroken atomic = do
           case psBroken of
             _ : _ -> do
               let send2 (cmd2, ps2) =
-                    when (seenAtomicGeneralCli knowEvents fid perFid ps2) $
+                    when (seenAtomicCli knowEvents fid perFid ps2) $
                       sendAtomic fid (UpdAtomic cmd2)
               mapM_ send2 $ zip atomicBroken psBroken
             [] -> do  -- hear only here; broken commands are never loud
@@ -131,7 +131,7 @@ handleAndBroadcast ps atomicBroken atomic = do
       -- (e.g., new actor created).
       send fid = do
         let perFid = sperFidOld EM.! fid
-        if seenAtomicGeneralCli knowEvents fid perFid ps
+        if seenAtomicCli knowEvents fid perFid ps
         then sendAtomic fid atomic
         else breakSend fid perFid
   -- Factions that are eliminated by the command are processed as well,
@@ -236,12 +236,12 @@ sendPer fid lid outPer inPer perNew = do
     sClient <- getsServer $ (EM.! fid) . sclientStates
     let forget = atomicForget fid lid outPer sClient
     remember <- getsState $ atomicRemember lid inPer sClient
-    let seenNew = seenAtomicCli False fid lid perNew
+    let seenNew = seenAtomicCli False fid (EM.singleton lid perNew)
         onLevel UpdRegisterItems{} = True
         onLevel UpdLoseStashFaction{} = True
         onLevel _ = False
     psRem <- mapM posUpdAtomic $ filter (not . onLevel) remember
-    -- Verify that we remember only currently seen things.
+    -- Verify that we remember the currently seen things.
     let !_A = assert (allB seenNew psRem) ()
     mapM_ (sendUpdateCheck fid) forget
     mapM_ (sendUpdate fid) remember

@@ -5,7 +5,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic, iidUpdAtomic, iidSfxAtomic
-  , breakUpdAtomic, lidOfPos, seenAtomicCli, seenAtomicGeneralCli, seenAtomicSer
+  , breakUpdAtomic, lidOfPos, seenAtomicCli, seenAtomicSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , posProjBody, singleAid, doubleAid, singleContainer
@@ -385,36 +385,16 @@ lidOfPos posAtomic =
     PosAll -> Nothing
     PosNone -> Nothing
 
--- | Given the client, its perception level and an atomic command, determine
--- if the client notices the command.
-seenAtomicCli :: Bool -> FactionId -> LevelId -> Perception -> PosAtomic -> Bool
-seenAtomicCli knowEvents fid lidOut per posAtomic =
-  case posAtomic of
-    PosSight lid ps -> assert (lid == lidOut)
-                       $ all (`ES.member` totalVisible per) ps || knowEvents
-    PosFidAndSight fid2 lid ps ->
-      assert (lid == lidOut)
-      $ fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
-    PosSmell lid ps -> assert (lid == lidOut)
-                       $ all (`ES.member` totalSmelled per) ps || knowEvents
-    PosFid fid2 -> fid == fid2
-    PosFidAndSer fid2 -> fid == fid2
-    PosSer -> False
-    PosAll -> True
-    PosNone -> error $ "no position possible" `showFailure` fid
-
 -- | Given the client, its perception and an atomic command, determine
 -- if the client notices the command.
-seenAtomicGeneralCli :: Bool -> FactionId -> PerLid -> PosAtomic -> Bool
-seenAtomicGeneralCli knowEvents fid perLid posAtomic =
-  case posAtomic of
-    PosSight lid ps -> let per = perLid EM.! lid
-                       in all (`ES.member` totalVisible per) ps || knowEvents
+seenAtomicCli :: Bool -> FactionId -> PerLid -> PosAtomic -> Bool
+seenAtomicCli knowEvents fid perLid posAtomic =
+  let per = (perLid EM.!)
+  in case posAtomic of
+    PosSight lid ps -> all (`ES.member` totalVisible (per lid)) ps || knowEvents
     PosFidAndSight fid2 lid ps ->
-      let per = perLid EM.! lid
-      in fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
-    PosSmell lid ps -> let per = perLid EM.! lid
-                       in all (`ES.member` totalSmelled per) ps || knowEvents
+      fid == fid2 || all (`ES.member` totalVisible (per lid)) ps || knowEvents
+    PosSmell lid ps -> all (`ES.member` totalSmelled (per lid)) ps || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
