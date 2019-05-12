@@ -5,7 +5,7 @@
 -- <https://github.com/LambdaHack/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic, iidUpdAtomic, iidSfxAtomic
-  , breakUpdAtomic, seenAtomicCli, seenAtomicGeneralCli, seenAtomicSer
+  , breakUpdAtomic, lidOfPos, seenAtomicCli, seenAtomicGeneralCli, seenAtomicSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , posProjBody, singleAid, doubleAid, singleContainer
@@ -372,6 +372,19 @@ breakUpdAtomic cmd = case cmd of
                 | Just target == mtleader ]
   _ -> return []
 
+-- | Which map level the @PosAtomic@ refers to, if any.
+lidOfPos :: PosAtomic -> Maybe LevelId
+lidOfPos posAtomic =
+  case posAtomic of
+    PosSight lid _ -> Just lid
+    PosFidAndSight _ lid _ -> Just lid
+    PosSmell lid _ -> Just lid
+    PosFid{} -> Nothing
+    PosFidAndSer{} -> Nothing
+    PosSer -> Nothing
+    PosAll -> Nothing
+    PosNone -> Nothing
+
 -- | Given the client, its perception level and an atomic command, determine
 -- if the client notices the command.
 seenAtomicCli :: Bool -> FactionId -> LevelId -> Perception -> PosAtomic -> Bool
@@ -406,7 +419,7 @@ seenAtomicGeneralCli knowEvents fid perLid posAtomic =
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
-    PosNone -> error $ "no position possible" `showFailure` fid
+    PosNone -> False
 
 -- | Determine whether the server would see a command that has
 -- the given visibilty conditions.

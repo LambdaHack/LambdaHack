@@ -84,69 +84,56 @@ handleAndBroadcast ps atomicBroken atomic = do
         sClient <- getsServer $ (EM.! fid) . sclientStates
         mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids sClient s
         sendSfx fid sfx
-      breakSend lidOriginal fid = do
-        let send2 (cmd2, ps2) = do
-              let perFid = sperFidOld EM.! fid
-              when (seenAtomicGeneralCli knowEvents fid perFid ps2) $ do
-                let iids2 = iidUpdAtomic cmd2
-                s <- getState
-                sClient <- getsServer $ (EM.! fid) . sclientStates
-                mapM_ (sendUpdateCheck fid) $ cmdItemsFromIids iids2 sClient s
-                sendUpdate fid cmd2
-        psBroken <- mapM posUpdAtomic atomicBroken
-        case psBroken of
-          _ : _ -> mapM_ send2 $ zip atomicBroken psBroken
-          [] -> do  -- hear only here; broken commands are never loud
-            -- At most @minusM@ applied total over a single actor move,
-            -- to avoid distress as if wounded (which is measured via deltas).
-            -- So, if faction hits an enemy and it yells, hearnig yell will
-            -- not decrease calm over the decrease from hearing strike.
-            -- This may accumulate over time, though, to eventually wake up
-            -- sleeping actors.
-            let drainCalmOnce aid = do
-                  b <- getsState $ getActorBody aid
-                  when (deltaBenign $ bcalmDelta b) $
-                    execUpdAtomic $ UpdRefillCalm aid minusM
-            -- Projectiles never hear, for speed and simplicity,
-            -- even though they sometimes see. There are flying cameras,
-            -- but no microphones --- drones make too much noise themselves.
-            as <- getsState $ fidActorRegularAssocs fid lidOriginal
-            case atomic of
-              UpdAtomic cmd -> do
-                maids <- hearUpdAtomic as cmd
-                case maids of
-                  Nothing -> return ()
-                  Just aids -> do
-                    sendUpdate fid $ UpdHearFid fid
-                                   $ HearUpd (not $ null aids) cmd
-                    mapM_ drainCalmOnce aids
-              SfxAtomic cmd -> do
-                mhear <- hearSfxAtomic as cmd
-                case mhear of
-                  Nothing -> return ()
-                  Just (hearMsg, aids) -> do
-                    sendUpdate fid $ UpdHearFid fid hearMsg
-                    mapM_ drainCalmOnce aids
+      breakSend fid perFid = case lidOfPos ps of
+        Nothing -> return ()
+        Just lidOriginal -> do
+          psBroken <- mapM posUpdAtomic atomicBroken
+          case psBroken of
+            _ : _ -> do
+              let send2 (cmd2, ps2) =
+                    when (seenAtomicGeneralCli knowEvents fid perFid ps2) $
+                      sendAtomic fid (UpdAtomic cmd2)
+              mapM_ send2 $ zip atomicBroken psBroken
+            [] -> do  -- hear only here; broken commands are never loud
+              -- At most @minusM@ applied total over a single actor move,
+              -- to avoid distress as if wounded (which is measured via deltas).
+              -- So, if faction hits an enemy and it yells, hearnig yell will
+              -- not decrease calm over the decrease from hearing strike.
+              -- This may accumulate over time, though, to eventually wake up
+              -- sleeping actors.
+              let drainCalmOnce aid = do
+                    b <- getsState $ getActorBody aid
+                    when (deltaBenign $ bcalmDelta b) $
+                      execUpdAtomic $ UpdRefillCalm aid minusM
+              -- Projectiles never hear, for speed and simplicity,
+              -- even though they sometimes see. There are flying cameras,
+              -- but no microphones --- drones make too much noise themselves.
+              as <- getsState $ fidActorRegularAssocs fid lidOriginal
+              case atomic of
+                UpdAtomic cmd -> do
+                  maids <- hearUpdAtomic as cmd
+                  case maids of
+                    Nothing -> return ()
+                    Just aids -> do
+                      sendUpdate fid $ UpdHearFid fid
+                                     $ HearUpd (not $ null aids) cmd
+                      mapM_ drainCalmOnce aids
+                SfxAtomic cmd -> do
+                  mhear <- hearSfxAtomic as cmd
+                  case mhear of
+                    Nothing -> return ()
+                    Just (hearMsg, aids) -> do
+                      sendUpdate fid $ UpdHearFid fid hearMsg
+                      mapM_ drainCalmOnce aids
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
       -- (e.g., new actor created).
-      posLevel lid fid =
-        let perFidLid = sperFidOld EM.! fid EM.! lid
-        in if seenAtomicCli knowEvents fid lid perFidLid ps
-           then sendAtomic fid atomic
-           else breakSend lid fid
-      -- This can be so simple and fast, because eash @PosAtomic@
-      -- constructor, and so each atomic action, spans only a single level.
-      send fid = case ps of
-        PosSight lid _ -> posLevel lid fid
-        PosFidAndSight _ lid _ -> posLevel lid fid
-        PosSmell lid _ -> posLevel lid fid
-        PosFid fid2 -> when (fid == fid2) $ sendAtomic fid atomic
-        PosFidAndSer fid2 -> when (fid == fid2) $ sendAtomic fid atomic
-        PosSer -> return ()
-        PosAll -> sendAtomic fid atomic
-        PosNone -> error $ "" `showFailure` (fid, atomic)
+      send fid = do
+        let perFid = sperFidOld EM.! fid
+        if seenAtomicGeneralCli knowEvents fid perFid ps
+        then sendAtomic fid atomic
+        else breakSend fid perFid
   -- Factions that are eliminated by the command are processed as well,
   -- because they are not deleted from @sfactionD@.
   factionD <- getsState sfactionD
