@@ -28,9 +28,9 @@ import           GHC.Exts (inline)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
+import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Definition.Defs
 
 -- | Weighted distance between points along shortest paths.
@@ -247,7 +247,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let free = fromEnum (bfsDistance dist) < actorsAvoidedDist
+                 else let free = fromEnum (bfsDistance dist) > actorsAvoidedDist
                                  || p `IM.notMember` EM.enumMapToIntMap lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster

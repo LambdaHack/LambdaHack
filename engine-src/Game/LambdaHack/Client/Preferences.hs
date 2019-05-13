@@ -71,6 +71,8 @@ effectToBenefit cops fid factionD eff =
     IK.RefillCalm p -> delta $ if p > 0
                                then min 100 (fromIntegral p)
                                else max (-500) (5 * fromIntegral p)
+                         -- this may cause ice to be attractive to AI,
+                         -- but it doesn't trigger it due to no @ConsideredByAI@
     IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100;
                               -- divided by 3, because impression needed first
