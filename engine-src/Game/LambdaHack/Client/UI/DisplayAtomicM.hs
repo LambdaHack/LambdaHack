@@ -266,7 +266,16 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
-  UpdSpotStashFaction _ lid pos -> do
+  UpdSpotStashFaction fid lid pos -> do
+    side <- getsClient sside
+    if fid == side then
+      msgAdd MsgDiplomacy "You set up the shared inventory stash of your team."
+    else do
+      fact <- getsState $ (EM.! fid) . sfactionD
+      let fidName = MU.Text $ gname fact
+      msgAdd MsgDiplomacy $
+        makeSentence [ "you have found the current"
+                     , MU.WownW fidName "hoard location" ]
     CCUI{coscreen} <- getsSession sccui
     animate lid $ actorX coscreen pos
   UpdLoseStashFaction _ lid pos -> do
