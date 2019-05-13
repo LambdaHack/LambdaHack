@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , itemOverlay, skillsOverlay, placesFromState, placeParts, placesOverlay
   , pickNumber, lookAtItems, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
+  , ppContainerWownW
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , lookAtTile, lookAtActors
@@ -671,3 +672,23 @@ spoilsBlurb currencyName total dungeonTotal =
          , MU.CarAWs total $ MU.Text currencyName
          , "out of the rumoured total"
          , MU.Cardinal dungeonTotal ]
+
+ppContainerWownW :: MonadClientUI m
+                 => (ActorId -> m MU.Part) -> Bool -> Container -> m [MU.Part]
+ppContainerWownW ownerFun addPrepositions c = case c of
+  CFloor{} -> return ["nearby"]
+  CEmbed{} -> return ["embedded nearby"]
+  CActor aid store -> do
+    side <- getsClient sside
+    b <- getsState $ getActorBody aid
+    owner <- ownerFun aid
+    fidName <- getsState $ gname . (EM.! bfid b) . sfactionD
+    let (preposition, noun) = ppCStore store
+        prep = [MU.Text preposition | addPrepositions]
+    return $! prep ++ case store of
+      CGround -> [MU.Text noun, "under", owner]
+      CStash -> if bfid b /= side
+                then [MU.WownW (MU.Text fidName) (MU.Text noun)]
+                else [MU.Text noun]
+      _ -> [MU.WownW owner (MU.Text noun)]
+  CTrunk{} -> error $ "" `showFailure` c

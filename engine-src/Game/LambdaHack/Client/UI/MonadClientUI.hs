@@ -15,8 +15,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
   , leaderTgtToPos, xhairToPos, clearAimMode, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
-  , resetSessionStart, resetGameStart
-  , partActorLeader, partActorLeaderFun, partPronounLeader
+  , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
   , tryRestore, leaderSkillsClientUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -379,12 +378,6 @@ resetGameStart = do
         , snframes = 0
         , sallNframes = sallNframes cli + nframes }
 
-partActorLeaderCommon :: Maybe ActorId -> ActorUI -> Actor -> ActorId -> MU.Part
-partActorLeaderCommon mleader bUI b aid = case mleader of
-  Just leader | aid == leader -> "you"
-  _ | bhp b <= 0 -> MU.Phrase ["the fallen", partActor bUI]
-  _ -> partActor bUI
-
 -- | The part of speech describing the actor or the "you" pronoun if he is
 -- the leader of the observer's faction.
 partActorLeader :: MonadClientUI m => ActorId -> m MU.Part
@@ -392,15 +385,10 @@ partActorLeader aid = do
   mleader <- getsClient sleader
   bUI <- getsSession $ getActorUI aid
   b <- getsState $ getActorBody aid
-  return $! partActorLeaderCommon mleader bUI b aid
-
-partActorLeaderFun :: MonadClientUI m => m (ActorId -> MU.Part)
-partActorLeaderFun = do
-  mleader <- getsClient sleader
-  sess <- getSession
-  s <- getState
-  return $! \aid ->
-    partActorLeaderCommon mleader (getActorUI aid sess) (getActorBody aid s) aid
+  return $! case mleader of
+    Just leader | aid == leader -> "you"
+    _ | bhp b <= 0 -> MU.Phrase ["the fallen", partActor bUI]
+    _ -> partActor bUI
 
 -- | The part of speech with the actor's pronoun or "you" if a leader
 -- of the client's faction.

@@ -1167,23 +1167,19 @@ itemMenuHuman cmdAction = do
           localTime <- getsState $ getLocalTime (blid b)
           found <- getsState $ findIid leader (bfid b) iid
           factionD <- getsState sfactionD
-          sactorUI <- getsSession sactorUI
           jlid <- getsSession $ (EM.! iid) . sitemUI
           let !_A = assert (not (null found) || fromCStore == CGround
                             `blame` (iid, leader)) ()
               fAlt (aid, (_, store)) = aid /= leader || store /= fromCStore
               foundAlt = filter fAlt found
-              foundUI = map (\(aid, bs) ->
-                               (aid, bs, sactorUI EM.! aid)) foundAlt
-              foundKeys = map (K.KM K.NoModifier . K.Fun)
-                              [1 .. length foundUI]  -- starting from 1!
-              ppLoc bUI2 store =
-                let phr = makePhrase $ ppCStoreWownW False store
-                                     $ partActor bUI2
-                in "[" ++ T.unpack phr ++ "]"
-              foundTexts = map (\(_, (_, store), bUI2) ->
-                                  ppLoc bUI2 store) foundUI
-              foundPrefix = textToAL $
+              partRawActor aid = getsSession (partActor . getActorUI aid)
+              ppLoc aid store = do
+                parts <- ppContainerWownW partRawActor
+                                          False
+                                          (CActor aid store)
+                return $! "[" ++ T.unpack (makePhrase parts) ++ "]"
+          foundTexts <- mapM (\(aid, (_, store)) -> ppLoc aid store) foundAlt
+          let foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
               desc = itemDesc markParagraphs (bfid b) factionD
@@ -1192,8 +1188,9 @@ itemMenuHuman cmdAction = do
               alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (last alPrefix) + 1
-              ks = zip foundKeys $ map (\(_, (_, store), bUI2) ->
-                                          ppLoc bUI2 store) foundUI
+              foundKeys = map (K.KM K.NoModifier . K.Fun)
+                              [1 .. length foundAlt]  -- starting from 1!
+          let ks = zip foundKeys foundTexts
               (ovFoundRaw, kxsFound) = wrapOKX ystart xstart rwidth ks
               ovFound = glueLines alPrefix ovFoundRaw
           report <- getReportUI

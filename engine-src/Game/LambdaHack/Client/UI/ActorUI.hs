@@ -2,8 +2,7 @@
 -- | UI aspects of actors.
 module Game.LambdaHack.Client.UI.ActorUI
   ( ActorUI(..), ActorDictUI
-  , keySelected, partActor, partPronoun
-  , ppCStoreWownW, ppContainerWownW, tryFindActor, tryFindHeroK
+  , keySelected, partActor, partPronoun, tryFindActor, tryFindHeroK
   ) where
 
 import Prelude ()
@@ -20,7 +19,6 @@ import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 
 data ActorUI = ActorUI
   { bsymbol  :: Char         -- ^ individual map symbol
@@ -46,23 +44,6 @@ partActor b = MU.Text $ bname b
 -- | The part of speech containing the actor's pronoun.
 partPronoun :: ActorUI -> MU.Part
 partPronoun b = MU.Text $ bpronoun b
-
-ppCStoreWownW :: Bool -> CStore -> MU.Part -> [MU.Part]
-ppCStoreWownW addPrepositions store owner =
-  let (preposition, noun) = ppCStore store
-      prep = [MU.Text preposition | addPrepositions]
-  in prep ++ case store of
-    CGround -> [MU.Text noun, "under", owner]
-    CStash -> [MU.Text noun]
-    _ -> [MU.WownW owner (MU.Text noun) ]
-
-ppContainerWownW :: (ActorId -> MU.Part) -> Bool -> Container -> [MU.Part]
-ppContainerWownW ownerFun addPrepositions c = case c of
-  CFloor{} -> ["nearby"]
-  CEmbed{} -> ["embedded nearby"]
-  CActor aid store -> let owner = ownerFun aid
-                      in ppCStoreWownW addPrepositions store owner
-  CTrunk{} -> error $ "" `showFailure` c
 
 tryFindActor :: State -> (ActorId -> Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p = find (uncurry p) $ EM.assocs $ sactorD s

@@ -116,14 +116,12 @@ displayRespUpdAtomicUI cmd = case cmd of
                  -- which is useful, because it shows "charging".
                  itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
                | isJust $ boldpos b -> do
-                 ownerFun <- partActorLeaderFun
-                 let wown = ppContainerWownW ownerFun True c
+                 wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
                            (MU.Text $ makePhrase $ "grow" : wown) c
                | otherwise -> return ()
           _ | isJust $ boldpos b -> do
-            ownerFun <- partActorLeaderFun
-            let wown = ppContainerWownW ownerFun True c
+            wown <- ppContainerWownW partActorLeader True c
             itemVerbMU MsgItemCreation iid kit
                        (MU.Text $ makePhrase $ "appear" : wown) c
           _ -> return ()
@@ -744,9 +742,8 @@ spotItem verbose iid kit c = do
   when verbose $ case c of
     CActor aid store | store `elem` [CEqp, CGround, CStash] -> do
       -- Actor fetching an item from or to shared stash, most probably.
-      subject <- partActorLeader aid
-      let ownW = ppCStoreWownW False store subject
-          verb = MU.Text $ makePhrase $ "be added to" : ownW
+      ownW <- ppContainerWownW partActorLeader False (CActor aid store)
+      let verb = MU.Text $ makePhrase $ "be added to" : ownW
       itemVerbMU MsgItemMove iid kit verb c
     _ -> return ()
 
@@ -1022,11 +1019,12 @@ discover c iid = do
   (noMsg, nameWhere) <- case c of
     CActor aidOwner storeOwner -> do
       bOwner <- getsState $ getActorBody aidOwner
-      partOwner <- partActorLeader aidOwner
-      let name = if bproj bOwner
-                 then []
-                 else ppCStoreWownW True storeOwner partOwner
-          isOurOrgan = bfid bOwner == side && storeOwner == COrgan
+      name <- if bproj bOwner
+              then return []
+              else ppContainerWownW partActorLeader
+                                    True
+                                    (CActor aidOwner storeOwner)
+      let isOurOrgan = bfid bOwner == side && storeOwner == COrgan
             -- assume own faction organs known intuitively
       return (isOurOrgan, name)
     CTrunk _ _ p | p == originPoint -> return (True, [])
@@ -1417,7 +1415,6 @@ ppSfxMsg sfxMsg = case sfxMsg of
     if aidSeen then do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
-      aidPronoun <- partPronounLeader aid
         -- assume almost always a prior message mentions the object
       factionD <- getsState sfactionD
       localTime <- getsState $ getLocalTime (blid b)
@@ -1425,8 +1422,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       side <- getsClient sside
       let kit = (1, [])
           (name, powers) = partItem (bfid b) factionD localTime itemFull kit
-          storeOwn = ppCStoreWownW True cstore aidPronoun
-          cond = [ "condition"
+      storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
+      let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
           -- Note that when enemy actor causes the extension to himsefl,
           -- the player is not notified at all. So the shorter blurb below
