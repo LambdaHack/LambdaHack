@@ -180,17 +180,20 @@ createPath aid tapTgt = do
   lvl <- getLevel $ blid b
   let stopAtUnwalkable tapPath@(Just AndPath{..}) =
         let (walkable, rest) =
-              -- Unknown tiles are not walkable, so path stops at first such.
+              -- Unknown tiles are not walkable, so path stops just before.
               -- which is good, because by the time actor reaches the tile,
-              -- it is known and target is recalculated with new info.
+              -- it is known and target is recalculated with new info,
+              -- perhaps sidestepping the tile, e.g., if explosive.
               span (Tile.isWalkable coTileSpeedup . at lvl) pathList
         in case rest of
+          _ | null walkable -> TgtAndPath{..}
           [] -> TgtAndPath{..}
           [g] | g == pathGoal -> TgtAndPath{..}
+            -- the exception is when the tile is explicitly targetted
           newGoal : _ ->
             let newTgt = TPoint TBlock (blid b) newGoal
                 newPath = AndPath{ pathSource = bpos b
-                                 , pathList = walkable ++ [newGoal]
+                                 , pathList = walkable  -- no @newGoal@
                                  , pathGoal = newGoal
                                  , pathLen = length walkable + 1 }
             in TgtAndPath{tapTgt = newTgt, tapPath = Just newPath}
