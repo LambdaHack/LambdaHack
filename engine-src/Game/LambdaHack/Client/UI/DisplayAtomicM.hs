@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
     -- * Internal operations
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
-  , itemVerbMU, itemAidVerbMU
+  , itemVerbMU, itemAidVerbMU, manyItemsAidVerbMU
   , createActorUI, destroyActorUI, spotItem, moveActor, displaceActorUI
   , moveItemUI, quitFactionUI
   , displayGameOverLoot, displayGameOverAnalytics
@@ -146,9 +146,22 @@ displayRespUpdAtomicUI cmd = case cmd of
     let verb = MU.Text $ makePhrase $ "be removed from" : ownW
     itemVerbMU MsgItemMove iid kit verb c
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag c bag ->
-    mapWithKeyM_ (\iid kit -> spotItem True iid kit c) bag
-  UpdLoseItemBag{} -> return ()
+  UpdSpotItemBag c bag -> do
+    mapWithKeyM_ (\iid kit -> spotItem False iid kit c) bag
+      -- @False@ for less spam and becuase summarized below
+    case c of
+      CActor aid store -> do
+        let verb = MU.Text $ verbCStore store
+        b <- getsState $ getActorBody aid
+        fact <- getsState $ (EM.! bfid b) . sfactionD
+        let underAI = isAIFact fact
+        mleader <- getsClient sleader
+        if Just aid == mleader && not underAI then
+          manyItemsAidVerbMU MsgItemMove aid verb bag Right
+        else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+          manyItemsAidVerbMU MsgItemMove aid verb bag (Left . Just)
+      _ -> return ()
+  UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
   -- Move actors and items.
   UpdMoveActor aid source target -> moveActor aid source target
   UpdWaitActor{} -> return ()
@@ -549,8 +562,6 @@ itemVerbMU msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msgClass msg
 
--- We assume the item is inside the specified container.
--- So, this function can't be used for, e.g., @UpdDestroyItem@.
 itemAidVerbMU :: MonadClientUI m
               => MsgClass -> ActorId -> MU.Part
               -> ItemId -> Either (Maybe Int) Int
@@ -559,12 +570,12 @@ itemAidVerbMU msgClass aid verb iid ek = do
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   factionD <- getsState sfactionD
-  -- The item may no longer be in @c@, but it was
-  itemFull <- getsState $ itemToFull iid
   let lid = blid body
       fakeKit = (1, [])
   localTime <- getsState $ getLocalTime lid
   subject <- partActorLeader aid
+  -- The item may no longer be in @c@, but it was.
+  itemFull <- getsState $ itemToFull iid
   let object = case ek of
         Left (Just n) -> partItemWs side factionD n localTime itemFull fakeKit
         Left Nothing -> let (name, powers) =
@@ -574,6 +585,34 @@ itemAidVerbMU msgClass aid verb iid ek = do
                          partItemShort side factionD localTime itemFull fakeKit
                    in MU.Phrase ["the", MU.Car1Ws n name1, powers]
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
+  msgAdd msgClass msg
+
+manyItemsAidVerbMU :: MonadClientUI m
+                   => MsgClass -> ActorId -> MU.Part
+                   -> ItemBag -> (Int -> Either (Maybe Int) Int)
+                   -> m ()
+manyItemsAidVerbMU msgClass aid verb bag ekf = do
+  body <- getsState $ getActorBody aid
+  side <- getsClient sside
+  factionD <- getsState sfactionD
+  let lid = blid body
+      fakeKit = (1, [])
+  localTime <- getsState $ getLocalTime lid
+  subject <- partActorLeader aid
+  -- The item may no longer be in @c@, but it was.
+  itemToF <- getsState $ flip itemToFull
+  let object (iid, (k, _)) =
+        let itemFull = itemToF iid
+        in case ekf k of
+          Left (Just n) -> partItemWs side factionD n localTime itemFull fakeKit
+          Left Nothing -> let (name, powers) = partItem side factionD localTime
+                                                        itemFull fakeKit
+                          in MU.Phrase [name, powers]
+          Right n -> let (name1, powers) = partItemShort side factionD localTime
+                                                         itemFull fakeKit
+                     in MU.Phrase ["the", MU.Car1Ws n name1, powers]
+      msg = makeSentence [ MU.SubjectVerbSg subject verb
+                         , MU.WWandW $ map object $ EM.assocs bag]
   msgAdd msgClass msg
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
