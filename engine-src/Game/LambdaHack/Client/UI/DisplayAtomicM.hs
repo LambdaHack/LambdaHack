@@ -92,7 +92,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRegisterItems{} -> return ()
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
-  UpdCreateItem iid _item kit c -> do
+  UpdCreateItem iid _ kit c -> do
     recordItemLid iid c
     updateItemSlot c iid
     case c of
@@ -132,25 +132,18 @@ displayRespUpdAtomicUI cmd = case cmd of
         markDisplayNeeded lid
       CTrunk{} -> return ()
   UpdDestroyItem iid _ kit c -> do
-    itemVerbMU MsgItemDestruction iid kit "disappear" c
+    ownW <- ppContainerWownW partActorLeader False c
+    let verb = MU.Text $ makePhrase $ "disappear from" : ownW
+    itemVerbMU MsgItemDestruction iid kit verb c
     lid <- getsState $ lidFromC c
     markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
   UpdSpotItem verbose iid kit c -> spotItem verbose iid kit c
-  {-
-  UpdLoseItem False _ _ _ _ -> return ()
-  -- The message is rather cryptic, so let's disable it until it's decided
-  -- if anemy equipments should be displayed, etc.
-  UpdLoseItem True iid _ kit c@(CActor aid store) | store /= CStash -> do
-    -- Actor putting an item into shared stash, most probably.
-    side <- getsClient sside
-    b <- getsState $ getActorBody aid
-    subject <- partActorLeader aid b
-    let ownW = ppCStoreWownW store subject
-        verb = MU.Text $ makePhrase $ "be removed from" : ownW
-    when (bfid b == side) $ itemVerbMU iid kit verb c
-  -}
+  UpdLoseItem True iid kit c -> do
+    ownW <- ppContainerWownW partActorLeader False c
+    let verb = MU.Text $ makePhrase $ "be removed from" : ownW
+    itemVerbMU MsgItemMove iid kit verb c
   UpdLoseItem{} -> return ()
   UpdSpotItemBag c bag ->
     mapWithKeyM_ (\iid kit -> spotItem True iid kit c) bag
@@ -720,7 +713,7 @@ destroyActorUI destroy aid b = do
 
 spotItem :: MonadClientUI m
          => Bool -> ItemId -> ItemQuant -> Container -> m ()
-spotItem verbose iid kit c = do
+spotItem verbose iid kit@(k, _) c = do
   -- This is due to a move, or similar, which will be displayed,
   -- so no extra @markDisplayNeeded@ needed here and in similar places.
   recordItemLid iid c
@@ -744,16 +737,21 @@ spotItem verbose iid kit c = do
                 bag <- getsState $ getFloorBag lid p
                 modifySession $ \sess ->
                   sess {sxhair = Just $ TPoint (TItem bag) lidV p}
-          itemVerbMU MsgItemSpot iid kit "be located" c
+          itemVerbMU MsgItemMove iid kit "be located" c
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
   when verbose $ case c of
-    CActor aid store | store `elem` [CEqp, CGround, CStash] -> do
-      -- Actor fetching an item from or to shared stash, most probably.
-      ownW <- ppContainerWownW partActorLeader False (CActor aid store)
-      let verb = MU.Text $ makePhrase $ "be added to" : ownW
-      itemVerbMU MsgItemMove iid kit verb c
+    CActor aid store -> do
+      let verb = MU.Text $ verbCStore store
+      b <- getsState $ getActorBody aid
+      fact <- getsState $ (EM.! bfid b) . sfactionD
+      let underAI = isAIFact fact
+      mleader <- getsClient sleader
+      if Just aid == mleader && not underAI then
+        itemAidVerbMU MsgItemMove aid verb iid (Right k)
+      else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+        itemAidVerbMU MsgItemMove aid verb iid (Left $ Just k)
     _ -> return ()
 
 recordItemLid :: MonadClientUI m => ItemId -> Container -> m ()
@@ -1030,9 +1028,7 @@ discover c iid = do
       bOwner <- getsState $ getActorBody aidOwner
       name <- if bproj bOwner
               then return []
-              else ppContainerWownW partActorLeader
-                                    True
-                                    (CActor aidOwner storeOwner)
+              else ppContainerWownW partActorLeader True c
       let isOurOrgan = bfid bOwner == side && storeOwner == COrgan
             -- assume own faction organs known intuitively
       return (isOurOrgan, name)
