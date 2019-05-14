@@ -53,6 +53,7 @@ handleCmdAtomicServer :: MonadServerAtomic m
 handleCmdAtomicServer cmd = do
   ps <- posUpdAtomic cmd
   atomicBroken <- breakUpdAtomic cmd
+    -- needs to be done before the states are changed and may make no sense
   executedOnServer <- if seenAtomicSer ps
                       then execUpdAtomicSer cmd
                       else return False

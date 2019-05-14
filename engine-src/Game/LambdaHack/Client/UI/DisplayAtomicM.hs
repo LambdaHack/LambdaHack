@@ -1062,7 +1062,7 @@ discover c iid = do
     CTrunk _ _ p | p == originPoint -> return (True, [])
       -- the special reveal at game over, using fake @CTrunk@; don't spam
     _ -> return (False, [])
-  let kit = EM.findWithDefault (1, []) iid bag
+  let kit = EM.findWithDefault (1, []) iid bag  -- may be used up by that time
       knownName = partItemMediumAW side factionD localTime itemFull kit
       -- Make sure the two names in the message differ. We may end up with
       -- "the pair turns out to be a pair of trousers of destruction",

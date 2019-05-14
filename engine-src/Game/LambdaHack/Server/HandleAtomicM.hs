@@ -4,7 +4,8 @@ module Game.LambdaHack.Server.HandleAtomicM
   ( cmdAtomicSemSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , floorStash, invalidateArenas, updateSclear, updateSlit
+  , validateFloor, validateFloorBag, levelOfStash
+  , invalidateArenas, updateSclear, updateSlit
   , invalidateLucidLid, invalidateLucidAid
   , actorHasShine, itemAffectsShineRadius, itemAffectsPerRadius
   , addPerActor, addPerActorAny, deletePerActor, deletePerActorAny
@@ -61,31 +62,31 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
           , sactorAn = EM.delete aid (sactorAn ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
-  UpdCreateItem iid _ _ (CFloor lid _) -> do
+  UpdCreateItem iid _ _ (CFloor lid _) -> validateFloor iid lid
+  UpdCreateItem iid _ _ (CActor aid CStash) -> do
+    lid <- levelOfStash aid
+    validateFloor iid lid
+  UpdCreateItem iid _ _ (CActor aid CGround) -> do
+    lid <- getsState $ blid . getActorBody aid
+    validateFloor iid lid
+  UpdCreateItem iid _ _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdCreateItem iid item kit (CActor aid CStash) -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdCreateItem iid item kit c
-  UpdCreateItem iid _ _ (CActor aid store) -> do
-    discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid [store]) $
+    when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+    when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdCreateItem{} -> return ()
-  UpdDestroyItem iid _ _ (CFloor lid _) -> do
+  UpdDestroyItem iid _ _ (CFloor lid _) -> validateFloor iid lid
+  UpdDestroyItem iid _ _  (CActor aid CStash) -> do
+    lid <- levelOfStash aid
+    validateFloor iid lid
+  UpdDestroyItem iid _ _ (CActor aid CGround) -> do
+    lid <- getsState $ blid . getActorBody aid
+    validateFloor iid lid
+  UpdDestroyItem iid _ _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdDestroyItem iid item kit (CActor aid CStash) -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdDestroyItem iid item kit c
-  UpdDestroyItem iid _ _ (CActor aid store) -> do
-    discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid [store]) $
+    when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+    when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdDestroyItem{} -> return ()
   UpdSpotActor aid b -> do
     -- On server, it does't affect aspects, but does affect lucid (Ascend).
@@ -105,65 +106,61 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
           , sactorAn = EM.delete aid (sactorAn ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
-  UpdSpotItem _ iid _ (CFloor lid _) -> do
+  UpdSpotItem _ iid _ (CFloor lid _) -> validateFloor iid lid
+  UpdSpotItem _ iid _  (CActor aid CStash) -> do
+    lid <- levelOfStash aid
+    validateFloor iid lid
+  UpdSpotItem _ iid _ (CActor aid CGround) -> do
+    lid <- getsState $ blid . getActorBody aid
+    validateFloor iid lid
+  UpdSpotItem _ iid _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdSpotItem verbose iid kit (CActor aid CStash) -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdSpotItem verbose iid kit c
-  UpdSpotItem _ iid _ (CActor aid store) -> do
-    discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid [store]) $
+    when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+    when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdSpotItem{} -> return ()
-  UpdLoseItem _ iid _ (CFloor lid _) -> do
+  UpdLoseItem _ iid _ (CFloor lid _) -> validateFloor iid lid
+  UpdLoseItem _ iid _ (CActor aid CStash) -> do
+    lid <- levelOfStash aid
+    validateFloor iid lid
+  UpdLoseItem _ iid _ (CActor aid CGround) -> do
+    lid <- getsState $ blid . getActorBody aid
+    validateFloor iid lid
+  UpdLoseItem _ iid _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid []) $ invalidateLucidLid lid
-  UpdLoseItem verbose iid kit (CActor aid CStash) -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdLoseItem verbose iid kit c
-  UpdLoseItem _ iid _ (CActor aid store) -> do
-    discoAspect <- getsState sdiscoAspect
-    when (itemAffectsShineRadius discoAspect iid [store]) $
+    when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
+    when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdLoseItem{} -> return ()
-  UpdSpotItemBag (CFloor lid _) bag  -> do
-    discoAspect <- getsState sdiscoAspect
-    let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
-      invalidateLucidLid lid
+  UpdSpotItemBag (CFloor lid _) bag  -> validateFloorBag bag lid
   UpdSpotItemBag (CActor aid CStash) bag -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdSpotItemBag c bag
-  UpdSpotItemBag (CActor aid store) bag -> do
+    lid <- levelOfStash aid
+    validateFloorBag bag lid
+  UpdSpotItemBag (CActor aid CGround) bag -> do
+    lid <- getsState $ blid . getActorBody aid
+    validateFloorBag bag lid
+  UpdSpotItemBag (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (any (itemAffectsPerRadius discoAspect) iids) $
-        reconsiderPerActor aid
+    when (any (itemAffectsPerRadius discoAspect) iids) $
+      reconsiderPerActor aid
   UpdSpotItemBag{} -> return ()
-  UpdLoseItemBag (CFloor lid _) bag -> do
-    discoAspect <- getsState sdiscoAspect
-    let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid []) iids) $
-      invalidateLucidLid lid
+  UpdLoseItemBag (CFloor lid _) bag -> validateFloorBag bag lid
   UpdLoseItemBag (CActor aid CStash) bag -> do
-    c <- floorStash aid
-    cmdAtomicSemSer oldState $ UpdLoseItemBag c bag
-  UpdLoseItemBag (CActor aid store) bag -> do
+    lid <- levelOfStash aid
+    validateFloorBag bag lid
+  UpdLoseItemBag (CActor aid CGround) bag -> do
+    lid <- levelOfStash aid
+    validateFloorBag bag lid
+  UpdLoseItemBag (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid [store]) iids) $
+    when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
       invalidateLucidAid aid
-    when (store `elem` [CEqp, COrgan]) $
-      when (any (itemAffectsPerRadius discoAspect) iids) $
-        reconsiderPerActor aid
+    when (any (itemAffectsPerRadius discoAspect) iids) $
+      reconsiderPerActor aid
   UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do
     actorMaxSkills <- getsState sactorMaxSkills
@@ -178,26 +175,12 @@ cmdAtomicSemSer oldState cmd = case cmd of
     invalidatePerActor aid1
     invalidatePerActor aid2
   UpdMoveItem iid _k aid s1 s2 -> do
-    discoAspect <- getsState sdiscoAspect
-    let itemAffectsPer = itemAffectsPerRadius discoAspect iid
-        invalidatePer = when itemAffectsPer $ reconsiderPerActor aid
-        itemAffectsShine = itemAffectsShineRadius discoAspect iid [s1, s2]
-        invalidateLucid = when itemAffectsShine $ invalidateLucidAid aid
-    case s1 of
-      CEqp -> case s2 of
-        COrgan -> return ()
-        _ -> do
-          invalidateLucid
-          invalidatePer
-      COrgan -> case s2 of
-        CEqp -> return ()
-        _ -> do
-          invalidateLucid
-          invalidatePer
-      _ -> do
-        invalidateLucid
-          -- from itemAffects, s2 provides light or s1 is CGround or CStash
-        when (s2 `elem` [CEqp, COrgan]) invalidatePer
+    let dummyVerbose = False
+        dummyKit = (1, [])
+    cmdAtomicSemSer oldState $
+      UpdLoseItem dummyVerbose iid dummyKit (CActor aid s1)
+    cmdAtomicSemSer oldState $
+      UpdSpotItem dummyVerbose iid dummyKit (CActor aid s2)
   UpdRefillHP{} -> return ()
   UpdRefillCalm aid _ -> do
     actorMaxSk <- getsState $ getActorMaxSkills aid
@@ -252,12 +235,24 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdWriteSave{} -> return ()
   UpdHearFid{} -> return ()
 
-floorStash :: MonadStateRead m => ActorId -> m Container
-floorStash aid = do
+validateFloor :: MonadServer m => ItemId -> LevelId -> m ()
+validateFloor iid lid = do
+  discoAspect <- getsState sdiscoAspect
+  when (itemAffectsShineRadius discoAspect iid) $ invalidateLucidLid lid
+
+validateFloorBag :: MonadServer m => ItemBag -> LevelId -> m ()
+validateFloorBag bag lid = do
+  discoAspect <- getsState sdiscoAspect
+  let iids = EM.keys bag
+  when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
+    invalidateLucidLid lid
+
+levelOfStash :: MonadStateRead m => ActorId -> m LevelId
+levelOfStash aid = do
   b <- getsState $ getActorBody aid
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   case mstash of
-    Just (lid, pos) -> return $! CFloor lid pos
+    Just (lid, _) -> return lid
     Nothing -> error $ "" `showFailure` (aid, b)
 
 invalidateArenas :: MonadServer m => m ()
@@ -306,12 +301,10 @@ actorHasShine actorMaxSkills aid = case EM.lookup aid actorMaxSkills of
   Just actorMaxSk -> Ability.getSk Ability.SkShine actorMaxSk > 0
   Nothing -> error $ "" `showFailure` aid
 
-itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> [CStore] -> Bool
-itemAffectsShineRadius discoAspect iid stores =
-  (null stores || not (null $ intersect stores [CEqp, COrgan, CGround]))
-  && case EM.lookup iid discoAspect of
-    Just arItem -> IA.getSkill Ability.SkShine arItem /= 0
-    Nothing -> error $ "" `showFailure` iid
+itemAffectsShineRadius :: DiscoveryAspect -> ItemId -> Bool
+itemAffectsShineRadius discoAspect iid = case EM.lookup iid discoAspect of
+  Just arItem -> IA.getSkill Ability.SkShine arItem /= 0
+  Nothing -> error $ "" `showFailure` iid
 
 itemAffectsPerRadius :: DiscoveryAspect -> ItemId -> Bool
 itemAffectsPerRadius discoAspect iid =
