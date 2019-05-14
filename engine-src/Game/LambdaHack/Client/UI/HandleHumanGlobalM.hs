@@ -728,10 +728,9 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   let overStash = mstash == Just (blid b, bpos b)
       calmE = calmEnough b actorMaxSk
   if destCStore == CEqp && not calmE then failSer ItemNotCalm
+  else if destCStore == CGround && overStash then failSer ItemOverStash
   else do
-    let cLegalE | destCStore == CGround && overStash = []
-                | otherwise = cLegalRaw
-                              \\ ([CGround | overStash] ++ [CEqp | not calmE])
+    let cLegalE = cLegalRaw \\ ([CGround | overStash] ++ [CEqp | not calmE])
         cLegal = case lastItemMove of
           Just (lastFrom, lastDest) | lastDest == destCStore
                                       && lastFrom `elem` cLegalE ->

@@ -151,7 +151,10 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
                   tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
                   ppLegal = makePhrase [MU.WWxW "nor" tLegal]
               return $ Left $ "no items" <+> ppLegal
-            [CEqp] -> return $! Left "not calm enough to handle equipment"
+            [CEqp] -> return $! Left "not calm enough to remove equipment"
+            [CGround, CEqp] ->  -- order matters
+              return $! Left "not calm enough to remove equipment"
+            [CGround] -> return $! Left "you vainly paw through your own hoard"
             _ -> return $! Left "no relevant items"
     haveThis@(headThisActor : _) -> do
       itemToF <- getsState $ flip itemToFull
