@@ -379,25 +379,29 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                 (cCurAfterCalm, cRestAfterCalm) =
                   if forward
                   then case cRest ++ mcCur of
+                    c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
+                      | not calmE && overStash ->
+                        (c3, c1 : c2 : rest)
+                    c1@(MStore CGround) : c2@(MStore CEqp) : c3 : rest
+                      | not calmE && overStash ->
+                        (c3, c1 : c2 : rest)
                     c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, c1 : rest)
-                    [MStore CEqp] | not calmE ->
-                      error $ "" `showFailure` cRest
                     c1@(MStore CGround) : c2 : rest | overStash ->
                       (c2, c1 : rest)
-                    [MStore CGround] | overStash ->
-                      error $ "" `showFailure` cRest
                     c1 : rest -> (c1, rest)
                     [] -> error $ "" `showFailure` cRest
                   else case reverse $ mcCur ++ cRest of
+                    c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
+                      | not calmE && overStash ->
+                        (c3, reverse $ c1 : c2 : rest)
+                    c1@(MStore CGround) : c2@(MStore CEqp) : c3 : rest
+                      | not calmE && overStash ->
+                        (c3, reverse $ c1 : c2 : rest)
                     c1@(MStore CEqp) : c2 : rest | not calmE ->
                       (c2, reverse $ c1 : rest)
-                    [MStore CEqp] | not calmE ->
-                      error $ "" `showFailure` cRest
                     c1@(MStore CGround) : c2 : rest | overStash ->
                       (c2, reverse $ c1 : rest)
-                    [MStore CGround] | overStash ->
-                      error $ "" `showFailure` cRest
                     c1 : rest -> (c1, reverse rest)
                     [] -> error $ "" `showFailure` cRest
             recCall numPrefix cCurAfterCalm cRestAfterCalm itemDialogState
