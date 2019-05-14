@@ -156,7 +156,7 @@ hearUpdAtomic as cmd = do
     UpdDestroyActor _ body _ | not $ bproj body -> do
       aids <- filterHear (bpos body) as
       return $ Just aids  -- profound
-    UpdCreateItem iid item _ (CActor aid cstore) -> do
+    UpdCreateItem True iid item _ (CActor aid cstore) -> do
       -- Kinetic damage implies the explosion is loud enough to cause noise.
       itemKind <- getsState $ getItemKindServer item
       discoAspect <- getsState sdiscoAspect
@@ -281,12 +281,12 @@ atomicRemember lid inPer sClient s =
                 [UpdLoseStashFaction False fid lid pos]
             (Nothing, Just (lidStash, pos))
               | lidStash == lid && pos `ES.member` totalVisible inPer ->
-                [UpdSpotStashFaction fid lid pos]
+                [UpdSpotStashFaction True fid lid pos]
             (Just (lidStash1, pos1), Just (lidStash2, pos2))
               | gstash factClient /= gstash fact ->
                 if | lidStash2 == lid && pos2 `ES.member` totalVisible inPer ->
                      [ UpdLoseStashFaction False fid lidStash1 pos1
-                     , UpdSpotStashFaction fid lid pos2 ]
+                     , UpdSpotStashFaction True fid lid pos2 ]
                    | lidStash1 == lid && pos1 `ES.member` totalVisible inPer ->
                      [UpdLoseStashFaction False fid lid pos1]
                    | otherwise -> []

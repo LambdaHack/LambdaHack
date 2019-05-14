@@ -164,7 +164,7 @@ processWatchfulness mwait aid = do
     WWatch ->
       when (mwait == Just True) $  -- only long wait switches to wait state
         if Ability.getSk Ability.SkWait actorMaxSk >= 2 then do
-          addCondition "braced" aid
+          addCondition False "braced" aid
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
         else
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)

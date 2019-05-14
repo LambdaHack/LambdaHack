@@ -76,8 +76,8 @@ handleUpdAtomic cmd = case cmd of
   UpdRegisterItems ais -> updRegisterItems ais
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
-  UpdCreateItem iid item kit c -> updCreateItem iid item kit c
-  UpdDestroyItem iid item kit c -> updDestroyItem iid item kit c
+  UpdCreateItem _ iid item kit c -> updCreateItem iid item kit c
+  UpdDestroyItem _ iid item kit c -> updDestroyItem iid item kit c
   UpdSpotActor aid body -> updSpotActor aid body
   UpdLoseActor aid body -> updLoseActor aid body
   UpdSpotItem _ iid kit c -> updSpotItem iid kit c
@@ -92,7 +92,7 @@ handleUpdAtomic cmd = case cmd of
   UpdRefillCalm aid n -> updRefillCalm aid n
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
-  UpdSpotStashFaction fid lid pos -> updSpotStashFaction fid lid pos
+  UpdSpotStashFaction _ fid lid pos -> updSpotStashFaction fid lid pos
   UpdLoseStashFaction _ fid lid pos -> updLoseStashFaction fid lid pos
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->

@@ -81,8 +81,8 @@ posUpdAtomic cmd = case cmd of
   UpdRegisterItems{} -> return PosNone
   UpdCreateActor _ body _ -> return $! posProjBody body
   UpdDestroyActor _ body _ -> return $! posProjBody body
-  UpdCreateItem _ _ _ c -> singleContainer c
-  UpdDestroyItem _ _ _ c -> singleContainer c
+  UpdCreateItem _ _ _ _ c -> singleContainer c
+  UpdDestroyItem _ _ _ _ c -> singleContainer c
   UpdSpotActor _ body -> return $! posProjBody body
   UpdLoseActor _ body -> return $! posProjBody body
   UpdSpotItem _ _ _ c -> singleContainer c
@@ -110,7 +110,7 @@ posUpdAtomic cmd = case cmd of
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
-  UpdSpotStashFaction fid lid pos -> return $! PosFidAndSight fid lid [pos]
+  UpdSpotStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLoseStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
@@ -326,17 +326,19 @@ lidPosOfStash b cstore =
 -- This is computed in server's @State@ from before performing the command.
 breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
-  UpdCreateItem iid item kit (CActor aid CStash) -> do
+  UpdCreateItem verbose iid item kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
-      Just (lid, pos) -> return [UpdCreateItem iid item kit (CFloor lid pos)]
+      Just (lid, pos) ->
+        return [UpdCreateItem verbose iid item kit (CFloor lid pos)]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, item)
-  UpdDestroyItem iid item kit (CActor aid CStash) -> do
+  UpdDestroyItem verbose iid item kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
-      Just (lid, pos) -> return [UpdDestroyItem iid item kit (CFloor lid pos)]
+      Just (lid, pos) ->
+        return [UpdDestroyItem verbose iid item kit (CFloor lid pos)]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, item)
   UpdSpotItem verbose iid kit (CActor aid CStash) -> do
     b <- getsState $ getActorBody aid

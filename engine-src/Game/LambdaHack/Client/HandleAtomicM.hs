@@ -59,11 +59,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdRegisterItems ais -> mapM_ (addItemToDiscoBenefit . fst) ais
   UpdCreateActor aid b ais -> createActor aid b ais
   UpdDestroyActor aid b _ -> destroyActor aid b True
-  UpdCreateItem iid _ _ (CActor aid store) -> do
+  UpdCreateItem _ iid _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     addItemToDiscoBenefit iid
-  UpdCreateItem iid _ _ _ -> addItemToDiscoBenefit iid
-  UpdDestroyItem _ _ _ (CActor aid store) ->
+  UpdCreateItem _ iid _ _ _ -> addItemToDiscoBenefit iid
+  UpdDestroyItem _ _ _ _ (CActor aid store) ->
     wipeBfsIfItemAffectsSkills [store] aid
   UpdDestroyItem{} -> return ()
   UpdSpotActor aid b -> do

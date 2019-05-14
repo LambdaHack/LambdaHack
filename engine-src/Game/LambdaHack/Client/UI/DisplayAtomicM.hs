@@ -93,12 +93,11 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRegisterItems{} -> return ()
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
-  UpdCreateItem iid _ kit c -> do
+  UpdCreateItem verbose iid _ kit c -> do
     recordItemLid iid c
     updateItemSlot c iid
-    case c of
-      CActor aid store -> do
-        b <- getsState $ getActorBody aid
+    if verbose then case c of
+      CActor aid store ->
         case store of
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
@@ -116,28 +115,31 @@ displayRespUpdAtomicUI cmd = case cmd of
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
-               | isJust $ boldpos b -> do
+               | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
                            (MU.Text $ makePhrase $ "grow" : wown) c
-               | otherwise -> return ()
-          _ | isJust $ boldpos b -> do
+          _ -> do
             wown <- ppContainerWownW partActorLeader True c
             itemVerbMU MsgItemCreation iid kit
                        (MU.Text $ makePhrase $ "appear" : wown) c
-          _ -> return ()
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         itemVerbMU MsgItemCreation iid kit
                    (MU.Text $ "appear" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
-  UpdDestroyItem iid _ kit c -> do
-    ownW <- ppContainerWownW partActorLeader False c
-    let verb = MU.Text $ makePhrase $ "disappear from" : ownW
-    itemVerbMU MsgItemDestruction iid kit verb c
-    lid <- getsState $ lidFromC c
-    markDisplayNeeded lid
+    else do
+      lid <- getsState $ lidFromC c
+      markDisplayNeeded lid
+  UpdDestroyItem verbose iid _ kit c -> do
+    if verbose then do
+      ownW <- ppContainerWownW partActorLeader False c
+      let verb = MU.Text $ makePhrase $ "disappear from" : ownW
+      itemVerbMU MsgItemDestruction iid kit verb c
+    else do
+      lid <- getsState $ lidFromC c
+      markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
   UpdSpotItem verbose iid kit c -> spotItem verbose iid kit c
@@ -272,16 +274,18 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (maybe True (null . fst) mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
-  UpdSpotStashFaction fid lid pos -> do
-    side <- getsClient sside
-    if fid == side then
-      msgAdd MsgDiplomacy "You set up the shared inventory stash of your team."
-    else do
-      fact <- getsState $ (EM.! fid) . sfactionD
-      let fidName = MU.Text $ gname fact
-      msgAdd MsgDiplomacy $
-        makeSentence [ "you have found the current"
-                     , MU.WownW fidName "hoard location" ]
+  UpdSpotStashFaction verbose fid lid pos -> do
+    when verbose $ do
+      side <- getsClient sside
+      if fid == side then
+        msgAdd MsgDiplomacy
+               "You set up the shared inventory stash of your team."
+      else do
+        fact <- getsState $ (EM.! fid) . sfactionD
+        let fidName = MU.Text $ gname fact
+        msgAdd MsgDiplomacy $
+          makeSentence [ "you have found the current"
+                       , MU.WownW fidName "hoard location" ]
     CCUI{coscreen} <- getsSession sccui
     animate lid $ actorX coscreen pos
   UpdLoseStashFaction verbose fid lid pos -> do

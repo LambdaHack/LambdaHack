@@ -68,8 +68,8 @@ data UpdAtomic =
     UpdRegisterItems [(ItemId, Item)]
   | UpdCreateActor ActorId Actor [(ItemId, Item)]
   | UpdDestroyActor ActorId Actor [(ItemId, Item)]
-  | UpdCreateItem ItemId Item ItemQuant Container
-  | UpdDestroyItem ItemId Item ItemQuant Container
+  | UpdCreateItem Bool ItemId Item ItemQuant Container
+  | UpdDestroyItem Bool ItemId Item ItemQuant Container
   | UpdSpotActor ActorId Actor
   | UpdLoseActor ActorId Actor
   | UpdSpotItem Bool ItemId ItemQuant Container
@@ -88,7 +88,7 @@ data UpdAtomic =
   -- Change faction attributes.
   | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
                    (Maybe (FactionAnalytics, GenerationAnalytics))
-  | UpdSpotStashFaction FactionId LevelId Point
+  | UpdSpotStashFaction Bool FactionId LevelId Point
   | UpdLoseStashFaction Bool FactionId LevelId Point
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
@@ -202,8 +202,10 @@ undoUpdAtomic cmd = case cmd of
   UpdRegisterItems{} -> Nothing  -- harmless and never forgotten
   UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
   UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
-  UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c
-  UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
+  UpdCreateItem verbose iid item k c ->
+    Just $ UpdDestroyItem verbose iid item k c
+  UpdDestroyItem verbose iid item k c ->
+    Just $ UpdCreateItem verbose iid item k c
   UpdSpotActor aid body -> Just $ UpdLoseActor aid body
   UpdLoseActor aid body -> Just $ UpdSpotActor aid body
   UpdSpotItem verbose iid k c -> Just $ UpdLoseItem verbose iid k c
@@ -220,10 +222,10 @@ undoUpdAtomic cmd = case cmd of
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdQuitFaction fid fromSt toSt manalytics ->
     Just $ UpdQuitFaction fid toSt fromSt manalytics
-  UpdSpotStashFaction fid lid pos ->
-    Just $ UpdLoseStashFaction False fid lid pos
-  UpdLoseStashFaction _ fid lid pos ->
-    Just $ UpdSpotStashFaction fid lid pos
+  UpdSpotStashFaction verbose fid lid pos ->
+    Just $ UpdLoseStashFaction verbose fid lid pos
+  UpdLoseStashFaction verbose fid lid pos ->
+    Just $ UpdSpotStashFaction verbose fid lid pos
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl

@@ -62,27 +62,27 @@ cmdAtomicSemSer oldState cmd = case cmd of
           , strajPushedBy = EM.delete aid (strajPushedBy ser)
           , sactorAn = EM.delete aid (sactorAn ser)
           , sactorStasis = ES.delete aid (sactorStasis ser) }
-  UpdCreateItem iid _ _ (CFloor lid _) -> validateFloor iid lid
-  UpdCreateItem iid _ _ (CActor aid CStash) -> do
+  UpdCreateItem _ iid _ _ (CFloor lid _) -> validateFloor iid lid
+  UpdCreateItem _ iid _ _ (CActor aid CStash) -> do
     lid <- levelOfStash aid
     validateFloor iid lid
-  UpdCreateItem iid _ _ (CActor aid CGround) -> do
+  UpdCreateItem _ iid _ _ (CActor aid CGround) -> do
     lid <- getsState $ blid . getActorBody aid
     validateFloor iid lid
-  UpdCreateItem iid _ _ (CActor aid _) -> do
+  UpdCreateItem _ iid _ _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
     when (itemAffectsPerRadius discoAspect iid) $ reconsiderPerActor aid
   UpdCreateItem{} -> return ()
-  UpdDestroyItem iid _ _ (CFloor lid _) -> validateFloor iid lid
-  UpdDestroyItem iid _ _  (CActor aid CStash) -> do
+  UpdDestroyItem _ iid _ _ (CFloor lid _) -> validateFloor iid lid
+  UpdDestroyItem _ iid _ _  (CActor aid CStash) -> do
     lid <- levelOfStash aid
     validateFloor iid lid
-  UpdDestroyItem iid _ _ (CActor aid CGround) -> do
+  UpdDestroyItem _ iid _ _ (CActor aid CGround) -> do
     lid <- getsState $ blid . getActorBody aid
     validateFloor iid lid
-  UpdDestroyItem iid _ _ (CActor aid _) -> do
+  UpdDestroyItem _ iid _ _ (CActor aid _) -> do
     discoAspect <- getsState sdiscoAspect
     when (itemAffectsShineRadius discoAspect iid) $
       invalidateLucidAid aid
@@ -192,7 +192,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
     when (radiusOld /= radiusNew) $ invalidatePerActor aid
   UpdTrajectory{} -> return ()
   UpdQuitFaction{} -> return ()
-  UpdSpotStashFaction fid lid _ -> invalidatePerFidLid fid lid
+  UpdSpotStashFaction _ fid lid _ -> invalidatePerFidLid fid lid
   UpdLoseStashFaction _ fid lid _ -> invalidatePerFidLid fid lid
   UpdLeadFaction{} -> invalidateArenas
   UpdDiplFaction{} -> return ()

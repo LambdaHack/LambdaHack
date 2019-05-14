@@ -434,7 +434,7 @@ effectExplode execSfx cgroup source target = do
   let itemFreq = [(cgroup, 1)]
       -- Explosion particles are placed among organs of the victim:
       container = CActor target COrgan
-  m2 <- rollAndRegisterItem (blid tb) itemFreq container Nothing
+  m2 <- rollAndRegisterItem False (blid tb) itemFreq container Nothing
   let (iid, (ItemFull{itemKind}, (itemK, _))) =
         fromMaybe (error $ "" `showFailure` cgroup) m2
       Point x y = bpos tb
@@ -1273,7 +1273,7 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
-      iid <- registerItem (itemFull, kitNew) itemKnown c
+      iid <- registerItem True (itemFull, kitNew) itemKnown c
       -- If created not on the ground, ID it, because it won't be on pickup.
       when (store /= CGround) $
         discoverIfMinorEffects c iid (itemKindId itemFull)
@@ -1431,7 +1431,7 @@ effectPolyItem execSfx iidId target = do
                kit = (maxCount, take maxCount itemTimer)
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+           execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            effectCreateItem (Just $ bfid tb) Nothing
                             target target cstore "common item" IK.timerNone
 
@@ -1462,7 +1462,7 @@ effectRerollItem execSfx iidId target = do
                freq = pure (itemKindId, itemKind)
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdDestroyItem iid itemBase kit c
+           execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            dungeon <- getsState sdungeon
            let maxLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
                             $ EM.assocs dungeon
@@ -1477,7 +1477,7 @@ effectRerollItem execSfx iidId target = do
                      then roll100 (n - 1)
                      else return i2
            (itemKnown, (itemFull, _)) <- roll100 100
-           void $ registerItem (itemFull, kit) itemKnown c
+           void $ registerItem True (itemFull, kit) itemKnown c
            return UseUp
     _ -> error "effectRerollItem: server ignorant about an item"
 
