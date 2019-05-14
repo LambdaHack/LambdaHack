@@ -91,7 +91,7 @@ handleUpdAtomic cmd = case cmd of
   UpdTrajectory aid fromT toT -> updTrajectory aid fromT toT
   UpdQuitFaction fid fromSt toSt _ -> updQuitFaction fid fromSt toSt
   UpdSpotStashFaction fid lid pos -> updSpotStashFaction fid lid pos
-  UpdLoseStashFaction fid lid pos -> updLoseStashFaction fid lid pos
+  UpdLoseStashFaction _ fid lid pos -> updLoseStashFaction fid lid pos
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl

@@ -98,7 +98,7 @@ moveStashIfNeeded c = case c of
       Just (lid, pos) -> do
         bagStash <- getsState $ getFloorBag lid pos
         return $! if EM.null bagStash
-                  then [ UpdLoseStashFaction (bfid b) lid pos
+                  then [ UpdLoseStashFaction False (bfid b) lid pos
                        , UpdSpotStashFaction (bfid b) (blid b) (bpos b) ]
                   else []
       Nothing -> return [UpdSpotStashFaction (bfid b) (blid b) (bpos b)]

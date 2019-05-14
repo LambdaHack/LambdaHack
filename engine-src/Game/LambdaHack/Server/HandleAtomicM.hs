@@ -189,7 +189,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdTrajectory{} -> return ()
   UpdQuitFaction{} -> return ()
   UpdSpotStashFaction fid lid _ -> invalidatePerFidLid fid lid
-  UpdLoseStashFaction fid lid _ -> invalidatePerFidLid fid lid
+  UpdLoseStashFaction _ fid lid _ -> invalidatePerFidLid fid lid
   UpdLeadFaction{} -> invalidateArenas
   UpdDiplFaction{} -> return ()
   UpdTacticFaction{} -> return ()

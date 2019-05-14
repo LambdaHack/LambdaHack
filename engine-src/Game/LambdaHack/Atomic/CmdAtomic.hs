@@ -88,7 +88,7 @@ data UpdAtomic =
   | UpdQuitFaction FactionId (Maybe Status) (Maybe Status)
                    (Maybe (FactionAnalytics, GenerationAnalytics))
   | UpdSpotStashFaction FactionId LevelId Point
-  | UpdLoseStashFaction FactionId LevelId Point
+  | UpdLoseStashFaction Bool FactionId LevelId Point
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
   | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic
@@ -217,8 +217,10 @@ undoUpdAtomic cmd = case cmd of
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT
   UpdQuitFaction fid fromSt toSt manalytics ->
     Just $ UpdQuitFaction fid toSt fromSt manalytics
-  UpdSpotStashFaction fid lid pos -> Just $ UpdLoseStashFaction fid lid pos
-  UpdLoseStashFaction fid lid pos -> Just $ UpdSpotStashFaction fid lid pos
+  UpdSpotStashFaction fid lid pos ->
+    Just $ UpdLoseStashFaction False fid lid pos
+  UpdLoseStashFaction _ fid lid pos ->
+    Just $ UpdSpotStashFaction fid lid pos
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl

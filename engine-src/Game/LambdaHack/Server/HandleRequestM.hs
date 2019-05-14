@@ -14,9 +14,9 @@ module Game.LambdaHack.Server.HandleRequestM
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , execFailure, checkWaiting, processWatchfulness, managePerRequest
-  , handleRequestTimedCases, affectSmell, reqMove, reqMelee, reqMeleeChecked
-  , reqDisplace, reqAlter, reqWait, reqWait10, reqYell, reqMoveItems
-  , reqMoveItem, reqProject, reqApply
+  , handleRequestTimedCases, affectSmell, affectStash
+  , reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
+  , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqTactic, reqAutomate
 #endif
   ) where
@@ -279,6 +279,21 @@ affectSmell aid = do
       when (oldS /= newS) $
         execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
 
+affectStash :: MonadServerAtomic m => ActorId -> Point -> m ()
+affectStash aid tpos = do
+  b <- getsState $ getActorBody aid
+  actorSk <- currentSkillsServer aid
+  let abInSkill sk = isJust (btrajectory b)
+                     || Ability.getSk sk actorSk > 0
+  when (abInSkill Ability.SkMoveItem) $ do
+    let locateStash (fid, fact) = case gstash fact of
+          Just (lidS, posS)
+            | lidS == blid b && posS == tpos && fid /= bfid b ->
+              execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
+          _ -> return ()
+    factionD <- getsState sfactionD
+    mapM_ locateStash $ EM.assocs factionD
+
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
 -- so it's the server that determines if melee took place, etc.
@@ -361,9 +376,10 @@ reqMoveGeneric voluntary mayAttack source dir = do
         if abInSkill Ability.SkMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
+          affectStash source tpos
           void $ reqAlterFail voluntary source tpos
             -- possibly alter or activate
-        else execFailure source (ReqMove dir) MoveUnskilled
+       else execFailure source (ReqMove dir) MoveUnskilled
       else
         -- Client foolishly tries to move into unwalkable tile.
         execFailure source (ReqMove dir) MoveNothing
@@ -561,6 +577,8 @@ reqDisplaceGeneric voluntary source target = do
              -- so sometimes smellers will backtrack once to wipe smell. OK.
              affectSmell source
              affectSmell target
+             affectStash source tpos
+             affectStash target spos
              void $ reqAlterFail voluntary source tpos
                -- possibly alter or activate
              void $ reqAlterFail voluntary target spos

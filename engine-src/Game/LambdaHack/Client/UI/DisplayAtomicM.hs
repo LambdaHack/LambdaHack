@@ -276,7 +276,16 @@ displayRespUpdAtomicUI cmd = case cmd of
                      , MU.WownW fidName "hoard location" ]
     CCUI{coscreen} <- getsSession sccui
     animate lid $ actorX coscreen pos
-  UpdLoseStashFaction _ lid pos -> do
+  UpdLoseStashFaction verbose fid lid pos -> do
+    when verbose $ do
+      side <- getsClient sside
+      if fid == side then
+        msgAdd MsgDiplomacy "You've lost access to your shared inventory stash!"
+      else do
+        fact <- getsState $ (EM.! fid) . sfactionD
+        let fidName = MU.Text $ gname fact
+        msgAdd MsgDiplomacy $
+          makeSentence [fidName, "no longer control their hoard"]
     CCUI{coscreen} <- getsSession sccui
     animate lid $ vanish coscreen pos
   UpdLeadFaction fid (Just source) (Just target) -> do

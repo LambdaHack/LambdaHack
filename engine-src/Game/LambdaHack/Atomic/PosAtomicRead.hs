@@ -103,7 +103,7 @@ posUpdAtomic cmd = case cmd of
   UpdTrajectory aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
   UpdSpotStashFaction fid lid pos -> return $! PosFidAndSight fid lid [pos]
-  UpdLoseStashFaction fid lid pos -> return $! PosFidAndSight fid lid [pos]
+  UpdLoseStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
   UpdTacticFaction fid _ _ -> return $! PosFidAndSer fid

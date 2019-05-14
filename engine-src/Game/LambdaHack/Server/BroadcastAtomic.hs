@@ -277,17 +277,17 @@ atomicRemember lid inPer sClient s =
         $ case (gstash factClient, gstash fact) of
             (Just (lidStash, pos), Nothing)
               | lidStash == lid && pos `ES.member` totalVisible inPer ->
-                [UpdLoseStashFaction fid lid pos]
+                [UpdLoseStashFaction False fid lid pos]
             (Nothing, Just (lidStash, pos))
               | lidStash == lid && pos `ES.member` totalVisible inPer ->
                 [UpdSpotStashFaction fid lid pos]
             (Just (lidStash1, pos1), Just (lidStash2, pos2))
               | gstash factClient /= gstash fact ->
                 if | lidStash2 == lid && pos2 `ES.member` totalVisible inPer ->
-                     [ UpdLoseStashFaction fid lidStash1 pos1
+                     [ UpdLoseStashFaction False fid lidStash1 pos1
                      , UpdSpotStashFaction fid lid pos2 ]
                    | lidStash1 == lid && pos1 `ES.member` totalVisible inPer ->
-                     [UpdLoseStashFaction fid lid pos1]
+                     [UpdLoseStashFaction False fid lid pos1]
                    | otherwise -> []
             _ -> []
       atomicStash = concatMap locateStash $ zip (EM.assocs $ sfactionD sClient)
