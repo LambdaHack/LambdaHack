@@ -80,6 +80,7 @@ data UpdAtomic =
   | UpdMoveActor ActorId Point Point
   | UpdWaitActor ActorId Watchfulness Watchfulness
   | UpdDisplaceActor ActorId ActorId
+  | UpdMoveItem ItemId Int ActorId CStore CStore
   -- Change actor attributes.
   | UpdRefillHP ActorId Int64
   | UpdRefillCalm ActorId Int64
@@ -212,6 +213,8 @@ undoUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
   UpdWaitActor aid fromWS toWS -> Just $ UpdWaitActor aid toWS fromWS
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
+  UpdMoveItem iid k aid store1 store2 ->
+    Just $ UpdMoveItem iid k aid store2 store1
   UpdRefillHP aid n -> Just $ UpdRefillHP aid (-n)
   UpdRefillCalm aid n -> Just $ UpdRefillCalm aid (-n)
   UpdTrajectory aid fromT toT -> Just $ UpdTrajectory aid toT fromT

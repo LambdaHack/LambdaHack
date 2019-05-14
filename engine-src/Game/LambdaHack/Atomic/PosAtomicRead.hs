@@ -98,6 +98,14 @@ posUpdAtomic cmd = case cmd of
               else PosFidAndSight (bfid b) (blid b) [fromP, toP]
   UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
+  UpdMoveItem _ _ aid cstore1 cstore2 -> do
+    b <- getsState $ getActorBody aid
+    mlidPos1 <- lidPosOfStash b cstore1
+    mlidPos2 <- lidPosOfStash b cstore2
+    let mlidPos = mlidPos1 `mplus` mlidPos2
+    return $! maybe (posProjBody b)
+                    (\lidPos -> PosSightLevels [lidPos, (blid b, bpos b)])
+                    mlidPos
   UpdRefillHP aid _ -> singleAid aid
   UpdRefillCalm aid _ -> singleAid aid
   UpdTrajectory aid _ _ -> singleAid aid
@@ -203,6 +211,7 @@ iidUpdAtomic cmd = case cmd of
   UpdMoveActor{} -> []
   UpdWaitActor{} -> []
   UpdDisplaceActor{} -> []
+  UpdMoveItem{} -> []
   UpdRefillHP{} -> []
   UpdRefillCalm{} -> []
   UpdTrajectory{} -> []
@@ -289,15 +298,22 @@ singleContainer (CFloor lid p) = return $! PosSight lid [p]
 singleContainer (CEmbed lid p) = return $! PosSight lid [p]
 singleContainer (CActor aid cstore) = do
   b <- getsState $ getActorBody aid
+  mlidPos <- lidPosOfStash b cstore
+  return $! maybe (posProjBody b)
+                  (\lidPos -> PosSightLevels $ [lidPos, (blid b, bpos b)])
+                  mlidPos
+singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
+
+lidPosOfStash :: MonadStateRead m
+              => Actor -> CStore -> m (Maybe (LevelId, Point))
+lidPosOfStash b cstore =
   case cstore of
-    CStash -> do  -- shared stash is private
+    CStash -> do
       mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
       case mstash of
-        Just (lid, pos) ->
-          return $! PosSightLevels [(lid, pos), (blid b, bpos b)]
-        Nothing -> error $ "manipulating void stash" `showFailure` (aid, b)
-    _ -> return $! posProjBody b
-singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
+        Just{} -> return mstash
+        Nothing -> error $ "manipulating void stash" `showFailure` b
+    _ -> return Nothing
 
 -- | Decompose an atomic action that is outside a client's visiblity.
 -- The decomposed actions give less information that the original command,
@@ -346,6 +362,26 @@ breakUpdAtomic cmd = case cmd of
     case mstash of
       Just (lid, pos) -> return [UpdLoseItemBag (CFloor lid pos) bag]
       Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, bag)
+  UpdMoveItem iid k aid CStash store2 -> do
+    b <- getsState $ getActorBody aid
+    bag <- getsState $ getBodyStoreBag b CStash
+    let (k1, it1) = bag EM.! iid
+        kit = assert (k <= k1) $ (k, take k it1)
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [ UpdLoseItem True iid kit (CFloor lid pos)
+                                , UpdSpotItem True iid kit (CActor aid store2) ]
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
+  UpdMoveItem iid k aid store1 CStash -> do
+    b <- getsState $ getActorBody aid
+    bag <- getsState $ getBodyStoreBag b store1
+    let (k1, it1) = bag EM.! iid
+        kit = assert (k <= k1) $ (k, take k it1)
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [ UpdLoseItem True iid kit (CActor aid store1)
+                                , UpdSpotItem True iid kit (CFloor lid pos) ]
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
   UpdMoveActor aid fromP toP -> do
     -- We assume other factions don't see leaders and we know the actor's
     -- faction always sees the atomic command and no other commands
