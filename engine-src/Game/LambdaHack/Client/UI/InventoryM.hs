@@ -145,13 +145,14 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
   getCStoreBag <- getsState $ \s cstore -> getBodyStoreBag b cstore s
   let hasThisActor = not . EM.null . getCStoreBag
   case filter hasThisActor cLegalAfterCalm of
-    [] ->
-      if isNothing (find hasThisActor cLegalRaw) then do
-        let contLegalRaw = map MStore cLegalRaw
-            tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
-            ppLegal = makePhrase [MU.WWxW "nor" tLegal]
-        return $ Left $ "no items" <+> ppLegal
-      else return $ Left "no relevant items"
+    [] -> case filter hasThisActor cLegalRaw of
+            [] -> do
+              let contLegalRaw = map MStore cLegalRaw
+                  tLegal = map (MU.Text . ppItemDialogModeIn) contLegalRaw
+                  ppLegal = makePhrase [MU.WWxW "nor" tLegal]
+              return $ Left $ "no items" <+> ppLegal
+            [CEqp] -> return $! Left "not calm enough to handle equipment"
+            _ -> return $! Left "no relevant items"
     haveThis@(headThisActor : _) -> do
       itemToF <- getsState $ flip itemToFull
       let suitsThisActor store =
@@ -176,8 +177,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => m Suitability
-                            -- ^ which items to consider suitable
+        => m Suitability    -- ^ which items to consider suitable
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
             -> Text)        -- ^ specific prompt for only suitable items
         -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State

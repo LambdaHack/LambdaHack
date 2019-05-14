@@ -149,7 +149,7 @@ showReqFailure reqFailure = case reqFailure of
   ApplyCharging -> "cannot apply an item that is still charging"
   ApplyNoEffects -> "cannot apply an item that produces no effect"
   ItemNothing -> "wasting time on void item manipulation"
-  ItemNotCalm -> "you are too distracted to organize the equipment"
+  ItemNotCalm -> "you are too distracted to organize equipment"
   NotCalmPrecious -> "you are too distracted to handle such an exquisite item"
   ProjectUnskilled -> "too low item flinging stat"
   ProjectAimOnself -> "cannot aim at oneself"

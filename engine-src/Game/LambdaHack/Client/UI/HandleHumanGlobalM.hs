@@ -727,37 +727,39 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   lastItemMove <- getsSession slastItemMove
   let overStash = mstash == Just (blid b, bpos b)
       calmE = calmEnough b actorMaxSk
-      cLegalE | destCStore == CGround && overStash
-                || destCStore == CEqp && not calmE = []
-              | otherwise = cLegalRaw
-                            \\ ([CGround | overStash] ++ [CEqp | not calmE])
-      cLegal = case lastItemMove of
-        Just (lastFrom, lastDest) | lastDest == destCStore
-                                    && lastFrom `elem` cLegalE ->
-          lastFrom : delete lastFrom cLegalE
-        _ -> cLegalE
-      prompt = makePhrase ["What to", verb]
-      promptEqp = makePhrase ["What consumable to", verb]
-      (promptGeneric, psuit) =
-        -- We prune item list only for eqp, because other stores don't have
-        -- so clear cut heuristics. So when picking up a stash, either grab
-        -- it to auto-store things, or equip first using the pruning
-        -- and then pack/stash the rest selectively or en masse.
-        if destCStore == CEqp
-        then (promptEqp, return $ SuitsSomething $ \itemFull _kit ->
-               IA.goesIntoEqp $ aspectRecordFull itemFull)
-        else (prompt, return SuitsEverything)
-  ggi <- getFull psuit
-                 (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 cLegalRaw cLegal (not auto) True
-  case ggi of
-    Right (l, (MStore fromCStore, _)) -> do
-      modifySession $ \sess ->
-        sess {slastItemMove = Just (fromCStore, destCStore)}
-      return $ Right (fromCStore, l)
-    Left err -> failWith err
-    _ -> error $ "" `showFailure` ggi
+  if destCStore == CEqp && not calmE then failSer ItemNotCalm
+  else do
+    let cLegalE | destCStore == CGround && overStash = []
+                | otherwise = cLegalRaw
+                              \\ ([CGround | overStash] ++ [CEqp | not calmE])
+        cLegal = case lastItemMove of
+          Just (lastFrom, lastDest) | lastDest == destCStore
+                                      && lastFrom `elem` cLegalE ->
+            lastFrom : delete lastFrom cLegalE
+          _ -> cLegalE
+        prompt = makePhrase ["What to", verb]
+        promptEqp = makePhrase ["What consumable to", verb]
+        (promptGeneric, psuit) =
+          -- We prune item list only for eqp, because other stores don't have
+          -- so clear cut heuristics. So when picking up a stash, either grab
+          -- it to auto-store things, or equip first using the pruning
+          -- and then pack/stash the rest selectively or en masse.
+          if destCStore == CEqp
+          then (promptEqp, return $ SuitsSomething $ \itemFull _kit ->
+                 IA.goesIntoEqp $ aspectRecordFull itemFull)
+          else (prompt, return SuitsEverything)
+    ggi <-
+      getFull psuit
+              (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
+              (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                   cLegalRaw cLegal (not auto) True
+    case ggi of
+      Right (l, (MStore fromCStore, _)) -> do
+        modifySession $ \sess ->
+          sess {slastItemMove = Just (fromCStore, destCStore)}
+        return $ Right (fromCStore, l)
+      Left err -> failWith err
+      _ -> error $ "" `showFailure` ggi
 
 moveItems :: forall m. MonadClientUI m
           => [CStore] -> (CStore, [(ItemId, ItemQuant)]) -> CStore
@@ -803,8 +805,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             -- No recursive call here:
             return []
           _ -> retRec destCStore
-  if not calmE && CEqp `elem` [fromCStore, destCStore]
-  then failSer ItemNotCalm
+  if CEqp `elem` [fromCStore, destCStore] && not calmE then failSer ItemNotCalm
   else do
     l4 <- ret4 l 0
     return $! if null l4
@@ -841,7 +842,7 @@ projectItem (fromCStore, (iid, itemFull)) = do
   b <- getsState $ getActorBody leader
   actorMaxSk <- getsState $ getActorMaxSkills leader
   let calmE = calmEnough b actorMaxSk
-  if not calmE && fromCStore == CEqp then failSer ItemNotCalm
+  if fromCStore == CEqp && not calmE then failSer ItemNotCalm
   else do
     mpsuitReq <- psuitReq
     case mpsuitReq of
@@ -901,8 +902,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
   let skill = Ability.getSk Ability.SkApply actorSk
       calmE = calmEnough b actorMaxSk
       arItem = aspectRecordFull itemFull
-  if not calmE && fromCStore == CEqp
-  then failSer ItemNotCalm
+  if fromCStore == CEqp && not calmE then failSer ItemNotCalm
   else case permittedApply localTime skill calmE itemFull kit of
     Left reqFail -> failSer reqFail
     Right _ -> do
