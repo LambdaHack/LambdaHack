@@ -71,29 +71,28 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , "cycle x-hair among enemies"
           , AimEnemy ))
   , ("/", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
-  , ("c", ( [CmdMinimal, CmdMove]
+  , ("m", ( [CmdMinimal, CmdMove]
           , descTs closeDoorTriggers
           , AlterDir closeDoorTriggers ))
   , ("%", ([CmdMinimal, CmdMeta], "yell/yawn", Yell))
 
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")
-  , ("d", dropItems "drop item(s)")
-  , ("period", dropItems "")
+  , ("r", dropItems "remove item(s)")
   , ("f", addCmdCategory CmdItemMenu $ projectA flingTs)
   , ("C-f", addCmdCategory CmdItemMenu
             $ replaceDesc "auto-fling and keep choice"
             $ projectI flingTs)
-  , ("a", addCmdCategory CmdItemMenu $ applyI applyTs)
+  , ("t", addCmdCategory CmdItemMenu $ applyI applyTs)
   , ("C-a", addCmdCategory CmdItemMenu
             $ replaceDesc "apply and keep choice" $ applyIK applyTs)
   , ("i", moveItemTriple [CGround, CEqp] CStash
                          "item" False)
-  , ("e", moveItemTriple [CGround, CStash] CEqp
+  , ("o", moveItemTriple [CGround, CStash] CEqp
                          "item" False)
 
   -- Terrain exploration and alteration
-  , ("C", ([CmdMove], "open or close or alter", AlterDir []))
+  , ("M", ([CmdMove], "modify terrain", AlterDir []))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
@@ -102,10 +101,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("colon", ( [CmdMove]
               , "run to x-hair collectively for 25 steps"
               , Macro ["C-colon", "C-quotedbl", "C-V"] ))
-  , ("x", ( [CmdMove]
+  , ("[", ( [CmdMove]
           , "explore nearest unknown spot"
           , autoexploreCmd ))
-  , ("X", ( [CmdMove]
+  , ("]", ( [CmdMove]
           , "autoexplore 25 times"
           , autoexplore25Cmd ))
   , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-V"]))
@@ -113,14 +112,14 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
-  , ("E", ( [CmdItem, CmdDashboard]
-          , "manage equipment of the leader"
+  , ("O", ( [CmdItem, CmdDashboard]
+          , "manage the equipment outfit of the leader"
           , ChooseItemMenu (MStore CEqp) ))
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"
           , ChooseItemMenu (MStore CGround) ))
-  , ("A", ( [CmdItem, CmdDashboard]
-          , "manage all owned items"
+  , ("T", ( [CmdItem, CmdDashboard]
+          , "manage total team belongings"
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdItem, CmdDashboard]
           , "describe organs of the leader"
