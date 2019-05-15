@@ -855,8 +855,10 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     upds <- generalMoveItem True iid k fromC toC
     mapM_ execUpdAtomic upds
     itemFull <- getsState $ itemToFull iid
-    when (fromCStore == CGround) $  -- pick up
-      discoverIfMinorEffects toC iid (itemKindId itemFull)
+    -- Let any item manipulation attempt to identify, in case the item
+    -- got into stash, e.g., by being thrown at the stash location,
+    -- and gets identified only when equipped or dropped and picked up again.
+    discoverIfMinorEffects toC iid (itemKindId itemFull)
     -- The first recharging period after equipping is random,
     -- between 1 and 2 standard timeouts of the item.
     -- We reset timeout for equipped periodic items and also for items

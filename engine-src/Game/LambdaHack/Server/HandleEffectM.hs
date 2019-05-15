@@ -1275,6 +1275,8 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
       -- already existing items.
       iid <- registerItem True (itemFull, kitNew) itemKnown c
       -- If created not on the ground, ID it, because it won't be on pickup.
+      -- If ground and stash coincide, unindentified item enters stash,
+      -- so will be identified when equipped, used or dropped and picked again.
       when (store /= CGround) $
         discoverIfMinorEffects c iid (itemKindId itemFull)
       -- Now, if timer change requested, change the timer, but in the new items,
