@@ -1311,7 +1311,7 @@ effectDropItem execSfx iidId ngroup kcopy store grp target = do
   let is = filter ((/= iidId) . fst) isRaw
   if | bproj tb || null is -> return UseDud
      | ngroup == maxBound && kcopy == maxBound
-       && store `elem` [CEqp, CStash]
+       && store `elem` [CStash, CEqp]
        && fhasGender (gplayer fact)  -- hero in Allure's decontamination chamber
        && (cdiff curChalSer == 1     -- at lowest difficulty for its faction
            && any (fhasUI . gplayer . snd)
@@ -1556,7 +1556,7 @@ effectIdentify execSfx iidId target = do
           allAssocs <- getsState $ fullAssocs target [store]
           go <- tryFull store allAssocs
           if go then return UseUp else tryStore rest
-  tryStore [CGround, CEqp, CStash]
+  tryStore [CGround, CStash, CEqp]
 
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> ContentId ItemKind -> ItemKind -> m ()
@@ -1589,7 +1589,7 @@ effectDetect execSfx d radius target pos = do
       embedHasLoot iid = any effectHasLoot $ IK.ieffects $ getKind iid
       reported acc _ _ itemKind = acc && itemKindIsLoot itemKind
       effectHasLoot (IK.CreateItem cstore grp _) =
-        cstore `elem` [CGround, CEqp, CStash]
+        cstore `elem` [CGround, CStash, CEqp]
         && ofoldlGroup' coitem grp reported True
       effectHasLoot IK.PolyItem = True
       effectHasLoot IK.RerollItem = True

@@ -42,9 +42,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 
   -- Minimal command set, in the desired presentation order.
   -- A lot of these are not necessary, but may be familiar to new players.
-  , ("E", ( [CmdMinimal, CmdItem, CmdDashboard]
-          , "manage equipment of the leader"
-          , ChooseItemMenu (MStore CEqp) ))
+  , ("I", ( [CmdMinimal, CmdItem, CmdDashboard]
+          , "manage the shared inventory stash"
+          , ChooseItemMenu (MStore CStash) ))
   , ("g", addCmdCategory CmdMinimal $ grabItems "grab item(s)")
   , ("Escape", ( [CmdMinimal, CmdAim]
                , "open main menu/finish aiming"
@@ -113,9 +113,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             , Macro ["C-KP_Begin", "V"] ))
 
   -- Item use, continued
-  , ("I", ( [CmdItem, CmdDashboard]
-          , "manage the shared inventory stash"
-          , ChooseItemMenu (MStore CStash) ))
+  , ("E", ( [CmdItem, CmdDashboard]
+          , "manage equipment of the leader"
+          , ChooseItemMenu (MStore CEqp) ))
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"
           , ChooseItemMenu (MStore CGround) ))

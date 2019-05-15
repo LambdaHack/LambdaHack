@@ -89,7 +89,7 @@ getStoreItem :: MonadClientUI m
              -> m ( Either Text (ItemId, ItemBag, SingleItemSlots)
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
-  let itemCs = map MStore [CEqp, CStash, CGround]
+  let itemCs = map MStore [CStash, CEqp, CGround]
       loreCs = map MLore [minBound..maxBound] ++ [MPlaces]
       allCs = case cInitial of
         MLore{} -> loreCs

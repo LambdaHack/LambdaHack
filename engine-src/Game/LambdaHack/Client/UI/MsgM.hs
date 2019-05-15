@@ -60,10 +60,11 @@ promptMainKeys = do
   ours <- getsState $ fidActorNotProjGlobalAssocs side
   revCmd <- revCmdMap
   let kmHelp = revCmd K.undefinedKM HumanCmd.Hint
-      kmViewEqp = revCmd K.undefinedKM (HumanCmd.ChooseItemMenu (MStore CEqp))
-      kmItemEqp = revCmd K.undefinedKM
-                         (HumanCmd.MoveItem [CGround, CStash] CEqp
-                                            Nothing False)
+      kmViewStash = revCmd K.undefinedKM
+                           (HumanCmd.ChooseItemMenu (MStore CStash))
+      kmItemStash = revCmd K.undefinedKM
+                           (HumanCmd.MoveItem [CGround, CEqp] CStash
+                                              Nothing False)
       kmXhairPointerFloor = revCmd K.undefinedKM HumanCmd.XhairPointerFloor
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLaptop} <- getsSession sUIOptions
@@ -80,13 +81,13 @@ promptMainKeys = do
       describePos = if mmbIsNormal
                     then "Describe map position with MMB."
                     else ""
-      viewEquip = if eqpKeysAreNormal
-                  then "View (E)quipment and (e)quip items."
+      viewEquip = if stashKeysAreNormal
+                  then "View shared (I)nventory stash and put items into the (i)nventory."
                   else ""
       moreHelp = "Press" <+> tshow kmHelp <+> "for help."
       mmbIsNormal = kmXhairPointerFloor == K.middleButtonReleaseKM
-      eqpKeysAreNormal = kmViewEqp == K.mkChar 'E'
-                         && kmItemEqp == K.mkChar 'e'
+      stashKeysAreNormal = kmViewStash == K.mkChar 'I'
+                           && kmItemStash == K.mkChar 'i'
       keys | isNothing saimMode =
         "Explore with" <+> moveKeys <+> "keys or mouse."
         <+> describePos

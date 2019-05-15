@@ -229,7 +229,7 @@ grabItems :: Text -> CmdTriple
 grabItems t = ([CmdItemMenu], t, grabCmd)
 
 dropCmd :: HumanCmd
-dropCmd = MoveItem [CEqp, CStash] CGround Nothing False
+dropCmd = MoveItem [CStash, CEqp] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
 dropItems t = ([CmdItemMenu], t, dropCmd)
