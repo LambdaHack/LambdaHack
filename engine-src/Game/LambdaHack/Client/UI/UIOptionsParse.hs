@@ -68,9 +68,7 @@ parseConfig cfg =
                 $ Ini.getOption "ui" optionName cfg
         in either (lookupFail optionName) id $ readEither s
       uVi = getOption "movementViKeys_hjklyubn"
-      -- The option for Vi keys takes precendence,
-      -- because the laptop keys are the default.
-      uLaptop = not uVi && getOption "movementLaptopKeys_uk8o79jl"
+      uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uGtkFontFamily = getOption "gtkFontFamily"
       uSdlFontFile = getOption "sdlFontFile"
       uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"

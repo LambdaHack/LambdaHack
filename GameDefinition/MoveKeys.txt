@@ -1,13 +1,13 @@
-Walk throughout a level with mouse or numeric keypad (left diagram below)
-or the Vi editor keys (right) or with a compact laptop setup (middle) that
-requires enabling in config.ui.ini. Run until disturbed with Shift or Control.
-Go-to with LMB (left mouse button). Run collectively via S-LMB (holding Shift).
+Walk throughout a level with mouse or numeric keypad (right diagram below)
+or the Vi editor keys (middle) or the left hand movement keys (left).
+Run until disturbed with Shift or Control. Go-to with LMB (left mouse button).
+Run collectively via S-LMB (holding Shift).
 
-               7 8 9          7 8 9          y k u
+               q w e          y k u          7 8 9
                 \|/            \|/            \|/
-               4-5-6          u-i-o          h-.-l
+               a-s-d          h-.-l          4-5-6
                 /|\            /|\            /|\
-               1 2 3          j k l          b j n
+               z x c          b j n          1 2 3
 
 In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
 Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any

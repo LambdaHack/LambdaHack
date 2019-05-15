@@ -67,12 +67,13 @@ promptMainKeys = do
                                               Nothing False)
       kmXhairPointerFloor = revCmd K.undefinedKM HumanCmd.XhairPointerFloor
   saimMode <- getsSession saimMode
-  UIOptions{uVi, uLaptop} <- getsSession sUIOptions
+  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   xhair <- getsSession sxhair
-  -- The silly "uk8o79jl" ordering of keys is chosen to match "hjklyubn",
+  -- The silly "axwdqezc" name of keys is chosen to match "hjklyubn",
   -- which the usual way of writing them.
-  let moveKeys | uVi = "keypad or hjklyubn"
-               | uLaptop = "keypad or uk8o79jl"
+  let moveKeys | uVi && uLeftHand = "keypad or axwdqezc or hjklyubn"
+               | uLeftHand = "keypad or axwdqezc"
+               | uVi = "keypad or hjklyubn"
                | otherwise = "keypad"
       manyTeammates = length ours > 1
       keepTab = if manyTeammates

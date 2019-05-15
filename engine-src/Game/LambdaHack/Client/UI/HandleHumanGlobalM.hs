@@ -929,13 +929,13 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 alterDirHuman :: MonadClientUI m
               => [TriggerTile] -> m (FailOrCmd RequestTimed)
 alterDirHuman ts = do
-  UIOptions{uVi, uLaptop} <- getsSession sUIOptions
+  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> ttverb tr
       keys = K.escKM
              : K.leftButtonReleaseKM
-             : map (K.KM K.NoModifier) (K.dirAllKey uVi uLaptop)
+             : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
       prompt = makePhrase
         ["Where to", verb1 <> "? [movement key] [pointer]"]
   promptAdd0 prompt
@@ -951,7 +951,7 @@ alterDirHuman ts = do
       then alterTile ts dir
       else failWith "never mind"
     _ ->
-      case K.handleDir uVi uLaptop km of
+      case K.handleDir uVi uLeftHand km of
         Nothing -> failWith "never mind"
         Just dir -> alterTile ts dir
 

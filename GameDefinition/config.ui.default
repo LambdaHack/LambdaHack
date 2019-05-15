@@ -26,9 +26,8 @@ HeroName_5 = ("Roger Robin", "he")
 HeroName_6 = ("Christopher Flatt", "he")
 
 [ui]
-; These two are mutually exclusive:
 movementViKeys_hjklyubn = True
-movementLaptopKeys_uk8o79jl = False
+movementLeftHandKeys_axwdqezc = True
 ; The font to use for scaling SDL2 display (best by multiples or 0.5):
 ;sdlFontFile = "16x16xw.woff"
 scalableFontSize = 16

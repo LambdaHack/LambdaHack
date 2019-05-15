@@ -44,32 +44,43 @@ data InputContent = InputContent
 makeData :: UIOptions        -- ^ UI client options
          -> InputContentRaw  -- ^ default key bindings from the content
          -> InputContent     -- ^ concrete binding
-makeData UIOptions{uCommands, uVi, uLaptop} (InputContentRaw copsClient) =
+makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
   let waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
+      filteredContent =
+        (if uVi
+         then filter (\(k, _) ->
+                k `notElem` [K.mkKM "period", K.mkKM "C-period"])
+         else id)
+        $ (if uLeftHand
+           then filter (\(k, _) ->
+                  k `notElem` [K.mkKM "s", K.mkKM "C-s", K.mkKM "S"])
+           else id)
+        $ filter (\(k, _) ->
+                  k `notElem` map (K.KM K.NoModifier)
+                                  (K.dirAllKey uVi uLeftHand)
+                              ++ map (K.KM K.Control) K.dirRunControl
+                              ++ map (K.KM K.Shift) K.dirRunShift)
+        $ copsClient
       bcmdList =
-        (if | uVi -> filter (\(k, _) ->
-              k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-            | uLaptop -> filter (\(k, _) ->
-              k `notElem` [K.mkKM "i", K.mkKM "C-i", K.mkKM "I"])
-            | otherwise -> id) copsClient
+        filteredContent
         ++ uCommands
         ++ [ (K.mkKM "KP_Begin", waitTriple)
            , (K.mkKM "C-KP_Begin", wait10Triple)
            , (K.mkKM "KP_5", wait10Triple)
            , (K.mkKM "C-KP_5", wait10Triple) ]
-        ++ (if | uVi ->
-                 [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "C-period", wait10Triple) ]  -- yell on % always
-               | uLaptop ->
-                 [ (K.mkKM "i", waitTriple)
-                 , (K.mkKM "C-i", wait10Triple)
-                 , (K.mkKM "I", wait10Triple) ]
-               | otherwise ->
-                 [])
-        ++ K.moveBinding uVi uLaptop
+        ++ (if uVi
+            then [ (K.mkKM "period", waitTriple)
+                 , (K.mkKM "C-period", wait10Triple) ]
+            else [])
+        ++ (if uLeftHand
+            then [ (K.mkKM "s", waitTriple)
+                 , (K.mkKM "C-s", wait10Triple)
+                 , (K.mkKM "S", wait10Triple) ]
+            else [])
+        ++ K.moveBinding uVi uLeftHand
              (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
              (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
       rejectRepetitions t1 t2 = error $ "duplicate key"

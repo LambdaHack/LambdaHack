@@ -24,8 +24,8 @@ data UIOptions = UIOptions
     -- hero names
   , uHeroNames          :: [(Int, (Text, Text))]
     -- ui
-  , uVi                 :: Bool  -- ^ the option for Vi keys takes precendence
-  , uLaptop             :: Bool  -- ^ because the laptop keys are the default
+  , uVi                 :: Bool
+  , uLeftHand           :: Bool
   , uGtkFontFamily      :: Text
   , uSdlFontFile        :: Text
   , uSdlScalableSizeAdd :: Int

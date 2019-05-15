@@ -117,14 +117,14 @@ on the `scalableFontSize` parameter in the config file.
 With `scalableFontSize = 16` it should look almost the same
 as the pixel-perfect `16x16xw.bdf`.
 
-If you don't have a numeric keypad, you can use the Vi editor keys
-(aka roguelike keys) or mouse for movement or you can enable the compact
-laptop keys (uk8o79jl) in the config file. If numeric keypad doesn't work,
-toggling the Num Lock key sometimes helps. If running with the Shift key
-and keypad keys doesn't work, try Control key instead.
-The game is fully playable with mouse only, as well as with keyboard only,
-but the most efficient combination for some players is mouse for go-to,
-inspecting, and aiming at distant positions and keyboard for everything else.
+If you don't have a numeric keypad, you can use the left hand movement
+key setup (axwdqezc) or Vi editor keys (aka roguelike keys) or mouse.
+If numeric keypad doesn't work, toggling the Num Lock key sometimes helps.
+If running with the Shift key and keypad keys doesn't work,
+try the Control key instead. The game is fully playable with mouse only,
+as well as with keyboard only, but the most efficient combination
+for some players is mouse for go-to, inspecting the map, and aiming
+at distant positions and keyboard for everything else.
 
 If you are using a terminal frontend, e.g. the best supported vty frontend,
 numeric keypad (e.g., keypad '*' and '/') may not work correctly

@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.Key
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , dirKeypadKey, dirKeypadShiftChar, dirKeypadShiftKey
-  , dirLaptopKey, dirLaptopShiftKey
+  , dirLeftHandKey, dirLeftHandShiftKey
   , dirViChar, dirViKey, dirViShiftKey
   , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
 #endif
@@ -213,11 +213,11 @@ dirKeypadShiftChar = ['7', '8', '9', '6', '3', '2', '1', '4']
 dirKeypadShiftKey :: [Key]
 dirKeypadShiftKey = map KP dirKeypadShiftChar
 
-dirLaptopKey :: [Key]
-dirLaptopKey = map Char ['7', '8', '9', 'o', 'l', 'k', 'j', 'u']
+dirLeftHandKey :: [Key]
+dirLeftHandKey = map Char ['q', 'w', 'e', 'd', 'c', 'x', 'z', 'a']
 
-dirLaptopShiftKey :: [Key]
-dirLaptopShiftKey = map Char ['&', '*', '(', 'O', 'L', 'K', 'J', 'U']
+dirLeftHandShiftKey :: [Key]
+dirLeftHandShiftKey = map Char ['Q', 'W', 'E', 'D', 'C', 'X', 'Z', 'A']
 
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
@@ -229,16 +229,14 @@ dirViShiftKey :: [Key]
 dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
 dirMoveNoModifier :: Bool -> Bool -> [Key]
-dirMoveNoModifier uVi uLaptop =
-  dirKeypadKey ++ if | uVi -> dirViKey
-                     | uLaptop -> dirLaptopKey
-                     | otherwise -> []
+dirMoveNoModifier uVi uLeftHand =
+  dirKeypadKey ++ (if uVi then dirViKey else [])
+               ++ (if uLeftHand then dirLeftHandKey else [])
 
 dirRunNoModifier :: Bool -> Bool -> [Key]
-dirRunNoModifier uVi uLaptop =
-  dirKeypadShiftKey ++ if | uVi -> dirViShiftKey
-                          | uLaptop -> dirLaptopShiftKey
-                          | otherwise -> []
+dirRunNoModifier uVi uLeftHand =
+  dirKeypadShiftKey ++ (if uVi then dirViShiftKey else [])
+                    ++ (if uLeftHand then dirLeftHandShiftKey else [])
 
 dirRunControl :: [Key]
 dirRunControl = dirKeypadKey
@@ -249,30 +247,30 @@ dirRunShift :: [Key]
 dirRunShift = dirRunControl
 
 dirAllKey :: Bool -> Bool -> [Key]
-dirAllKey uVi uLaptop =
-  dirMoveNoModifier uVi uLaptop
-  ++ dirRunNoModifier uVi uLaptop
+dirAllKey uVi uLeftHand =
+  dirMoveNoModifier uVi uLeftHand
+  ++ dirRunNoModifier uVi uLeftHand
   ++ dirRunControl
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
 handleDir :: Bool -> Bool -> KM -> Maybe Vector
-handleDir uVi uLaptop KM{modifier=NoModifier, key} =
-  let assocs = zip (dirAllKey uVi uLaptop) $ cycle moves
+handleDir uVi uLeftHand KM{modifier=NoModifier, key} =
+  let assocs = zip (dirAllKey uVi uLeftHand) $ cycle moves
   in lookup key assocs
 handleDir _ _ _ = Nothing
 
 -- | Binding of both sets of movement keys, vi and laptop.
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
-moveBinding uVi uLaptop move run =
+moveBinding uVi uLeftHand move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
         map (assign move) (zip (map (KM modifier) keys) $ cycle moves)
       mapRun modifier keys =
         map (assign run) (zip (map (KM modifier) keys) $ cycle moves)
-  in mapMove NoModifier (dirMoveNoModifier uVi uLaptop)
-     ++ mapRun NoModifier (dirRunNoModifier uVi uLaptop)
+  in mapMove NoModifier (dirMoveNoModifier uVi uLeftHand)
+     ++ mapRun NoModifier (dirRunNoModifier uVi uLeftHand)
      ++ mapRun Control dirRunControl
      ++ mapRun Shift dirRunShift
 
