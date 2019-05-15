@@ -129,24 +129,13 @@ chooseItemDialogMode c = do
                [ MU.Capitalize $ MU.SubjectVerbSg subject verbEqp
                , nItems, MU.Text tIn
                , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-        MStore CStash ->
-          -- We assume "gold grain", not "grain" with label "of gold":
-          let currencyName = IK.iname $ okind coitem
-                             $ ouniqGroup coitem "currency"
-              dungeonTotal = sgold s
-              (_, total) = calculateTotal side s
-              n = countItems CStash
-              verbStash = if | n == 0 -> "find nothing"
-                             | otherwise -> "notice"
-          in makePhrase
-               [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
-               , MU.Capitalize $ MU.SubjectVerbSg subject verbStash
-               , MU.Text tIn
-               , MU.Text t ]
         MStore cstore ->
           let n = countItems cstore
               nItems = MU.CarAWs n "item"
-              verb = if cstore == COrgan then "feel" else "see"
+              verb = case cstore of
+                COrgan -> "feel"
+                CStash -> "notice"
+                _ -> "see"
           in makePhrase
                [ MU.Capitalize $ MU.SubjectVerbSg subject verb
                , nItems, MU.Text tIn
@@ -157,9 +146,18 @@ chooseItemDialogMode c = do
             , MU.Text tIn
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
         MOwned ->
-          makePhrase
-            [ MU.Capitalize $ MU.SubjectVerbSg subject "inspect"
-            , MU.Text t ]
+          -- We assume "gold grain", not "grain" with label "of gold":
+          let currencyName = IK.iname $ okind coitem
+                             $ ouniqGroup coitem "currency"
+              dungeonTotal = sgold s
+              (_, total) = calculateTotal side s
+              n = countItems CStash
+              verbOwned = if | n == 0 -> "find nothing among"
+                             | otherwise -> "review"
+          in makePhrase
+               [ MU.Text $ spoilsBlurb currencyName total dungeonTotal
+               , MU.Capitalize $ MU.SubjectVerbSg subject verbOwned
+               , MU.Text t ]
         MSkills ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
