@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Content.Input
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
-  , grabItems, dropItems, descIs, descTs, defaultHeroSelect
+  , grabItems, dropItems, descIs, defaultHeroSelect
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , replaceCmd, projectICmd, grabCmd, dropCmd
@@ -264,10 +264,6 @@ dropItems t = ([CmdItemMenu], t, dropCmd)
 descIs :: [TriggerItem] -> Text
 descIs [] = "trigger an item"
 descIs (t : _) = makePhrase [tiverb t, tiobject t]
-
-descTs :: [TriggerTile] -> Text
-descTs [] = "alter a tile"
-descTs (t : _) = makePhrase [ttverb t, ttobject t]
 
 defaultHeroSelect :: Int -> (String, CmdTriple)
 defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))

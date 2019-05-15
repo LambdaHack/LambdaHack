@@ -34,7 +34,7 @@ categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMainMenu = "Main menu"
 categoryDescription CmdDashboard = "Dashboard"
 categoryDescription CmdItemMenu = "Item menu commands"
-categoryDescription CmdMove = "Terrain exploration and alteration"
+categoryDescription CmdMove = "Terrain exploration and modification"
 categoryDescription CmdItem = "Remaining item-related commands"
 categoryDescription CmdAim = "Aiming commands"
 categoryDescription CmdMeta = "Assorted commands"

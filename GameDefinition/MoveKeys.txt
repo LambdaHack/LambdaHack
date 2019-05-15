@@ -1,7 +1,7 @@
 Walk throughout a level with mouse or numeric keypad (right diagram below)
 or the Vi editor keys (middle) or the left hand movement keys (left).
-Run until disturbed with Shift or Control. Go-to with LMB (left mouse button).
-Run collectively via S-LMB (holding Shift).
+Run until disturbed with Shift or Control. Go-to a position with LMB
+(left mouse button). Run collectively via S-LMB (holding Shift).
 
                q w e          y k u          7 8 9
                 \|/            \|/            \|/

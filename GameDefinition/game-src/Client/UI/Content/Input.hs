@@ -72,9 +72,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , AimEnemy ))
   , ("/", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
   , ("m", ( [CmdMinimal, CmdMove]
-          , descTs closeDoorTriggers
+          , "modify door by closing it"
           , AlterDir closeDoorTriggers ))
-  , ("%", ([CmdMinimal, CmdMeta], "yell/yawn", Yell))
+  , ("%", ([CmdMinimal, CmdMeta], "yell/yawn and stop sleeping", Yell))
 
   -- Item menu, first part of item use commands
   , ("comma", grabItems "")
@@ -84,15 +84,15 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             $ replaceDesc "auto-fling and keep choice"
             $ projectI flingTs)
   , ("t", addCmdCategory CmdItemMenu $ applyI applyTs)
-  , ("C-a", addCmdCategory CmdItemMenu
-            $ replaceDesc "apply and keep choice" $ applyIK applyTs)
-  , ("i", moveItemTriple [CGround, CEqp] CStash
-                         "item" False)
-  , ("o", moveItemTriple [CGround, CStash] CEqp
-                         "item" False)
+  , ("C-t", addCmdCategory CmdItemMenu
+            $ replaceDesc "trigger item and keep choice" $ applyIK applyTs)
+  , ("i", replaceDesc "stash item into shared inventory"
+          $ moveItemTriple [CGround, CEqp] CStash "item" False)
+  , ("o", replaceDesc "equip item into outfit of the leader"
+          $ moveItemTriple [CGround, CStash] CEqp "item" False)
 
-  -- Terrain exploration and alteration
-  , ("M", ([CmdMove], "modify terrain", AlterDir []))
+  -- Terrain exploration and modification
+  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir []))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
@@ -119,7 +119,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , "manage items on the ground"
           , ChooseItemMenu (MStore CGround) ))
   , ("T", ( [CmdItem, CmdDashboard]
-          , "manage total team belongings"
+          , "manage our total team belongings"
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdItem, CmdDashboard]
           , "describe organs of the leader"
@@ -176,7 +176,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   -- Assorted (first few cloned from main menu)
   , ("C-s", ([CmdMeta], "start new game", GameRestart))
   , ("C-x", ([CmdMeta], "save and exit to desktop", GameExit))
-  , ("C-t", ([CmdMeta], "toggle autoplay (insert coin)", Automate))
   , ("C-q", ([CmdMeta], "quit game and start autoplay", GameQuit))
   , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
   , ("?", ([CmdMeta], "display help", Hint))
@@ -203,7 +202,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("RightButtonRelease", mouseRMB)
   , ("C-LeftButtonRelease", replaceDesc "" mouseRMB)  -- Mac convention
   , ( "S-RightButtonRelease"
-    , ([CmdMouse], "open or close or alter at pointer", AlterWithPointer []) )
+    , ([CmdMouse], "modify terrain at pointer", AlterWithPointer []) )
   , ("MiddleButtonRelease", mouseMMB)
   , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
   , ( "C-S-LeftButtonRelease",
@@ -278,6 +277,6 @@ closeDoorTriggers =
   ]
 
 applyTs :: [TriggerItem]
-applyTs = [TriggerItem { tiverb = "apply"
-                       , tiobject = "consumable"
+applyTs = [TriggerItem { tiverb = "trigger"
+                       , tiobject = "consumable item"
                        , tisymbols = "!,?/" }]

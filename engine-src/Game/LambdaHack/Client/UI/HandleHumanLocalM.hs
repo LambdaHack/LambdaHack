@@ -136,10 +136,12 @@ chooseItemDialogMode c = do
                 COrgan -> "feel"
                 CStash -> "notice"
                 _ -> "see"
-          in makePhrase
+              ownObject = case cstore of
+                CStash -> ["our", MU.Text t]
+                _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
+          in makePhrase $
                [ MU.Capitalize $ MU.SubjectVerbSg subject verb
-               , nItems, MU.Text tIn
-               , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
+               , nItems, MU.Text tIn ] ++ ownObject
         MOrgans ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"

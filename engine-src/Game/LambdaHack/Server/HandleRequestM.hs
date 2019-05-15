@@ -861,13 +861,13 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
     discoverIfMinorEffects toC iid (itemKindId itemFull)
     -- The first recharging period after equipping is random,
     -- between 1 and 2 standard timeouts of the item.
-    -- We reset timeout for equipped periodic items and also for items
-    -- moved out of the shared stash, in which timeouts are not consistent
-    -- wrt some local time, because actors from many levels put items there
-    -- all the time (and don't rebase it to any common clock).
+    -- Timeouts for items in shared stash are not consistent wrt the actor's
+    -- local time, because actors from many levels put items there
+    -- all the time (and don't rebase it to the clock of the stash's level).
     -- If wrong local time in shared stash causes an item to recharge
-    -- for a very long time, the player can reset it by moving it to pack
-    -- and back to stash (as a flip side, a charging item in stash may sometimes
+    -- for a very long time wrt actor on some level,
+    -- the player can reset it by dropping the item and picking up again
+    -- (as a flip side, a charging item in stash may sometimes
     -- be used at once on another level, with different local time, but only
     -- once, because after first use, the timeout is set to local time).
     -- This is not terribly consistent, but not recharging in stash is

@@ -83,14 +83,14 @@ promptMainKeys = do
                     then "Describe map position with MMB."
                     else ""
       viewEquip = if stashKeysAreNormal
-                  then "View shared (I)nventory stash and put items into the (i)nventory."
+                  then "View shared (I)nventory stash and stash items into the (i)nventory."
                   else ""
       moreHelp = "Press" <+> tshow kmHelp <+> "for help."
       mmbIsNormal = kmXhairPointerFloor == K.middleButtonReleaseKM
       stashKeysAreNormal = kmViewStash == K.mkChar 'I'
                            && kmItemStash == K.mkChar 'i'
       keys | isNothing saimMode =
-        "Explore with" <+> moveKeys <+> "keys or mouse."
+        "Explore with" <+> moveKeys <+> "or mouse."
         <+> describePos
         <+> viewEquip
         <+> keepTab

@@ -99,8 +99,8 @@ instance NFData CStore
 ppCStore :: CStore -> (Text, Text)
 ppCStore CGround = ("on", "the ground")
 ppCStore COrgan = ("in", "body")
-ppCStore CEqp = ("in", "equipment")
-ppCStore CStash = ("in", "shared stash")
+ppCStore CEqp = ("in", "equipment outfit")
+ppCStore CStash = ("in", "shared inventory stash")
 
 ppCStoreIn :: CStore -> Text
 ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
@@ -157,7 +157,7 @@ headingSLore SEmbed = "landmark feature"
 ppItemDialogMode :: ItemDialogMode -> (Text, Text)
 ppItemDialogMode (MStore cstore) = ppCStore cstore
 ppItemDialogMode MOrgans = ("in", "body")
-ppItemDialogMode MOwned = ("among", "our belongings")
+ppItemDialogMode MOwned = ("among", "our total team belongings")
 ppItemDialogMode MSkills = ("among", "skills")
 ppItemDialogMode (MLore slore) = ("among", ppSLore slore <+> "lore")
 ppItemDialogMode MPlaces = ("among", "place lore")

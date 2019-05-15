@@ -65,31 +65,31 @@ keyHelp COps{corule}
       ]
     itemMenuEnding =
       [ ""
-      , "Note how lower case item commands (pack an item, equip, stash)"
+      , "Note how lower case item commands (stash item, equip item)"
       , "let you move items into a particular item store."
       , ""
       , "Press SPACE to see the detailed descriptions of other item-related commands."
       ]
     itemRemainingEnding =
       [ ""
-      , "Note how upper case item commands (manage Pack, Equipment,"
-      , "Stash, etc.) let you view and organize items within"
-      , "a particular item store. Once a menu is opened, you can"
-      , "switch stores at will, so each of the commands only"
-      , "determines the starting item store. Each store"
-      , "is accessible from the dashboard, as well."
+      , "Note how upper case item commands (manage Inventory, manage Outfit)"
+      , "let you view and organize items within a particular item store."
+      , "Once a store management menu is opened, you can switch stores"
+      , "at will with '<' and '>', so the multiple commands only"
+      , "determine the starting item store. Each store is accessible"
+      , "from the dashboard as well."
       , ""
       , "Press SPACE to see the next page of command descriptions."
       ]
     itemAllEnding =
       [ ""
-      , "Note how lower case item commands (pack an item, equip, stash)"
+      , "Note how lower case item commands (stash item, equip item)"
       , "let you move items into a particular item store, while"
-      , "upper case item commands (manage Pack, Equipment, Stash, etc.)"
-      , "let you view and organize items within an item store."
-      , "Once a store management menu is opened, you can switch"
-      , "stores at will, so the multiple commands only determine"
-      , "the starting item store. Each store is accessible"
+      , "upper case item commands (manage Inventory, manage Outfit)"
+      , "let you view and organize items within a particular item store."
+      , "Once a store management menu is opened, you can switch stores"
+      , "at will with '<' and '>', so the multiple commands only"
+      , "determine the starting item store. Each store is accessible"
       , "from the dashboard as well."
       , ""
       , "Press SPACE to see the next page of command descriptions."
@@ -220,12 +220,12 @@ keyHelp COps{corule}
                     itemAllEnd) ) ]
     , if catLength CmdMove + catLength CmdAim
          + 9 > rheight then
-        [ ( "All terrain exploration and alteration commands."
+        [ ( "All terrain exploration and modification commands."
           , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
         , ( categoryDescription CmdAim <> "."
           , okxs CmdAim [keyCaption] categoryEnd ) ]
       else
-        [ ( "All terrain exploration and alteration commands."
+        [ ( "All terrain exploration and modification commands."
           , mergeOKX
               (okxs CmdMove [keyCaption] (pickLeaderDescription ++ [""]))
               (okxs CmdAim

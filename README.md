@@ -136,11 +136,12 @@ Control and Shift together won't work either, but fortunately they are
 not crucial to gameplay.
 
 Some effort has been put to help using the vty frontend with screen readers,
-but without feedback it's hard to say how accesible that setup is.
+but without feedback it's hard to say how accessible that setup is.
 As a side effect of screen reader support, there is no aiming line
-nor path in vty frontend. Screen readers may also work better with animations
-turned off using `--noAnim` or the corresponding config file option.
-Note that unicode and cursor support are now necessary for correct output.
+nor path in vty frontend and some of the map positions highlighting
+is performed using the terminal cursor. Screen readers may also work
+better with animations turned off using `--noAnim` or the corresponding
+config file option.
 
 
 Compilation of the library and sample game from source
