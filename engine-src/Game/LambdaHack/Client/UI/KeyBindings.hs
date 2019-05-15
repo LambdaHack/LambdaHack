@@ -118,7 +118,7 @@ keyHelp COps{corule}
       ]
     keyL = 12
     pickLeaderDescription =
-      [ fmt keyL "0, 1 ... 6" "pick a particular actor as the new leader"
+      [ fmt keyL "0, 1 ... 9" "pick a particular actor as the new leader"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = " " <> T.justifyLeft n ' ' k <+> h

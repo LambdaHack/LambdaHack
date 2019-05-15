@@ -67,10 +67,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("BackTab", ( [CmdMinimal, CmdMove]
               , "cycle among all party members"
               , MemberBack ))
-  , ("KP_Multiply", ( [CmdMinimal, CmdAim]
-                    , "cycle x-hair among enemies"
-                    , AimEnemy ))
-  , ("KP_Divide", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
+  , ("*", ( [CmdMinimal, CmdAim]
+          , "cycle x-hair among enemies"
+          , AimEnemy ))
+  , ("/", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
   , ("c", ( [CmdMinimal, CmdMove]
           , descTs closeDoorTriggers
           , AlterDir closeDoorTriggers ))
@@ -148,8 +148,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Aiming
-  , ("!", ([CmdAim], "", AimEnemy))
-  , ("/", ([CmdAim], "", AimItem))
   , ("+", ([CmdAim], "swerve the aiming line", EpsIncr True))
   , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
   , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
@@ -262,7 +260,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "snap x-hair to enemy"
                , XhairPointerEnemy ))
   ]
-  ++ map defaultHeroSelect [0..6]
+  ++ map defaultHeroSelect [0..9]
 
 closeDoorTriggers :: [TriggerTile]
 closeDoorTriggers =
