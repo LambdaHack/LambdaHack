@@ -49,40 +49,56 @@ makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
+      isMainMenu (_, ([CmdMainMenu], _, _)) = True
+      isMainMenu _ = False
+      rawConent = copsClient ++ uCommands
+      (rawConentMainMenu, rawConentNoMainMenu) = partition isMainMenu rawConent
       filteredContent =
-        (if uVi
-         then filter (\(k, _) ->
-                k `notElem` [K.mkKM "period", K.mkKM "C-period"])
-         else id)
-        $ (if uLeftHand
-           then filter (\(k, _) ->
-                  k `notElem` [K.mkKM "s", K.mkKM "C-s", K.mkKM "S"])
-           else id)
-        $ filter (\(k, _) ->
-                  k `notElem` map (K.KM K.NoModifier)
-                                  (K.dirAllKey uVi uLeftHand)
-                              ++ map (K.KM K.Control) K.dirRunControl
-                              ++ map (K.KM K.Shift) K.dirRunShift)
-        $ copsClient
+        rawConentMainMenu
+        ++ ((if uVi
+             then filter (\(k, _) ->
+                    k `notElem` [K.mkKM "period", K.mkKM "C-period"])
+             else id)
+             $ (if uLeftHand
+                then filter (\(k, _) ->
+                       k `notElem` [K.mkKM "s", K.mkKM "S"])
+                else id)
+             $ filter (\(k, _) ->
+                 k `notElem` map (K.KM K.NoModifier)
+                                 (K.dirMoveNoModifier uVi uLeftHand)
+                             ++ map (K.KM K.NoModifier)
+                                    (K.dirRunNoModifier uVi uLeftHand)
+                             ++ map (K.KM K.Control) K.dirRunControl
+                             ++ map (K.KM K.Shift) K.dirRunShift
+                             ++ map K.mkKM [ "KP_Begin", "C-KP_Begin"
+                                           , "KP_5", "C-KP_5" ])
+             $ rawConentNoMainMenu)
       bcmdList =
-        filteredContent
-        ++ uCommands
-        ++ [ (K.mkKM "KP_Begin", waitTriple)
-           , (K.mkKM "C-KP_Begin", wait10Triple)
-           , (K.mkKM "KP_5", wait10Triple)
-           , (K.mkKM "C-KP_5", wait10Triple) ]
-        ++ (if uVi
-            then [ (K.mkKM "period", waitTriple)
-                 , (K.mkKM "C-period", wait10Triple) ]
-            else [])
-        ++ (if uLeftHand
-            then [ (K.mkKM "s", waitTriple)
-                 , (K.mkKM "C-s", wait10Triple)
-                 , (K.mkKM "S", wait10Triple) ]
-            else [])
-        ++ K.moveBinding uVi uLeftHand
-             (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
-             (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+        -- Users are free to overwrite commands, but at the defaults should be
+        -- non-overlapping with the movement keys.
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+        assert (rawConentMainMenu ++ rawConentNoMainMenu == filteredContent
+                `blame` "duplicate keys"
+                `swith` (rawConentMainMenu ++ rawConentNoMainMenu)
+                        \\ filteredContent)
+#endif
+        $ filteredContent
+          ++ (if uVi
+              then [ (K.mkKM "period", waitTriple)
+                   , (K.mkKM "C-period", wait10Triple) ]
+              else [])
+          ++ (if uLeftHand
+              then [ (K.mkKM "s", waitTriple)
+                   , (K.mkKM "S", wait10Triple) ]
+              else [])
+          ++ [ (K.mkKM "KP_Begin", waitTriple)
+             , (K.mkKM "C-KP_Begin", wait10Triple)
+             , (K.mkKM "KP_5", wait10Triple)
+             , (K.mkKM "C-KP_5", wait10Triple) ]
+          ++ K.moveBinding uVi uLeftHand
+               (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
+               (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
+      -- This catches repetitions inside input content definitions.
       rejectRepetitions t1 t2 = error $ "duplicate key"
                                         `showFailure` (t1, t2)
   in InputContent
