@@ -536,7 +536,7 @@ runOnceAheadHuman = do
     Just RunParams{runMembers}
       | noRunWithMulti fact && runMembers /= [leader] -> do
       stopPlayBack
-      msgAdd MsgRunStop "run stop: automatic leader change"
+      msgAdd MsgRunStop "run stop: automatic pointman change"
       return $ Left Nothing
     Just _runParams | keyPressed -> do
       discardPressedKey
@@ -1604,7 +1604,7 @@ tacticHuman = do
           <+> "(" <> Ability.describeTactic fromT <> ")."
           <+> "Switching tactic to" <+> Ability.nameTactic toT
           <+> "(" <> Ability.describeTactic toT <> ")."
-          <+> "This clears targets of all henchmen (non-leader teammates)."
+          <+> "This clears targets of all henchmen (non-pointman teammates)."
           <+> "New targets will be picked according to new tactic."
   if not go
   then failWith "tactic change canceled"

@@ -72,7 +72,7 @@ instance Binary CmdArea
 areaDescription :: CmdArea -> Text
 areaDescription ca = case ca of
   CaMessage ->      "message line"
-  CaMapLeader ->    "leader on map"
+  CaMapLeader ->    "pointman on map"
   CaMapParty ->     "party on map"
   CaMap ->          "the map area"
   CaLevelNumber ->  "level number"
@@ -84,7 +84,7 @@ areaDescription ca = case ca of
   CaCalmValue ->    "Calm value"
   CaHPGauge ->      "HP gauge"
   CaHPValue ->      "HP Value"
-  CaLeaderDesc ->   "leader info"
+  CaLeaderDesc ->   "pointman info"
   --                 1234567890123
 
 -- | This triple of command categories, description and the command term itself

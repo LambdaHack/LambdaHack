@@ -158,7 +158,7 @@ pickLeader verbose aid = do
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor bodyUI
       when verbose $
-        msgAdd MsgDone $ makeSentence [subject, "picked as a leader"]
+        msgAdd MsgDone $ makeSentence [subject, "picked as a pointman"]
       -- Update client state.
       updateClientLeader aid
       -- Move the xhair, if active, to the new level.

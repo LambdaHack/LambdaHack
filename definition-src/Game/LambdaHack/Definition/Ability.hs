@@ -206,9 +206,9 @@ nameTactic TPatrol         = "patrol area"
 
 describeTactic :: Tactic -> Text
 describeTactic TExplore = "investigate unknown positions, chase targets"
-describeTactic TFollow = "follow leader's target or position, grab items"
+describeTactic TFollow = "follow pointman's target or position, grab items"
 describeTactic TFollowNoItems =
-  "follow leader's target or position, ignore items"
+  "follow pointman's target or position, ignore items"
 describeTactic TMeleeAndRanged =
   "engage in both melee and ranged combat, don't move"
 describeTactic TMeleeAdjacent = "engage exclusively in melee, don't move"

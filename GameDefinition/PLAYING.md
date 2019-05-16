@@ -95,33 +95,33 @@ Heroes
 
 The heroes are displayed on the map with bright white color (red if they are
 about to fall down) and symbols `@` and `1` through `9` (never `0`).
-The currently chosen party leader is yellow-highlighted on the map
+The currently chosen party pointman is yellow-highlighted on the map
 and his attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
 
-    *@12   2m/s Calm: 20/60 HP: 33/50 Leader: Haskell Alvin   6d1+5% 4d1
+    *@12   2m/s Calm: 20/60 HP: 33/50 Pointman: Haskell Alvin   6d1+5% 4d1
 
-The line starts with the list of party members, with the current leader
-highlighted in yellow. Most commands involve only the leader, including
+The line starts with the list of party members, with the current pointman
+highlighted in yellow. Most commands involve only the pointman, including
 movement with keyboard's keypad or `LMB` (left mouse button). If more
 heroes are selected (highlighted in blue), they run together
 whenever `:` or `S-LMB` (while holding Shift) over map area is pressed.
 Any sleeping hero is highlighted in green and can be woken up
 by yelling with `%`, which also taunts or stresses nearby enemies.
 
-Next on the bottom-most status line is the leader's current and maximum
+Next on the bottom-most status line is the pointman's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
 and maximum HP (hit points, health). The colon after "Calm" turning
-into a dot signifies that the leader is in a position without ambient
+into a dot signifies that the pointman is in a position without ambient
 illumination, making a stealthy conduct easier. A brace sign instead
-of a colon after "HP" means the leader is braced for combat
+of a colon after "HP" means the pointman is braced for combat
 (see section [Basic Commands](#basic-commands)).
 
-In the second half of the bottom-most status line, the leader's name
-is shown. Then come damage dice of the leader's melee weapons and leader's
+In the second half of the bottom-most status line, the pointman's name
+is shown. Then come damage dice of the pointman's melee weapons and pointman's
 appendages, ordered by their power. The dice of the first recharged weapon,
 the one that would be used in this moment, is adorned with percentage
-damage bonus collected from the whole equipment of the leader.
+damage bonus collected from the whole equipment of the pointman.
 If the dice are displayed with upper-case `D` instead of lower-case `d`,
 the weapon has additional effects apart of the usual kinetic damage.
 The nature of the effects can be appraised via the `E`quipment screen.
@@ -155,7 +155,7 @@ For example, this form
 
 indicates that the party is aiming at an exact spot on the map.
 At the end of the status line comes the length of the shortest
-path from the leader's position to the spot and the straight-line
+path from the pointman's position to the spot and the straight-line
 distance between the two points, one that a flung projectile would travel.
 
 
@@ -198,7 +198,7 @@ Lastly, you can select a command with arrows or mouse directly
 from the help screen or the dashboard and execute it on the spot.
 
     keys         command
-    E            manage equipment of the leader
+    E            manage equipment of the pointman
     g or ,       grab item(s)
     ESC          open main menu/finish aiming
     RET or INS   open dashboard/accept target
@@ -237,14 +237,14 @@ and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
 or assign persistent personal targets to party members.
 The latter is essential in the rare cases when your henchmen
-(non-leader characters) can move autonomously or fire opportunistically
+(non-pointman characters) can move autonomously or fire opportunistically
 (via innate skills or rare equipment). Also, if your henchman is adjacent
 to more than one enemy, setting his target makes him melee a particular foe.
 
 You can enter the aiming mode with the `*` and keypad '*' keys that
 select enemies or the `/` and keypad '/' keys that cycle among items
 on the floor and mark a tile underneath an item. You can move x-hair
-with direction keys and assign a personal target to the leader
+with direction keys and assign a personal target to the pointman
 with a `RET` key (Return, Enter). The details of the shared x-hair mark
 are displayed in a status line close to the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
@@ -319,7 +319,7 @@ capped at 200%) minus the melee armor modifier of the defender
 (capped at 200%, as well), with the outcome bounded between -99% and 99%,
 which means that at least 1% of damage always gets through
 and the damage is always lower than twice the dice roll.
-The current leader's melee bonus, armor modifier and other detailed
+The current pointman's melee bonus, armor modifier and other detailed
 skills can be viewed via the `#` command.
 
 In ranged combat, the projectile is assumed to be attacking the defender

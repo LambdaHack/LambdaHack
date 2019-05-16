@@ -88,7 +88,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
             $ replaceDesc "trigger item and keep choice" $ applyIK applyTs)
   , ("i", replaceDesc "stash item into shared inventory"
           $ moveItemTriple [CGround, CEqp] CStash "item" False)
-  , ("o", replaceDesc "equip item into outfit of the leader"
+  , ("o", replaceDesc "equip item into outfit of the pointman"
           $ moveItemTriple [CGround, CStash] CEqp "item" False)
 
   -- Terrain exploration and modification
@@ -113,7 +113,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 
   -- Item use, continued
   , ("O", ( [CmdItem, CmdDashboard]
-          , "manage the equipment outfit of the leader"
+          , "manage the equipment outfit of the pointman"
           , ChooseItemMenu (MStore CEqp) ))
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"
@@ -122,10 +122,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , "manage our total team belongings"
           , ChooseItemMenu MOwned ))
   , ("@", ( [CmdItem, CmdDashboard]
-          , "describe organs of the leader"
+          , "describe organs of the pointman"
           , ChooseItemMenu MOrgans ))
   , ("#", ( [CmdItem, CmdDashboard]
-          , "show skill summary of the leader"
+          , "show skill summary of the pointman"
           , ChooseItemMenu MSkills ))
   , ("~", ( [CmdItem]
           , "display known lore"
@@ -228,7 +228,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "run to pointer collectively"
               , runToAllCmd ))
   , ("safe3", ( [CmdInternal]
-              , "pick new leader on screen"
+              , "pick new pointman on screen"
               , PickLeaderWithPointer ))
   , ("safe4", ( [CmdInternal]
               , "select party member on screen"

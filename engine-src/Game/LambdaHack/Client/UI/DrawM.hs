@@ -480,12 +480,12 @@ drawFrameStatus drawnLevelId = do
       widthXhairOrItem = widthTgt - T.length pathCsr - 8
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
       fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
-                 then "This faction never picks a leader"
+                 then "This faction never picks a pointman"
                  else makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
       leaderName bUI = trimTgtDesc (widthTgt - 8) (bname bUI)
       leaderBlurbLong = maybe fallback (\bUI ->
-        "Leader:" <+> leaderName bUI) mbodyUI
+        "Pointman:" <+> leaderName bUI) mbodyUI
       leaderBlurbShort = maybe fallback leaderName mbodyUI
   ours <- getsState $ fidActorNotProjGlobalAssocs side
   ns <- getsState $ EM.size . getFactionStashBag side
