@@ -419,6 +419,12 @@ breakUpdAtomic cmd = case cmd of
                 | Just source == msleader ]
              ++ [ UpdLeadFaction (bfid tb) Nothing mtleader
                 | Just target == mtleader ]
+  UpdTimeItem iid (CActor aid CStash) fromIt toIt -> do
+    b <- getsState $ getActorBody aid
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    case mstash of
+      Just (lid, pos) -> return [UpdTimeItem iid (CFloor lid pos) fromIt toIt]
+      Nothing -> error $ "manipulating void stash" `showFailure` (aid, b, iid)
   _ -> return []
 
 -- | What is the main map level the @PosAtomic@ refers to, if any.

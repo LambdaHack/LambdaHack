@@ -114,7 +114,8 @@ data UpdAtomic =
   | UpdUnAgeGame [LevelId]
   | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord
       -- Here and below @Container@ is only used for presentation
-      -- and in such a way that @CStash@ won't break anything.
+      -- and when @CStash@ is not visible, but the item is, it won't
+      -- break anything, because item identification is not set globally.
   | UpdCover Container ItemId (ContentId ItemKind) IA.AspectRecord
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
