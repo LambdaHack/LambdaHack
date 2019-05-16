@@ -10,12 +10,12 @@ module Game.LambdaHack.Client.UI.Key
   , leftButtonReleaseKM, middleButtonReleaseKM, rightButtonReleaseKM
   , dirAllKey, handleDir, moveBinding, mkKM, mkChar, mkKP
   , keyTranslate, keyTranslateWeb
+  , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , dirKeypadKey, dirKeypadShiftChar, dirKeypadShiftKey
   , dirLeftHandKey, dirLeftHandShiftKey
   , dirViChar, dirViKey, dirViShiftKey
-  , dirMoveNoModifier, dirRunNoModifier, dirRunControl, dirRunShift
 #endif
   ) where
 
