@@ -224,8 +224,8 @@ condBFS aid = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       -- Under UI, playing a hero party, we let AI set our target each
-      -- turn for henchmen that can't move and can't alter, usually to TUnknown.
-      -- This is rather useless, but correct.
+      -- turn for non-pointmen that can't move and can't alter,
+      -- usually to TUnknown. This is rather useless, but correct.
       enterSuspect = smarkSuspect > 0 || underAI
       skill | enterSuspect = alterSkill  -- dig and search as skill allows
             | otherwise = 0  -- only walkable tiles

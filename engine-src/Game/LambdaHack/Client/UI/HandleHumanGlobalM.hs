@@ -1423,7 +1423,7 @@ settingsMenuHuman cmdAction = do
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
       tvisible = "show visible zone:" <+> offOn markVision
       tsmell = "display smell clues:" <+> offOn markSmell
-      thenchmen = "henchmen tactic:" <+> Ability.nameTactic factTactic
+      thenchmen = "non-pointmen tactic:" <+> Ability.nameTactic factTactic
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
@@ -1600,11 +1600,11 @@ tacticHuman = do
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
-          <+> "Current henchmen tactic is" <+> Ability.nameTactic fromT
+          <+> "Current non-pointmen tactic is" <+> Ability.nameTactic fromT
           <+> "(" <> Ability.describeTactic fromT <> ")."
           <+> "Switching tactic to" <+> Ability.nameTactic toT
           <+> "(" <> Ability.describeTactic toT <> ")."
-          <+> "This clears targets of all henchmen (non-pointman teammates)."
+          <+> "This clears targets of all non-pointmen teammates."
           <+> "New targets will be picked according to new tactic."
   if not go
   then failWith "tactic change canceled"

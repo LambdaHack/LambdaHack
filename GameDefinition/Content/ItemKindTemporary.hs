@@ -112,7 +112,7 @@ tmpBonusSkMoveItem =
   tmpAspects "more tidy" [AddSkill SkMoveItem 5]
 tmpBonusSkProject =
   tmpAspects "more projecting" [AddSkill SkProject 8]
-    -- TODO: 11, but let player control potion throwing by henchmen;
+    -- TODO: 11, but let player control potion throwing by non-pointmen;
     -- beware also of capReinforced and other sources of the skill
 tmpBonusSkApply =
   tmpAspects "more practical" [AddSkill SkApply 5]

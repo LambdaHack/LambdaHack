@@ -236,9 +236,9 @@ because x-hair is set automatically as soon as a monster comes into view
 and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
 or assign persistent personal targets to party members.
-The latter is essential in the rare cases when your henchmen
+The latter is essential in the rare cases when your non-pointmen
 (non-pointman characters) can move autonomously or fire opportunistically
-(via innate skills or rare equipment). Also, if your henchman is adjacent
+(via innate skills or rare equipment). Also, if your non-pointman is adjacent
 to more than one enemy, setting his target makes him melee a particular foe.
 
 You can enter the aiming mode with the `*` and keypad '*' keys that
