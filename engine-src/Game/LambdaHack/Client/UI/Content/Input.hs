@@ -80,9 +80,9 @@ makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
         assert (rawConentMainMenu ++ rawConentNoMainMenu == filteredContent
                 `blame` "duplicate keys"
                 `swith` (rawConentMainMenu ++ rawConentNoMainMenu)
-                        \\ filteredContent)
+                        \\ filteredContent) $
 #endif
-        $ filteredContent
+          filteredContent
           ++ (if uVi
               then [ (K.mkKM "period", waitTriple)
                    , (K.mkKM "C-period", wait10Triple) ]
