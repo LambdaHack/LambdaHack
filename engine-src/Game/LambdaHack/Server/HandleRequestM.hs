@@ -17,7 +17,7 @@ module Game.LambdaHack.Server.HandleRequestM
   , handleRequestTimedCases, affectSmell, affectStash
   , reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
   , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, reqProject, reqApply
-  , reqGameRestart, reqGameSave, reqTactic, reqAutomate
+  , reqGameRestart, reqGameSave, reqDoctrine, reqAutomate
 #endif
   ) where
 
@@ -102,7 +102,7 @@ handleRequestUI fid aid cmd = case cmd of
   ReqUIGameDropAndExit -> reqGameDropAndExit aid >> return Nothing
   ReqUIGameSaveAndExit -> reqGameSaveAndExit aid >> return Nothing
   ReqUIGameSave -> reqGameSave >> return Nothing
-  ReqUITactic toT -> reqTactic fid toT >> return Nothing
+  ReqUIDoctrine toT -> reqDoctrine fid toT >> return Nothing
   ReqUIAutomate -> reqAutomate fid >> return Nothing
   ReqUINop -> return Nothing
 
@@ -997,12 +997,12 @@ reqGameSave =
   modifyServer $ \ser -> ser { sbreakASAP = True
                              , swriteSave = True }
 
--- * ReqTactic
+-- * ReqDoctrine
 
-reqTactic :: MonadServerAtomic m => FactionId -> Ability.Tactic -> m ()
-reqTactic fid toT = do
-  fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
-  execUpdAtomic $ UpdTacticFaction fid toT fromT
+reqDoctrine :: MonadServerAtomic m => FactionId -> Ability.Doctrine -> m ()
+reqDoctrine fid toT = do
+  fromT <- getsState $ fdoctrine . gplayer . (EM.! fid) . sfactionD
+  execUpdAtomic $ UpdDoctrineFaction fid toT fromT
 
 -- * ReqAutomate
 

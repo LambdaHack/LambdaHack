@@ -1,6 +1,6 @@
 -- | Picking the AI actor to move and refreshing leader and non-leader targets.
 module Game.LambdaHack.Client.AI.PickActorM
-  ( pickActorToMove, setTargetFromTactics
+  ( pickActorToMove, setTargetFromDoctrines
   ) where
 
 import Prelude ()
@@ -289,17 +289,17 @@ pickActorToMove maidToAvoid = do
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
           condInMelee <- condInMeleeM $ blid b
-          when (ftactic (gplayer fact)
+          when (fdoctrine (gplayer fact)
                 `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
             void $ refreshTarget (aid, b)
           return aid
         _ -> return oldAid
 
--- | Inspect the tactics of the actor and set his target according to it.
-setTargetFromTactics :: MonadClient m => ActorId -> m ()
-{-# INLINE setTargetFromTactics #-}
-setTargetFromTactics oldAid = do
+-- | Inspect the doctrines of the actor and set his target according to it.
+setTargetFromDoctrines :: MonadClient m => ActorId -> m ()
+{-# INLINE setTargetFromDoctrines #-}
+setTargetFromDoctrines oldAid = do
   mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
@@ -326,7 +326,7 @@ setTargetFromTactics oldAid = do
                   cli {stargetD = EM.insert oldAid tap (stargetD cli)}
                 return True
       follow = case mleader of
-        -- If no leader at all (forced @TFollow@ tactic on an actor
+        -- If no leader at all (forced @TFollow@ doctrine on an actor
         -- from a leaderless faction), fall back to @TExplore@.
         Nothing -> explore
         _ | bwatch oldBody == WSleep ->
@@ -347,7 +347,7 @@ setTargetFromTactics oldAid = do
               unless nonEnemyPathSet
                 -- If no path even to the leader himself, explore.
                 explore
-  case ftactic $ gplayer fact of
+  case fdoctrine $ gplayer fact of
     Ability.TExplore -> explore
     Ability.TFollow -> follow
     Ability.TFollowNoItems -> follow

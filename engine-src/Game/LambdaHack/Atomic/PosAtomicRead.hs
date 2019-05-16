@@ -114,7 +114,7 @@ posUpdAtomic cmd = case cmd of
   UpdLoseStashFaction _ fid lid pos -> return $! PosFidAndSight fid lid [pos]
   UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
   UpdDiplFaction{} -> return PosAll
-  UpdTacticFaction fid _ _ -> return $! PosFidAndSer fid
+  UpdDoctrineFaction fid _ _ -> return $! PosFidAndSer fid
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ _ -> singleAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
@@ -220,7 +220,7 @@ iidUpdAtomic cmd = case cmd of
   UpdLoseStashFaction{} -> []
   UpdLeadFaction{} -> []
   UpdDiplFaction{} -> []
-  UpdTacticFaction{} -> []
+  UpdDoctrineFaction{} -> []
   UpdAutoFaction{} -> []
   UpdRecordKill{} -> []
   UpdAlterTile{} -> []

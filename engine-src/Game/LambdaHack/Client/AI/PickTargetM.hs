@@ -218,8 +218,8 @@ computeTarget aid = do
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in Ability.getSk Ability.SkMove actorSk > 0
       isStuck = actorWaits b && couldMoveLastTurn
-      slackTactic =
-        ftactic (gplayer fact)
+      slackDoctrine =
+        fdoctrine (gplayer fact)
           `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
                  , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       setPath :: Target -> m (Maybe TgtAndPath)
@@ -240,7 +240,7 @@ computeTarget aid = do
                                 , tapPath=Just AndPath{pathList=path7, ..} }
             take7 tap = tap
         tgtpath <- createPath aid tgt
-        return $ Just $ if slackTactic then take7 tgtpath else tgtpath
+        return $ Just $ if slackDoctrine then take7 tgtpath else tgtpath
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
@@ -290,7 +290,7 @@ computeTarget aid = do
                         oldpos = fromMaybe (bpos b) (boldpos b)
                         vOld = bpos b `vectorToFrom` oldpos
                         pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                    if slackTactic && not isStuck
+                    if slackDoctrine && not isStuck
                        && isUnit vOld && bpos b /= pNew
                             -- both are needed, e.g., when just teleported
                             -- or when the shift bounded by level borders

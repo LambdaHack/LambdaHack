@@ -92,7 +92,7 @@ data UpdAtomic =
   | UpdLoseStashFaction Bool FactionId LevelId Point
   | UpdLeadFaction FactionId (Maybe ActorId) (Maybe ActorId)
   | UpdDiplFaction FactionId FactionId Diplomacy Diplomacy
-  | UpdTacticFaction FactionId Ability.Tactic Ability.Tactic
+  | UpdDoctrineFaction FactionId Ability.Doctrine Ability.Doctrine
   | UpdAutoFaction FactionId Bool
   | UpdRecordKill ActorId (ContentId ItemKind) Int
   -- Alter map.
@@ -230,7 +230,7 @@ undoUpdAtomic cmd = case cmd of
   UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl
-  UpdTacticFaction fid toT fromT -> Just $ UpdTacticFaction fid fromT toT
+  UpdDoctrineFaction fid toT fromT -> Just $ UpdDoctrineFaction fid fromT toT
   UpdAutoFaction fid st -> Just $ UpdAutoFaction fid (not st)
   UpdRecordKill aid ikind k -> Just $ UpdRecordKill aid ikind (-k)
   UpdAlterTile lid p fromTile toTile ->

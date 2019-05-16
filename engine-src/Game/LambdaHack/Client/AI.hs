@@ -21,9 +21,9 @@ import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Types
-import Game.LambdaHack.Common.Point
 
 -- | Handle the move of an actor under AI control (regardless if the whole
 -- faction is under human or computer control).
@@ -69,7 +69,7 @@ pickActorAndAction maid aid = do
     if mleader == Just aid
     then pickActorToMove maid
     else do
-      setTargetFromTactics aid
+      setTargetFromDoctrines aid
       return aid
   oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
   -- Trying harder (@retry@) whenever no better leader found and so at least

@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Abilities of items, actors and factions.
 module Game.LambdaHack.Definition.Ability
-  ( Skill(..), Skills, Flag(..), Flags(..), Tactic(..), EqpSlot(..)
+  ( Skill(..), Skills, Flag(..), Flags(..), Doctrine(..), EqpSlot(..)
   , getSk, addSk, checkFl, skillsToList
   , zeroSkills, addSkills, sumScaledSkills
-  , nameTactic, describeTactic, tacticSkills
+  , nameDoctrine, describeDoctrine, doctrineSkills
   , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -100,10 +100,10 @@ data Flag =
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary)
 
--- | Tactic of non-leader actors. Apart of determining AI operation,
--- each tactic implies a skill modifier, that is added to the non-leader skills
+-- | Doctrine of non-leader actors. Apart of determining AI operation,
+-- each doctrine implies a skill modifier, that is added to the non-leader skills
 -- defined in @fskillsOther@ field of @Player@.
-data Tactic =
+data Doctrine =
     TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
   | TFollow   -- ^ always follow leader's target or his position if no target
   | TFollowNoItems   -- ^ follow but don't do any item management nor use
@@ -117,9 +117,9 @@ data Tactic =
               --   the actor's sight radius
   deriving (Show, Eq, Ord, Enum, Bounded, Generic)
 
-instance Binary Tactic
+instance Binary Doctrine
 
-instance Hashable Tactic
+instance Hashable Doctrine
 
 -- | AI and UI hints about the role of the item.
 data EqpSlot =
@@ -194,37 +194,37 @@ sumScaledSkills :: [(Skills, Int)] -> Skills
 sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)
                            $ map (\(Skills sk, k) -> scaleSkills k sk) l
 
-nameTactic :: Tactic -> Text
-nameTactic TExplore        = "explore"
-nameTactic TFollow         = "follow freely"
-nameTactic TFollowNoItems  = "follow only"
-nameTactic TMeleeAndRanged = "fight only"
-nameTactic TMeleeAdjacent  = "melee only"
-nameTactic TBlock          = "block only"
-nameTactic TRoam           = "roam freely"
-nameTactic TPatrol         = "patrol area"
+nameDoctrine :: Doctrine -> Text
+nameDoctrine TExplore        = "explore"
+nameDoctrine TFollow         = "follow freely"
+nameDoctrine TFollowNoItems  = "follow only"
+nameDoctrine TMeleeAndRanged = "fight only"
+nameDoctrine TMeleeAdjacent  = "melee only"
+nameDoctrine TBlock          = "block only"
+nameDoctrine TRoam           = "roam freely"
+nameDoctrine TPatrol         = "patrol area"
 
-describeTactic :: Tactic -> Text
-describeTactic TExplore = "investigate unknown positions, chase targets"
-describeTactic TFollow = "follow pointman's target or position, grab items"
-describeTactic TFollowNoItems =
+describeDoctrine :: Doctrine -> Text
+describeDoctrine TExplore = "investigate unknown positions, chase targets"
+describeDoctrine TFollow = "follow pointman's target or position, grab items"
+describeDoctrine TFollowNoItems =
   "follow pointman's target or position, ignore items"
-describeTactic TMeleeAndRanged =
+describeDoctrine TMeleeAndRanged =
   "engage in both melee and ranged combat, don't move"
-describeTactic TMeleeAdjacent = "engage exclusively in melee, don't move"
-describeTactic TBlock = "block and wait, don't move"
-describeTactic TRoam = "move freely, chase targets"
-describeTactic TPatrol = "find and patrol an area (WIP)"
+describeDoctrine TMeleeAdjacent = "engage exclusively in melee, don't move"
+describeDoctrine TBlock = "block and wait, don't move"
+describeDoctrine TRoam = "move freely, chase targets"
+describeDoctrine TPatrol = "find and patrol an area (WIP)"
 
-tacticSkills :: Tactic -> Skills
-tacticSkills TExplore = zeroSkills
-tacticSkills TFollow = zeroSkills
-tacticSkills TFollowNoItems = ignoreItems
-tacticSkills TMeleeAndRanged = meleeAndRanged
-tacticSkills TMeleeAdjacent = meleeAdjacent
-tacticSkills TBlock = blockOnly
-tacticSkills TRoam = zeroSkills
-tacticSkills TPatrol = zeroSkills
+doctrineSkills :: Doctrine -> Skills
+doctrineSkills TExplore = zeroSkills
+doctrineSkills TFollow = zeroSkills
+doctrineSkills TFollowNoItems = ignoreItems
+doctrineSkills TMeleeAndRanged = meleeAndRanged
+doctrineSkills TMeleeAdjacent = meleeAdjacent
+doctrineSkills TBlock = blockOnly
+doctrineSkills TRoam = zeroSkills
+doctrineSkills TPatrol = zeroSkills
 
 minusTen, blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems :: Skills
 

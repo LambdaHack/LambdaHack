@@ -441,7 +441,7 @@ closestTriggers fleeVia aid = do
 -- | Check whether the actor has enough gear to go look for enemies.
 -- We assume weapons in equipment are better than any among organs
 -- or at least provide some essential diversity.
--- Disabled if, due to tactic, actors follow leader and so would
+-- Disabled if, due to doctrine, actors follow leader and so would
 -- repeatedly move towards and away form stairs at leader change,
 -- depending on current leader's gear.
 -- Number of items of a single kind is ignored, because variety is needed.
@@ -449,10 +449,10 @@ condEnoughGearM :: MonadClientRead m => ActorId -> m Bool
 condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let followTactic = ftactic (gplayer fact)
+  let followDoctrine = fdoctrine (gplayer fact)
                      `elem` [Ability.TFollow, Ability.TFollowNoItems]
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
-  return $ not followTactic  -- keep it lazy
+  return $ not followDoctrine  -- keep it lazy
            && (any (IA.checkFlag Ability.Meleeable
                     . aspectRecordFull . snd) eqpAssocs
                || length eqpAssocs >= 3)

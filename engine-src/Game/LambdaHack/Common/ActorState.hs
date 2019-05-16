@@ -194,7 +194,7 @@ getActorBody :: ActorId -> State -> Actor
 {-# INLINE getActorBody #-}
 getActorBody aid s = sactorD s EM.! aid
 
--- For now, faction and tactic skill modifiers only change
+-- For now, faction and doctrine skill modifiers only change
 -- the stats that affect permitted actions (@SkMove..SkApply@),
 -- so the expensive @actorCurrentSkills@ operation doesn't need to be used
 -- when checking the other skills, e.g., for FOV calculations,
@@ -209,10 +209,10 @@ actorCurrentSkills mleader aid s =
   let body = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
       player = gplayer . (EM.! bfid body) . sfactionD $ s
-      skillsFromTactic = Ability.tacticSkills $ ftactic player
+      skillsFromDoctrine = Ability.doctrineSkills $ fdoctrine player
       factionSkills
         | Just aid == mleader = Ability.zeroSkills
-        | otherwise = fskillsOther player `Ability.addSkills` skillsFromTactic
+        | otherwise = fskillsOther player `Ability.addSkills` skillsFromDoctrine
   in actorMaxSk `Ability.addSkills` factionSkills
 
 -- Check that the actor can move, also between levels and through doors.

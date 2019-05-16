@@ -12,7 +12,7 @@ module Game.LambdaHack.Atomic.HandleAtomicWrite
   , updMoveActor, updWaitActor, updDisplaceActor, updMoveItem
   , updRefillHP, updRefillCalm
   , updTrajectory, updQuitFaction, updSpotStashFaction, updLoseStashFaction
-  , updLeadFaction, updDiplFaction, updTacticFaction, updAutoFaction
+  , updLeadFaction, updDiplFaction, updDoctrineFaction, updAutoFaction
   , updRecordKill, updAlterTile, updAlterExplorable, updSearchTile
   , updSpotTile, updLoseTile, updAlterSmell, updSpotSmell, updLoseSmell
   , updTimeItem, updAgeGame, updUnAgeGame, ageLevel, updDiscover, updCover
@@ -97,7 +97,7 @@ handleUpdAtomic cmd = case cmd of
   UpdLeadFaction fid source target -> updLeadFaction fid source target
   UpdDiplFaction fid1 fid2 fromDipl toDipl ->
     updDiplFaction fid1 fid2 fromDipl toDipl
-  UpdTacticFaction fid toT fromT -> updTacticFaction fid toT fromT
+  UpdDoctrineFaction fid toT fromT -> updDoctrineFaction fid toT fromT
   UpdAutoFaction fid st -> updAutoFaction fid st
   UpdRecordKill aid ikind k -> updRecordKill aid ikind k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
@@ -478,13 +478,13 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
 
-updTacticFaction :: MonadStateWrite m
-                 => FactionId -> Ability.Tactic -> Ability.Tactic -> m ()
-updTacticFaction fid toT fromT = do
+updDoctrineFaction :: MonadStateWrite m
+                   => FactionId -> Ability.Doctrine -> Ability.Doctrine -> m ()
+updDoctrineFaction fid toT fromT = do
   let adj fact =
         let player = gplayer fact
-        in assert (ftactic player == fromT)
-           $ fact {gplayer = player {ftactic = toT}}
+        in assert (fdoctrine player == fromT)
+           $ fact {gplayer = player {fdoctrine = toT}}
   updateFaction fid adj
 
 updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()

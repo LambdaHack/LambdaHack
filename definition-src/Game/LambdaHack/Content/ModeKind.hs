@@ -96,14 +96,14 @@ data Player = Player
   , fskillsOther :: Ability.Skills
                                 -- ^ fixed skill modifiers to the non-leader
                                 --   actors; also summed with skills implied
-                                --   by ftactic (which is not fixed)
+                                --   by @fdoctrine@ (which is not fixed)
   , fcanEscape   :: Bool        -- ^ the player can escape the dungeon
   , fneverEmpty  :: Bool        -- ^ the faction declared killed if no actors
   , fhiCondPoly  :: HiCondPoly  -- ^ score polynomial for the player
   , fhasGender   :: Bool        -- ^ whether actors have gender
-  , ftactic      :: Ability.Tactic
+  , fdoctrine    :: Ability.Doctrine
                                 -- ^ non-leaders behave according to this
-                                --   tactic; can be changed during the game
+                                --   doctrine; can be changed during the game
   , fleaderMode  :: LeaderMode  -- ^ the mode of switching the leader
   , fhasUI       :: Bool        -- ^ does the faction have a UI client
                                 --   (for control or passive observation)

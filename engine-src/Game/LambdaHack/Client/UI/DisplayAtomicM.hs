@@ -332,7 +332,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         showDipl War = "at war"
     msgAdd MsgDiplomacy $
       name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
-  UpdTacticFaction{} -> return ()
+  UpdDoctrineFaction{} -> return ()
   UpdAutoFaction fid b -> do
     side <- getsClient sside
     lidV <- viewedLevelUI

@@ -196,7 +196,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdLoseStashFaction _ fid lid _ -> invalidatePerFidLid fid lid
   UpdLeadFaction{} -> invalidateArenas
   UpdDiplFaction{} -> return ()
-  UpdTacticFaction{} -> return ()
+  UpdDoctrineFaction{} -> return ()
   UpdAutoFaction{} -> return ()
   UpdRecordKill{} -> invalidateArenas
   UpdAlterTile lid pos fromTile toTile -> do

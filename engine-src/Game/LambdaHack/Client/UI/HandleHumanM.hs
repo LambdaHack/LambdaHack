@@ -108,7 +108,7 @@ cmdAction cmd = case cmd of
   GameDrop -> weaveJust <$> fmap Right gameDropHuman
   GameExit -> weaveJust <$> fmap Right gameExitHuman
   GameSave -> weaveJust <$> fmap Right gameSaveHuman
-  Tactic -> weaveJust <$> tacticHuman
+  Doctrine -> weaveJust <$> doctrineHuman
   Automate -> weaveJust <$> automateHuman
   AutomateToggle -> weaveJust <$> automateToggleHuman
   AutomateBack -> automateBackHuman

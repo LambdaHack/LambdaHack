@@ -39,8 +39,8 @@ data StateClient = StateClient
   { seps          :: Int            -- ^ a parameter of the aiming digital line
   , stargetD      :: EM.EnumMap ActorId TgtAndPath
       -- ^ targets of our actors in the dungeon; this is only useful for AI
-      --   and for directing non-pointmen, in particular with following tactics,
-      --   where non-pointmen go to the leader's target
+      --   and for directing non-pointmen, in particular with following
+      --   doctrines, where non-pointmen go to the pointman's target
   , sfleeD        :: EM.EnumMap ActorId Point
                                     -- ^ the position when fleeing requested
   , sexplored     :: ES.EnumSet LevelId

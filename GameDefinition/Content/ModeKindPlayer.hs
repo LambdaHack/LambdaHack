@@ -24,7 +24,7 @@ playerHero = Player
   , fneverEmpty = True
   , fhiCondPoly = hiHeroLong
   , fhasGender = True
-  , ftactic = TExplore
+  , fdoctrine = TExplore
   , fleaderMode = LeaderUI $ AutoLeader False False
   , fhasUI = True
   }
@@ -42,7 +42,7 @@ playerCivilian = Player
   , fneverEmpty = True
   , fhiCondPoly = hiHeroMedium
   , fhasGender = True
-  , ftactic = TPatrol
+  , fdoctrine = TPatrol
   , fleaderMode = LeaderNull  -- unorganized
   , fhasUI = False
   }
@@ -55,7 +55,7 @@ playerMonster = Player
   , fneverEmpty = False
   , fhiCondPoly = hiDweller
   , fhasGender = False
-  , ftactic = TExplore
+  , fdoctrine = TExplore
   , fleaderMode =
       -- No point changing leader on level, since all move and they
       -- don't follow the leader.
@@ -76,7 +76,7 @@ playerAnimal = Player
   , fneverEmpty = False
   , fhiCondPoly = hiDweller
   , fhasGender = False
-  , ftactic = TRoam  -- can't pick up, so no point exploring
+  , fdoctrine = TRoam  -- can't pick up, so no point exploring
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
@@ -94,7 +94,7 @@ playerHorror = Player
   , fneverEmpty = False
   , fhiCondPoly = []
   , fhasGender = False
-  , ftactic = TPatrol  -- disoriented
+  , fdoctrine = TPatrol  -- disoriented
   , fleaderMode = LeaderNull
   , fhasUI = False
   }
@@ -104,7 +104,7 @@ playerMonsterTourist =
                     , fcanEscape = True
                     , fneverEmpty = True  -- no spawning
                     , fhiCondPoly = hiHeroMedium
-                    , ftactic = TFollow  -- follow-the-guide, as tourists do
+                    , fdoctrine = TFollow  -- follow-the-guide, as tourists do
                     , fleaderMode = LeaderUI $ AutoLeader False False }
 
 playerHunamConvict =

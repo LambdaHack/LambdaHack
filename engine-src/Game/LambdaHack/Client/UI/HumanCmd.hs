@@ -143,7 +143,7 @@ data HumanCmd =
   | GameDrop
   | GameExit
   | GameSave
-  | Tactic
+  | Doctrine
   | Automate
   | AutomateToggle
   | AutomateBack

@@ -143,7 +143,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     -- @condBFS@ depends on the setting we change here (e.g., smarkSuspect).
     invalidateBfsAll
   UpdRecordKill{} -> return ()
-  UpdTacticFaction{} -> do
+  UpdDoctrineFaction{} -> do
     -- Clear all targets except the leader's.
     mleader <- getsClient sleader
     mtgt <- case mleader of

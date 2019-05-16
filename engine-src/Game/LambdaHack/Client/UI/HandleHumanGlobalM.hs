@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , gameScenarioIncr, gameDifficultyIncr, gameWolfToggle, gameFishToggle
     -- * Global commands that never take time
   , gameRestartHuman, gameQuitHuman, gameDropHuman, gameExitHuman, gameSaveHuman
-  , tacticHuman, automateHuman, automateToggleHuman, automateBackHuman
+  , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
@@ -1413,7 +1413,7 @@ settingsMenuHuman cmdAction = do
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
   side <- getsClient sside
-  factTactic <- getsState $ ftactic . gplayer . (EM.! side) . sfactionD
+  factDoctrine <- getsState $ fdoctrine . gplayer . (EM.! side) . sfactionD
   let offOn b = if b then "on" else "off"
       offOnAll n = case n of
         0 -> "none"
@@ -1423,12 +1423,12 @@ settingsMenuHuman cmdAction = do
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
       tvisible = "show visible zone:" <+> offOn markVision
       tsmell = "display smell clues:" <+> offOn markSmell
-      thenchmen = "non-pointmen tactic:" <+> Ability.nameTactic factTactic
+      tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
             , (K.mkKM "c", (tsmell, MarkSmell))
-            , (K.mkKM "t", (thenchmen, Tactic))
+            , (K.mkKM "t", (tdoctrine, Doctrine))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       bindingLen = 35
       gameInfo = map T.unpack
@@ -1588,27 +1588,27 @@ gameSaveHuman = do
   promptAdd0 "Saving game backup."
   return ReqUIGameSave
 
--- * Tactic
+-- * Doctrine
 
--- Note that the difference between seek-target and follow-the-leader tactic
+-- Note that the difference between seek-target and follow-the-leader doctrine
 -- can influence even a faction with passive actors. E.g., if a passive actor
 -- has an extra active skill from equipment, he moves every turn.
-tacticHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
-tacticHuman = do
+doctrineHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
+doctrineHuman = do
   fid <- getsClient sside
-  fromT <- getsState $ ftactic . gplayer . (EM.! fid) . sfactionD
+  fromT <- getsState $ fdoctrine . gplayer . (EM.! fid) . sfactionD
   let toT = if fromT == maxBound then minBound else succ fromT
   go <- displaySpaceEsc ColorFull
         $ "(Beware, work in progress!)"
-          <+> "Current non-pointmen tactic is" <+> Ability.nameTactic fromT
-          <+> "(" <> Ability.describeTactic fromT <> ")."
-          <+> "Switching tactic to" <+> Ability.nameTactic toT
-          <+> "(" <> Ability.describeTactic toT <> ")."
+          <+> "Current squad doctrine is" <+> Ability.nameDoctrine fromT
+          <+> "(" <> Ability.describeDoctrine fromT <> ")."
+          <+> "Switching doctrine to" <+> Ability.nameDoctrine toT
+          <+> "(" <> Ability.describeDoctrine toT <> ")."
           <+> "This clears targets of all non-pointmen teammates."
-          <+> "New targets will be picked according to new tactic."
+          <+> "New targets will be picked according to new doctrine."
   if not go
-  then failWith "tactic change canceled"
-  else return $ Right $ ReqUITactic toT
+  then failWith "squad doctrine change canceled"
+  else return $ Right $ ReqUIDoctrine toT
 
 -- * Automate
 
