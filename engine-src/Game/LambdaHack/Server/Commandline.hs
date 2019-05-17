@@ -25,9 +25,9 @@ import qualified System.Random as R
 -- client and ui options from and singnal an error if anything was left.
 
 import Game.LambdaHack.Client (ClientOptions (..))
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Server.ServerOptions
 
 -- | Parser for server options from commandline arguments.
@@ -68,6 +68,7 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sgtkFontFamily    <- gtkFontFamilyP
   sdlFontFile       <- sdlFontFileP
+  sdlMsgFontFile    <- sdlMsgFontFileP
   sdlScalableSizeAdd <- sdlScalableSizeAddP
   sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
   sscalableFontSize <- scalableFontSizeP
@@ -231,6 +232,12 @@ sdlFontFileP = optional $ T.pack <$>
   strOption (  long "sdlFontFile"
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
+
+sdlMsgFontFileP :: Parser (Maybe Text)
+sdlMsgFontFileP = optional $ T.pack <$>
+  strOption (  long "sdlMsgFontFile"
+            <> metavar "FONT_FILE"
+            <> help "Use FONT_FILE for the messages overlay in SDL2 frontend" )
 
 sdlScalableSizeAddP :: Parser (Maybe Int)
 sdlScalableSizeAddP = optional $

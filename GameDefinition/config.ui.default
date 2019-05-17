@@ -33,6 +33,7 @@ movementLeftHandKeys_axwdqezc = True
 scalableFontSize = 16
 sdlScalableSizeAdd = 0
 sdlFontFile = "16x16xw.bdf"
+sdlMsgFontFile = "Quando-Regular.ttf"
 sdlBitmapSizeAdd = 0
 ;sdlFontFile = "8x8xb.fnt"
 ;sdlFontFile = "8x8x.fnt"

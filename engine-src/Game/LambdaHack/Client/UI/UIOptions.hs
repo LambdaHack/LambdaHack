@@ -28,6 +28,7 @@ data UIOptions = UIOptions
   , uLeftHand           :: Bool
   , uGtkFontFamily      :: Text
   , uSdlFontFile        :: Text
+  , uSdlMsgFontFile     :: Text
   , uSdlScalableSizeAdd :: Int
   , uSdlBitmapSizeAdd   :: Int
   , uScalableFontSize   :: Int
