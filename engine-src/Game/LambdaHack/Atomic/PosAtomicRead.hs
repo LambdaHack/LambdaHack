@@ -151,6 +151,10 @@ posUpdAtomic cmd = case cmd of
   UpdAgeGame _ -> return PosAll
   UpdUnAgeGame _ -> return PosAll
   UpdDiscover c _ _ _ -> singleContainer c
+    -- This implies other factions applying items from their inventory,
+    -- when we can't see the position of the stash, won't Id the item
+    -- for us, even when notice item usage. Thrown items will Id, though,
+    -- just as triggering items from the floor or embedded items.
   UpdCover c _ _ _ -> singleContainer c
   UpdDiscoverKind c _ _ -> singleContainer c
   UpdCoverKind c _ _ -> singleContainer c

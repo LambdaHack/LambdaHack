@@ -385,7 +385,9 @@ animalBrain = armoredSkin
                ++ [AddSkill SkMove 4]  -- can move at once when waking up
                ++ [AddSkill SkAlter 2]  -- can use normal stairs; can't dig
                ++ [AddSkill SkWait 2]  -- can brace and sleep
-               -- No @SkAppy@ bonus, so can only apply foods.
+               -- No @SkAppy@ bonus, so can only apply foods. Note, however,
+               -- that AI doesn't risk applying unIded items, so in early
+               -- game animals won't eat anything.
                ++ [AddSkill SkDisplace (-1)]  -- no melee tactics
                ++ [AddSkill SkMoveItem (-1)]  -- no item gathering
                ++ [AddSkill SkProject (-1)]  -- nor item flinging

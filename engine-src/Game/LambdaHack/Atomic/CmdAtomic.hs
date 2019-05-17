@@ -115,7 +115,7 @@ data UpdAtomic =
   | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord
       -- Here and below @Container@ is only used for presentation
       -- and when @CStash@ is not visible, but the item is, it won't
-      -- break anything, because item identification is not set globally.
+      -- break anything, because item identification is not registered globally.
   | UpdCover Container ItemId (ContentId ItemKind) IA.AspectRecord
   | UpdDiscoverKind Container ItemKindIx (ContentId ItemKind)
   | UpdCoverKind Container ItemKindIx (ContentId ItemKind)
