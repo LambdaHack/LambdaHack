@@ -58,6 +58,7 @@ data FrontendSession = FrontendSession
   { swindow          :: SDL.Window
   , srenderer        :: SDL.Renderer
   , sfont            :: TTF.Font
+  , smsgFont         :: TTF.Font
   , satlas           :: IORef FontAtlas
   , stexture         :: IORef SDL.Texture
   , spreviousFrame   :: IORef SingleFrame
@@ -78,6 +79,15 @@ frontendName = "sdl"
 startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
+isBitmapFile :: String -> Bool
+isBitmapFile fontFileName =
+  "fon" `isSuffixOf` fontFileName
+  || "fnt" `isSuffixOf` fontFileName
+  || "bdf" `isSuffixOf` fontFileName
+  || "FON" `isSuffixOf` fontFileName
+  || "FNT" `isSuffixOf` fontFileName
+  || "BDF" `isSuffixOf` fontFileName
+
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
 startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  SDL.initialize [SDL.InitEvents]
@@ -85,30 +95,28 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
  let title = fromJust stitle
-     fontFileName = T.unpack (fromJust sdlFontFile)
-     fontFileOrig | isRelative fontFileName = fromJust sfontDir </> fontFileName
-                  | otherwise = fontFileName
- (fontFileExists, fontFile) <- do
-   fontFileOrigExists <- doesFileExist fontFileOrig
-   if fontFileOrigExists
-   then return (True, fontFileOrig)
-   else do
-     -- Handling old font format specified in old game config files.
-     let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
-     fontFileAltExists <- doesFileExist fontFileAlt
-     return (fontFileAltExists, fontFileAlt)
- unless fontFileExists $
-   fail $ "Font file does not exist: " ++ fontFileOrig
+     findFontFile t = do
+       let fontFileName = T.unpack (fromJust t)
+           fontFileOrig | isRelative fontFileName =
+                          fromJust sfontDir </> fontFileName
+                        | otherwise = fontFileName
+       fontFileOrigExists <- doesFileExist fontFileOrig
+       if fontFileOrigExists
+       then return fontFileOrig
+       else do
+         -- Handling old font format specified in old game config files.
+         let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
+         fontFileAltExists <- doesFileExist fontFileAlt
+         if fontFileAltExists
+         then return fontFileAlt
+         else fail $ "Font file does not exist: " ++ fontFileOrig
+ fontFile <- findFontFile sdlFontFile
+ msgFontFile <- findFontFile sdlMsgFontFile
  let fontSize = fromJust sscalableFontSize  -- will be ignored for bitmap fonts
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
- let isBitmapFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                 || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                 || "bdf" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                 || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                 || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                 || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-     sdlSizeAdd = fromJust $ if isBitmapFile
+ smsgFont <- TTF.load msgFontFile fontSize
+ let sdlSizeAdd = fromJust $ if isBitmapFile fontFile  -- based on main font
                              then sdlBitmapSizeAdd
                              else sdlScalableSizeAdd
  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
@@ -117,6 +125,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  if slogPriority == Just 0 then do
   rf <- createRawFrontend coscreen (\_ -> return ()) (return ())
   putMVar rfMVar rf
+  TTF.free smsgFont
   TTF.free sfont
   TTF.quit
   SDL.quit
@@ -201,6 +210,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         if continueSdlLoop
         then loopSDL
         else do
+          TTF.free smsgFont
           TTF.free sfont
           TTF.quit
           SDL.destroyRenderer srenderer
@@ -291,16 +301,11 @@ drawFrame :: ClientOptions    -- ^ client options
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
 drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
-  let isBitmapFile = "fon" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                  || "fnt" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                  || "bdf" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                  || "FON" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                  || "FNT" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-                  || "BDF" `isSuffixOf` T.unpack (fromJust sdlFontFile)
-      sdlSizeAdd = fromJust $ if isBitmapFile
+  let isBitmapFont = isBitmapFile $ T.unpack (fromJust sdlFontFile)
+      sdlSizeAdd = fromJust $ if isBitmapFont
                               then sdlBitmapSizeAdd
                               else sdlScalableSizeAdd
-  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont
+  boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont  -- based on main font
   let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
       vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
@@ -330,7 +335,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
             -- so only the dot can be bold).
             let acChar = if not (Color.isBright fg)
                             && acCharRaw == floorSymbol  -- 0xb7
-                         then if isBitmapFile
+                         then if isBitmapFont
                               then Char.chr 7   -- hack
                               else Char.chr 8901  -- 0x22c5
                          else acCharRaw
