@@ -11,7 +11,7 @@ module Game.LambdaHack.Definition.Color
     -- * Characters with attributes
   , AttrChar(..), AttrCharW32(..)
   , attrCharToW32, attrCharFromW32
-  , fgFromW32, bgFromW32, charFromW32, attrFromW32, attrEnumFromW32
+  , fgFromW32, bgFromW32, attrW32FromW32, charFromW32, attrFromW32
   , spaceAttrW32, retAttrW32, attrChar2ToW32, attrChar1ToW32
   ) where
 
@@ -191,6 +191,10 @@ bgFromW32 :: AttrCharW32 -> Highlight
 bgFromW32 w =
   toEnum $ fromEnum $ attrCharW32 w .&. (2 ^ (8 :: Int) - 1)
 
+attrW32FromW32 :: AttrCharW32 -> Word32
+{-# INLINE attrW32FromW32 #-}
+attrW32FromW32 w = attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
+
 charFromW32 :: AttrCharW32 -> Char
 {-# INLINE charFromW32 #-}
 charFromW32 w =
@@ -199,10 +203,6 @@ charFromW32 w =
 attrFromW32 :: AttrCharW32 -> Attr
 {-# INLINE attrFromW32 #-}
 attrFromW32 w = Attr (fgFromW32 w) (bgFromW32 w)
-
-attrEnumFromW32 :: AttrCharW32 -> Int
-{-# INLINE attrEnumFromW32 #-}
-attrEnumFromW32 !w = fromEnum $ attrCharW32 w .&. (2 ^ (16 :: Int) - 1)
 
 spaceAttrW32 :: AttrCharW32
 spaceAttrW32 = attrCharToW32 $ AttrChar defAttr ' '

@@ -14,6 +14,7 @@ import           Data.Bits (unsafeShiftL)
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import qualified Data.Text as T
+import           Data.Word (Word32)
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Graphics.UI.Gtk hiding (Point)
 import           System.Exit (exitFailure)
@@ -250,11 +251,11 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
     ib <- textBufferGetStartIter tb
     ie <- textIterCopy ib
     let defEnum = fromAttr Color.defAttr
-        setTo :: (X, Int) -> Color.AttrCharW32 -> IO (X, Int)
+        setTo :: (X, Word32) -> Color.AttrCharW32 -> IO (X, Word32)
         setTo (!lx, !previous) !w
           | (lx + 1) `mod` (rwidth coscreen + 1) /= 0 = do
-            let current :: Int
-                current = Color.attrEnumFromW32 w
+            let current :: Word32
+                current = Color.attrFromW32 w
             if current == previous
             then return (lx + 1, previous)
             else do

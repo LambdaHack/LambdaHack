@@ -44,6 +44,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
@@ -115,6 +116,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  let fontSize = fromJust sscalableFontSize  -- will be ignored for bitmap fonts
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
+ isMono <- TTF.isMonospace sfont
+ let !_A = assert isMono ()
  smsgFont <- TTF.load msgFontFile fontSize
  let sdlSizeAdd = fromJust $ if isBitmapFile fontFile  -- based on main font
                              then sdlBitmapSizeAdd
@@ -317,7 +320,57 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
           -- reset back to black
       chooseAndDrawHighlight !x !y !bg = case bg of
         Color.HighlightNone -> return ()
+        Color.HighlightNoneCursor -> return ()
         _ -> drawHighlight x y $ Color.highlightToColor bg
+      -- This also frees the surface it gets.
+      scaleSurfaceToTexture :: SDL.Surface -> IO SDL.Texture
+      scaleSurfaceToTexture textSurfaceRaw = do
+        Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
+        let width = min boxSize $ fromEnum sw
+            height = min boxSize $ fromEnum sh
+            xsrc = max 0 (fromEnum sw - width) `div` 2
+            ysrc = max 0 (fromEnum sh - height) `div` 2
+            srcR = SDL.Rectangle (vp xsrc ysrc)
+                                 (Vect.V2 (toEnum width) (toEnum height))
+            xtgt = (boxSize - width) `divUp` 2
+            ytgt = (boxSize - height) `div` 2
+            tgtR = vp xtgt ytgt
+        textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
+        SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
+        -- We resize surface rather than texture to set the resulting
+        -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
+        -- which otherwise we wouldn't be able to do.
+        void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
+                               textSurface (Just tgtR)
+        SDL.freeSurface textSurfaceRaw
+        textTexture <- SDL.createTextureFromSurface srenderer textSurface
+        SDL.freeSurface textSurface
+        return textTexture
+      -- This also frees the surface it gets.
+      scaleSurfaceToTextureProportional :: SDL.Surface -> IO (CInt, SDL.Texture)
+      scaleSurfaceToTextureProportional textSurfaceRaw = do
+        Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
+        let width = fromEnum sw
+            height = min boxSize $ fromEnum sh
+            xsrc = 0
+            ysrc = max 0 (fromEnum sh - height) `div` 2
+            srcR = SDL.Rectangle (vp xsrc ysrc)
+                                 (Vect.V2 (toEnum width) (toEnum height))
+            xtgt = 0
+            ytgt = (boxSize - height) `div` 2
+            tgtR = vp xtgt ytgt
+            tt2Proportional = Vect.V2 sw (toEnum boxSize)
+        textSurface <- SDL.createRGBSurface tt2Proportional SDL.ARGB8888
+        SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
+        -- We resize surface rather than texture to set the resulting
+        -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
+        -- which otherwise we wouldn't be able to do.
+        void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
+                               textSurface (Just tgtR)
+        SDL.freeSurface textSurfaceRaw
+        textTexture <- SDL.createTextureFromSurface srenderer textSurface
+        SDL.freeSurface textSurface
+        return (sw, textTexture)
       setChar :: Int -> (Word32, Word32) -> IO Int
       setChar !i (!w, !wPrev) | w == wPrev = return $! i + 1
       setChar i (w, _) = do
@@ -341,26 +394,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
                          else acCharRaw
             textSurfaceRaw <- TTF.shadedGlyph sfont (colorToRGBA fg)
                                               (colorToRGBA Color.Black) acChar
-            Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
-            let width = min boxSize $ fromEnum sw
-                height = min boxSize $ fromEnum sh
-                xsrc = max 0 (fromEnum sw - width) `div` 2
-                ysrc = max 0 (fromEnum sh - height) `div` 2
-                srcR = SDL.Rectangle (vp xsrc ysrc)
-                                     (Vect.V2 (toEnum width) (toEnum height))
-                xtgt = (boxSize - width) `divUp` 2
-                ytgt = (boxSize - height) `div` 2
-                tgtR = vp xtgt ytgt
-            textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
-            SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
-            -- We resize surface rather than texture to set the resulting
-            -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
-            -- which otherwise we wouldn't be able to do.
-            void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
-                                   textSurface (Just tgtR)
-            SDL.freeSurface textSurfaceRaw
-            textTexture <- SDL.createTextureFromSurface srenderer textSurface
-            SDL.freeSurface textSurface
+            textTexture <- scaleSurfaceToTexture textSurfaceRaw
             writeIORef satlas $ EM.insert ac textTexture atlas
             return textTexture
           Just textTexture -> return textTexture
@@ -369,6 +403,32 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
         -- Potentially overwrite a portion of the glyph.
         chooseAndDrawHighlight px py bg
         return $! i + 1
+      drawProportionalOverlay mov =
+        mapM_ drawProportionalLine
+        $ zipWith (\py line -> (Point 0 py, line)) [0..] mov
+      drawProportionalLine :: (Point, AttrLine) -> IO ()
+      drawProportionalLine (_, []) = return ()
+      drawProportionalLine (p@Point{..}, w : rest) = do
+        let sameAttr ac = Color.attrW32FromW32 ac == Color.attrW32FromW32 w
+            (sameRest, otherRest) = span sameAttr rest
+            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}} =
+              Color.attrCharFromW32 w
+            !_A = assert (bg `elem` [ Color.HighlightNone
+                                    , Color.HighlightNoneCursor ]) ()
+            fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
+            t = T.pack $ map Color.charFromW32 $ w : sameRest
+        drawProportionalChunk p fg t
+        drawProportionalLine (Point {px = px + T.length t, py}, otherRest)
+      drawProportionalChunk :: Point -> Color.Color -> T.Text -> IO ()
+      drawProportionalChunk Point{..} fg t = do
+        textSurfaceRaw <- TTF.shaded smsgFont (colorToRGBA fg)
+                                     (colorToRGBA Color.Black) t
+        (sw, textTexture) <- scaleSurfaceToTextureProportional textSurfaceRaw
+        let tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize))
+                                 (Vect.V2 sw (toEnum boxSize))
+        -- Potentially overwrite some of the screen.
+        SDL.copy srenderer textTexture Nothing (Just tgtR)
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
@@ -376,6 +436,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
                               (PointArray.avector $ singleArray prevFrame)
+  drawProportionalOverlay $ singleOverlay curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer
