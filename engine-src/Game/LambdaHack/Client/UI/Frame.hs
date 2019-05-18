@@ -1,7 +1,8 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( FrameST, FrameForall(..), FrameBase(..), Frame, PreFrame, PreFrames
+  ( FrameST, FrameForall(..), FrameBase(..), Frame
+  , PreFrame3, PreFrames3, PreFrame, PreFrames
   , SingleFrame(..)
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
 #ifdef EXPOSE_INTERNAL
@@ -38,14 +39,20 @@ newtype FrameBase = FrameBase
   {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
 
 -- | A frame, that is, a base frame and all its modifications.
-type Frame = (FrameBase, FrameForall)
+type Frame = ((FrameBase, FrameForall), Overlay)
 
 -- | Components of a frame, before it's decided if the first can be overwritten
 -- in-place or needs to be copied.
-type PreFrame = (U.Vector Word32, FrameForall)
+type PreFrame3 = (PreFrame, Overlay)
 
 -- | Sequence of screen frames, including delays. Potentially based on a single
 -- base frame.
+type PreFrames3 = [Maybe PreFrame3]
+
+-- | A simpler variant of @PreFrame3@.
+type PreFrame = (U.Vector Word32, FrameForall)
+
+-- | A simpler variant of @PreFrames3@.
 type PreFrames = [Maybe PreFrame]
 
 -- | Representation of an operation of overwriting a frame with a single line
@@ -59,19 +66,20 @@ writeLine offset l = FrameForall $ \v -> do
         writeAt (off + 1) rest
   writeAt offset l
 
--- | An overlay that fits on the screen (or is meant to be truncated on display)
--- and is padded to fill the whole screen
--- and is displayed as a single game screen frame.
+-- | An frame that is padded to fill the whole screen with an optional
+-- overlay to display in proportional font.
 --
 -- Note that we don't provide a list of color-highlighed positions separately,
 -- because overlays need to obscure not only map, but the highlights as well.
-newtype SingleFrame = SingleFrame
-  {singleFrame :: PointArray.Array Color.AttrCharW32}
+data SingleFrame = SingleFrame
+  { singleArray   :: PointArray.Array Color.AttrCharW32
+  , singleOverlay :: Overlay }
   deriving (Eq, Show)
 
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
-  SingleFrame $ PointArray.replicateA rwidth rheight Color.spaceAttrW32
+  SingleFrame (PointArray.replicateA rwidth rheight Color.spaceAttrW32)
+              []
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
@@ -107,9 +115,11 @@ truncateAttrLine w xs lenMax =
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
 overlayFrame :: IntOverlay -> PreFrame -> PreFrame
-overlayFrame ov (m, ff) = (m, FrameForall $ \v -> do
-  unFrameForall ff v
-  mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov)
+overlayFrame ov (m, ff) =
+  ( m
+  , FrameForall $ \v -> do
+      unFrameForall ff v
+      mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov )
 
 overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> PreFrame
                       -> PreFrame

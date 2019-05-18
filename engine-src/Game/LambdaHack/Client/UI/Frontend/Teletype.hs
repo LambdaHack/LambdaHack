@@ -16,10 +16,10 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
+import qualified Game.LambdaHack.Definition.Color as Color
 
 -- No session data maintained by this frontend
 
@@ -50,12 +50,12 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: ScreenContent
         -> SingleFrame
         -> IO ()
-display coscreen SingleFrame{singleFrame} =
+display coscreen SingleFrame{singleArray} =
   let f w l =
         let acCharRaw = Color.charFromW32 w
             acChar = if acCharRaw == floorSymbol then '.' else acCharRaw
         in acChar : l
-      levelChar = chunk $ PointArray.foldrA f [] singleFrame
+      levelChar = chunk $ PointArray.foldrA f [] singleArray
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r

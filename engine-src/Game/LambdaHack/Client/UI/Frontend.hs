@@ -134,15 +134,15 @@ fchanFrontend fs@FrontSetup{..} rf =
 
 display :: RawFrontend -> Frame -> IO ()
 display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
-        (m, upd) = do
+        ((m, upd), mov) = do
   let new :: forall s. ST s (G.Mutable U.Vector s Word32)
       new = do
         v <- unFrameBase m
         unFrameForall upd v
         return v
-      singleFrame = PointArray.Array rwidth rheight (U.create new)
+      singleArray = PointArray.Array rwidth rheight (U.create new)
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
-  fdisplay rf $ SingleFrame singleFrame
+  fdisplay rf $ SingleFrame singleArray mov
 
 defaultMaxFps :: Int
 defaultMaxFps = 24
@@ -189,9 +189,9 @@ nullStartup :: ScreenContent -> IO RawFrontend
 nullStartup coscreen = createRawFrontend coscreen seqFrame (return ())
 
 seqFrame :: SingleFrame -> IO ()
-seqFrame SingleFrame{singleFrame} =
+seqFrame SingleFrame{singleArray} =
   let seqAttr () attr = Color.colorToRGB (Color.fgFromW32 attr)
                         `seq` Color.bgFromW32 attr
                         `seq` Color.charFromW32 attr == ' '
                         `seq` ()
-  in return $! PointArray.foldlA' seqAttr () singleFrame
+  in return $! PointArray.foldlA' seqAttr () singleArray

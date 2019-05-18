@@ -237,12 +237,12 @@ display :: ScreenContent
         -> FrontendSession
         -> SingleFrame
         -> IO ()
-display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
+display coscreen FrontendSession{..} SingleFrame{singleArray} = do
   let f !w (!n, !l) = if n == -1
                       then (rwidth coscreen - 2, Color.charFromW32 w : '\n' : l)
                       else (n - 1, Color.charFromW32 w : l)
       (_, levelChar) =
-        PointArray.foldrA' f (rwidth coscreen - 1, []) singleFrame
+        PointArray.foldrA' f (rwidth coscreen - 1, []) singleArray
       !gfChar = T.pack levelChar
   postGUISync $ do
     tb <- textViewGetBuffer sview
@@ -264,7 +264,7 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
               textIterSetOffset ib lx
               return (lx + 1, current)
         setTo (lx, previous) w = setTo (lx + 1, previous) w
-    (lx, previous) <- PointArray.foldMA' setTo (-1, defEnum) singleFrame
+    (lx, previous) <- PointArray.foldMA' setTo (-1, defEnum) singleArray
     textIterSetOffset ie lx
     when (previous /= defEnum) $
       textBufferApplyTag tb (stags IM.! previous) ib ie

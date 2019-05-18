@@ -250,8 +250,8 @@ display FrontendSession{..} !curFrame = flip runDOM undefined $ do
   writeIORef spreviousFrame curFrame
   -- This continues asynchronously, if can't otherwise.
   callback <- newRequestAnimationFrameCallbackSync $ \_ ->
-    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleFrame curFrame)
-                                (PointArray.avector $ singleFrame prevFrame)
+    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
+                                (PointArray.avector $ singleArray prevFrame)
   -- This attempts to ensure no redraws while callback executes
   -- and a single redraw when it completes.
   requestAnimationFrame_ scurrentWindow callback

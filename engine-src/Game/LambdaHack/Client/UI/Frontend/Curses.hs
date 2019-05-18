@@ -69,7 +69,7 @@ display :: ScreenContent
         -> FrontendSession
         -> SingleFrame
         -> IO ()
-display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
+display coscreen FrontendSession{..} SingleFrame{singleArray} = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! (Color.defFG, Color.Black)
@@ -79,7 +79,7 @@ display coscreen FrontendSession{..} SingleFrame{singleFrame} = do
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
   let sf = chunk $ map Color.attrCharFromW32
-                 $ PointArray.toListA singleFrame
+                 $ PointArray.toListA singleArray
       level = init sf ++ [init $ last sf]
       nm = zip [0..] $ map (zip [0..]) level
       chunk [] = []

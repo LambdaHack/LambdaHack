@@ -12,6 +12,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -39,16 +40,24 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- If the overlay is too long, it's truncated.
 -- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
-            => ColorMode -> Bool -> Overlay -> LevelId -> m PreFrame
+            => ColorMode -> Bool -> Overlay -> LevelId -> m PreFrame3
 drawOverlay dm onBlank topTrunc lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
+  ClientOptions{sdlMsgFontFile} <- getsClient soptions
   basicFrame <- if onBlank
                 then do
                   let m = U.replicate (rwidth * rheight)
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  return $! overlayFrameWithLines coscreen onBlank topTrunc basicFrame
+  let preFrame = overlayFrameWithLines coscreen onBlank topTrunc basicFrame
+      msgFontSupported =
+#ifdef USE_SDL
+        maybe True T.null sdlMsgFontFile
+#else
+        False
+#endif
+  return $! if msgFontSupported then (preFrame, []) else (basicFrame, topTrunc)
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
@@ -140,7 +149,7 @@ resetPlayBack = do
       modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.
-renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames
+renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
 renderFrames arena anim = do
   report <- getReportUI
   let truncRep = [renderReport report]
@@ -148,7 +157,8 @@ renderFrames arena anim = do
   snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
-            else renderAnim basicFrame anim
+            else map (fmap (\fr -> (fr, snd basicFrame)))
+                 $ renderAnim (fst basicFrame) anim
 
 -- | Render and display animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m ()

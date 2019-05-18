@@ -374,8 +374,8 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
   writeIORef spreviousFrame curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Just texture
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
-  U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleFrame curFrame)
-                              (PointArray.avector $ singleFrame prevFrame)
+  U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
+                              (PointArray.avector $ singleArray prevFrame)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer

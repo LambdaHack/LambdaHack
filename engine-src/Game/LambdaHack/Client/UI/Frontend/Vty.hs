@@ -53,14 +53,14 @@ display :: ScreenContent
         -> FrontendSession
         -> SingleFrame
         -> IO ()
-display coscreen FrontendSession{svty} SingleFrame{singleFrame} = do
+display coscreen FrontendSession{svty} SingleFrame{singleArray} = do
   let img = foldr (<->) emptyImage
             . map (foldr (<|>) emptyImage
                      . map (\w -> char (setAttr $ Color.attrFromW32 w)
                                        (squashChar $ Color.charFromW32 w)))
-            $ chunk $ PointArray.toListA singleFrame
+            $ chunk $ PointArray.toListA singleArray
       pic1 = picForImage img
-      Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleFrame
+      Point{..} = PointArray.maxIndexByA (comparing Color.bgFromW32) singleArray
       pic2 = pic1 {picCursor = AbsoluteCursor px py}
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
