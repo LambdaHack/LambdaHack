@@ -719,7 +719,7 @@ eitherHistory showAll = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, (slotPrefix sn, 0, rwidth))
+      kxs = [ (Right sn, (slotPrefix sn, 0, maxBound))
             | sn <- take (length rh) intSlots ]
   promptAdd0 msg
   okxs <- overlayToSlideshow rheight [K.escKM] (rh, kxs)
