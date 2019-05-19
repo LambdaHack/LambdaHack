@@ -68,6 +68,7 @@ serverOptionsP = do
   sdbgMsgSer        <- dbgMsgSerP
   sgtkFontFamily    <- gtkFontFamilyP
   sdlFontFile       <- sdlFontFileP
+  sdlMsgFontSize    <- sdlMsgFontSizeP
   sdlMsgFontFile    <- sdlMsgFontFileP
   sdlScalableSizeAdd <- sdlScalableSizeAddP
   sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
@@ -233,11 +234,17 @@ sdlFontFileP = optional $ T.pack <$>
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
 
+sdlMsgFontSizeP :: Parser (Maybe Int)
+sdlMsgFontSizeP = optional $
+  option auto (  long "sdlMsgFontSize"
+              <> metavar "N"
+              <> help "Use font size of N pixels for the message overlay in SDL2 frontend" )
+
 sdlMsgFontFileP :: Parser (Maybe Text)
 sdlMsgFontFileP = optional $ T.pack <$>
   strOption (  long "sdlMsgFontFile"
             <> metavar "FONT_FILE"
-            <> help "Use FONT_FILE for the messages overlay in SDL2 frontend" )
+            <> help "Use FONT_FILE for the message overlay in SDL2 frontend" )
 
 sdlScalableSizeAddP :: Parser (Maybe Int)
 sdlScalableSizeAddP = optional $

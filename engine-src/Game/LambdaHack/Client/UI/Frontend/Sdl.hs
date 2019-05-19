@@ -113,12 +113,13 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          else fail $ "Font file does not exist: " ++ fontFileOrig
  fontFile <- findFontFile sdlFontFile
  msgFontFile <- findFontFile sdlMsgFontFile
- let fontSize = fromJust sscalableFontSize  -- will be ignored for bitmap fonts
+ let fontSize = fromJust sscalableFontSize  -- is ignored for bitmap fonts
+     msgFontSize = fromJust sdlMsgFontSize
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
  isMono <- TTF.isMonospace sfont
  let !_A = assert isMono ()
- smsgFont <- TTF.load msgFontFile fontSize
+ smsgFont <- TTF.load msgFontFile msgFontSize
  let sdlSizeAdd = fromJust $ if isBitmapFile fontFile  -- based on main font
                              then sdlBitmapSizeAdd
                              else sdlScalableSizeAdd

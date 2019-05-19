@@ -71,6 +71,7 @@ parseConfig cfg =
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uGtkFontFamily = getOption "gtkFontFamily"
       uSdlFontFile = getOption "sdlFontFile"
+      uSdlMsgFontSize = getOption "sdlMsgFontSize"
       uSdlMsgFontFile = getOption "sdlMsgFontFile"
       uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
       uSdlBitmapSizeAdd = getOption "sdlBitmapSizeAdd"
@@ -118,6 +119,8 @@ applyUIOptions COps{corule} uioptions soptions =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlFontFile =
         sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
+     (\opts -> opts {sdlMsgFontSize =
+        sdlMsgFontSize opts `mplus` Just (uSdlMsgFontSize uioptions)}) .
      (\opts -> opts {sdlMsgFontFile =
         sdlMsgFontFile opts `mplus` Just (uSdlMsgFontFile uioptions)}) .
      (\opts -> opts {sdlScalableSizeAdd =

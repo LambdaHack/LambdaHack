@@ -17,8 +17,10 @@ data ClientOptions = ClientOptions
       -- ^ Font family to use for the GTK main game window.
   , sdlFontFile        :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
+  , sdlMsgFontSize     :: Maybe Int
+      -- ^ Font size to use for the SDL2 message overlay.
   , sdlMsgFontFile     :: Maybe Text
-      -- ^ Font file to use for the SDL2 messages overlay.
+      -- ^ Font file to use for the SDL2 message overlay.
   , sdlScalableSizeAdd :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
       --   To get symmetric padding, add an even number.
@@ -71,6 +73,7 @@ defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing
   , sdlFontFile = Nothing
+  , sdlMsgFontSize = Nothing
   , sdlMsgFontFile = Nothing
   , sdlScalableSizeAdd = Nothing
   , sdlBitmapSizeAdd = Nothing
