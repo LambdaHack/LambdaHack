@@ -405,10 +405,10 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
         return $! i + 1
       drawProportionalOverlay mov =
         mapM_ drawProportionalLine
-        $ zipWith (\py line -> (Point 0 py, line)) [0..] mov
-      drawProportionalLine :: (Point, AttrLine) -> IO ()
-      drawProportionalLine (_, []) = return ()
-      drawProportionalLine (p@Point{..}, w : rest) = do
+        $ zipWith (\y line -> (0, y, line)) [0..] mov
+      drawProportionalLine :: (Int, Int, AttrLine) -> IO ()
+      drawProportionalLine (_, _, []) = return ()
+      drawProportionalLine (x, row, w : rest) = do
         let sameAttr ac = Color.fgFromW32 ac == Color.fgFromW32 w
                           || ac == Color.spaceAttrW32  -- matches all colours
             (sameRest, otherRest) = span sameAttr rest
@@ -416,20 +416,21 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
               Color.attrCharFromW32 w
             !_A = assert (bg `elem` [ Color.HighlightNone
                                     , Color.HighlightNoneCursor ]) ()
-            fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             t = T.pack $ map Color.charFromW32 $ w : sameRest
-        drawProportionalChunk p fg t
-        drawProportionalLine (Point {px = px + T.length t, py}, otherRest)
-      drawProportionalChunk :: Point -> Color.Color -> T.Text -> IO ()
-      drawProportionalChunk Point{..} fg t = do
+        width <- drawProportionalChunk x row fg t
+        drawProportionalLine (x + width, row, otherRest)
+      drawProportionalChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
+      drawProportionalChunk x row fg t = do
         textSurfaceRaw <- TTF.shaded smsgFont (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t
         (sw, textTexture) <- scaleSurfaceToTextureProportional textSurfaceRaw
-        let tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize))
+        let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 sw (toEnum boxSize))
         -- Potentially overwrite some of the screen.
         SDL.copy srenderer textTexture Nothing (Just tgtR)
+        return $! fromEnum sw
   texture <- readIORef stexture
   prevFrame <- readIORef spreviousFrame
   writeIORef spreviousFrame curFrame
