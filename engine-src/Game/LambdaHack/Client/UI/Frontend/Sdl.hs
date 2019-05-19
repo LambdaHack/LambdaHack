@@ -410,6 +410,7 @@ drawFrame ClientOptions{..} FrontendSession{..} curFrame = do
       drawProportionalLine (_, []) = return ()
       drawProportionalLine (p@Point{..}, w : rest) = do
         let sameAttr ac = Color.attrW32FromW32 ac == Color.attrW32FromW32 w
+                          || ac == Color.spaceAttrW32  -- matches all colours
             (sameRest, otherRest) = span sameAttr rest
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}} =
               Color.attrCharFromW32 w

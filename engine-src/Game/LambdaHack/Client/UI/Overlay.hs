@@ -40,7 +40,8 @@ textToAL !t =
 textFgToAL :: Color.Color -> Text -> AttrLine
 textFgToAL !fg !t =
   let f ' ' l = Color.spaceAttrW32 : l
-                  -- for speed and simplicity we always keep the space @White@
+                  -- for speed and simplicity (testing if char is a space)
+                  -- we always keep the space @White@
       f c l = let !ac = Color.attrChar2ToW32 fg c
               in ac : l
   in T.foldr f [] t
