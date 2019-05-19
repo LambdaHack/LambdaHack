@@ -137,7 +137,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
         Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
-              highAttr x | Color.acAttr x `notElem` highableAttrs = x
+              highAttr x | Color.acAttr x `notElem` highableAttrs
+                           || Color.acChar x == ' ' = x
               highAttr x = x {Color.acAttr =
                                 (Color.acAttr x) {Color.fg = Color.BrWhite}}
               cursorAttr x = x {Color.acAttr =

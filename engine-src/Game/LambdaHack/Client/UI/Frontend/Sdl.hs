@@ -427,6 +427,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
       drawProportionalLine (x, row, w : rest) = do
         let sameAttr ac = Color.fgFromW32 ac == Color.fgFromW32 w
                           || ac == Color.spaceAttrW32  -- matches all colours
+                          --- || ac == Color.spaceCursorAttrW32
+                          -- don't uncomment, unless highlight artifacts seen
             (sameRest, otherRest) = span sameAttr rest
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}} =
               Color.attrCharFromW32 w
