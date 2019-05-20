@@ -257,10 +257,8 @@ build-binary-common:
 	cp GameDefinition/fonts/8x8xb.fnt LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/8x8x.fnt LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/LICENSE.16x16x LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/Fix15Mono-Bold.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/source-code-pro-v9-latin_latin-ext-700.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/source-sans-pro-v12-latin_latin-ext-700.woff LambdaHackTheGame/GameDefinition/fonts
-	cp GameDefinition/fonts/LICENSE.Fix15Mono-Bold LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/OFL.txt LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/InGameHelp.txt LambdaHackTheGame/GameDefinition
 	cp GameDefinition/PLAYING.md LambdaHackTheGame/GameDefinition
