@@ -72,7 +72,7 @@ instance Binary CmdArea
 areaDescription :: CmdArea -> Text
 areaDescription ca = case ca of
   CaMessage ->      "message line"
-  CaMapLeader ->    "pointman on map"
+  CaMapLeader ->    "pointman spot"
   CaMapParty ->     "party on map"
   CaMap ->          "the map area"
   CaLevelNumber ->  "level number"
