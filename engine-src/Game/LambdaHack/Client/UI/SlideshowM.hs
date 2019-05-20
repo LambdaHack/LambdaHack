@@ -87,7 +87,7 @@ displayYesNo dm prompt = do
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirms dm extraKeys slides = do
-  ekm <- displayChoiceScreen "" dm False slides extraKeys
+  ekm <- displayChoiceScreen "" SansFont dm False slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
 -- | Display a, potentially, multi-screen menu and return the chosen
@@ -96,9 +96,10 @@ getConfirms dm extraKeys slides = do
 --
 -- This function is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
+                    => String -> DisplayFont -> ColorMode -> Bool -> Slideshow
+                    -> [K.KM]
                     -> m (Either K.KM SlotChar)
-displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
+displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
              ++ extraKeys
@@ -227,7 +228,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   K.Space -> if pointer == maxIx then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey dm ov1 sfBlank legalKeys
+          pkm <- promptGetKey displayFont dm ov1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

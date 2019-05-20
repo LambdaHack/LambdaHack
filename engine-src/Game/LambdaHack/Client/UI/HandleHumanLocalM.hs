@@ -724,7 +724,7 @@ eitherHistory showAll = do
   promptAdd0 msg
   okxs <- overlayToSlideshow rheight [K.escKM] (rh, kxs)
   let displayAllHistory = do
-        ekm <- displayChoiceScreen "history" ColorFull True okxs
+        ekm <- displayChoiceScreen "history" SansFont ColorFull True okxs
                                    [K.spaceKM, K.escKM]
         case ekm of
           Left km | km == K.escKM ->

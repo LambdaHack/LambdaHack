@@ -31,6 +31,7 @@ import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.EffectDescription
+import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -325,7 +326,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
         let kprompt = "Choose number:" <+> tshow kCur
         promptAdd0 kprompt
         sli <- reportToSlideshow shownKeys
-        ekkm <- displayChoiceScreen "" ColorFull False
+        ekkm <- displayChoiceScreen "" SansFont ColorFull False
                                     sli frontKeyKeys
         case ekkm of
           Left kkm ->
@@ -636,7 +637,8 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
         if go2
         then viewLoreItems menuName lSlots trunkBag prompt examItem
         else return K.escKM
-  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
+  ekm <- displayChoiceScreen menuName SansFont ColorFull
+                             False itemSlides keysMain
   case ekm of
     Left km | km == K.spaceKM -> return km
     Left km | km == K.mkChar '<' -> return km

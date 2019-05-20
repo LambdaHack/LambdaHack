@@ -1098,7 +1098,8 @@ helpHuman cmdAction = do
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
-  ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
+  ekm <- displayChoiceScreen "help" MonoFont ColorFull
+                             True sli [K.spaceKM, K.escKM]
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
@@ -1136,7 +1137,7 @@ dashboardHuman cmdAction = do
       splitHelp (al, okx) = splitOKX rwidth (rheight - 2) al [K.escKM] okx
       sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
-  ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
+  ekm <- displayChoiceScreen "dashboard" MonoFont ColorFull False sli extraKeys
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
@@ -1229,7 +1230,8 @@ itemMenuHuman cmdAction = do
                     $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown (e.g., leader switch), save to history
-          ekm <- displayChoiceScreen "item menu" ColorFull False sli extraKeys
+          ekm <- displayChoiceScreen "item menu" SansFont ColorFull
+                                     False sli extraKeys
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
@@ -1350,7 +1352,7 @@ generateMenu cmdAction kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
       ov = map stringToAL menuOvLines
-  ekm <- displayChoiceScreen menuName ColorFull True
+  ekm <- displayChoiceScreen menuName SquareFont ColorFull True
                                       (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of

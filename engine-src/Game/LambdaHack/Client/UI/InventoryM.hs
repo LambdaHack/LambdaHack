@@ -20,6 +20,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
+import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HumanCmd
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -526,7 +527,7 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
     okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
+    displayChoiceScreen (show cCur) SansFont ColorFull False okxs itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm
