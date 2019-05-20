@@ -73,6 +73,8 @@ parseConfig cfg =
       uSdlFontFile = getOption "sdlFontFile"
       uSdlMsgFontSize = getOption "sdlMsgFontSize"
       uSdlMsgFontFile = getOption "sdlMsgFontFile"
+      uSdlMonoFontSize = getOption "sdlMonoFontSize"
+      uSdlMonoFontFile = getOption "sdlMonoFontFile"
       uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
       uSdlBitmapSizeAdd = getOption "sdlBitmapSizeAdd"
       uScalableFontSize = getOption "scalableFontSize"
@@ -123,6 +125,10 @@ applyUIOptions COps{corule} uioptions soptions =
         sdlMsgFontSize opts `mplus` Just (uSdlMsgFontSize uioptions)}) .
      (\opts -> opts {sdlMsgFontFile =
         sdlMsgFontFile opts `mplus` Just (uSdlMsgFontFile uioptions)}) .
+     (\opts -> opts {sdlMonoFontSize =
+        sdlMonoFontSize opts `mplus` Just (uSdlMonoFontSize uioptions)}) .
+     (\opts -> opts {sdlMonoFontFile =
+        sdlMonoFontFile opts `mplus` Just (uSdlMonoFontFile uioptions)}) .
      (\opts -> opts {sdlScalableSizeAdd =
         sdlScalableSizeAdd opts `mplus` Just (uSdlScalableSizeAdd uioptions)}) .
      (\opts -> opts {sdlBitmapSizeAdd =

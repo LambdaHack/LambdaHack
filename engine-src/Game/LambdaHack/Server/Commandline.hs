@@ -70,6 +70,8 @@ serverOptionsP = do
   sdlFontFile       <- sdlFontFileP
   sdlMsgFontSize    <- sdlMsgFontSizeP
   sdlMsgFontFile    <- sdlMsgFontFileP
+  sdlMonoFontSize   <- sdlMonoFontSizeP
+  sdlMonoFontFile   <- sdlMonoFontFileP
   sdlScalableSizeAdd <- sdlScalableSizeAddP
   sdlBitmapSizeAdd  <- sdlBitmapSizeAddP
   sscalableFontSize <- scalableFontSizeP
@@ -245,6 +247,18 @@ sdlMsgFontFileP = optional $ T.pack <$>
   strOption (  long "sdlMsgFontFile"
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the message overlay in SDL2 frontend" )
+
+sdlMonoFontSizeP :: Parser (Maybe Int)
+sdlMonoFontSizeP = optional $
+  option auto (  long "sdlMonoFontSize"
+              <> metavar "N"
+              <> help "Use font size of N pixels for the monospaced rectangular font in SDL2 frontend" )
+
+sdlMonoFontFileP :: Parser (Maybe Text)
+sdlMonoFontFileP = optional $ T.pack <$>
+  strOption (  long "sdlMonoFontFile"
+            <> metavar "FONT_FILE"
+            <> help "Use FONT_FILE for the monospaced rectangular font in SDL2 frontend" )
 
 sdlScalableSizeAddP :: Parser (Maybe Int)
 sdlScalableSizeAddP = optional $

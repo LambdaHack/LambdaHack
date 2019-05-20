@@ -21,6 +21,10 @@ data ClientOptions = ClientOptions
       -- ^ Font size to use for the SDL2 message overlay.
   , sdlMsgFontFile     :: Maybe Text
       -- ^ Font file to use for the SDL2 message overlay.
+  , sdlMonoFontSize    :: Maybe Int
+      -- ^ Font size to use for the SDL2 monospaced rectangular font.
+  , sdlMonoFontFile    :: Maybe Text
+      -- ^ Font file to use for the SDL2 monospaced rectangular font.
   , sdlScalableSizeAdd :: Maybe Int
       -- ^ Pixels to add to map cells on top of scalable font max glyph height.
       --   To get symmetric padding, add an even number.
@@ -75,6 +79,8 @@ defClientOptions = ClientOptions
   , sdlFontFile = Nothing
   , sdlMsgFontSize = Nothing
   , sdlMsgFontFile = Nothing
+  , sdlMonoFontSize = Nothing
+  , sdlMonoFontFile = Nothing
   , sdlScalableSizeAdd = Nothing
   , sdlBitmapSizeAdd = Nothing
   , sscalableFontSize = Nothing

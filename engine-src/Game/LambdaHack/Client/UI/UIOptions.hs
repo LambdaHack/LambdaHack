@@ -30,6 +30,8 @@ data UIOptions = UIOptions
   , uSdlFontFile        :: Text
   , uSdlMsgFontSize     :: Int
   , uSdlMsgFontFile     :: Text
+  , uSdlMonoFontSize    :: Int
+  , uSdlMonoFontFile    :: Text
   , uSdlScalableSizeAdd :: Int
   , uSdlBitmapSizeAdd   :: Int
   , uScalableFontSize   :: Int
