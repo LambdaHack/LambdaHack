@@ -1,6 +1,7 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( DisplayFont(..), pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
+  ( DisplayFont(..)
+  , pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack

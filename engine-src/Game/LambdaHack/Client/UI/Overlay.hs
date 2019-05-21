@@ -6,8 +6,6 @@ module Game.LambdaHack.Client.UI.Overlay
     -- * Overlay
   , Overlay, IntOverlay
   , splitAttrLine, indentSplitAttrLine, glueLines, updateLines
-    -- * Misc
-  , ColorMode(..)
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , linesAttr, splitAttrPhrase
@@ -136,11 +134,3 @@ updateLines n f ov =
                        else l : upd (k - 1) ls
       upd _ [] = []
   in upd n ov
-
--- * Misc
-
--- | Color mode for the display.
-data ColorMode =
-    ColorFull  -- ^ normal, with full colours
-  | ColorBW    -- ^ black and white only
-  deriving Eq

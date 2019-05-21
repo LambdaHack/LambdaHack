@@ -1,7 +1,8 @@
 {-# LANGUAGE RankNTypes, TypeFamilies #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
-  ( FrameST, FrameForall(..), FrameBase(..), Frame
+  ( ColorMode(..)
+  , FrameST, FrameForall(..), FrameBase(..), Frame
   , PreFrame3, PreFrames3, PreFrame, PreFrames
   , SingleFrame(..)
   , blankSingleFrame, overlayFrame, overlayFrameWithLines
@@ -26,6 +27,12 @@ import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
+
+-- | Color mode for the display.
+data ColorMode =
+    ColorFull  -- ^ normal, with full colours
+  | ColorBW    -- ^ black and white only
+  deriving Eq
 
 type FrameST s = G.Mutable U.Vector s Word32 -> ST s ()
 
