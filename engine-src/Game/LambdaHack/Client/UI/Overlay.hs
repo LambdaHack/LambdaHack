@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.Overlay
     AttrLine, emptyAttrLine, textToAL, textFgToAL, stringToAL, (<+:>)
     -- * Overlay
   , Overlay, IntOverlay
-  , splitAttrLine, indentSplitAttrLine, glueLines, updateLines
+  , splitAttrLine, indentSplitAttrLine, glueLines, updateLine
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , linesAttr, splitAttrPhrase
@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
@@ -58,13 +59,17 @@ infixr 6 <+:>  -- matches Monoid.<>
 -- | A series of screen lines that either fit the width of the screen
 -- or are intended for truncation when displayed. The length of overlay
 -- may exceed the length of the screen, unlike in @SingleFrame@.
--- An exception is lines generated from animation, which have to fit
--- in either dimension.
 type Overlay = [AttrLine]
 
--- | Sparse screen overlay representation where only the indicated rows
--- are overlayed and the remaining rows are kept unchanged.
-type IntOverlay = [(Int, AttrLine)]
+-- | A series of screen lines with points at which they should ber overlayed
+-- over the base frame or a blank screen, depending on context.
+-- The point is represented as in integer that is an index into the
+-- frame character array.
+-- The lines either fit the width of the screen or are intended
+-- for truncation when displayed. The positions of lines may fall outside
+-- the length of the screen, too, unlike in @SingleFrame@. Then they are
+-- simply not shown.
+type IntOverlay = [(PointI, AttrLine)]
 
 -- | Split a string into lines. Avoids ending the line with
 -- a character other than space. Space characters are removed
@@ -76,7 +81,7 @@ splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))
   $ linesAttr l
 
-indentSplitAttrLine :: X -> AttrLine -> [AttrLine]
+indentSplitAttrLine :: X -> AttrLine -> Overlay
 indentSplitAttrLine w l =
   -- First line could be split at @w@, not @w - 1@, but it's good enough.
   let ts = splitAttrLine (w - 1) l
@@ -127,8 +132,8 @@ glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
        glue (mh : mt) (lh : lt) = reverse lt ++ (mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
-updateLines :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
-updateLines n f ov =
+updateLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
+updateLine n f ov =
   let upd k (l : ls) = if k == 0
                        then f l : ls
                        else l : upd (k - 1) ls

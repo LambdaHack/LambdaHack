@@ -159,7 +159,7 @@ displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
                       [] -> []
                       xh : xhrest -> cursorW32 xh : xhrest
                 in xs1 ++ xs2High ++ xs3
-              ov1 = updateLines y drawHighlight ov
+              ov1 = updateLine y drawHighlight ov
               ignoreKey = page pointer
               pageLen = length kyxs
               xix (_, (_, x1', _)) = x1' == x1
