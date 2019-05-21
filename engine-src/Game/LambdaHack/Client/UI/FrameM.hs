@@ -55,7 +55,8 @@ drawOverlay displayFont dm onBlank topTrunc lid = do
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  let preFrame = overlayFrameWithLines coscreen onBlank topTrunc basicFrame
+  let iov = offsetOverlay coscreen onBlank topTrunc
+      preFrame = overlayFrame iov basicFrame
       msgFontSupported =
 #ifdef USE_SDL
         maybe False (not . T.null) sdlMsgFontFile && displayFont == SansFont

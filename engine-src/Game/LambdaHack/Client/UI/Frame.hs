@@ -5,10 +5,10 @@ module Game.LambdaHack.Client.UI.Frame
   , FrameST, FrameForall(..), FrameBase(..), Frame
   , PreFrame3, PreFrames3, PreFrame, PreFrames
   , SingleFrame(..)
-  , blankSingleFrame, overlayFrame, overlayFrameWithLines
+  , blankSingleFrame, offsetOverlay, overlayFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , truncateAttrLine
+  , truncateLines, truncateAttrLine
 #endif
   ) where
 
@@ -102,6 +102,11 @@ truncateLines ScreenContent{rwidth, rheight} onBlank l =
       lens = map (min (rwidth - 1) . length) topLayer
   in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) topLayer
 
+offsetOverlay :: ScreenContent -> Bool -> Overlay -> IntOverlay
+offsetOverlay coscreen@ScreenContent{rwidth} onBlank l =
+  map (\(y, al) -> (y * rwidth, al))
+  $ zip [0..] $ truncateLines coscreen onBlank l
+
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines.
 truncateAttrLine :: X -> AttrLine -> X -> AttrLine
@@ -127,10 +132,3 @@ overlayFrame ov (m, ff) =
   , FrameForall $ \v -> do
       unFrameForall ff v
       mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov )
-
-overlayFrameWithLines :: ScreenContent -> Bool -> Overlay -> PreFrame
-                      -> PreFrame
-overlayFrameWithLines coscreen@ScreenContent{rwidth} onBlank l fr =
-  let ov = map (\(y, al) -> (y * rwidth, al))
-           $ zip [0..] $ truncateLines coscreen onBlank l
-  in overlayFrame ov fr
