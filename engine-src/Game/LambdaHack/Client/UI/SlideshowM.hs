@@ -148,8 +148,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               cursorAttr x = x {Color.acAttr =
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
-              drawHighlight xs =
-                let (xs1, xsRest) = splitAt x1 xs
+              drawHighlight xstart xs =
+                let (xs1, xsRest) = splitAt (x1 - xstart) xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                     highW32 = Color.attrCharToW32
                               . highAttr

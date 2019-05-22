@@ -138,11 +138,8 @@ glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
          in reverse (map offsetOv lt) ++ (p, mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
--- Note that this ignores points and just updates nth line.
-updateLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
-updateLine n f ov =
-  let upd k ((p, l) : ls) = if k == 0
-                            then (p, f l) : ls
-                            else (p, l) : upd (k - 1) ls
-      upd _ [] = []
-  in upd n ov
+updateLine :: Y -> (X -> AttrLine -> AttrLine) -> Overlay -> Overlay
+updateLine y f ov =
+  let upd (p, l) = let Point{..} = toEnum p
+                   in if py == y then (p, f px l) else (p, l)
+  in map upd ov
