@@ -1,7 +1,6 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( DisplayFont(..)
-  , pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
+  ( pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack
@@ -30,17 +29,13 @@ import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
+import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Color as Color
-
-data DisplayFont = SquareFont | MonoFont | SansFont
-  deriving (Eq, Enum)
-
-type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m

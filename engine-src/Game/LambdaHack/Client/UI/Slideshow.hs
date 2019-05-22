@@ -1,6 +1,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( KYX, OKX, Slideshow(slideshow)
+  ( DisplayFont(..), FontOverlayMap
+  , KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX, highSlideshow
 #ifdef EXPOSE_INTERNAL
@@ -13,7 +14,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Data.Time.LocalTime
+import qualified Data.EnumMap.Strict as EM
+import           Data.Time.LocalTime
 
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -23,6 +25,11 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
+
+data DisplayFont = SquareFont | MonoFont | SansFont
+  deriving (Show, Eq, Enum)
+
+type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (Y, X, X))
