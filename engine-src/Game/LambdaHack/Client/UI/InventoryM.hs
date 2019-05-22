@@ -525,8 +525,8 @@ runDefItemKey keyDefs lettersDef okx slotKeys prompt cCur = do
   promptAdd0 $ prompt <+> choice
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   ekm <- do
-    okxs <- overlayToSlideshow (rheight - 2) keys okx
-    displayChoiceScreen (show cCur) SansFont ColorFull False okxs itemKeys
+    okxs <- overlayToSlideshow SansFont (rheight - 2) keys okx
+    displayChoiceScreen (show cCur) ColorFull False okxs itemKeys
   case ekm of
     Left km -> case km `lookup` keyDefs of
       Just keyDef -> defAction keyDef ekm

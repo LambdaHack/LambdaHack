@@ -30,18 +30,19 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
-overlayToSlideshow :: MonadClientUI m => Y -> [K.KM] -> OKX -> m Slideshow
-overlayToSlideshow y keys okx = do
+overlayToSlideshow :: MonadClientUI m
+                   => DisplayFont -> Y -> [K.KM] -> OKX -> m Slideshow
+overlayToSlideshow displayFont y keys okx = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
-  return $! splitOverlay rwidth y report keys okx
+  return $! splitOverlay displayFont rwidth y report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  overlayToSlideshow (rheight - 2) keys ([], [])
+  overlayToSlideshow SansFont (rheight - 2) keys (EM.empty, [])
 
 -- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -50,7 +51,8 @@ reportToSlideshowKeep keys = do
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
-  return $! splitOverlay rwidth (rheight - 2) report keys ([], [])
+  return $! splitOverlay SansFont rwidth (rheight - 2) report keys
+                         (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
 -- Feature: if many pages, only the last SPACE exits (but first ESC).
@@ -89,7 +91,7 @@ displayYesNo dm prompt = do
 getConfirms :: MonadClientUI m
             => ColorMode -> [K.KM] -> Slideshow -> m K.KM
 getConfirms dm extraKeys slides = do
-  ekm <- displayChoiceScreen "" SansFont dm False slides extraKeys
+  ekm <- displayChoiceScreen "" dm False slides extraKeys
   return $! either id (error $ "" `showFailure` ekm) ekm
 
 -- | Display a, potentially, multi-screen menu and return the chosen
@@ -98,10 +100,9 @@ getConfirms dm extraKeys slides = do
 --
 -- This function is the only source of menus and so, effectively, UI modes.
 displayChoiceScreen :: forall m . MonadClientUI m
-                    => String -> DisplayFont -> ColorMode -> Bool -> Slideshow
-                    -> [K.KM]
+                    => String -> ColorMode -> Bool -> Slideshow -> [K.KM]
                     -> m (Either K.KM SlotChar)
-displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
+displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
   let frs = slideshow frsX
       keys = concatMap (concatMap (either id (const []) . fst) . snd) frs
              ++ extraKeys
@@ -160,7 +161,7 @@ displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
                       [] -> []
                       xh : xhrest -> cursorW32 xh : xhrest
                 in xs1 ++ xs2High ++ xs3
-              ov1 = updateLine y drawHighlight ov
+              ov1 = EM.map (updateLine y drawHighlight) ov
               ignoreKey = page pointer
               pageLen = length kyxs
               xix (_, (_, x1', _)) = x1' == x1
@@ -230,8 +231,7 @@ displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
                   K.Space -> if pointer == maxIx then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey dm (EM.fromList [(displayFont, ov1)])
-                              sfBlank legalKeys
+          pkm <- promptGetKey dm ov1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

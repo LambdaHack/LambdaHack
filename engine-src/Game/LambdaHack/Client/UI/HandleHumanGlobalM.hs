@@ -1094,13 +1094,12 @@ helpHuman cmdAction = do
     <- getsSession sccui
   let keyH = keyHelp cops ccui
       splitHelp (t, okx) =
-        splitOKX rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
+        splitOKX MonoFont rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
-  ekm <- displayChoiceScreen "help" MonoFont ColorFull
-                             True sli [K.spaceKM, K.escKM]
+  ekm <- displayChoiceScreen "help" ColorFull True sli [K.spaceKM, K.escKM]
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
@@ -1135,10 +1134,11 @@ dashboardHuman cmdAction = do
       (ov0, kxs0) = okxsN coinput rwidth 0 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
-      splitHelp (al, okx) = splitOKX rwidth (rheight - 2) al [K.escKM] okx
+      splitHelp (al, okx) =
+        splitOKX SansFont rwidth (rheight - 2) al [K.escKM] okx
       sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
-  ekm <- displayChoiceScreen "dashboard" MonoFont ColorFull False sli extraKeys
+  ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
@@ -1227,13 +1227,14 @@ itemMenuHuman cmdAction = do
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
-                splitOKX rwidth (rheight - 2) al [K.spaceKM, K.escKM] okx
+                splitOKX SansFont rwidth (rheight - 2) al
+                         [K.spaceKM, K.escKM] okx
               sli = toSlideshow
-                    $ splitHelp (al1, (ovFound ++ ov0, kxsFound ++ kxs0))
+                    $ splitHelp (al1, ( EM.insertWith (++) SansFont ovFound ov0
+                                      , kxsFound ++ kxs0 ))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown (e.g., leader switch), save to history
-          ekm <- displayChoiceScreen "item menu" SansFont ColorFull
-                                     False sli extraKeys
+          ekm <- displayChoiceScreen "item menu" ColorFull False sli extraKeys
           case ekm of
             Left km -> case km `M.lookup` bcmdMap coinput of
               _ | km == K.escKM -> weaveJust <$> failWith "never mind"
@@ -1354,9 +1355,10 @@ generateMenu cmdAction kds gameInfo menuName = do
       menuOverwritten = overwrite $ zip [0..] art
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = offsetOverlay rwidth $ map stringToAL menuOvLines
-  ekm <- displayChoiceScreen menuName SquareFont ColorFull True
-                                      (menuToSlideshow (ov, kyxs)) [K.escKM]
+      ov = EM.singleton MonoFont $ offsetOverlay rwidth
+           $ map stringToAL menuOvLines
+  ekm <- displayChoiceScreen menuName ColorFull True
+                             (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
       Just (_desc, cmd) -> cmdAction cmd

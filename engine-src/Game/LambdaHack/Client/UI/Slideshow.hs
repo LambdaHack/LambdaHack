@@ -37,7 +37,7 @@ type KYX = (Either [K.KM] SlotChar, (Y, X, X))
 -- | An Overlay of text with an associated list of keys or slots
 -- that activated when the specified screen position is pointed at.
 -- The list should be sorted wrt rows and then columns.
-type OKX = (Overlay, [KYX])
+type OKX = (FontOverlayMap, [KYX])
 
 -- | A list of active screenfulls to be shown one after another.
 -- Each screenful has an independent numbering of rows and columns.
@@ -59,24 +59,39 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   okxFilter (ov, kyxs) =
     (ov, filter (either (not . null) (const True) . fst) kyxs)
   okxsNotNull = map okxFilter okxs
-  pofOkxs [] = 0
-  pofOkxs l@((pFirst, _) : _) =
+  pofOv :: Overlay -> PointI
+  pofOv [] = 0
+  pofOv l@((pFirst, _) : _) =
     let (pLast, _) = last l
         Point pxFirst _ = toEnum pFirst  -- match x of the header
         Point _ pyLast = toEnum pLast  -- append after last line
     in fromEnum $ Point pxFirst (pyLast + 1)
+  atEnd = flip (++)
+  appendToFontOverlayMap :: FontOverlayMap -> AttrLine -> (FontOverlayMap, Int)
+  appendToFontOverlayMap ovs al =
+    case EM.lookup SansFont ovs of
+      Just ovF ->
+        (EM.insertWith atEnd SansFont [(pofOv ovF, al)] ovs, length ovF)
+      Nothing -> case EM.lookup MonoFont ovs of
+        Just ovF ->
+          (EM.insertWith atEnd MonoFont [(pofOv ovF, al)] ovs, length ovF)
+        Nothing -> case EM.lookup SquareFont ovs of
+          Just ovF ->
+            (EM.insertWith atEnd SquareFont [(pofOv ovF, al)] ovs, length ovF)
+          Nothing -> (EM.insertWith atEnd SansFont [(pofOv [], al)] ovs, 0)
+  addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
-    [( als ++ [(pofOkxs als, stringToAL endMsg)]
-     , [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
+    let (ovs, len) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, [(Left [K.safeSpaceKM], (len, 0, 15))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
-    [( als ++ [(pofOkxs als, stringToAL endMsg)]
-     , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
+    let (ovs, len) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (len, 0, 15))])]
   addFooters _ ((als, kxs) : rest) =
-    ( als ++ [(pofOkxs als, stringToAL moreMsg)]
-    , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 8))] )
-    : addFooters True rest
+    let (ovs, len) = appendToFontOverlayMap als (stringToAL moreMsg)
+    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (len, 0, 8))])
+       : addFooters True rest
 
 moreMsg :: String
 moreMsg = "--more--  "
@@ -86,9 +101,9 @@ endMsg = "--back to top--  "
 
 menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
-  assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
+  assert (not (EM.null als || null kxs)) $ Slideshow [(als, kxs)]
 
-wrapOKX :: Y -> X -> X -> [(K.KM, String)] -> OKX
+wrapOKX :: Y -> X -> X -> [(K.KM, String)] -> (Overlay, [KYX])
 wrapOKX ystart xstart width ks =
   let f :: ((Y, X), (X, [String], Overlay, [KYX])) -> (K.KM, String)
         -> ((Y, X), (X, [String], Overlay, [KYX]))
@@ -106,30 +121,34 @@ wrapOKX ystart xstart width ks =
       iov1 = (p1, stringToAL $ intercalate " " (reverse kL1))
   in (reverse $ iov1 : kV1, reverse kX1)
 
-keysOKX :: Y -> X -> X -> [K.KM] -> OKX
+keysOKX :: Y -> X -> X -> [K.KM] -> (Overlay, [KYX])
 keysOKX ystart xstart width keys =
   let wrapB :: String -> String
       wrapB s = "[" ++ s ++ "]"
       ks = map (\key -> (key, wrapB $ K.showKM key)) keys
   in wrapOKX ystart xstart width ks
 
-splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
-splitOverlay width height report keys (ls0, kxs0) =
-  toSlideshow $ splitOKX width height (renderReport report) keys (ls0, kxs0)
+-- The font argument is for the report and keys overlay. Others already have
+-- assigned fonts.
+splitOverlay :: DisplayFont -> X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
+splitOverlay displayFont width height report keys (ls0, kxs0) =
+  toSlideshow $ splitOKX displayFont width height (renderReport report)
+                         keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
-splitOKX :: X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
-splitOKX width height rrep keys (ls0, kxs0) =
+splitOKX :: DisplayFont -> X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
+splitOKX displayFont width height rrep keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
   let msgRaw = offsetOverlay width $ splitAttrLine width rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
       pX0 = case lX0 of
         [] -> 0
         (p, _) : _ -> p
-      (lX, keysX) | null msgRaw = (lX0, keysX0)
-                  | otherwise = keysOKX (length msgRaw - 1)
-                                        (length (snd $ last msgRaw) + 1)
-                                        width keys
+      (lX, keysX) =
+        if null msgRaw
+        then (lX0, keysX0)
+        else keysOKX (length msgRaw - 1)(length (snd $ last msgRaw) + 1)
+                     width keys
       msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
@@ -142,22 +161,26 @@ splitOKX width height rrep keys (ls0, kxs0) =
         else (([], []), msgOkx)
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
       renumberOv y = map (\(p, al) -> (p + y * width, al))
-      splitO :: Y -> OKX -> OKX -> [OKX]
+      splitO :: Y -> (Overlay, [KYX]) -> OKX -> [OKX]
       splitO yoffset (hdr, rk) (ls, kxs) =
         let keyRenumber = map $ renumber (length hdr - yoffset)
-            lineRenumber = renumberOv (length hdr - yoffset)
+            lineRenumber = EM.map $ renumberOv (length hdr - yoffset)
             yoffsetNew = yoffset + height - length hdr - 1
-            (pre, post) = break (\(p, _) -> p >= yoffsetNew * width) ls
-        in if null post  -- all fits on one screen
-           then [(hdr ++ lineRenumber pre, rk ++ keyRenumber kxs)]
+            ltOffset (p, _) = p < yoffsetNew * width
+            (pre, post) = ( filter ltOffset <$> ls
+                          , filter (not . ltOffset) <$> ls )
+            prependHdr = EM.insertWith (++) displayFont hdr
+        in if all null $ EM.elems post  -- all fits on one screen
+           then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) =
                       break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
-                in (hdr ++ lineRenumber pre, rk ++ keyRenumber preX)
+                in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdr, rk) (post, postX)
       initSlides = if null lsInit
                    then assert (null kxsInit) []
-                   else splitO 0 ([], []) (lsInit, kxsInit)
-      mainSlides = if null ls0 && not (null lsInit)
+                   else splitO 0 ([], [])
+                               (EM.singleton displayFont lsInit, kxsInit)
+      mainSlides = if EM.null ls0 && not (null lsInit)
                    then assert (null kxs0) []
                    else splitO 0 (header, rkxs) (ls0, kxs0)
   in initSlides ++ mainSlides
@@ -176,7 +199,8 @@ highSlideshow width height table pos gameModeName tz =
       tts = map (offsetOverlay width) $ showNearbyScores tz pos table entries
       al = textToAL msg
       splitScreen ts =
-        splitOKX width height al [K.spaceKM, K.escKM] (ts, [])
+        splitOKX MonoFont width height al [K.spaceKM, K.escKM]
+                 (EM.singleton MonoFont ts, [])
   in toSlideshow $ concat $ map splitScreen tts
 
 -- | Show a screenful of the high scores table.

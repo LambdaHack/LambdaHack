@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
@@ -139,9 +140,10 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
     renumberOv y = map (\(p, al) -> (p + y * rwidth, al))
     mergeOKX :: OKX -> OKX -> OKX
-    mergeOKX (ov1, ks1) (ov2, ks2) =
-      let off = length ov1
-      in (ov1 ++ renumberOv off ov2, ks1 ++ map (renumber off) ks2)
+    mergeOKX (ovs1, ks1) (ovs2, ks2) =
+      let off = EM.foldr (\ov acc -> max acc (length ov)) 0 ovs1
+      in ( EM.unionWith (\ov1 ov2 -> ov1 ++ renumberOv off ov2) ovs1 ovs2
+         , ks1 ++ map (renumber off) ks2 )
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -189,18 +191,17 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in ( offsetOverlay rwidth
-           $ map textToAL $ "" : header ++ menu ++ footer
-         , kxs )
+      in (toDisplayFont $ "" : header ++ menu ++ footer, kxs)
+    toDisplayFont :: [Text] -> FontOverlayMap
+    toDisplayFont = EM.singleton MonoFont . offsetOverlay rwidth . map textToAL
   in concat
     [ [ ( rtitle corule <+> "- backstory"
-        , (offsetOverlay rwidth $ map textToAL introText, []) ) ]
+        , (toDisplayFont introText, []) ) ]
     , if catLength CmdMinimal
          + length movText + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (offsetOverlay rwidth
-             $ map textToAL ([""] ++ movText ++ [""] ++ movTextEnd), []) )
+          , (toDisplayFont $ [""] ++ movText ++ [""] ++ movTextEnd, []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
       else
@@ -290,4 +291,5 @@ okxsN InputContent{..} width offset n greyedOut showManyKeys cat header footer =
       renumberOv = map (\(p, al) -> (p + offset * width, al))
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
       greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
-  in (renumberOv $ offsetOverlay width $ map greyToAL ts, kxs)
+      greyTs = map greyToAL ts
+  in (EM.singleton MonoFont $ renumberOv $ offsetOverlay width greyTs, kxs)

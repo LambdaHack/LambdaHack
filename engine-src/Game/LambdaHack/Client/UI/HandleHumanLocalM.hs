@@ -241,14 +241,15 @@ chooseItemDialogMode c = do
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
-                  ov0 = offsetOverlay rwidth
+                  ov0 = EM.singleton SansFont
+                        $ offsetOverlay rwidth
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ skillDesc skill
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
+              slides <- overlayToSlideshow SansFont (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MSkills
@@ -287,7 +288,8 @@ chooseItemDialogMode c = do
                        , MU.CarWs (ES.size es) "level" <> ":"
                        , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
-                  ov0 = offsetOverlay rwidth
+                  ov0 = EM.singleton SansFont
+                        $ offsetOverlay rwidth
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ T.unlines
                         $ (if sexposePlaces soptions
@@ -300,7 +302,7 @@ chooseItemDialogMode c = do
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
-              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
+              slides <- overlayToSlideshow SansFont (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MPlaces
@@ -716,7 +718,9 @@ eitherHistory showAll = do
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
-  let rh = offsetOverlay rwidth $ renderHistory history
+  let renderedHistory = renderHistory history
+      histBound = length renderedHistory
+      rh = EM.singleton SansFont $ offsetOverlay rwidth renderedHistory
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -725,11 +729,11 @@ eitherHistory showAll = do
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
       kxs = [ (Right sn, (slotPrefix sn, 0, maxBound))
-            | sn <- take (length rh) intSlots ]
+            | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow rheight [K.escKM] (rh, kxs)
+  okxs <- overlayToSlideshow SansFont rheight [K.escKM] (rh, kxs)
   let displayAllHistory = do
-        ekm <- displayChoiceScreen "history" SansFont ColorFull True okxs
+        ekm <- displayChoiceScreen "history" ColorFull True okxs
                                    [K.spaceKM, K.escKM]
         case ekm of
           Left km | km == K.escKM ->
@@ -739,20 +743,20 @@ eitherHistory showAll = do
           Right SlotChar{..} | slotChar == 'a' ->
             displayOneReport slotPrefix
           _ -> error $ "" `showFailure` ekm
-      histBound = lengthHistory history - 1
       displayOneReport :: Int -> m ()
       displayOneReport histSlot = do
-        let timeReport = case drop histSlot rh of
+        let timeReport = case drop histSlot renderedHistory of
               [] -> error $ "" `showFailure` histSlot
-              (_, tR) : _ -> tR
-            ov0 = offsetOverlay rwidth $ indentSplitAttrLine rwidth timeReport
+              tR : _ -> tR
+            ov0 = EM.singleton SansFont $ offsetOverlay rwidth
+                  $ indentSplitAttrLine rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
             keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
                                         ++ [K.downKM | histSlot /= histBound]
         promptAdd0 prompt
-        slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
+        slides <- overlayToSlideshow SansFont (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
         case K.key km of
           K.Space -> displayAllHistory
@@ -760,7 +764,9 @@ eitherHistory showAll = do
           K.Down -> displayOneReport $ histSlot + 1
           K.Esc -> promptAdd0 "Try to learn from your previous mistakes."
           _ -> error $ "" `showFailure` km
-  if showAll then displayAllHistory else displayOneReport (length rh - 1)
+  if showAll
+  then displayAllHistory
+  else displayOneReport (histBound - 1)
 
 -- * LastHistory
 

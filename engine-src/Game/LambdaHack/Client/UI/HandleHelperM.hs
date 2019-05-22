@@ -249,7 +249,8 @@ itemOverlay lSlots lid bag = do
             in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-  return (offsetOverlay rwidth $ concat ts, zipWith renumber [0..] kxs)
+  return ( EM.singleton SansFont $ offsetOverlay rwidth $ concat ts
+         , zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
@@ -268,7 +269,7 @@ skillsOverlay aid = do
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
-  return (offsetOverlay rwidth $ map textToAL ts, kxs)
+  return (EM.singleton SansFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
@@ -318,7 +319,7 @@ placesOverlay = do
                  : parts
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
-  return (offsetOverlay rwidth $ map textToAL ts, kxs)
+  return (EM.singleton SquareFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
@@ -329,8 +330,7 @@ pickNumber askNumber kAll = assert (kAll >= 1) $ do
         let kprompt = "Choose number:" <+> tshow kCur
         promptAdd0 kprompt
         sli <- reportToSlideshow shownKeys
-        ekkm <- displayChoiceScreen "" SansFont ColorFull False
-                                    sli frontKeyKeys
+        ekkm <- displayChoiceScreen "" ColorFull False sli frontKeyKeys
         case ekkm of
           Left kkm ->
             case K.key kkm of
@@ -600,12 +600,13 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
-      ov = offsetOverlay rwidth $ splitAttrLine rwidth attrLine
+      ov = EM.singleton SansFont $ offsetOverlay rwidth
+           $ splitAttrLine rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   promptAdd0 $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
+  slides <- overlayToSlideshow SansFont (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.Space -> return True
@@ -628,7 +629,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
       lSlots = sortSlotMap itemToF lSlotsRaw
   promptAdd0 prompt
   io <- itemOverlay lSlots arena trunkBag
-  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
+  itemSlides <- overlayToSlideshow SansFont (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
       keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
       allOKX = concatMap snd $ slideshow itemSlides
@@ -640,8 +641,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
         if go2
         then viewLoreItems menuName lSlots trunkBag prompt examItem
         else return K.escKM
-  ekm <- displayChoiceScreen menuName SansFont ColorFull
-                             False itemSlides keysMain
+  ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
     Left km | km == K.spaceKM -> return km
     Left km | km == K.mkChar '<' -> return km
