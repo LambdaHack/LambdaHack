@@ -10,6 +10,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Either
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -229,7 +230,8 @@ displayChoiceScreen menuName displayFont dm sfBlank frsX extraKeys = do
                   K.Space -> if pointer == maxIx then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey displayFont dm ov1 sfBlank legalKeys
+          pkm <- promptGetKey dm (EM.fromList [(displayFont, ov1)])
+                              sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

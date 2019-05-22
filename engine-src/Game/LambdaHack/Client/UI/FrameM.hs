@@ -90,9 +90,9 @@ pushFrame = do
     displayFrames lidV [Just frame]
 
 promptGetKey :: MonadClientUI m
-             => DisplayFont -> ColorMode -> Overlay -> Bool -> [K.KM]
+             => ColorMode -> FontOverlayMap -> Bool -> [K.KM]
              -> m K.KM
-promptGetKey displayFont dm ov onBlank frontKeyKeys = do
+promptGetKey dm ovs onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
   report <- getsSession $ newReport . shistory
@@ -102,8 +102,7 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
     km : kms | not keyPressed
                && (null frontKeyKeys || km `elem` frontKeyKeys)
                && not msgDisturbs -> do
-      frontKeyFrame <-
-        drawOverlay dm onBlank (EM.fromList [(displayFont, ov)]) lidV
+      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
@@ -112,10 +111,9 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
-      let ov2 = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
-                ++ ov
-      frontKeyFrame <-
-        drawOverlay dm onBlank (EM.fromList [(displayFont, ov2)]) lidV
+      let ovWarn = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
+          ovs2 = EM.insertWith (++) SansFont ovWarn ovs
+      frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
@@ -123,8 +121,7 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
-      frontKeyFrame <-
-        drawOverlay dm onBlank (EM.fromList [(displayFont, ov)]) lidV
+      frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       when (dm /= ColorFull) $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
