@@ -38,13 +38,15 @@ import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Definition.Color as Color
 
 data DisplayFont = SquareFont | MonoFont | SansFont
-  deriving Eq
+  deriving (Eq, Enum)
+
+type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m
-            => DisplayFont -> ColorMode -> Bool -> Overlay -> LevelId
+            => ColorMode -> Bool -> FontOverlayMap -> LevelId
             -> m PreFrame3
-drawOverlay displayFont dm onBlank iov lid = do
+drawOverlay dm onBlank ovs lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
   ClientOptions{sdlMsgFontFile} <- getsClient soptions
   basicFrame <- if onBlank
@@ -55,15 +57,21 @@ drawOverlay displayFont dm onBlank iov lid = do
                 else drawHudFrame dm lid
   let msgFontSupported =
 #ifdef USE_SDL
-        maybe False (not . T.null) sdlMsgFontFile && displayFont == SansFont
+        maybe False (not . T.null) sdlMsgFontFile
 #else
         False
 #endif
-  return $! if msgFontSupported
-            then (basicFrame, iov)
-            else ( overlayFrame (truncateOverlay coscreen onBlank iov)
-                                basicFrame
-                 , [])
+      ovSans = if msgFontSupported
+               then EM.findWithDefault [] SansFont ovs
+               else []
+      ovOther = EM.findWithDefault [] SquareFont ovs
+                ++ EM.findWithDefault [] MonoFont ovs
+                ++ if msgFontSupported
+                   then []
+                   else EM.findWithDefault [] SansFont ovs
+      overlayedFrame = overlayFrame (truncateOverlay coscreen onBlank ovOther)
+                                     basicFrame
+  return (overlayedFrame, ovSans)
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
@@ -77,8 +85,8 @@ pushFrame = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     report <- getReportUI
-    let truncRep = [(0, renderReport report)]
-    frame <- drawOverlay SansFont ColorFull False truncRep lidV
+    let truncRep = EM.fromList [(SansFont, [(0, renderReport report)])]
+    frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
 promptGetKey :: MonadClientUI m
@@ -94,7 +102,8 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
     km : kms | not keyPressed
                && (null frontKeyKeys || km `elem` frontKeyKeys)
                && not msgDisturbs -> do
-      frontKeyFrame <- drawOverlay displayFont dm onBlank ov lidV
+      frontKeyFrame <-
+        drawOverlay dm onBlank (EM.fromList [(displayFont, ov)]) lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = kms}
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
@@ -105,7 +114,8 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
       resetPressedKeys
       let ov2 = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
                 ++ ov
-      frontKeyFrame <- drawOverlay displayFont dm onBlank ov2 lidV
+      frontKeyFrame <-
+        drawOverlay dm onBlank (EM.fromList [(displayFont, ov2)]) lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
     [] -> do
@@ -113,7 +123,8 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
       modifySession $ \sess -> sess {srunning = Nothing}
-      frontKeyFrame <- drawOverlay displayFont dm onBlank ov lidV
+      frontKeyFrame <-
+        drawOverlay dm onBlank (EM.fromList [(displayFont, ov)]) lidV
       when (dm /= ColorFull) $ do
         side <- getsClient sside
         fact <- getsState $ (EM.! side) . sfactionD
@@ -160,8 +171,8 @@ resetPlayBack = do
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
 renderFrames arena anim = do
   report <- getReportUI
-  let truncRep = [(0, renderReport report)]
-  basicFrame <- drawOverlay SansFont ColorFull False truncRep arena
+  let truncRep = EM.fromList [(SansFont, [(0, renderReport report)])]
+  basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
