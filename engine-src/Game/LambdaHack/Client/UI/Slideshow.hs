@@ -20,6 +20,7 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
@@ -51,16 +52,22 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   okxFilter (ov, kyxs) =
     (ov, filter (either (not . null) (const True) . fst) kyxs)
   okxsNotNull = map okxFilter okxs
+  pofOkxs [] = 0
+  pofOkxs l@((pFirst, _) : _) =
+    let (pLast, _) = last l
+        Point pxFirst _ = toEnum pFirst  -- match x of the header
+        Point _ pyLast = toEnum pLast  -- append after last line
+    in fromEnum $ Point pxFirst (pyLast + 1)
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
-    [( als ++ [stringToAL endMsg]
+    [( als ++ [(pofOkxs als, stringToAL endMsg)]
      , [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
-    [( als ++ [stringToAL endMsg]
+    [( als ++ [(pofOkxs als, stringToAL endMsg)]
      , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 15))] )]
   addFooters _ ((als, kxs) : rest) =
-    ( als ++ [stringToAL moreMsg]
+    ( als ++ [(pofOkxs als, stringToAL moreMsg)]
     , kxs ++ [(Left [K.safeSpaceKM], (length als, 0, 8))] )
     : addFooters True rest
 
@@ -75,23 +82,29 @@ menuToSlideshow (als, kxs) =
   assert (not (null als || null kxs)) $ Slideshow [(als, kxs)]
 
 wrapOKX :: Y -> X -> X -> [(K.KM, String)] -> OKX
-wrapOKX ystart xstart xBound ks =
-  let f ((y, x), (kL, kV, kX)) (key, s) =
+wrapOKX ystart xstart width ks =
+  let f :: ((Y, X), (X, [String], Overlay, [KYX])) -> (K.KM, String)
+        -> ((Y, X), (X, [String], Overlay, [KYX]))
+      f ((y, x), (xlineStart, kL, kV, kX)) (key, s) =
         let len = length s
-        in if x + len > xBound
-           then f ((y + 1, 0), ([], kL : kV, kX)) (key, s)
+        in if x + len >= width
+           then let p = fromEnum $ Point xlineStart y
+                    iov = (p, stringToAL $ intercalate " " (reverse kL))
+                in f ((y + 1, 0), (0, [], iov : kV, kX)) (key, s)
            else ( (y, x + len + 1)
-                , (s : kL, kV, (Left [key], (y, x, x + len)) : kX) )
-      (kL1, kV1, kX1) = snd $ foldl' f ((ystart, xstart), ([], [], [])) ks
-      catL = stringToAL . intercalate " " . reverse
-  in (reverse $ map catL $ kL1 : kV1, reverse kX1)
+                , (xlineStart, s : kL, kV, (Left [key], (y, x, x + len)) : kX) )
+      ((ystop, _), (xlineStop, kL1, kV1, kX1)) =
+        foldl' f ((ystart, xstart), (xstart, [], [], [])) ks
+      p1 = fromEnum $ Point xlineStop ystop
+      iov1 = (p1, stringToAL $ intercalate " " (reverse kL1))
+  in (reverse $ iov1 : kV1, reverse kX1)
 
 keysOKX :: Y -> X -> X -> [K.KM] -> OKX
-keysOKX ystart xstart xBound keys =
+keysOKX ystart xstart width keys =
   let wrapB :: String -> String
       wrapB s = "[" ++ s ++ "]"
       ks = map (\key -> (key, wrapB $ K.showKM key)) keys
-  in wrapOKX ystart xstart xBound ks
+  in wrapOKX ystart xstart width ks
 
 splitOverlay :: X -> Y -> Report -> [K.KM] -> OKX -> Slideshow
 splitOverlay width height report keys (ls0, kxs0) =
@@ -101,30 +114,38 @@ splitOverlay width height report keys (ls0, kxs0) =
 splitOKX :: X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
 splitOKX width height rrep keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
-  let msgRaw = splitAttrLine width rrep
+  let msgRaw = offsetOverlay width $ splitAttrLine width rrep
       (lX0, keysX0) = keysOKX 0 0 maxBound keys
+      pX0 = case lX0 of
+        [] -> 0
+        (p, _) : _ -> p
       (lX, keysX) | null msgRaw = (lX0, keysX0)
                   | otherwise = keysOKX (length msgRaw - 1)
-                                        (length (last msgRaw) + 1)
+                                        (length (snd $ last msgRaw) + 1)
                                         width keys
       msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =
         -- Check whether most space taken by report and keys.
         if length (glueLines msgRaw lX0) * 2 > height
-        then (msgOkx, ( [intercalate [Color.spaceAttrW32] lX0 <+:> rrep]
-                      , keysX0 ))
+        then ( msgOkx
+             , ( [(pX0, intercalate [Color.spaceAttrW32] (map snd lX0)
+                        <+:> rrep)]
+               , keysX0 ) )
                -- will display "$" (unless has EOLs)
         else (([], []), msgOkx)
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+      renumberOv y = map (\(p, al) -> (p + y * width, al))
+      splitO :: Y -> OKX -> OKX -> [OKX]
       splitO yoffset (hdr, rk) (ls, kxs) =
-        let zipRenumber = map $ renumber $ length hdr - yoffset
-            (pre, post) = splitAt (height - 1) $ hdr ++ ls
+        let keyRenumber = map $ renumber (length hdr - yoffset)
+            lineRenumber = renumberOv (length hdr - yoffset)
             yoffsetNew = yoffset + height - length hdr - 1
-        in if null post
-           then [(pre, rk ++ zipRenumber kxs)]  -- all fits on one screen
+            (pre, post) = break (\(p, _) -> p >= yoffsetNew * width) ls
+        in if null post  -- all fits on one screen
+           then [(hdr ++ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) =
                       break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
-                in (pre, rk ++ zipRenumber preX)
+                in (hdr ++ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdr, rk) (post, postX)
       initSlides = if null lsInit
                    then assert (null kxsInit) []
@@ -145,7 +166,7 @@ highSlideshow :: X          -- ^ width of the display area
 highSlideshow width height table pos gameModeName tz =
   let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
-      tts = showNearbyScores tz pos table entries
+      tts = map (offsetOverlay width) $ showNearbyScores tz pos table entries
       al = textToAL msg
       splitScreen ts =
         splitOKX width height al [K.spaceKM, K.escKM] (ts, [])

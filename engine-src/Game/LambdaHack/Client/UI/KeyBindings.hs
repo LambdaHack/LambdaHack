@@ -28,11 +28,9 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- When the intro screen mentions KP_5, this really is KP_Begin,
 -- but since that is harder to understand we assume a different, non-default
 -- state of NumLock in the help text than in the code that handles keys.
-keyHelp :: COps -> CCUI -> Int -> [(Text, OKX)]
-keyHelp COps{corule}
-        CCUI{ coinput=coinput@InputContent{..}
-            , coscreen=ScreenContent{rheight, rintroScreen, rmoveKeysScreen} }
-        offset = assert (offset > 0) $
+keyHelp :: COps -> CCUI -> [(Text, OKX)]
+keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
+                         , coscreen=ScreenContent{..} } =
   let
     introBlurb =
       ""
@@ -137,11 +135,13 @@ keyHelp COps{corule}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput offset keyL (const False) True
+    okxs = okxsN coinput rwidth 0 keyL (const False) True
     renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+    renumberOv y = map (\(p, al) -> (p + y * rwidth, al))
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ov1, ks1) (ov2, ks2) =
-      (ov1 ++ ov2, ks1 ++ map (renumber $ length ov1) ks2)
+      let off = length ov1
+      in (ov1 ++ renumberOv off ov2, ks1 ++ map (renumber off) ks2)
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
     keyM = 13
@@ -185,19 +185,22 @@ keyHelp COps{corule}
               [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
               , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
           f c d e = error $ "" `showFailure` (c, d, e)
-          kxs = concat $ zipWith3 f kst1 kst2 [offset + length header..]
+          kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in (map textToAL $ "" : header ++ menu ++ footer, kxs)
+      in ( offsetOverlay rwidth
+           $ map textToAL $ "" : header ++ menu ++ footer
+         , kxs )
   in concat
     [ [ ( rtitle corule <+> "- backstory"
-        , (map textToAL introText, []) ) ]
+        , (offsetOverlay rwidth $ map textToAL introText, []) ) ]
     , if catLength CmdMinimal
          + length movText + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (map textToAL ([""] ++ movText ++ [""] ++ movTextEnd), []) )
+          , (offsetOverlay rwidth
+             $ map textToAL ([""] ++ movText ++ [""] ++ movTextEnd), []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
       else
@@ -206,7 +209,7 @@ keyHelp COps{corule}
                  (movText ++ [""] ++ minimalText ++ [keyCaption])
                  casualEnd ) ]
     , if catLength CmdItemMenu + catLength CmdItem
-         + 9 > rheight then
+         + 14 > rheight then
         [ ( categoryDescription CmdItemMenu <> "."
           , okxs CmdItemMenu [keyCaption] itemMenuEnd )
         , ( categoryDescription CmdItem <> "."
@@ -261,9 +264,10 @@ keyHelp COps{corule}
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool -> CmdCategory
+okxsN :: InputContent -> Int -> Int -> Int -> (HumanCmd -> Bool) -> Bool
+      -> CmdCategory
       -> [Text] -> [Text] -> OKX
-okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
+okxsN InputContent{..} width offset n greyedOut showManyKeys cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -282,7 +286,8 @@ okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
       f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))
-      kxs = zipWith f keys [offset + length header..]
+      kxs = zipWith f keys [offset + 1 + length header..]
+      renumberOv = map (\(p, al) -> (p + offset * width, al))
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
       greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
-  in (map greyToAL ts, kxs)
+  in (renumberOv $ offsetOverlay width $ map greyToAL ts, kxs)

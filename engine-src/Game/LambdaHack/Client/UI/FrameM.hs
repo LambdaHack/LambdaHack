@@ -41,12 +41,10 @@ data DisplayFont = SquareFont | MonoFont | SansFont
   deriving Eq
 
 -- | Draw the current level with the overlay on top.
--- If the overlay is too long, it's truncated.
--- Similarly, for each line of the overlay, if it's too wide, it's truncated.
 drawOverlay :: MonadClientUI m
             => DisplayFont -> ColorMode -> Bool -> Overlay -> LevelId
             -> m PreFrame3
-drawOverlay displayFont dm onBlank topTrunc lid = do
+drawOverlay displayFont dm onBlank iov lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
   ClientOptions{sdlMsgFontFile} <- getsClient soptions
   basicFrame <- if onBlank
@@ -55,15 +53,17 @@ drawOverlay displayFont dm onBlank topTrunc lid = do
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  let iov = offsetOverlay coscreen onBlank topTrunc
-      preFrame = overlayFrame iov basicFrame
-      msgFontSupported =
+  let msgFontSupported =
 #ifdef USE_SDL
         maybe False (not . T.null) sdlMsgFontFile && displayFont == SansFont
 #else
         False
 #endif
-  return $! if msgFontSupported then (basicFrame, topTrunc) else (preFrame, [])
+  return $! if msgFontSupported
+            then (basicFrame, iov)
+            else ( overlayFrame (truncateOverlay coscreen onBlank iov)
+                                basicFrame
+                 , [])
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
@@ -77,12 +77,13 @@ pushFrame = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     report <- getReportUI
-    let truncRep = [renderReport report]
+    let truncRep = [(0, renderReport report)]
     frame <- drawOverlay SansFont ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
 promptGetKey :: MonadClientUI m
-             => DisplayFont -> ColorMode -> Overlay -> Bool -> [K.KM] -> m K.KM
+             => DisplayFont -> ColorMode -> Overlay -> Bool -> [K.KM]
+             -> m K.KM
 promptGetKey displayFont dm ov onBlank frontKeyKeys = do
   lidV <- viewedLevelUI
   keyPressed <- anyKeyPressed
@@ -102,7 +103,8 @@ promptGetKey displayFont dm ov onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
-      let ov2 = [textFgToAL Color.BrYellow "*interrupted*" | keyPressed] ++ ov
+      let ov2 = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
+                ++ ov
       frontKeyFrame <- drawOverlay displayFont dm onBlank ov2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
@@ -158,7 +160,7 @@ resetPlayBack = do
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
 renderFrames arena anim = do
   report <- getReportUI
-  let truncRep = [renderReport report]
+  let truncRep = [(0, renderReport report)]
   basicFrame <- drawOverlay SansFont ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim

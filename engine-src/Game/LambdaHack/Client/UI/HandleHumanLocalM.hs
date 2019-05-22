@@ -240,8 +240,9 @@ chooseItemDialogMode c = do
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
-                  ov0 = indentSplitAttrLine rwidth $ textToAL
-                        $ skillDesc skill
+                  ov0 = offsetOverlay rwidth
+                        $ indentSplitAttrLine rwidth
+                        $ textToAL $ skillDesc skill
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -285,8 +286,10 @@ chooseItemDialogMode c = do
                        , MU.CarWs (ES.size es) "level" <> ":"
                        , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
-                  ov0 = indentSplitAttrLine rwidth $ textToAL $ T.unlines $
-                          (if sexposePlaces soptions
+                  ov0 = offsetOverlay rwidth
+                        $ indentSplitAttrLine rwidth
+                        $ textToAL $ T.unlines
+                        $ (if sexposePlaces soptions
                            then [ "", partsPhrase
                                 , "", freqsText
                                 , "" ] ++ PK.ptopLeft pkind
@@ -712,7 +715,7 @@ eitherHistory showAll = do
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
-  let rh = renderHistory history
+  let rh = offsetOverlay rwidth $ renderHistory history
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -740,8 +743,8 @@ eitherHistory showAll = do
       displayOneReport histSlot = do
         let timeReport = case drop histSlot rh of
               [] -> error $ "" `showFailure` histSlot
-              tR : _ -> tR
-            ov0 = indentSplitAttrLine rwidth timeReport
+              (_, tR) : _ -> tR
+            ov0 = offsetOverlay rwidth $ indentSplitAttrLine rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]

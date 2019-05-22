@@ -5,10 +5,10 @@ module Game.LambdaHack.Client.UI.Frame
   , FrameST, FrameForall(..), FrameBase(..), Frame
   , PreFrame3, PreFrames3, PreFrame, PreFrames
   , SingleFrame(..)
-  , blankSingleFrame, offsetOverlay, overlayFrame
+  , blankSingleFrame, truncateOverlay, overlayFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , truncateLines, truncateAttrLine
+  , truncateAttrLine
 #endif
   ) where
 
@@ -24,6 +24,7 @@ import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
@@ -90,43 +91,56 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
-truncateLines :: ScreenContent -> Bool -> Overlay -> Overlay
-truncateLines ScreenContent{rwidth, rheight} onBlank l =
+truncateOverlay :: ScreenContent -> Bool -> Overlay -> Overlay
+truncateOverlay ScreenContent{rwidth, rheight} onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
-      topLayer = if length l <= canvasLength
-                 then l ++ [[] | length l < canvasLength && length l > 3]
-                 else take (canvasLength - 1) l
-                      ++ [stringToAL "--a portion of the text trimmed--"]
-      f lenPrev lenNext layerLine =
-        truncateAttrLine rwidth layerLine (max lenPrev lenNext)
-      lens = map (min (rwidth - 1) . length) topLayer
-  in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) topLayer
-
-offsetOverlay :: ScreenContent -> Bool -> Overlay -> IntOverlay
-offsetOverlay coscreen@ScreenContent{rwidth} onBlank l =
-  map (\(y, al) -> (y * rwidth, al))
-  $ zip [0..] $ truncateLines coscreen onBlank l
+      supHeight = if null ov then 0 else maximum $ map fst ov
+      ovTopFiltered = filter (\(p, _) -> p < rwidth * (canvasLength - 1)) ov
+      trimmedPoint = rwidth * (canvasLength - 1)
+      trimmedAlert = ( trimmedPoint
+                     , stringToAL "--a portion of the text trimmed--" )
+      extraLine = case reverse ov of
+        [] -> []
+        (pLast, _) : _ ->
+          [ (pLast + rwidth, [])
+          | supHeight < trimmedPoint && supHeight >= 3 * rwidth ]
+      ovTop = if supHeight >= rwidth * canvasLength
+              then ovTopFiltered ++ [trimmedAlert]
+              else ov ++ extraLine
+      -- Unlike the trimming above, adding spaces around overlay depends
+      -- on there being no gaps and duplicate line definitions.
+      -- Probably gives messy results when X offsets are not all the same.
+      f lenPrev lenNext (p, layerLine) =
+        let xstart = px $ toEnum p
+        in (p, truncateAttrLine rwidth xstart layerLine (max lenPrev lenNext))
+      lengthOfLine (p, al) = let xstart = px $ toEnum p
+                             in min (rwidth - 1) (xstart + length al)
+      lens = map lengthOfLine ovTop
+  in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
--- Also trim (do not wrap!) too long lines.
-truncateAttrLine :: X -> AttrLine -> X -> AttrLine
-truncateAttrLine w xs lenMax =
-  case compare w (length xs) of
-    LT -> let discarded = drop w xs
+-- Also trim (do not wrap!) too long lines. Also add many spaces when under
+-- longer lines.
+truncateAttrLine :: X -> X -> AttrLine -> X -> AttrLine
+truncateAttrLine w xstart al lenMax =
+  case compare w (xstart + length al) of
+    LT -> let discarded = drop (w - xstart) al
           in if all (== Color.spaceAttrW32) discarded
-             then take w xs
-             else take (w - 1) xs ++ [Color.attrChar2ToW32 Color.BrBlack '$']
-    EQ -> xs
-    GT -> let xsSpace =
-                if | null xs -> xs
-                   | last xs == Color.spaceAttrW32 -> xs ++ [Color.spaceAttrW32]
-                   | otherwise -> xs ++ [Color.spaceAttrW32, Color.spaceAttrW32]
-              whiteN = max (40 - length xsSpace) (1 + lenMax - length xsSpace)
-          in xsSpace ++ replicate whiteN Color.spaceAttrW32
+             then take (w - xstart) al
+             else take (w - xstart - 1) al ++ [Color.trimmedLineAttrW32]
+    EQ -> al
+    GT -> let alSpace =
+                if | null al -> al
+                   | last al == Color.spaceAttrW32
+                     || xstart + length al == w - 1 ->  -- no space for more
+                     al ++ [Color.spaceAttrW32]
+                   | otherwise -> al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
+              whiteN = max (40 - length alSpace) (1 + lenMax - length alSpace)
+          in alSpace ++ replicate whiteN Color.spaceAttrW32
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: IntOverlay -> PreFrame -> PreFrame
+overlayFrame :: Overlay -> PreFrame -> PreFrame
 overlayFrame ov (m, ff) =
   ( m
   , FrameForall $ \v -> do

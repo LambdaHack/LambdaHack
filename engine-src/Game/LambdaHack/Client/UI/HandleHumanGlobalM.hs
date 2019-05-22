@@ -1092,7 +1092,7 @@ helpHuman cmdAction = do
   cops <- getsState scops
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
-  let keyH = keyHelp cops ccui 1
+  let keyH = keyHelp cops ccui
       splitHelp (t, okx) =
         splitOKX rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow $ concat $ map splitHelp keyH
@@ -1132,7 +1132,7 @@ dashboardHuman :: MonadClientUI m
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let keyL = 2
-      (ov0, kxs0) = okxsN coinput 1 keyL (const False) False
+      (ov0, kxs0) = okxsN coinput rwidth 0 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
       splitHelp (al, okx) = splitOKX rwidth (rheight - 2) al [K.escKM] okx
@@ -1186,9 +1186,10 @@ itemMenuHuman cmdAction = do
               desc = itemDesc markParagraphs (bfid b) factionD
                               (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                               fromCStore localTime jlid itemFull kit
-              alPrefix = splitAttrLine rwidth $ desc <+:> foundPrefix
+              alPrefix = offsetOverlay rwidth $ splitAttrLine rwidth
+                         $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
-              xstart = length (last alPrefix) + 1
+              xstart = length (snd $ last alPrefix) + 1
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
@@ -1219,8 +1220,8 @@ itemMenuHuman cmdAction = do
               fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
-              offset = 1 + length ovFound
-              (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
+              offset = length ovFound
+              (ov0, kxs0) = okxsN coinput rwidth offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
@@ -1320,6 +1321,7 @@ generateMenu :: MonadClientUI m
              -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   art <- artWithVersion
   let bindingLen = 35
       emptyInfo = repeat $ replicate bindingLen ' '
@@ -1352,7 +1354,7 @@ generateMenu cmdAction kds gameInfo menuName = do
       menuOverwritten = overwrite $ zip [0..] art
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = map stringToAL menuOvLines
+      ov = offsetOverlay rwidth $ map stringToAL menuOvLines
   ekm <- displayChoiceScreen menuName SquareFont ColorFull True
                                       (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of

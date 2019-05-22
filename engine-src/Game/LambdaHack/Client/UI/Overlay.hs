@@ -4,8 +4,8 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
     AttrLine, emptyAttrLine, textToAL, textFgToAL, stringToAL, (<+:>)
     -- * Overlay
-  , Overlay, IntOverlay
-  , splitAttrLine, indentSplitAttrLine, glueLines, updateLine
+  , Overlay
+  , offsetOverlay, splitAttrLine, indentSplitAttrLine, glueLines, updateLine
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , linesAttr, splitAttrPhrase
@@ -56,11 +56,6 @@ infixr 6 <+:>  -- matches Monoid.<>
 
 -- * Overlay
 
--- | A series of screen lines that either fit the width of the screen
--- or are intended for truncation when displayed. The length of overlay
--- may exceed the length of the screen, unlike in @SingleFrame@.
-type Overlay = [AttrLine]
-
 -- | A series of screen lines with points at which they should ber overlayed
 -- over the base frame or a blank screen, depending on context.
 -- The point is represented as in integer that is an index into the
@@ -69,19 +64,22 @@ type Overlay = [AttrLine]
 -- for truncation when displayed. The positions of lines may fall outside
 -- the length of the screen, too, unlike in @SingleFrame@. Then they are
 -- simply not shown.
-type IntOverlay = [(PointI, AttrLine)]
+type Overlay = [(PointI, AttrLine)]
+
+offsetOverlay :: X -> [AttrLine] -> Overlay
+offsetOverlay width l = map (\(y, al) -> (y * width, al)) $ zip [0..] l
 
 -- | Split a string into lines. Avoids ending the line with
 -- a character other than space. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
 --
 -- Note that we only split wrt @White@ space, nothing else.
-splitAttrLine :: X -> AttrLine -> Overlay
+splitAttrLine :: X -> AttrLine -> [AttrLine]
 splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))
   $ linesAttr l
 
-indentSplitAttrLine :: X -> AttrLine -> Overlay
+indentSplitAttrLine :: X -> AttrLine -> [AttrLine]
 indentSplitAttrLine w l =
   -- First line could be split at @w@, not @w - 1@, but it's good enough.
   let ts = splitAttrLine (w - 1) l
@@ -89,7 +87,7 @@ indentSplitAttrLine w l =
     [] -> []
     hd : tl -> hd : map ([Color.spaceAttrW32] ++) tl
 
-linesAttr :: AttrLine -> Overlay
+linesAttr :: AttrLine -> [AttrLine]
 linesAttr l | null l = []
             | otherwise = h : if null t then [] else linesAttr (tail t)
  where (h, t) = span (/= Color.retAttrW32) l
@@ -109,7 +107,7 @@ breakAtSpace lRev =
       else (pre, post)
     _ -> (pre, post)  -- no space found, give up
 
-splitAttrPhrase :: X -> AttrLine -> Overlay
+splitAttrPhrase :: X -> AttrLine -> [AttrLine]
 splitAttrPhrase w xs
   | w >= length xs = [xs]  -- no problem, everything fits
   | otherwise =
@@ -125,17 +123,26 @@ splitAttrPhrase w xs
          then pre : splitAttrPhrase w post
          else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
 
+-- There are pretty very strong assumptions here: only one overlap,
+-- between the last line of the first argument and the first line
+-- of the second, all lines of @ov1@ start at the first column,
+-- the concatenation in the overlapping line fits in line width.
+-- We keep the order of lines to ensure the assumptions hold
+-- for nested calls.
 glueLines :: Overlay -> Overlay -> Overlay
 glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
  where glue [] l = l
        glue m [] = m
-       glue (mh : mt) (lh : lt) = reverse lt ++ (mh <+:> lh) : mt
+       glue ((p, mh) : mt) ((_, lh) : lt) =
+         let offsetOv = \(mp, ma) -> (mp + p, ma)
+         in reverse (map offsetOv lt) ++ (p, mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
+-- Note that this ignores points and just updates nth line.
 updateLine :: Int -> (AttrLine -> AttrLine) -> Overlay -> Overlay
 updateLine n f ov =
-  let upd k (l : ls) = if k == 0
-                       then f l : ls
-                       else l : upd (k - 1) ls
+  let upd k ((p, l) : ls) = if k == 0
+                            then (p, f l) : ls
+                            else (p, l) : upd (k - 1) ls
       upd _ [] = []
   in upd n ov

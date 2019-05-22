@@ -15,6 +15,7 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
@@ -51,6 +52,7 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
+import           Game.LambdaHack.Definition.Defs
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -341,7 +343,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             tgtR = vp xtgt ytgt
         textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
         SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
-        -- We resize surface rather than texture to set the resulting
+        -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
         -- which otherwise we wouldn't be able to do.
         void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
@@ -370,7 +372,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             tt2Proportional = Vect.V2 (toEnum width) (toEnum boxSize)
         textSurface <- SDL.createRGBSurface tt2Proportional SDL.ARGB8888
         SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
-        -- We resize surface rather than texture to set the resulting
+        -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
         -- which otherwise we wouldn't be able to do.
         void $ SDL.surfaceBlit textSurfaceRaw (Just srcR)
@@ -379,7 +381,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         textTexture <- SDL.createTextureFromSurface srenderer textSurface
         SDL.freeSurface textSurface
         when (width /= widthRaw) $ do
-          let greyDollar = Color.attrChar2ToW32 Color.BrBlack '$'
+          let greyDollar = Color.trimmedLineAttrW32
           void $ setChar (fromEnum Point{px = rwidth coscreen - 1, py = row})
                          (Color.attrCharW32 greyDollar, 0)
         return (width, textTexture)
@@ -418,13 +420,17 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      drawProportionalOverlay :: Overlay -> IO [Int]
+      drawProportionalOverlay :: Overlay -> IO [(Y, Int)]
       drawProportionalOverlay mov =
-        mapM drawProportionalLine
-        $ zipWith (\y line -> (0, y, line)) [0..] mov
-      drawProportionalLine :: (Int, Int, AttrLine) -> IO Int
-      drawProportionalLine (x, _, []) = return x
-      drawProportionalLine (x, row, w : rest) = do
+        mapM (\(i, line) -> let Point{..} = toEnum i
+                            in drawProportionalLine (px * boxSize) py line)
+             mov
+      drawProportionalLine :: Int -> Y -> AttrLine -> IO (Y, Int)
+      drawProportionalLine x row [] = return (row, x)
+      drawProportionalLine x row _ | x >= (rwidth coscreen - 1) * boxSize - x =
+        -- This chunk starts at $ sign or beyond so, for KISS, reject it.
+        return (row, maxBound)
+      drawProportionalLine x row (w : rest) = do
         let sameAttr ac = Color.fgFromW32 ac == Color.fgFromW32 w
                           || ac == Color.spaceAttrW32  -- matches all colours
                           --- || ac == Color.spaceCursorAttrW32
@@ -438,10 +444,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                | otherwise = fgRaw
             t = T.pack $ map Color.charFromW32 $ w : sameRest
         width <- drawProportionalChunk x row fg t
-        let remaining = if x + width >= (rwidth coscreen - 1) * boxSize - x
-                        then []  -- only enough space for '$' sign
-                        else otherRest
-        drawProportionalLine (x + width, row, remaining)
+        drawProportionalLine (x + width) row otherRest
       drawProportionalChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
       drawProportionalChunk x row fg t = do
         textSurfaceRaw <- TTF.shaded smsgFont (colorToRGBA fg)
@@ -459,7 +462,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
                               (PointArray.avector $ singleArray prevFrame)
   rawMsgArea <- drawProportionalOverlay $ singleOverlay curFrame
-  let curMsgArea = U.fromList $ take (rheight coscreen) $ rawMsgArea ++ repeat 0
+  let msgMap = IM.fromListWith max rawMsgArea  -- we assume initial segment
+      curMsgArea = U.fromListN (rheight coscreen) $ IM.elems msgMap ++ repeat 0
   writeIORef spreviousFrame (curFrame, curMsgArea)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer

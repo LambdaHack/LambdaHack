@@ -26,7 +26,7 @@ import Game.LambdaHack.Definition.Color
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
-newtype Animation = Animation [IntOverlay]
+newtype Animation = Animation [Overlay]
   deriving (Eq, Show)
 
 -- | Render animations on top of a screen frame.
@@ -34,9 +34,10 @@ newtype Animation = Animation [IntOverlay]
 -- Located in this module to keep @Animation@ abstract.
 renderAnim :: PreFrame -> Animation -> PreFrames
 renderAnim basicFrame (Animation anim) =
-  let modifyFrame :: IntOverlay -> PreFrame
+  let modifyFrame :: Overlay -> PreFrame
+      -- Overlay not truncated, because guaranteed within bounds.
       modifyFrame am = overlayFrame am basicFrame
-      modifyFrames :: (IntOverlay, IntOverlay) -> Maybe PreFrame
+      modifyFrames :: (Overlay, Overlay) -> Maybe PreFrame
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
   in Just basicFrame : map modifyFrames (zip anim ([] : anim))
@@ -51,13 +52,14 @@ mapPosToOffset :: ScreenContent -> (Point, AttrCharW32) -> (Int, [AttrCharW32])
 mapPosToOffset ScreenContent{rwidth} (Point{..}, attr) =
   ((py + 1) * rwidth + px, [attr])
 
-mzipSingleton :: ScreenContent -> Point -> Maybe AttrCharW32 -> IntOverlay
+mzipSingleton :: ScreenContent -> Point -> Maybe AttrCharW32 -> Overlay
 mzipSingleton coscreen p1 mattr1 = map (mapPosToOffset coscreen) $
   let mzip (pos, mattr) = fmap (pos,) mattr
   in catMaybes [mzip (p1, mattr1)]
 
-mzipPairs :: ScreenContent -> (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
-          -> IntOverlay
+mzipPairs :: ScreenContent -> (Point, Point)
+          -> (Maybe AttrCharW32, Maybe AttrCharW32)
+          -> Overlay
 mzipPairs coscreen (p1, p2) (mattr1, mattr2) = map (mapPosToOffset coscreen) $
   let mzip (pos, mattr) = fmap (pos,) mattr
   in catMaybes $ if p1 /= p2
