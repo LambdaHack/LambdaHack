@@ -84,6 +84,7 @@ import           Game.LambdaHack.Content.ModeKind (fhasGender)
 import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
 -- * Macro
@@ -720,7 +721,12 @@ eitherHistory showAll = do
   global <- getsState stime
   let renderedHistory = renderHistory history
       histBound = length renderedHistory
-      rh = EM.singleton SansFont $ offsetOverlay rwidth renderedHistory
+      splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
+                    in (spNo, (length spNo, spYes))
+--                  in (spNo, (length spNo `divUp` 2, spYes))
+      (histLab, histDesc) = unzip $ map splitRow renderedHistory
+      rhLab = EM.singleton MonoFont $ offsetOverlay rwidth histLab
+      rhDesc = EM.singleton SansFont $ offsetOverlayX rwidth histDesc
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -731,7 +737,8 @@ eitherHistory showAll = do
       kxs = [ (Right sn, (slotPrefix sn, 0, maxBound))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow SansFont rheight [K.escKM] (rh, kxs)
+  okxs <- overlayToSlideshow SansFont rheight [K.escKM]
+                             (rhLab `EM.union` rhDesc , kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull True okxs
                                    [K.spaceKM, K.escKM]

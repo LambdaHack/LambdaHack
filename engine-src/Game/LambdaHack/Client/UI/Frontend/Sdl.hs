@@ -431,13 +431,17 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
         return (row, maxBound)
       drawProportionalLine x row (w : rest) = do
-        let sameAttr ac = Color.fgFromW32 ac == Color.fgFromW32 w
-                          || ac == Color.spaceAttrW32  -- matches all colours
-                          --- || ac == Color.spaceCursorAttrW32
-                          -- don't uncomment, unless highlight artifacts seen
-            (sameRest, otherRest) = span sameAttr rest
+        let isSpace = (`elem` [Color.spaceAttrW32, Color.spaceCursorAttrW32])
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}} =
-              Color.attrCharFromW32 w
+              Color.attrCharFromW32
+              $ if isSpace w
+                then case filter (not . isSpace) rest of
+                  w2 : _ -> w2
+                  [] -> w
+                else w
+            sameAttr ac = Color.fgFromW32 ac == fgRaw
+                          || isSpace ac  -- matches all colours
+            (sameRest, otherRest) = span sameAttr rest
             !_A = assert (bg `elem` [ Color.HighlightNone
                                     , Color.HighlightNoneCursor ]) ()
             fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite

@@ -5,7 +5,8 @@ module Game.LambdaHack.Client.UI.Overlay
     AttrLine, emptyAttrLine, textToAL, textFgToAL, stringToAL, (<+:>)
     -- * Overlay
   , Overlay
-  , offsetOverlay, splitAttrLine, indentSplitAttrLine, glueLines, updateLine
+  , offsetOverlay, offsetOverlayX, splitAttrLine, indentSplitAttrLine
+  , glueLines, updateLine
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , linesAttr, splitAttrPhrase
@@ -68,6 +69,10 @@ type Overlay = [(PointI, AttrLine)]
 
 offsetOverlay :: X -> [AttrLine] -> Overlay
 offsetOverlay width l = map (\(y, al) -> (y * width, al)) $ zip [0..] l
+
+offsetOverlayX :: X -> [(X, AttrLine)] -> Overlay
+offsetOverlayX width l =
+  map (\(y, (x, al)) -> (y * width + x, al)) $ zip [0..] l
 
 -- | Split a string into lines. Avoids ending the line with
 -- a character other than space. Space characters are removed
