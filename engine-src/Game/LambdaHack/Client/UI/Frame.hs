@@ -47,11 +47,11 @@ newtype FrameBase = FrameBase
   {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
 
 -- | A frame, that is, a base frame and all its modifications.
-type Frame = ((FrameBase, FrameForall), Overlay)
+type Frame = ((FrameBase, FrameForall), (Overlay, Overlay))
 
 -- | Components of a frame, before it's decided if the first can be overwritten
 -- in-place or needs to be copied.
-type PreFrame3 = (PreFrame, Overlay)
+type PreFrame3 = (PreFrame, (Overlay, Overlay))
 
 -- | Sequence of screen frames, including delays. Potentially based on a single
 -- base frame.
@@ -80,13 +80,15 @@ writeLine offset l = FrameForall $ \v -> do
 -- Note that we don't provide a list of color-highlighed positions separately,
 -- because overlays need to obscure not only map, but the highlights as well.
 data SingleFrame = SingleFrame
-  { singleArray   :: PointArray.Array Color.AttrCharW32
-  , singleOverlay :: Overlay }
+  { singleArray       :: PointArray.Array Color.AttrCharW32
+  , singleSansOverlay :: Overlay
+  , singleMonoOverlay :: Overlay }
   deriving (Eq, Show)
 
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
   SingleFrame (PointArray.replicateA rwidth rheight Color.spaceAttrW32)
+              []
               []
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated

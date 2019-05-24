@@ -62,7 +62,9 @@ data FrontendSession = FrontendSession
   , srenderer        :: SDL.Renderer
   , sfont            :: TTF.Font
   , smsgFont         :: TTF.Font
+  , smonoFont        :: TTF.Font
   , satlas           :: IORef FontAtlas
+  , smonoAtlas       :: IORef FontAtlas
   , stexture         :: IORef SDL.Texture
   , spreviousFrame   :: IORef (SingleFrame, U.Vector Int)
   , sforcedShutdown  :: IORef Bool
@@ -115,13 +117,18 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
          else fail $ "Font file does not exist: " ++ fontFileOrig
  fontFile <- findFontFile sdlFontFile
  msgFontFile <- findFontFile sdlMsgFontFile
+ monoFontFile <- findFontFile sdlMonoFontFile
  let fontSize = fromJust sscalableFontSize  -- is ignored for bitmap fonts
      msgFontSize = fromJust sdlMsgFontSize
+     monoFontSize = fromJust sdlMonoFontSize
  TTF.initialize
  sfont <- TTF.load fontFile fontSize
  isMono <- TTF.isMonospace sfont
  let !_A = assert isMono ()
  smsgFont <- TTF.load msgFontFile msgFontSize
+ smonoFont <- TTF.load monoFontFile monoFontSize
+ isMonoMono <- TTF.isMonospace smonoFont
+ let !_A = assert isMonoMono ()
  let sdlSizeAdd = fromJust $ if isBitmapFile fontFile  -- based on main font
                              then sdlBitmapSizeAdd
                              else sdlScalableSizeAdd
@@ -131,6 +138,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  if slogPriority == Just 0 then do
   rf <- createRawFrontend coscreen (\_ -> return ()) (return ())
   putMVar rfMVar rf
+  TTF.free smonoFont
   TTF.free smsgFont
   TTF.free sfont
   TTF.quit
@@ -161,6 +169,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         return texture
   texture <- initTexture
   satlas <- newIORef EM.empty
+  smonoAtlas <- newIORef EM.empty
   stexture <- newIORef texture
   let emptyMsgArea = U.replicate (rheight coscreen) 0
   spreviousFrame <- newIORef (blankSingleFrame coscreen, emptyMsgArea )
@@ -180,9 +189,12 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         -- Textures may be trashed and even invalid, especially on Windows.
         atlas <- readIORef satlas
         writeIORef satlas EM.empty
+        monoAtlas <- readIORef smonoAtlas
+        writeIORef smonoAtlas EM.empty
         oldTexture <- readIORef stexture
         newTexture <- initTexture
         mapM_ SDL.destroyTexture $ EM.elems atlas
+        mapM_ SDL.destroyTexture $ EM.elems monoAtlas
         SDL.destroyTexture oldTexture
         writeIORef stexture newTexture
         (prevFrame, _) <- readIORef spreviousFrame
@@ -217,6 +229,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         if continueSdlLoop
         then loopSDL
         else do
+          TTF.free smonoFont
           TTF.free smsgFont
           TTF.free sfont
           TTF.quit
@@ -315,12 +328,12 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                               else sdlScalableSizeAdd
   (prevFrame, prevMsgArea) <- readIORef spreviousFrame
   boxSize <- (+ sdlSizeAdd) <$> TTF.height sfont  -- based on main font
-  let tt2 = Vect.V2 (toEnum boxSize) (toEnum boxSize)
-      vp :: Int -> Int -> Vect.Point Vect.V2 CInt
+  let vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight !x !y !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
-        let rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2
+        let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
+            rect = SDL.Rectangle (vp (x * boxSize) (y * boxSize)) tt2Square
         SDL.drawRect srenderer $ Just rect
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
           -- reset back to black
@@ -329,18 +342,19 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         Color.HighlightNoneCursor -> return ()
         _ -> drawHighlight x y $ Color.highlightToColor bg
       -- This also frees the surface it gets.
-      scaleSurfaceToTexture :: SDL.Surface -> IO SDL.Texture
-      scaleSurfaceToTexture textSurfaceRaw = do
+      scaleSurfaceToTexture :: Int -> SDL.Surface -> IO SDL.Texture
+      scaleSurfaceToTexture xsize textSurfaceRaw = do
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
-        let width = min boxSize $ fromEnum sw
+        let width = min xsize $ fromEnum sw
             height = min boxSize $ fromEnum sh
             xsrc = max 0 (fromEnum sw - width) `div` 2
             ysrc = max 0 (fromEnum sh - height) `div` 2
             srcR = SDL.Rectangle (vp xsrc ysrc)
                                  (Vect.V2 (toEnum width) (toEnum height))
-            xtgt = (boxSize - width) `divUp` 2
+            xtgt = (xsize - width) `divUp` 2
             ytgt = (boxSize - height) `div` 2
             tgtR = vp xtgt ytgt
+            tt2 = Vect.V2 (toEnum xsize) (toEnum boxSize)
         textSurface <- SDL.createRGBSurface tt2 SDL.ARGB8888
         SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
         -- We crop surface rather than texture to set the resulting
@@ -353,9 +367,9 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         return textTexture
       -- This also frees the surface it gets.
-      scaleSurfaceToTextureProportional :: Int -> Int -> SDL.Surface
-                                        -> IO (Int, SDL.Texture)
-      scaleSurfaceToTextureProportional x row textSurfaceRaw = do
+      scaleSurfaceToTextureSans :: Int -> Y -> SDL.Surface
+                                -> IO (Int, SDL.Texture)
+      scaleSurfaceToTextureSans x row textSurfaceRaw = do
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
         let widthRaw = fromEnum sw
             width = if widthRaw > rwidth coscreen * boxSize - x
@@ -369,8 +383,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             xtgt = 0
             ytgt = (boxSize - height) `div` 2
             tgtR = vp xtgt ytgt
-            tt2Proportional = Vect.V2 (toEnum width) (toEnum boxSize)
-        textSurface <- SDL.createRGBSurface tt2Proportional SDL.ARGB8888
+            tt2Sans = Vect.V2 (toEnum width) (toEnum boxSize)
+        textSurface <- SDL.createRGBSurface tt2Sans SDL.ARGB8888
         SDL.surfaceFillRect textSurface Nothing (colorToRGBA Color.Black)
         -- We crop surface rather than texture to set the resulting
         -- texture as @TextureAccessStatic@ via @createTextureFromSurface@,
@@ -386,7 +400,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                          (Color.attrCharW32 greyDollar, 0)
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
-      setChar :: Int -> (Word32, Word32) -> IO Int
+      setChar :: PointI -> (Word32, Word32) -> IO Int
       setChar !i (!w, !wPrev) = do
         let Point{..} = toEnum i
             outOfArea xbound = px * boxSize > xbound
@@ -394,7 +408,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         then return $! i + 1
         else do
           atlas <- readIORef satlas
-          let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}, acChar=acCharRaw} =
+          let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
+                            , acChar=acCharRaw } =
                 Color.attrCharFromW32 $ Color.AttrCharW32 w
               fg | py `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                  | otherwise = fgRaw
@@ -411,28 +426,64 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                            else acCharRaw
               textSurfaceRaw <- TTF.shadedGlyph sfont (colorToRGBA fg)
                                                 (colorToRGBA Color.Black) acChar
-              textTexture <- scaleSurfaceToTexture textSurfaceRaw
+              textTexture <- scaleSurfaceToTexture boxSize textSurfaceRaw
               writeIORef satlas $ EM.insert ac textTexture atlas
               return textTexture
             Just textTexture -> return textTexture
-          let tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2
+          let tt2Square = Vect.V2 (toEnum boxSize) (toEnum boxSize)
+              tgtR = SDL.Rectangle (vp (px * boxSize) (py * boxSize)) tt2Square
           SDL.copy srenderer textTexture Nothing (Just tgtR)
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      drawProportionalOverlay :: Overlay -> IO [(Y, Int)]
-      drawProportionalOverlay mov =
+      halfSize = boxSize `div` 2
+      drawMonoOverlay :: Overlay -> IO [(Y, Int)]
+      drawMonoOverlay ov =
         mapM (\(i, line) -> let Point{..} = toEnum i
-                            in drawProportionalLine (px * boxSize) py line)
-             mov
-      drawProportionalLine :: Int -> Y -> AttrLine -> IO (Y, Int)
-      drawProportionalLine x row [] = return (row, x)
-      drawProportionalLine x row _ | x >= (rwidth coscreen - 1) * boxSize - x =
+                                lineCut = take ((rwidth coscreen - px) * 2) line
+                            in drawMonoLine (px * boxSize) py lineCut)
+             ov
+      drawMonoLine :: Int -> Y -> AttrLine -> IO (Y, Int)
+      drawMonoLine x row [] = return (row, x)
+      drawMonoLine x row [w] = drawMonoLine x row [w, Color.spaceAttrW32]
+      drawMonoLine x row (w1 : w2 : rest) = do
+        setMonoChar x row w1
+        setMonoChar (x + halfSize) row w2
+        drawMonoLine (x + boxSize) row rest
+      setMonoChar :: Int -> Y -> Color.AttrCharW32 -> IO ()
+      setMonoChar !x !row !w = do
+          monoAtlas <- readIORef smonoAtlas
+          let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
+                Color.attrCharFromW32 w
+              fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+                 | otherwise = fgRaw
+              ac = Color.attrChar2ToW32 fg acChar
+              !_A = assert (bg `elem` [ Color.HighlightNone
+                                      , Color.HighlightNoneCursor ]) ()
+          textTexture <- case EM.lookup ac monoAtlas of
+            Nothing -> do
+              textSurfaceRaw <- TTF.shadedGlyph smonoFont (colorToRGBA fg)
+                                                (colorToRGBA Color.Black) acChar
+              textTexture <- scaleSurfaceToTexture halfSize textSurfaceRaw
+              writeIORef smonoAtlas $ EM.insert ac textTexture monoAtlas
+              return textTexture
+            Just textTexture -> return textTexture
+          let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
+              tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
+          SDL.copy srenderer textTexture Nothing (Just tgtR)
+      drawSansOverlay :: Overlay -> IO [(Y, Int)]
+      drawSansOverlay ov =
+        mapM (\(i, line) -> let Point{..} = toEnum i
+                            in drawSansLine (px * boxSize) py line)
+             ov
+      drawSansLine :: Int -> Y -> AttrLine -> IO (Y, Int)
+      drawSansLine x row [] = return (row, x)
+      drawSansLine x row _ | x >= (rwidth coscreen - 1) * boxSize - x =
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
         return (row, maxBound)
-      drawProportionalLine x row (w : rest) = do
+      drawSansLine x row (w : rest) = do
         let isSpace = (`elem` [Color.spaceAttrW32, Color.spaceCursorAttrW32])
-            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw,bg}} =
+            Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
               Color.attrCharFromW32
               $ if isSpace w
                 then case filter (not . isSpace) rest of
@@ -447,14 +498,14 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
                | otherwise = fgRaw
             t = T.pack $ map Color.charFromW32 $ w : sameRest
-        width <- drawProportionalChunk x row fg t
-        drawProportionalLine (x + width) row otherRest
-      drawProportionalChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
-      drawProportionalChunk x row fg t = do
+        width <- drawSansChunk x row fg t
+        drawSansLine (x + width) row otherRest
+      drawSansChunk :: Int -> Y -> Color.Color -> T.Text -> IO Int
+      drawSansChunk x row fg t = do
         textSurfaceRaw <- TTF.shaded smsgFont (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t
         (width, textTexture) <-
-          scaleSurfaceToTextureProportional x row textSurfaceRaw
+          scaleSurfaceToTextureSans x row textSurfaceRaw
         let tgtR = SDL.Rectangle (vp x (row * boxSize))
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
@@ -465,8 +516,10 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
                               (PointArray.avector $ singleArray prevFrame)
-  rawMsgArea <- drawProportionalOverlay $ singleOverlay curFrame
-  let msgMap = IM.fromListWith max rawMsgArea  -- we assume initial segment
+  rawMsgAreaSans <- drawSansOverlay $ singleSansOverlay curFrame
+  rawMsgAreaMono <- drawMonoOverlay $ singleMonoOverlay curFrame
+  let msgMap = IM.fromListWith max $ rawMsgAreaSans ++ rawMsgAreaMono
+       -- We assume an initial segment, without gaps, is filled:
       curMsgArea = U.fromListN (rheight coscreen) $ IM.elems msgMap ++ repeat 0
   writeIORef spreviousFrame (curFrame, curMsgArea)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing

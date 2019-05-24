@@ -123,13 +123,13 @@ displayFrames :: MonadClientUI m => LevelId -> PreFrames3 -> m ()
 displayFrames lid frs = do
   let frames = case frs of
         [] -> []
-        [Just ((bfr, ffr), mov)] ->
-          [Just ((FrameBase $ U.unsafeThaw bfr, ffr), mov)]
+        [Just ((bfr, ffr), (ovSans, ovMono))] ->
+          [Just ((FrameBase $ U.unsafeThaw bfr, ffr), (ovSans, ovMono))]
         _ ->
           -- Due to the frames coming from the same base frame,
           -- we have to copy it to avoid picture corruption.
-          map (fmap $ \((bfr, ffr), mov) ->
-                ((FrameBase $ U.thaw bfr, ffr), mov)) frs
+          map (fmap $ \((bfr, ffr), (ovSans, ovMono)) ->
+                ((FrameBase $ U.thaw bfr, ffr), (ovSans, ovMono))) frs
   mapM_ displayFrame frames
   -- Can be different than @blid b@, e.g., when our actor is attacked
   -- on a remote level.
@@ -140,8 +140,8 @@ displayFrames lid frs = do
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
-connFrontendFrontKey frontKeyKeys ((bfr, ffr), mov) = do
-  let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), mov)
+connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovSans, ovMono)) = do
+  let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovSans, ovMono))
   kmp <- connFrontend $ FrontKey frontKeyKeys frontKeyFrame
   modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
   return $! K.kmpKeyMod kmp

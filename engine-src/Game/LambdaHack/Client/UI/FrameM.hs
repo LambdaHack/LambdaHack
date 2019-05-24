@@ -59,14 +59,17 @@ drawOverlay dm onBlank ovs lid = do
       ovSans = if msgFontSupported
                then EM.findWithDefault [] SansFont ovs
                else []
+      ovMono = if msgFontSupported
+               then EM.findWithDefault [] MonoFont ovs
+               else []
       ovOther = EM.findWithDefault [] SquareFont ovs
-                ++ EM.findWithDefault [] MonoFont ovs
                 ++ if msgFontSupported
                    then []
                    else EM.findWithDefault [] SansFont ovs
+                        ++ EM.findWithDefault [] MonoFont ovs
       overlayedFrame = overlayFrame (truncateOverlay coscreen onBlank ovOther)
                                      basicFrame
-  return (overlayedFrame, ovSans)
+  return (overlayedFrame, (ovSans, ovMono))
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
