@@ -1,6 +1,7 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
+  ( propFontSupported, pushFrame, promptGetKey
+  , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack
@@ -44,29 +45,33 @@ drawOverlay :: MonadClientUI m
             -> m PreFrame3
 drawOverlay dm onBlank ovs lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
-  ClientOptions{sdlPropFontFile} <- getsClient soptions
   basicFrame <- if onBlank
                 then do
                   let m = U.replicate (rwidth * rheight)
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  let msgFontSupported = frontendName == "sdl"
-                         && maybe False (not . T.null) sdlPropFontFile
-      ovProp = if msgFontSupported
+  propFontSup <- propFontSupported
+  let ovProp = if propFontSup
                then EM.findWithDefault [] PropFont ovs
                else []
-      ovMono = if msgFontSupported
+      ovMono = if propFontSup
                then EM.findWithDefault [] MonoFont ovs
                else []
       ovOther = EM.findWithDefault [] SquareFont ovs
-                ++ if msgFontSupported
+                ++ if propFontSup
                    then []
                    else EM.findWithDefault [] PropFont ovs
                         ++ EM.findWithDefault [] MonoFont ovs
       overlayedFrame = overlayFrame (truncateOverlay coscreen onBlank ovOther)
                                      basicFrame
   return (overlayedFrame, (ovProp, ovMono))
+
+propFontSupported :: MonadClientUI m => m Bool
+propFontSupported = do
+  ClientOptions{sdlPropFontFile} <- getsClient soptions
+  return $! frontendName == "sdl"
+            && maybe False (not . T.null) sdlPropFontFile
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,

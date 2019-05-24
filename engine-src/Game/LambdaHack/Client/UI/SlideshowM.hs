@@ -12,16 +12,11 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 
-import           Game.LambdaHack.Client.ClientOptions
-import           Game.LambdaHack.Client.MonadClient
-import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
-import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -191,11 +186,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
                     Point{..} <- getsSession spointer
-                    ClientOptions{sdlPropFontFile} <- getsClient soptions
-                    let msgFontSupported =
-                          frontendName == "sdl"
-                          && maybe False (not . T.null) sdlPropFontFile
-                        clickWithinLine (p, al) =
+                    propFontSup <- propFontSupported
+                    let clickWithinLine (p, al) =
                           let Point pxl pyl = toEnum p
                           in pyl == py && pxl >= pxl
                                        && pxl <= pxl + length al `div` 2
@@ -203,8 +195,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                           any clickWithinLine
                           $ EM.findWithDefault [] displayFont ovs
                         clickWithinSmallFontOverlay =
-                          (msgFontSupported && (clickWithinOverlay MonoFont
-                                               || clickWithinOverlay PropFont))
+                          (propFontSup && (clickWithinOverlay MonoFont
+                                          || clickWithinOverlay PropFont))
                         onChoice (_, (cy, cx1, cx2)) =
                           cy == py
                           && if clickWithinSmallFontOverlay
