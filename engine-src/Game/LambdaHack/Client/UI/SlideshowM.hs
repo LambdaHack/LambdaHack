@@ -12,11 +12,16 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 
+import           Game.LambdaHack.Client.ClientOptions
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
+import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
@@ -138,7 +143,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ((ov, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
+        Just ((ovs, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
               highAttr x | Color.acAttr x `notElem` highableAttrs
@@ -161,7 +166,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                       [] -> []
                       xh : xhrest -> cursorW32 xh : xhrest
                 in xs1 ++ xs2High ++ xs3
-              ov1 = EM.map (updateLine y drawHighlight) ov
+              ovs1 = EM.map (updateLine y drawHighlight) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
               xix (_, (_, x1', _)) = x1' == x1
@@ -186,8 +191,25 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
                     Point{..} <- getsSession spointer
-                    let onChoice (_, (cy, cx1, cx2)) =
-                          cy == py && cx1 <= px && cx2 > px
+                    ClientOptions{sdlPropFontFile} <- getsClient soptions
+                    let msgFontSupported =
+                          frontendName == "sdl"
+                          && maybe False (not . T.null) sdlPropFontFile
+                        clickWithinLine (p, al) =
+                          let Point pxl pyl = toEnum p
+                          in pyl == py && pxl >= pxl
+                                       && pxl <= pxl + length al `div` 2
+                        clickWithinOverlay displayFont =
+                          any clickWithinLine
+                          $ EM.findWithDefault [] displayFont ovs
+                        clickWithinSmallFontOverlay =
+                          (msgFontSupported && (clickWithinOverlay MonoFont
+                                               || clickWithinOverlay PropFont))
+                        onChoice (_, (cy, cx1, cx2)) =
+                          cy == py
+                          && if clickWithinSmallFontOverlay
+                             then cx1 <= 2 * px + 1 && cx2 > 2 * px
+                             else cx1 <= px && cx2 > px
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys -> return (Left ikm, pointer)
                       Nothing -> if K.spaceKM `elem` keys
@@ -231,7 +253,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   K.Space -> if pointer == maxIx then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
-          pkm <- promptGetKey dm ov1 sfBlank legalKeys
+          pkm <- promptGetKey dm ovs1 sfBlank legalKeys
           interpretKey pkm
   menuIxMap <- getsSession smenuIxMap
   -- Beware, values in @menuIxMap@ may be negative (meaning: a key, not slot).

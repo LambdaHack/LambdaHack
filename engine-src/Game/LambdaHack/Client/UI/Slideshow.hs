@@ -147,7 +147,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
       (lX, keysX) =
         if null msgRaw
         then (lX0, keysX0)
-        else keysOKX (length msgRaw - 1)(length (snd $ last msgRaw) + 1)
+        else keysOKX (length msgRaw - 1) (length (snd $ last msgRaw) + 1)
                      width keys
       msgOkx = (glueLines msgRaw lX, keysX)
       ((lsInit, kxsInit), (header, rkxs)) =

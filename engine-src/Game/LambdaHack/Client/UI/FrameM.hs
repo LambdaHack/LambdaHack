@@ -23,6 +23,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
+import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -50,12 +51,8 @@ drawOverlay dm onBlank ovs lid = do
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  let msgFontSupported =
-#ifdef USE_SDL
-        maybe False (not . T.null) sdlPropFontFile
-#else
-        False
-#endif
+  let msgFontSupported = frontendName == "sdl"
+                         && maybe False (not . T.null) sdlPropFontFile
       ovProp = if msgFontSupported
                then EM.findWithDefault [] PropFont ovs
                else []
