@@ -1135,7 +1135,7 @@ dashboardHuman cmdAction = do
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
       splitHelp (al, okx) =
-        splitOKX SansFont rwidth (rheight - 2) al [K.escKM] okx
+        splitOKX PropFont rwidth (rheight - 2) al [K.escKM] okx
       sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
@@ -1227,10 +1227,10 @@ itemMenuHuman cmdAction = do
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
               splitHelp (al, okx) =
-                splitOKX SansFont rwidth (rheight - 2) al
+                splitOKX PropFont rwidth (rheight - 2) al
                          [K.spaceKM, K.escKM] okx
               sli = toSlideshow
-                    $ splitHelp (al1, ( EM.insertWith (++) SansFont ovFound ov0
+                    $ splitHelp (al1, ( EM.insertWith (++) PropFont ovFound ov0
                                       , kxsFound ++ kxs0 ))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown (e.g., leader switch), save to history

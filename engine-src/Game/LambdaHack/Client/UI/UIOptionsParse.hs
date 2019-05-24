@@ -70,9 +70,9 @@ parseConfig cfg =
       uVi = getOption "movementViKeys_hjklyubn"
       uLeftHand = getOption "movementLeftHandKeys_axwdqezc"
       uGtkFontFamily = getOption "gtkFontFamily"
-      uSdlFontFile = getOption "sdlFontFile"
-      uSdlMsgFontSize = getOption "sdlMsgFontSize"
-      uSdlMsgFontFile = getOption "sdlMsgFontFile"
+      uSdlSquareFontFile = getOption "sdlSquareFontFile"
+      uSdlPropFontSize = getOption "sdlPropFontSize"
+      uSdlPropFontFile = getOption "sdlPropFontFile"
       uSdlMonoFontSize = getOption "sdlMonoFontSize"
       uSdlMonoFontFile = getOption "sdlMonoFontFile"
       uSdlScalableSizeAdd = getOption "sdlScalableSizeAdd"
@@ -119,12 +119,12 @@ applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
 applyUIOptions COps{corule} uioptions soptions =
      (\opts -> opts {sgtkFontFamily =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
-     (\opts -> opts {sdlFontFile =
-        sdlFontFile opts `mplus` Just (uSdlFontFile uioptions)}) .
-     (\opts -> opts {sdlMsgFontSize =
-        sdlMsgFontSize opts `mplus` Just (uSdlMsgFontSize uioptions)}) .
-     (\opts -> opts {sdlMsgFontFile =
-        sdlMsgFontFile opts `mplus` Just (uSdlMsgFontFile uioptions)}) .
+     (\opts -> opts {sdlSquareFontFile =
+        sdlSquareFontFile opts `mplus` Just (uSdlSquareFontFile uioptions)}) .
+     (\opts -> opts {sdlPropFontSize =
+        sdlPropFontSize opts `mplus` Just (uSdlPropFontSize uioptions)}) .
+     (\opts -> opts {sdlPropFontFile =
+        sdlPropFontFile opts `mplus` Just (uSdlPropFontFile uioptions)}) .
      (\opts -> opts {sdlMonoFontSize =
         sdlMonoFontSize opts `mplus` Just (uSdlMonoFontSize uioptions)}) .
      (\opts -> opts {sdlMonoFontFile =

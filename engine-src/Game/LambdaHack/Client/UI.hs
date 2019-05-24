@@ -138,7 +138,7 @@ humanCommand = do
             then
               -- Display the only generated slide while waiting for next key.
               -- Strip the "--end-" prompt from it.
-              return $! init $ ov EM.! SansFont
+              return $! init $ ov EM.! PropFont
             else do
               -- Show, one by one, all slides, awaiting confirmation for each.
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw
@@ -155,7 +155,7 @@ humanCommand = do
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
-        km <- promptGetKey ColorFull (EM.fromList [(SansFont, over)]) False []
+        km <- promptGetKey ColorFull (EM.fromList [(PropFont, over)]) False []
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui

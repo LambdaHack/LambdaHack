@@ -81,7 +81,7 @@ writeLine offset l = FrameForall $ \v -> do
 -- because overlays need to obscure not only map, but the highlights as well.
 data SingleFrame = SingleFrame
   { singleArray       :: PointArray.Array Color.AttrCharW32
-  , singleSansOverlay :: Overlay
+  , singlePropOverlay :: Overlay
   , singleMonoOverlay :: Overlay }
   deriving (Eq, Show)
 

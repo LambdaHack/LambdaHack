@@ -26,7 +26,7 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
-data DisplayFont = SquareFont | MonoFont | SansFont
+data DisplayFont = SquareFont | MonoFont | PropFont
   deriving (Show, Eq, Enum)
 
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
@@ -69,16 +69,16 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> AttrLine -> (FontOverlayMap, Int)
   appendToFontOverlayMap ovs al =
-    case EM.lookup SansFont ovs of
+    case EM.lookup PropFont ovs of
       Just ovF ->
-        (EM.insertWith atEnd SansFont [(pofOv ovF, al)] ovs, length ovF)
+        (EM.insertWith atEnd PropFont [(pofOv ovF, al)] ovs, length ovF)
       Nothing -> case EM.lookup MonoFont ovs of
         Just ovF ->
           (EM.insertWith atEnd MonoFont [(pofOv ovF, al)] ovs, length ovF)
         Nothing -> case EM.lookup SquareFont ovs of
           Just ovF ->
             (EM.insertWith atEnd SquareFont [(pofOv ovF, al)] ovs, length ovF)
-          Nothing -> (EM.insertWith atEnd SansFont [(pofOv [], al)] ovs, 0)
+          Nothing -> (EM.insertWith atEnd PropFont [(pofOv [], al)] ovs, 0)
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =

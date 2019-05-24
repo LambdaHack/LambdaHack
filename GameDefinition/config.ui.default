@@ -29,17 +29,17 @@ HeroName_6 = ("Christopher Flatt", "he")
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
 ; The font to use for scaling SDL2 display (best by multiples or 0.5):
-;sdlFontFile = "16x16xw.woff"
+;sdlSquareFontFile = "16x16xw.woff"
 scalableFontSize = 16
 sdlScalableSizeAdd = 0
-sdlFontFile = "16x16xw.bdf"
-sdlMsgFontSize = 15
-sdlMsgFontFile = "source-sans-pro-v12-latin_latin-ext-700.woff"
+sdlSquareFontFile = "16x16xw.bdf"
+sdlPropFontSize = 15
+sdlPropFontFile = "source-sans-pro-v12-latin_latin-ext-700.woff"
 sdlMonoFontSize = 14
 sdlMonoFontFile = "source-code-pro-v9-latin_latin-ext-700.woff"
 sdlBitmapSizeAdd = 0
-;sdlFontFile = "8x8xb.fnt"
-;sdlFontFile = "8x8x.fnt"
+;sdlSquareFontFile = "8x8xb.fnt"
+;sdlSquareFontFile = "8x8x.fnt"
 ;sdlBitmapSizeAdd = 2
 ; New historyMax takes effect after removal of savefiles.
 historyMax = 5000

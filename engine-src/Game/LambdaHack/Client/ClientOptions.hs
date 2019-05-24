@@ -15,11 +15,11 @@ import GHC.Generics (Generic)
 data ClientOptions = ClientOptions
   { sgtkFontFamily     :: Maybe Text
       -- ^ Font family to use for the GTK main game window.
-  , sdlFontFile        :: Maybe Text
+  , sdlSquareFontFile  :: Maybe Text
       -- ^ Font file to use for the SDL2 main game window.
-  , sdlMsgFontSize     :: Maybe Int
+  , sdlPropFontSize    :: Maybe Int
       -- ^ Font size to use for the SDL2 message overlay.
-  , sdlMsgFontFile     :: Maybe Text
+  , sdlPropFontFile    :: Maybe Text
       -- ^ Font file to use for the SDL2 message overlay.
   , sdlMonoFontSize    :: Maybe Int
       -- ^ Font size to use for the SDL2 monospaced rectangular font.
@@ -76,9 +76,9 @@ instance Binary ClientOptions
 defClientOptions :: ClientOptions
 defClientOptions = ClientOptions
   { sgtkFontFamily = Nothing
-  , sdlFontFile = Nothing
-  , sdlMsgFontSize = Nothing
-  , sdlMsgFontFile = Nothing
+  , sdlSquareFontFile = Nothing
+  , sdlPropFontSize = Nothing
+  , sdlPropFontFile = Nothing
   , sdlMonoFontSize = Nothing
   , sdlMonoFontFile = Nothing
   , sdlScalableSizeAdd = Nothing

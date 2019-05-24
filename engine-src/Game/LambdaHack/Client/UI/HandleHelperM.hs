@@ -249,7 +249,7 @@ itemOverlay lSlots lid bag = do
             in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
-  return ( EM.singleton SansFont $ offsetOverlay rwidth $ concat ts
+  return ( EM.singleton PropFont $ offsetOverlay rwidth $ concat ts
          , zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
@@ -269,7 +269,7 @@ skillsOverlay aid = do
             ft = fullText valueText
         in (ft, (Right c, (y, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
-  return (EM.singleton SansFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
+  return (EM.singleton PropFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
@@ -600,13 +600,13 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
-      ov = EM.singleton SansFont $ offsetOverlay rwidth
+      ov = EM.singleton PropFont $ offsetOverlay rwidth
            $ splitAttrLine rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   promptAdd0 $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow SansFont (rheight - 2) keys (ov, [])
+  slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.Space -> return True
@@ -629,7 +629,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
       lSlots = sortSlotMap itemToF lSlotsRaw
   promptAdd0 prompt
   io <- itemOverlay lSlots arena trunkBag
-  itemSlides <- overlayToSlideshow SansFont (rheight - 2) keysPre io
+  itemSlides <- overlayToSlideshow PropFont (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
       keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
       allOKX = concatMap snd $ slideshow itemSlides

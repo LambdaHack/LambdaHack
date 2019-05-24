@@ -67,9 +67,9 @@ serverOptionsP = do
   sdumpInitRngs     <- dumpInitRngsP
   sdbgMsgSer        <- dbgMsgSerP
   sgtkFontFamily    <- gtkFontFamilyP
-  sdlFontFile       <- sdlFontFileP
-  sdlMsgFontSize    <- sdlMsgFontSizeP
-  sdlMsgFontFile    <- sdlMsgFontFileP
+  sdlSquareFontFile <- sdlSquareFontFileP
+  sdlPropFontSize   <- sdlPropFontSizeP
+  sdlPropFontFile   <- sdlPropFontFileP
   sdlMonoFontSize   <- sdlMonoFontSizeP
   sdlMonoFontFile   <- sdlMonoFontFileP
   sdlScalableSizeAdd <- sdlScalableSizeAddP
@@ -230,21 +230,21 @@ gtkFontFamilyP = optional $ T.pack <$>
             <> metavar "FONT_FAMILY"
             <> help "Use FONT_FAMILY for the main game window in GTK frontend" )
 
-sdlFontFileP :: Parser (Maybe Text)
-sdlFontFileP = optional $ T.pack <$>
+sdlSquareFontFileP :: Parser (Maybe Text)
+sdlSquareFontFileP = optional $ T.pack <$>
   strOption (  long "sdlFontFile"
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
 
-sdlMsgFontSizeP :: Parser (Maybe Int)
-sdlMsgFontSizeP = optional $
-  option auto (  long "sdlMsgFontSize"
+sdlPropFontSizeP :: Parser (Maybe Int)
+sdlPropFontSizeP = optional $
+  option auto (  long "sdlPropFontSize"
               <> metavar "N"
               <> help "Use font size of N pixels for the message overlay in SDL2 frontend" )
 
-sdlMsgFontFileP :: Parser (Maybe Text)
-sdlMsgFontFileP = optional $ T.pack <$>
-  strOption (  long "sdlMsgFontFile"
+sdlPropFontFileP :: Parser (Maybe Text)
+sdlPropFontFileP = optional $ T.pack <$>
+  strOption (  long "sdlPropFontFile"
             <> metavar "FONT_FILE"
             <> help "Use FONT_FILE for the message overlay in SDL2 frontend" )
 

@@ -43,7 +43,7 @@ drawOverlay :: MonadClientUI m
             -> m PreFrame3
 drawOverlay dm onBlank ovs lid = do
   CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
-  ClientOptions{sdlMsgFontFile} <- getsClient soptions
+  ClientOptions{sdlPropFontFile} <- getsClient soptions
   basicFrame <- if onBlank
                 then do
                   let m = U.replicate (rwidth * rheight)
@@ -52,12 +52,12 @@ drawOverlay dm onBlank ovs lid = do
                 else drawHudFrame dm lid
   let msgFontSupported =
 #ifdef USE_SDL
-        maybe False (not . T.null) sdlMsgFontFile
+        maybe False (not . T.null) sdlPropFontFile
 #else
         False
 #endif
-      ovSans = if msgFontSupported
-               then EM.findWithDefault [] SansFont ovs
+      ovProp = if msgFontSupported
+               then EM.findWithDefault [] PropFont ovs
                else []
       ovMono = if msgFontSupported
                then EM.findWithDefault [] MonoFont ovs
@@ -65,11 +65,11 @@ drawOverlay dm onBlank ovs lid = do
       ovOther = EM.findWithDefault [] SquareFont ovs
                 ++ if msgFontSupported
                    then []
-                   else EM.findWithDefault [] SansFont ovs
+                   else EM.findWithDefault [] PropFont ovs
                         ++ EM.findWithDefault [] MonoFont ovs
       overlayedFrame = overlayFrame (truncateOverlay coscreen onBlank ovOther)
                                      basicFrame
-  return (overlayedFrame, (ovSans, ovMono))
+  return (overlayedFrame, (ovProp, ovMono))
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
@@ -83,7 +83,7 @@ pushFrame = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     report <- getReportUI
-    let truncRep = EM.fromList [(SansFont, [(0, renderReport report)])]
+    let truncRep = EM.fromList [(PropFont, [(0, renderReport report)])]
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
@@ -110,7 +110,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       resetPlayBack
       resetPressedKeys
       let ovWarn = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
-          ovs2 = EM.insertWith (++) SansFont ovWarn ovs
+          ovs2 = EM.insertWith (++) PropFont ovWarn ovs
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
@@ -166,7 +166,7 @@ resetPlayBack = do
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
 renderFrames arena anim = do
   report <- getReportUI
-  let truncRep = EM.fromList [(SansFont, [(0, renderReport report)])]
+  let truncRep = EM.fromList [(PropFont, [(0, renderReport report)])]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim

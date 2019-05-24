@@ -42,7 +42,7 @@ overlayToSlideshow displayFont y keys okx = do
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  overlayToSlideshow SansFont (rheight - 2) keys (EM.empty, [])
+  overlayToSlideshow PropFont (rheight - 2) keys (EM.empty, [])
 
 -- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -51,7 +51,7 @@ reportToSlideshowKeep keys = do
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
-  return $! splitOverlay SansFont rwidth (rheight - 2) report keys
+  return $! splitOverlay PropFont rwidth (rheight - 2) report keys
                          (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.
