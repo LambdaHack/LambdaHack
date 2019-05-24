@@ -760,8 +760,9 @@ eitherHistory showAll = do
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
-            keys = [K.spaceKM, K.escKM] ++ [K.upKM | histSlot /= 0]
-                                        ++ [K.downKM | histSlot /= histBound]
+            keys = [K.spaceKM, K.escKM]
+                   ++ [K.upKM | histSlot /= 0]
+                   ++ [K.downKM | histSlot /= histBound - 1]
         promptAdd0 prompt
         slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
