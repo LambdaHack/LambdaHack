@@ -520,8 +520,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   rawAreaProp <- drawPropOverlay $ singlePropOverlay curFrame
   rawAreaMono <- drawMonoOverlay $ singleMonoOverlay curFrame
   let areaMap = IM.fromListWith max $ rawAreaProp ++ rawAreaMono
-       -- We assume an initial segment, without gaps, is filled:
-      curArea = U.fromListN (rheight coscreen) $ IM.elems areaMap ++ repeat 0
+      curArea = U.replicate (rheight coscreen) 0 U.// IM.assocs areaMap
   writeIORef spreviousFrame (curFrame, curArea)
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
