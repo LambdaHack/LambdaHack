@@ -59,38 +59,41 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   okxFilter (ov, kyxs) =
     (ov, filter (either (not . null) (const True) . fst) kyxs)
   okxsNotNull = map okxFilter okxs
-  pofOv :: Overlay -> PointI
-  pofOv [] = 0
+  pofOv :: Overlay -> (X, Y)
+  pofOv [] = (0, 0)
   pofOv l@((pFirst, _) : _) =
-    let (pLast, _) = last l
+    let pMax = maximum $ map fst l
         Point pxFirst _ = toEnum pFirst  -- match x of the header
-        Point _ pyLast = toEnum pLast  -- append after last line
-    in fromEnum $ Point pxFirst (pyLast + 1)
+        Point _ pyLast = toEnum pMax  -- append after last line
+    in (pxFirst, pyLast + 1)
   atEnd = flip (++)
-  appendToFontOverlayMap :: FontOverlayMap -> AttrLine -> (FontOverlayMap, Int)
+  appendToFontOverlayMap :: FontOverlayMap -> AttrLine
+                         -> (FontOverlayMap, X, Y)
   appendToFontOverlayMap ovs al =
-    case EM.lookup PropFont ovs of
-      Just ovF ->
-        (EM.insertWith atEnd PropFont [(pofOv ovF, al)] ovs, length ovF)
+    let insertAl square ovF =
+          let (x, y) = pofOv ovF
+              p = fromEnum $ Point x y
+              displayFont = if square then SquareFont else MonoFont
+          in (EM.insertWith atEnd displayFont [(p, al)] ovs, x, y)
+    in case EM.lookup PropFont ovs of
+      Just ovF -> insertAl False ovF
       Nothing -> case EM.lookup MonoFont ovs of
-        Just ovF ->
-          (EM.insertWith atEnd MonoFont [(pofOv ovF, al)] ovs, length ovF)
+        Just ovF -> insertAl False ovF
         Nothing -> case EM.lookup SquareFont ovs of
-          Just ovF ->
-            (EM.insertWith atEnd SquareFont [(pofOv ovF, al)] ovs, length ovF)
-          Nothing -> (EM.insertWith atEnd PropFont [(pofOv [], al)] ovs, 0)
+          Just ovF -> insertAl True ovF
+          Nothing -> insertAl False []
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
-    let (ovs, len) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, [(Left [K.safeSpaceKM], (len, 0, 15))])]
+    let (ovs, x, y) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, [(Left [K.safeSpaceKM], (y, x, x + 15))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
-    let (ovs, len) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (len, 0, 15))])]
+    let (ovs, x, y) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x + 15))])]
   addFooters _ ((als, kxs) : rest) =
-    let (ovs, len) = appendToFontOverlayMap als (stringToAL moreMsg)
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (len, 0, 8))])
+    let (ovs, x, y) = appendToFontOverlayMap als (stringToAL moreMsg)
+    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x + 8))])
        : addFooters True rest
 
 moreMsg :: String
