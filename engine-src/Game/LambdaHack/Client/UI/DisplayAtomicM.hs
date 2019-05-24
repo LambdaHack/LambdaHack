@@ -985,7 +985,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
         if sexposeItems
         then let generationBag = EM.map (\k -> (-k, [])) generationItem
                  bag = heldBag `EM.union` generationBag
-                 slots = EM.fromAscList $ zip allSlots $ EM.keys bag
+                 slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
         else (heldBag, lSlotsRaw)
       promptFun iid itemFull2 k =
@@ -1041,7 +1041,7 @@ displayGameOverAnalytics factionAn generationAn = do
         if sexposeActors
         then let generationBag = EM.map (\k -> (-k, [])) generationTrunk
                  bag = killedBag `EM.union` generationBag
-                 slots = EM.fromAscList $ zip allSlots $ EM.keys bag
+                 slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys bag
              in (bag, slots)
         else (killedBag, lSlotsRaw)
       total = sum $ filter (> 0) $ map fst $ EM.elems trunkBag
@@ -1066,7 +1066,7 @@ displayGameOverLore slore exposeCount generationAn = do
       generationBag = EM.map (\k -> (if exposeCount then k else 1, []))
                              generationLore
       total = sum $ map fst $ EM.elems generationBag
-      slots = EM.fromAscList $ zip allSlots $ EM.keys generationBag
+      slots = EM.fromDistinctAscList $ zip allSlots $ EM.keys generationBag
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun _ _ k =
         makeSentence

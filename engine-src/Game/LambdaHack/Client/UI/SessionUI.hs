@@ -113,7 +113,7 @@ emptySessionUI sUIOptions =
     { sxhair = Nothing
     , sactorUI = EM.empty
     , sitemUI = EM.empty
-    , sslots = ItemSlots $ EM.fromAscList
+    , sslots = ItemSlots $ EM.fromDistinctAscList
                $ zip [minBound..maxBound] (repeat EM.empty)
     , slastItemMove = Nothing
     , schanF = ChanFrontend $ const $

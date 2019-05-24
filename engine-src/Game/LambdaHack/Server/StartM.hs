@@ -147,7 +147,7 @@ sampleTrunks dungeon = do
                 Just <$> registerItem False (itemFull, kit) itemKnown c
   miids <- mapM regItem trunkKindIds
   return $! EM.singleton STrunk
-            $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
+            $ EM.fromDistinctAscList $ zip (catMaybes miids) $ repeat 0
 
 -- For simplicity, only actors generated on the ground are taken into account.
 -- not starting items of any actors nor items that can be create by effects
@@ -173,7 +173,7 @@ sampleItems dungeon = do
             Just <$> registerItem False (itemFull, (0, [])) itemKnown c
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem
-            $ EM.fromAscList $ zip (catMaybes miids) $ repeat 0
+            $ EM.fromDistinctAscList $ zip (catMaybes miids) $ repeat 0
 
 mapFromFuns :: Ord b => [a] -> [a -> b] -> M.Map b a
 mapFromFuns domain =

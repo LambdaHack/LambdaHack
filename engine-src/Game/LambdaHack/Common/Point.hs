@@ -58,8 +58,8 @@ instance Binary Point where
 -- We need to keep it that way, because we want close xs to have close indexes,
 -- e.g., adjacent points in line to have adjacent enumerations,
 -- because some of the screen layout and most of processing is line-by-line.
--- Consequently, one can use EM.fromAscList on @(1, 8)..(10, 8)@, but not on
--- @(1, 7)..(10, 9)@.
+-- Consequently, one can use EM.fromDistinctAscList
+-- on @(1, 8)..(10, 8)@, but not on @(1, 7)..(10, 9)@.
 instance Enum Point where
   fromEnum Point{..} =
     let !xsize = PA.indexPrimArray speedupHackXSize 0

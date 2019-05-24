@@ -83,7 +83,8 @@ emptyStateServer =
     , strajPushedBy = EM.empty
     , sfactionAn = EM.empty
     , sactorAn = EM.empty
-    , sgenerationAn = EM.fromAscList $ zip [minBound..maxBound] (repeat EM.empty)
+    , sgenerationAn = EM.fromDistinctAscList
+                      $ zip [minBound..maxBound] (repeat EM.empty)
     , sactorStasis = ES.empty
     , sdiscoKindRev = emptyDiscoveryKindRev
     , suniqueSet = ES.empty
