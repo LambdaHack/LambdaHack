@@ -107,6 +107,7 @@ menuToSlideshow (als, kxs) =
   assert (not (EM.null als || null kxs)) $ Slideshow [(als, kxs)]
 
 wrapOKX :: Y -> X -> X -> [(K.KM, String)] -> (Overlay, [KYX])
+wrapOKX _ _ _ [] = ([], [])
 wrapOKX ystart xstart width ks =
   let f :: ((Y, X), (X, [String], Overlay, [KYX])) -> (K.KM, String)
         -> ((Y, X), (X, [String], Overlay, [KYX]))
@@ -142,50 +143,65 @@ splitOverlay displayFont width height report keys (ls0, kxs0) =
 splitOKX :: DisplayFont -> X -> Y -> AttrLine -> [K.KM] -> OKX -> [OKX]
 splitOKX displayFont width height rrep keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
-  let msgRaw = offsetOverlay width $ splitAttrLine width rrep
-      (lX0, keysX0) = keysOKX 0 0 maxBound keys
-      pX0 = case lX0 of
-        [] -> 0
-        (p, _) : _ -> p
-      (lX, keysX) =
-        if null msgRaw
-        then (lX0, keysX0)
-        else keysOKX (length msgRaw - 1) (length (snd $ last msgRaw) + 1)
-                     width keys
-      msgOkx = (glueLines msgRaw lX, keysX)
-      ((lsInit, kxsInit), (header, rkxs)) =
-        -- Check whether most space taken by report and keys.
-        if length (glueLines msgRaw lX0) * 2 > height
-        then ( msgOkx
-             , ( [(pX0, intercalate [Color.spaceAttrW32] (map snd lX0)
-                        <+:> rrep)]
-               , keysX0 ) )
-               -- will display "$" (unless has EOLs)
-        else (([], []), msgOkx)
+  let msgRaw0 = offsetOverlay width $ splitAttrLine width rrep
+      msgRaw1 = map (\(p, al) -> (p + width, al)) msgRaw0
+      (lX0, keysX0) = keysOKX 0 0 width keys
+      (lX1, keysX1) = keysOKX 1 0 width keys
+      endOfMsgRaw = if null rrep then 0 else length (snd $ last msgRaw0) + 1
+      endOfMsg = if displayFont /= SquareFont
+                 then endOfMsgRaw `divUp` 2
+                 else endOfMsgRaw
+      (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg width keys
       renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
       renumberOv y = map (\(p, al) -> (p + y * width, al))
-      splitO :: Y -> (Overlay, [KYX]) -> OKX -> [OKX]
-      splitO yoffset (hdr, rk) (ls, kxs) =
-        let keyRenumber = map $ renumber (length hdr - yoffset)
-            lineRenumber = EM.map $ renumberOv (length hdr - yoffset)
-            yoffsetNew = yoffset + height - length hdr - 1
+      splitO :: Y -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
+      splitO yoffset (hdrFont, hdrMono, rk) (ls, kxs) =
+        let hdrOff | null hdrFont && null hdrMono = 0
+                   | otherwise = 1 + maximum (0 : map fst hdrMono) `divUp` width
+            keyRenumber = map $ renumber (hdrOff - yoffset)
+            lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
+            yoffsetNew = yoffset + height - hdrOff - 1
             ltOffset (p, _) = p < yoffsetNew * width
             (pre, post) = ( filter ltOffset <$> ls
                           , filter (not . ltOffset) <$> ls )
-            prependHdr = EM.insertWith (++) displayFont hdr
+            -- TODO: until SDL support for measuring prop font text is released,
+            -- we have to put MonoFont also for hdrFont; undo when possible
+            msgFont = if null hdrMono then PropFont else MonoFont
+            prependHdr = EM.insertWith (++) msgFont hdrFont
+                         . EM.insertWith (++) MonoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) =
                       break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
-                   : splitO yoffsetNew (hdr, rk) (post, postX)
-      initSlides = if null lsInit
+                   : splitO yoffsetNew (hdrFont, hdrMono, rk) (post, postX)
+      hdrShortened = ( [(0, rrep)]  -- shortened for the main slides
+                     , take (height - 1) lX1  -- try to fit on one screen
+                     , keysX1 )
+      ((lsInit, kxsInit), (headerFont, headerMono, rkxs)) =
+        -- Check whether most space taken by report and keys.
+        if | (length msgRaw0 + length lX) * 2 <= height ->
+             ((EM.empty, []), (msgRaw0, lX, keysX))  -- display normally
+           | length rrep <= width ->  -- very crude check, but OK
+             ( (EM.empty, [])  -- already shown in full in shortened header
+             , hdrShortened )
+           | otherwise -> case lX0 of
+               [] ->
+                 ( (EM.singleton displayFont msgRaw0, [])
+                     -- showing in full in the init slide
+                 , hdrShortened )
+               lX0first : _ ->
+                 ( ( EM.insertWith (++) displayFont msgRaw1
+                     $ EM.singleton MonoFont [lX0first]
+                   , filter (\(_, (y, _, _)) -> y == 0) keysX0 )
+                 , hdrShortened )
+      initSlides = if EM.null lsInit
                    then assert (null kxsInit) []
-                   else splitO 0 ([], [])
-                               (EM.singleton displayFont lsInit, kxsInit)
-      mainSlides = if EM.null ls0 && not (null lsInit)
+                   else splitO 0 ([], [], []) (lsInit, kxsInit)
+      -- If @ls0@ we still want to display the report, one way or another.
+      mainSlides = if EM.null ls0 && (not $ EM.null lsInit)
                    then assert (null kxs0) []
-                   else splitO 0 (header, rkxs) (ls0, kxs0)
+                   else splitO 0 (headerFont, headerMono, rkxs) (ls0, kxs0)
   in initSlides ++ mainSlides
 
 -- | Generate a slideshow with the current and previous scores.
