@@ -32,7 +32,7 @@ data DisplayFont = SquareFont | MonoFont | PropFont
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 -- | A key or an item slot label at a given position on the screen.
-type KYX = (Either [K.KM] SlotChar, (Y, X, X))
+type KYX = (Either [K.KM] SlotChar, (Y, X, X, X))
 
 -- | An Overlay of text with an associated list of keys or slots
 -- that activated when the specified screen position is pointed at.
@@ -86,14 +86,14 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
     let (ovs, x, y) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, [(Left [K.safeSpaceKM], (y, x, x + 15))])]
+    in [(ovs, [(Left [K.safeSpaceKM], (y, x, x, x + 15))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
     let (ovs, x, y) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x + 15))])]
+    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x, x + 15))])]
   addFooters _ ((als, kxs) : rest) =
     let (ovs, x, y) = appendToFontOverlayMap als (stringToAL moreMsg)
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x + 8))])
+    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (y, x, x, x + 8))])
        : addFooters True rest
 
 moreMsg :: String
@@ -118,7 +118,9 @@ wrapOKX ystart xstart width ks =
                     iov = (p, stringToAL $ intercalate " " (reverse kL))
                 in f ((y + 1, 0), (0, [], iov : kV, kX)) (key, s)
            else ( (y, x + len + 1)
-                , (xlineStart, s : kL, kV, (Left [key], (y, x, x + len)) : kX) )
+                , ( xlineStart, s : kL
+                  , kV
+                  , (Left [key], (y, xlineStart, x, x + len)) : kX ) )
       ((ystop, _), (xlineStop, kL1, kV1, kX1)) =
         foldl' f ((ystart, xstart), (xstart, [], [], [])) ks
       p1 = fromEnum $ Point xlineStop ystop
@@ -152,7 +154,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
                  then endOfMsgRaw `divUp` 2
                  else endOfMsgRaw
       (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg width keys
-      renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+      renumber y (km, (y0, xbegin, x1, x2)) = (km, (y0 + y, xbegin, x1, x2))
       renumberOv y = map (\(p, al) -> (p + y * width, al))
       splitO :: Y -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
       splitO yoffset (hdrFont, hdrMono, rk) (ls, kxs) =
@@ -172,7 +174,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) =
-                      break (\(_, (y1, _, _)) -> y1 >= yoffsetNew) kxs
+                      break (\(_, (y1, _, _, _)) -> y1 >= yoffsetNew) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdrFont, hdrMono, rk) (post, postX)
       hdrShortened = ( [(0, rrep)]  -- shortened for the main slides
@@ -193,7 +195,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
                lX0first : _ ->
                  ( ( EM.insertWith (++) displayFont msgRaw1
                      $ EM.singleton MonoFont [lX0first]
-                   , filter (\(_, (y, _, _)) -> y == 0) keysX0 )
+                   , filter (\(_, (y, _, _, _)) -> y == 0) keysX0 )
                  , hdrShortened )
       initSlides = if EM.null lsInit
                    then assert (null kxsInit) []

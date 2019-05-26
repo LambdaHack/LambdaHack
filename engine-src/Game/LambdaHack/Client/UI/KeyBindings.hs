@@ -137,7 +137,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN coinput rwidth 0 keyL (const False) True
-    renumber y (km, (y0, x1, x2)) = (km, (y0 + y, x1, x2))
+    renumber y (km, (y0, xbegin, x1, x2)) = (km, (y0 + y, xbegin, x1, x2))
     renumberOv y = map (\(p, al) -> (p + y * rwidth, al))
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
@@ -184,8 +184,8 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (kst1, kst2))
-              [ (Left [km1], (y, keyM + 3, keyB + keyM + 3))
-              , (Left [km2], (y, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
+              [ (Left [km1], (y, 0, keyM + 3, keyB + keyM + 3))
+              , (Left [km2], (y, 0, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
@@ -286,7 +286,7 @@ okxsN InputContent{..} width offset n greyedOut showManyKeys cat header footer =
                    kmsRes = if desc == "" then knownKeys else kms
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      f (ks, (_, tkey)) y = (ks, (y, 1, T.length tkey))
+      f (ks, (_, tkey)) y = (ks, (y, 0, 1, T.length tkey))
       kxs = zipWith f keys [offset + 1 + length header..]
       renumberOv = map (\(p, al) -> (p + offset * width, al))
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer

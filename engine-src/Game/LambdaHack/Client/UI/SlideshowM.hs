@@ -138,7 +138,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ((ovs, kyxs), (ekm, (y, x1, x2)), ixOnPage) -> do
+        Just ((ovs, kyxs), (ekm, (y, xbegin, x1, x2)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
               highAttr x | Color.acAttr x `notElem` highableAttrs
@@ -148,7 +148,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               cursorAttr x = x {Color.acAttr =
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
-              drawHighlight xstart xs =
+              drawHighlight PropFont _ xs = xs
+              drawHighlight _ xstart xs | xstart /= xbegin = xs
+              drawHighlight _ xstart xs =
                 let (xs1, xsRest) = splitAt (x1 - xstart) xs
                     (xs2, xs3) = splitAt (x2 - x1) xsRest
                     highW32 = Color.attrCharToW32
@@ -161,10 +163,11 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                       [] -> []
                       xh : xhrest -> cursorW32 xh : xhrest
                 in xs1 ++ xs2High ++ xs3
-              ovs1 = EM.map (updateLine y drawHighlight) ovs
+              ovs1 = EM.mapWithKey (\font ov ->
+                                      updateLine y (drawHighlight font) ov) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
-              xix (_, (_, x1', _)) = x1' == x1
+              xix (_, (_, _, x1', _)) = x1' == x1
               firstRowOfNextPage = pointer + pageLen - ixOnPage
               restOKX = drop firstRowOfNextPage allOKX
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
@@ -197,7 +200,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                         clickWithinSmallFontOverlay =
                           (propFontSup && (clickWithinOverlay MonoFont
                                           || clickWithinOverlay PropFont))
-                        onChoice (_, (cy, cx1, cx2)) =
+                        onChoice (_, (cy, _cxbegin, cx1, cx2)) =
                           cy == py
                           && if clickWithinSmallFontOverlay
                              then cx1 <= 2 * px + 1 && cx2 > 2 * px
@@ -242,7 +245,8 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
                     page (min maxIx firstItemOfNextPage)
-                  K.Space -> if pointer == maxIx then page clearIx
+                  K.Space -> if pointer == maxIx
+                             then page clearIx
                              else page maxIx
                   _ -> error $ "unknown key" `showFailure` ikm
           pkm <- promptGetKey dm ovs1 sfBlank legalKeys

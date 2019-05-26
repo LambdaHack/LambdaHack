@@ -1345,7 +1345,7 @@ generateMenu cmdAction kds gameInfo menuName = do
                    let lenB = length binding
                        post = drop (lenB - length braces) suffix
                        len = length prefix
-                       yxx key = (Left [key], (y, len, len + lenB))
+                       yxx key = (Left [key], (y, len, len, len + lenB))
                        myxx = yxx <$> mkey
                    in (bsRest, (prefix <> binding <> post, myxx))
                  else (bs, (line, Nothing))

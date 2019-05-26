@@ -245,10 +245,10 @@ itemOverlay lSlots lid bag = do
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
-                kx = (Right l, (undefined, 0, length al))
+                kx = (Right l, (undefined, 0, 0, length al))
             in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-      renumber y (km, (_, x1, x2)) = (km, (y, x1, x2))
+      renumber y (km, (_, xbegin, x1, x2)) = (km, (y, xbegin, x1, x2))
   return ( EM.singleton PropFont $ offsetOverlay rwidth $ concat ts
          , zipWith renumber [0..] kxs )
 
@@ -267,7 +267,7 @@ skillsOverlay aid = do
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             ft = fullText valueText
-        in (ft, (Right c, (y, 0, T.length ft)))
+        in (ft, (Right c, (y, 0, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
   return (EM.singleton PropFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
 
@@ -317,7 +317,7 @@ placesOverlay = do
             ft = makePhrase $ MU.Text (markPlace $ slotLabel c)
                  : MU.Text placeName
                  : parts
-        in (ft, (Right c, (y, 0, T.length ft)))
+        in (ft, (Right c, (y, 0, 0, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
   return (EM.singleton SquareFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
 
