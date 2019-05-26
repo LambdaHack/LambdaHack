@@ -159,7 +159,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
       splitO :: Y -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
       splitO yoffset (hdrFont, hdrMono, rk) (ls, kxs) =
         let hdrOff | null hdrFont && null hdrMono = 0
-                   | otherwise = 1 + maximum (0 : map fst hdrMono) `divUp` width
+                   | otherwise = 1 + maximum (0 : map fst hdrMono) `div` width
             keyRenumber = map $ renumber (hdrOff - yoffset)
             lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
             yoffsetNew = yoffset + height - hdrOff - 1
