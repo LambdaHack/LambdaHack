@@ -133,7 +133,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                   $ if isBitmapFile squareFontFile  -- based on main font
                     then sdlBitmapSizeAdd
                     else sdlScalableSizeAdd
- boxSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
+ squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
+ let halfSize = squareFontSize `div` 2
+     boxSize = 2 * halfSize
  -- The hacky log priority 0 tells SDL frontend to init and quit at once,
  -- for testing on CIs without graphics access.
  if slogPriority == Just 0 then do
@@ -328,8 +330,10 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                               then sdlBitmapSizeAdd
                               else sdlScalableSizeAdd
   (prevFrame, prevArea) <- readIORef spreviousFrame
-  boxSize <- (+ sdlSizeAdd) <$> TTF.height squareFont  -- based on main font
-  let vp :: Int -> Int -> Vect.Point Vect.V2 CInt
+  squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
+  let halfSize = squareFontSize `div` 2
+      boxSize = 2 * halfSize
+      vp :: Int -> Int -> Vect.Point Vect.V2 CInt
       vp x y = Vect.P $ Vect.V2 (toEnum x) (toEnum y)
       drawHighlight !x !y !color = do
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA color
@@ -437,7 +441,6 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      halfSize = boxSize `div` 2
       drawMonoOverlay :: Overlay -> IO [(Y, Int)]
       drawMonoOverlay ov =
         mapM (\(i, line) -> let Point{..} = toEnum i
