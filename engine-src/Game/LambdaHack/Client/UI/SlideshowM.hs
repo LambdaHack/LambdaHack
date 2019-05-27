@@ -146,8 +146,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               cursorAttr x = x {Color.acAttr =
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
-              drawHighlight PropFont _ xs = xs
-              drawHighlight _ xstart xs =
+              drawHighlight xstart xs =
                 let (xs1, xsRest) = splitAt (x1 - xstart) xs
                     (xs2, xs3) = splitAt len xsRest
                     highW32 = Color.attrCharToW32
@@ -160,8 +159,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                       [] -> []
                       xh : xhrest -> cursorW32 xh : xhrest
                 in xs1 ++ xs2High ++ xs3
-              ovs1 = EM.mapWithKey (\font ov ->
-                                      updateLine y (drawHighlight font) ov) ovs
+              ovs1 = EM.map (updateLine y drawHighlight) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
               xix (_, (K.PointUI x1' _, _)) = x1' == x1
