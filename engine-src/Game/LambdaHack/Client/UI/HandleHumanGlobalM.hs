@@ -1185,18 +1185,20 @@ itemMenuHuman cmdAction = do
           let foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
-              desc = itemDesc markParagraphs (bfid b) factionD
-                              (Ability.getSk Ability.SkHurtMelee actorMaxSk)
-                              fromCStore localTime jlid itemFull kit
-              alPrefix = offsetOverlay $ splitAttrLine rwidth
-                         $ desc <+:> foundPrefix
-              ystart = length alPrefix - 1
+              desc = offsetOverlay $ splitAttrLine rwidth
+                     $ itemDesc markParagraphs (bfid b) factionD
+                                (Ability.getSk Ability.SkHurtMelee actorMaxSk)
+                                fromCStore localTime jlid itemFull kit
+              alPrefix = map (\(K.PointUI x y, al) ->
+                                (K.PointUI x (y + length desc), al))
+                         $ offsetOverlay $ splitAttrLine rwidth foundPrefix
+              ystart = length desc + length alPrefix - 1
               xstart = length (snd $ last alPrefix) + 1
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
               (ovFoundRaw, kxsFound) = wrapOKX ystart xstart rwidth ks
-              ovFound = glueLines alPrefix ovFoundRaw
+              ovFound = alPrefix ++ ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
           actorSk <- leaderSkillsClientUI
@@ -1222,7 +1224,7 @@ itemMenuHuman cmdAction = do
               fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
-              offset = length ovFound
+              offset = 1 + maxYofOverlay (desc ++ ovFound)
               (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
@@ -1232,8 +1234,11 @@ itemMenuHuman cmdAction = do
                 splitOKX PropFont rwidth (rheight - 2) al
                          [K.spaceKM, K.escKM] okx
               sli = toSlideshow
-                    $ splitHelp (al1, ( EM.insertWith (++) PropFont ovFound ov0
-                                      , kxsFound ++ kxs0 ))
+                    $ splitHelp ( al1
+                                , ( EM.insertWith (++) PropFont desc
+                                    $ EM.insertWith (++) MonoFont ovFound ov0
+                                      -- mono font, because there are buttons
+                                  , kxsFound ++ kxs0 ))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown (e.g., leader switch), save to history
           ekm <- displayChoiceScreen "item menu" ColorFull False sli extraKeys

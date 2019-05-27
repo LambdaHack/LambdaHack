@@ -4,9 +4,8 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrLine
     AttrLine, emptyAttrLine, textToAL, textFgToAL, stringToAL, (<+:>)
     -- * Overlay
-  , Overlay
-  , offsetOverlay, offsetOverlayX, splitAttrLine, indentSplitAttrLine
-  , glueLines, updateLine
+  , Overlay, offsetOverlay, offsetOverlayX
+  , splitAttrLine, indentSplitAttrLine, updateLine
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , linesAttr, splitAttrPhrase
@@ -126,20 +125,6 @@ splitAttrPhrase w xs
       in if null testPost
          then pre : splitAttrPhrase w post
          else reverse ppost : splitAttrPhrase w (reverse ppre ++ post)
-
--- There are pretty very strong assumptions here: only one overlap,
--- between the last line of the first argument and the first line
--- of the second, all lines of @ov1@ start at the first column,
--- the concatenation in the overlapping line fits in line width.
--- We keep the order of lines to ensure the assumptions hold
--- for nested calls.
-glueLines :: Overlay -> Overlay -> Overlay
-glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
- where glue [] l = l
-       glue m [] = m
-       glue ((p@(PointUI dx dy), mh) : mt) ((_, lh) : lt) =
-         let offsetOv = \(PointUI x y, ma) -> (PointUI (x + dx) (y + dy), ma)
-         in reverse (map offsetOv lt) ++ (p, mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
 updateLine :: Int -> (Int -> AttrLine -> AttrLine) -> Overlay -> Overlay

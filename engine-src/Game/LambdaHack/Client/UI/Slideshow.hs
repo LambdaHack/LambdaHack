@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.Slideshow
   ( DisplayFont(..), FontOverlayMap
   , KYX, OKX, Slideshow(slideshow)
-  , emptySlideshow, unsnoc, toSlideshow, menuToSlideshow
+  , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX, highSlideshow
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
