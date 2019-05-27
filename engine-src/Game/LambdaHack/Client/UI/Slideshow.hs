@@ -185,7 +185,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdrFont, hdrMono, rk) (post, postX)
       hdrShortened = ( [(PointUI 0 0, rrep)]  -- shortened for the main slides
-                     , take (height - 1) lX1  -- try to fit on one screen
+                     , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )
       ((lsInit, kxsInit), (headerFont, headerMono, rkxs)) =
         -- Check whether most space taken by report and keys.
