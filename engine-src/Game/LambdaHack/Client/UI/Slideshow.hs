@@ -15,6 +15,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Ord (comparing)
 import           Data.Time.LocalTime
 
 import           Game.LambdaHack.Client.UI.ItemSlot
@@ -67,17 +68,19 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
   appendToFontOverlayMap :: FontOverlayMap -> AttrLine
                          -> (FontOverlayMap, PointUI)
   appendToFontOverlayMap ovs al =
-    let insertAl square ovF =
+    let maxYminXofOverlay ov = let ymxOfOverlay (PointUI x y, _) = (y, - x)
+                               in maximum $ (0, 0) : map ymxOfOverlay ov
+        fontMax = if EM.null ovs
+                  then MonoFont
+                  else fst $ maximumBy (comparing snd)
+                       $ EM.assocs $ EM.map maxYminXofOverlay ovs
+        insertAl ovF =
           let p = pofOv ovF
-              displayFont = if square then SquareFont else MonoFont
+              displayFont = if fontMax == PropFont then MonoFont else fontMax
           in (EM.insertWith atEnd displayFont [(p, al)] ovs, p)
-    in case EM.lookup PropFont ovs of
-      Just ovF -> insertAl False ovF
-      Nothing -> case EM.lookup MonoFont ovs of
-        Just ovF -> insertAl False ovF
-        Nothing -> case EM.lookup SquareFont ovs of
-          Just ovF -> insertAl True ovF
-          Nothing -> insertAl False []
+    in case EM.lookup fontMax ovs of
+      Just ovF -> insertAl ovF
+      Nothing -> insertAl []
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =

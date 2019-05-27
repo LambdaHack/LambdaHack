@@ -225,6 +225,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                   _ | K.key ikm `elem` [K.PgUp, K.WheelNorth] ->
                     page (max 0 (pointer - ixOnPage - 1))
                   _ | K.key ikm `elem` [K.PgDn, K.WheelSouth] ->
+                    -- This doesn't scroll by screenful when header very long
+                    -- and menu non-empty, but that scenario is rare, so OK,
+                    -- arrow keys may be used instead.
                     page (min maxIx firstItemOfNextPage)
                   K.Space -> if pointer == maxIx
                              then page clearIx

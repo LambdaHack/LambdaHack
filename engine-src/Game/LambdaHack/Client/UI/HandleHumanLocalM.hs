@@ -716,22 +716,14 @@ allHistoryHuman = eitherHistory True
 eitherHistory :: forall m. MonadClientUI m => Bool -> m ()
 eitherHistory showAll = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  propFontSup <- propFontSupported
   history <- getsSession shistory
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
   let renderedHistory = renderHistory history
       histBound = length renderedHistory
-      splitRow al =
-        let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-        in if propFontSup
-           then let len = length spNo
-                    spMaybe = if odd len
-                              then dropWhile (== Color.spaceAttrW32) spYes
-                              else Color.spaceAttrW32 : spYes
-                in (spNo, (len `divUp` 2, spMaybe))
-           else (spNo, (length spNo, spYes))
+      splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
+                    in (spNo, (length spNo, spYes))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
       rhLab = EM.singleton MonoFont $ offsetOverlay histLab
       rhDesc = EM.singleton PropFont $ offsetOverlayX histDesc
@@ -745,7 +737,7 @@ eitherHistory showAll = do
       kxs = [ (Right sn, (K.PointUI 0 (slotPrefix sn), maxBound))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow PropFont rheight [K.escKM]
+  okxs <- overlayToSlideshow PropFont (rheight - 2) [K.escKM]
                              (rhLab `EM.union` rhDesc , kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull False okxs
