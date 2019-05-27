@@ -157,7 +157,7 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
       endOfMsg = if displayFont == SquareFont
                  then endOfMsgRaw * 2
                  else endOfMsgRaw
-      (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg width keys
+      (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
