@@ -52,7 +52,6 @@ import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 
 type FontAtlas = EM.EnumMap Color.AttrCharW32 SDL.Texture
 
@@ -185,9 +184,9 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     createRawFrontend coscreen (display sess) (shutdown sess)
   let rf = rfWithoutPrintScreen {fprintScreen = printScreen sess}
   putMVar rfMVar rf
-  let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> Point
+  let pointTranslate :: forall i. (Enum i) => Vect.Point Vect.V2 i -> K.PointUI
       pointTranslate (SDL.P (SDL.V2 x y)) =
-        Point (fromEnum x `div` boxSize) (fromEnum y `div` boxSize)
+        K.PointUI (fromEnum x `div` halfSize) (fromEnum y `div` boxSize)
       redraw = do
         -- Textures may be trashed and even invalid, especially on Windows.
         atlas <- readIORef squareAtlas
@@ -372,7 +371,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.freeSurface textSurface
         return textTexture
       -- This also frees the surface it gets.
-      scaleSurfaceToTextureProp :: Int -> Y -> SDL.Surface
+      scaleSurfaceToTextureProp :: Int -> Int -> SDL.Surface
                                 -> IO (Int, SDL.Texture)
       scaleSurfaceToTextureProp x row textSurfaceRaw = do
         Vect.V2 sw sh <- SDL.surfaceDimensions textSurfaceRaw
@@ -441,46 +440,43 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      drawMonoOverlay :: Overlay -> IO [(Y, Int)]
+      drawMonoOverlay :: Overlay -> IO [(Int, Int)]
       drawMonoOverlay ov =
-        mapM (\(i, line) -> let Point{..} = toEnum i
-                                lineCut = take ((rwidth coscreen - px) * 2) line
-                            in drawMonoLine (px * boxSize) py lineCut)
+        mapM (\(K.PointUI x y, line) ->
+                let lineCut = take (2 * (rwidth coscreen) - x) line
+                in drawMonoLine (x * halfSize) y lineCut)
              ov
-      drawMonoLine :: Int -> Y -> AttrLine -> IO (Y, Int)
+      drawMonoLine :: Int -> Int -> AttrLine -> IO (Int, Int)
       drawMonoLine x row [] = return (row, x)
-      drawMonoLine x row [w] = drawMonoLine x row [w, Color.spaceAttrW32]
-      drawMonoLine x row (w1 : w2 : rest) = do
-        setMonoChar x row w1
-        setMonoChar (x + halfSize) row w2
-        drawMonoLine (x + boxSize) row rest
-      setMonoChar :: Int -> Y -> Color.AttrCharW32 -> IO ()
+      drawMonoLine x row (w : rest) = do
+        setMonoChar x row w
+        drawMonoLine (x + halfSize) row rest
+      setMonoChar :: Int -> Int -> Color.AttrCharW32 -> IO ()
       setMonoChar !x !row !w = do
-          atlas <- readIORef smonoAtlas
-          let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
-                Color.attrCharFromW32 w
-              fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
-                 | otherwise = fgRaw
-              ac = Color.attrChar2ToW32 fg acChar
-              !_A = assert (bg `elem` [ Color.HighlightNone
-                                      , Color.HighlightNoneCursor ]) ()
-          textTexture <- case EM.lookup ac atlas of
-            Nothing -> do
-              textSurfaceRaw <- TTF.shadedGlyph smonoFont (colorToRGBA fg)
-                                                (colorToRGBA Color.Black) acChar
-              textTexture <- scaleSurfaceToTexture halfSize textSurfaceRaw
-              writeIORef smonoAtlas $ EM.insert ac textTexture atlas
-              return textTexture
-            Just textTexture -> return textTexture
-          let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
-              tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
-          SDL.copy srenderer textTexture Nothing (Just tgtR)
-      drawPropOverlay :: Overlay -> IO [(Y, Int)]
+        atlas <- readIORef smonoAtlas
+        let Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}, acChar} =
+              Color.attrCharFromW32 w
+            fg | row `mod` 2 == 0 && fgRaw == Color.White = Color.AltWhite
+               | otherwise = fgRaw
+            ac = Color.attrChar2ToW32 fg acChar
+            !_A = assert (bg `elem` [ Color.HighlightNone
+                                    , Color.HighlightNoneCursor ]) ()
+        textTexture <- case EM.lookup ac atlas of
+          Nothing -> do
+            textSurfaceRaw <- TTF.shadedGlyph smonoFont (colorToRGBA fg)
+                                              (colorToRGBA Color.Black) acChar
+            textTexture <- scaleSurfaceToTexture halfSize textSurfaceRaw
+            writeIORef smonoAtlas $ EM.insert ac textTexture atlas
+            return textTexture
+          Just textTexture -> return textTexture
+        let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
+            tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
+        SDL.copy srenderer textTexture Nothing (Just tgtR)
+      drawPropOverlay :: Overlay -> IO [(Int, Int)]
       drawPropOverlay ov =
-        mapM (\(i, line) -> let Point{..} = toEnum i
-                            in drawPropLine (px * boxSize) py line)
+        mapM (\(K.PointUI x y, line) -> drawPropLine (x * halfSize) y line)
              ov
-      drawPropLine :: Int -> Y -> AttrLine -> IO (Y, Int)
+      drawPropLine :: Int -> Int -> AttrLine -> IO (Int, Int)
       drawPropLine x row [] = return (row, x)
       drawPropLine x row _ | x >= (rwidth coscreen - 1) * boxSize - x =
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
@@ -504,7 +500,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
             t = T.pack $ map Color.charFromW32 $ w : sameRest
         width <- drawPropChunk x row fg t
         drawPropLine (x + width) row otherRest
-      drawPropChunk :: Int -> Y -> Color.Color -> T.Text -> IO Int
+      drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
       drawPropChunk x row fg t = do
         textSurfaceRaw <- TTF.shaded spropFont (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t

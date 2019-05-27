@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  , getCachePath
                  )
     -- * Assorted primitives
-  , clientPrintUI, mapStartY, getSession, putSession, displayFrames
+  , clientPrintUI, getSession, putSession, displayFrames
   , connFrontendFrontKey, setFrontAutoYes, frontendShutdown, printScreen
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedControlEsc, revCmdMap
@@ -74,7 +74,6 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
-import           Game.LambdaHack.Definition.Defs
 
 -- Assumes no interleaving with other clients, because each UI client
 -- in a different terminal/window/machine.
@@ -82,10 +81,6 @@ clientPrintUI :: MonadClientUI m => Text -> m ()
 clientPrintUI t = liftIO $ do
   T.hPutStrLn stdout t
   hFlush stdout
-
--- | The row where the dungeon map starts.
-mapStartY :: Y
-mapStartY = 1
 
 -- | The monad that gives the client access to UI operations,
 -- but not to modifying client state.
@@ -175,7 +170,7 @@ addPressedKey = connFrontend . FrontAdd
 
 addPressedControlEsc :: MonadClientUI m => m ()
 addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
-                                           , K.kmpPointer = originPoint }
+                                           , K.kmpPointer = K.PointUI 0 0 }
 
 revCmdMap :: MonadClientUI m => m (K.KM -> HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do

@@ -172,7 +172,6 @@ displayRespUpdAtomicUI cmd = case cmd of
   -- Change actor attributes.
   UpdRefillHP _ 0 -> return ()
   UpdRefillHP aid hpDelta -> do
-    CCUI{coscreen} <- getsSession sccui
     aidVerbMU MsgNumeric aid $ MU.Text
                              $ (if hpDelta > 0 then "heal" else "lose")
                                <+> tshow (abs hpDelta `divUp` oneM) <+> "HP"
@@ -207,9 +206,9 @@ displayRespUpdAtomicUI cmd = case cmd of
          -- We show death anims only if not dead already before this refill.
          let deathAct
                | alreadyDeadBefore =
-                 twirlSplash coscreen (bpos b, bpos b) Color.Red Color.Red
-               | bfid b == side = deathBody coscreen (bpos b)
-               | otherwise = shortDeathBody coscreen (bpos b)
+                 twirlSplash (bpos b, bpos b) Color.Red Color.Red
+               | bfid b == side = deathBody (bpos b)
+               | otherwise = shortDeathBody (bpos b)
          unless (bproj b) $ animate (blid b) deathAct
        | otherwise -> do
          when (hpDelta >= bhp b && bhp b > 0) $
@@ -286,8 +285,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         msgAdd MsgDiplomacy $
           makeSentence [ "you have found the current"
                        , MU.WownW fidName "hoard location" ]
-    CCUI{coscreen} <- getsSession sccui
-    animate lid $ actorX coscreen pos
+    animate lid $ actorX pos
   UpdLoseStashFaction verbose fid lid pos -> do
     when verbose $ do
       side <- getsClient sside
@@ -298,8 +296,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         let fidName = MU.Text $ gname fact
         msgAdd MsgDiplomacy $
           makeSentence [fidName, "no longer control their hoard"]
-    CCUI{coscreen} <- getsSession sccui
-    animate lid $ vanish coscreen pos
+    animate lid $ vanish pos
   UpdLeadFaction fid (Just source) (Just target) -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     lidV <- viewedLevelUI
@@ -621,7 +618,6 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
-  CCUI{coscreen} <- getsSession sccui
   side <- getsClient sside
   when (bfid body == side && not (bproj body)) $ do
     let upd = ES.insert aid
@@ -704,7 +700,7 @@ createActorUI born aid body = do
      | ES.member aid lastLost || bproj body -> markDisplayNeeded (blid body)
      | otherwise -> do
        aidVerbMU MsgActorSpot aid verb
-       animate (blid body) $ actorX coscreen (bpos body)
+       animate (blid body) $ actorX (bpos body)
   when (bfid body /= side) $ do
     when (not (bproj body) && isFoe (bfid body) fact side) $ do
       -- Aim even if nobody can shoot at the enemy. Let's home in on him
@@ -815,18 +811,16 @@ moveActor aid source target = do
   -- not seen, the (half of the) animation would be boring, just a delay,
   -- not really showing a transition, so we skip it (via 'breakUpdAtomic').
   -- The message about teleportation is sometimes shown anyway, just as the X.
-  CCUI{coscreen} <- getsSession sccui
   body <- getsState $ getActorBody aid
   if adjacent source target
   then markDisplayNeeded (blid body)
   else do
     let ps = (source, target)
-    animate (blid body) $ teleport coscreen ps
+    animate (blid body) $ teleport ps
   lookAtMove aid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
-  CCUI{coscreen} <- getsSession sccui
   mleader <- getsClient sleader
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -844,7 +838,7 @@ displaceActorUI source target = do
   -- Ours involved, but definitely not requested by player via UI.
   when (side `elem` [bfid sb, bfid tb] && mleader /= Just source) stopPlayBack
   let ps = (bpos tb, bpos sb)
-  animate (blid sb) $ swapPlaces coscreen ps
+  animate (blid sb) $ swapPlaces ps
 
 -- @UpdMoveItem@ is relatively rare (except within the player's faction),
 -- but it ensure that even if only one of the stores is visible
@@ -1202,7 +1196,6 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxShun aid _p ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
-    CCUI{coscreen} <- getsSession sccui
     b <- getsState $ getActorBody aid
     bUI <- getsSession $ getActorUI aid
     side <- getsClient sside
@@ -1221,18 +1214,18 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.Burn{} -> do
           feelLookHP "burned"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Brown
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
           feelLookHP "healthier"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash coscreen ps Color.BrGreen Color.Green
+          animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
           feelLookHP "wounded"
           let ps = (bpos b, bpos b)
-          animate (blid b) $ twirlSplash coscreen ps Color.BrRed Color.Red
+          animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm{} | bproj b -> return ()
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
         IK.RefillCalm p | p > 0 -> feelLookCalm "calmer"
@@ -1531,11 +1524,10 @@ ppSfxMsg sfxMsg = case sfxMsg of
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
-  CCUI{coscreen} <- getsSession sccui
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ memActor source (blid tb)
   if not sourceSeen then
-    animate (blid tb) $ subtleHit coscreen (bpos tb)
+    animate (blid tb) $ subtleHit (bpos tb)
   else do
     hurtMult <- getsState $ armorHurtBonus source target
     sb <- getsState $ getActorBody source
@@ -1677,9 +1669,9 @@ strike catch source target iid = assert (source /= target) $ do
                                         ++ blockWithWhat)
         ps = (bpos tb, bpos sb)
         basicAnim
-          | hurtMult > 70 = twirlSplash coscreen ps Color.BrRed Color.Red
-          | hurtMult > 1 = blockHit coscreen ps Color.BrRed Color.Red
-          | otherwise = blockMiss coscreen ps
+          | hurtMult > 70 = twirlSplash ps Color.BrRed Color.Red
+          | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
+          | otherwise = blockMiss ps
         targetIsFoe = bfid sb == side  -- no big news if others hit our foes
                       && isFoe (bfid tb) tfact side
         targetIsFriend = isFriend (bfid tb) tfact side
@@ -1696,7 +1688,7 @@ strike catch source target iid = assert (source /= target) $ do
          let msg = makeSentence
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgVeryRare msg
-         animate (blid tb) $ blockHit coscreen ps Color.BrGreen Color.Green
+         animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
        | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
          -- Much less plausible with a wielded weapon.
@@ -1718,14 +1710,14 @@ strike catch source target iid = assert (source /= target) $ do
          msgAdd MsgVeryRare $
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
-         animate (blid tb) $ blockHit coscreen ps Color.BrBlue Color.Blue
+         animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
        | IK.idamage (itemKind itemFullWeapon) == 0 -> do
          let adverb = if bproj sb then "lightly" else "delicately"
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else ["with", weaponName]
          msgAdd msgClassMelee msg  -- too common for color
-         animate (blid tb) $ subtleHit coscreen (bpos sb)
+         animate (blid tb) $ subtleHit (bpos sb)
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
          let msgRangedPowerful | targetIsFoe = MsgRangedPowerfulWe
                                | targetIsFriend = MsgRangedPowerfulUs

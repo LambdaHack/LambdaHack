@@ -34,7 +34,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Frontend.Teletype as Teletype
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
 
@@ -100,7 +99,7 @@ getKey fs rf@RawFrontend{fchanKey} keys frame = do
   autoYes <- readIORef $ fautoYesRef fs
   if autoYes && (null keys || K.spaceKM `elem` keys) then do
     display rf frame
-    return $! KMP {kmpKeyMod = K.spaceKM, kmpPointer = originPoint}
+    return $! KMP {kmpKeyMod = K.spaceKM, kmpPointer = K.PointUI 0 0}
   else do
     -- Wait until timeout is up, not to skip the last frame of animation.
     display rf frame

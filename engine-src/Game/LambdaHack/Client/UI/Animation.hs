@@ -17,12 +17,13 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Bits
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Client.UI.Content.Screen
-import Game.LambdaHack.Client.UI.Frame
-import Game.LambdaHack.Client.UI.Overlay
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Core.Random
-import Game.LambdaHack.Definition.Color
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.Frame
+import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Color
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -32,11 +33,11 @@ newtype Animation = Animation [Overlay]
 -- | Render animations on top of a screen frame.
 --
 -- Located in this module to keep @Animation@ abstract.
-renderAnim :: PreFrame -> Animation -> PreFrames
-renderAnim basicFrame (Animation anim) =
+renderAnim :: Int -> PreFrame -> Animation -> PreFrames
+renderAnim width basicFrame (Animation anim) =
   let modifyFrame :: Overlay -> PreFrame
       -- Overlay not truncated, because guaranteed within bounds.
-      modifyFrame am = overlayFrame am basicFrame
+      modifyFrame am = overlayFrame width am basicFrame
       modifyFrames :: (Overlay, Overlay) -> Maybe PreFrame
       modifyFrames (am, amPrevious) =
         if am == amPrevious then Nothing else Just $ modifyFrame am
@@ -48,32 +49,33 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrChar2ToW32 color symbol
 
-mapPosToOffset :: ScreenContent -> (Point, AttrCharW32) -> (Int, [AttrCharW32])
-mapPosToOffset ScreenContent{rwidth} (Point{..}, attr) =
-  ((py + 1) * rwidth + px, [attr])
+mapPosToOffset :: (Point, AttrCharW32) -> (K.PointUI, [AttrCharW32])
+mapPosToOffset (Point{..}, attr) =
+  (K.PointUI (px * 2) (py + K.mapStartY), [attr])
 
-mzipSingleton :: ScreenContent -> Point -> Maybe AttrCharW32 -> Overlay
-mzipSingleton coscreen p1 mattr1 = map (mapPosToOffset coscreen) $
-  let mzip (pos, mattr) = fmap (pos,) mattr
-  in catMaybes [mzip (p1, mattr1)]
+mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay
+mzipSingleton p1 mattr1 =
+  map mapPosToOffset $
+    let mzip (pos, mattr) = fmap (pos,) mattr
+    in catMaybes [mzip (p1, mattr1)]
 
-mzipPairs :: ScreenContent -> (Point, Point)
-          -> (Maybe AttrCharW32, Maybe AttrCharW32)
+mzipPairs :: (Point, Point) -> (Maybe AttrCharW32, Maybe AttrCharW32)
           -> Overlay
-mzipPairs coscreen (p1, p2) (mattr1, mattr2) = map (mapPosToOffset coscreen) $
-  let mzip (pos, mattr) = fmap (pos,) mattr
-  in catMaybes $ if p1 /= p2
-                 then [mzip (p1, mattr1), mzip (p2, mattr2)]
-                 else -- If actor affects himself, show only the effect,
-                      -- not the action.
-                      [mzip (p1, mattr1)]
+mzipPairs (p1, p2) (mattr1, mattr2) =
+  map mapPosToOffset $
+    let mzip (pos, mattr) = fmap (pos,) mattr
+    in catMaybes $ if p1 /= p2
+                   then [mzip (p1, mattr1), mzip (p2, mattr2)]
+                   else -- If actor affects himself, show only the effect,
+                        -- not the action.
+                        [mzip (p1, mattr1)]
 
 pushAndDelay :: Animation
 pushAndDelay = Animation [[]]
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
-twirlSplash :: ScreenContent -> (Point, Point) -> Color -> Color -> Animation
-twirlSplash coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
+twirlSplash :: (Point, Point) -> Color -> Color -> Animation
+twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -88,8 +90,8 @@ twirlSplash coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
   ]
 
 -- | Attack that hits through a block.
-blockHit :: ScreenContent -> (Point, Point) -> Color -> Color -> Animation
-blockHit coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
+blockHit :: (Point, Point) -> Color -> Color -> Animation
+blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '\'')
   , (blank           , cSym BrYellow '^')
@@ -110,8 +112,8 @@ blockHit coscreen poss c1 c2 = Animation $ map (mzipPairs coscreen poss)
   ]
 
 -- | Attack that is blocked.
-blockMiss :: ScreenContent -> (Point, Point) -> Animation
-blockMiss coscreen poss = Animation $ map (mzipPairs coscreen poss)
+blockMiss :: (Point, Point) -> Animation
+blockMiss poss = Animation $ map (mzipPairs poss)
   [ (blank           , cSym BrCyan '\'')
   , (blank           , cSym BrYellow '^')
   , (cSym BrBlue  '{', cSym BrYellow '\'')
@@ -124,8 +126,8 @@ blockMiss coscreen poss = Animation $ map (mzipPairs coscreen poss)
   ]
 
 -- | Attack that is subtle (e.g., damage dice 0).
-subtleHit :: ScreenContent -> Point -> Animation
-subtleHit coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+subtleHit :: Point -> Animation
+subtleHit pos = Animation $ map (mzipSingleton pos)
   [ cSym BrCyan '\''
   , cSym BrYellow '\''
   , cSym BrYellow '^'
@@ -134,8 +136,8 @@ subtleHit coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   ]
 
 -- | Death animation for an organic body.
-deathBody :: ScreenContent -> Point -> Animation
-deathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+deathBody :: Point -> Animation
+deathBody pos = Animation $ map (mzipSingleton pos)
   [ cSym Red '%'
   , cSym Red '-'
   , cSym Red '-'
@@ -152,8 +154,8 @@ deathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   ]
 
 -- | Death animation for an organic body, short version (e.g., for enemies).
-shortDeathBody :: ScreenContent -> Point -> Animation
-shortDeathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+shortDeathBody :: Point -> Animation
+shortDeathBody pos = Animation $ map (mzipSingleton pos)
   [ cSym Red '%'
   , cSym Red '-'
   , cSym Red '\\'
@@ -166,8 +168,8 @@ shortDeathBody coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   ]
 
 -- | Mark actor location animation.
-actorX :: ScreenContent -> Point -> Animation
-actorX coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+actorX :: Point -> Animation
+actorX pos = Animation $ map (mzipSingleton pos)
   [ cSym BrRed 'X'
   , cSym BrRed 'X'
   , blank
@@ -175,8 +177,8 @@ actorX coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   ]
 
 -- | Actor teleport animation.
-teleport :: ScreenContent -> (Point, Point) -> Animation
-teleport coscreen poss = Animation $ map (mzipPairs coscreen poss)
+teleport :: (Point, Point) -> Animation
+teleport poss = Animation $ map (mzipPairs poss)
   [ (cSym BrMagenta 'o', cSym Magenta   '.')
   , (cSym BrMagenta 'O', cSym Magenta   '.')
   , (cSym Magenta   'o', cSym Magenta   'o')
@@ -187,8 +189,8 @@ teleport coscreen poss = Animation $ map (mzipPairs coscreen poss)
   ]
 
 -- | Terrain feature vanishing animation.
-vanish :: ScreenContent -> Point -> Animation
-vanish coscreen pos = Animation $ map (mzipSingleton coscreen pos)
+vanish :: Point -> Animation
+vanish pos = Animation $ map (mzipSingleton pos)
   [ cSym BrMagenta 'o'
   , cSym BrMagenta 'O'
   , cSym Magenta   'o'
@@ -198,8 +200,8 @@ vanish coscreen pos = Animation $ map (mzipSingleton coscreen pos)
   ]
 
 -- | Swap-places animation, both hostile and friendly.
-swapPlaces :: ScreenContent -> (Point, Point) -> Animation
-swapPlaces coscreen poss = Animation $ map (mzipPairs coscreen poss)
+swapPlaces :: (Point, Point) -> Animation
+swapPlaces poss = Animation $ map (mzipPairs poss)
   [ (cSym BrMagenta 'o', cSym Magenta   'o')
   , (cSym BrMagenta 'd', cSym Magenta   'p')
   , (cSym BrMagenta '.', cSym Magenta   'p')
@@ -240,8 +242,8 @@ fadeout ScreenContent{rwidth, rheight} out step = do
                   x2 :: Int
                   {-# INLINE x2 #-}
                   x2 = max 0 (xbound - (n - 2 * y))
-              in [ (y * rwidth, map (fadeAttr y) [0..x1])
-                 , (y * rwidth + x2, map (fadeAttr y) [x2..xbound]) ]
+              in [ (K.PointUI 0 y, map (fadeAttr y) [0..x1])
+                 , (K.PointUI (2 * x2) y, map (fadeAttr y) [x2..xbound]) ]
         return $! concatMap fadeLine [0..ybound]
       fs | out = [3, 3 + step .. rwidth - margin]
          | otherwise = [rwidth - margin, rwidth - margin - step .. 1]

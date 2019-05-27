@@ -108,10 +108,11 @@ byAreaHuman :: MonadClientUI m
             -> [(CmdArea, HumanCmd)]
             -> m (Either MError ReqUI)
 byAreaHuman cmdAction l = do
-  pointer <- getsSession spointer
-  let pointerInArea a = do
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y)
+      pointerInArea a = do
         rs <- areaToRectangles a
-        return $! any (inside pointer) $ catMaybes rs
+        return $! any (inside $ Point {..}) $ catMaybes rs
   cmds <- filterM (pointerInArea . fst) l
   case cmds of
     [] -> do
@@ -130,16 +131,16 @@ areaToRectangles ca = map toArea <$> do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
     let Point{..} = bpos b
-    return [(px, mapStartY + py, px, mapStartY + py)]
+    return [(px, K.mapStartY + py, px, K.mapStartY + py)]
   CaMapParty -> do  -- takes preference over @CaMap@
     lidV <- viewedLevelUI
     side <- getsClient sside
     ours <- getsState $ filter (not . bproj) . map snd
                         . actorAssocs (== side) lidV
-    let rectFromB Point{..} = (px, mapStartY + py, px, mapStartY + py)
+    let rectFromB Point{..} = (px, K.mapStartY + py, px, K.mapStartY + py)
     return $! map (rectFromB . bpos) ours
   CaMap -> return
-    [( 0, mapStartY, rwidth - 1, mapStartY + rheight - 4 )]
+    [( 0, K.mapStartY, rwidth - 1, K.mapStartY + rheight - 4 )]
   CaLevelNumber -> let y = rheight - 2
                    in return [(0, y, 1, y)]
   CaArenaName -> let y = rheight - 2
@@ -946,8 +947,9 @@ alterDirHuman ts = do
     K.LeftButtonRelease -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
-      Point x y <- getsSession spointer
-      let dir = Point x (y - mapStartY) `vectorToFrom` bpos b
+      K.PointUI x y <- getsSession spointer
+      let (px, py) = (x `div` 2, y - K.mapStartY)
+          dir = Point px py `vectorToFrom` bpos b
       if isUnit dir
       then alterTile ts dir
       else failWith "never mind"
@@ -1074,11 +1076,11 @@ alterWithPointerHuman ts = do
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
   lvl <- getLevel lidV
-  Point{..} <- getsSession spointer
-  let tpos = Point px (py - mapStartY)
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - K.mapStartY)
+      tpos = Point px py
       t = lvl `at` tpos
-  if px >= 0 && py - mapStartY >= 0
-     && px < rXmax && py - mapStartY < rYmax
+  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
   else failWith "never mind"
 
@@ -1131,7 +1133,7 @@ dashboardHuman :: MonadClientUI m
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   let keyL = 2
-      (ov0, kxs0) = okxsN coinput rwidth 0 keyL (const False) False
+      (ov0, kxs0) = okxsN coinput 0 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
       splitHelp (al, okx) =
@@ -1186,7 +1188,7 @@ itemMenuHuman cmdAction = do
               desc = itemDesc markParagraphs (bfid b) factionD
                               (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                               fromCStore localTime jlid itemFull kit
-              alPrefix = offsetOverlay rwidth $ splitAttrLine rwidth
+              alPrefix = offsetOverlay $ splitAttrLine rwidth
                          $ desc <+:> foundPrefix
               ystart = length alPrefix - 1
               xstart = length (snd $ last alPrefix) + 1
@@ -1221,7 +1223,7 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = length ovFound
-              (ov0, kxs0) = okxsN coinput rwidth offset keyL greyedOut True
+              (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
@@ -1322,7 +1324,6 @@ generateMenu :: MonadClientUI m
              -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   art <- artWithVersion
   let bindingLen = 35
       emptyInfo = repeat $ replicate bindingLen ' '
@@ -1345,7 +1346,7 @@ generateMenu cmdAction kds gameInfo menuName = do
                    let lenB = length binding
                        post = drop (lenB - length braces) suffix
                        len = length prefix
-                       yxx key = (Left [key], (y, len, len, len + lenB))
+                       yxx key = (Left [key], (K.PointUI len y, lenB))
                        myxx = yxx <$> mkey
                    in (bsRest, (prefix <> binding <> post, myxx))
                  else (bs, (line, Nothing))
@@ -1355,7 +1356,7 @@ generateMenu cmdAction kds gameInfo menuName = do
       menuOverwritten = overwrite $ zip [0..] art
       (menuOvLines, mkyxs) = unzip menuOverwritten
       kyxs = catMaybes mkyxs
-      ov = EM.singleton MonoFont $ offsetOverlay rwidth
+      ov = EM.singleton MonoFont $ offsetOverlay
            $ map stringToAL menuOvLines
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]

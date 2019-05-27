@@ -136,9 +136,9 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput rwidth 0 keyL (const False) True
-    renumber y (km, (y0, xbegin, x1, x2)) = (km, (y0 + y, xbegin, x1, x2))
-    renumberOv y = map (\(p, al) -> (p + y * rwidth, al))
+    okxs = okxsN coinput 0 keyL (const False) True
+    renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
+    renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
       let off = EM.foldr (\ov acc -> max acc (length ov)) 0 ovs1
@@ -184,8 +184,8 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (kst1, kst2))
-              [ (Left [km1], (y, 0, keyM + 3, keyB + keyM + 3))
-              , (Left [km2], (y, 0, keyB + keyM + 5, 2 * keyB + keyM + 5)) ]
+              [ (Left [km1], (K.PointUI (keyM + 3) y, keyB))
+              , (Left [km2], (K.PointUI (keyB + keyM + 5) y, keyB)) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
@@ -193,7 +193,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           menu = zipWith render kst1 kst2
       in (toDisplayFont $ "" : header ++ menu ++ footer, kxs)
     toDisplayFont :: [Text] -> FontOverlayMap
-    toDisplayFont = EM.singleton MonoFont . offsetOverlay rwidth . map textToAL
+    toDisplayFont = EM.singleton MonoFont . offsetOverlay . map textToAL
   in concat
     [ [ ( rtitle corule <+> "- backstory"
         , (toDisplayFont introText, []) ) ]
@@ -265,10 +265,10 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: InputContent -> Int -> Int -> Int -> (HumanCmd -> Bool) -> Bool
+okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool
       -> CmdCategory
       -> [Text] -> [Text] -> OKX
-okxsN InputContent{..} width offset n greyedOut showManyKeys cat header footer =
+okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -286,10 +286,10 @@ okxsN InputContent{..} width offset n greyedOut showManyKeys cat header footer =
                    kmsRes = if desc == "" then knownKeys else kms
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      f (ks, (_, tkey)) y = (ks, (y, 0, 1, T.length tkey))
+      f (ks, (_, tkey)) y = (ks, (K.PointUI 1 y, T.length tkey))
       kxs = zipWith f keys [offset + 1 + length header..]
-      renumberOv = map (\(p, al) -> (p + offset * width, al))
+      renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
       greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
       greyTs = map greyToAL ts
-  in (EM.singleton MonoFont $ renumberOv $ offsetOverlay width greyTs, kxs)
+  in (EM.singleton MonoFont $ renumberOv $ offsetOverlay greyTs, kxs)

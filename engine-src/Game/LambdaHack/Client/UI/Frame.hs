@@ -23,11 +23,10 @@ import qualified Data.Vector.Unboxed.Mutable as VM
 import           Data.Word
 
 import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.Key (PointUI (..))
 import           Game.LambdaHack.Client.UI.Overlay
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 
 -- | Color mode for the display.
 data ColorMode =
@@ -96,34 +95,33 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 truncateOverlay :: ScreenContent -> Bool -> Overlay -> Overlay
 truncateOverlay ScreenContent{rwidth, rheight} onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
-      supHeight = if null ov then 0 else maximum $ map fst ov
-      ovTopFiltered = filter (\(p, _) -> p < rwidth * (canvasLength - 1)) ov
-      trimmedPoint = rwidth * (canvasLength - 1)
-      trimmedAlert = ( trimmedPoint
+      supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
+      trimmedY = canvasLength - 1
+      ovTopFiltered = filter (\(PointUI _ y, _) -> y < trimmedY) ov
+      trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )
-      extraLine = case reverse ov of
-        [] -> []
-        (pLast, _) : _ ->
-          [ (pLast + rwidth, [])
-          | supHeight < trimmedPoint && supHeight >= 3 * rwidth ]
-      ovTop = if supHeight >= rwidth * canvasLength
+      extraLine | supHeight < 3 = []
+                | otherwise =
+        case find (\(PointUI _ y, _) -> y == supHeight) ov of
+          Nothing -> []
+          Just (PointUI xLast yLast, _) -> [(PointUI xLast (yLast + 1), [])]
+      ovTop = if supHeight >= canvasLength
               then ovTopFiltered ++ [trimmedAlert]
               else ov ++ extraLine
       -- Unlike the trimming above, adding spaces around overlay depends
       -- on there being no gaps and duplicate line definitions.
       -- Probably gives messy results when X offsets are not all the same.
-      f lenPrev lenNext (p, layerLine) =
-        let xstart = px $ toEnum p
-        in (p, truncateAttrLine rwidth xstart layerLine (max lenPrev lenNext))
-      lengthOfLine (p, al) = let xstart = px $ toEnum p
-                             in min (rwidth - 1) (xstart + length al)
+      f lenPrev lenNext (p@(PointUI xstart _), layerLine) =
+        (p, truncateAttrLine rwidth xstart layerLine (max lenPrev lenNext))
+      lengthOfLine (PointUI xstart _, al) =
+        min (rwidth - 1) (xstart + length al)
       lens = map lengthOfLine ovTop
   in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
-truncateAttrLine :: X -> X -> AttrLine -> X -> AttrLine
+truncateAttrLine :: Int -> Int -> AttrLine -> Int -> AttrLine
 truncateAttrLine w xstart al lenMax =
   case compare w (xstart + length al) of
     LT -> let discarded = drop (w - xstart) al
@@ -142,9 +140,11 @@ truncateAttrLine w xstart al lenMax =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: Overlay -> PreFrame -> PreFrame
-overlayFrame ov (m, ff) =
+overlayFrame :: Int -> Overlay -> PreFrame -> PreFrame
+overlayFrame width ov (m, ff) =
   ( m
   , FrameForall $ \v -> do
       unFrameForall ff v
-      mapM_ (\(offset, l) -> unFrameForall (writeLine offset l) v) ov )
+      mapM_ (\(PointUI px py, l) ->
+               let offset = py * width + px `div` 2
+               in unFrameForall (writeLine offset l) v) ov )

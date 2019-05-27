@@ -243,7 +243,7 @@ chooseItemDialogMode c = do
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
                   ov0 = EM.singleton PropFont
-                        $ offsetOverlay rwidth
+                        $ offsetOverlay
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ skillDesc skill
                   keys = [K.spaceKM, K.escKM]
@@ -290,7 +290,7 @@ chooseItemDialogMode c = do
                        , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   ov0 = EM.singleton PropFont
-                        $ offsetOverlay rwidth
+                        $ offsetOverlay
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ T.unlines
                         $ (if sexposePlaces soptions
@@ -656,15 +656,16 @@ selectWithPointerHuman = do
   sactorUI <- getsSession sactorUI
   let oursUI = map (\(aid, b) -> (aid, b, sactorUI EM.! aid)) ours
       viewed = sortOn keySelected oursUI
-  Point{..} <- getsSession spointer
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - K.mapStartY)
   -- Select even if no space in status line for the actor's symbol.
-  if | py == rYmax + 2 && px == 0 -> selectNoneHuman >> return Nothing
-     | py == rYmax + 2 ->
+  if | py == rYmax + 1 && px == 0 -> selectNoneHuman >> return Nothing
+     | py == rYmax + 1 ->
          case drop (px - 1) viewed of
            [] -> failMsg "not pointing at an actor"
            (aid, _, _) : _ -> selectAid aid >> return Nothing
      | otherwise ->
-         case find (\(_, b) -> bpos b == Point px (py - mapStartY)) ours of
+         case find (\(_, b) -> bpos b == Point px py) ours of
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, _) -> selectAid aid >> return Nothing
 
@@ -732,8 +733,8 @@ eitherHistory showAll = do
                 in (spNo, (len `divUp` 2, spMaybe))
            else (spNo, (length spNo, spYes))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
-      rhLab = EM.singleton MonoFont $ offsetOverlay rwidth histLab
-      rhDesc = EM.singleton PropFont $ offsetOverlayX rwidth histDesc
+      rhLab = EM.singleton MonoFont $ offsetOverlay histLab
+      rhDesc = EM.singleton PropFont $ offsetOverlayX histDesc
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -741,7 +742,7 @@ eitherHistory showAll = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, (slotPrefix sn, 0, 0, maxBound))
+      kxs = [ (Right sn, (K.PointUI 0 (slotPrefix sn), maxBound))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
   okxs <- overlayToSlideshow PropFont rheight [K.escKM]
@@ -762,7 +763,7 @@ eitherHistory showAll = do
         let timeReport = case drop histSlot renderedHistory of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 = EM.singleton PropFont $ offsetOverlay rwidth
+            ov0 = EM.singleton PropFont $ offsetOverlay
                   $ indentSplitAttrLine rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
@@ -1148,12 +1149,12 @@ aimPointerFloorHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  Point{..} <- getsSession spointer
-  if px >= 0 && py - mapStartY >= 0
-     && px < rXmax && py - mapStartY < rYmax
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - K.mapStartY)
+  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     oldXhair <- getsSession sxhair
-    let sxhair = Just $ TPoint TUnknown lidV $ Point px (py - mapStartY)
+    let sxhair = Just $ TPoint TUnknown lidV $ Point px py
         sxhairMoused = sxhair /= oldXhair
     modifySession $ \sess ->
       sess { saimMode = Just $ AimMode lidV
@@ -1169,15 +1170,15 @@ aimPointerEnemyHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   lidV <- viewedLevelUI
   -- Not @ScreenContent@, because not drawing here.
-  Point{..} <- getsSession spointer
-  if px >= 0 && py - mapStartY >= 0
-     && px < rXmax && py - mapStartY < rYmax
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - K.mapStartY)
+  if px >= 0 && py >= 0 && px < rXmax && py < rYmax
   then do
     bsAll <- getsState $ actorAssocs (const True) lidV
     oldXhair <- getsSession sxhair
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    let newPos = Point px (py - mapStartY)
+    let newPos = Point px py
         sxhair =
           -- If many actors, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,

@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Client.UI.Key
-  ( Key(..), Modifier(..), KM(..), KMP(..)
+  ( PointUI(..), mapStartY
+  , Key(..), Modifier(..), KM(..), KMP(..)
   , showKey, showKM
   , escKM, controlEscKM, spaceKM, safeSpaceKM, undefinedKM, returnKM
   , pgupKM, pgdnKM, wheelNorthKM, wheelSouthKM
@@ -28,7 +29,6 @@ import           Data.Binary
 import qualified Data.Char as Char
 import           GHC.Generics (Generic)
 
-import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Frontend-independent datatype to represent keys.
@@ -97,7 +97,15 @@ instance Show KM where
 
 -- | Key, modifier and position of mouse pointer.
 data KMP = KMP { kmpKeyMod  :: KM
-               , kmpPointer :: Point }
+               , kmpPointer :: PointUI }
+
+-- | UI character coordinates, independent of map coordinates.
+data PointUI = PointUI Int Int
+  deriving (Eq, Show)
+
+-- | The row where the dungeon map starts.
+mapStartY :: Int
+mapStartY = 1
 
 -- | Common and terse names for keys.
 showKey :: Key -> String

@@ -24,7 +24,6 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Msg
 import           Game.LambdaHack.Client.UI.UIOptions
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
@@ -53,7 +52,7 @@ data SessionUI = SessionUI
   , srunning       :: Maybe RunParams
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
-  , spointer       :: Point         -- ^ mouse pointer position
+  , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastRecord    :: LastRecord    -- ^ state of key sequence recording
   , slastPlay      :: [K.KM]        -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
@@ -126,7 +125,7 @@ emptySessionUI sUIOptions =
     , sselected = ES.empty
     , srunning = Nothing
     , shistory = emptyHistory 0
-    , spointer = originPoint
+    , spointer = K.PointUI 0 0
     , slastRecord = LastRecord [] [] 0
     , slastPlay = []
     , slastLost = ES.empty
@@ -190,7 +189,7 @@ instance Binary SessionUI where
           error $ "Binary: ChanFrontend" `showFailure` ()
         sccui = emptyCCUI
         sxhairMoused = True
-        spointer = originPoint
+        spointer = K.PointUI 0 0
         slastRecord = LastRecord [] [] 0
         slastPlay = []
         slastLost = ES.empty

@@ -19,9 +19,8 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Common.Point
+import           Game.LambdaHack.Client.UI.Key (PointUI (..))
 import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 
 -- * AttrLine
 
@@ -65,26 +64,26 @@ infixr 6 <+:>  -- matches Monoid.<>
 -- for truncation when displayed. The positions of lines may fall outside
 -- the length of the screen, too, unlike in @SingleFrame@. Then they are
 -- simply not shown.
-type Overlay = [(PointI, AttrLine)]
+type Overlay = [(PointUI, AttrLine)]
 
-offsetOverlay :: X -> [AttrLine] -> Overlay
-offsetOverlay width l = map (\(y, al) -> (y * width, al)) $ zip [0..] l
+offsetOverlay :: [AttrLine] -> Overlay
+offsetOverlay l = map (\(y, al) -> (PointUI 0 y, al)) $ zip [0..] l
 
-offsetOverlayX :: X -> [(X, AttrLine)] -> Overlay
-offsetOverlayX width l =
-  map (\(y, (x, al)) -> (y * width + x, al)) $ zip [0..] l
+offsetOverlayX :: [(Int, AttrLine)] -> Overlay
+offsetOverlayX l =
+  map (\(y, (x, al)) -> (PointUI x y, al)) $ zip [0..] l
 
 -- | Split a string into lines. Avoids ending the line with
 -- a character other than space. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
 --
 -- Note that we only split wrt @White@ space, nothing else.
-splitAttrLine :: X -> AttrLine -> [AttrLine]
+splitAttrLine :: Int -> AttrLine -> [AttrLine]
 splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))
   $ linesAttr l
 
-indentSplitAttrLine :: X -> AttrLine -> [AttrLine]
+indentSplitAttrLine :: Int -> AttrLine -> [AttrLine]
 indentSplitAttrLine w l =
   -- First line could be split at @w@, not @w - 1@, but it's good enough.
   let ts = splitAttrLine (w - 1) l
@@ -112,7 +111,7 @@ breakAtSpace lRev =
       else (pre, post)
     _ -> (pre, post)  -- no space found, give up
 
-splitAttrPhrase :: X -> AttrLine -> [AttrLine]
+splitAttrPhrase :: Int -> AttrLine -> [AttrLine]
 splitAttrPhrase w xs
   | w >= length xs = [xs]  -- no problem, everything fits
   | otherwise =
@@ -138,13 +137,12 @@ glueLines :: Overlay -> Overlay -> Overlay
 glueLines ov1 ov2 = reverse $ glue (reverse ov1) ov2
  where glue [] l = l
        glue m [] = m
-       glue ((p, mh) : mt) ((_, lh) : lt) =
-         let offsetOv = \(mp, ma) -> (mp + p, ma)
+       glue ((p@(PointUI dx dy), mh) : mt) ((_, lh) : lt) =
+         let offsetOv = \(PointUI x y, ma) -> (PointUI (x + dx) (y + dy), ma)
          in reverse (map offsetOv lt) ++ (p, mh <+:> lh) : mt
 
 -- @f@ should not enlarge the line beyond screen width.
-updateLine :: Y -> (X -> AttrLine -> AttrLine) -> Overlay -> Overlay
+updateLine :: Int -> (Int -> AttrLine -> AttrLine) -> Overlay -> Overlay
 updateLine y f ov =
-  let upd (p, l) = let Point{..} = toEnum p
-                   in if py == y then (p, f px l) else (p, l)
+  let upd (p@(PointUI px py), l) = if py == y then (p, f px l) else (p, l)
   in map upd ov

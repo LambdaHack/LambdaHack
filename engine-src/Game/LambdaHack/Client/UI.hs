@@ -137,8 +137,8 @@ humanCommand = do
             if allButLast == emptySlideshow
             then
               -- Display the only generated slide while waiting for next key.
-              -- Strip the "--end-" prompt from it.
-              return $! init $ ov EM.! PropFont
+              -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
+              return $! ov EM.! PropFont
             else do
               -- Show, one by one, all slides, awaiting confirmation for each.
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw

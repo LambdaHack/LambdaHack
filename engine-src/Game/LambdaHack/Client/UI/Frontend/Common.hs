@@ -17,7 +17,6 @@ import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Key (KMP (..))
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Misc
-import           Game.LambdaHack.Common.Point
 
 -- | Raw frontend definition. The minimal closed set of values that need
 -- to depend on the specifics of the chosen frontend.
@@ -74,7 +73,7 @@ resetChanKey fchanKey = do
   res <- STM.atomically $ STM.tryReadTQueue fchanKey
   when (isJust res) $ resetChanKey fchanKey
 
-saveKMP :: RawFrontend -> K.Modifier -> K.Key -> Point -> IO ()
+saveKMP :: RawFrontend -> K.Modifier -> K.Key -> K.PointUI -> IO ()
 saveKMP !rf !modifier !key !kmpPointer = do
   -- Instantly show any frame waiting for display.
   void $ tryTakeMVar $ fshowNow rf

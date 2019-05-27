@@ -24,14 +24,12 @@ import           Game.LambdaHack.Client.UI.MsgM
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Client.UI.Slideshow
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
-import           Game.LambdaHack.Definition.Defs
 
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m
-                   => DisplayFont -> Y -> [K.KM] -> OKX -> m Slideshow
+                   => DisplayFont -> Int -> [K.KM] -> OKX -> m Slideshow
 overlayToSlideshow displayFont y keys okx = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   report <- getReportUI
@@ -138,7 +136,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ((ovs, kyxs), (ekm, (y, xbegin, x1, x2)), ixOnPage) -> do
+        Just ((ovs, kyxs), (ekm, (K.PointUI x1 y, len)), ixOnPage) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
               highAttr x | Color.acAttr x `notElem` highableAttrs
@@ -149,10 +147,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
               drawHighlight PropFont _ xs = xs
-              drawHighlight _ xstart xs | xstart /= xbegin = xs
               drawHighlight _ xstart xs =
                 let (xs1, xsRest) = splitAt (x1 - xstart) xs
-                    (xs2, xs3) = splitAt (x2 - x1) xsRest
+                    (xs2, xs3) = splitAt len xsRest
                     highW32 = Color.attrCharToW32
                               . highAttr
                               . Color.attrCharFromW32
@@ -167,7 +164,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                       updateLine y (drawHighlight font) ov) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
-              xix (_, (_, _, x1', _)) = x1' == x1
+              xix (_, (K.PointUI x1' _, _)) = x1' == x1
               firstRowOfNextPage = pointer + pageLen - ixOnPage
               restOKX = drop firstRowOfNextPage allOKX
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of
@@ -188,23 +185,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Left [] -> error $ "" `showFailure` ikm
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
-                    Point{..} <- getsSession spointer
-                    propFontSup <- propFontSupported
-                    let clickWithinLine (p, al) =
-                          let Point pxl pyl = toEnum p
-                          in pyl == py && pxl >= pxl
-                                       && pxl <= pxl + length al `div` 2
-                        clickWithinOverlay displayFont =
-                          any clickWithinLine
-                          $ EM.findWithDefault [] displayFont ovs
-                        clickWithinSmallFontOverlay =
-                          (propFontSup && (clickWithinOverlay MonoFont
-                                          || clickWithinOverlay PropFont))
-                        onChoice (_, (cy, _cxbegin, cx1, cx2)) =
-                          cy == py
-                          && if clickWithinSmallFontOverlay
-                             then cx1 <= 2 * px + 1 && cx2 > 2 * px
-                             else cx1 <= px && cx2 > px
+                    K.PointUI mx my <- getsSession spointer
+                    let onChoice (_, (K.PointUI cx cy, clen)) =
+                          cy == my && cx <= mx && cx + clen > mx
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys -> return (Left ikm, pointer)
                       Nothing -> if K.spaceKM `elem` keys

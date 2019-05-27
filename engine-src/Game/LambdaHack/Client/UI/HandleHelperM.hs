@@ -191,22 +191,23 @@ pickLeaderWithPointer = do
            | otherwise -> do
                void $ pickLeader True aid
                return Nothing
-  Point{..} <- getsSession spointer
+  K.PointUI x y <- getsSession spointer
+  let (px, py) = (x `div` 2, y - K.mapStartY)
   -- Pick even if no space in status line for the actor's symbol.
-  if | py == rheight - 1 && px == 0 -> memberBack True
-     | py == rheight - 1 ->
+  if | py == rheight - 2 && px == 0 -> memberBack True
+     | py == rheight - 2 ->
          case drop (px - 1) viewed of
            [] -> return Nothing
              -- relaxed, due to subtleties of display of selected actors
            (aid, b, _) : _ -> pick (aid, b)
      | otherwise ->
-         case find (\(_, b, _) -> bpos b == Point px (py - mapStartY)) oursUI of
+         case find (\(_, b, _) -> bpos b == Point px py) oursUI of
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientUI m => SingleItemSlots -> LevelId -> ItemBag -> m OKX
+itemOverlay :: MonadClientRead m
+            => SingleItemSlots -> LevelId -> ItemBag -> m OKX
 itemOverlay lSlots lid bag = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState $ flip itemToFull
   side <- getsClient sside
@@ -245,19 +246,18 @@ itemOverlay lSlots lid bag = do
                 al = textToAL (markEqp iid $ slotLabel l)
                      <+:> [colorSymbol]
                      <+:> textToAL phrase
-                kx = (Right l, (undefined, 0, 0, length al))
+                kx = (Right l, (K.PointUI 0 0, length al))
             in Just ([al], kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
-      renumber y (km, (_, xbegin, x1, x2)) = (km, (y, xbegin, x1, x2))
-  return ( EM.singleton PropFont $ offsetOverlay rwidth $ concat ts
+      renumber y (km, (K.PointUI x _, len)) = (km, (K.PointUI x y, len))
+  return ( EM.singleton PropFont $ offsetOverlay $ concat ts
          , zipWith renumber [0..] kxs )
 
-skillsOverlay :: MonadClientUI m => ActorId -> m OKX
+skillsOverlay :: MonadStateRead m => ActorId -> m OKX
 skillsOverlay aid = do
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let prSlot :: (Y, SlotChar) -> Ability.Skill -> (Text, KYX)
+  let prSlot :: (Int, SlotChar) -> Ability.Skill -> (Text, KYX)
       prSlot (y, c) skill =
         let skName = skillName skill
             fullText t =
@@ -267,9 +267,9 @@ skillsOverlay aid = do
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             ft = fullText valueText
-        in (ft, (Right c, (y, 0, 0, T.length ft)))
+        in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
-  return (EM.singleton PropFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
+  return (EM.singleton PropFont $ offsetOverlay $ map textToAL ts, kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
@@ -299,13 +299,12 @@ placeParts (_, ne, na, nd) =
   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
   ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
 
-placesOverlay :: MonadClientUI m => m OKX
+placesOverlay :: MonadClientRead m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   soptions <- getsClient soptions
   places <- getsState $ placesFromState coplace soptions
-  let prSlot :: (Y, SlotChar)
+  let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (Text, KYX)
       prSlot (y, c) (pk, (es, ne, na, nd)) =
@@ -317,9 +316,9 @@ placesOverlay = do
             ft = makePhrase $ MU.Text (markPlace $ slotLabel c)
                  : MU.Text placeName
                  : parts
-        in (ft, (Right c, (y, 0, 0, T.length ft)))
+        in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
-  return (EM.singleton SquareFont $ offsetOverlay rwidth $ map textToAL ts, kxs)
+  return (EM.singleton SquareFont $ offsetOverlay $ map textToAL ts, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
@@ -600,7 +599,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
-      ov = EM.singleton PropFont $ offsetOverlay rwidth
+      ov = EM.singleton PropFont $ offsetOverlay
            $ splitAttrLine rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]

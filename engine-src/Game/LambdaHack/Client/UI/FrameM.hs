@@ -63,8 +63,9 @@ drawOverlay dm onBlank ovs lid = do
                    then []
                    else EM.findWithDefault [] PropFont ovs
                         ++ EM.findWithDefault [] MonoFont ovs
-      overlayedFrame = overlayFrame (truncateOverlay coscreen onBlank ovOther)
-                                     basicFrame
+      overlayedFrame = overlayFrame rwidth
+                                    (truncateOverlay coscreen onBlank ovOther)
+                                    basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
 propFontSupported :: MonadClientUI m => m Bool
@@ -85,7 +86,8 @@ pushFrame = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     report <- getReportUI
-    let truncRep = EM.fromList [(PropFont, [(0, renderReport report)])]
+    let truncRep =
+          EM.fromList [(PropFont, [(K.PointUI 0 0, renderReport report)])]
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
@@ -111,7 +113,8 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
-      let ovWarn = [(0, textFgToAL Color.BrYellow "*interrupted*") | keyPressed]
+      let ovWarn = [ (K.PointUI 0 0, textFgToAL Color.BrYellow "*interrupted*")
+                   | keyPressed ]
           ovs2 = EM.insertWith (++) PropFont ovWarn ovs
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
@@ -167,14 +170,16 @@ resetPlayBack = do
 -- | Render animations on top of the current screen frame.
 renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
 renderFrames arena anim = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   report <- getReportUI
-  let truncRep = EM.fromList [(PropFont, [(0, renderReport report)])]
+  let truncRep =
+        EM.fromList [(PropFont, [(K.PointUI 0 0, renderReport report)])]
   basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . soptions
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else map (fmap (\fr -> (fr, snd basicFrame)))
-                 $ renderAnim (fst basicFrame) anim
+                 $ renderAnim rwidth (fst basicFrame) anim
 
 -- | Render and display animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m ()
