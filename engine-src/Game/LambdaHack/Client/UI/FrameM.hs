@@ -168,14 +168,17 @@ resetPlayBack = do
       modifySession (\sess -> sess {srunning = Nothing})
 
 -- | Render animations on top of the current screen frame.
-renderFrames :: MonadClientUI m => LevelId -> Animation -> m PreFrames3
-renderFrames arena anim = do
+renderFrames :: MonadClientUI m => Bool -> LevelId -> Animation -> m PreFrames3
+renderFrames onBlank arena anim = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-  report <- getReportUI
-  let truncRep =
-        EM.fromList [(PropFont, [(K.PointUI 0 0, renderReport report)])]
-  basicFrame <- drawOverlay ColorFull False truncRep arena
   snoAnim <- getsClient $ snoAnim . soptions
+  report <- getReportUI
+  let ovFont = if not onBlank || fromMaybe False snoAnim
+               then PropFont
+               else SquareFont
+      truncRep =
+        EM.fromList [(ovFont, [(K.PointUI 0 0, renderReport report)])]
+  basicFrame <- drawOverlay ColorFull False truncRep arena
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else map (fmap (\fr -> (fr, snd basicFrame)))
@@ -188,7 +191,7 @@ animate arena anim = do
   -- projectiles hitting actors, so frames need to be skipped.
   keyPressed <- anyKeyPressed
   unless keyPressed $ do
-    frames <- renderFrames arena anim
+    frames <- renderFrames False arena anim
     displayFrames arena frames
 
 fadeOutOrIn :: MonadClientUI m => Bool -> m ()
@@ -196,5 +199,5 @@ fadeOutOrIn out = do
   arena <- getArenaUI
   CCUI{coscreen} <- getsSession sccui
   animMap <- rndToActionForget $ fadeout coscreen out 2
-  animFrs <- renderFrames arena animMap
+  animFrs <- renderFrames True arena animMap
   displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
