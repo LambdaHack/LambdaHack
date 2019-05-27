@@ -243,15 +243,16 @@ itemOverlay lSlots lid bag = do
                   else viewItem itemFull
                 phrase = makePhrase
                   [partItemWsRanged side factionD k localTime itemFull kit]
-                al = textToAL (markEqp iid $ slotLabel l)
-                     <+:> [colorSymbol]
-                     <+:> textToAL phrase
-                kx = (Right l, (K.PointUI 0 0, length al))
-            in Just ([al], kx)
+                al1 = textToAL (markEqp iid $ slotLabel l) ++ [colorSymbol]
+                xal2 = (2 * length al1, Color.spaceAttrW32 : textToAL phrase)
+                kx = (Right l, (K.PointUI 0 0, maxBound))
+            in Just ((al1, xal2), kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
+      (tsLab, tsDesc) = unzip ts
+      ovsLab = EM.singleton SquareFont $ offsetOverlay tsLab
+      ovsDesc = EM.singleton PropFont $ offsetOverlayX tsDesc
       renumber y (km, (K.PointUI x _, len)) = (km, (K.PointUI x y, len))
-  return ( EM.singleton PropFont $ offsetOverlay $ concat ts
-         , zipWith renumber [0..] kxs )
+  return (ovsLab `EM.union` ovsDesc, zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadStateRead m => ActorId -> m OKX
 skillsOverlay aid = do
