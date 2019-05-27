@@ -358,7 +358,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                  Nothing -> do
                    (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
                    recCall numPrefix cCurUpd cRestUpd itemDialogState
-                 Just{} -> return (Left "not a teammate", (cCur, ekm))
+                 Just{} -> return ( Left "not a menu item nor teammate position"
+                                  , (cCur, ekm) )
                              -- don't inspect the error, it's expected
            })
         , (K.escKM, DefItemKey
