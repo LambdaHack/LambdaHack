@@ -106,7 +106,7 @@ ppCStoreIn :: CStore -> Text
 ppCStoreIn c = let (tIn, t) = ppCStore c in tIn <+> t
 
 verbCStore :: CStore -> Text
-verbCStore CGround = "drop"
+verbCStore CGround = "remove"
 verbCStore COrgan = "implant"
 verbCStore CEqp = "equip"
 verbCStore CStash = "stash"
