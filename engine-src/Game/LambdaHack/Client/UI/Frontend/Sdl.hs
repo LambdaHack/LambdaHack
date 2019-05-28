@@ -60,8 +60,8 @@ data FrontendSession = FrontendSession
   { swindow          :: SDL.Window
   , srenderer        :: SDL.Renderer
   , squareFont       :: TTF.Font
-  , spropFont        :: TTF.Font
-  , smonoFont        :: TTF.Font
+  , spropFont        :: Maybe TTF.Font
+  , smonoFont        :: Maybe TTF.Font
   , squareAtlas      :: IORef FontAtlas
   , smonoAtlas       :: IORef FontAtlas
   , stexture         :: IORef SDL.Texture
@@ -99,21 +99,24 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
  let title = fromJust stitle
-     findFontFile t = do
-       let fontFileName = T.unpack (fromJust t)
-           fontFileOrig | isRelative fontFileName =
-                          fromJust sfontDir </> fontFileName
-                        | otherwise = fontFileName
-       fontFileOrigExists <- doesFileExist fontFileOrig
-       if fontFileOrigExists
-       then return fontFileOrig
+     findFontFile mt =
+       if maybe True T.null mt
+       then return Nothing
        else do
-         -- Handling old font format specified in old game config files.
-         let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
-         fontFileAltExists <- doesFileExist fontFileAlt
-         if fontFileAltExists
-         then return fontFileAlt
-         else fail $ "Font file does not exist: " ++ fontFileOrig
+         let fontFileName = T.unpack (fromJust mt)
+             fontFileOrig | isRelative fontFileName =
+                            fromJust sfontDir </> fontFileName
+                          | otherwise = fontFileName
+         fontFileOrigExists <- doesFileExist fontFileOrig
+         if fontFileOrigExists
+         then return $ Just fontFileOrig
+         else do
+           -- Handling old font format specified in old game config files.
+           let fontFileAlt = dropExtension fontFileOrig <.> "fnt"
+           fontFileAltExists <- doesFileExist fontFileAlt
+           if fontFileAltExists
+           then return $ Just fontFileAlt
+           else fail $ "Font file does not exist: " ++ fontFileOrig
  squareFontFile <- findFontFile sdlSquareFontFile
  propFontFile <- findFontFile sdlPropFontFile
  monoFontFile <- findFontFile sdlMonoFontFile
@@ -121,15 +124,20 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
      propFontSize = fromJust sdlPropFontSize
      monoFontSize = fromJust sdlMonoFontSize
  TTF.initialize
- squareFont <- TTF.load squareFontFile fontSize
+ squareFont <- TTF.load (fromJust squareFontFile) fontSize
  isSquareMono <- TTF.isMonospace squareFont
  let !_A = assert isSquareMono ()
- spropFont <- TTF.load propFontFile propFontSize
- smonoFont <- TTF.load monoFontFile monoFontSize
- isMonoMono <- TTF.isMonospace smonoFont
+ spropFont <- maybe (return Nothing)
+                    (\file -> Just <$> TTF.load file propFontSize)
+                    propFontFile
+ smonoFont <- maybe (return Nothing)
+                    (\file -> Just <$> TTF.load file monoFontSize)
+                    monoFontFile
+ isMonoMono <- maybe (return True) TTF.isMonospace smonoFont
  let !_A = assert isMonoMono ()
  let sdlSizeAdd = fromJust
-                  $ if isBitmapFile squareFontFile  -- based on main font
+                  $ if isBitmapFile (fromJust squareFontFile)
+                      -- based on main font, because cell size is based off it
                     then sdlBitmapSizeAdd
                     else sdlScalableSizeAdd
  squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
@@ -140,8 +148,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  if slogPriority == Just 0 then do
   rf <- createRawFrontend coscreen (\_ -> return ()) (return ())
   putMVar rfMVar rf
-  TTF.free smonoFont
-  TTF.free spropFont
+  maybe (return ()) TTF.free smonoFont
+  maybe (return ()) TTF.free spropFont
   TTF.free squareFont
   TTF.quit
   SDL.quit
@@ -231,8 +239,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         if continueSdlLoop
         then loopSDL
         else do
-          TTF.free smonoFont
-          TTF.free spropFont
+          maybe (return ()) TTF.free smonoFont
+          maybe (return ()) TTF.free spropFont
           TTF.free squareFont
           TTF.quit
           SDL.destroyRenderer srenderer
@@ -463,8 +471,9 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                                     , Color.HighlightNoneCursor ]) ()
         textTexture <- case EM.lookup ac atlas of
           Nothing -> do
-            textSurfaceRaw <- TTF.shadedGlyph smonoFont (colorToRGBA fg)
-                                              (colorToRGBA Color.Black) acChar
+            textSurfaceRaw <-
+              TTF.shadedGlyph (fromJust smonoFont) (colorToRGBA fg)
+                              (colorToRGBA Color.Black) acChar
             textTexture <- scaleSurfaceToTexture halfSize textSurfaceRaw
             writeIORef smonoAtlas $ EM.insert ac textTexture atlas
             return textTexture
@@ -502,7 +511,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         drawPropLine (x + width) row otherRest
       drawPropChunk :: Int -> Int -> Color.Color -> T.Text -> IO Int
       drawPropChunk x row fg t = do
-        textSurfaceRaw <- TTF.shaded spropFont (colorToRGBA fg)
+        textSurfaceRaw <- TTF.shaded (fromJust spropFont) (colorToRGBA fg)
                                      (colorToRGBA Color.Black) t
         (width, textTexture) <-
           scaleSurfaceToTextureProp x row textSurfaceRaw
