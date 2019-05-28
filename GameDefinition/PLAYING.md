@@ -3,21 +3,21 @@ Playing LambdaHack
 
 The following blurb is a copy of the game intro screen.
 
-              LambdaHack is a small dungeon crawler illustrating
-              the roguelike game engine of the same name. Playing
-              the game involves exploring spooky dungeons, alone
-              or in a party of fearless explorers, avoiding
-              and setting up ambushes, hiding in shadows from
-              the gaze of unspeakable horrors, discovering secret
-              passages and gorgeous magical treasure and making
-              creative use of it all.
+ LambdaHack is a small dungeon crawler illustrating
+ the roguelike game engine of the same name. Playing
+ the game involves exploring spooky dungeons, alone
+ or in a party of fearless explorers, avoiding
+ and setting up ambushes, hiding in shadows from
+ the gaze of unspeakable horrors, discovering secret
+ passages and gorgeous magical treasure and making
+ creative use of it all.
 
-              The madness-inspiring abominations that multiply
-              in the depths perform the same feats, due to their
-              aberrant, abstract hyper-intelligence. They look out
-              for any sign of weakness or indecision, ready
-              to tirelessly chase the elusive heroes by sight,
-              sound and smell.
+ The madness-inspiring abominations that multiply
+ in the depths perform the same feats, due to their
+ aberrant, abstract hyper-intelligence. They look out
+ for any sign of weakness or indecision, ready
+ to tirelessly chase the elusive heroes by sight,
+ sound and smell.
 
 LambdaHack is a turn-based game. You issue a command.
 Then you watch its results unfold on the screen without you being able

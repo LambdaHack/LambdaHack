@@ -20,7 +20,7 @@ import Game.LambdaHack.Definition.Defs
 data ScreenContent = ScreenContent
   { rwidth          :: X         -- ^ screen width
   , rheight         :: Y         -- ^ screen height
-  , rmainMenuArt    :: Text      -- ^ the ASCII art for the main menu
+  , rmainMenuArt    :: [String]   -- ^ the ASCII art for the main menu
   , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
   , rmoveKeysScreen :: [String]  -- ^ the fixed move key help blurb
   , rapplyVerbMap   :: EM.EnumMap Char T.Text
@@ -30,14 +30,11 @@ data ScreenContent = ScreenContent
 -- | Catch invalid rule kind definitions.
 validateSingle :: ScreenContent -> [Text]
 validateSingle ScreenContent{rmainMenuArt} =
-  let ts = T.lines rmainMenuArt
-      tsNot80 = filter ((/= 80) . T.length) ts
-  in case tsNot80 of
-     [] -> [ "rmainMenuArt doesn't have at least 24 lines, but "
-             <> tshow (length ts)
-           | length ts < 24]
-     tNot80 : _ ->
-       ["rmainMenuArt has a line with length other than 80:" <> tNot80]
+  let tsGt80 = filter ((> 80) . T.length) $ map T.pack rmainMenuArt
+  in case tsGt80 of
+     [] -> []
+     tGt80 : _ ->
+       ["rmainMenuArt has a line with length other than 80:" <> tGt80]
 
 makeData :: ScreenContent -> ScreenContent
 makeData sc =

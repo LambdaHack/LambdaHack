@@ -19,24 +19,10 @@ standardLayoutAndFeatures :: ScreenContent
 standardLayoutAndFeatures = ScreenContent
   { rwidth = 80
   , rheight = 24
-  -- ASCII art for the main menu. Only pure 7-bit ASCII characters are allowed,
-  -- except for character 183 ('·'), which is rendered as very tiny middle dot.
-  -- The encoding should be utf-8-unix.
-  -- When displayed in the main menu screen, the picture is overwritten
-  -- with game and engine version strings and keybindings.
-  -- The keybindings overwrite places marked with left curly brace signs.
-  -- This sign is forbidden anywhere else in the picture.
-  -- The picture and the whole main menu is displayed dull white on black.
-  -- The glyphs, or at least the character cells, are perfect squares.
-  -- The picture for LambdaHack should be exactly 24 rows by 80 columns.
-  , rmainMenuArt = $(do
-      let path = "GameDefinition/MainMenu.ascii"
-      qAddDependentFile path
-      x <- qRunIO $ do
-        handle <- openFile path ReadMode
-        hSetEncoding handle utf8
-        hGetContents handle
-      lift x)
+  , rmainMenuArt =
+      [ "         LambdaHack "
+      , ""
+      , "    <lambdahack.github.io>" ]
   , rintroScreen = $(do
       let path = "GameDefinition/PLAYING.md"
       qAddDependentFile path

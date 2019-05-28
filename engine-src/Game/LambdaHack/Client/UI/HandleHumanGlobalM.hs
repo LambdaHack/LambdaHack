@@ -28,7 +28,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
   , applyItem, alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
-  , artWithVersion, generateMenu, nxtGameMode
+  , getVersionBlurb, generateMenu, nxtGameMode
 #endif
   ) where
 
@@ -1296,81 +1296,47 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
-artAtSize :: MonadClientUI m => m [Text]
-artAtSize = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
-    getsSession sccui
-  let tlines = T.lines rmainMenuArt
-      xoffset = (80 - rwidth) `div` 2
-      yoffset = (length tlines - rheight) `div` 2
-      f = T.take rwidth . T.drop xoffset
-  return $! map f $ take rheight $ drop yoffset tlines
-
--- We detect the place for the version string by searching for 'Version'
--- in the last line of the picture. If it doesn't fit, we shift, if everything
--- else fails, only then we crop. We don't assume any line length.
-artWithVersion :: MonadClientUI m => m [String]
-artWithVersion = do
+getVersionBlurb :: MonadClientUI m => m String
+getVersionBlurb = do
   COps{corule} <- getsState scops
-  let pasteVersion :: [Text] -> [String]
-      pasteVersion art =
-        let exeVersion = rexeVersion corule
-            libVersion = Self.version
-            version = " Version " ++ showVersion exeVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion libVersion
-                      ++ ") "
-            versionLen = length version
-            f line =
-              let (prefix, versionSuffix) = T.breakOn "Version" line
-              in if T.null versionSuffix then T.unpack line else
-                let suffix = drop versionLen $ T.unpack versionSuffix
-                    overfillLen = versionLen - T.length versionSuffix
-                    prefixModified = T.unpack $ T.dropEnd overfillLen prefix
-                in prefixModified ++ version ++ suffix
-        in map f art
-  mainMenuArt <- artAtSize
-  return $! pasteVersion mainMenuArt
+  let exeVersion = rexeVersion corule
+      libVersion = Self.version
+  return $! " Version " ++ showVersion exeVersion
+            ++ " (frontend: " ++ frontendName
+            ++ ", engine: LambdaHack " ++ showVersion libVersion
+            ++ ") "
 
 generateMenu :: MonadClientUI m
              => (HumanCmd -> m (Either MError ReqUI))
              -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
-  art <- artWithVersion
-  let bindingLen = 35
-      emptyInfo = repeat $ replicate bindingLen ' '
+  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
+    getsSession sccui
+  versionBlurb <- getVersionBlurb
+  let offset = 2
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
               , T.unpack
-                $ T.justifyLeft bindingLen ' '
-                    $ " " <> T.justifyLeft 4 ' ' (T.pack $ K.showKM k)
-                      <> " " <> d )
+                $  " " <> T.justifyLeft 4 ' ' (T.pack $ K.showKM k)
+                   <> " " <> d )
         in map fmt kds
-      overwrite :: [(Int, String)] -> [(String, Maybe KYX)]
-      overwrite =  -- overwrite the art with key bindings and other lines
-        let over [] (_, line) = ([], (line, Nothing))
-            over bs@((mkey, binding) : bsRest) (y, line) =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces >= bindingLen
-                 then
-                   let lenB = length binding
-                       post = drop (lenB - length braces) suffix
-                       len = length prefix
-                       yxx key = (Left [key], (K.PointUI len y, lenB))
-                       myxx = yxx <$> mkey
-                   in (bsRest, (prefix <> binding <> post, myxx))
-                 else (bs, (line, Nothing))
-        in snd . mapAccumL over (zip (repeat Nothing) gameInfo
-                                 ++ bindings
-                                 ++ zip (repeat Nothing) emptyInfo)
-      menuOverwritten = overwrite $ zip [0..] art
-      (menuOvLines, mkyxs) = unzip menuOverwritten
+      generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
+      generate y (mkey, binding) =
+        let lenB = length binding
+            yxx key = (Left [key], (K.PointUI offset y, lenB))
+            myxx = yxx <$> mkey
+        in ((offset, stringToAL binding), myxx)
+      rawLines = zip (repeat Nothing) ("" : rmainMenuArt ++ "" : gameInfo)
+                 ++ bindings
+      (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      ov = EM.singleton MonoFont $ offsetOverlay
-           $ map stringToAL menuOvLines
+      versionPos = K.PointUI (max 0 (2 * (rwidth - length versionBlurb)))
+                             (rheight - 1)
+      versionAl = take rwidth $ stringToAL versionBlurb
+      ov = EM.singleton SquareFont $ offsetOverlayX menuOvLines
+                                     ++ [(versionPos, versionAl)]
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
@@ -1394,13 +1360,10 @@ mainMenuHuman cmdAction = do
       kds = (K.mkKM "p", (tnextScenario, GameScenarioIncr))
             : [ (km, (desc, cmd))
               | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
-      bindingLen = 35
       gameName = mname gameMode
       gameInfo = map T.unpack
-                   [ T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' '
-                     $ " Now playing:" <+> gameName
-                   , T.justifyLeft bindingLen ' ' "" ]
+                   [ " Now playing:" <+> gameName
+                   , "" ]
   generateMenu cmdAction kds gameInfo "main"
 
 -- * MainMenuAutoOn
@@ -1451,11 +1414,9 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "c", (tsmell, MarkSmell))
             , (K.mkKM "t", (tdoctrine, Doctrine))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      bindingLen = 35
       gameInfo = map T.unpack
-                   [ T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' " Convenience settings:"
-                   , T.justifyLeft bindingLen ' ' "" ]
+                   [ " Convenience settings:"
+                   , "" ]
   generateMenu cmdAction kds gameInfo "settings"
 
 -- * ChallengesMenu
@@ -1483,16 +1444,15 @@ challengesMenuHuman cmdAction = do
             , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      bindingLen = 35
       gameInfo = map T.unpack
-                   [ T.justifyLeft bindingLen ' ' " Current challenges:"
-                   , T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' tcurDiff
-                   , T.justifyLeft bindingLen ' ' tcurWolf
-                   , T.justifyLeft bindingLen ' ' tcurFish
-                   , T.justifyLeft bindingLen ' ' ""
-                   , T.justifyLeft bindingLen ' ' " Next game challenges:"
-                   , T.justifyLeft bindingLen ' ' "" ]
+                   [ " Current challenges:"
+                   , ""
+                   , tcurDiff
+                   , tcurWolf
+                   , tcurFish
+                   , ""
+                   , " Next game challenges:"
+                   , "" ]
   generateMenu cmdAction kds gameInfo "challenge"
 
 -- * GameScenarioIncr
