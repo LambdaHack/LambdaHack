@@ -92,15 +92,15 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
-truncateOverlay :: ScreenContent -> Bool -> Overlay -> Overlay
-truncateOverlay ScreenContent{rwidth, rheight} onBlank ov =
+truncateOverlay :: Int -> Int -> Bool -> Int -> Bool -> Overlay -> Overlay
+truncateOverlay rwidth rheight wipeAdjacent fillLen onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
       supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
       trimmedY = canvasLength - 1
       ovTopFiltered = filter (\(PointUI _ y, _) -> y < trimmedY) ov
       trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )
-      extraLine | supHeight < 3 = []
+      extraLine | supHeight < 3 || supHeight >= trimmedY = []
                 | otherwise =
         case find (\(PointUI _ y, _) -> y == supHeight) ov of
           Nothing -> []
@@ -109,10 +109,11 @@ truncateOverlay ScreenContent{rwidth, rheight} onBlank ov =
               then ovTopFiltered ++ [trimmedAlert]
               else ov ++ extraLine
       -- Unlike the trimming above, adding spaces around overlay depends
-      -- on there being no gaps and duplicate line definitions.
-      -- Probably gives messy results when X offsets are not all the same.
+      -- on there being no gaps and a natural order.
+      -- Probably also gives messy results when X offsets are not all the same.
       f lenPrev lenNext (p@(PointUI xstart _), layerLine) =
-        (p, truncateAttrLine rwidth xstart layerLine (max lenPrev lenNext))
+        (p, truncateAttrLine rwidth fillLen xstart layerLine
+                             (if wipeAdjacent then max lenPrev lenNext else 0))
       lengthOfLine (PointUI xstart _, al) =
         min (rwidth - 1) (xstart + length al)
       lens = map lengthOfLine ovTop
@@ -121,8 +122,8 @@ truncateOverlay ScreenContent{rwidth, rheight} onBlank ov =
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
-truncateAttrLine :: Int -> Int -> AttrLine -> Int -> AttrLine
-truncateAttrLine w xstart al lenMax =
+truncateAttrLine :: Int -> Int -> Int -> AttrLine -> Int -> AttrLine
+truncateAttrLine w fillLen xstart al lenMax =
   case compare w (xstart + length al) of
     LT -> let discarded = drop (w - xstart) al
           in if all (== Color.spaceAttrW32) discarded
@@ -135,7 +136,7 @@ truncateAttrLine w xstart al lenMax =
                      || xstart + length al == w - 1 ->  -- no space for more
                      al ++ [Color.spaceAttrW32]
                    | otherwise -> al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
-              whiteN = max (40 - length alSpace) (1 + lenMax - length alSpace)
+              whiteN = max fillLen (1 + lenMax) - xstart - length alSpace
           in alSpace ++ replicate whiteN Color.spaceAttrW32
 
 -- | Overlays either the game map only or the whole empty screen frame.

@@ -516,8 +516,8 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
   U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
                               (PointArray.avector $ singleArray prevFrame)
-  rawAreaProp <- drawPropOverlay $ singlePropOverlay curFrame
   rawAreaMono <- drawMonoOverlay $ singleMonoOverlay curFrame
+  rawAreaProp <- drawPropOverlay $ singlePropOverlay curFrame
   let areaMap = IM.fromListWith max $ rawAreaProp ++ rawAreaMono
       curArea = U.replicate (rheight coscreen) 0 U.// IM.assocs areaMap
   writeIORef spreviousFrame (curFrame, curArea)

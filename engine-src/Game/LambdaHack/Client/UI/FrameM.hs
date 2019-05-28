@@ -44,7 +44,7 @@ drawOverlay :: MonadClientUI m
             => ColorMode -> Bool -> FontOverlayMap -> LevelId
             -> m PreFrame3
 drawOverlay dm onBlank ovs lid = do
-  CCUI{coscreen=coscreen@ScreenContent{rwidth, rheight}} <- getsSession sccui
+  CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   basicFrame <- if onBlank
                 then do
                   let m = U.replicate (rwidth * rheight)
@@ -53,19 +53,25 @@ drawOverlay dm onBlank ovs lid = do
                 else drawHudFrame dm lid
   propFontSup <- propFontSupported
   let ovProp = if propFontSup
-               then EM.findWithDefault [] PropFont ovs
+               then truncateOverlay (3 * rwidth) rheight False 0 onBlank
+                    $ EM.findWithDefault [] PropFont ovs
                else []
       ovMono = if propFontSup
-               then EM.findWithDefault [] MonoFont ovs
+               then truncateOverlay (2 * rwidth) rheight True 30 onBlank
+                    $ EM.findWithDefault [] MonoFont ovs
+                      -- True and 30 are OK, because Mono overwritten by others
+                      -- and because the filler space has a fixed size
                else []
-      ovOther = EM.findWithDefault [] SquareFont ovs
-                ++ if propFontSup
-                   then []
-                   else EM.findWithDefault [] PropFont ovs
-                        ++ EM.findWithDefault [] MonoFont ovs
-      overlayedFrame = overlayFrame rwidth
-                                    (truncateOverlay coscreen onBlank ovOther)
-                                    basicFrame
+      ovOther = if propFontSup
+                then truncateOverlay rwidth rheight False 15 onBlank
+                     $ EM.findWithDefault [] SquareFont ovs
+                     -- 15 needed not to leave gaps in, e. g., skills menu;
+                     -- usually fine, because square never on the right
+                else truncateOverlay rwidth rheight True 40 onBlank
+                     $ EM.findWithDefault [] SquareFont ovs
+                       ++ EM.findWithDefault [] PropFont ovs
+                       ++ EM.findWithDefault [] MonoFont ovs
+      overlayedFrame = overlayFrame rwidth ovOther basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
 propFontSupported :: MonadClientUI m => m Bool
