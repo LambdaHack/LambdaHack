@@ -325,9 +325,8 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                                    ISuitable -> IAll
                                    IAll -> ISuitable
            })
-        , let km = K.mkChar '!'
+        , let km = K.mkChar '*'
           in (km, useMultipleDef $ Right km)
-        , (K.mkKP '*', useMultipleDef $ Left "")
         , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
           in (km, DefItemKey
            { defLabel = Right km
