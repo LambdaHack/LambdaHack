@@ -146,6 +146,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               cursorAttr x = x {Color.acAttr =
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
+              -- This also highlights dull white item symbols, but who cares.
               drawHighlight xstart xs =
                 let (xs1, xsRest) = splitAt (x1 - xstart) xs
                     (xs2, xs3) = splitAt len xsRest

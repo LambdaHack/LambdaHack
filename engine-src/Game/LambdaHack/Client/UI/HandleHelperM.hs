@@ -258,19 +258,23 @@ skillsOverlay :: MonadStateRead m => ActorId -> m OKX
 skillsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
-  let prSlot :: (Int, SlotChar) -> Ability.Skill -> (Text, KYX)
+  let prSlot :: (Int, SlotChar) -> Ability.Skill
+             -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot (y, c) skill =
-        let skName = skillName skill
-            fullText t =
-              makePhrase [ MU.Text $ slotLabel c
-                         , MU.Text $ T.justifyLeft 22 ' ' skName
-                         , MU.Text t ]
+        let skName = " " <> skillName skill
+            lab = slotLabel c
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
-            ft = fullText valueText
-        in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
+            triple = ( textToAL lab
+                     , (2 * T.length lab, textToAL skName)
+                     , (22 + 2 * T.length lab, textToAL valueText) )
+        in (triple, (Right c, (K.PointUI 0 y, maxBound)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
-  return (EM.singleton PropFont $ offsetOverlay $ map textToAL ts, kxs)
+      (skLab, skDescr, skValue) = unzip3 ts
+      skillLab = EM.singleton SquareFont $ offsetOverlay skLab
+      skillDescr = EM.singleton PropFont $ offsetOverlayX skDescr
+      skillValue = EM.singleton MonoFont $ offsetOverlayX skValue
+  return (EM.unions [skillLab, skillDescr, skillValue], kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
@@ -315,11 +319,16 @@ placesOverlay = do
                           then T.snoc (T.init t) '>'
                           else t
             ft = makePhrase $ MU.Text (markPlace $ slotLabel c)
-                 : MU.Text placeName
-                 : parts
+                              : MU.Text placeName
+                              : parts
         in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
-  return (EM.singleton SquareFont $ offsetOverlay $ map textToAL ts, kxs)
+      splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
+                    in (spNo, (2 * length spNo, spYes))
+      (plLab, plDesc) = unzip $ map splitRow $ map textToAL ts
+      placeLab = EM.singleton SquareFont $ offsetOverlay plLab
+      placeDesc = EM.singleton PropFont $ offsetOverlayX plDesc
+  return (placeLab `EM.union` placeDesc, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
