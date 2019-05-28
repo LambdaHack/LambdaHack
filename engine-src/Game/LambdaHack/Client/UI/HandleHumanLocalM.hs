@@ -289,7 +289,9 @@ chooseItemDialogMode c = do
                        , MU.CarWs (ES.size es) "level" <> ":"
                        , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
-                  ov0 = EM.singleton PropFont
+                  -- Ideally, place layout would be in SquareFont and the rest
+                  -- in PropFont, but this is mostly a debug screen, so KISS.
+                  ov0 = EM.singleton MonoFont
                         $ offsetOverlay
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ T.unlines
