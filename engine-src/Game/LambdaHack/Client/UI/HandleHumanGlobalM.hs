@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Semantics of "Game.LambdaHack.Client.UI.HumanCmd"
 -- client commands that return server requests.
 -- A couple of them do not take time, the rest does.
@@ -97,6 +98,7 @@ import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
 -- * ByArea
@@ -1185,14 +1187,19 @@ itemMenuHuman cmdAction = do
           let foundPrefix = textToAL $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
-              desc = offsetOverlay $ splitAttrLine rwidth
-                     $ itemDesc markParagraphs (bfid b) factionD
+              descAl = itemDesc markParagraphs (bfid b) factionD
                                 (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                                 fromCStore localTime jlid itemFull kit
+              (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
+              descSym = offsetOverlay $ splitAttrLine rwidth descSymAl
+              descBlurb = offsetOverlayX $
+                case splitAttrLine rwidth $ stringToAL "xx" ++ descBlurbAl of
+                  [] -> error "splitting AttrLine loses characters"
+                  al1 : rest -> (2, drop 2 al1) : map (0,) rest
               alPrefix = map (\(K.PointUI x y, al) ->
-                                (K.PointUI x (y + length desc), al))
+                                (K.PointUI x (y + length descBlurb), al))
                          $ offsetOverlay $ splitAttrLine rwidth foundPrefix
-              ystart = length desc + length alPrefix - 1
+              ystart = length descBlurb + length alPrefix - 1
               xstart = length (snd $ last alPrefix) + 1
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
@@ -1224,7 +1231,7 @@ itemMenuHuman cmdAction = do
               fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
-              offset = 1 + maxYofOverlay (desc ++ ovFound)
+              offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
               (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
@@ -1235,7 +1242,8 @@ itemMenuHuman cmdAction = do
                          [K.spaceKM, K.escKM] okx
               sli = toSlideshow
                     $ splitHelp ( al1
-                                , ( EM.insertWith (++) PropFont desc
+                                , ( EM.insertWith (++) SquareFont descSym
+                                    $ EM.insertWith (++) PropFont descBlurb
                                     $ EM.insertWith (++) MonoFont ovFound ov0
                                       -- mono font, because there are buttons
                                   , kxsFound ++ kxs0 ))
