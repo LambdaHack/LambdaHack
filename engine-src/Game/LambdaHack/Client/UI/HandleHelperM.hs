@@ -253,7 +253,7 @@ itemOverlay lSlots lid bag = do
       ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
       ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
       renumber y (km, (K.PointUI x _, len)) = (km, (K.PointUI x y, len))
-  return (ovsLab `EM.union` ovsDesc, zipWith renumber [0..] kxs )
+  return (EM.unionWith (++) ovsLab ovsDesc, zipWith renumber [0..] kxs )
 
 skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
@@ -276,7 +276,7 @@ skillsOverlay aid = do
       skillLab = EM.singleton squareFont $ offsetOverlay skLab
       skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
       skillValue = EM.singleton monoFont $ offsetOverlayX skValue
-  return (EM.unions [skillLab, skillDescr, skillValue], kxs)
+  return (EM.unionsWith (++) [skillLab, skillDescr, skillValue], kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
@@ -331,7 +331,7 @@ placesOverlay = do
       (plLab, plDesc) = unzip $ map splitRow $ map textToAL ts
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
-  return (placeLab `EM.union` placeDesc, kxs)
+  return (EM.unionWith (++) placeLab placeDesc, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
 pickNumber askNumber kAll = assert (kAll >= 1) $ do
