@@ -76,7 +76,10 @@ offsetOverlayX l =
 -- a character other than space. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
 --
--- Note that we only split wrt @White@ space, nothing else.
+-- Note that we only split wrt @White@ space, nothing else,
+-- and the width, in the first argument, is calculated in characters,
+-- not in UI (mono font) coordinates, so that taking and dropping characters
+-- is performed correctly.
 splitAttrLine :: Int -> AttrLine -> [AttrLine]
 splitAttrLine w l =
   concatMap (splitAttrPhrase w . dropWhile (== Color.spaceAttrW32))

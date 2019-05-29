@@ -93,8 +93,12 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 
 -- | Truncate the overlay: for each line, if it's too long, it's truncated
 -- and if there are too many lines, excess is dropped and warning is appended.
-truncateOverlay :: Int -> Int -> Bool -> Int -> Bool -> Overlay -> Overlay
-truncateOverlay rwidth rheight wipeAdjacent fillLen onBlank ov =
+-- The width, in the second argument, is calculated in characters,
+-- not in UI (mono font) coordinates, so that taking and dropping characters
+-- is performed correctly.
+truncateOverlay :: Bool -> Int -> Int -> Bool -> Int -> Bool -> Overlay
+                -> Overlay
+truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
       supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
       trimmedY = canvasLength - 1
@@ -117,16 +121,18 @@ truncateOverlay rwidth rheight wipeAdjacent fillLen onBlank ov =
       -- Below we at least mitigate the case of multiple lines per row.
       f lenPrev lenNext lal =
         -- This is crude, because an al at lower x may be longer, but KISS.
-        case sortOn (\(PointUI x _, _) -> - x) lal of
+        case sortOn (\(PointUI x _, _) -> x) lal of
           [] -> error "empty list of overlay lines at the given row"
-          maxAl : rest -> reverse $  -- to overwrite the padding correctly
+          maxAl : rest ->
             g lenPrev lenNext fillLen maxAl
             : map (g 0 0 0) rest
-      g lenPrev lenNext fillL (p@(PointUI xstart _), layerLine) =
-        (p, truncateAttrLine rwidth fillL xstart layerLine
-                             (if wipeAdjacent then max lenPrev lenNext else 0))
-      rightExtentOfLine (PointUI xstart _, al) =
-        min (rwidth - 1) (xstart + length al)
+      g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
+        let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
+            maxLen = if wipeAdjacent then max lenPrev lenNext else 0
+        in (p, truncateAttrLine width fillL xstart layerLine maxLen)
+      rightExtentOfLine (PointUI xstartRaw _, al) =
+        let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
+        in min (width - 1) (xstart + length al)
       lens = map (maximum . map rightExtentOfLine) ovTop
   in concat $ zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
@@ -134,20 +140,22 @@ truncateOverlay rwidth rheight wipeAdjacent fillLen onBlank ov =
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
 truncateAttrLine :: Int -> Int -> Int -> AttrLine -> Int -> AttrLine
-truncateAttrLine w fillLen xstart al lenMax =
-  case compare w (xstart + length al) of
-    LT -> let discarded = drop (w - xstart) al
+truncateAttrLine width fillLen xstart al lenMax =
+  case compare width (xstart + length al) of
+    LT -> let discarded = drop (width - xstart) al
           in if all (== Color.spaceAttrW32) discarded
-             then take (w - xstart) al
-             else take (w - xstart - 1) al ++ [Color.trimmedLineAttrW32]
+             then take (width - xstart) al
+             else take (width - xstart - 1) al ++ [Color.trimmedLineAttrW32]
     EQ -> al
     GT -> let alSpace =
                 if | null al -> al
                    | last al == Color.spaceAttrW32
-                     || xstart + length al == w - 1 ->  -- no space for more
+                     || xstart + length al == width - 1 ->
+                     -- No space for more:
                      al ++ [Color.spaceAttrW32]
                    | otherwise -> al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
-              whiteN = max fillLen (1 + lenMax) - xstart - length alSpace
+              whiteN = max fillLen (1 + lenMax)
+                       - xstart - length alSpace
           in alSpace ++ replicate whiteN Color.spaceAttrW32
 
 -- | Overlays either the game map only or the whole empty screen frame.

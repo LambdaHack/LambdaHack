@@ -245,7 +245,8 @@ itemOverlay lSlots lid bag = do
                 phrase = makePhrase
                   [partItemWsRanged side factionD k localTime itemFull kit]
                 al1 = textToAL (markEqp iid $ slotLabel l) ++ [colorSymbol]
-                xal2 = (2 * length al1, Color.spaceAttrW32 : textToAL phrase)
+                xal2 = ( textSize squareFont al1
+                       , Color.spaceAttrW32 : textToAL phrase )
                 kx = (Right l, (K.PointUI 0 0, maxBound))
             in Just ((al1, xal2), kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
@@ -264,12 +265,14 @@ skillsOverlay aid = do
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot (y, c) skill =
         let skName = " " <> skillName skill
-            lab = slotLabel c
+            lab = textToAL $ slotLabel c
+            labLen = textSize squareFont lab
+            indentation = if propFont == squareFont then 40 else 20
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
-            triple = ( textToAL lab
-                     , (2 * T.length lab, textToAL skName)
-                     , (22 + 2 * T.length lab, textToAL valueText) )
+            triple = ( lab
+                     , (labLen, textToAL skName)
+                     , (indentation + labLen, textToAL valueText) )
         in (triple, (Right c, (K.PointUI 0 y, maxBound)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
@@ -327,7 +330,7 @@ placesOverlay = do
         in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-                    in (spNo, (2 * length spNo, spYes))
+                    in (spNo, (textSize squareFont spNo, spYes))
       (plLab, plDesc) = unzip $ map splitRow $ map textToAL ts
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc

@@ -1203,7 +1203,7 @@ itemMenuHuman cmdAction = do
                                 (K.PointUI x (y + length descBlurb), al))
                          $ offsetOverlay $ splitAttrLine rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
-              xstart = length (snd $ last alPrefix) + 1
+              xstart = 1 + textSize monoFont (snd $ last alPrefix)
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
@@ -1335,8 +1335,9 @@ generateMenu cmdAction kds gameInfo menuName = do
                  ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      versionPos = K.PointUI (max 0 (2 * (rwidth - length versionBlurb)))
-                             (rheight - 1)
+      versionPos =
+        K.PointUI (max 0 (2 * rwidth - textSize squareFont versionBlurb))
+                  (rheight - 1)
       versionAl = take rwidth $ stringToAL versionBlurb
       ov = EM.singleton squareFont $ offsetOverlayX menuOvLines
                                      ++ [(versionPos, versionAl)]

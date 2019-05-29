@@ -50,21 +50,21 @@ drawOverlay dm onBlank ovs lid = do
                 else drawHudFrame dm lid
   FontSetup{..} <- getFontSetup
   let ovProp = if multiFont
-               then truncateOverlay (3 * rwidth) rheight False 0 onBlank
+               then truncateOverlay False (4 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] propFont ovs
                else []
       ovMono = if multiFont
-               then truncateOverlay (2 * rwidth) rheight True 30 onBlank
+               then truncateOverlay False (2 * rwidth) rheight True 24 onBlank
                     $ EM.findWithDefault [] monoFont ovs
-                      -- True and 30 are OK, because Mono overwritten by others
+                      -- True and 24 are OK, because Mono overwritten by others
                       -- and because the filler space has a fixed size
                else []
       ovOther = if multiFont
-                then truncateOverlay rwidth rheight False 15 onBlank
+                then truncateOverlay True rwidth rheight False 14 onBlank
                      $ EM.findWithDefault [] squareFont ovs
-                     -- 15 needed not to leave gaps in, e. g., skills menu;
+                     -- 14 needed not to leave gaps in, e. g., skills menu;
                      -- usually fine, because square never on the right
-                else truncateOverlay rwidth rheight True 40 onBlank
+                else truncateOverlay True rwidth rheight True 20 onBlank
                      $ concat $ EM.elems ovs
       overlayedFrame = overlayFrame rwidth ovOther basicFrame
   return (overlayedFrame, (ovProp, ovMono))

@@ -727,7 +727,7 @@ eitherHistory showAll = do
   let renderedHistory = renderHistory history
       histBound = length renderedHistory
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-                    in (spNo, (length spNo, spYes))
+                    in (spNo, (textSize monoFont spNo, spYes))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
       rhLab = EM.singleton monoFont $ offsetOverlay histLab
       rhDesc = EM.singleton propFont $ offsetOverlayX histDesc
