@@ -17,6 +17,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -105,19 +106,29 @@ truncateOverlay rwidth rheight wipeAdjacent fillLen onBlank ov =
         case find (\(PointUI _ y, _) -> y == supHeight) ov of
           Nothing -> []
           Just (PointUI xLast yLast, _) -> [(PointUI xLast (yLast + 1), [])]
-      ovTop = if supHeight >= canvasLength
-              then ovTopFiltered ++ [trimmedAlert]
-              else ov ++ extraLine
+      ovTop = IM.elems $ IM.fromListWith (++)
+              $ map (\pal@(PointUI _ y, _) -> (y, [pal]))
+              $ if supHeight >= canvasLength
+                then ovTopFiltered ++ [trimmedAlert]
+                else ov ++ extraLine
       -- Unlike the trimming above, adding spaces around overlay depends
       -- on there being no gaps and a natural order.
       -- Probably also gives messy results when X offsets are not all the same.
-      f lenPrev lenNext (p@(PointUI xstart _), layerLine) =
-        (p, truncateAttrLine rwidth fillLen xstart layerLine
+      -- Below we at least mitigate the case of multiple lines per row.
+      f lenPrev lenNext lal =
+        -- This is crude, because an al at lower x may be longer, but KISS.
+        case sortOn (\(PointUI x _, _) -> - x) lal of
+          [] -> error "empty list of overlay lines at the given row"
+          maxAl : rest -> reverse $  -- to overwrite the padding correctly
+            g lenPrev lenNext fillLen maxAl
+            : map (g 0 0 0) rest
+      g lenPrev lenNext fillL (p@(PointUI xstart _), layerLine) =
+        (p, truncateAttrLine rwidth fillL xstart layerLine
                              (if wipeAdjacent then max lenPrev lenNext else 0))
-      lengthOfLine (PointUI xstart _, al) =
+      rightExtentOfLine (PointUI xstart _, al) =
         min (rwidth - 1) (xstart + length al)
-      lens = map lengthOfLine ovTop
-  in zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
+      lens = map (maximum . map rightExtentOfLine) ovTop
+  in concat $ zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
