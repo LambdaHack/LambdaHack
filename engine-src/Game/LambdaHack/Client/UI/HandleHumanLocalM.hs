@@ -250,7 +250,7 @@ chooseItemDialogMode c = do
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
-              slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov0, [])
+              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MSkills
@@ -305,7 +305,7 @@ chooseItemDialogMode c = do
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
               promptAdd0 prompt2
-              slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov0, [])
+              slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
               km <- getConfirms ColorFull keys slides
               case K.key km of
                 K.Space -> chooseItemDialogMode MPlaces
@@ -739,7 +739,7 @@ eitherHistory showAll = do
       kxs = [ (Right sn, (K.PointUI 0 (slotPrefix sn), maxBound))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow PropFont (rheight - 2) [K.escKM]
+  okxs <- overlayToSlideshow (rheight - 2) [K.escKM]
                              (rhLab `EM.union` rhDesc, kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull False okxs
@@ -766,7 +766,7 @@ eitherHistory showAll = do
                    ++ [K.upKM | histSlot /= 0]
                    ++ [K.downKM | histSlot /= histBound - 1]
         promptAdd0 prompt
-        slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov0, [])
+        slides <- overlayToSlideshow (rheight - 2) keys (ov0, [])
         km <- getConfirms ColorFull keys slides
         case K.key km of
           K.Space -> displayAllHistory

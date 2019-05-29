@@ -1096,10 +1096,11 @@ helpHuman cmdAction = do
   cops <- getsState scops
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
+  fontSetup <- getFontSetup
   let keyH = keyHelp cops ccui
       splitHelp (t, okx) =
-        splitOKX MonoFont rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
-      sli = toSlideshow $ concat $ map splitHelp keyH
+        splitOKX fontSetup rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
+      sli = toSlideshow fontSetup $ concat $ map splitHelp keyH
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
   -- menu contains many pages.
@@ -1138,9 +1139,10 @@ dashboardHuman cmdAction = do
       (ov0, kxs0) = okxsN coinput 0 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
-      splitHelp (al, okx) =
-        splitOKX PropFont rwidth (rheight - 2) al [K.escKM] okx
-      sli = toSlideshow $ splitHelp (al1, (ov0, kxs0))
+  fontSetup <- getFontSetup
+  let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
+                                     [K.escKM] okx
+      sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
   ekm <- displayChoiceScreen "dashboard" ColorFull False sli extraKeys
   case ekm of
@@ -1237,10 +1239,10 @@ itemMenuHuman cmdAction = do
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
-              splitHelp (al, okx) =
-                splitOKX PropFont rwidth (rheight - 2) al
-                         [K.spaceKM, K.escKM] okx
-              sli = toSlideshow
+          fontSetup <- getFontSetup
+          let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
+                                             [K.spaceKM, K.escKM] okx
+              sli = toSlideshow fontSetup
                     $ splitHelp ( al1
                                 , ( EM.insertWith (++) SquareFont descSym
                                     $ EM.insertWith (++) PropFont descBlurb

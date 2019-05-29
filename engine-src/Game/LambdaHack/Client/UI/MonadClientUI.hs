@@ -13,7 +13,8 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedControlEsc, revCmdMap
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , leaderTgtToPos, xhairToPos, clearAimMode, scoreToSlideshow, defaultHistory
+  , leaderTgtToPos, xhairToPos, clearAimMode
+  , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
   , tryRestore, leaderSkillsClientUI
@@ -264,6 +265,15 @@ clearAimMode = do
           _ -> sxhairOld
     modifySession $ \sess -> sess {sxhair}
 
+getFontSetup :: MonadClientUI m => m FontSetup
+getFontSetup = do
+  ClientOptions{sdlPropFontFile} <- getsClient soptions
+  let multiFont = frontendName == "sdl"
+                  && maybe False (not . T.null) sdlPropFontFile
+  return $! if multiFont
+            then FontSetup multiFont SquareFont MonoFont PropFont
+            else FontSetup multiFont SquareFont SquareFont SquareFont
+
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
@@ -295,7 +305,9 @@ scoreToSlideshow total status = do
                            (T.unwords $ tail $ T.words $ gname fact)
                            ourVictims theirVictims
                            (fhiCondPoly $ gplayer fact)
-      sli = highSlideshow rwidth (rheight - 1) ntable pos gameModeName tz
+  fontSetup <- getFontSetup
+  let sli = highSlideshow fontSetup rwidth (rheight - 1) ntable pos
+                          gameModeName tz
   return $! if worthMentioning
             then sli
             else emptySlideshow

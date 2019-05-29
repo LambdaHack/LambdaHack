@@ -1,6 +1,6 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont(..), FontOverlayMap
+  ( DisplayFont(..), FontOverlayMap, FontSetup(..)
   , KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX, highSlideshow
@@ -30,6 +30,13 @@ data DisplayFont = SquareFont | MonoFont | PropFont
 
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
+data FontSetup = FontSetup
+  { multiFont  :: Bool
+  , squareFont :: DisplayFont
+  , monoFont   :: DisplayFont
+  , propFont   :: DisplayFont
+  }
+
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (PointUI, Int))
 
@@ -52,8 +59,8 @@ unsnoc Slideshow{slideshow} =
     [] -> Nothing
     okx : rest -> Just (Slideshow $ reverse rest, okx)
 
-toSlideshow :: [OKX] -> Slideshow
-toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
+toSlideshow :: FontSetup -> [OKX] -> Slideshow
+toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
  where
   okxFilter (ov, kyxs) =
     (ov, filter (either (not . null) (const True) . fst) kyxs)
@@ -71,13 +78,13 @@ toSlideshow okxs = Slideshow $ addFooters False okxsNotNull
                                in maximum $ (0, 0) : map ymxOfOverlay ov
         assocsYX = sortOn snd $ EM.assocs $ EM.map maxYminXofOverlay ovs
         (fontMax, unique) = case assocsYX of
-          [] -> (MonoFont, False)
+          [] -> (monoFont, False)
           (font, (y, _x)) : rest -> (font, all (\(_, (y2, _)) -> y /= y2) rest)
         insertAl ovF =
           let p = pofOv ovF
               displayFont = case fontMax of
                 SquareFont | unique -> SquareFont
-                _ -> MonoFont
+                _ -> monoFont
           in (EM.insertWith atEnd displayFont [(p, al)] ovs, p)
     in case EM.lookup fontMax ovs of
       Just ovF -> insertAl ovF
@@ -143,22 +150,22 @@ keysOKX ystart xstart width keys =
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
-splitOverlay :: DisplayFont -> Int -> Int -> Report -> [K.KM] -> OKX
+splitOverlay :: FontSetup -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
-splitOverlay displayFont width height report keys (ls0, kxs0) =
-  toSlideshow $ splitOKX displayFont width height (renderReport report)
-                         keys (ls0, kxs0)
+splitOverlay fontSetup width height report keys (ls0, kxs0) =
+  toSlideshow fontSetup $ splitOKX fontSetup width height (renderReport report)
+                                   keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
-splitOKX :: DisplayFont -> Int -> Int -> AttrLine -> [K.KM] -> OKX -> [OKX]
-splitOKX displayFont width height rrep keys (ls0, kxs0) =
+splitOKX :: FontSetup -> Int -> Int -> AttrLine -> [K.KM] -> OKX -> [OKX]
+splitOKX FontSetup{..} width height rrep keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
   let msgRaw0 = offsetOverlay $ splitAttrLine width rrep
       msgRaw1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) msgRaw0
       (lX0, keysX0) = keysOKX 0 0 width keys
       (lX1, keysX1) = keysOKX 1 0 width keys
       endOfMsgRaw = if null rrep then 0 else length (snd $ last msgRaw0) + 1
-      endOfMsg = if displayFont == SquareFont
+      endOfMsg = if propFont == SquareFont
                  then endOfMsgRaw * 2
                  else endOfMsgRaw
       (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg (2 * width) keys
@@ -176,9 +183,9 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
                           , filter (not . ltOffset) <$> ls )
             -- TODO: until SDL support for measuring prop font text is released,
             -- we have to put MonoFont also for hdrFont; undo when possible
-            msgFont = if null hdrMono then PropFont else MonoFont
+            msgFont = if null hdrMono then propFont else monoFont
             prependHdr = EM.insertWith (++) msgFont hdrFont
-                         . EM.insertWith (++) MonoFont hdrMono
+                         . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) =
@@ -197,12 +204,12 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
-                 ( (EM.singleton displayFont msgRaw0, [])
+                 ( (EM.singleton propFont msgRaw0, [])
                      -- showing in full in the init slide
                  , hdrShortened )
                lX0first : _ ->
-                 ( ( EM.insertWith (++) displayFont msgRaw1
-                     $ EM.singleton MonoFont [lX0first]
+                 ( ( EM.insertWith (++) propFont msgRaw1
+                     $ EM.singleton monoFont [lX0first]
                    , filter (\(_, (PointUI _ y, _)) -> y == 0) keysX0 )
                  , hdrShortened )
       initSlides = if EM.null lsInit
@@ -215,22 +222,24 @@ splitOKX displayFont width height rrep keys (ls0, kxs0) =
   in initSlides ++ mainSlides
 
 -- | Generate a slideshow with the current and previous scores.
-highSlideshow :: Int        -- ^ width of the display area
+highSlideshow :: FontSetup
+              -> Int        -- ^ width of the display area
               -> Int        -- ^ height of the display area
               -> HighScore.ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
               -> Text       -- ^ the name of the game mode
               -> TimeZone   -- ^ the timezone where the game is run
               -> Slideshow
-highSlideshow width height table pos gameModeName tz =
+highSlideshow fontSetup@FontSetup{monoFont} width height table pos
+              gameModeName tz =
   let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
       al = textToAL msg
       splitScreen ts =
-        splitOKX MonoFont width height al [K.spaceKM, K.escKM]
-                 (EM.singleton MonoFont ts, [])
-  in toSlideshow $ concat $ map splitScreen tts
+        splitOKX fontSetup width height al [K.spaceKM, K.escKM]
+                 (EM.singleton monoFont ts, [])
+  in toSlideshow fontSetup $ concat $ map splitScreen tts
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.

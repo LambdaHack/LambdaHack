@@ -29,18 +29,19 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- | Add current report to the overlay, split the result and produce,
 -- possibly, many slides.
 overlayToSlideshow :: MonadClientUI m
-                   => DisplayFont -> Int -> [K.KM] -> OKX -> m Slideshow
-overlayToSlideshow displayFont y keys okx = do
+                   => Int -> [K.KM] -> OKX -> m Slideshow
+overlayToSlideshow y keys okx = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   report <- getReportUI
   recordHistory  -- report will be shown soon, remove it to history
-  return $! splitOverlay displayFont rwidth y report keys okx
+  fontSetup <- getFontSetup
+  return $! splitOverlay fontSetup rwidth y report keys okx
 
 -- | Split current report into a slideshow.
 reportToSlideshow :: MonadClientUI m => [K.KM] -> m Slideshow
 reportToSlideshow keys = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
-  overlayToSlideshow PropFont (rheight - 2) keys (EM.empty, [])
+  overlayToSlideshow (rheight - 2) keys (EM.empty, [])
 
 -- | Split current report into a slideshow. Keep report unchanged.
 reportToSlideshowKeep :: MonadClientUI m => [K.KM] -> m Slideshow
@@ -49,7 +50,8 @@ reportToSlideshowKeep keys = do
   report <- getReportUI
   -- Don't do @recordHistory@; the message is important, but related
   -- to the messages that come after, so should be shown together.
-  return $! splitOverlay PropFont rwidth (rheight - 2) report keys
+  fontSetup <- getFontSetup
+  return $! splitOverlay fontSetup rwidth (rheight - 2) report keys
                          (EM.empty, [])
 
 -- | Display a message. Return value indicates if the player wants to continue.

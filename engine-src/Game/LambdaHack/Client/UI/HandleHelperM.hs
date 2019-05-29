@@ -615,7 +615,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]
   promptAdd0 $ promptFun iid2 itemFull2 k
-  slides <- overlayToSlideshow PropFont (rheight - 2) keys (ov, [])
+  slides <- overlayToSlideshow (rheight - 2) keys (ov, [])
   km <- getConfirms ColorFull keys slides
   case K.key km of
     K.Space -> return True
@@ -638,7 +638,7 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
       lSlots = sortSlotMap itemToF lSlotsRaw
   promptAdd0 prompt
   io <- itemOverlay lSlots arena trunkBag
-  itemSlides <- overlayToSlideshow PropFont (rheight - 2) keysPre io
+  itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
       keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
       allOKX = concatMap snd $ slideshow itemSlides

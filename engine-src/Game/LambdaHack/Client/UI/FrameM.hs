@@ -1,7 +1,6 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( propFontSupported, pushFrame, promptGetKey
-  , stopPlayBack, animate, fadeOutOrIn
+  ( pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack
@@ -13,7 +12,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as U
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -24,7 +22,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
-import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -51,18 +48,18 @@ drawOverlay dm onBlank ovs lid = do
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  propFontSup <- propFontSupported
-  let ovProp = if propFontSup
+  FontSetup{multiFont} <- getFontSetup
+  let ovProp = if multiFont
                then truncateOverlay (3 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] PropFont ovs
                else []
-      ovMono = if propFontSup
+      ovMono = if multiFont
                then truncateOverlay (2 * rwidth) rheight True 30 onBlank
                     $ EM.findWithDefault [] MonoFont ovs
                       -- True and 30 are OK, because Mono overwritten by others
                       -- and because the filler space has a fixed size
                else []
-      ovOther = if propFontSup
+      ovOther = if multiFont
                 then truncateOverlay rwidth rheight False 15 onBlank
                      $ EM.findWithDefault [] SquareFont ovs
                      -- 15 needed not to leave gaps in, e. g., skills menu;
@@ -73,12 +70,6 @@ drawOverlay dm onBlank ovs lid = do
                        ++ EM.findWithDefault [] MonoFont ovs
       overlayedFrame = overlayFrame rwidth ovOther basicFrame
   return (overlayedFrame, (ovProp, ovMono))
-
-propFontSupported :: MonadClientUI m => m Bool
-propFontSupported = do
-  ClientOptions{sdlPropFontFile} <- getsClient soptions
-  return $! frontendName == "sdl"
-            && maybe False (not . T.null) sdlPropFontFile
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one line of the report is shown, as in animations,
