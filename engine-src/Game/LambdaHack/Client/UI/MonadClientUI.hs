@@ -270,9 +270,7 @@ getFontSetup = do
   ClientOptions{sdlPropFontFile} <- getsClient soptions
   let multiFont = frontendName == "sdl"
                   && maybe False (not . T.null) sdlPropFontFile
-  return $! if multiFont
-            then FontSetup multiFont SquareFont MonoFont PropFont
-            else FontSetup multiFont SquareFont SquareFont SquareFont
+  return $! if multiFont then multiFontSetup else singleFontSetup
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do

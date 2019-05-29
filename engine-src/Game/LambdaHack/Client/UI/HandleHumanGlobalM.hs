@@ -1096,8 +1096,8 @@ helpHuman cmdAction = do
   cops <- getsState scops
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
-  fontSetup <- getFontSetup
-  let keyH = keyHelp cops ccui
+  fontSetup@FontSetup{monoFont} <- getFontSetup
+  let keyH = keyHelp cops ccui monoFont
       splitHelp (t, okx) =
         splitOKX fontSetup rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup $ concat $ map splitHelp keyH
@@ -1135,11 +1135,11 @@ dashboardHuman :: MonadClientUI m
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
+  fontSetup@FontSetup{monoFont} <- getFontSetup
   let keyL = 2
-      (ov0, kxs0) = okxsN coinput 0 keyL (const False) False
+      (ov0, kxs0) = okxsN coinput monoFont 0 keyL (const False) False
                           CmdDashboard [] []
       al1 = textToAL "Dashboard"
-  fontSetup <- getFontSetup
   let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
                                      [K.escKM] okx
       sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
@@ -1159,6 +1159,7 @@ itemMenuHuman :: MonadClientUI m
               -> m (Either MError ReqUI)
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
+  fontSetup@FontSetup{..} <- getFontSetup
   case itemSel of
     Just (iid, fromCStore, _) -> do
       leader <- getLeaderUI
@@ -1206,7 +1207,7 @@ itemMenuHuman cmdAction = do
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
-              (ovFoundRaw, kxsFound) = wrapOKX ystart xstart rwidth ks
+              (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart rwidth ks
               ovFound = alPrefix ++ ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
@@ -1234,19 +1235,18 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
-              (ov0, kxs0) = okxsN coinput offset keyL greyedOut True
+              (ov0, kxs0) = okxsN coinput monoFont offset keyL greyedOut True
                                   CmdItemMenu [keyCaption] []
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
-          fontSetup <- getFontSetup
-          let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
+              splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
                                              [K.spaceKM, K.escKM] okx
               sli = toSlideshow fontSetup
                     $ splitHelp ( al1
-                                , ( EM.insertWith (++) SquareFont descSym
-                                    $ EM.insertWith (++) PropFont descBlurb
-                                    $ EM.insertWith (++) MonoFont ovFound ov0
+                                , ( EM.insertWith (++) squareFont descSym
+                                    $ EM.insertWith (++) propFont descBlurb
+                                    $ EM.insertWith (++) monoFont ovFound ov0
                                       -- mono font, because there are buttons
                                   , kxsFound ++ kxs0 ))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
@@ -1315,6 +1315,7 @@ generateMenu :: MonadClientUI m
 generateMenu cmdAction kds gameInfo menuName = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
     getsSession sccui
+  FontSetup{..} <- getFontSetup
   versionBlurb <- getVersionBlurb
   let offset = 2
       bindings =  -- key bindings to display
@@ -1337,7 +1338,7 @@ generateMenu cmdAction kds gameInfo menuName = do
       versionPos = K.PointUI (max 0 (2 * (rwidth - length versionBlurb)))
                              (rheight - 1)
       versionAl = take rwidth $ stringToAL versionBlurb
-      ov = EM.singleton SquareFont $ offsetOverlayX menuOvLines
+      ov = EM.singleton squareFont $ offsetOverlayX menuOvLines
                                      ++ [(versionPos, versionAl)]
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]

@@ -117,6 +117,7 @@ queryUI = do
 -- | Let the human player issue commands until any command takes time.
 humanCommand :: forall m. (MonadClient m, MonadClientUI m) => m ReqUI
 humanCommand = do
+  FontSetup{propFont} <- getFontSetup
   modifySession $ \sess -> sess { slastLost = ES.empty
                                 , shintMode = HintAbsent }
   let loop :: Maybe ActorId -> m ReqUI
@@ -138,7 +139,7 @@ humanCommand = do
             then
               -- Display the only generated slide while waiting for next key.
               -- Strip the "--end-" prompt from it, by ignoring @MonoFont@.
-              return $! ov EM.! PropFont
+              return $! ov EM.! propFont
             else do
               -- Show, one by one, all slides, awaiting confirmation for each.
               void $ getConfirms ColorFull [K.spaceKM, K.escKM] slidesRaw
@@ -155,7 +156,7 @@ humanCommand = do
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
-        km <- promptGetKey ColorFull (EM.fromList [(PropFont, over)]) False []
+        km <- promptGetKey ColorFull (EM.fromList [(propFont, over)]) False []
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui

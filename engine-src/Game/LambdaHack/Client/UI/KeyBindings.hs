@@ -29,9 +29,9 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- When the intro screen mentions KP_5, this really is KP_Begin,
 -- but since that is harder to understand we assume a different, non-default
 -- state of NumLock in the help text than in the code that handles keys.
-keyHelp :: COps -> CCUI -> [(Text, OKX)]
+keyHelp :: COps -> CCUI -> DisplayFont -> [(Text, OKX)]
 keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
-                         , coscreen=ScreenContent{..} } =
+                         , coscreen=ScreenContent{..} } displayFont =
   let
     introBlurb =
       ""
@@ -136,7 +136,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput 0 keyL (const False) True
+    okxs = okxsN coinput displayFont 0 keyL (const False) True
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
@@ -193,7 +193,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           menu = zipWith render kst1 kst2
       in (toDisplayFont $ "" : header ++ menu ++ footer, kxs)
     toDisplayFont :: [Text] -> FontOverlayMap
-    toDisplayFont = EM.singleton MonoFont . offsetOverlay . map textToAL
+    toDisplayFont = EM.singleton displayFont . offsetOverlay . map textToAL
   in concat
     [ [ ( rtitle corule <+> "- backstory"
         , (toDisplayFont introText, []) ) ]
@@ -265,10 +265,11 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: InputContent -> Int -> Int -> (HumanCmd -> Bool) -> Bool
+okxsN :: InputContent -> DisplayFont -> Int -> Int -> (HumanCmd -> Bool) -> Bool
       -> CmdCategory
       -> [Text] -> [Text] -> OKX
-okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
+okxsN InputContent{..} displayFont offset n greyedOut showManyKeys cat
+      header footer =
   let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -292,4 +293,4 @@ okxsN InputContent{..} offset n greyedOut showManyKeys cat header footer =
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
       greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
       greyTs = map greyToAL ts
-  in (EM.singleton MonoFont $ renumberOv $ offsetOverlay greyTs, kxs)
+  in (EM.singleton displayFont $ renumberOv $ offsetOverlay greyTs, kxs)

@@ -205,7 +205,7 @@ pickLeaderWithPointer = do
            Nothing -> failMsg "not pointing at an actor"
            Just (aid, b, _) -> pick (aid, b)
 
-itemOverlay :: MonadClientRead m
+itemOverlay :: MonadClientUI m
             => SingleItemSlots -> LevelId -> ItemBag -> m OKX
 itemOverlay lSlots lid bag = do
   localTime <- getsState $ getLocalTime lid
@@ -217,6 +217,7 @@ itemOverlay lSlots lid bag = do
   combEqp <- getsState $ combinedEqp side
   stashBag <- getsState $ getFactionStashBag side
   discoBenefit <- getsClient sdiscoBenefit
+  FontSetup{..} <- getFontSetup
   let !_A = assert (all (`elem` EM.elems lSlots) (EM.keys bag)
                     `blame` (lid, bag, lSlots)) ()
       markEqp iid t =
@@ -249,15 +250,16 @@ itemOverlay lSlots lid bag = do
             in Just ((al1, xal2), kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       (tsLab, tsDesc) = unzip ts
-      ovsLab = EM.singleton SquareFont $ offsetOverlay tsLab
-      ovsDesc = EM.singleton PropFont $ offsetOverlayX tsDesc
+      ovsLab = EM.singleton squareFont $ offsetOverlay tsLab
+      ovsDesc = EM.singleton propFont $ offsetOverlayX tsDesc
       renumber y (km, (K.PointUI x _, len)) = (km, (K.PointUI x y, len))
   return (ovsLab `EM.union` ovsDesc, zipWith renumber [0..] kxs )
 
-skillsOverlay :: MonadStateRead m => ActorId -> m OKX
+skillsOverlay :: MonadClientUI m => ActorId -> m OKX
 skillsOverlay aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
+  FontSetup{..} <- getFontSetup
   let prSlot :: (Int, SlotChar) -> Ability.Skill
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot (y, c) skill =
@@ -271,9 +273,9 @@ skillsOverlay aid = do
         in (triple, (Right c, (K.PointUI 0 y, maxBound)))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
-      skillLab = EM.singleton SquareFont $ offsetOverlay skLab
-      skillDescr = EM.singleton PropFont $ offsetOverlayX skDescr
-      skillValue = EM.singleton MonoFont $ offsetOverlayX skValue
+      skillLab = EM.singleton squareFont $ offsetOverlay skLab
+      skillDescr = EM.singleton propFont $ offsetOverlayX skDescr
+      skillValue = EM.singleton monoFont $ offsetOverlayX skValue
   return (EM.unions [skillLab, skillDescr, skillValue], kxs)
 
 placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
@@ -304,11 +306,12 @@ placeParts (_, ne, na, nd) =
   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
   ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
 
-placesOverlay :: MonadClientRead m => m OKX
+placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
   COps{coplace} <- getsState scops
   soptions <- getsClient soptions
   places <- getsState $ placesFromState coplace soptions
+  FontSetup{..} <- getFontSetup
   let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
              -> (Text, KYX)
@@ -326,8 +329,8 @@ placesOverlay = do
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
                     in (spNo, (2 * length spNo, spYes))
       (plLab, plDesc) = unzip $ map splitRow $ map textToAL ts
-      placeLab = EM.singleton SquareFont $ offsetOverlay plLab
-      placeDesc = EM.singleton PropFont $ offsetOverlayX plDesc
+      placeLab = EM.singleton squareFont $ offsetOverlay plLab
+      placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (placeLab `EM.union` placeDesc, kxs)
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (Either MError Int)
@@ -607,9 +610,10 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   factionD <- getsState sfactionD
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
+  FontSetup{propFont} <- getFontSetup
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
-      ov = EM.singleton PropFont $ offsetOverlay
+      ov = EM.singleton propFont $ offsetOverlay
            $ splitAttrLine rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]

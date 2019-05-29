@@ -1,6 +1,7 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont(..), FontOverlayMap, FontSetup(..)
+  ( DisplayFont, FontOverlayMap
+  , FontSetup(..), multiFontSetup, singleFontSetup, textSize
   , KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX, highSlideshow
@@ -36,6 +37,17 @@ data FontSetup = FontSetup
   , monoFont   :: DisplayFont
   , propFont   :: DisplayFont
   }
+
+multiFontSetup :: FontSetup
+multiFontSetup = FontSetup True SquareFont MonoFont PropFont
+
+singleFontSetup :: FontSetup
+singleFontSetup = FontSetup False SquareFont SquareFont SquareFont
+
+textSize :: DisplayFont -> [a] -> Int
+textSize SquareFont l = 2 * length l
+textSize MonoFont l = length l
+textSize PropFont _ = error "size of proportional font texts is not defined"
 
 -- | A key or an item slot label at a given position on the screen.
 type KYX = (Either [K.KM] SlotChar, (PointUI, Int))
@@ -117,9 +129,10 @@ menuToSlideshow :: OKX -> Slideshow
 menuToSlideshow (als, kxs) =
   assert (not (EM.null als || null kxs)) $ Slideshow [(als, kxs)]
 
-wrapOKX :: Int -> Int -> Int -> [(K.KM, String)] -> (Overlay, [KYX])
-wrapOKX _ _ _ [] = ([], [])
-wrapOKX ystart xstart width ks =
+wrapOKX :: DisplayFont -> Int -> Int -> Int -> [(K.KM, String)]
+        -> (Overlay, [KYX])
+wrapOKX _ _ _ _ [] = ([], [])
+wrapOKX displayFont ystart xstart width ks =
   let overlayLineFromStrings :: Int -> Int -> [String] -> (PointUI, AttrLine)
       overlayLineFromStrings xlineStart y strings =
         let p = PointUI xlineStart y
@@ -127,7 +140,7 @@ wrapOKX ystart xstart width ks =
       f :: ((Int, Int), (Int, [String], Overlay, [KYX])) -> (K.KM, String)
         -> ((Int, Int), (Int, [String], Overlay, [KYX]))
       f ((y, x), (xlineStart, kL, kV, kX)) (key, s) =
-        let len = length s
+        let len = textSize displayFont s
         in if x + len >= width
            then let iov = overlayLineFromStrings xlineStart y kL
                 in f ((y + 1, 0), (0, [], iov : kV, kX)) (key, s)
@@ -141,12 +154,12 @@ wrapOKX ystart xstart width ks =
       iov1 = overlayLineFromStrings xlineStop ystop kL1
   in (reverse $ iov1 : kV1, reverse kX1)
 
-keysOKX :: Int -> Int -> Int -> [K.KM] -> (Overlay, [KYX])
-keysOKX ystart xstart width keys =
+keysOKX :: DisplayFont -> Int -> Int -> Int -> [K.KM] -> (Overlay, [KYX])
+keysOKX displayFont ystart xstart width keys =
   let wrapB :: String -> String
       wrapB s = "[" ++ s ++ "]"
       ks = map (\key -> (key, wrapB $ K.showKM key)) keys
-  in wrapOKX ystart xstart width ks
+  in wrapOKX displayFont ystart xstart width ks
 
 -- The font argument is for the report and keys overlay. Others already have
 -- assigned fonts.
@@ -158,17 +171,19 @@ splitOverlay fontSetup width height report keys (ls0, kxs0) =
 
 -- Note that we only split wrt @White@ space, nothing else.
 splitOKX :: FontSetup -> Int -> Int -> AttrLine -> [K.KM] -> OKX -> [OKX]
-splitOKX FontSetup{..} width height rrep keys (ls0, kxs0) =
+splitOKX FontSetup{..} width height rrepRaw keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
-  let msgRaw0 = offsetOverlay $ splitAttrLine width rrep
+  let rrep = if null keys then rrepRaw else rrepRaw ++ [Color.spaceAttrW32]
+      -- TODO: until SDL support for measuring prop font text is released,
+      -- we have to put MonoFont also for hdrFont; undo when possible
+      msgFont = if null keys then propFont else monoFont
+      msgRaw0 = offsetOverlay $ splitAttrLine width rrep
       msgRaw1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) msgRaw0
-      (lX0, keysX0) = keysOKX 0 0 width keys
-      (lX1, keysX1) = keysOKX 1 0 width keys
-      endOfMsgRaw = if null rrep then 0 else length (snd $ last msgRaw0) + 1
-      endOfMsg = if propFont == SquareFont
-                 then endOfMsgRaw * 2
-                 else endOfMsgRaw
-      (lX, keysX) = keysOKX (length msgRaw0 - 1) endOfMsg (2 * width) keys
+      (lX0, keysX0) = keysOKX monoFont 0 0 width keys
+      (lX1, keysX1) = keysOKX monoFont 1 0 width keys
+      endOfMsg = if null rrep then 0 else textSize msgFont (snd $ last msgRaw0)
+      (lX, keysX) = keysOKX monoFont (length msgRaw0 - 1) endOfMsg
+                            (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
@@ -181,9 +196,6 @@ splitOKX FontSetup{..} width height rrep keys (ls0, kxs0) =
             ltOffset (PointUI _ y, _) = y < yoffsetNew
             (pre, post) = ( filter ltOffset <$> ls
                           , filter (not . ltOffset) <$> ls )
-            -- TODO: until SDL support for measuring prop font text is released,
-            -- we have to put MonoFont also for hdrFont; undo when possible
-            msgFont = if null hdrMono then propFont else monoFont
             prependHdr = EM.insertWith (++) msgFont hdrFont
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
@@ -199,7 +211,7 @@ splitOKX FontSetup{..} width height rrep keys (ls0, kxs0) =
         -- Check whether most space taken by report and keys.
         if | (length msgRaw0 + length lX) * 2 <= height ->
              ((EM.empty, []), (msgRaw0, lX, keysX))  -- display normally
-           | length rrep <= width ->  -- very crude check, but OK
+           | length rrep <= 2 * width ->  -- very crude check, but OK
              ( (EM.empty, [])  -- already shown in full in shortened header
              , hdrShortened )
            | otherwise -> case lX0 of

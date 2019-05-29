@@ -106,6 +106,7 @@ chooseItemDialogMode :: MonadClientUI m
 chooseItemDialogMode c = do
   CCUI{coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   COps{coitem} <- getsState scops
+  FontSetup{..} <- getFontSetup
   side <- getsClient sside
   let prompt :: Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
              -> Text
@@ -242,7 +243,7 @@ chooseItemDialogMode c = do
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
-                  ov0 = EM.singleton PropFont
+                  ov0 = EM.singleton propFont
                         $ offsetOverlay
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ skillDesc skill
@@ -291,7 +292,7 @@ chooseItemDialogMode c = do
                                    $ map (abs . fromEnum) $ ES.elems es ]]
                   -- Ideally, place layout would be in SquareFont and the rest
                   -- in PropFont, but this is mostly a debug screen, so KISS.
-                  ov0 = EM.singleton MonoFont
+                  ov0 = EM.singleton monoFont
                         $ offsetOverlay
                         $ indentSplitAttrLine rwidth
                         $ textToAL $ T.unlines
@@ -722,13 +723,14 @@ eitherHistory showAll = do
   arena <- getArenaUI
   localTime <- getsState $ getLocalTime arena
   global <- getsState stime
+  FontSetup{..} <- getFontSetup
   let renderedHistory = renderHistory history
       histBound = length renderedHistory
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
                     in (spNo, (length spNo, spYes))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
-      rhLab = EM.singleton MonoFont $ offsetOverlay histLab
-      rhDesc = EM.singleton PropFont $ offsetOverlayX histDesc
+      rhLab = EM.singleton monoFont $ offsetOverlay histLab
+      rhDesc = EM.singleton propFont $ offsetOverlayX histDesc
       turnsGlobal = global `timeFitUp` timeTurn
       turnsLocal = localTime `timeFitUp` timeTurn
       msg = makeSentence
@@ -757,7 +759,7 @@ eitherHistory showAll = do
         let timeReport = case drop histSlot renderedHistory of
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
-            ov0 = EM.singleton PropFont $ offsetOverlay
+            ov0 = EM.singleton propFont $ offsetOverlay
                   $ indentSplitAttrLine rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1

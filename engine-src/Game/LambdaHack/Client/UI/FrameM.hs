@@ -48,26 +48,24 @@ drawOverlay dm onBlank ovs lid = do
                                       (Color.attrCharW32 Color.spaceAttrW32)
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
-  FontSetup{multiFont} <- getFontSetup
+  FontSetup{..} <- getFontSetup
   let ovProp = if multiFont
                then truncateOverlay (3 * rwidth) rheight False 0 onBlank
-                    $ EM.findWithDefault [] PropFont ovs
+                    $ EM.findWithDefault [] propFont ovs
                else []
       ovMono = if multiFont
                then truncateOverlay (2 * rwidth) rheight True 30 onBlank
-                    $ EM.findWithDefault [] MonoFont ovs
+                    $ EM.findWithDefault [] monoFont ovs
                       -- True and 30 are OK, because Mono overwritten by others
                       -- and because the filler space has a fixed size
                else []
       ovOther = if multiFont
                 then truncateOverlay rwidth rheight False 15 onBlank
-                     $ EM.findWithDefault [] SquareFont ovs
+                     $ EM.findWithDefault [] squareFont ovs
                      -- 15 needed not to leave gaps in, e. g., skills menu;
                      -- usually fine, because square never on the right
                 else truncateOverlay rwidth rheight True 40 onBlank
-                     $ EM.findWithDefault [] SquareFont ovs
-                       ++ EM.findWithDefault [] PropFont ovs
-                       ++ EM.findWithDefault [] MonoFont ovs
+                     $ concat $ EM.elems ovs
       overlayedFrame = overlayFrame rwidth ovOther basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
@@ -83,8 +81,9 @@ pushFrame = do
   unless keyPressed $ do
     lidV <- viewedLevelUI
     report <- getReportUI
+    FontSetup{propFont} <- getFontSetup
     let truncRep =
-          EM.fromList [(PropFont, [(K.PointUI 0 0, renderReport report)])]
+          EM.fromList [(propFont, [(K.PointUI 0 0, renderReport report)])]
     frame <- drawOverlay ColorFull False truncRep lidV
     displayFrames lidV [Just frame]
 
@@ -110,9 +109,10 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
+      FontSetup{propFont} <- getFontSetup
       let ovWarn = [ (K.PointUI 0 0, textFgToAL Color.BrYellow "*interrupted*")
                    | keyPressed ]
-          ovs2 = EM.insertWith (++) PropFont ovWarn ovs
+          ovs2 = EM.insertWith (++) propFont ovWarn ovs
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
@@ -170,9 +170,10 @@ renderFrames onBlank arena anim = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   snoAnim <- getsClient $ snoAnim . soptions
   report <- getReportUI
+  FontSetup{..} <- getFontSetup
   let ovFont = if not onBlank || fromMaybe False snoAnim
-               then PropFont
-               else SquareFont
+               then propFont
+               else squareFont
       truncRep =
         EM.fromList [(ovFont, [(K.PointUI 0 0, renderReport report)])]
   basicFrame <- drawOverlay ColorFull False truncRep arena
