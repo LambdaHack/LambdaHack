@@ -1089,11 +1089,10 @@ helpHuman :: MonadClientUI m
           => (HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
-  cops <- getsState scops
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
   fontSetup@FontSetup{monoFont} <- getFontSetup
-  let keyH = keyHelp cops ccui monoFont
+  let keyH = keyHelp ccui monoFont
       splitHelp (t, okx) =
         splitOKX fontSetup rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup $ concat $ map splitHelp keyH

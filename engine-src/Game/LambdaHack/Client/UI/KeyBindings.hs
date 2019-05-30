@@ -20,8 +20,6 @@ import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
 import           Game.LambdaHack.Client.UI.Slideshow
-import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | Produce a set of help/menu screens from the key bindings.
@@ -29,23 +27,13 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- When the intro screen mentions KP_5, this really is KP_Begin,
 -- but since that is harder to understand we assume a different, non-default
 -- state of NumLock in the help text than in the code that handles keys.
-keyHelp :: COps -> CCUI -> DisplayFont -> [(Text, OKX)]
-keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
-                         , coscreen=ScreenContent{ rheight, rmoveKeysScreen
-                                                 , rintroScreen } }
-        displayFont =
+keyHelp :: CCUI -> DisplayFont -> [(Text, OKX)]
+keyHelp CCUI{ coinput=coinput@InputContent{..}
+            , coscreen=ScreenContent{ rheight, rmoveKeysScreen} } displayFont =
   let
-    introBlurb =
-      ""
-      : map T.pack rintroScreen
-      ++
-      [ ""
-      , "Press SPACE or PGDN for help and ESC to see the map again."
-      ]
     movBlurb = map T.pack rmoveKeysScreen
     movBlurbEnd =
-      [ "Press SPACE or scroll the mouse wheel to see the minimal command set."
-      ]
+      [ "Press SPACE or PGDN for the minimal command set or ESC to see the map again." ]
     minimalBlurb =
       [ "The following commands, joined with the basic set above,"
       , "let you accomplish anything in the game, though"
@@ -58,7 +46,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
       ]
     casualEnding =
       [ ""
-      , "Press SPACE to see the detailed descriptions of all commands."
+      , "Press SPACE or scroll the mouse wheel to see descriptions of all commands."
       ]
     categoryEnding =
       [ ""
@@ -124,7 +112,6 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
     fmts s = " " <> s
-    introText = map fmts introBlurb
     movText = map fmts movBlurb
     movTextEnd = map fmts movBlurbEnd
     minimalText = map fmts minimalBlurb
@@ -201,9 +188,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     toDisplayFont :: [Text] -> FontOverlayMap
     toDisplayFont = EM.singleton displayFont . offsetOverlay . map textToAL
   in concat
-    [ [ ( "Backstory"
-        , (toDisplayFont introText, []) ) ]
-    , if catLength CmdMinimal
+    [ if catLength CmdMinimal
          + length movText + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
