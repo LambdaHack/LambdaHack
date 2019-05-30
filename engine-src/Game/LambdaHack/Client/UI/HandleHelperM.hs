@@ -244,7 +244,11 @@ itemOverlay lSlots lid bag = do
                   else viewItem itemFull
                 phrase = makePhrase
                   [partItemWsRanged side factionD k localTime itemFull kit]
-                al1 = textToAL (markEqp iid $ slotLabel l) ++ [colorSymbol]
+                al1 = textToAL (markEqp iid $ slotLabel l)
+                      ++ (if isSquareFont propFont
+                         then [Color.spaceAttrW32]
+                         else [])
+                      ++ [colorSymbol]
                 xal2 = ( textSize squareFont al1
                        , Color.spaceAttrW32 : textToAL phrase )
                 kx = (Right l, ( K.PointUI 0 0
