@@ -17,7 +17,7 @@ import Game.LambdaHack.Definition.Defs
 
 -- | The type of game rules and assorted game data.
 data RuleContent = RuleContent
-  { rtitle            :: Text      -- ^ title of the game (not lib)
+  { rtitle            :: String    -- ^ title of the game (not lib)
   , rXmax             :: X         -- ^ maximum level width; for now,
                                    --   keep equal to ScreenContent.rwidth
   , rYmax             :: Y         -- ^ maximum level height; for now,

@@ -20,7 +20,7 @@ import Game.LambdaHack.Definition.Defs
 data ScreenContent = ScreenContent
   { rwidth          :: X         -- ^ screen width
   , rheight         :: Y         -- ^ screen height
-  , rmainMenuArt    :: [String]   -- ^ the ASCII art for the main menu
+  , rmainMenuLine   :: String    -- ^ an extra blurb line for the main menu
   , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
   , rmoveKeysScreen :: [String]  -- ^ the fixed move key help blurb
   , rapplyVerbMap   :: EM.EnumMap Char T.Text
@@ -29,8 +29,8 @@ data ScreenContent = ScreenContent
 
 -- | Catch invalid rule kind definitions.
 validateSingle :: ScreenContent -> [Text]
-validateSingle ScreenContent{rmainMenuArt} =
-  let tsGt80 = filter ((> 80) . T.length) $ map T.pack rmainMenuArt
+validateSingle ScreenContent{rmainMenuLine} =
+  let tsGt80 = filter ((> 80) . T.length) $ map T.pack [rmainMenuLine]
   in case tsGt80 of
      [] -> []
      tGt80 : _ ->

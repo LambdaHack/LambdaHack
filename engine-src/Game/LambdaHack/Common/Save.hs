@@ -145,8 +145,8 @@ delayPrint t = do
 saveNameCli :: COps -> FactionId -> String
 saveNameCli COps{corule} side =
   let gameShortName =
-        case T.words $ rtitle corule of
-          w : _ -> T.unpack w
+        case words $ rtitle corule of
+          w : _ -> w
           _ -> "Game"
       n = fromEnum side  -- we depend on the numbering hack to number saves
   in gameShortName
@@ -158,7 +158,7 @@ saveNameCli COps{corule} side =
 saveNameSer :: COps -> String
 saveNameSer COps{corule} =
   let gameShortName =
-        case T.words $ rtitle corule of
-          w : _ -> T.unpack w
+        case words $ rtitle corule of
+          w : _ -> w
           _ -> "Game"
   in gameShortName ++ ".server.sav"

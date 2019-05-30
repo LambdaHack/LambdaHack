@@ -31,7 +31,9 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- state of NumLock in the help text than in the code that handles keys.
 keyHelp :: COps -> CCUI -> DisplayFont -> [(Text, OKX)]
 keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
-                         , coscreen=ScreenContent{..} } displayFont =
+                         , coscreen=ScreenContent{ rheight, rmoveKeysScreen
+                                                 , rintroScreen } }
+        displayFont =
   let
     introBlurb =
       ""
@@ -199,7 +201,7 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
     toDisplayFont :: [Text] -> FontOverlayMap
     toDisplayFont = EM.singleton displayFont . offsetOverlay . map textToAL
   in concat
-    [ [ ( rtitle corule <+> "- backstory"
+    [ [ ( "Backstory"
         , (toDisplayFont introText, []) ) ]
     , if catLength CmdMinimal
          + length movText + length minimalText + length casualEnd

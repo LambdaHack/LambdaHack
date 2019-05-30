@@ -19,10 +19,7 @@ standardLayoutAndFeatures :: ScreenContent
 standardLayoutAndFeatures = ScreenContent
   { rwidth = 80
   , rheight = 24
-  , rmainMenuArt =
-      [ "         LambdaHack "
-      , ""
-      , "    <lambdahack.github.io>" ]
+  , rmainMenuLine = "<lambdahack.github.io>"
   , rintroScreen = $(do
       let path = "GameDefinition/PLAYING.md"
       qAddDependentFile path
@@ -36,8 +33,7 @@ standardLayoutAndFeatures = ScreenContent
                                      then reverse rows : paragraphs ls []
                                      else paragraphs ls (l : rows)
           intro = case paragraphs (lines x) [] of
-            _title : _blurb : par1 : par2 : _rest ->
-              ["", ""] ++ par1 ++ [""] ++ par2 ++ ["", ""]
+            _title : _blurb : par1 : par2 : _rest -> par1 ++ [""] ++ par2
             _ -> error "not enough paragraphs in intro screen text"
       lift intro)
   , rmoveKeysScreen = $(do

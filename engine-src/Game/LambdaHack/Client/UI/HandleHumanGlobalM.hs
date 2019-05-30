@@ -28,16 +28,13 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
   , applyItem, alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
-  , getVersionBlurb, generateMenu, nxtGameMode
+  , generateMenu, nxtGameMode
 #endif
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
-
--- Cabal
-import qualified Paths_LambdaHack as Self (version)
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -58,7 +55,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
-import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import           Game.LambdaHack.Client.UI.HumanCmd
@@ -1298,31 +1294,21 @@ chooseItemMenuHuman cmdAction c = do
 
 -- * MainMenu
 
-getVersionBlurb :: MonadClientUI m => m String
-getVersionBlurb = do
-  COps{corule} <- getsState scops
-  let exeVersion = rexeVersion corule
-      libVersion = Self.version
-  return $! " Version " ++ showVersion exeVersion
-            ++ " (frontend: " ++ frontendName
-            ++ ", engine: LambdaHack " ++ showVersion libVersion
-            ++ ") "
-
 generateMenu :: MonadClientUI m
              => (HumanCmd -> m (Either MError ReqUI))
              -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction kds gameInfo menuName = do
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuArt}} <-
+  COps{corule} <- getsState scops
+  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine, rintroScreen}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  versionBlurb <- getVersionBlurb
-  let offset = 4
+  let offset = if isSquareFont propFont then 2 else 4
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
               , T.unpack
-                $  T.justifyLeft 4 ' ' (T.pack $ K.showKM k) <> " " <> d )
+                $  T.justifyLeft 3 ' ' (T.pack $ K.showKM k) <> " " <> d )
         in map fmt kds
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
@@ -1331,16 +1317,20 @@ generateMenu cmdAction kds gameInfo menuName = do
                                    , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((offset, stringToAL binding), myxx)
-      rawLines = zip (repeat Nothing) ("" : rmainMenuArt ++ "" : gameInfo)
-                 ++ bindings
+      titleLine = " " ++ rtitle corule
+                  ++ " " ++ showVersion (rexeVersion corule)
+      rawLines = zip (repeat Nothing) ("" : gameInfo) ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      versionPos =
-        K.PointUI (max 0 (2 * rwidth - textSize squareFont versionBlurb))
-                  (rheight - 1)
-      versionAl = take rwidth $ stringToAL versionBlurb
-      ov = EM.singleton squareFont $ offsetOverlayX menuOvLines
-                                     ++ [(versionPos, versionAl)]
+      introALs = map stringToAL $ ["",  titleLine, "", " " ++ rmainMenuLine, ""]
+                                  ++ rintroScreen
+      introLen = length introALs
+      introMaxLen = maximum $ map (textSize monoFont) introALs
+      introOv = map (\(y, al) ->
+                       (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
+                $ zip [max 0 (rheight - introLen - 1) ..] introALs
+      ov = EM.insertWith (++) propFont introOv
+           $ EM.singleton squareFont (offsetOverlayX menuOvLines)
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of

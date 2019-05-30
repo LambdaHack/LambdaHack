@@ -49,7 +49,7 @@ data ClientOptions = ClientOptions
       -- ^ Start a new game, overwriting the save file.
   , sbenchmark         :: Bool
       -- ^ Don't create directories and files and show time stats.
-  , stitle             :: Maybe Text
+  , stitle             :: Maybe String
   , sfontDir           :: Maybe FilePath
   , ssavePrefixCli     :: String
       -- ^ Prefix of the save game file name.

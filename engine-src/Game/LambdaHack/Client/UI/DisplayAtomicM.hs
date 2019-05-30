@@ -412,7 +412,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     when (sstart == 0) resetSessionStart
     history <- getsSession shistory
     if lengthHistory history == 0 then do
-      let title = rtitle corule
+      let title = T.pack $ rtitle corule
       msgAdd MsgAdmin $ "Welcome to" <+> title <> "!"
       -- Generate initial history. Only for UI clients.
       shistory <- defaultHistory

@@ -35,7 +35,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("s", ([CmdMainMenu], "start new game", GameRestart))
   , ("x", ([CmdMainMenu], "save and exit to desktop", GameExit))
   , ("v", ([CmdMainMenu], "visit settings menu>", SettingsMenu))
-  , ("t", ([CmdMainMenu], "toggle autoplay (insert coin)", AutomateToggle))
+  , ("t", ([CmdMainMenu], "toggle autoplay", AutomateToggle))
   , ("?", ([CmdMainMenu], "see command help", Help))
   , ("F12", ([CmdMainMenu], "switch to dashboard", Dashboard))
   , ("Escape", ([CmdMainMenu], "back to playing", AutomateBack))

@@ -98,7 +98,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
  -- lowest: pattern SDL_LOG_PRIORITY_VERBOSE = (1) :: LogPriority
  -- our default: pattern SDL_LOG_PRIORITY_ERROR = (5) :: LogPriority
  SDL.logSetAllPriority $ toEnum $ fromMaybe 5 slogPriority
- let title = fromJust stitle
+ let title = T.pack $ fromJust stitle
      findFontFile mt =
        if maybe True T.null mt
        then return Nothing
