@@ -487,7 +487,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
              ov
       drawPropLine :: Int -> Int -> AttrLine -> IO (Int, Int)
       drawPropLine x row [] = return (row, x)
-      drawPropLine x row _ | x >= (rwidth coscreen - 1) * boxSize - x =
+      drawPropLine x row _ | x >= (rwidth coscreen - 1) * boxSize =
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
         return (row, maxBound)
       drawPropLine x row (w : rest) = do
