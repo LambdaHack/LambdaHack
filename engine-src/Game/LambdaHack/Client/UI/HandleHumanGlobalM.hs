@@ -1302,7 +1302,7 @@ generateMenu cmdAction kds gameInfo menuName = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine, rintroScreen}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  let offset = if isSquareFont propFont then 2 else 4
+  let offset = if isSquareFont propFont then 2 else -10
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
@@ -1312,24 +1312,33 @@ generateMenu cmdAction kds gameInfo menuName = do
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left [key], ( K.PointUI offset y
+            yxx key = (Left [key], ( K.PointUI 2 y
                                    , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
-        in ((offset, stringToAL binding), myxx)
-      titleLine = " " ++ rtitle corule
+        in ((2, stringToAL binding), myxx)
+      titleLine = rtitle corule
                   ++ " " ++ showVersion (rexeVersion corule)
-      rawLines = zip (repeat Nothing) ("" : gameInfo) ++ bindings
+      rawLines = zip (repeat Nothing)
+                     (["", titleLine ++ " " ++ rmainMenuLine, ""]
+                      ++ gameInfo)
+                 ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      introALs = map stringToAL $ ["",  titleLine, "", " " ++ rmainMenuLine, ""]
-                                  ++ rintroScreen
+      glueLines (l1 : l2 : rest) =
+        if | null l1 -> l1 : glueLines (l2 : rest)
+           | null l2 -> l1 : l2 : glueLines rest
+           | otherwise -> (l1 ++ l2) : glueLines rest
+      glueLines ll = ll
+      introALs =
+        map stringToAL
+        $ if isSquareFont propFont then rintroScreen else glueLines rintroScreen
       introLen = length introALs
       introMaxLen = maximum $ map (textSize monoFont) introALs
       introOv = map (\(y, al) ->
                        (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
                 $ zip [max 0 (rheight - introLen - 1) ..] introALs
       ov = EM.insertWith (++) propFont introOv
-           $ EM.singleton squareFont (offsetOverlayX menuOvLines)
+           $ EM.singleton squareFont $ offsetOverlayX menuOvLines
   ekm <- displayChoiceScreen menuName ColorFull True
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
