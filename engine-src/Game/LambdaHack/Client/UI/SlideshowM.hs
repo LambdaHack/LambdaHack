@@ -138,7 +138,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
       page :: Int -> m (Either K.KM SlotChar, Int)
       page pointer = assert (pointer >= 0) $ case findKYX pointer frs of
         Nothing -> error $ "no menu keys" `showFailure` frs
-        Just ((ovs, kyxs), (ekm, (K.PointUI x1 y, len)), ixOnPage) -> do
+        Just ( (ovs, kyxs)
+             , (ekm, (K.PointUI x1 y, ButtonWidth fontX1 len))
+             , ixOnPage ) -> do
           let highableAttrs =
                 [Color.defAttr, Color.defAttr {Color.fg = Color.BrBlack}]
               highAttr x | Color.acAttr x `notElem` highableAttrs
@@ -149,8 +151,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                   (Color.acAttr x)
                                     {Color.bg = Color.HighlightNoneCursor}}
               -- This also highlights dull white item symbols, but who cares.
+              x1Chars = if isSquareFont fontX1 then x1 `div` 2 else x1
               drawHighlight xstart xs =
-                let (xs1, xsRest) = splitAt (x1 - xstart) xs
+                let (xs1, xsRest) = splitAt (x1Chars - xstart) xs
                     (xs2, xs3) = splitAt len xsRest
                     highW32 = Color.attrCharToW32
                               . highAttr
@@ -165,6 +168,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               ovs1 = EM.map (updateLine y drawHighlight) ovs
               ignoreKey = page pointer
               pageLen = length kyxs
+              xix :: KYX -> Bool
               xix (_, (K.PointUI x1' _, _)) = x1' == x1
               firstRowOfNextPage = pointer + pageLen - ixOnPage
               restOKX = drop firstRowOfNextPage allOKX
@@ -187,8 +191,10 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                     Right c -> return (Right c, pointer)
                   K.LeftButtonRelease -> do
                     K.PointUI mx my <- getsSession spointer
-                    let onChoice (_, (K.PointUI cx cy, clen)) =
-                          cy == my && cx <= mx && cx + clen > mx
+                    let onChoice (_, (K.PointUI cx cy, ButtonWidth font clen)) =
+                          let blen | isSquareFont font = 2 * clen
+                                   | otherwise = clen
+                          in my == cy && mx >= cx && mx < cx + blen
                     case find onChoice kyxs of
                       Nothing | ikm `elem` keys -> return (Left ikm, pointer)
                       Nothing -> if K.spaceKM `elem` keys

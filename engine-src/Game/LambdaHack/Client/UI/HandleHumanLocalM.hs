@@ -738,7 +738,8 @@ eitherHistory showAll = do
         , MU.CarWs turnsGlobal "half-second turn"
         , "(this level:"
         , MU.Car turnsLocal <> ")" ]
-      kxs = [ (Right sn, (K.PointUI 0 (slotPrefix sn), maxBound))
+      kxs = [ (Right sn, ( K.PointUI 0 (slotPrefix sn)
+                         , ButtonWidth propFont 1000 ))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
   okxs <- overlayToSlideshow (rheight - 2) [K.escKM]

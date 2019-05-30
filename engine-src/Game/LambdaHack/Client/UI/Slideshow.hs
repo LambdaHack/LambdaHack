@@ -1,8 +1,8 @@
 -- | Slideshows.
 module Game.LambdaHack.Client.UI.Slideshow
-  ( DisplayFont, FontOverlayMap
-  , FontSetup(..), multiFontSetup, singleFontSetup, textSize
-  , KYX, OKX, Slideshow(slideshow)
+  ( DisplayFont, isSquareFont
+  , FontOverlayMap, FontSetup(..), multiFontSetup, singleFontSetup, textSize
+  , ButtonWidth(..), KYX, OKX, Slideshow(slideshow)
   , emptySlideshow, unsnoc, toSlideshow, maxYofOverlay, menuToSlideshow
   , wrapOKX, splitOverlay, splitOKX, highSlideshow
 #ifdef EXPOSE_INTERNAL
@@ -29,6 +29,10 @@ import qualified Game.LambdaHack.Definition.Color as Color
 data DisplayFont = SquareFont | MonoFont | PropFont
   deriving (Show, Eq, Enum)
 
+isSquareFont :: DisplayFont -> Bool
+isSquareFont SquareFont = True
+isSquareFont _ = False
+
 type FontOverlayMap = EM.EnumMap DisplayFont Overlay
 
 data FontSetup = FontSetup
@@ -49,8 +53,19 @@ textSize SquareFont l = 2 * length l
 textSize MonoFont l = length l
 textSize PropFont _ = error "size of proportional font texts is not defined"
 
+-- TODO: probably best merge the PointUI into that and represent
+-- the position as characters, too, translating to UI positions as needed.
+-- The problem is that then I need to do a lot of reverse translation
+-- when creating buttons.
+-- | Width of on-screen button text, expressed in characters,
+-- and so UI (mono font) width is deduced from the used font.
+data ButtonWidth = ButtonWidth
+  { buttonFont  :: DisplayFont
+  , buttonWidth :: Int }
+  deriving (Show, Eq)
+
 -- | A key or an item slot label at a given position on the screen.
-type KYX = (Either [K.KM] SlotChar, (PointUI, Int))
+type KYX = (Either [K.KM] SlotChar, (PointUI, ButtonWidth))
 
 -- | An Overlay of text with an associated list of keys or slots
 -- that activated when the specified screen position is pointed at.
@@ -84,7 +99,7 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
     in PointUI pxFirst pyAfterLast
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> AttrLine
-                         -> (FontOverlayMap, PointUI)
+                         -> (FontOverlayMap, PointUI, DisplayFont)
   appendToFontOverlayMap ovs al =
     let maxYminXofOverlay ov = let ymxOfOverlay (PointUI x y, _) = (- y, x)
                                in minimum $ (0, 0) : map ymxOfOverlay ov
@@ -97,22 +112,22 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
               displayFont = case fontMax of
                 SquareFont | unique -> SquareFont
                 _ -> monoFont
-          in (EM.insertWith atEnd displayFont [(p, al)] ovs, p)
+          in (EM.insertWith atEnd displayFont [(p, al)] ovs, p, displayFont)
     in case EM.lookup fontMax ovs of
       Just ovF -> insertAl ovF
       Nothing -> insertAl []
   addFooters :: Bool -> [OKX] -> [OKX]
   addFooters _ [] = error $ "" `showFailure` okxsNotNull
   addFooters _ [(als, [])] =
-    let (ovs, p) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, [(Left [K.safeSpaceKM], (p, 15))])]
+    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, [(Left [K.safeSpaceKM], (p, ButtonWidth font 15))])]
   addFooters False [(als, kxs)] = [(als, kxs)]
   addFooters True [(als, kxs)] =
-    let (ovs, p) = appendToFontOverlayMap als (stringToAL endMsg)
-    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, 15))])]
+    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL endMsg)
+    in [(ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font 15))])]
   addFooters _ ((als, kxs) : rest) =
-    let (ovs, p) = appendToFontOverlayMap als (stringToAL moreMsg)
-    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, 8))])
+    let (ovs, p, font) = appendToFontOverlayMap als (stringToAL moreMsg)
+    in (ovs, kxs ++ [(Left [K.safeSpaceKM], (p, ButtonWidth font 8))])
        : addFooters True rest
 
 moreMsg :: String
@@ -141,14 +156,17 @@ wrapOKX displayFont ystart xstart width ks =
         -> ((Int, Int), (Int, [String], Overlay, [KYX]))
       f ((y, x), (xlineStart, kL, kV, kX)) (key, s) =
         let len = textSize displayFont s
+            len1 = len + textSize displayFont " "
         in if x + len >= width
            then let iov = overlayLineFromStrings xlineStart y kL
                 in f ((y + 1, 0), (0, [], iov : kV, kX)) (key, s)
-           else ( (y, x + len + 1)
+           else ( (y, x + len1)
                 , ( xlineStart
                   , s : kL
                   , kV
-                  , (Left [key], (PointUI x y, len)) : kX ) )
+                  , (Left [key], ( PointUI x y
+                                 , ButtonWidth displayFont (length s) ))
+                    : kX ) )
       ((ystop, _), (xlineStop, kL1, kV1, kX1)) =
         foldl' f ((ystart, xstart), (xstart, [], [], [])) ks
       iov1 = overlayLineFromStrings xlineStop ystop kL1

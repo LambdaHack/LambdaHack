@@ -1317,18 +1317,18 @@ generateMenu cmdAction kds gameInfo menuName = do
     getsSession sccui
   FontSetup{..} <- getFontSetup
   versionBlurb <- getVersionBlurb
-  let offset = 2
+  let offset = 4
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
               , T.unpack
-                $  " " <> T.justifyLeft 4 ' ' (T.pack $ K.showKM k)
-                   <> " " <> d )
+                $  T.justifyLeft 4 ' ' (T.pack $ K.showKM k) <> " " <> d )
         in map fmt kds
       generate :: Int -> (Maybe K.KM, String) -> ((Int, AttrLine), Maybe KYX)
       generate y (mkey, binding) =
         let lenB = length binding
-            yxx key = (Left [key], (K.PointUI offset y, lenB))
+            yxx key = (Left [key], ( K.PointUI offset y
+                                   , ButtonWidth squareFont lenB ))
             myxx = yxx <$> mkey
         in ((offset, stringToAL binding), myxx)
       rawLines = zip (repeat Nothing) ("" : rmainMenuArt ++ "" : gameInfo)
@@ -1366,7 +1366,7 @@ mainMenuHuman cmdAction = do
               | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
       gameName = mname gameMode
       gameInfo = map T.unpack
-                   [ " Now playing:" <+> gameName
+                   [ "Now playing:" <+> gameName
                    , "" ]
   generateMenu cmdAction kds gameInfo "main"
 
@@ -1419,7 +1419,7 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "t", (tdoctrine, Doctrine))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
-                   [ " Convenience settings:"
+                   [ "Convenience settings:"
                    , "" ]
   generateMenu cmdAction kds gameInfo "settings"
 
@@ -1433,13 +1433,13 @@ challengesMenuHuman cmdAction = do
   curChal <- getsClient scurChal
   nxtChal <- getsClient snxtChal
   let offOn b = if b then "on" else "off"
-      tcurDiff = " *   difficulty:" <+> tshow (cdiff curChal)
+      tcurDiff = "*   difficulty:" <+> tshow (cdiff curChal)
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
-      tcurWolf = " *   lone wolf:"
+      tcurWolf = "*   lone wolf:"
                  <+> offOn (cwolf curChal)
       tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
-      tcurFish = " *   cold fish:"
+      tcurFish = "*   cold fish:"
                  <+> offOn (cfish curChal)
       tnextFish = "cold fish (hard):"
                   <+> offOn (cfish nxtChal)
@@ -1449,13 +1449,13 @@ challengesMenuHuman cmdAction = do
             , (K.mkKM "f", (tnextFish, GameFishToggle))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
-                   [ " Current challenges:"
+                   [ "Current challenges:"
                    , ""
                    , tcurDiff
                    , tcurWolf
                    , tcurFish
                    , ""
-                   , " Next game challenges:"
+                   , "Next game challenges:"
                    , "" ]
   generateMenu cmdAction kds gameInfo "challenge"
 

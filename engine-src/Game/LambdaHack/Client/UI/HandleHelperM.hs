@@ -247,7 +247,8 @@ itemOverlay lSlots lid bag = do
                 al1 = textToAL (markEqp iid $ slotLabel l) ++ [colorSymbol]
                 xal2 = ( textSize squareFont al1
                        , Color.spaceAttrW32 : textToAL phrase )
-                kx = (Right l, (K.PointUI 0 0, maxBound))
+                kx = (Right l, ( K.PointUI 0 0
+                               , ButtonWidth propFont (5 + T.length phrase) ))
             in Just ((al1, xal2), kx)
       (ts, kxs) = unzip $ mapMaybe pr $ EM.assocs lSlots
       (tsLab, tsDesc) = unzip ts
@@ -265,15 +266,17 @@ skillsOverlay aid = do
              -> ((AttrLine, (Int, AttrLine), (Int, AttrLine)), KYX)
       prSlot (y, c) skill =
         let skName = " " <> skillName skill
-            lab = textToAL $ slotLabel c
+            slotLab = slotLabel c
+            lab = textToAL slotLab
             labLen = textSize squareFont lab
-            indentation = if propFont == squareFont then 40 else 20
+            indentation = if isSquareFont propFont then 40 else 20
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
             triple = ( lab
                      , (labLen, textToAL skName)
-                     , (indentation + labLen, textToAL valueText) )
-        in (triple, (Right c, (K.PointUI 0 y, maxBound)))
+                     , (labLen + indentation, textToAL valueText) )
+        in (triple, (Right c, ( K.PointUI 0 y
+                              , ButtonWidth propFont (28 + T.length slotLab) )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) skillSlots
       (skLab, skDescr, skValue) = unzip3 ts
       skillLab = EM.singleton squareFont $ offsetOverlay skLab
@@ -327,7 +330,8 @@ placesOverlay = do
             ft = makePhrase $ MU.Text (markPlace $ slotLabel c)
                               : MU.Text placeName
                               : parts
-        in (ft, (Right c, (K.PointUI 0 y, T.length ft)))
+        in (ft, (Right c, ( K.PointUI 0 y
+                          , ButtonWidth propFont (2 + T.length ft) )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
                     in (spNo, (textSize squareFont spNo, spYes))

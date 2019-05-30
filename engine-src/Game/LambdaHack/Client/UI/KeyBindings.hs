@@ -176,6 +176,8 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
                   Nothing -> (key, "(not described:" <+> tshow cmd2 <> ")")
             in (ca, Left km, desc)
       in map caMakeChoice caCmds
+    doubleIfSquare n | isSquareFont displayFont = 2 * n
+                     | otherwise = n
     okm :: (forall a. (a, a) -> a)
         -> K.KM -> K.KM -> [Text] -> [Text]
         -> OKX
@@ -184,8 +186,10 @@ keyHelp COps{corule} CCUI{ coinput=coinput@InputContent{..}
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (kst1, kst2))
-              [ (Left [km1], (K.PointUI (keyM + 3) y, keyB))
-              , (Left [km2], (K.PointUI (keyB + keyM + 5) y, keyB)) ]
+              [ (Left [km1], ( K.PointUI (doubleIfSquare $ keyM + 3) y
+                             , ButtonWidth displayFont keyB ))
+              , (Left [km2], ( K.PointUI (doubleIfSquare $ keyB + keyM + 5) y
+                             , ButtonWidth displayFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
@@ -287,7 +291,9 @@ okxsN InputContent{..} displayFont offset n greyedOut showManyKeys cat
                    kmsRes = if desc == "" then knownKeys else kms
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      f (ks, (_, tkey)) y = (ks, (K.PointUI 1 y, T.length tkey))
+      spLen = textSize displayFont " "
+      f (ks, (_, tkey)) y = (ks, ( K.PointUI spLen y
+                                 , ButtonWidth displayFont (T.length tkey - 1)))
       kxs = zipWith f keys [offset + 1 + length header..]
       renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
       ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
