@@ -193,7 +193,7 @@ splitOKX FontSetup{..} width height rrepRaw keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
   let rrep = if null keys then rrepRaw else rrepRaw ++ [Color.spaceAttrW32]
       -- TODO: until SDL support for measuring prop font text is released,
-      -- we have to put MonoFont also for hdrFont; undo when possible
+      -- we have to put MonoFont also for hdrMsg; undo when possible
       msgFont = if null keys then propFont else monoFont
       msgRaw0 = offsetOverlay $ splitAttrLine width rrep
       msgRaw1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) msgRaw0
@@ -205,23 +205,23 @@ splitOKX FontSetup{..} width height rrepRaw keys (ls0, kxs0) =
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
-      splitO yoffset (hdrFont, hdrMono, rk) (ls, kxs) =
-        let hdrOff | null hdrFont && null hdrMono = 0
+      splitO yoffset (hdrMsg, hdrMono, rk) (ls, kxs) =
+        let hdrOff | null hdrMsg && null hdrMono = 0
                    | otherwise = 1 + maxYofOverlay hdrMono
             keyRenumber = map $ renumber (hdrOff - yoffset)
             lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
             yoffsetNew = yoffset + height - hdrOff - 1
+            ltOffset :: (PointUI, a) -> Bool
             ltOffset (PointUI _ y, _) = y < yoffsetNew
             (pre, post) = ( filter ltOffset <$> ls
                           , filter (not . ltOffset) <$> ls )
-            prependHdr = EM.insertWith (++) msgFont hdrFont
+            prependHdr = EM.insertWith (++) msgFont hdrMsg
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
-           else let (preX, postX) =
-                      break (\(_, (PointUI _ y, _)) -> y >= yoffsetNew) kxs
+           else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
-                   : splitO yoffsetNew (hdrFont, hdrMono, rk) (post, postX)
+                   : splitO yoffsetNew (hdrMsg, hdrMono, rk) (post, postX)
       hdrShortened = ( [(PointUI 0 0, rrep)]  -- shortened for the main slides
                      , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )

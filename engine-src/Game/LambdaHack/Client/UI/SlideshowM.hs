@@ -173,7 +173,7 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
               ignoreKey = page pointer
               pageLen = length kyxs
               xix :: KYX -> Bool
-              xix (_, (K.PointUI x1' _, _)) = x1' == x1
+              xix (_, (K.PointUI x1' _, _)) = x1' <= x1 + 2 && x1' >= x1 - 2
               firstRowOfNextPage = pointer + pageLen - ixOnPage
               restOKX = drop firstRowOfNextPage allOKX
               firstItemOfNextPage = case findIndex (isRight . fst) restOKX of

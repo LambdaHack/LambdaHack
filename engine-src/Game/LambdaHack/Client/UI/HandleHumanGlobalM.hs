@@ -1198,11 +1198,13 @@ itemMenuHuman cmdAction = do
                                 (K.PointUI x (y + length descBlurb), al))
                          $ offsetOverlay $ splitAttrLine rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
-              xstart = 1 + textSize monoFont (snd $ last alPrefix)
+              xstart = textSize monoFont (Color.spaceAttrW32
+                                          : snd (last alPrefix))
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
-              (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart rwidth ks
+              width = if isSquareFont monoFont then 2 * rwidth else rwidth
+              (ovFoundRaw, kxsFound) = wrapOKX monoFont ystart xstart width ks
               ovFound = alPrefix ++ ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
@@ -1243,7 +1245,7 @@ itemMenuHuman cmdAction = do
                                 , ( EM.insertWith (++) squareFont descSym
                                     $ EM.insertWith (++) propFont descBlurb
                                     $ EM.insertWith (++) monoFont ovFound ov0
-                                      -- mono font, because there are buttons
+                                        -- mono font, because there are buttons
                                   , kxsFound ++ kxs0 ))
               extraKeys = [K.spaceKM, K.escKM] ++ foundKeys
           recordHistory  -- report shown (e.g., leader switch), save to history
