@@ -27,9 +27,9 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- When the intro screen mentions KP_5, this really is KP_Begin,
 -- but since that is harder to understand we assume a different, non-default
 -- state of NumLock in the help text than in the code that handles keys.
-keyHelp :: CCUI -> DisplayFont -> [(Text, OKX)]
+keyHelp :: CCUI -> FontSetup -> [(Text, OKX)]
 keyHelp CCUI{ coinput=coinput@InputContent{..}
-            , coscreen=ScreenContent{rheight} } displayFont =
+            , coscreen=ScreenContent{rheight} } FontSetup{..} =
   let
     movBlurb1 =
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
@@ -151,7 +151,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput displayFont 0 keyL (const False) True
+    okxs = okxsN coinput monoFont 0 keyL (const False) True
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
@@ -191,7 +191,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                   Nothing -> (key, "(not described:" <+> tshow cmd2 <> ")")
             in (ca, Left km, desc)
       in map caMakeChoice caCmds
-    doubleIfSquare n | isSquareFont displayFont = 2 * n
+    doubleIfSquare n | isSquareFont monoFont = 2 * n
                      | otherwise = n
     okm :: (forall a. (a, a) -> a)
         -> K.KM -> K.KM -> [Text] -> [Text]
@@ -202,24 +202,24 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
             assert (ca1 == ca2 `blame` (kst1, kst2))
               [ (Left [km1], ( K.PointUI (doubleIfSquare $ keyM + 3) y
-                             , ButtonWidth displayFont keyB ))
+                             , ButtonWidth monoFont keyB ))
               , (Left [km2], ( K.PointUI (doubleIfSquare $ keyB + keyM + 5) y
-                             , ButtonWidth displayFont keyB )) ]
+                             , ButtonWidth monoFont keyB )) ]
           f c d e = error $ "" `showFailure` (c, d, e)
           kxs = concat $ zipWith3 f kst1 kst2 [1 + length header..]
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in (toDisplayFont $ "" : header ++ menu ++ footer, kxs)
-    toDisplayFont :: [Text] -> FontOverlayMap
-    toDisplayFont = EM.singleton displayFont . offsetOverlay . map textToAL
+      in (typesetInMono $ "" : header ++ menu ++ footer, kxs)
+    typesetInMono :: [Text] -> FontOverlayMap
+    typesetInMono = EM.singleton monoFont . offsetOverlay . map textToAL
   in concat
     [ if catLength CmdMinimal
          + length movText1 + length movTextS + length movText2
          + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (toDisplayFont $ [""] ++ movText1 ++ [""] ++ movTextS
+          , (typesetInMono $ [""] ++ movText1 ++ [""] ++ movTextS
                              ++ [""] ++ movText2 ++ movTextEnd, []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
