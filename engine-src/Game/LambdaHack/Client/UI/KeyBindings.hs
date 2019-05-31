@@ -38,11 +38,11 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "(left mouse button). Run collectively via S-LMB (holding Shift)."
       ]
     movSchema =
-      [ "         q w e          y k u          7 8 9"
-      , "          \\|/            \\|/            \\|/"
-      , "         a-s-d          h-.-l          4-5-6"
-      , "          /|\\            /|\\            /|\\"
-      , "         z x c          b j n          1 2 3"
+      [ "     q w e     y k u     7 8 9"
+      , "      \\|/       \\|/       \\|/"
+      , "     a-s-d     h-.-l     4-5-6"
+      , "      /|\\       /|\\       /|\\"
+      , "     z x c     b j n     1 2 3"
       ]
     movBlurb2 =
       [ "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
@@ -156,8 +156,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
     mergeOKX (ovs1, ks1) (ovs2, ks2) =
-      let off = EM.foldr (\ov acc -> max acc (length ov)) 0 ovs1
-      in ( EM.unionWith (\ov1 ov2 -> ov1 ++ renumberOv off ov2) ovs1 ovs2
+      let off = 1 + EM.foldr (\ov acc -> max acc (maxYofOverlay ov)) 0 ovs1
+      in ( EM.unionWith (++) ovs1 $ EM.map (renumberOv off) ovs2
          , ks1 ++ map (renumber off) ks2 )
     catLength cat = length $ filter (\(_, (cats, desc, _)) ->
       cat `elem` cats && (desc /= "" || CmdInternal `elem` cats)) bcmdList
@@ -211,6 +211,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
       in (typesetInMono $ "" : header ++ menu ++ footer, kxs)
+    typesetInSquare :: [Text] -> FontOverlayMap
+    typesetInSquare = EM.singleton squareFont . offsetOverlay . map textToAL
     typesetInMono :: [Text] -> FontOverlayMap
     typesetInMono = EM.singleton monoFont . offsetOverlay . map textToAL
   in concat
@@ -219,8 +221,10 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
          + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (typesetInMono $ [""] ++ movText1 ++ [""] ++ movTextS
-                             ++ [""] ++ movText2 ++ movTextEnd, []) )
+          , mergeOKX
+              (mergeOKX (typesetInMono $ [""] ++ movText1, [])
+                        (typesetInSquare $ [""] ++ movTextS, []))
+              (typesetInMono $ [""] ++ movText2 ++ movTextEnd, []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
       else
