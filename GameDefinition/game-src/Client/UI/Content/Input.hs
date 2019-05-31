@@ -121,13 +121,13 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("T", ( [CmdItem, CmdDashboard]
           , "manage our total team belongings"
           , ChooseItemMenu MOwned ))
-  , ("@", ( [CmdItem, CmdDashboard]
+  , ("@", ( [CmdMeta, CmdDashboard]
           , "describe organs of the pointman"
           , ChooseItemMenu MOrgans ))
-  , ("#", ( [CmdItem, CmdDashboard]
+  , ("#", ( [CmdMeta, CmdDashboard]
           , "show skill summary of the pointman"
           , ChooseItemMenu MSkills ))
-  , ("~", ( [CmdItem]
+  , ("~", ( [CmdMeta]
           , "display known lore"
           , ChooseItemMenu (MLore SItem) ))
 
@@ -183,8 +183,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
   , ("V", repeatTriple 100)
-  , ("C-v", repeatTriple 1000)
-  , ("C-V", repeatTriple 25)
+  , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 1000)
+  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))

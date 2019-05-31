@@ -77,34 +77,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ ""
       , "Press SPACE to see the next page of command descriptions."
       ]
-    itemMenuEnding =
-      [ ""
-      , "Note how lower case item commands (stash item, equip item)"
-      , "let you move items into a particular item store."
-      , ""
-      , "Press SPACE to see the detailed descriptions of other item-related commands."
-      ]
-    itemRemainingEnding =
-      [ ""
-      , "Note how upper case item commands (manage Inventory, manage Outfit)"
-      , "let you view and organize items within a particular item store."
-      , "Once a store management menu is opened, you can switch stores"
-      , "at will with '<' and '>', so the multiple commands only"
-      , "determine the starting item store. Each store is accessible"
-      , "from the dashboard as well."
-      , ""
-      , "Press SPACE to see the next page of command descriptions."
-      ]
     itemAllEnding =
       [ ""
-      , "Note how lower case item commands (stash item, equip item)"
-      , "let you move items into a particular item store, while"
-      , "upper case item commands (manage Inventory, manage Outfit)"
-      , "let you view and organize items within a particular item store."
-      , "Once a store management menu is opened, you can switch stores"
-      , "at will with '<' and '>', so the multiple commands only"
-      , "determine the starting item store. Each store is accessible"
-      , "from the dashboard as well."
+      , "Note how lower case item commands (stash item, equip item) place items"
+      , "into a particular item store, while upper case item commands (manage Inventory,"
+      , "manage Outfit) open management menu for a store. Once a store menu is opened,"
+      , "you can switch stores with '<' and '>', so the multiple commands only determine"
+      , "the starting item store. Each store is accessible from the dashboard as well."
       , ""
       , "Press SPACE to see the next page of command descriptions."
       ]
@@ -126,10 +105,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ ""
       , "Press SPACE to see mouse commands in exploration and aiming modes."
       ]
-    lastHelpEnding =
+    lastKeyboardHelpEnding =
       [ ""
-      , "For more playing instructions see file PLAYING.md. Press PGUP or scroll"
-      , "mouse wheel for previous pages and press SPACE or ESC to see the map again."
+      , "This concludes keyboard help. Press SPACE to view mouse commands or ESC"
+      , "to see the map again. For more playing instructions read file PLAYING.md."
+      ]
+    lastMouseHelpEnding =
+      [ ""
+      , "Scroll mouse wheel for previous pages. Press SPACE or ESC to see the map again."
       ]
     keyL = 12
     pickLeaderDescription =
@@ -145,12 +128,11 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
     categoryEnd = map fmts categoryEnding
-    itemMenuEnd = map fmts itemMenuEnding
-    itemRemainingEnd = map fmts itemRemainingEnding
     itemAllEnd = map fmts itemAllEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
     mouseBasicsEnd = map fmts mouseBasicsEnding
-    lastHelpEnd = map fmts lastHelpEnding
+    lastKeyboardHelpEnd = map fmts lastKeyboardHelpEnding
+    lastMouseHelpEnd = map fmts lastMouseHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN coinput monoFont propFont 0 keyL (const False) True
@@ -238,34 +220,32 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                   ++ [""] ++ minimalText
                  , [keyCaption] )
                  ([], casualEnd) ) ]
-    , if catLength CmdItemMenu + catLength CmdItem
-         + 14 > rheight then
-        [ ( categoryDescription CmdItemMenu <> "."
-          , okxs CmdItemMenu ([], ["", keyCaption]) ([], itemMenuEnd) )
-        , ( categoryDescription CmdItem <> "."
-          , okxs CmdItem ([], ["", keyCaption]) ([], itemRemainingEnd) ) ]
-      else
-        [ ( categoryDescription CmdItemMenu <> "."
-          , mergeOKX
-              (okxs CmdItemMenu ([], ["", keyCaption]) ([], [""]))
-              (okxs CmdItem
-                    ([categoryDescription CmdItem <> ".", ""], [keyCaption])
-                    ([], itemAllEnd) ) ) ]
-    , if catLength CmdMove + catLength CmdAim
-         + 9 > rheight then
-        [ ( "All terrain exploration and modification commands."
+    , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
+        [ ( categoryDescription CmdItem <> "."
+          , okxs CmdItem ([], ["", keyCaption]) ([], itemAllEnd) )
+        , ( categoryDescription CmdMove
           , okxs CmdMove ([], ["", keyCaption])
-                         (pickLeaderDescription, categoryEnd) )
-        , ( categoryDescription CmdAim <> "."
-          , okxs CmdAim ([], ["", keyCaption]) ([], categoryEnd) ) ]
+                         (pickLeaderDescription, categoryEnd) ) ]
       else
-        [ ( "All terrain exploration and modification commands."
+        [ ( categoryDescription CmdItem <> "."
           , mergeOKX
-              (okxs CmdMove ([], ["", keyCaption])
+              (okxs CmdItem ([], ["", keyCaption]) ([], itemAllEnd))
+              (okxs CmdMove
+                    ([categoryDescription CmdMove <> ".", ""], [keyCaption])
+                    (pickLeaderDescription, [""])) ) ]
+    , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
+        [ ( categoryDescription CmdAim <> "."
+          , okxs CmdAim ([], ["", keyCaption]) ([], categoryEnd) )
+        , ( categoryDescription CmdMeta <> "."
+          , okxs CmdMeta ([], ["", keyCaption]) ([], lastKeyboardHelpEnd) ) ]
+      else
+        [ ( categoryDescription CmdMove
+          , mergeOKX
+              (okxs CmdAim ([], ["", keyCaption])
                             (pickLeaderDescription, [""]))
-              (okxs CmdAim
-                    ([categoryDescription CmdAim <> ".", ""], [keyCaption])
-                    ([], categoryEnd)) ) ]
+              (okxs CmdMeta
+                    ([categoryDescription CmdMeta <> ".", ""], [keyCaption])
+                    ([], lastKeyboardHelpEnd)) ) ]
     , if 45 > rheight then
         [ ( "Mouse overview."
           , let (ls, _) = okxs CmdMouse
@@ -277,7 +257,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
                     [areaCaption "exploration"] [])
                (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                    [areaCaption "aiming mode"] categoryEnd) ) ]
+                    [areaCaption "aiming mode"] lastMouseHelpEnd) ) ]
       else
         [ ( "Mouse commands."
           , let (ls, _) = okxs CmdMouse
@@ -290,9 +270,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
                          [areaCaption "exploration"] []))
                  (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "aiming mode"] categoryEnd) ) ]
-    , [ ( categoryDescription CmdMeta <> "."
-        , okxs CmdMeta ([], ["", keyCaption]) ([], lastHelpEnd) ) ]
+                      [areaCaption "aiming mode"] lastMouseHelpEnd) ) ]
     ]
 
 -- | Turn the specified portion of bindings into a menu.

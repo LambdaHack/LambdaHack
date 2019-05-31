@@ -135,7 +135,7 @@ moveItemTriple :: [CStore] -> CStore -> MU.Part -> Bool -> CmdTriple
 moveItemTriple stores1 store2 object auto =
   let verb = MU.Text $ verbCStore store2
       desc = makePhrase [verb, object]
-  in ([CmdItemMenu], desc, MoveItem stores1 store2 Nothing auto)
+  in ([CmdItemMenu, CmdItem], desc, MoveItem stores1 store2 Nothing auto)
 
 repeatTriple :: Int -> CmdTriple
 repeatTriple n = ( [CmdMeta]
@@ -224,7 +224,7 @@ projectICmd :: [TriggerItem] -> HumanCmd
 projectICmd ts = ComposeUnlessError (ChooseItemProject ts) Project
 
 projectI :: [TriggerItem] -> CmdTriple
-projectI ts = ([], descIs ts, projectICmd ts)
+projectI ts = ([CmdItem], descIs ts, projectICmd ts)
 
 projectA :: [TriggerItem] -> CmdTriple
 projectA ts =
@@ -241,25 +241,25 @@ flingTs = [TriggerItem { tiverb = "fling"
 
 applyIK :: [TriggerItem] -> CmdTriple
 applyIK ts =
-  ([], descIs ts, ComposeUnlessError (ChooseItemApply ts) Apply)
+  ([CmdItem], descIs ts, ComposeUnlessError (ChooseItemApply ts) Apply)
 
 applyI :: [TriggerItem] -> CmdTriple
 applyI ts =
   let apply = Compose2ndLocal Apply ItemClear
-  in ([], descIs ts, ComposeUnlessError (ChooseItemApply ts) apply)
+  in ([CmdItem], descIs ts, ComposeUnlessError (ChooseItemApply ts) apply)
 
 grabCmd :: HumanCmd
 grabCmd = MoveItem [CGround] CStash (Just "grab") True
             -- @CStash@ is the implicit default; refined in HandleHumanGlobalM
 
 grabItems :: Text -> CmdTriple
-grabItems t = ([CmdItemMenu], t, grabCmd)
+grabItems t = ([CmdItemMenu, CmdItem], t, grabCmd)
 
 dropCmd :: HumanCmd
 dropCmd = MoveItem [CStash, CEqp] CGround Nothing False
 
 dropItems :: Text -> CmdTriple
-dropItems t = ([CmdItemMenu], t, dropCmd)
+dropItems t = ([CmdItemMenu, CmdItem], t, dropCmd)
 
 descIs :: [TriggerItem] -> Text
 descIs [] = "trigger an item"
