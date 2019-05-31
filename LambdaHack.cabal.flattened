@@ -69,7 +69,6 @@ data-files:    GameDefinition/config.ui.default,
                COPYLEFT,
                CREDITS
 extra-source-files: GameDefinition/config.ui.default,
-                    GameDefinition/MoveKeys.txt,
                     GameDefinition/PLAYING.md,
                     Makefile
 author:        Andres Loeh, Mikolaj Konarski and others

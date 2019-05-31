@@ -18,12 +18,11 @@ import Game.LambdaHack.Definition.Defs
 
 -- | Screen layout and features definition.
 data ScreenContent = ScreenContent
-  { rwidth          :: X         -- ^ screen width
-  , rheight         :: Y         -- ^ screen height
-  , rmainMenuLine   :: String    -- ^ an extra blurb line for the main menu
-  , rintroScreen    :: [String]  -- ^ the intro screen (first help screen) text
-  , rmoveKeysScreen :: [String]  -- ^ the fixed move key help blurb
-  , rapplyVerbMap   :: EM.EnumMap Char T.Text
+  { rwidth        :: X         -- ^ screen width
+  , rheight       :: Y         -- ^ screen height
+  , rmainMenuLine :: String    -- ^ an extra blurb line for the main menu
+  , rintroScreen  :: [String]  -- ^ the intro screen (first help screen) text
+  , rapplyVerbMap :: EM.EnumMap Char T.Text
                                  -- ^ verbs to use for apply actions
   }
 

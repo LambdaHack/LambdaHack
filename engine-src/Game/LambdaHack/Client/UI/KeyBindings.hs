@@ -29,11 +29,35 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- state of NumLock in the help text than in the code that handles keys.
 keyHelp :: CCUI -> DisplayFont -> [(Text, OKX)]
 keyHelp CCUI{ coinput=coinput@InputContent{..}
-            , coscreen=ScreenContent{ rheight, rmoveKeysScreen} } displayFont =
+            , coscreen=ScreenContent{rheight} } displayFont =
   let
-    movBlurb = map T.pack rmoveKeysScreen
+    movBlurb1 =
+      [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
+      , "or the Vi editor keys (middle) or the left hand movement keys (left)."
+      , "Run until disturbed with Shift or Control. Go-to a position with LMB"
+      , "(left mouse button). Run collectively via S-LMB (holding Shift)."
+      ]
+    movSchema =
+      [ "         q w e          y k u          7 8 9"
+      , "          \\|/            \\|/            \\|/"
+      , "         a-s-d          h-.-l          4-5-6"
+      , "          /|\\            /|\\            /|\\"
+      , "         z x c          b j n          1 2 3"
+      ]
+    movBlurb2 =
+      [ "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
+      , "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
+      , "damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`"
+      , "(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing."
+      , "Displace enemies by running into them with Shift/Control or S-LMB. Search,"
+      , "open, descend and attack by bumping into walls, doors, stairs and enemies."
+      , "The best melee weapon is automatically chosen from your equipment"
+      , "and from among your body parts."
+      ]
     movBlurbEnd =
-      [ "Press SPACE or PGDN for the minimal command set or ESC to see the map again." ]
+      [ ""
+      , "Press SPACE or PGDN for the minimal command set or ESC to see the map again."
+      ]
     minimalBlurb =
       [ "The following commands, joined with the basic set above,"
       , "let you accomplish anything in the game, though"
@@ -112,7 +136,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     casualDescription = "Minimal cheat sheet for casual play"
     fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
     fmts s = " " <> s
-    movText = map fmts movBlurb
+    movText1 = map fmts movBlurb1
+    movTextS = map fmts movSchema
+    movText2 = map fmts movBlurb2
     movTextEnd = map fmts movBlurbEnd
     minimalText = map fmts minimalBlurb
     casualEnd = map fmts casualEnding
@@ -189,16 +215,19 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     toDisplayFont = EM.singleton displayFont . offsetOverlay . map textToAL
   in concat
     [ if catLength CmdMinimal
-         + length movText + length minimalText + length casualEnd
+         + length movText1 + length movTextS + length movText2
+         + length minimalText + length casualEnd
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
-          , (toDisplayFont $ [""] ++ movText ++ [""] ++ movTextEnd, []) )
+          , (toDisplayFont $ [""] ++ movText1 ++ [""] ++ movTextS
+                             ++ [""] ++ movText2 ++ movTextEnd, []) )
         , ( casualDescription <+> "(2/2)."
           , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
       else
         [ ( casualDescription <> "."
           , okxs CmdMinimal
-                 (movText ++ [""] ++ minimalText ++ [keyCaption])
+                 (movText1 ++ [""] ++ movTextS ++ [""] ++ movText2
+                  ++ [""] ++ minimalText ++ [keyCaption])
                  casualEnd ) ]
     , if catLength CmdItemMenu + catLength CmdItem
          + 14 > rheight then
