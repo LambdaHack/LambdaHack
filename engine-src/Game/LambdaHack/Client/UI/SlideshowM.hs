@@ -152,7 +152,9 @@ displayChoiceScreen menuName dm sfBlank frsX extraKeys = do
                                     {Color.bg = Color.HighlightNoneCursor}}
               -- This also highlights dull white item symbols, but who cares.
               x1Chars = if isSquareFont fontX1 then x1 `div` 2 else x1
-              drawHighlight xstart xs =
+              lenUI = if isSquareFont fontX1 then len * 2 else len
+              drawHighlight xstart xs | x1 + lenUI < xstart = xs
+                                      | otherwise =
                 let (xs1, xsRest) = splitAt (x1Chars - xstart) xs
                     (xs2, xs3) = splitAt len xsRest
                     highW32 = Color.attrCharToW32
