@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, TupleSections #-}
+{-# LANGUAGE RankNTypes #-}
 -- | Verifying, aggregating and displaying binding of keys to commands.
 module Game.LambdaHack.Client.UI.KeyBindings
   ( keyHelp, okxsN
@@ -59,13 +59,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "Press SPACE or PGDN for the minimal command set or ESC to see the map again."
       ]
     minimalBlurb =
-      [ "The following commands, joined with the basic set above,"
-      , "let you accomplish anything in the game, though"
-      , "not necessarily with the fewest keystrokes. You can also"
-      , "play the game exclusively with a mouse, or both mouse"
-      , "and keyboard. (See the ending help screens for mouse commands.)"
-      , "Lastly, you can select a command with arrows or mouse directly"
-      , "from the help screen or the dashboard and execute it on the spot."
+      [ ""
+      , "The following commands, joined with the basic set above,"
+      , "let you accomplish anything in the game, though not necessarily"
+      , "with the fewest keystrokes. You can also play the game"
+      , "exclusively with a mouse, or both mouse and keyboard."
+      , "(See the ending help screens for mouse commands.) Lastly,"
+      , "you can select a command with arrows or mouse directly from"
+      , "the help screen or the dashboard and execute it on the spot."
       , ""
       ]
     casualEnding =
@@ -108,14 +109,15 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "Press SPACE to see the next page of command descriptions."
       ]
     mouseBasicsBlurb =
-      [ "Screen area and UI mode (exploration/aiming) determine"
+      [ ""
+      , "Screen area and UI mode (exploration/aiming) determine"
       , "mouse click effects. First, we give an overview"
       , "of effects of each button over the game map area."
       , "The list includes not only left and right buttons, but also"
       , "the optional middle mouse button (MMB) and the mouse wheel,"
       , "which is also used over menus, to page-scroll them."
-      , "(For mice without RMB, one can use Control key with LMB and for mice"
-      , "without MMB, one can use C-RMB or C-S-LMB.)"
+      , "(For mice without RMB, one can use Control key with LMB"
+      , "and for mice without MMB, one can use C-RMB or C-S-LMB.)"
       , "Next we show mouse button effects per screen area,"
       , "in exploration mode and (if different) in aiming mode."
       , ""
@@ -151,7 +153,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     lastHelpEnd = map fmts lastHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput monoFont 0 keyL (const False) True
+    okxs = okxsN coinput monoFont propFont 0 keyL (const False) True
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
@@ -215,6 +217,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetInSquare = EM.singleton squareFont . offsetOverlay . map textToAL
     typesetInMono :: [Text] -> FontOverlayMap
     typesetInMono = EM.singleton monoFont . offsetOverlay . map textToAL
+    typesetInProp :: [Text] -> FontOverlayMap
+    typesetInProp = EM.singleton propFont . offsetOverlay . map textToAL
   in concat
     [ if catLength CmdMinimal
          + length movText1 + length movTextS + length movText2
@@ -222,48 +226,51 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
          + 5 > rheight then
         [ ( casualDescription <+> "(1/2)."
           , mergeOKX
-              (mergeOKX (typesetInMono $ [""] ++ movText1, [])
+              (mergeOKX (typesetInProp $ [""] ++ movText1, [])
                         (typesetInSquare $ [""] ++ movTextS, []))
-              (typesetInMono $ [""] ++ movText2 ++ movTextEnd, []) )
+              (typesetInProp $ [""] ++ movText2 ++ movTextEnd, []) )
         , ( casualDescription <+> "(2/2)."
-          , okxs CmdMinimal (minimalText ++ [keyCaption]) casualEnd ) ]
+          , okxs CmdMinimal (minimalText, [keyCaption]) ([], casualEnd) ) ]
       else
         [ ( casualDescription <> "."
           , okxs CmdMinimal
-                 (movText1 ++ [""] ++ movTextS ++ [""] ++ movText2
-                  ++ [""] ++ minimalText ++ [keyCaption])
-                 casualEnd ) ]
+                 ( movText1 ++ [""] ++ movTextS ++ [""] ++ movText2
+                  ++ [""] ++ minimalText
+                 , [keyCaption] )
+                 ([], casualEnd) ) ]
     , if catLength CmdItemMenu + catLength CmdItem
          + 14 > rheight then
         [ ( categoryDescription CmdItemMenu <> "."
-          , okxs CmdItemMenu [keyCaption] itemMenuEnd )
+          , okxs CmdItemMenu ([], ["", keyCaption]) ([], itemMenuEnd) )
         , ( categoryDescription CmdItem <> "."
-          , okxs CmdItem [keyCaption] itemRemainingEnd ) ]
+          , okxs CmdItem ([], ["", keyCaption]) ([], itemRemainingEnd) ) ]
       else
         [ ( categoryDescription CmdItemMenu <> "."
           , mergeOKX
-              (okxs CmdItemMenu [keyCaption] [""])
+              (okxs CmdItemMenu ([], ["", keyCaption]) ([], [""]))
               (okxs CmdItem
-                    [categoryDescription CmdItem <> ".", "", keyCaption]
-                    itemAllEnd) ) ]
+                    ([categoryDescription CmdItem <> ".", ""], [keyCaption])
+                    ([], itemAllEnd) ) ) ]
     , if catLength CmdMove + catLength CmdAim
          + 9 > rheight then
         [ ( "All terrain exploration and modification commands."
-          , okxs CmdMove [keyCaption] (pickLeaderDescription ++ categoryEnd) )
+          , okxs CmdMove ([], ["", keyCaption])
+                         (pickLeaderDescription, categoryEnd) )
         , ( categoryDescription CmdAim <> "."
-          , okxs CmdAim [keyCaption] categoryEnd ) ]
+          , okxs CmdAim ([], ["", keyCaption]) ([], categoryEnd) ) ]
       else
         [ ( "All terrain exploration and modification commands."
           , mergeOKX
-              (okxs CmdMove [keyCaption] (pickLeaderDescription ++ [""]))
+              (okxs CmdMove ([], ["", keyCaption])
+                            (pickLeaderDescription, [""]))
               (okxs CmdAim
-                    [categoryDescription CmdAim <> ".", "", keyCaption]
-                    categoryEnd) ) ]
+                    ([categoryDescription CmdAim <> ".", ""], [keyCaption])
+                    ([], categoryEnd)) ) ]
     , if 45 > rheight then
         [ ( "Mouse overview."
           , let (ls, _) = okxs CmdMouse
-                               (mouseBasicsText ++ [keyCaption])
-                               mouseBasicsEnd
+                               (mouseBasicsText, [keyCaption])
+                               ([], mouseBasicsEnd)
             in (ls, []) )  -- don't capture mouse wheel, etc.
         , ( "Mouse in exploration and aiming modes."
           , mergeOKX
@@ -274,8 +281,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       else
         [ ( "Mouse commands."
           , let (ls, _) = okxs CmdMouse
-                               (mouseBasicsText ++ [keyCaption])
-                               []
+                               (mouseBasicsText, [keyCaption])
+                               ([], [])
                 okx0 = (ls, [])  -- don't capture mouse wheel, etc.
             in mergeOKX
                  (mergeOKX
@@ -285,23 +292,26 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                  (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
                       [areaCaption "aiming mode"] categoryEnd) ) ]
     , [ ( categoryDescription CmdMeta <> "."
-        , okxs CmdMeta [keyCaption] lastHelpEnd ) ]
+        , okxs CmdMeta ([], ["", keyCaption]) ([], lastHelpEnd) ) ]
     ]
 
 -- | Turn the specified portion of bindings into a menu.
-okxsN :: InputContent -> DisplayFont -> Int -> Int -> (HumanCmd -> Bool) -> Bool
-      -> CmdCategory
-      -> [Text] -> [Text] -> OKX
-okxsN InputContent{..} displayFont offset n greyedOut showManyKeys cat
-      header footer =
-  let fmt k h = " " <> T.justifyLeft n ' ' k <+> h
+--
+-- The length of the button may be wrong if the two supplied fonts
+-- have very different widths.
+okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
+      -> (HumanCmd -> Bool) -> Bool -> CmdCategory
+      -> ([Text], [Text]) -> ([Text], [Text]) -> OKX
+okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
+      (headerProp, headerMono) (footerMono, footerProp) =
+  let fmt k h = (" " <> T.justifyLeft n ' ' k <> " ", h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
       keyKnown km = case K.key km of
         K.Unknown{} -> False
         _ -> True
-      keys :: [(Either [K.KM] SlotChar, (Bool, Text))]
+      keys :: [(Either [K.KM] SlotChar, (Bool, (Text, Text)))]
       keys = [ (Left kmsRes, (greyedOut cmd, fmt keyNames desc))
              | (_, (cats, desc, cmd)) <- bcmdList
              , let kms = coImage cmd
@@ -311,12 +321,25 @@ okxsN InputContent{..} displayFont offset n greyedOut showManyKeys cat
                    kmsRes = if desc == "" then knownKeys else kms
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
-      spLen = textSize displayFont " "
-      f (ks, (_, tkey)) y = (ks, ( K.PointUI spLen y
-                                 , ButtonWidth displayFont (T.length tkey - 1)))
-      kxs = zipWith f keys [offset + 1 + length header..]
+      spLen = textSize keyFont " "
+      f (ks, (_, (t1, t2))) y =
+        (ks, ( K.PointUI spLen y
+             , ButtonWidth keyFont (T.length t1 + T.length t2 - 1)))
+      kxs = zipWith f keys
+                    [offset + length headerProp + length headerMono ..]
       renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
-      ts = map (False,) ("" : header) ++ map snd keys ++ map (False,) footer
-      greyToAL (b, t) = if b then textFgToAL Color.BrBlack t else textToAL t
-      greyTs = map greyToAL ts
-  in (EM.singleton displayFont $ renumberOv $ offsetOverlay greyTs, kxs)
+      ts = map (\t -> (False, ("", t))) headerProp
+           ++ map (\t -> (False, (t, ""))) headerMono
+           ++ map snd keys
+           ++ map (\t -> (False, (t, ""))) footerMono
+           ++ map (\t -> (False, ("", t))) footerProp
+      greyToAL (b, (t1, t2)) =
+        if b
+        then let al1 = textFgToAL Color.BrBlack t1
+             in (al1, (textSize keyFont al1, textFgToAL Color.BrBlack t2))
+        else let al1 = textToAL t1
+             in (al1, (textSize keyFont al1, textToAL t2))
+      (greyLab, greyDesc) = unzip $ map greyToAL ts
+  in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
+         $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
+     , kxs )

@@ -1130,10 +1130,10 @@ dashboardHuman :: MonadClientUI m
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
-  fontSetup@FontSetup{monoFont} <- getFontSetup
+  fontSetup@FontSetup{..} <- getFontSetup
   let keyL = 2
-      (ov0, kxs0) = okxsN coinput monoFont 0 keyL (const False) False
-                          CmdDashboard [] []
+      (ov0, kxs0) = okxsN coinput monoFont propFont 0 keyL (const False) False
+                          CmdDashboard ([], []) ([], [])
       al1 = textToAL "Dashboard"
   let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
                                      [K.escKM] okx
@@ -1230,8 +1230,9 @@ itemMenuHuman cmdAction = do
               keyL = 11
               keyCaption = fmt keyL "keys" "command"
               offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
-              (ov0, kxs0) = okxsN coinput monoFont offset keyL greyedOut True
-                                  CmdItemMenu [keyCaption] []
+              (ov0, kxs0) = okxsN coinput monoFont propFont offset keyL
+                                  greyedOut True CmdItemMenu
+                                  ([], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
