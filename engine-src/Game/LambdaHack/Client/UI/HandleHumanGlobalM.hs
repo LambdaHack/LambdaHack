@@ -1306,7 +1306,7 @@ generateMenu cmdAction kds gameInfo menuName = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine, rintroScreen}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  let offset = if isSquareFont propFont then 2 else -10
+  let offset = if isSquareFont propFont then 2 else -8
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
