@@ -28,7 +28,7 @@ HeroName_6 = ("Christopher Flatt", "he")
 [ui]
 movementViKeys_hjklyubn = True
 movementLeftHandKeys_axwdqezc = True
-; The font to use for scaling SDL2 display (best by multiples or 0.5):
+; The font to use for scaling SDL2 display (best by multiples of 0.5):
 ;sdlSquareFontFile = "16x16xw.woff"
 scalableFontSize = 16
 sdlScalableSizeAdd = 0
