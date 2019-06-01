@@ -171,7 +171,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     sideBySide ((t1, (ovs1, kyx1)) : (_t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
         (t1, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
-             , kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
+             , sortOn (\(_, (K.PointUI x y, _)) -> (y, x))
+               $ kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
         : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
