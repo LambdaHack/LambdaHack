@@ -29,7 +29,7 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- state of NumLock in the help text than in the code that handles keys.
 keyHelp :: CCUI -> FontSetup -> [(Text, OKX)]
 keyHelp CCUI{ coinput=coinput@InputContent{..}
-            , coscreen=ScreenContent{rheight} } FontSetup{..} =
+            , coscreen=ScreenContent{rwidth, rheight} } FontSetup{..} =
   let
     movBlurb1 =
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
@@ -201,7 +201,16 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     typesetInMono = EM.singleton monoFont . offsetOverlay . map textToAL
     typesetInProp :: [Text] -> FontOverlayMap
     typesetInProp = EM.singleton propFont . offsetOverlay . map textToAL
-  in concat
+    pamoveRight :: (K.PointUI, a) -> (K.PointUI, a)
+    pamoveRight (K.PointUI x y, a) = (K.PointUI (x + rwidth) y, a)
+    sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
+    sideBySide ((t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
+      | not $ isSquareFont propFont =
+        (t1 <+> t2, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
+                    , kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
+        : sideBySide rest
+    sideBySide l = l
+  in sideBySide $ concat
     [ if catLength CmdMinimal
          + length movText1 + length movTextS + length movText2
          + length minimalText + length casualEnd
@@ -223,7 +232,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( categoryDescription CmdItem <> "."
           , okxs CmdItem ([], ["", keyCaption]) ([], itemAllEnd) )
-        , ( categoryDescription CmdMove
+        , ( categoryDescription CmdMove <> "."
           , okxs CmdMove ([], ["", keyCaption])
                          (pickLeaderDescription, categoryEnd) ) ]
       else
@@ -239,7 +248,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         , ( categoryDescription CmdMeta <> "."
           , okxs CmdMeta ([], ["", keyCaption]) ([], lastKeyboardHelpEnd) ) ]
       else
-        [ ( categoryDescription CmdMove
+        [ ( categoryDescription CmdMove <> "."
           , mergeOKX
               (okxs CmdAim ([], ["", keyCaption])
                             (pickLeaderDescription, [""]))

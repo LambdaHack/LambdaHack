@@ -1093,8 +1093,8 @@ helpHuman cmdAction = do
     <- getsSession sccui
   fontSetup <- getFontSetup
   let keyH = keyHelp ccui fontSetup
-      splitHelp (t, okx) =
-        splitOKX fontSetup rwidth rheight (textToAL t) [K.spaceKM, K.escKM] okx
+      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAL t)
+                                    [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup $ concat $ map splitHelp keyH
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
   -- e.g., shared stash menu. This is especially clear when the shared stash
@@ -1135,7 +1135,7 @@ dashboardHuman cmdAction = do
       (ov0, kxs0) = okxsN coinput monoFont propFont 0 keyL (const False) False
                           CmdDashboard ([], []) ([], [])
       al1 = textToAL "Dashboard"
-  let splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
+  let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) al
                                      [K.escKM] okx
       sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
       extraKeys = [K.escKM]
@@ -1238,8 +1238,9 @@ itemMenuHuman cmdAction = do
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
               al1 = renderReport report <+:> textToAL t0
-              splitHelp (al, okx) = splitOKX fontSetup rwidth (rheight - 2) al
-                                             [K.spaceKM, K.escKM] okx
+              splitHelp (al, okx) =
+                splitOKX fontSetup False rwidth (rheight - 2) al
+                         [K.spaceKM, K.escKM] okx
               sli = toSlideshow fontSetup
                     $ splitHelp ( al1
                                 , ( EM.insertWith (++) squareFont descSym

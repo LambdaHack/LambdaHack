@@ -184,18 +184,22 @@ keysOKX displayFont ystart xstart width keys =
 splitOverlay :: FontSetup -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
 splitOverlay fontSetup width height report keys (ls0, kxs0) =
-  toSlideshow fontSetup $ splitOKX fontSetup width height (renderReport report)
-                                   keys (ls0, kxs0)
+  toSlideshow fontSetup $ splitOKX fontSetup False width height
+                                   (renderReport report) keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
-splitOKX :: FontSetup -> Int -> Int -> AttrLine -> [K.KM] -> OKX -> [OKX]
-splitOKX FontSetup{..} width height rrepRaw keys (ls0, kxs0) =
+splitOKX :: FontSetup -> Bool -> Int -> Int -> AttrLine -> [K.KM] -> OKX
+         -> [OKX]
+splitOKX FontSetup{..} msgLong width height rrepRaw keys (ls0, kxs0) =
   assert (height > 2) $  -- and kxs0 is sorted
   let rrep = if null keys then rrepRaw else rrepRaw ++ [Color.spaceAttrW32]
       -- TODO: until SDL support for measuring prop font text is released,
       -- we have to put MonoFont also for hdrMsg; undo when possible
       msgFont = if null keys then propFont else monoFont
-      msgRaw0 = offsetOverlay $ splitAttrLine width rrep
+      msgWidth = if msgLong && not (isSquareFont propFont)
+                 then 2 * width
+                 else width
+      msgRaw0 = offsetOverlay $ splitAttrLine msgWidth rrep
       msgRaw1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) msgRaw0
       (lX0, keysX0) = keysOKX monoFont 0 0 width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
@@ -267,7 +271,7 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
       al = textToAL msg
       splitScreen ts =
-        splitOKX fontSetup width height al [K.spaceKM, K.escKM]
+        splitOKX fontSetup False width height al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
   in toSlideshow fontSetup $ concat $ map splitScreen tts
 
