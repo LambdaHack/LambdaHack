@@ -54,66 +54,36 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "The best melee weapon is automatically chosen from your equipment"
       , "and from among your body parts."
       ]
-    movBlurbEnd =
-      [ ""
-      , "Press SPACE or PGDN for the minimal command set or ESC to see the map again."
-      ]
     minimalBlurb =
-      [ ""
-      , "The following commands, joined with the basic set above,"
+      [ "The following commands, joined with the movement keys shown earlier,"
       , "let you accomplish anything in the game, though not necessarily"
       , "with the fewest keystrokes. You can also play the game"
       , "exclusively with a mouse, or both mouse and keyboard."
       , "(See the ending help screens for mouse commands.) Lastly,"
       , "you can select a command with arrows or mouse directly from"
       , "the help screen or the dashboard and execute it on the spot."
-      , ""
-      ]
-    casualEnding =
-      [ ""
-      , "Press SPACE or scroll the mouse wheel to see descriptions of all commands."
-      ]
-    categoryEnding =
-      [ ""
-      , "Press SPACE to see the next page of command descriptions."
       ]
     itemAllEnding =
-      [ ""
-      , "Note how lower case item commands (stash item, equip item) place items"
+      [ "Note how lower case item commands (stash item, equip item) place items"
       , "into a particular item store, while upper case item commands (manage Inventory,"
       , "manage Outfit) open management menu for a store. Once a store menu is opened,"
       , "you can switch stores with '<' and '>', so the multiple commands only determine"
       , "the starting item store. Each store is accessible from the dashboard as well."
-      , ""
-      , "Press SPACE to see the next page of command descriptions."
       ]
     mouseBasicsBlurb =
-      [ ""
-      , "Screen area and UI mode (exploration/aiming) determine"
-      , "mouse click effects. First, we give an overview"
-      , "of effects of each button over the game map area."
-      , "The list includes not only left and right buttons, but also"
-      , "the optional middle mouse button (MMB) and the mouse wheel,"
-      , "which is also used over menus, to page-scroll them."
-      , "(For mice without RMB, one can use Control key with LMB"
-      , "and for mice without MMB, one can use C-RMB or C-S-LMB.)"
-      , "Next we show mouse button effects per screen area,"
-      , "in exploration mode and (if different) in aiming mode."
-      , ""
+      [ "Screen area and UI mode (exploration/aiming) determine mouse click"
+      , "effects. First, we give an overview of effects of each button over"
+      , "the game map area. The list includes not only left and right buttons,"
+      , "but also the optional middle mouse button (MMB) and the mouse wheel,"
+      , "which is also used over menus, to page-scroll them. (For mice without"
+      , "RMB, one can use Control key with LMB and for mice without MMB,"
+      , "one can use C-RMB or C-S-LMB.) Next we show mouse button effects"
+      , "per screen area, in exploration mode and (if different) in aiming mode."
       ]
-    mouseBasicsEnding =
-      [ ""
-      , "Press SPACE to see mouse commands in exploration and aiming modes."
-      ]
-    lastKeyboardHelpEnding =
-      [ ""
-      , "This concludes keyboard help. Press SPACE to view mouse commands or ESC"
-      , "to see the map again. For more playing instructions read file PLAYING.md."
-      ]
-    lastMouseHelpEnding =
-      [ ""
-      , "Scroll mouse wheel for previous pages. Press SPACE or ESC to see the map again."
-      ]
+    movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
+    categoryEnd = "Press SPACE or PGDN or scroll the mouse wheel for more."
+    lastHelpEnd = "Scroll mouse wheel to go back. Press ESC to see the map again."
+    seeAlso = "For more playing instructions see file PLAYING.md."
     keyL = 12
     pickLeaderDescription =
       [ fmt keyL "0, 1 ... 9" "pick a particular actor as the new pointman"
@@ -124,15 +94,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     movText1 = map fmts movBlurb1
     movTextS = map fmts movSchema
     movText2 = map fmts movBlurb2
-    movTextEnd = map fmts movBlurbEnd
     minimalText = map fmts minimalBlurb
-    casualEnd = map fmts casualEnding
-    categoryEnd = map fmts categoryEnding
     itemAllEnd = map fmts itemAllEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
-    mouseBasicsEnd = map fmts mouseBasicsEnding
-    lastKeyboardHelpEnd = map fmts lastKeyboardHelpEnding
-    lastMouseHelpEnd = map fmts lastMouseHelpEnding
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
     okxs = okxsN coinput monoFont propFont 0 keyL (const False) True
@@ -178,9 +142,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     doubleIfSquare n | isSquareFont monoFont = 2 * n
                      | otherwise = n
     okm :: (forall a. (a, a) -> a)
-        -> K.KM -> K.KM -> [Text] -> [Text]
+        -> K.KM -> K.KM -> [Text]
         -> OKX
-    okm sel key1 key2 header footer =
+    okm sel key1 key2 header =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
@@ -194,7 +158,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in (typesetInMono $ "" : header ++ menu ++ footer, kxs)
+      in (typesetInMono $ "" : header ++ menu, kxs)
     typesetInSquare :: [Text] -> FontOverlayMap
     typesetInSquare = EM.singleton squareFont . offsetOverlay . map textToAL
     typesetInMono :: [Text] -> FontOverlayMap
@@ -204,83 +168,109 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     pamoveRight :: (K.PointUI, a) -> (K.PointUI, a)
     pamoveRight (K.PointUI x y, a) = (K.PointUI (x + rwidth) y, a)
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
+    sideBySide ((t1, (ovs1, kyx1)) : (_t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
-        (t1 <+> t2, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
-                    , kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
+        (t1, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
+             , kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
         : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal
          + length movText1 + length movTextS + length movText2
-         + length minimalText + length casualEnd
-         + 5 > rheight then
-        [ ( casualDescription <+> "(1/2)."
+         + length minimalText
+         + 6 > rheight then
+        [ ( movTextEnd
           , mergeOKX
-              (mergeOKX (typesetInProp $ [""] ++ movText1, [])
+              (mergeOKX (typesetInProp
+                         $ ["", " " <> casualDescription <+> "(1/2)", ""]
+                           ++ movText1, [])
                         (typesetInSquare $ [""] ++ movTextS, []))
-              (typesetInProp $ [""] ++ movText2 ++ movTextEnd, []) )
-        , ( casualDescription <+> "(2/2)."
-          , okxs CmdMinimal (minimalText, [keyCaption]) ([], casualEnd) ) ]
-      else
-        [ ( casualDescription <> "."
+              (typesetInProp $ [""] ++ movText2, []) )
+        , ( movTextEnd
           , okxs CmdMinimal
-                 ( movText1 ++ [""] ++ movTextS ++ [""] ++ movText2
-                  ++ [""] ++ minimalText
+                 ( ["", " " <> casualDescription <+> "(2/2)", ""]
+                   ++ minimalText ++ [""]
                  , [keyCaption] )
-                 ([], casualEnd) ) ]
-    , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
-        [ ( categoryDescription CmdItem <> "."
-          , okxs CmdItem ([], ["", keyCaption]) ([], itemAllEnd) )
-        , ( categoryDescription CmdMove <> "."
-          , okxs CmdMove ([], ["", keyCaption])
-                         (pickLeaderDescription, categoryEnd) ) ]
+                 ([], []) ) ]
       else
-        [ ( categoryDescription CmdItem <> "."
+        [ ( movTextEnd
+          , okxs CmdMinimal
+                 ( ["", " " <> casualDescription, ""] ++ movText1
+                   ++ [""] ++ movTextS ++ [""] ++ movText2
+                   ++ [""] ++ minimalText ++ [""]
+                 , [keyCaption] )
+                 ([], []) ) ]
+    , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
+        [ ( categoryEnd
+          , okxs CmdItem
+                 (["", " " <> categoryDescription CmdItem], ["", keyCaption])
+                 ([], [""] ++ itemAllEnd) )
+        , ( categoryEnd
+          , okxs CmdMove
+                 (["", " " <> categoryDescription CmdMove], ["", keyCaption])
+                 (pickLeaderDescription, []) ) ]
+      else
+        [ ( categoryEnd
           , mergeOKX
-              (okxs CmdItem ([], ["", keyCaption]) ([], itemAllEnd))
+              (okxs CmdItem
+                    (["", " " <> categoryDescription CmdItem], ["", keyCaption])
+                    ([], [""] ++ itemAllEnd))
               (okxs CmdMove
-                    ([categoryDescription CmdMove <> ".", ""], [keyCaption])
+                    ([" " <> categoryDescription CmdMove, ""], [keyCaption])
                     (pickLeaderDescription, [""])) ) ]
     , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
-        [ ( categoryDescription CmdAim <> "."
-          , okxs CmdAim ([], ["", keyCaption]) ([], categoryEnd) )
-        , ( categoryDescription CmdMeta <> "."
-          , okxs CmdMeta ([], ["", keyCaption]) ([], lastKeyboardHelpEnd) ) ]
+        [ ( categoryEnd
+          , okxs CmdAim
+                 (["", " " <> categoryDescription CmdAim], ["", keyCaption])
+                 ([], []) )
+        , ( categoryEnd
+          , okxs CmdMeta
+                 (["", " " <> categoryDescription CmdMeta], ["", keyCaption])
+                 ([], []) ) ]
       else
-        [ ( categoryDescription CmdMove <> "."
+        [ ( categoryEnd
           , mergeOKX
-              (okxs CmdAim ([], ["", keyCaption])
-                            (pickLeaderDescription, [""]))
+              (okxs CmdAim
+                    (["", " " <> categoryDescription CmdMove], ["", keyCaption])
+                    (pickLeaderDescription, [""]))
               (okxs CmdMeta
-                    ([categoryDescription CmdMeta <> ".", ""], [keyCaption])
-                    ([], lastKeyboardHelpEnd)) ) ]
+                    ([" " <> categoryDescription CmdMeta, ""], [keyCaption])
+                    ([], [])) ) ]
     , if 45 > rheight then
-        [ ( "Mouse overview."
+        [ ( lastHelpEnd
           , let (ls, _) = okxs CmdMouse
-                               (mouseBasicsText, [keyCaption])
-                               ([], mouseBasicsEnd)
+                               ( ["", " Mouse commands", ""]
+                                 ++ mouseBasicsText++ [""]
+                               , [keyCaption] )
+                               ([], [])
             in (ls, []) )  -- don't capture mouse wheel, etc.
-        , ( "Mouse in exploration and aiming modes."
+        , ( lastHelpEnd
           , mergeOKX
-               (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                    [areaCaption "exploration"] [])
-               (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                    [areaCaption "aiming mode"] lastMouseHelpEnd) ) ]
+              (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                   [areaCaption "exploration"])
+              (mergeOKX
+                 (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                      [areaCaption "aiming mode"])
+                 (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
       else
-        [ ( "Mouse commands."
+        [ ( lastHelpEnd
           , let (ls, _) = okxs CmdMouse
-                               (mouseBasicsText, [keyCaption])
+                               ( ["", " Mouse commands", ""]
+                                 ++ mouseBasicsText ++ [""]
+                               , [keyCaption] )
                                ([], [])
                 okx0 = (ls, [])  -- don't capture mouse wheel, etc.
             in mergeOKX
                  (mergeOKX
                     okx0
                     (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "exploration"] []))
-                 (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "aiming mode"] lastMouseHelpEnd) ) ]
+                         [areaCaption "exploration"]))
+                 (mergeOKX
+                    (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                         [areaCaption "aiming mode"])
+                    (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
     ]
+
 
 -- | Turn the specified portion of bindings into a menu.
 --
