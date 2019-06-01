@@ -55,7 +55,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "and from among your body parts."
       ]
     minimalBlurb =
-      [ "The following commands, joined with the movement keys shown earlier,"
+      [ "The following commands, joined with the movement and running keys,"
       , "let you accomplish anything in the game, though not necessarily"
       , "with the fewest keystrokes. You can also play the game"
       , "exclusively with a mouse, or both mouse and keyboard."
@@ -81,7 +81,6 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "per screen area, in exploration mode and (if different) in aiming mode."
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
-    categoryEnd = "Press SPACE or PGDN or scroll the mouse wheel for more."
     lastHelpEnd = "Scroll mouse wheel to go back. Press ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
     keyL = 12
@@ -168,9 +167,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     pamoveRight :: (K.PointUI, a) -> (K.PointUI, a)
     pamoveRight (K.PointUI x y, a) = (K.PointUI (x + rwidth) y, a)
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
-    sideBySide ((t1, (ovs1, kyx1)) : (_t2, (ovs2, kyx2)) : rest)
+    sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
-        (t1, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
+        (t2, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
              , sortOn (\(_, (K.PointUI x y, _)) -> (y, x))
                $ kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
         : sideBySide rest
@@ -195,48 +194,52 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                  ([], []) ) ]
       else
         [ ( movTextEnd
-          , okxs CmdMinimal
-                 ( ["", " " <> casualDescription, ""] ++ movText1
-                   ++ [""] ++ movTextS ++ [""] ++ movText2
-                   ++ [""] ++ minimalText ++ [""]
-                 , [keyCaption] )
-                 ([], []) ) ]
+          , mergeOKX
+              (mergeOKX (typesetInProp
+                         $ ["", " " <> casualDescription, ""]
+                           ++ movText1, [])
+                        (typesetInSquare $ [""] ++ movTextS, []))
+              (okxs CmdMinimal
+                    ( [""] ++ movText2 ++ [""]
+                       ++ minimalText ++ [""]
+                    , [keyCaption] )
+                    ([], [""])) ) ]
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
-        [ ( categoryEnd
+        [ ( movTextEnd
           , okxs CmdItem
                  (["", " " <> categoryDescription CmdItem], ["", keyCaption])
                  ([], [""] ++ itemAllEnd) )
-        , ( categoryEnd
+        , ( movTextEnd
           , okxs CmdMove
                  (["", " " <> categoryDescription CmdMove], ["", keyCaption])
                  (pickLeaderDescription, []) ) ]
       else
-        [ ( categoryEnd
+        [ ( movTextEnd
           , mergeOKX
               (okxs CmdItem
                     (["", " " <> categoryDescription CmdItem], ["", keyCaption])
                     ([], [""] ++ itemAllEnd))
               (okxs CmdMove
-                    ([" " <> categoryDescription CmdMove, ""], [keyCaption])
+                    (["", " " <> categoryDescription CmdMove], ["", keyCaption])
                     (pickLeaderDescription, [""])) ) ]
     , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
-        [ ( categoryEnd
+        [ ( movTextEnd
           , okxs CmdAim
                  (["", " " <> categoryDescription CmdAim], ["", keyCaption])
                  ([], []) )
-        , ( categoryEnd
+        , ( movTextEnd
           , okxs CmdMeta
                  (["", " " <> categoryDescription CmdMeta], ["", keyCaption])
                  ([], []) ) ]
       else
-        [ ( categoryEnd
+        [ ( movTextEnd
           , mergeOKX
               (okxs CmdAim
-                    (["", " " <> categoryDescription CmdMove], ["", keyCaption])
-                    (pickLeaderDescription, [""]))
+                    (["", " " <> categoryDescription CmdAim], ["", keyCaption])
+                    ([], []))
               (okxs CmdMeta
-                    ([" " <> categoryDescription CmdMeta, ""], [keyCaption])
-                    ([], [])) ) ]
+                    (["", " " <> categoryDescription CmdMeta], ["", keyCaption])
+                    ([], [""])) ) ]
     , if 45 > rheight then
         [ ( lastHelpEnd
           , let (ls, _) = okxs CmdMouse
@@ -269,7 +272,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                  (mergeOKX
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
                          [areaCaption "aiming mode"])
-                    (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
+                    (typesetInProp $ ["", " " <> seeAlso, ""], [])) ) ]
     ]
 
 
