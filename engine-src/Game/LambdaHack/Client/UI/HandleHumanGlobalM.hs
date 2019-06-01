@@ -1602,9 +1602,8 @@ doctrineHuman = do
 automateHuman :: MonadClientUI m => m (FailOrCmd ReqUI)
 automateHuman = do
   clearAimMode
-  go <- displaySpaceEsc ColorBW
-          "Ceding control to AI (press SPACE to confirm, ESC to cancel)."
-  if not go
+  proceed <- displayYesNo ColorBW "Do you really want to cede control to AI?"
+  if not proceed
   then failWith "automation canceled"
   else return $ Right ReqUIAutomate
 
