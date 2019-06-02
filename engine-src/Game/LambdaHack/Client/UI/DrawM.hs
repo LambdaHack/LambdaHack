@@ -531,12 +531,12 @@ drawFrameStatus drawnLevelId = do
         if | T.length leaderBlurbShort > withForLeader -> ""
            | T.length leaderBlurbLong > withForLeader -> leaderBlurbShort
            | otherwise -> leaderBlurbLong
-      damageGap = emptyAttrString
+      damageGap = blankAttrString
                   $ widthTgt - damageStatusWidth - T.length leaderBottom
-      xhairGap = emptyAttrString (widthTgt - T.length pathXhairOrNull
+      xhairGap = blankAttrString (widthTgt - T.length pathXhairOrNull
                                          - length xhairLine)
       xhairStatus = xhairLine ++ xhairGap ++ textToAS pathXhairOrNull
-      selectedGap = emptyAttrString (widthStatus - leaderStatusWidth
+      selectedGap = blankAttrString (widthStatus - leaderStatusWidth
                                                - selectedStatusWidth
                                                - length speedStatus)
       status = arenaStatus

@@ -2,7 +2,7 @@
 -- | Screen overlays.
 module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrString
-    AttrString, emptyAttrString, textToAS, textFgToAS, stringToAS, (<+:>)
+    AttrString, blankAttrString, textToAS, textFgToAS, stringToAS, (<+:>)
     -- * AttrLine
   , AttrLine, attrLine, emptyAttrLine, attrStringToAL, paragraph1OfAS, linesAttr
   , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
@@ -28,8 +28,8 @@ import qualified Game.LambdaHack.Definition.Color as Color
 -- | String of colourful text. End of line characters permitted.
 type AttrString = [Color.AttrCharW32]
 
-emptyAttrString :: Int -> AttrString
-emptyAttrString w = replicate w Color.spaceAttrW32
+blankAttrString :: Int -> AttrString
+blankAttrString w = replicate w Color.spaceAttrW32
 
 textToAS :: Text -> AttrString
 textToAS !t =
