@@ -473,7 +473,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       unless (T.null desc) $ do
         msgAdd MsgPromptFocus "You remember your surroundings."
         msgAdd MsgPrompt desc
-      displayMore ColorFull "Are you up for the challenge?"
+      displayMore ColorFull "\nAre you up for the challenge?"
       promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown

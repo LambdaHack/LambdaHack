@@ -1238,7 +1238,9 @@ itemMenuHuman cmdAction = do
                                   ([], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
-              al1 = renderReport report <+:> textToAS t0
+              alRep = renderReport report
+              al1 | null alRep = textToAS t0
+                  | otherwise = alRep ++ stringToAS "\n" ++ textToAS t0
               splitHelp (al, okx) =
                 splitOKX fontSetup False rwidth (rheight - 2) al
                          [K.spaceKM, K.escKM] okx
