@@ -105,7 +105,7 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       ovTopFiltered = filter (\(PointUI _ y, _) -> y < trimmedY) ov
       trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )
-      extraLine | supHeight < 3 || supHeight >= trimmedY = []
+      extraLine | supHeight < 3 || supHeight >= trimmedY || not wipeAdjacent= []
                 | otherwise =
         case find (\(PointUI _ y, _) -> y == supHeight) ov of
           Nothing -> []
