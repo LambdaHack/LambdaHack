@@ -67,12 +67,12 @@ type PreFrames = [Maybe PreFrame]
 -- at the given row.
 writeLine :: Int -> AttrLine -> FrameForall
 {-# INLINE writeLine #-}
-writeLine offset l = FrameForall $ \v -> do
+writeLine offset al = FrameForall $ \v -> do
   let writeAt _ [] = return ()
       writeAt off (ac32 : rest) = do
         VM.write v off (Color.attrCharW32 ac32)
         writeAt (off + 1) rest
-  writeAt offset l
+  writeAt offset $ attrLine al
 
 -- | An frame that is padded to fill the whole screen with an optional
 -- overlay to display in proportional font.
@@ -109,7 +109,8 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
                 | otherwise =
         case find (\(PointUI _ y, _) -> y == supHeight) ov of
           Nothing -> []
-          Just (PointUI xLast yLast, _) -> [(PointUI xLast (yLast + 1), [])]
+          Just (PointUI xLast yLast, _) ->
+            [(PointUI xLast (yLast + 1), emptyAttrLine)]
       ovTop = IM.elems $ IM.fromListWith (++)
               $ map (\pal@(PointUI _ y, _) -> (y, [pal]))
               $ if supHeight >= canvasLength
@@ -132,7 +133,7 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
         in (p, truncateAttrLine width fillL xstart layerLine maxLen)
       rightExtentOfLine (PointUI xstartRaw _, al) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
-        in min (width - 1) (xstart + length al)
+        in min (width - 1) (xstart + length (attrLine al))
       lens = map (maximum . map rightExtentOfLine) ovTop
   in concat $ zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
@@ -140,8 +141,9 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
 truncateAttrLine :: Int -> Int -> Int -> AttrLine -> Int -> AttrLine
-truncateAttrLine width fillLen xstart al lenMax =
-  case compare width (xstart + length al) of
+truncateAttrLine width fillLen xstart aLine lenMax =
+  let al = attrLine aLine
+  in attrStringToAL $ case compare width (xstart + length al) of
     LT -> let discarded = drop (width - xstart) al
           in if all (== Color.spaceAttrW32) discarded
              then take (width - xstart) al

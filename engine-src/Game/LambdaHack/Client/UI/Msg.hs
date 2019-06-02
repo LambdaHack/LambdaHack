@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.Msg
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , isSavedToHistory, isDisplayed, bindsPronouns, msgColor
-  , UAttrLine, RepMsgN, uToAttrLine, attrLineToU
+  , UAttrString, RepMsgN, uToAttrString, attrLineToU
   , emptyReport, snocReport, renderWholeReport, renderRepetition
   , scrapRepetition, renderTimeReport
 #endif
@@ -36,21 +36,21 @@ import qualified Game.LambdaHack.Common.RingBuffer as RB
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Definition.Color as Color
 
--- * UAttrLine
+-- * UAttrString
 
-type UAttrLine = U.Vector Word32
+type UAttrString = U.Vector Word32
 
-uToAttrLine :: UAttrLine -> AttrLine
-uToAttrLine v = map Color.AttrCharW32 $ U.toList v
+uToAttrString :: UAttrString -> AttrString
+uToAttrString v = map Color.AttrCharW32 $ U.toList v
 
-attrLineToU :: AttrLine -> UAttrLine
+attrLineToU :: AttrString -> UAttrString
 attrLineToU l = U.fromList $ map Color.attrCharW32 l
 
 -- * Msg
 
 -- | The type of a single game message.
 data Msg = Msg
-  { msgLine  :: AttrLine  -- ^ the colours and characters of the message;
+  { msgLine  :: AttrString  -- ^ the colours and characters of the message;
                           --   not just text, in case there was some colour
                           --   unrelated to msg class
   , msgClass :: MsgClass  -- ^ whether message should be displayed,
@@ -64,7 +64,7 @@ toMsg :: Maybe (EM.EnumMap MsgClass Color.Color) -> MsgClass -> Text -> Msg
 toMsg mem msgClass l =
   let findColorInConfig = EM.findWithDefault Color.White msgClass
       color = maybe (msgColor msgClass) findColorInConfig mem
-      msgLine = textFgToAL color l
+      msgLine = textFgToAS color l
   in Msg {..}
 
 data MsgClass =
@@ -282,23 +282,23 @@ consReport :: Msg -> Report -> Report
 consReport Msg{msgLine=[]} rep = rep
 consReport y (Report r) = Report $ r ++ [RepMsgN y 1]
 
--- | Render a report as a (possibly very long) 'AttrLine'. Filter out
+-- | Render a report as a (possibly very long) 'AttrString'. Filter out
 -- messages not meant for display.
-renderReport :: Report -> AttrLine
+renderReport :: Report -> AttrString
 renderReport (Report r) =
   let rep = Report $ filter (isDisplayed . msgClass . repMsg) r
   in renderWholeReport rep
 
--- | Render a report as a (possibly very long) 'AttrLine'.
-renderWholeReport :: Report -> AttrLine
+-- | Render a report as a (possibly very long) 'AttrString'.
+renderWholeReport :: Report -> AttrString
 renderWholeReport (Report []) = []
 renderWholeReport (Report (x : xs)) =
   renderWholeReport (Report xs) <+:> renderRepetition x
 
-renderRepetition :: RepMsgN -> AttrLine
+renderRepetition :: RepMsgN -> AttrString
 renderRepetition (RepMsgN s 0) = msgLine s
 renderRepetition (RepMsgN s 1) = msgLine s
-renderRepetition (RepMsgN s n) = msgLine s ++ stringToAL ("<x" ++ show n ++ ">")
+renderRepetition (RepMsgN s n) = msgLine s ++ stringToAS ("<x" ++ show n ++ ">")
 
 anyInReport :: (MsgClass -> Bool) -> Report -> Bool
 anyInReport f (Report xns) = any (f . msgClass . repMsg) xns
@@ -313,7 +313,7 @@ data History = History
   , newTime         :: Time
   , oldReport       :: Report
   , oldTime         :: Time
-  , archivedHistory :: RB.RingBuffer UAttrLine }
+  , archivedHistory :: RB.RingBuffer UAttrString }
   deriving (Show, Generic)
 
 instance Binary History
@@ -378,13 +378,13 @@ archiveReport History{newReport=Report newMsgs, ..} =
           in History emptyReport timeZero newReportNon0 newTime
              $ foldl' (\ !h !v -> RB.cons v h) archivedHistory (reverse lU)
 
-renderTimeReport :: Time -> Report -> [AttrLine]
+renderTimeReport :: Time -> Report -> [AttrString]
 renderTimeReport !t (Report r) =
   let turns = t `timeFitUp` timeTurn
       rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r
   in if nullReport rep
      then []
-     else [stringToAL (show turns ++ ": ") ++ renderReport rep]
+     else [stringToAS (show turns ++ ": ") ++ renderReport rep]
 
 lengthHistory :: History -> Int
 lengthHistory History{oldReport, archivedHistory} =
@@ -394,6 +394,6 @@ lengthHistory History{oldReport, archivedHistory} =
 
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
-renderHistory :: History -> [AttrLine]
-renderHistory History{..} = map uToAttrLine (RB.toList archivedHistory)
+renderHistory :: History -> [AttrString]
+renderHistory History{..} = map uToAttrString (RB.toList archivedHistory)
                             ++ renderTimeReport oldTime oldReport

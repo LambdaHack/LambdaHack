@@ -1093,7 +1093,7 @@ helpHuman cmdAction = do
     <- getsSession sccui
   fontSetup <- getFontSetup
   let keyH = keyHelp ccui fontSetup
-      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAL t)
+      splitHelp (t, okx) = splitOKX fontSetup True rwidth rheight (textToAS t)
                                     [K.spaceKM, K.escKM] okx
       sli = toSlideshow fontSetup $ concat $ map splitHelp keyH
   -- Thus, the whole help menu corresponde to a single menu of item or lore,
@@ -1134,7 +1134,7 @@ dashboardHuman cmdAction = do
   let keyL = 2
       (ov0, kxs0) = okxsN coinput monoFont propFont 0 keyL (const False) False
                           CmdDashboard ([], []) ([], [])
-      al1 = textToAL "Dashboard"
+      al1 = textToAS "Dashboard"
   let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) al
                                      [K.escKM] okx
       sli = toSlideshow fontSetup $ splitHelp (al1, (ov0, kxs0))
@@ -1182,24 +1182,25 @@ itemMenuHuman cmdAction = do
                                           (CActor aid store)
                 return $! "[" ++ T.unpack (makePhrase parts) ++ "]"
           foundTexts <- mapM (\(aid, (_, store)) -> ppLoc aid store) foundAlt
-          let foundPrefix = textToAL $
+          let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
               descAl = itemDesc markParagraphs (bfid b) factionD
                                 (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                                 fromCStore localTime jlid itemFull kit
               (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl
-              descSym = offsetOverlay $ splitAttrLine rwidth descSymAl
+              descSym = offsetOverlay $ splitAttrString rwidth descSymAl
               descBlurb = offsetOverlayX $
-                case splitAttrLine rwidth $ stringToAL "xx" ++ descBlurbAl of
-                  [] -> error "splitting AttrLine loses characters"
-                  al1 : rest -> (2, drop 2 al1) : map (0,) rest
+                case splitAttrString rwidth $ stringToAS "xx" ++ descBlurbAl of
+                  [] -> error "splitting AttrString loses characters"
+                  al1 : rest ->
+                    (2, attrStringToAL $ drop 2 $ attrLine al1) : map (0,) rest
               alPrefix = map (\(K.PointUI x y, al) ->
                                 (K.PointUI x (y + length descBlurb), al))
-                         $ offsetOverlay $ splitAttrLine rwidth foundPrefix
+                         $ offsetOverlay $ splitAttrString rwidth foundPrefix
               ystart = length descBlurb + length alPrefix - 1
               xstart = textSize monoFont (Color.spaceAttrW32
-                                          : snd (last alPrefix))
+                                          : attrLine (snd $ last alPrefix))
               foundKeys = map (K.KM K.NoModifier . K.Fun)
                               [1 .. length foundAlt]  -- starting from 1!
           let ks = zip foundKeys foundTexts
@@ -1237,7 +1238,7 @@ itemMenuHuman cmdAction = do
                                   ([], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"
                                 , "an item", MU.Text $ ppCStoreIn fromCStore ]
-              al1 = renderReport report <+:> textToAL t0
+              al1 = renderReport report <+:> textToAS t0
               splitHelp (al, okx) =
                 splitOKX fontSetup False rwidth (rheight - 2) al
                          [K.spaceKM, K.escKM] okx
@@ -1337,7 +1338,7 @@ generateMenu cmdAction kds gameInfo menuName = do
         map stringToAL
         $ if isSquareFont propFont then rintroScreen else glueLines rintroScreen
       introLen = length introALs
-      introMaxLen = maximum $ map (textSize monoFont) introALs
+      introMaxLen = maximum $ map (textSize monoFont . attrLine) introALs
       introOv = map (\(y, al) ->
                        (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
                 $ zip [max 0 (rheight - introLen - 1) ..] introALs

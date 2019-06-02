@@ -49,9 +49,9 @@ blank = Nothing
 cSym :: Color -> Char -> Maybe AttrCharW32
 cSym color symbol = Just $ attrChar2ToW32 color symbol
 
-mapPosToOffset :: (Point, AttrCharW32) -> (K.PointUI, [AttrCharW32])
+mapPosToOffset :: (Point, AttrCharW32) -> (K.PointUI, AttrLine)
 mapPosToOffset (Point{..}, attr) =
-  (K.PointUI (px * 2) (py + K.mapStartY), [attr])
+  (K.PointUI (px * 2) (py + K.mapStartY), attrStringToAL [attr])
 
 mzipSingleton :: Point -> Maybe AttrCharW32 -> Overlay
 mzipSingleton p1 mattr1 =
@@ -242,8 +242,9 @@ fadeout ScreenContent{rwidth, rheight} out step = do
                   x2 :: Int
                   {-# INLINE x2 #-}
                   x2 = max 0 (xbound - (n - 2 * y))
-              in [ (K.PointUI 0 y, map (fadeAttr y) [0..x1])
-                 , (K.PointUI (2 * x2) y, map (fadeAttr y) [x2..xbound]) ]
+              in [ (K.PointUI 0 y, attrStringToAL $ map (fadeAttr y) [0..x1])
+                 , (K.PointUI (2 * x2) y, attrStringToAL
+                                          $ map (fadeAttr y) [x2..xbound]) ]
         return $! concatMap fadeLine [0..ybound]
       fs | out = [3, 3 + step .. rwidth - margin]
          | otherwise = [rwidth - margin, rwidth - margin - step .. 1]

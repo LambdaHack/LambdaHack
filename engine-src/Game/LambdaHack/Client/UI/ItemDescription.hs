@@ -279,7 +279,7 @@ viewItem itemFull =
 
 itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time -> LevelId
          -> ItemFull -> ItemQuant
-         -> AttrLine
+         -> AttrString
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
          itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect} kit =
   let (name, powers) = partItemHigh side factionD localTime itemFull kit
@@ -383,4 +383,4 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
         <+> damageAnalysis
         <> (if markParagraphs && not (T.null ikitDesc) then "\n\n" else "\n")
         <> ikitDesc
-  in colorSymbol : textToAL blurb
+  in colorSymbol : textToAS blurb

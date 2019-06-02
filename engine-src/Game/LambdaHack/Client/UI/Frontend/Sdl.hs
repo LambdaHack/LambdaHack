@@ -450,11 +450,11 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
           return $! i + 1
       drawMonoOverlay :: Overlay -> IO [(Int, Int)]
       drawMonoOverlay ov =
-        mapM (\(K.PointUI x y, line) ->
-                let lineCut = take (2 * (rwidth coscreen) - x) line
+        mapM (\(K.PointUI x y, al) ->
+                let lineCut = take (2 * (rwidth coscreen) - x) $ attrLine al
                 in drawMonoLine (x * halfSize) y lineCut)
              ov
-      drawMonoLine :: Int -> Int -> AttrLine -> IO (Int, Int)
+      drawMonoLine :: Int -> Int -> AttrString -> IO (Int, Int)
       drawMonoLine x row [] = return (row, x)
       drawMonoLine x row (w : rest) = do
         setMonoChar x row w
@@ -483,9 +483,10 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
       drawPropOverlay :: Overlay -> IO [(Int, Int)]
       drawPropOverlay ov =
-        mapM (\(K.PointUI x y, line) -> drawPropLine (x * halfSize) y line)
+        mapM (\(K.PointUI x y, al) ->
+                drawPropLine (x * halfSize) y $ attrLine al)
              ov
-      drawPropLine :: Int -> Int -> AttrLine -> IO (Int, Int)
+      drawPropLine :: Int -> Int -> AttrString -> IO (Int, Int)
       drawPropLine x row [] = return (row, x)
       drawPropLine x row _ | x >= (rwidth coscreen - 1) * boxSize =
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.

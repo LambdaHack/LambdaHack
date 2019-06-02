@@ -188,29 +188,44 @@ splitOverlay fontSetup width height report keys (ls0, kxs0) =
                                    (renderReport report) keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
-splitOKX :: FontSetup -> Bool -> Int -> Int -> AttrLine -> [K.KM] -> OKX
+splitOKX :: FontSetup -> Bool -> Int -> Int -> AttrString -> [K.KM] -> OKX
          -> [OKX]
-splitOKX FontSetup{..} msgLong width height rrepRaw keys (ls0, kxs0) =
-  assert (height > 2) $  -- and kxs0 is sorted
-  let rrep = if null keys then rrepRaw else rrepRaw ++ [Color.spaceAttrW32]
+splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
+  assert (height > 2) $
+  let reportParagraphs = linesAttr reportAS
       -- TODO: until SDL support for measuring prop font text is released,
-      -- we have to put MonoFont also for hdrMsg; undo when possible
-      msgFont = if null keys then propFont else monoFont
+      -- we have to use MonoFont for the paragraph that ends with buttons.
+      (repPrep, repMono) =
+        if null keys
+        then (reportParagraphs, emptyAttrLine)
+        else case reverse reportParagraphs of
+          [] -> ([], emptyAttrLine)
+          l : rest ->
+            (reverse rest, attrStringToAL $ attrLine l ++ [Color.spaceAttrW32])
       msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
-      msgRaw0 = offsetOverlay $ splitAttrLine msgWidth rrep
-      msgRaw1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) msgRaw0
+      repPrep0 = offsetOverlay
+                 $ concatMap (splitAttrString msgWidth . attrLine) repPrep
+      repMono0 = map (\(PointUI x y, al) ->
+                        (PointUI x (y + length repPrep0), al))
+                 $ offsetOverlay
+                 $ splitAttrString msgWidth $ attrLine repMono
+      repWhole0 = offsetOverlay $ splitAttrString msgWidth reportAS
+      repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
+      lefOfRep = length repPrep0 + length repMono0
+      endOfRep = if null repMono0
+                 then 0
+                 else textSize monoFont (attrLine $ snd $ last repMono0)
       (lX0, keysX0) = keysOKX monoFont 0 0 width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
-      endOfMsg = if null rrep then 0 else textSize msgFont (snd $ last msgRaw0)
-      (lX, keysX) = keysOKX monoFont (length msgRaw0 - 1) endOfMsg
+      (lX, keysX) = keysOKX monoFont (lefOfRep - 1) endOfRep
                             (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
       splitO :: Int -> (Overlay, Overlay, [KYX]) -> OKX -> [OKX]
-      splitO yoffset (hdrMsg, hdrMono, rk) (ls, kxs) =
-        let hdrOff | null hdrMsg && null hdrMono = 0
+      splitO yoffset (hdrPrep, hdrMono, rk) (ls, kxs) =
+        let hdrOff | null hdrPrep && null hdrMono = 0
                    | otherwise = 1 + maxYofOverlay hdrMono
             keyRenumber = map $ renumber (hdrOff - yoffset)
             lineRenumber = EM.map $ renumberOv (hdrOff - yoffset)
@@ -219,30 +234,31 @@ splitOKX FontSetup{..} msgLong width height rrepRaw keys (ls0, kxs0) =
             ltOffset (PointUI _ y, _) = y < yoffsetNew
             (pre, post) = ( filter ltOffset <$> ls
                           , filter (not . ltOffset) <$> ls )
-            prependHdr = EM.insertWith (++) msgFont hdrMsg
+            prependHdr = EM.insertWith (++) propFont hdrPrep
                          . EM.insertWith (++) monoFont hdrMono
         in if all null $ EM.elems post  -- all fits on one screen
            then [(prependHdr $ lineRenumber pre, rk ++ keyRenumber kxs)]
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
-                   : splitO yoffsetNew (hdrMsg, hdrMono, rk) (post, postX)
-      hdrShortened = ( [(PointUI 0 0, rrep)]  -- shortened for the main slides
+                   : splitO yoffsetNew (hdrPrep, hdrMono, rk) (post, postX)
+      hdrShortened = ( [(PointUI 0 0, paragraph1OfAS reportAS)]
+                         -- shortened for the main slides; in full beforehand
                      , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )
-      ((lsInit, kxsInit), (headerFont, headerMono, rkxs)) =
+      ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if | (length msgRaw0 + length lX) * 2 <= height ->
-             ((EM.empty, []), (msgRaw0, lX, keysX))  -- display normally
-           | length rrep <= 2 * width ->  -- very crude check, but OK
+        if | (lefOfRep + length lX) * 2 <= height ->  -- display normally
+             ((EM.empty, []), (repPrep0, repMono0 ++ lX, keysX))
+           | length reportAS <= 2 * width ->  -- very crude check, but OK
              ( (EM.empty, [])  -- already shown in full in shortened header
              , hdrShortened )
            | otherwise -> case lX0 of
                [] ->
-                 ( (EM.singleton propFont msgRaw0, [])
+                 ( (EM.singleton propFont repWhole0, [])
                      -- showing in full in the init slide
                  , hdrShortened )
                lX0first : _ ->
-                 ( ( EM.insertWith (++) propFont msgRaw1
+                 ( ( EM.insertWith (++) propFont repWhole1
                      $ EM.singleton monoFont [lX0first]
                    , filter (\(_, (PointUI _ y, _)) -> y == 0) keysX0 )
                  , hdrShortened )
@@ -252,7 +268,7 @@ splitOKX FontSetup{..} msgLong width height rrepRaw keys (ls0, kxs0) =
       -- If @ls0@ we still want to display the report, one way or another.
       mainSlides = if EM.null ls0 && (not $ EM.null lsInit)
                    then assert (null kxs0) []
-                   else splitO 0 (headerFont, headerMono, rkxs) (ls0, kxs0)
+                   else splitO 0 (headerProp, headerMono, rkxs) (ls0, kxs0)
   in initSlides ++ mainSlides
 
 -- | Generate a slideshow with the current and previous scores.
@@ -269,7 +285,7 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
   let entries = (height - 3) `div` 3
       msg = HighScore.showAward entries table pos gameModeName
       tts = map offsetOverlay $ showNearbyScores tz pos table entries
-      al = textToAL msg
+      al = textToAS msg
       splitScreen ts =
         splitOKX fontSetup False width height al [K.spaceKM, K.escKM]
                  (EM.singleton monoFont ts, [])
@@ -277,14 +293,15 @@ highSlideshow fontSetup@FontSetup{monoFont} width height table pos
 
 -- | Show a screenful of the high scores table.
 -- Parameter @entries@ is the number of (3-line) scores to be shown.
-showTable :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> Int -> [AttrLine]
+showTable :: TimeZone -> Int -> HighScore.ScoreTable -> Int -> Int
+          -> [AttrLine]
 showTable tz pos table start entries =
   let zipped    = zip [1..] $ HighScore.unTable table
       screenful = take entries . drop (start - 1) $ zipped
       renderScore (pos1, score1) =
         map (if pos1 == pos then textFgToAL Color.BrWhite else textToAL)
         $ HighScore.showScore tz pos1 score1
-  in [] : intercalate [[]] (map renderScore screenful)
+  in emptyAttrLine : intercalate [emptyAttrLine] (map renderScore screenful)
 
 -- | Produce a couple of renderings of the high scores table.
 showNearbyScores :: TimeZone -> Int -> HighScore.ScoreTable -> Int

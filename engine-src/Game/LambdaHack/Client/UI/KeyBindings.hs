@@ -317,9 +317,10 @@ okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       greyToAL (b, (t1, t2)) =
         if b
         then let al1 = textFgToAL Color.BrBlack t1
-             in (al1, (textSize keyFont al1, textFgToAL Color.BrBlack t2))
+             in (al1, ( textSize keyFont $ attrLine al1
+                      , textFgToAL Color.BrBlack t2 ))
         else let al1 = textToAL t1
-             in (al1, (textSize keyFont al1, textToAL t2))
+             in (al1, (textSize keyFont $ attrLine al1, textToAL t2))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
          $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab

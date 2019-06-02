@@ -244,13 +244,14 @@ itemOverlay lSlots lid bag = do
                   else viewItem itemFull
                 phrase = makePhrase
                   [partItemWsRanged side factionD k localTime itemFull kit]
-                al1 = textToAL (markEqp iid $ slotLabel l)
-                      ++ (if isSquareFont propFont
-                         then [Color.spaceAttrW32]
-                         else [])
-                      ++ [colorSymbol]
-                xal2 = ( textSize squareFont al1
-                       , Color.spaceAttrW32 : textToAL phrase )
+                al1 = attrStringToAL
+                      $ textToAS (markEqp iid $ slotLabel l)
+                        ++ (if isSquareFont propFont
+                           then [Color.spaceAttrW32]
+                           else [])
+                        ++ [colorSymbol]
+                xal2 = ( textSize squareFont $ attrLine al1
+                       , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
                 kx = (Right l, ( K.PointUI 0 0
                                , ButtonWidth propFont (5 + T.length phrase) ))
             in Just ((al1, xal2), kx)
@@ -272,7 +273,7 @@ skillsOverlay aid = do
         let skName = " " <> skillName skill
             slotLab = slotLabel c
             lab = textToAL slotLab
-            labLen = textSize squareFont lab
+            labLen = textSize squareFont $ attrLine lab
             indentation = if isSquareFont propFont then 40 else 20
             valueText = skillToDecorator skill b
                         $ Ability.getSk skill actorMaxSk
@@ -338,8 +339,9 @@ placesOverlay = do
                           , ButtonWidth propFont (2 + T.length ft) )))
       (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
       splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-                    in (spNo, (textSize squareFont spNo, spYes))
-      (plLab, plDesc) = unzip $ map splitRow $ map textToAL ts
+                    in ( attrStringToAL spNo
+                       , (textSize squareFont spNo, attrStringToAL spYes) )
+      (plLab, plDesc) = unzip $ map splitRow $ map textToAS ts
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
@@ -625,7 +627,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   let attrLine = itemDesc True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
       ov = EM.singleton propFont $ offsetOverlay
-           $ splitAttrLine rwidth attrLine
+           $ splitAttrString rwidth attrLine
       keys = [K.spaceKM, K.escKM]
              ++ [K.upKM | slotIndex /= 0]
              ++ [K.downKM | slotIndex /= lSlotsBound]

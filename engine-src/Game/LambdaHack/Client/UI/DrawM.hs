@@ -415,7 +415,7 @@ drawFrameExtra dm drawnLevelId = do
         when (dm == ColorBW) $ mapVL turnBW lDungeon v
   return upd
 
-drawFrameStatus :: MonadClientUI m => LevelId -> m AttrLine
+drawFrameStatus :: MonadClientUI m => LevelId -> m AttrString
 drawFrameStatus drawnLevelId = do
   cops@COps{corule=RuleContent{rXmax=_rXmax}} <- getsState scops
   SessionUI{sselected, saimMode, swaitTimes, sitemSel} <- getSession
@@ -492,17 +492,17 @@ drawFrameStatus drawnLevelId = do
   let na = length ours
       nl = ES.size $ ES.fromList $ map (blid . snd) ours
       -- To be replaced by something more useful.
-      teamBlurb = textToAL $ trimTgtDesc widthTgt $
+      teamBlurb = textToAS $ trimTgtDesc widthTgt $
         makePhrase [ "Team:"
                    , MU.CarWs na "actor", "on"
                    , MU.CarWs nl "level" <> ","
                    , "stash", MU.Car ns ]
       markSleepTgtDesc
-        | (snd <$> mxhairHPWatchfulness) /= Just WSleep = textToAL
-        | otherwise = textFgToAL Color.Green
+        | (snd <$> mxhairHPWatchfulness) /= Just WSleep = textToAS
+        | otherwise = textFgToAS Color.Green
       xhairBlurb =
         maybe teamBlurb (\t ->
-          textToAL (if isJust saimMode then "x-hair>" else "X-hair:")
+          textToAS (if isJust saimMode then "x-hair>" else "X-hair:")
           <+:> markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
         mhairDesc
       tgtOrItem
@@ -520,7 +520,7 @@ drawFrameStatus drawnLevelId = do
                 let (name, powers) =
                       partItem (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
-                return (textToAL $ "Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
+                return (textToAS $ "Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairLine, pathXhairOrNull) <- tgtOrItem
@@ -531,18 +531,18 @@ drawFrameStatus drawnLevelId = do
         if | T.length leaderBlurbShort > withForLeader -> ""
            | T.length leaderBlurbLong > withForLeader -> leaderBlurbShort
            | otherwise -> leaderBlurbLong
-      damageGap = emptyAttrLine
+      damageGap = emptyAttrString
                   $ widthTgt - damageStatusWidth - T.length leaderBottom
-      xhairGap = emptyAttrLine (widthTgt - T.length pathXhairOrNull
+      xhairGap = emptyAttrString (widthTgt - T.length pathXhairOrNull
                                          - length xhairLine)
-      xhairStatus = xhairLine ++ xhairGap ++ textToAL pathXhairOrNull
-      selectedGap = emptyAttrLine (widthStatus - leaderStatusWidth
+      xhairStatus = xhairLine ++ xhairGap ++ textToAS pathXhairOrNull
+      selectedGap = emptyAttrString (widthStatus - leaderStatusWidth
                                                - selectedStatusWidth
                                                - length speedStatus)
       status = arenaStatus
                <+:> xhairStatus
                <> selectedStatus ++ selectedGap ++ speedStatus ++ leaderStatus
-               <+:> (textToAL leaderBottom ++ damageGap ++ damageStatus)
+               <+:> (textToAS leaderBottom ++ damageGap ++ damageStatus)
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -569,7 +569,7 @@ drawHudFrame dm drawnLevelId = do
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
-drawArenaStatus :: COps -> Level -> Int -> AttrLine
+drawArenaStatus :: COps -> Level -> Int -> AttrString
 drawArenaStatus COps{cocave}
                 Level{lkind, ldepth=Dice.AbsDepth ld, lseen, lexpl}
                 width =
@@ -579,11 +579,11 @@ drawArenaStatus COps{cocave}
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow ld)
       seenStatus = "[" <> seenTxt <+> "seen]"
-  in textToAL $ T.justifyLeft width ' '
+  in textToAS $ T.justifyLeft width ' '
               $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' (cname ck))
                 <+> seenStatus
 
-drawLeaderStatus :: MonadClientUI m => Int -> m AttrLine
+drawLeaderStatus :: MonadClientUI m => Int -> m AttrString
 drawLeaderStatus waitT = do
   time <- getsState stime
   let calmHeaderText = "Calm"
@@ -614,7 +614,7 @@ drawLeaderStatus waitT = do
               = addColor Color.BrRed  -- alarming news have priority
             | snd resCurrentTurn > 0 || snd resPreviousTurn > 0
               = addColor Color.BrGreen
-            | otherwise = stringToAL  -- only if nothing at all noteworthy
+            | otherwise = stringToAS  -- only if nothing at all noteworthy
           checkSleep body resDelta
             | bwatch body == WSleep = addColor Color.Green
             | otherwise = checkDelta resDelta
@@ -638,7 +638,7 @@ drawLeaderStatus waitT = do
                    <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxHP
                                                        actorMaxSk)
           justifyRight n t = replicate (n - length t) ' ' ++ t
-          colorWarning w = if w then addColor Color.Red else stringToAL
+          colorWarning w = if w then addColor Color.Red else stringToAS
       return $! calmHeader
                 <> colorWarning calmCheckWarning (justifyRight 7 calmText)
                 <+:> hpHeader
@@ -647,10 +647,10 @@ drawLeaderStatus waitT = do
       -- This is a valuable feedback for passing of time while faction
       -- leaderless and especially while temporarily actor-less..
       let slashPick = slashes !! (max 0 waitGlobal `mod` length slashes)
-      return $! stringToAL (calmHeaderText ++ ":  --" ++ slashPick ++ "--")
-                <+:> stringToAL (hpHeaderText <> ":  --/--")
+      return $! stringToAS (calmHeaderText ++ ":  --" ++ slashPick ++ "--")
+                <+:> stringToAS (hpHeaderText <> ":  --/--")
 
-drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrLine
+drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrString
 drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
   actorSk <- leaderSkillsClientUI
@@ -661,7 +661,7 @@ drawLeaderDamage width leader = do
         in timeout > 0
       hasEffect itemFull =
         any IK.forApplyEffect $ IK.ieffects $ itemKind itemFull
-      ppDice :: (Int, ItemFullKit) -> [(Bool, AttrLine)]
+      ppDice :: (Int, ItemFullKit) -> [(Bool, AttrString)]
       ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             tdiceEffect = if hasEffect itemFull
@@ -673,7 +673,7 @@ drawLeaderDamage width leader = do
                 ++ replicate nch
                      (True, map (Color.attrChar2ToW32 Color.BrCyan) tdiceEffect)
            else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdiceEffect)]
-      lbonus :: AttrLine
+      lbonus :: AttrString
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk
             bonus = min 200 $ max (-200) bonusRaw
@@ -706,12 +706,12 @@ drawLeaderDamage width leader = do
       lFlat = intercalate [Color.spaceAttrW32]
               $ map snd ldischarged ++ lWithBonus
       lFits = if length lFlat > width
-              then take (width - 3) lFlat ++ stringToAL "..."
+              then take (width - 3) lFlat ++ stringToAS "..."
               else lFlat
   return $! lFits
 
 drawSelected :: MonadClientUI m
-             => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrLine)
+             => LevelId -> Int -> ES.EnumSet ActorId -> m (Int, AttrString)
 drawSelected drawnLevelId width selected = do
   mleader <- getsClient sleader
   side <- getsClient sside

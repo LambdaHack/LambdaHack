@@ -245,8 +245,8 @@ chooseItemDialogMode c = do
                     , "is", MU.Text valueText ]
                   ov0 = EM.singleton propFont
                         $ offsetOverlay
-                        $ indentSplitAttrLine rwidth
-                        $ textToAL $ skillDesc skill
+                        $ indentSplitAttrString rwidth
+                        $ textToAS $ skillDesc skill
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
                          ++ [K.downKM | slotIndex /= slotListBound]
@@ -294,8 +294,7 @@ chooseItemDialogMode c = do
                   -- in PropFont, but this is mostly a debug screen, so KISS.
                   ov0 = EM.singleton monoFont
                         $ offsetOverlay
-                        $ indentSplitAttrLine rwidth
-                        $ textToAL $ T.unlines
+                        $ concatMap (indentSplitAttrString rwidth . textToAS)
                         $ (if sexposePlaces soptions
                            then [ "", partsPhrase
                                 , "", freqsText
@@ -726,8 +725,13 @@ eitherHistory showAll = do
   FontSetup{..} <- getFontSetup
   let renderedHistory = renderHistory history
       histBound = length renderedHistory
-      splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-                    in (spNo, (textSize monoFont spNo, spYes))
+      splitRow al =
+        let (spNo, spYes) = span (/= Color.spaceAttrW32) al
+            par1 = case linesAttr spYes of
+              [] -> emptyAttrLine
+              [l] -> l
+              l : _ -> attrStringToAL $ attrLine l ++ stringToAS "..."
+        in (attrStringToAL spNo, (textSize monoFont spNo, par1))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
       rhLab = EM.singleton monoFont $ offsetOverlay histLab
       rhDesc = EM.singleton propFont $ offsetOverlayX histDesc
@@ -761,7 +765,7 @@ eitherHistory showAll = do
               [] -> error $ "" `showFailure` histSlot
               tR : _ -> tR
             ov0 = EM.singleton propFont $ offsetOverlay
-                  $ indentSplitAttrLine rwidth timeReport
+                  $ indentSplitAttrString rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
               , "record of all history follows" ]
