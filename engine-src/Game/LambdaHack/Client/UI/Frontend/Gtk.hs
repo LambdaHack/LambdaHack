@@ -16,7 +16,7 @@ import           Data.IORef
 import qualified Data.Text as T
 import           Data.Word (Word32)
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import           Graphics.UI.Gtk hiding (Point)
+import           Graphics.UI.Gtk
 import           System.Exit (exitFailure)
 
 import           Game.LambdaHack.Client.ClientOptions
@@ -24,7 +24,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 
@@ -137,7 +136,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
       (iter, _) <- textViewGetIterAtPosition sview bx by
       cx <- textIterGetLineOffset iter
       cy <- textIterGetLine iter
-      let pointer = Point cx cy
+      let pointer = K.PointUI cx cy
           -- Store the mouse event coords in the keypress channel.
           storeK key = saveKMP rf modifier key pointer
       case scrollDir of
@@ -187,7 +186,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
             MiddleButton -> Just K.MiddleButtonRelease
             RightButton -> Just K.RightButtonRelease
             _ -> Nothing  -- probably a glitch
-          pointer = Point cx cy
+          pointer = K.PointUI cx cy
       -- Store the mouse event coords in the keypress channel.
       maybe (return ())
             (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
