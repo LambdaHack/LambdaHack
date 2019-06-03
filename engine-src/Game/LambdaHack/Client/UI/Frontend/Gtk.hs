@@ -248,22 +248,22 @@ display coscreen FrontendSession{..} SingleFrame{singleArray} = do
     textBufferSetText tb gfChar
     ib <- textBufferGetStartIter tb
     ie <- textIterCopy ib
-    let defEnum = fromAttr Color.defAttr
+    let defEnum = toEnum $ fromAttr Color.defAttr
         setTo :: (X, Word32) -> Color.AttrCharW32 -> IO (X, Word32)
         setTo (!lx, !previous) !w
           | (lx + 1) `mod` (rwidth coscreen + 1) /= 0 = do
             let current :: Word32
-                current = Color.attrFromW32 w
+                current = Color.attrCharW32 w
             if current == previous
             then return (lx + 1, previous)
             else do
               textIterSetOffset ie lx
               when (previous /= defEnum) $
-                textBufferApplyTag tb (stags IM.! previous) ib ie
+                textBufferApplyTag tb (stags IM.! fromEnum previous) ib ie
               textIterSetOffset ib lx
               return (lx + 1, current)
         setTo (lx, previous) w = setTo (lx + 1, previous) w
     (lx, previous) <- PointArray.foldMA' setTo (-1, defEnum) singleArray
     textIterSetOffset ie lx
     when (previous /= defEnum) $
-      textBufferApplyTag tb (stags IM.! previous) ib ie
+      textBufferApplyTag tb (stags IM.! fromEnum previous) ib ie
