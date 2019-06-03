@@ -112,9 +112,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
           _ -> modifier
-        pointer = originPoint
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-    IO.liftIO $ saveKMP rf modifier key pointer
+    IO.liftIO $ saveKMP rf modifier key (K.PointUI 0 0)
     return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString

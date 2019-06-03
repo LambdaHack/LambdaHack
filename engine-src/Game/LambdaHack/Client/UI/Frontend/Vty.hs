@@ -42,7 +42,7 @@ startup coscreen _soptions = do
         e <- nextEvent svty  -- blocks here, so no polling
         case e of
           EvKey n mods ->
-            saveKMP rf (modTranslate mods) (keyTranslate n) originPoint
+            saveKMP rf (modTranslate mods) (keyTranslate n) (K.PointUI 0 0)
           _ -> return ()
         storeKeys
   void $ async storeKeys

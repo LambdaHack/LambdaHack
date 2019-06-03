@@ -123,7 +123,7 @@ runWeb coscreen ClientOptions{..} rfMVar = do
     --   putStrLn $ "key: " ++ K.showKey key
     --   putStrLn $ "modifier: " ++ show modifier
     when (key == K.Esc) $ IO.liftIO $ resetChanKey (fchanKey rf)
-    IO.liftIO $ saveKMP rf modifierNoShift key originPoint
+    IO.liftIO $ saveKMP rf modifierNoShift key (K.PointUI 0 0)
     -- Pass through C-+ and others, but disable special behaviour on Tab, etc.
     let browserKeys = "+-0tTnNdxcv"
     unless (modifier == K.Alt

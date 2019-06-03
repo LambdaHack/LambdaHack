@@ -56,7 +56,7 @@ startup coscreen _soptions = do
   let storeKeys :: IO ()
       storeKeys = do
         K.KM{..} <- keyTranslate <$> C.getKey C.refresh
-        saveKMP rf modifier key originPoint
+        saveKMP rf modifier key (K.PointUI 0 0)
         storeKeys
   void $ async storeKeys
   return $! rf
