@@ -136,6 +136,8 @@ indentSplitAttrString w l =
     [] -> []
     hd : tl -> hd : map (AttrLine . ([Color.spaceAttrW32] ++) . attrLine) tl
 
+-- We pass empty line along for the case of appended buttons, which need
+-- either space or new lines before them.
 splitAttrPhrase :: Int -> AttrLine -> [AttrLine]
 splitAttrPhrase w (AttrLine xs)
   | w >= length xs = [AttrLine xs]  -- no problem, everything fits

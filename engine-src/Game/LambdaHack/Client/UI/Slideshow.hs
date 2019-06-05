@@ -213,13 +213,13 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
                  $ splitAttrString msgWidth $ attrLine repMono
       repWhole0 = offsetOverlay $ splitAttrString msgWidth reportAS
       repWhole1 = map (\(PointUI x y, al) -> (PointUI x (y + 1), al)) repWhole0
-      lefOfRep = length repPrep0 + length repMono0
-      endOfRep = if null repMono0
-                 then 0
-                 else textSize monoFont (attrLine $ snd $ last repMono0)
+      lenOfRep = length repPrep0 + length repMono0
+      startOfKeys = if null repMono0
+                    then 0
+                    else textSize monoFont (attrLine $ snd $ last repMono0)
       (lX0, keysX0) = keysOKX monoFont 0 0 width keys
       (lX1, keysX1) = keysOKX monoFont 1 0 width keys
-      (lX, keysX) = keysOKX monoFont (lefOfRep - 1) endOfRep
+      (lX, keysX) = keysOKX monoFont (lenOfRep - 1) startOfKeys
                             (2 * width) keys
       renumber dy (km, (PointUI x y, len)) = (km, (PointUI x (y + dy), len))
       renumberOv dy = map (\(PointUI x y, al) -> (PointUI x (y + dy), al))
@@ -247,8 +247,8 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
                      , keysX1 )
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if | (lefOfRep + length lX) * 2 <= height ->  -- display normally
-             ((EM.empty, []), (repPrep0, repMono0 ++ lX, keysX))
+        if | (lenOfRep + length lX) * 2 <= height ->  -- display normally
+             ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
            | length reportAS <= 2 * width ->  -- very crude check, but OK
              ( (EM.empty, [])  -- already shown in full in shortened header
              , hdrShortened )
