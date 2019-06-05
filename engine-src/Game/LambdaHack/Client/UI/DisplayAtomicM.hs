@@ -202,7 +202,12 @@ displayRespUpdAtomicUI cmd = case cmd of
                       | targetIsFoe = MsgDeathGood
                       | targetIsFriend = MsgDeathBad
                       | otherwise = MsgDeath
-         msgAdd msgClass msgDie
+         if bfid b == side && not (bproj b)
+         then do
+           msgAdd msgClass $ msgDie
+           displayMore ColorBW "Alas!"
+         else
+           msgAdd msgClass $ msgDie <> if bproj b then "" else "\n"
          -- We show death anims only if not dead already before this refill.
          let deathAct
                | alreadyDeadBefore =
@@ -743,7 +748,6 @@ destroyActorUI destroy aid b = do
       let upd = ES.delete aid
       modifySession $ \sess -> sess {sselected = upd $ sselected sess}
       when destroy $ do
-        displayMore ColorBW "Alas!"
         mleader <- getsClient sleader
         when (isJust mleader)
           -- This is especially handy when the dead actor was a leader
