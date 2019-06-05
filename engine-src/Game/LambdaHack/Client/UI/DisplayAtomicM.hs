@@ -928,10 +928,12 @@ quitFactionUI fid toSt manalytics = do
             ourTrunks <- getsState $ map getTrunkFull
                                      . fidActorNotProjGlobalAssocs side
             let smartFaction fact2 = fleaderMode (gplayer fact2) /= LeaderNull
+                canBeSmart = any (smartFaction . snd)
+                canBeOurFaction = any (\(fid2, _) -> fid2 == side)
                 smartEnemy trunkFull =
-                  any (smartFaction . snd)
-                  $ filter (\(fid2, _) -> fid2 /= side)
-                  $ possibleActorFactions (itemKind trunkFull) factionD
+                  let possible =
+                        possibleActorFactions (itemKind trunkFull) factionD
+                  in not (canBeOurFaction possible) && canBeSmart possible
                 smartEnemyOurs = filter smartEnemy ourTrunks
                 uniqueActor trunkFull = IA.checkFlag Ability.Unique
                                         $ aspectRecordFull trunkFull
