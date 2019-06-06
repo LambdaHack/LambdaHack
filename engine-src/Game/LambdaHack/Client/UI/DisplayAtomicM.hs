@@ -227,7 +227,7 @@ displayRespUpdAtomicUI cmd = case cmd of
            when (bhp b >= xM (Ability.getSk Ability.SkMaxHP actorMaxSk)
                  && bhp b - hpDelta < xM (Ability.getSk Ability.SkMaxHP
                                                   actorMaxSk)) $
-             msgAdd MsgVeryRare "You recover your health fully."
+             msgAdd MsgVeryRare "You recover your health fully. Any further gains will be transient."
          when (bfid b == side && not (bproj b)) $ do
            markDisplayNeeded (blid b)
            when (hpDelta < 0) $ do
