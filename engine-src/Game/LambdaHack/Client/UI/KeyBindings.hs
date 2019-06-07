@@ -91,7 +91,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     casualDescription = "Minimal cheat sheet for casual play"
     fmt0 n k h = T.justifyLeft n ' ' k <+> h
     fmt n k h = " " <> fmt0 n k h
-    fmts s = " " <> s
+    fmts s = s
     movText1 = map fmts movBlurb1
     movTextS = map fmts movSchema
     movText2 = map fmts movBlurb2
@@ -100,7 +100,14 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     mouseBasicsText = map fmts mouseBasicsBlurb
     keyCaptionN n = fmt n "keys" "command"
     keyCaption = keyCaptionN keyL
-    okxs = okxsN coinput monoFont propFont 0 keyL (const False) True
+    spLen = textSize monoFont " "
+    pamoveRight :: Int -> (K.PointUI, a) -> (K.PointUI, a)
+    pamoveRight xoff (K.PointUI x y, a) = (K.PointUI (x + xoff) y, a)
+    okxs cat headers footers =
+      let (ovs, kyx) = okxsN coinput monoFont propFont 0 keyL (const False) True
+                             cat headers footers
+      in ( EM.map (map (pamoveRight spLen)) ovs
+         , map (\(ekm, pa) -> (ekm, pamoveRight spLen pa)) kyx )
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
@@ -115,7 +122,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     truncatem b = if T.length b > keyB
                   then T.take (keyB - 1) b <> "$"
                   else b
-    fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (" " <> truncatem c)
+    fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: (forall a. (a, a) -> a) -> K.KM
            -> [(CmdArea, Either K.KM SlotChar, Text)]
@@ -161,19 +168,21 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           menu = zipWith render kst1 kst2
       in (typesetInMono $ "" : header ++ menu, kxs)
     typesetInSquare :: [Text] -> FontOverlayMap
-    typesetInSquare = EM.singleton squareFont . offsetOverlay . map textToAL
+    typesetInSquare = EM.singleton squareFont . offsetOverlayX
+                      . map (\t -> (spLen, textToAL t))
     typesetInMono :: [Text] -> FontOverlayMap
-    typesetInMono = EM.singleton monoFont . offsetOverlay . map textToAL
+    typesetInMono = EM.singleton monoFont . offsetOverlayX
+                    . map (\t -> (spLen, textToAL t))
     typesetInProp :: [Text] -> FontOverlayMap
-    typesetInProp = EM.singleton propFont . offsetOverlay . map textToAL
-    pamoveRight :: (K.PointUI, a) -> (K.PointUI, a)
-    pamoveRight (K.PointUI x y, a) = (K.PointUI (x + rwidth) y, a)
+    typesetInProp = EM.singleton propFont . offsetOverlayX
+                    . map (\t -> (spLen, textToAL t))
     sideBySide :: [(Text, OKX)] -> [(Text, OKX)]
     sideBySide ((_t1, (ovs1, kyx1)) : (t2, (ovs2, kyx2)) : rest)
       | not $ isSquareFont propFont =
-        (t2, ( EM.unionWith (++) ovs1 (EM.map (map pamoveRight) ovs2)
+        (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
              , sortOn (\(_, (K.PointUI x y, _)) -> (y, x))
-               $ kyx1 ++ map (\(ekm, pa) -> (ekm, pamoveRight pa)) kyx2 ))
+               $ kyx1 ++ map (\(ekm, pa) ->
+                                (ekm, pamoveRight rwidth pa)) kyx2 ))
         : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
@@ -184,13 +193,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , mergeOKX
               (mergeOKX (typesetInProp
-                         $ ["", " " <> casualDescription <+> "(1/2)", ""]
+                         $ ["", casualDescription <+> "(1/2)", ""]
                            ++ movText1, [])
                         (typesetInSquare $ [""] ++ movTextS, []))
               (typesetInProp $ [""] ++ movText2, []) )
         , ( movTextEnd
           , okxs CmdMinimal
-                 ( ["", " " <> casualDescription <+> "(2/2)", ""]
+                 ( ["", casualDescription <+> "(2/2)", ""]
                    ++ minimalText ++ [""]
                  , [keyCaption] )
                  ([], []) ) ]
@@ -198,7 +207,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , mergeOKX
               (mergeOKX (typesetInProp
-                         $ ["", " " <> casualDescription, ""]
+                         $ ["", casualDescription, ""]
                            ++ movText1, [])
                         (typesetInSquare $ [""] ++ movTextS, []))
               (okxs CmdMinimal
@@ -209,43 +218,43 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
-                 (["", " " <> categoryDescription CmdItem], ["", keyCaption])
+                 (["", categoryDescription CmdItem], ["", keyCaption])
                  ([], [""] ++ itemAllEnd) )
         , ( movTextEnd
           , okxs CmdMove
-                 (["", " " <> categoryDescription CmdMove], ["", keyCaption])
+                 (["", categoryDescription CmdMove], ["", keyCaption])
                  (pickLeaderDescription, []) ) ]
       else
         [ ( movTextEnd
           , mergeOKX
               (okxs CmdItem
-                    (["", " " <> categoryDescription CmdItem], ["", keyCaption])
+                    (["", categoryDescription CmdItem], ["", keyCaption])
                     ([], [""] ++ itemAllEnd))
               (okxs CmdMove
-                    (["", " " <> categoryDescription CmdMove], ["", keyCaption])
+                    (["", categoryDescription CmdMove], ["", keyCaption])
                     (pickLeaderDescription, [""])) ) ]
     , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdAim
-                 (["", " " <> categoryDescription CmdAim], ["", keyCaption])
+                 (["", categoryDescription CmdAim], ["", keyCaption])
                  ([], []) )
         , ( movTextEnd
           , okxs CmdMeta
-                 (["", " " <> categoryDescription CmdMeta], ["", keyCaption])
+                 (["", categoryDescription CmdMeta], ["", keyCaption])
                  ([], []) ) ]
       else
         [ ( movTextEnd
           , mergeOKX
               (okxs CmdAim
-                    (["", " " <> categoryDescription CmdAim], ["", keyCaption])
+                    (["", categoryDescription CmdAim], ["", keyCaption])
                     ([], []))
               (okxs CmdMeta
-                    (["", " " <> categoryDescription CmdMeta], ["", keyCaption])
+                    (["", categoryDescription CmdMeta], ["", keyCaption])
                     ([], [""])) ) ]
     , if 45 > rheight then
         [ ( lastHelpEnd
           , let (ls, _) = okxs CmdMouse
-                               ( ["", " Mouse commands", ""]
+                               ( ["", "Mouse commands", ""]
                                  ++ mouseBasicsText++ [""]
                                , [keyCaption] )
                                ([], [])
@@ -257,11 +266,11 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
               (mergeOKX
                  (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
                       [areaCaption "aiming mode"])
-                 (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
+                 (typesetInProp $ ["", seeAlso], [])) ) ]
       else
         [ ( lastHelpEnd
           , let (ls, _) = okxs CmdMouse
-                               ( ["", " Mouse commands", ""]
+                               ( ["", "Mouse commands", ""]
                                  ++ mouseBasicsText ++ [""]
                                , [keyCaption] )
                                ([], [])
@@ -274,7 +283,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                  (mergeOKX
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
                          [areaCaption "aiming mode"])
-                    (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
+                    (typesetInProp $ ["", seeAlso], [])) ) ]
     ]
 
 -- | Turn the specified portion of bindings into a menu.
