@@ -247,7 +247,7 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
                      , keysX1 )
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
         -- Check whether most space taken by report and keys.
-        if | (lenOfRep + length lX) * 2 <= height ->  -- display normally
+        if | (lenOfRep + length lX) * 3 < 2 * height ->  -- display normally
              ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
            | length reportAS <= 2 * width ->  -- very crude check, but OK
              ( (EM.empty, [])  -- already shown in full in shortened header
@@ -265,7 +265,8 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
       initSlides = if EM.null lsInit
                    then assert (null kxsInit) []
                    else splitO 0 ([], [], []) (lsInit, kxsInit)
-      -- If @ls0@ we still want to display the report, one way or another.
+      -- If @ls0@ is not empty, we still want to display the report,
+      -- one way or another.
       mainSlides = if EM.null ls0 && (not $ EM.null lsInit)
                    then assert (null kxs0) []
                    else splitO 0 (headerProp, headerMono, rkxs) (ls0, kxs0)
