@@ -477,13 +477,13 @@ drawFrameStatus drawnLevelId = do
       trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
         if T.length t <= n then t else T.take (n - 3) t <> "..."
       -- The indicators must fit, they are the actual information.
-      widthXhairOrItem = widthTgt - T.length pathCsr - 8
+      widthXhairOrItem = widthTgt - T.length pathCsr
       nMember = MU.Ord $ 1 + sum (EM.elems $ gvictims fact)
       fallback = if MK.fleaderMode (gplayer fact) == MK.LeaderNull
                  then "This faction never picks a pointman"
                  else makePhrase
                         ["Waiting for", nMember, "team member to spawn"]
-      leaderName bUI = trimTgtDesc (widthTgt - 8) (bname bUI)
+      leaderName bUI = trimTgtDesc (widthTgt - 10) (bname bUI)
       leaderBlurbLong = maybe fallback (\bUI ->
         "Pointman:" <+> leaderName bUI) mbodyUI
       leaderBlurbShort = maybe fallback leaderName mbodyUI
@@ -501,10 +501,13 @@ drawFrameStatus drawnLevelId = do
         | (snd <$> mxhairHPWatchfulness) /= Just WSleep = textToAS
         | otherwise = textFgToAS Color.Green
       xhairBlurb =
-        maybe teamBlurb (\t ->
-          textToAS (if isJust saimMode then "crosshair>" else "Crosshair:")
-          <+:> markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
-        mhairDesc
+        maybe
+          teamBlurb (\t ->
+            if isJust saimMode
+            then textToAS "crosshair>"
+                 <+:> markSleepTgtDesc (trimTgtDesc (widthXhairOrItem - 11) t)
+            else markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
+          mhairDesc
       tgtOrItem
         | Just (iid, fromCStore, _) <- sitemSel
         , Just leader <- mleader
