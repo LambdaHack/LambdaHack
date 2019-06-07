@@ -94,9 +94,8 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
   okxsNotNull = map okxFilter okxs
   pofOv :: Overlay -> PointUI
   pofOv [] = PointUI 0 0
-  pofOv l@((PointUI pxFirst _, _) : _) =  -- match x of the header
-    let pyAfterLast = 1 + maxYofOverlay l  -- append after last line
-    in PointUI pxFirst pyAfterLast
+  pofOv l = let pyAfterLast = 1 + maxYofOverlay l  -- append after last line
+            in PointUI 0 pyAfterLast
   atEnd = flip (++)
   appendToFontOverlayMap :: FontOverlayMap -> AttrLine
                          -> (FontOverlayMap, PointUI, DisplayFont)
