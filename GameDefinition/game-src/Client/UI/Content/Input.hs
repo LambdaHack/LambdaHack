@@ -72,9 +72,9 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "cycle among all party members"
               , MemberBack ))
   , ("*", ( [CmdMinimal, CmdAim]
-          , "cycle x-hair among enemies"
+          , "cycle crosshair among enemies"
           , AimEnemy ))
-  , ("/", ([CmdMinimal, CmdAim], "cycle x-hair among items", AimItem))
+  , ("/", ([CmdMinimal, CmdAim], "cycle crosshair among items", AimItem))
   , ("m", ( [CmdMinimal, CmdMove]
           , "modify door by closing it"
           , AlterDir closeDoorTriggers ))
@@ -100,10 +100,10 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
-                  , "go to x-hair for 25 steps"
+                  , "go to crosshair for 25 steps"
                   , Macro ["C-semicolon", "C-quotedbl", "C-V"] ))
   , ("colon", ( [CmdMove]
-              , "run to x-hair collectively for 25 steps"
+              , "run to crosshair collectively for 25 steps"
               , Macro ["C-colon", "C-quotedbl", "C-V"] ))
   , ("[", ( [CmdMove]
           , "explore nearest unknown spot"
@@ -152,16 +152,16 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("-", ([CmdAim], "unswerve the aiming line", EpsIncr False))
   , ("\\", ([CmdAim], "cycle aiming modes", AimFloor))
   , ("C-?", ( [CmdAim]
-            , "set x-hair to nearest unknown spot"
+            , "set crosshair to nearest unknown spot"
             , XhairUnknown ))
   , ("C-/", ( [CmdAim]
-            , "set x-hair to nearest item"
+            , "set crosshair to nearest item"
             , XhairItem ))
   , ("C-{", ( [CmdAim]
-            , "set x-hair to nearest upstairs"
+            , "aim at nearest upstairs"
             , XhairStair True ))
   , ("C-}", ( [CmdAim]
-            , "set x-hair to nearest dnstairs"
+            , "aim at nearest downstairs"
             , XhairStair False ))
   , ("<", ([CmdAim], "move aiming one level up" , AimAscend 1))
   , ("C-<", ( [CmdNoHelp], "move aiming 10 levels up"
@@ -171,7 +171,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("C->", ( [CmdNoHelp], "move aiming 10 levels down"
             , AimAscend (-10)) )
   , ("BackSpace" , ( [CmdAim]
-                   , "clear chosen item and x-hair"
+                   , "clear chosen item and crosshair"
                    , ComposeUnlessError ClearTargetIfItemClear ItemClear))
 
   -- Assorted (first few cloned from main menu)
@@ -213,13 +213,13 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
 
   -- Debug and others not to display in help screens
   , ("C-semicolon", ( [CmdNoHelp]
-                    , "move one step towards the x-hair"
+                    , "move one step towards the crosshair"
                     , MoveOnceToXhair ))
   , ("C-colon", ( [CmdNoHelp]
-                , "run collectively one step towards the x-hair"
+                , "run collectively one step towards the crosshair"
                 , RunOnceToXhair ))
   , ("C-quotedbl", ( [CmdNoHelp]
-                   , "continue towards the x-hair"
+                   , "continue towards the crosshair"
                    , ContinueToXhair ))
   , ("C-comma", ([CmdNoHelp], "run once ahead", RunOnceAhead))
   , ("safe1", ( [CmdInternal]
@@ -235,7 +235,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
               , "select party member on screen"
               , SelectWithPointer ))
   , ("safe5", ( [CmdInternal]
-              , "set x-hair to enemy"
+              , "set crosshair to enemy"
               , AimPointerEnemy ))
   , ("safe6", ( [CmdInternal]
               , "fling at enemy under pointer"
@@ -256,7 +256,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , "lurk 0.1 of a turn"
                , Wait10 ))
   , ("safe12", ( [CmdInternal]
-               , "snap x-hair to enemy"
+               , "snap crosshair to enemy"
                , XhairPointerEnemy ))
   ]
   ++ map defaultHeroSelect [0..9]

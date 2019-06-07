@@ -502,7 +502,7 @@ drawFrameStatus drawnLevelId = do
         | otherwise = textFgToAS Color.Green
       xhairBlurb =
         maybe teamBlurb (\t ->
-          textToAS (if isJust saimMode then "x-hair>" else "X-hair:")
+          textToAS (if isJust saimMode then "crosshair>" else "Crosshair:")
           <+:> markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
         mhairDesc
       tgtOrItem

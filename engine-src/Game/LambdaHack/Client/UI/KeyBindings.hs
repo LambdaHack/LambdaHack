@@ -44,7 +44,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "     z x c     b j n     1 2 3"
       ]
     movBlurb2 =
-      [ "In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair)."
+      [ "In aiming mode, the same keys (and mouse) move the aiming crosshair."
       , "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
       , "damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`"
       , "(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing."
@@ -89,7 +89,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ fmt keyL "0, 1 ... 9" "pick a particular actor as the new pointman"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
-    fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
+    fmt0 n k h = T.justifyLeft n ' ' k <+> h
+    fmt n k h = " " <> fmt0 n k h
     fmts s = " " <> s
     movText1 = map fmts movBlurb1
     movTextS = map fmts movSchema
@@ -114,7 +115,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     truncatem b = if T.length b > keyB
                   then T.take (keyB - 1) b <> "$"
                   else b
-    fmm a b c = fmt keyM a $ fmt keyB (truncatem b) (" " <> truncatem c)
+    fmm a b c = fmt (keyM + 1) a $ fmt0 keyB (truncatem b) (" " <> truncatem c)
     areaCaption t = fmm t "LMB (left mouse button)" "RMB (right mouse button)"
     keySel :: (forall a. (a, a) -> a) -> K.KM
            -> [(CmdArea, Either K.KM SlotChar, Text)]

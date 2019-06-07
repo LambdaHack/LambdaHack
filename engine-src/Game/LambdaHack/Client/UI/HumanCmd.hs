@@ -78,7 +78,7 @@ areaDescription ca = case ca of
   CaLevelNumber ->  "level number"
   CaArenaName ->    "level caption"
   CaPercentSeen ->  "percent seen"
-  CaXhairDesc ->    "x-hair info"
+  CaXhairDesc ->    "crosshair info"
   CaSelected ->     "party roster"
   CaCalmGauge ->    "Calm gauge"
   CaCalmValue ->    "Calm value"

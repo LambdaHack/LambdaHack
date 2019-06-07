@@ -824,7 +824,7 @@ cancelHuman = do
 
 -- * Accept
 
--- | Accept the current x-hair position as target, ending
+-- | Accept the current crosshair position as target, ending
 -- aiming mode, if active.
 acceptHuman :: (MonadClient m, MonadClientUI m) => m ()
 acceptHuman = do

@@ -171,7 +171,7 @@ mouseLMB goToOrRunTo desc =
 
 mouseMMB :: CmdTriple
 mouseMMB = ( [CmdMouse]
-           , "snap x-hair to floor under pointer"
+           , "snap crosshair to floor under pointer"
            , XhairPointerFloor )
 
 mouseRMB :: CmdTriple
