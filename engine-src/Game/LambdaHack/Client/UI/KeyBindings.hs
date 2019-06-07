@@ -33,9 +33,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
   let
     movBlurb1 =
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
-      , "or the Vi editor keys (middle) or the left hand movement keys (left)."
-      , "Run until disturbed with Shift or Control. Go-to a position with LMB"
-      , "(left mouse button). Run collectively via S-LMB (holding Shift)."
+      , "or the Vi editor keys (middle) or the left hand movement keys (left). Run until "
+      , "disturbed with Shift or Control. Go-to a position with LMB (left mouse button)."
       ]
     movSchema =
       [ "     q w e     y k u     7 8 9"
@@ -49,10 +48,11 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any"
       , "damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`"
       , "(the same key with Shift or Control) to lurk 0.1 of a turn, without bracing."
+      , ""
       , "Displace enemies by running into them with Shift/Control or S-LMB. Search,"
       , "open, descend and attack by bumping into walls, doors, stairs and enemies."
-      , "The best melee weapon is automatically chosen from your equipment"
-      , "and from among your body parts."
+      , "The best, not on cooldown, melee weapon is automatically chosen from your"
+      , "equipment and from among your body parts."
       ]
     minimalBlurb =
       [ "The following commands, joined with the movement and running keys,"
@@ -73,12 +73,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     mouseBasicsBlurb =
       [ "Screen area and UI mode (exploration/aiming) determine mouse click"
       , "effects. First, we give an overview of effects of each button over"
-      , "the game map area. The list includes not only left and right buttons,"
-      , "but also the optional middle mouse button (MMB) and the mouse wheel,"
-      , "which is also used over menus, to page-scroll them. (For mice without"
-      , "RMB, one can use Control key with LMB and for mice without MMB,"
-      , "one can use C-RMB or C-S-LMB.) Next we show mouse button effects"
-      , "per screen area, in exploration mode and (if different) in aiming mode."
+      , "the game map area. Next we show mouse button effects per screen area,"
+      , "in exploration mode and (if different) in aiming mode."
+      , ""
+      , "The list includes not only left and right buttons, but also the optional"
+      , "middle mouse button (MMB) and the mouse wheel, which is also used over"
+      , "menus, to page-scroll them. For mice without RMB, one can use Control key"
+      , "with LMB and for mice without MMB, one can use C-RMB or C-S-LMB."
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
     lastHelpEnd = "Scroll mouse wheel to go back. Press ESC to see the map again."
@@ -272,9 +273,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                  (mergeOKX
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
                          [areaCaption "aiming mode"])
-                    (typesetInProp $ ["", " " <> seeAlso, ""], [])) ) ]
+                    (typesetInProp $ ["", " " <> seeAlso], [])) ) ]
     ]
-
 
 -- | Turn the specified portion of bindings into a menu.
 --
