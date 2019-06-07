@@ -55,7 +55,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "equipment and from among your body parts."
       ]
     minimalBlurb =
-      [ "The following commands, joined with the movement and running keys,"
+      [ "The following few commands, joined with the movement and running keys,"
       , "let you accomplish anything in the game, though not necessarily"
       , "with the fewest keystrokes. You can also play the game"
       , "exclusively with a mouse, or both mouse and keyboard."
@@ -76,7 +76,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "the game map area. Next we show mouse button effects per screen area,"
       , "in exploration mode and (if different) in aiming mode."
       , ""
-      , "The list includes not only left and right buttons, but also the optional"
+      , "The first list includes not only left and right buttons, but also the optional"
       , "middle mouse button (MMB) and the mouse wheel, which is also used over"
       , "menus, to page-scroll them. For mice without RMB, one can use Control key"
       , "with LMB and for mice without MMB, one can use C-RMB or C-S-LMB."
