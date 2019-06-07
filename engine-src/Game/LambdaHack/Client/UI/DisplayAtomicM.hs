@@ -476,7 +476,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgPrompt $ mdesc mode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
-        msgAdd MsgPromptFocus "You remember your surroundings."
+        msgAdd MsgPromptFocus "\nYou remember your surroundings."
         msgAdd MsgPrompt desc
       displayMore ColorFull "\nAre you up for the challenge?"
       promptAdd0 "Prove yourself!"
