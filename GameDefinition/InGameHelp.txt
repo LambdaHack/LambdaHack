@@ -1,3 +1,5 @@
+This file is temporarily out of date.
+
 This is a snapshot of in-game help, rendered with default config file.
 For more general gameplay information see
 https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/PLAYING.md
