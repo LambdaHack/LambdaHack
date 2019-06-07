@@ -1283,10 +1283,8 @@ displayRespSfxAtomicUI sfx = case sfx of
               (lid, _) : _ -> do  -- only works until different levels possible
                 lvl <- getLevel lid
                 let desc = cdesc $ okind cocave $ lkind lvl
-                unless (T.null desc) $ do
-                  msgAdd0 MsgLandscape desc
-                  msgAdd0 MsgFocus
-                          "You turn your attention to nearby positions."
+                unless (T.null desc) $
+                  msgAdd0 MsgLandscape $ desc <> "\n"
               [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side
