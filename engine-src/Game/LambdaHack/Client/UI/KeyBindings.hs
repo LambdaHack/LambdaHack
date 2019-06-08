@@ -154,9 +154,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     doubleIfSquare n | isSquareFont monoFont = 2 * n
                      | otherwise = n
     okm :: (forall a. (a, a) -> a)
-        -> K.KM -> K.KM -> [Text]
+        -> K.KM -> K.KM -> [Text] -> [Text]
         -> OKX
-    okm sel key1 key2 header =
+    okm sel key1 key2 header footer =
       let kst1 = keySel sel key1
           kst2 = keySel sel key2
           f (ca1, Left km1, _) (ca2, Left km2, _) y =
@@ -170,7 +170,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           render (ca1, _, desc1) (_, _, desc2) =
             fmm (areaDescription ca1) desc1 desc2
           menu = zipWith render kst1 kst2
-      in (typesetInMono $ "" : header ++ menu, kxs)
+      in (typesetInMono $ "" : header ++ menu ++ footer, kxs)
     typesetInSquare :: [Text] -> FontOverlayMap
     typesetInSquare = EM.singleton squareFont . offsetOverlayX
                       . map (\t -> (spLen, textToAL t))
@@ -232,9 +232,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
               (typesetInProp $ "" : mouseAreasMini, [])
               (mergeOKX
                  (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "exploration"])
+                      [areaCaption "exploration"] [])
                  (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "aiming mode"])) ) ]
+                      [areaCaption "aiming mode"] [])) ) ]
       else
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
@@ -249,9 +249,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (typesetInProp $ "" : mouseAreasBlurb, []))
                  (mergeOKX
                     (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "exploration"])
+                         [areaCaption "exploration"] [])
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "aiming mode"])) ) ]
+                         [areaCaption "aiming mode"] [""] )) ) ]
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
@@ -268,7 +268,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (["", categoryDescription CmdItem], ["", keyCaption])
                     ([], [""] ++ itemAllEnd))
               (okxs CmdMove
-                    (["", categoryDescription CmdMove], ["", keyCaption])
+                    (["", "", categoryDescription CmdMove], ["", keyCaption])
                     (pickLeaderDescription, [""])) ) ]
     , if catLength CmdAim + catLength CmdMeta + 9 > rheight then
         [ ( movTextEnd
@@ -286,8 +286,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (["", categoryDescription CmdAim], ["", keyCaption])
                     ([], []))
               (okxs CmdMeta
-                    (["", categoryDescription CmdMeta], ["", keyCaption])
-                    ([], ["", "", seeAlso, ""])) ) ]
+                    (["", "", categoryDescription CmdMeta], ["", keyCaption])
+                    ([], ["", seeAlso, ""])) ) ]
     ]
 
 -- | Turn the specified portion of bindings into a menu.
