@@ -222,7 +222,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     , if 45 > rheight then
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
-                               ( ["", "Mouse commands", ""]
+                               ( ["", "Optional mouse commands", ""]
                                  ++ mouseBasicsText++ [""]
                                , [keyCaption] )
                                ([], [])
@@ -238,7 +238,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       else
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
-                               ( ["", "Mouse commands", ""]
+                               ( ["", "Optional mouse commands", ""]
                                  ++ mouseBasicsText ++ [""]
                                , [keyCaption] )
                                ([], [])
