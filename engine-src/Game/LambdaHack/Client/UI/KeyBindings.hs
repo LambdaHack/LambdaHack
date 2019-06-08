@@ -57,11 +57,11 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     minimalBlurb =
       [ "The following few commands, joined with the movement and running keys,"
       , "let you accomplish anything in the game, though not necessarily"
-      , "with the fewest keystrokes. You can also play the game"
-      , "exclusively with a mouse, or both mouse and keyboard."
-      , "(See the ending help screens for mouse commands.) Lastly,"
-      , "you can select a command with arrows or mouse directly from"
-      , "the help screen or the dashboard and execute it on the spot."
+      , "with the fewest keystrokes. You can also play the game exclusively"
+      , "with a mouse, or both mouse and keyboard (e.g., mouse for go-to"
+      , "and terrain inspection and keyboard for everything else). Lastly, "
+      , "you can select a command with arrows or mouse directly from the help"
+      , "screen or the dashboard and execute it on the spot."
       ]
     itemAllEnding =
       [ "Note how lower case item commands (stash item, equip item) place items"
@@ -73,16 +73,20 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     mouseBasicsBlurb =
       [ "Screen area and UI mode (exploration/aiming) determine mouse click"
       , "effects. First, we give an overview of effects of each button over"
-      , "the game map area. Next we show mouse button effects per screen area,"
+      , "the game map area. The list includes not only left and right buttons,"
+      , "but also the optional middle mouse button (MMB) and the mouse wheel,"
+      , "which is also used over menus, to page-scroll them. For mice without RMB,"
+      , "one can use Control key with LMB and for mice without MMB, one can use"
+      , "C-RMB or C-S-LMB."
+      ]
+    mouseAreasBlurb =
+      [ "Next we show mouse button effects per screen area,"
       , "in exploration mode and (if different) in aiming mode."
-      , ""
-      , "The first list includes not only left and right buttons, but also the optional"
-      , "middle mouse button (MMB) and the mouse wheel, which is also used over"
-      , "menus, to page-scroll them. For mice without RMB, one can use Control key"
-      , "with LMB and for mice without MMB, one can use C-RMB or C-S-LMB."
+      ]
+    mouseAreasMini =
+      [ "Mouse button effects per screen area, in exploration and in aiming modes"
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
-    lastHelpEnd = "Scroll mouse wheel to go back. Press ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
     keyL = 12
     pickLeaderDescription =
@@ -215,6 +219,39 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                        ++ minimalText ++ [""]
                     , [keyCaption] )
                     ([], [""])) ) ]
+    , if 45 > rheight then
+        [ ( movTextEnd
+          , let (ls, _) = okxs CmdMouse
+                               ( ["", "Mouse commands", ""]
+                                 ++ mouseBasicsText++ [""]
+                               , [keyCaption] )
+                               ([], [])
+            in (ls, []) )  -- don't capture mouse wheel, etc.
+        , ( movTextEnd
+          , mergeOKX
+              (typesetInProp $ "" : mouseAreasMini, [])
+              (mergeOKX
+                 (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                      [areaCaption "exploration"])
+                 (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                      [areaCaption "aiming mode"])) ) ]
+      else
+        [ ( movTextEnd
+          , let (ls, _) = okxs CmdMouse
+                               ( ["", "Mouse commands", ""]
+                                 ++ mouseBasicsText ++ [""]
+                               , [keyCaption] )
+                               ([], [])
+                okx0 = (ls, [])  -- don't capture mouse wheel, etc.
+            in mergeOKX
+                 (mergeOKX
+                    okx0
+                    (typesetInProp $ "" : mouseAreasBlurb, []))
+                 (mergeOKX
+                    (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
+                         [areaCaption "exploration"])
+                    (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
+                         [areaCaption "aiming mode"])) ) ]
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
@@ -241,7 +278,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         , ( movTextEnd
           , okxs CmdMeta
                  (["", categoryDescription CmdMeta], ["", keyCaption])
-                 ([], []) ) ]
+                 ([], [seeAlso]) ) ]
       else
         [ ( movTextEnd
           , mergeOKX
@@ -250,40 +287,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     ([], []))
               (okxs CmdMeta
                     (["", categoryDescription CmdMeta], ["", keyCaption])
-                    ([], [""])) ) ]
-    , if 45 > rheight then
-        [ ( lastHelpEnd
-          , let (ls, _) = okxs CmdMouse
-                               ( ["", "Mouse commands", ""]
-                                 ++ mouseBasicsText++ [""]
-                               , [keyCaption] )
-                               ([], [])
-            in (ls, []) )  -- don't capture mouse wheel, etc.
-        , ( lastHelpEnd
-          , mergeOKX
-              (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                   [areaCaption "exploration"])
-              (mergeOKX
-                 (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                      [areaCaption "aiming mode"])
-                 (typesetInProp $ ["", seeAlso], [])) ) ]
-      else
-        [ ( lastHelpEnd
-          , let (ls, _) = okxs CmdMouse
-                               ( ["", "Mouse commands", ""]
-                                 ++ mouseBasicsText ++ [""]
-                               , [keyCaption] )
-                               ([], [])
-                okx0 = (ls, [])  -- don't capture mouse wheel, etc.
-            in mergeOKX
-                 (mergeOKX
-                    okx0
-                    (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "exploration"]))
-                 (mergeOKX
-                    (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "aiming mode"])
-                    (typesetInProp $ ["", seeAlso], [])) ) ]
+                    ([], ["", "", seeAlso, ""])) ) ]
     ]
 
 -- | Turn the specified portion of bindings into a menu.
