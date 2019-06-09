@@ -628,24 +628,28 @@ drawLeaderStatus waitT = do
           darkPick | bdark = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
+          maxCalm = max 0 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
           calmText = showTrunc (bcalm b `divUp` oneM)
                      <> (if bdark then slashPick else "/")
-                     <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxCalm
-                                                         actorMaxSk)
+                     <> showTrunc maxCalm
           bracePick | actorWaits b = "}"
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
+          maxHP = max 0 $ Ability.getSk Ability.SkMaxHP actorMaxSk
           hpText = showTrunc (bhp b `divUp` oneM)
                    <> (if not bdark then slashPick else "/")
-                   <> showTrunc (max 0 $ Ability.getSk Ability.SkMaxHP
-                                                       actorMaxSk)
+                   <> showTrunc maxHP
           justifyRight n t = replicate (n - length t) ' ' ++ t
-          colorWarning w = if w then addColor Color.Red else stringToAS
+          colorWarning w full | w = addColor Color.Red
+                              | full = addColor Color.Magenta
+                              | otherwise = stringToAS
       return $! calmHeader
-                <> colorWarning calmCheckWarning (justifyRight 7 calmText)
+                <> colorWarning calmCheckWarning (bcalm b > xM maxCalm)
+                                (justifyRight 7 calmText)
                 <+:> hpHeader
-                <> colorWarning hpCheckWarning (justifyRight 7 hpText)
+                <> colorWarning hpCheckWarning (bhp b > xM maxHP)
+                                (justifyRight 7 hpText)
     Nothing -> do
       -- This is a valuable feedback for passing of time while faction
       -- leaderless and especially while temporarily actor-less..
