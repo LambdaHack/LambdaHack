@@ -87,6 +87,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ "Mouse button effects per screen area, in exploration and in aiming modes"
       ]
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
+    lastHelpEnd = "Use mouse wheel or PGUP to go back and ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
     keyL = 12
     pickLeaderDescription =
@@ -275,12 +276,12 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , okxs CmdAim
                  (["", categoryDescription CmdAim], ["", keyCaption])
                  ([], []) )
-        , ( movTextEnd
+        , ( lastHelpEnd
           , okxs CmdMeta
                  (["", categoryDescription CmdMeta], ["", keyCaption])
                  ([], [seeAlso]) ) ]
       else
-        [ ( movTextEnd
+        [ ( lastHelpEnd
           , mergeOKX
               (okxs CmdAim
                     (["", categoryDescription CmdAim], ["", keyCaption])
