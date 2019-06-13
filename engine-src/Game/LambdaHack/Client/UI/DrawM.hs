@@ -504,7 +504,7 @@ drawFrameStatus drawnLevelId = do
         maybe
           teamBlurb (\t ->
             if isJust saimMode
-            then textToAS "crosshair>"
+            then textToAS "Crosshair:"
                  <+:> markSleepTgtDesc (trimTgtDesc (widthXhairOrItem - 11) t)
             else markSleepTgtDesc (trimTgtDesc widthXhairOrItem t))
           mhairDesc
