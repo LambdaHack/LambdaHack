@@ -80,8 +80,9 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "C-RMB or C-S-LMB."
       ]
     mouseAreasBlurb =
-      [ "Next we show mouse button effects per screen area,"
-      , "in exploration mode and (if different) in aiming mode."
+      [ "Next we show mouse button effects per screen area, in exploration mode"
+      , "and (if different) in aiming mode. Note that this is all optional. Keyboard"
+      , "suffices, at worst employing the more obscure commands listed later on."
       ]
     mouseAreasMini =
       [ "Mouse button effects per screen area, in exploration and in aiming modes"
@@ -252,7 +253,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
                     (okm fst K.leftButtonReleaseKM K.rightButtonReleaseKM
                          [areaCaption "exploration"] [])
                     (okm snd K.leftButtonReleaseKM K.rightButtonReleaseKM
-                         [areaCaption "aiming mode"] [""] )) ) ]
+                         [areaCaption "aiming mode"] [] )) ) ]
     , if catLength CmdItem + catLength CmdMove + 9 + 9 > rheight then
         [ ( movTextEnd
           , okxs CmdItem
