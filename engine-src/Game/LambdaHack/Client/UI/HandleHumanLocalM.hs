@@ -730,7 +730,8 @@ eitherHistory showAll = do
             par1 = case linesAttr spYes of
               [] -> emptyAttrLine
               [l] -> l
-              l : _ -> attrStringToAL $ attrLine l ++ stringToAS "..."
+              ls -> attrStringToAL $ intercalate [Color.spaceAttrW32]
+                                   $ map attrLine ls
         in (attrStringToAL spNo, (textSize monoFont spNo, par1))
       (histLab, histDesc) = unzip $ map splitRow renderedHistory
       rhLab = EM.singleton monoFont $ offsetOverlay histLab
