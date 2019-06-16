@@ -6,7 +6,8 @@ module Game.LambdaHack.Client.UI.Msg
     Msg, toMsg
   , MsgClass(..), interruptsRunning, disturbsResting
     -- * Report
-  , Report, nullReport, consReport, renderReport, anyInReport
+  , Report, nullReport, nullFilteredReport, consReport
+  , renderReport, anyInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
   , renderHistory
@@ -271,6 +272,10 @@ emptyReport = Report []
 -- | Test if the set of messages is empty.
 nullReport :: Report -> Bool
 nullReport (Report l) = null l
+
+nullFilteredReport :: Report -> Bool
+nullFilteredReport (Report l) =
+  null $ filter (\(RepMsgN msg n) -> n > 0 && isDisplayed (msgClass msg)) l
 
 -- | Add a message to the end of the report.
 snocReport :: Report -> Msg -> Int -> Report

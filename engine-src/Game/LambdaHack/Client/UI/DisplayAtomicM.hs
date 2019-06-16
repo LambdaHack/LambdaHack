@@ -910,11 +910,10 @@ quitFactionUI fid toSt manalytics = do
   case startingPart of
     Nothing -> return ()
     Just sp ->
-      let (lineBreak, msgClass) = if fid == side
-                                  then ("\n", MsgOutcome)
-                                  else ("", MsgDiplomacy)
-      in msgAdd msgClass
-         $ lineBreak <> makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
+      let blurb = makeSentence [MU.SubjectVerb person MU.Yes fidName sp]
+      in if fid == side
+         then msgLnAdd MsgOutcome blurb
+         else msgAdd MsgDiplomacy blurb
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
       isNoConfirms <- isNoConfirmsGame
