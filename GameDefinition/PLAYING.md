@@ -39,6 +39,16 @@ and literary imagination. To be honest, a lot of imagination is required
 for this modest sample game, but it has its own distinct quirky mood
 and is playable and winnable.
 
+The game differs from classic roguelikes as follows:
+
+* player manually controls each member of his squad, though often the best tactics is to scout with only one character (a classic roguelike feel) and let others guard important areas
+* the game is turn-based, but with visibly high granularity --- projectiles fly gradually over time with varying speeds and can be sidestepped or shot down; less so explosions that are swarms of projectile particles (turn-based just the same)
+* time passes and factions pursue their goals on a few levels simultaneously, while other levels are frozen (but all are persistent)
+* combat mechanics is deterministic; randomness comes from enemies and procedurally generated terrain only
+* there's (almost) no HP regeneration; attrition ensures all past (silly) decisions matter
+* each character has 10 uniform equipment slots, which fill quickly given that most melee weapons have cooldowns
+* each faction has a single shared inventory of unlimited size, which has a physical location on the map and so can be ransacked
+
 If the game window is too large for your screen or you experience
 other technical issues, please consult
 [README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
