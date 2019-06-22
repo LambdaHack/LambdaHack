@@ -29,7 +29,7 @@ What to expect
 --------------
 
 LambdaHack is a turn-based game. You issue a command.
-Then you watch its results unfold on the screen without you being able
+Then you watch its results unfold on the screen, without you being able
 to intervene. Then all settles down and you have as much time
 as you want to inspect the battlefield and think about your next move.
 
@@ -53,7 +53,6 @@ If the game window is too large for your screen or you experience
 other technical issues, please consult
 [README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
 or describe your problem on gitter or the issue tracker.
-
 Contributions of all kinds are welcome. Please offer feedback
 to mikolaj.konarski@funktory.com or, preferably, at any of the public forums.
 
@@ -222,7 +221,7 @@ distance between the two points, one that a flung projectile would travel.
 Moving and acting
 -----------------
 
-This section is a copy of the few basic screens of in-game help. The help
+This section is a copy of the few initial bits of in-game help. The help
 pages are automatically generated based on a game's keybinding content and
 on overrides in the player's config file. The remaining in-game help screens,
 not shown here, list all game commands grouped by categories in detail.
