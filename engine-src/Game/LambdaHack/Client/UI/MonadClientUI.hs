@@ -321,7 +321,7 @@ defaultHistory = do
         mem = EM.fromList <$> uMessageColors sUIOptions
         msg = toMsg mem MsgAdmin
               $ "History log started on " <> curDate <> "."
-    return $! fst $ addToReport emptyHist msg 0 timeZero
+    return $! fst $ addToReport emptyHist msg 1 timeZero
 
 tellAllClipPS :: MonadClientUI m => m ()
 tellAllClipPS = do
