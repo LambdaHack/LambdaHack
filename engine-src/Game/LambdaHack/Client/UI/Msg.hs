@@ -400,5 +400,5 @@ lengthHistory History{oldReport, archivedHistory} =
 -- | Render history as many lines of text. New report is not rendered.
 -- It's expected to be empty when history is shown.
 renderHistory :: History -> [AttrString]
-renderHistory History{..} = map uToAttrString (RB.toList archivedHistory)
-                            ++ renderTimeReport oldTime oldReport
+renderHistory History{..} = renderTimeReport oldTime oldReport
+                            ++ map uToAttrString (RB.toList archivedHistory)

@@ -2,7 +2,7 @@
 -- | Ring buffers.
 module Game.LambdaHack.Common.RingBuffer
   ( RingBuffer
-  , empty, cons, uncons, toList, length
+  , empty, cons, toList, length
   ) where
 
 import Prelude ()
@@ -37,19 +37,11 @@ cons a RingBuffer{..} =
       incLength = min rbMaxSize $ rbLength + 1
   in RingBuffer (Seq.update rbNext a rbCarrier) rbMaxSize incNext incLength
 
-uncons :: RingBuffer a -> Maybe (a, RingBuffer a)
-uncons RingBuffer{..} =
-  let decNext = (rbNext - 1) `mod` rbMaxSize
-  in if rbLength == 0
-     then Nothing
-     else Just ( Seq.index rbCarrier decNext
-               , RingBuffer rbCarrier rbMaxSize decNext (rbLength - 1) )
-
 toList :: RingBuffer a -> [a]
 toList RingBuffer{..} =
   let l = Foldable.toList rbCarrier
       start = (rbNext + rbMaxSize - rbLength) `mod` rbMaxSize
-  in take rbLength $ drop start $ l ++ l
+  in reverse $ take rbLength $ drop start $ l ++ l
 
 length :: RingBuffer a -> Int
 length RingBuffer{rbLength} = rbLength

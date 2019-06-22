@@ -784,7 +784,7 @@ eitherHistory showAll = do
           _ -> error $ "" `showFailure` km
   if showAll
   then displayAllHistory
-  else displayOneReport (histBound - 1)
+  else displayOneReport 0
 
 -- * LastHistory
 
