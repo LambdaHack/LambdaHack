@@ -2,7 +2,8 @@ Playing LambdaHack
 ==================
 
 This file is temporarily out of date.
-The following blurb is a copy of the game intro screen.
+
+The following backstory blurb is a copy of the sample game intro screen.
 
  LambdaHack is a small dungeon crawler
  illustrating the roguelike game engine
@@ -23,6 +24,10 @@ The following blurb is a copy of the game intro screen.
  ready to tirelessly chase the elusive
  heroes by sight, sound and smell.
 
+
+What to expect
+--------------
+
 LambdaHack is a turn-based game. You issue a command.
 Then you watch its results unfold on the screen without you being able
 to intervene. Then all settles down and you have as much time
@@ -32,18 +37,59 @@ Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
 for this modest sample game, but it has its own distinct quirky mood
-and is playable and winnable. Contributions are welcome.
-Please offer feedback to mikolaj.konarski@funktory.com or, preferably,
-at any of the public forums.
+and is playable and winnable.
 
 If the game window is too large for your screen or you experience
 other technical issues, please consult
 [README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
 or describe your problem on gitter or the issue tracker.
 
+Contributions of all kinds are welcome. Please offer feedback
+to mikolaj.konarski@funktory.com or, preferably, at any of the public forums.
 
-Game map
---------
+
+Starting your adventure
+-----------------------
+
+Commands for saving and exiting the current game, starting a new game,
+configuring convenience settings for the current game and challenges
+for the next game are listed in the main menu, brought up by the `ESC` key.
+Game difficulty, from the challenges menu, determines hitpoints at birth:
+difficulty below 5 multiplies hitpoints of player characters, difficulty
+over 5 multiplies hitpoints of their enemies. Of the convenience settings,
+the `suspect terrain` choice is particularly interesting, because it
+determines not only screen display of the level map, but also whether
+suspect tiles are considered for auto-explore and for the `C-?` command that
+marks the nearest unexplored position.
+
+The "lone wolf" challenge mode reduces player's starting actors to exactly
+one (consequently, this does not affect the initial 'solo raid' scenario).
+The "cold fish" challenge mode makes it impossible for player characters
+to be healed by actors from other factions (this is a significant
+restriction in the final 'deep crawl' scenario).
+
+For a person new to roguelikes, the 'solo raid' scenario offers a gentle
+introduction. The subsequent game scenarios lead the player along
+an optional story arc. They gradually introduce squad combat,
+stealth, opportunity fire, asymmetric battles and more.
+Starting from the second scenario, the player controls a whole team
+of characters and will develop his repertoire of squad formations,
+preferred rendezvous locations and the use of light sources.
+
+The last scenario, the deep crawl, is the only one that takes place
+in a multi-floor setting, spanning 10 varied levels, requiring lots
+of time and focus to beat and providing considerable replayability.
+The player has a choice of exploring a single level at a time
+or portions of many levels along a single staircase. The scenario
+is the gist and the main challenge of the game, involving strategic
+resource management and area denial elements. Compared to that,
+the smaller scenarios provide mostly tactical training and additional
+entertainment via trying to beat a high score. They offer variety
+and a breather between the attempts at the deep crawl scenario.
+
+
+Exploring the world
+-------------------
 
 The map of any particular scenario consists of one or many levels
 and each level has a large number of tiles with a particular
@@ -94,8 +140,8 @@ The lower row of the larger room is full of items.
     ------       ----------
 
 
-Heroes
-------
+Leading your heroes
+-------------------
 
 The heroes are displayed on the map with bright white color (red if they are
 about to fall down) and symbols `@` and `1` through `9` (never `0`).
@@ -163,8 +209,8 @@ path from the pointman's position to the spot and the straight-line
 distance between the two points, one that a flung projectile would travel.
 
 
-Basic Commands
---------------
+Moving and acting
+-----------------
 
 This section is a copy of the few basic screens of in-game help. The help
 pages are automatically generated based on a game's keybinding content and
@@ -232,66 +278,8 @@ without MMB, one can use C-RMB or C-S-LMB.)
     WHEEL-DN     unswerve the aiming line
 
 
-Advanced Commands
+Battling monsters
 -----------------
-
-For ranged attacks, setting the aiming crosshair beforehand is not mandatory,
-because x-hair is set automatically as soon as a monster comes into view
-and can still be adjusted for as long as the missile to fling is not chosen.
-However, sometimes you want to examine the level map tile by tile
-or assign persistent personal targets to party members.
-The latter is essential in the rare cases when your non-pointmen
-(non-pointman characters) can move autonomously or fire opportunistically
-(via innate skills or rare equipment). Also, if your non-pointman is adjacent
-to more than one enemy, setting his target makes him melee a particular foe.
-
-You can enter the aiming mode with the `*` and keypad '*' keys that
-select enemies or the `/` and keypad '/' keys that cycle among items
-on the floor and mark a tile underneath an item. You can move x-hair
-with direction keys and assign a personal target to the pointman
-with a `RET` key (Return, Enter). The details of the shared x-hair mark
-are displayed in a status line close to the bottom of the screen,
-as explained in section [Heroes](#heroes) above.
-
-Commands for saving and exiting the current game, starting a new game,
-configuring convenience settings for the current game and challenges
-for the next game are listed in the main menu, brought up by the `ESC` key.
-Game difficulty, from the challenges menu, determines hitpoints at birth:
-difficulty below 5 multiplies hitpoints of player characters, difficulty
-over 5 multiplies hitpoints of their enemies. Of the convenience settings,
-the `suspect terrain` choice is particularly interesting, because it
-determines not only screen display of the level map, but also whether
-suspect tiles are considered for auto-explore and for the `C-?` command that
-marks the nearest unexplored position.
-
-The "lone wolf" challenge mode reduces player's starting actors to exactly
-one (consequently, this does not affect the initial 'solo raid' scenario).
-The "cold fish" challenge mode makes it impossible for player characters
-to be healed by actors from other factions (this is a significant
-restriction in the final 'deep crawl' scenario).
-
-For a person new to roguelikes, the 'solo raid' scenario offers a gentle
-introduction. The subsequent game scenarios lead the player along
-an optional story arc. They gradually introduce squad combat,
-stealth, opportunity fire, asymmetric battles and more.
-Starting from the second scenario, the player controls a whole team
-of characters and will develop his repertoire of squad formations,
-preferred rendezvous locations and the use of light sources.
-
-The last scenario, the deep crawl, is the only one that takes place
-in a multi-floor setting, spanning 10 varied levels, requiring lots
-of time and focus to beat and providing considerable replayability.
-The player has a choice of exploring a single level at a time
-or portions of many levels along a single staircase. The scenario
-is the gist and the main challenge of the game, involving strategic
-resource management and area denial elements. Compared to that,
-the smaller scenarios provide mostly tactical training and additional
-entertainment via trying to beat a high score. They offer variety
-and a breather between the attempts at the deep crawl scenario.
-
-
-Monsters
---------
 
 The life of the heroes is full of dangers. Monstrosities, natural
 and out of this world, roam the dark corridors and crawl from damp holes
@@ -349,8 +337,30 @@ the combatant is incapacitated and promptly dies.
 When the last hero dies or is dominated, the scenario ends in defeat.
 
 
-On Winning and Dying
---------------------
+Attacking from a distance
+-------------------------
+
+For ranged attacks, setting the aiming crosshair beforehand is not mandatory,
+because x-hair is set automatically as soon as a monster comes into view
+and can still be adjusted for as long as the missile to fling is not chosen.
+However, sometimes you want to examine the level map tile by tile
+or assign persistent personal targets to party members.
+The latter is essential in the rare cases when your non-pointmen
+(non-pointman characters) can move autonomously or fire opportunistically
+(via innate skills or rare equipment). Also, if your non-pointman is adjacent
+to more than one enemy, setting his target makes him melee a particular foe.
+
+You can enter the aiming mode with the `*` and keypad '*' keys that
+select enemies or the `/` and keypad '/' keys that cycle among items
+on the floor and mark a tile underneath an item. You can move x-hair
+with direction keys and assign a personal target to the pointman
+with a `RET` key (Return, Enter). The details of the shared x-hair mark
+are displayed in a status line close to the bottom of the screen,
+as explained in section [Heroes](#heroes) above.
+
+
+Winning and dying
+-----------------
 
 You win a scenario if you escape the location alive (which may prove
 difficult, because your foes tend to gradually build up the ambush squad
