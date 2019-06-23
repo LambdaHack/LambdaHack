@@ -2,7 +2,6 @@ Playing LambdaHack
 ==================
 
 This file is temporarily out of date.
-
 The following backstory blurb is a copy of the sample game intro screen.
 
  LambdaHack is a small dungeon crawler
