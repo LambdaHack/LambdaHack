@@ -1359,19 +1359,22 @@ mainMenuHuman :: MonadClientUI m
               => (HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
-  cops <- getsState scops
   CCUI{coinput=InputContent{bcmdList}} <- getsSession sccui
   gameMode <- getGameMode
-  snxtScenario <- getsClient snxtScenario
-  let nxtGameName = mname $ nxtGameMode cops snxtScenario
-      tnextScenario = "pick next:" <+> nxtGameName
+  curChal <- getsClient scurChal
+  let offOn b = if b then "on" else "off"
+      tcurDiff = "  with difficulty:" <+> tshow (cdiff curChal)
+      tcurWolf = "       lone wolf:" <+> offOn (cwolf curChal)
+      tcurFish = "       cold fish:" <+> offOn (cfish curChal)
       -- Key-description-command tuples.
-      kds = (K.mkKM "p", (tnextScenario, GameScenarioIncr))
-            : [ (km, (desc, cmd))
-              | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList ]
+      kds = [(km, (desc, cmd)) | (km, ([CmdMainMenu], desc, cmd)) <- bcmdList]
       gameName = mname gameMode
       gameInfo = map T.unpack
                    [ "Now playing:" <+> gameName
+                   , ""
+                   , tcurDiff
+                   , tcurWolf
+                   , tcurFish
                    , "" ]
   generateMenu cmdAction kds gameInfo "main"
 
@@ -1424,7 +1427,7 @@ settingsMenuHuman cmdAction = do
             , (K.mkKM "t", (tdoctrine, Doctrine))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
-                   [ "Convenience settings:"
+                   [ "Tweak convenience settings:"
                    , "" ]
   generateMenu cmdAction kds gameInfo "settings"
 
@@ -1435,32 +1438,26 @@ challengesMenuHuman :: MonadClientUI m
                     => (HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
-  curChal <- getsClient scurChal
+  cops <- getsState scops
+  snxtScenario <- getsClient snxtScenario
   nxtChal <- getsClient snxtChal
-  let offOn b = if b then "on" else "off"
-      tcurDiff = "*   difficulty:" <+> tshow (cdiff curChal)
+  let nxtGameName = mname $ nxtGameMode cops snxtScenario
+      tnextScenario = "scenario:" <+> nxtGameName
+      offOn b = if b then "on" else "off"
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
-      tcurWolf = "*   lone wolf:"
-                 <+> offOn (cwolf curChal)
       tnextWolf = "lone wolf (very hard):"
                   <+> offOn (cwolf nxtChal)
-      tcurFish = "*   cold fish:"
-                 <+> offOn (cfish curChal)
       tnextFish = "cold fish (hard):"
                   <+> offOn (cfish nxtChal)
       -- Key-description-command tuples.
-      kds = [ (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
+      kds = [ (K.mkKM "s", (tnextScenario, GameScenarioIncr))
+            , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
             , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
+            , (K.mkKM "n", ("start new game", GameRestart))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
-                   [ "Current challenges:"
-                   , ""
-                   , tcurDiff
-                   , tcurWolf
-                   , tcurFish
-                   , ""
-                   , "Next game challenges:"
+                   [ "Setup and start new game:"
                    , "" ]
   generateMenu cmdAction kds gameInfo "challenge"
 

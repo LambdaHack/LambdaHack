@@ -101,7 +101,7 @@ cmdAction cmd = case cmd of
   GameDifficultyIncr -> gameDifficultyIncr >> challengesMenuHuman cmdAction
   GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdAction
   GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdAction
-  GameScenarioIncr -> gameScenarioIncr >> mainMenuHuman cmdAction
+  GameScenarioIncr -> gameScenarioIncr >> challengesMenuHuman cmdAction
 
   GameRestart -> weaveJust <$> gameRestartHuman
   GameQuit -> weaveJust <$> gameQuitHuman
