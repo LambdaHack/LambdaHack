@@ -22,7 +22,7 @@ import qualified Data.EnumSet as ES
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.Time
@@ -103,7 +103,7 @@ aspectsRandom ass =
   let rollM depth =
         foldlM' (castAspect (Dice.AbsDepth depth) (Dice.AbsDepth 10))
                 emptyAspectRecord ass
-      gen = R.mkStdGen 0
+      gen = SM.mkSMGen 0
       (ar0, gen0) = St.runState (rollM 0) gen
       (ar1, gen1) = St.runState (rollM 10) gen0
   in show gen /= show gen0 || show gen /= show gen1 || ar0 /= ar1

@@ -12,7 +12,7 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Common.Analytics
 import Game.LambdaHack.Common.Perception
@@ -56,7 +56,7 @@ data StateServer = StateServer
   , sfovLitLid    :: FovLitLid      -- ^ ambient light positions
   , sarenas       :: [LevelId]      -- ^ active arenas
   , svalidArenas  :: Bool           -- ^ whether active arenas valid
-  , srandom       :: R.StdGen       -- ^ current random generator
+  , srandom       :: SM.SMGen       -- ^ current random generator
   , srngs         :: RNGs           -- ^ initial random generators
   , sbreakLoop    :: Bool           -- ^ exit game loop after clip's end;
                                     --   usually no game save follows
@@ -103,7 +103,7 @@ emptyStateServer =
     , sfovLitLid = EM.empty
     , sarenas = []
     , svalidArenas = False
-    , srandom = R.mkStdGen 42
+    , srandom = SM.mkSMGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
                    , startingRandomGenerator = Nothing }
     , sbreakLoop = False

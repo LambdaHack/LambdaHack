@@ -23,12 +23,13 @@ import Game.LambdaHack.Core.Prelude
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Ratio
 import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Frequency
 
 -- | The monad of computations with random generator state.
-type Rnd a = St.State R.StdGen a
+type Rnd a = St.State SM.SMGen a
 
 -- | Get a random object within a range with a uniform distribution.
 randomR :: (R.Random a) => (a, a) -> Rnd a
@@ -61,7 +62,7 @@ frequency :: Show a => Frequency a -> Rnd a
 frequency = St.state . rollFreq
 
 -- | Randomly choose an item according to the distribution.
-rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
+rollFreq :: Show a => Frequency a -> SM.SMGen -> (a, SM.SMGen)
 rollFreq fr g = case runFrequency fr of
   [] -> error $ "choice from an empty frequency"
                 `showFailure` nameFrequency fr

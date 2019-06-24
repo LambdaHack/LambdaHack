@@ -18,7 +18,7 @@ import qualified Paths_LambdaHack as Self (version)
 import qualified Data.Text as T
 import           Data.Version
 import           Options.Applicative
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 -- Dependence on ClientOptions is an anomaly. Instead, probably the raw
 -- remaining commandline should be passed and parsed by the client to extract
@@ -204,13 +204,13 @@ benchmarkP =
   switch (  long "benchmark"
          <> help "Restrict file IO, print timing stats" )
 
-setDungeonRngP :: Parser (Maybe R.StdGen)
+setDungeonRngP :: Parser (Maybe SM.SMGen)
 setDungeonRngP = optional $
   option auto (  long "setDungeonRng"
               <> metavar "RNG_SEED"
               <> help "Set dungeon generation RNG seed to string RNG_SEED" )
 
-setMainRngP :: Parser (Maybe R.StdGen)
+setMainRngP :: Parser (Maybe SM.SMGen)
 setMainRngP = optional $
   option auto (  long "setMainRng"
               <> metavar "RNG_SEED"

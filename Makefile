@@ -108,6 +108,9 @@ benchFrontendBattle:
 benchCrawl:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
 
+benchCrawl-new-build:
+	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng "SMGen 123 123" --setMainRng "SMGen 125 125"
+
 benchFrontendCrawl:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --logPriority 4 --newGame 1 --noAnim --maxFps 100000 --benchmark --stopAfterFrames 7000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng 0 --setMainRng 0
 
@@ -131,6 +134,13 @@ nodeBenchCrawl:
 
 nodeBenchBattle:
 	node dist/build/LambdaHack/LambdaHack.jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng 0 --setMainRng 0
+
+# needs installed cabal-plan
+nodeBenchCrawl-new-build:
+	node $$(cabal-plan list-bin LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode crawl --setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"
+
+nodeBenchBattle-new-build:
+	node $$(cabal-plan list-bin LambdaHack).jsexe/all.js --dbgMsgSer --logPriority 4 --newGame 3 --noAnim --maxFps 100000 --frontendNull --benchmark --stopAfterFrames 1000 --automateAll --keepAutomated --gameMode battle --setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"
 
 nodeBench: nodeBenchBattle nodeBenchCrawl
 

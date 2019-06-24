@@ -24,6 +24,7 @@ import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
 import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -188,7 +189,7 @@ instance Binary ThrowMod
 
 instance Hashable ThrowMod
 
-boostItemKindList :: R.StdGen -> [ItemKind] -> [ItemKind]
+boostItemKindList :: SM.SMGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []
 boostItemKindList initialGen l =
   let (r, _) = R.randomR (0, length l - 1) initialGen

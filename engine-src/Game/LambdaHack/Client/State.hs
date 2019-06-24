@@ -17,7 +17,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Generics (Generic)
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.ClientOptions
@@ -53,7 +53,7 @@ data StateClient = StateClient
       --   but they are costly to generate and not too large
   , sfper         :: PerLid         -- ^ faction perception indexed by level
   , salter        :: AlterLid       -- ^ cached alter skill data for positions
-  , srandom       :: R.StdGen       -- ^ current random generator
+  , srandom       :: SM.SMGen       -- ^ current random generator
   , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
                                     --   Faction.gleader is the old leader
   , _sside        :: FactionId      -- ^ faction controlled by the client
@@ -129,7 +129,7 @@ emptyStateClient _sside =
     , sdiscoBenefit = EM.empty
     , sfper = EM.empty
     , salter = EM.empty
-    , srandom = R.mkStdGen 42  -- will get modified in this and future games
+    , srandom = SM.mkSMGen 42  -- will get modified in this and future games
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
