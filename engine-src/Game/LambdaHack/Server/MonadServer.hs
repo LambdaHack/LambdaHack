@@ -31,6 +31,7 @@ import           System.Exit (exitFailure)
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (sbenchmark)
@@ -204,7 +205,7 @@ rndToAction r = do
 
 -- | Gets a random generator from the user-submitted options or, if not present,
 -- generates one.
-getSetGen :: MonadServer m => Maybe R.StdGen -> m R.StdGen
+getSetGen :: MonadServer m => Maybe SM.SMGen -> m SM.SMGen
 getSetGen mrng = case mrng of
   Just rnd -> return rnd
-  Nothing -> liftIO R.newStdGen
+  Nothing -> liftIO SM.newSMGen

@@ -193,6 +193,7 @@ library definition
                       ,keys
                       ,miniutter
                       ,random
+                      ,splitmix
                       ,time
                       ,text
                       ,transformers
@@ -348,6 +349,7 @@ library
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
                       random     >= 1.1,
+                      splitmix   >= 0.0.3,
                       stm        >= 2.4,
                       time       >= 1.4,
                       text       >= 0.11.2.3,
@@ -426,6 +428,7 @@ library this-game-src
                       ,optparse-applicative
                       ,primitive
                       ,random
+                      ,splitmix
                       ,template-haskell >= 2.6
                       ,text
                       ,transformers

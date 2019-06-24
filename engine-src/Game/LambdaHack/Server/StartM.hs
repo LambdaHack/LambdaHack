@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Common.ActorState
@@ -250,7 +251,7 @@ resetFactions factionDold gameModeIdOld curDiffSerOld totalDepth players = do
 
 gameReset :: MonadServer m
           => ServerOptions -> Maybe (GroupName ModeKind)
-          -> Maybe R.StdGen -> m State
+          -> Maybe SM.SMGen -> m State
 gameReset serverOptions mGameMode mrandom = do
   -- Dungeon seed generation has to come first, to ensure item boosting
   -- is determined by the dungeon RNG.

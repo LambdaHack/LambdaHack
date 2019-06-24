@@ -23,6 +23,7 @@ import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Definition.Defs
@@ -52,9 +53,9 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable darea ltile = do
   let outerId = ouniqGroup cotile "unknown outer fence"
-      runCdefTile :: (R.StdGen, (Int, [(Int, ContentId TileKind)]))
+      runCdefTile :: (SM.SMGen, (Int, [(Int, ContentId TileKind)]))
                   -> ( ContentId TileKind
-                     , (R.StdGen, (Int, [(Int, ContentId TileKind)])) )
+                     , (SM.SMGen, (Int, [(Int, ContentId TileKind)])) )
       runCdefTile (gen1, (pI, assocs)) =
         let p = toEnum pI
         in if p `inside` darea

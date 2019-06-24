@@ -13,7 +13,7 @@ import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import qualified Data.Primitive.PrimArray as PA
 import           GHC.Compact
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Client
 import qualified Game.LambdaHack.Client.UI.Content.Input as IC
@@ -62,7 +62,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- This setup ensures the boosting option doesn't affect generating initial
   -- RNG for dungeon, etc., and also, that setting dungeon RNG on commandline
   -- equal to what was generated last time, ensures the same item boost.
-  initialGen <- maybe R.getStdGen return sdungeonRng
+  initialGen <- maybe SM.newSMGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
       coitem = IK.makeData $

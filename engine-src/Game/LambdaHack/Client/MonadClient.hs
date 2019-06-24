@@ -17,10 +17,11 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Bits (finiteBitSize, xor, (.&.))
+import           Data.Word (Word32)
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
@@ -76,11 +77,11 @@ rndToAction r = do
 rndToActionForget :: MonadClientRead m => Rnd a -> m a
 rndToActionForget r = do
   gen <- getsClient srandom
-  let i = fst $ R.next gen
+  let i = fst $ SM.nextWord32 gen
   time <- getsState stime
-  -- Prevent overflow from @Int64@ to @Int@.
-  let positiveIntSize = finiteBitSize (1 :: Int) - 1
+  -- Prevent overflow from @Int64@ to @Word32@.
+  let positiveIntSize = finiteBitSize (1 :: Word32) - 1
       oneBitsPositiveInt = 2 ^ positiveIntSize - 1
-      timeSmallBits = fromEnum $ timeTicks time .&. oneBitsPositiveInt
-      genNew = R.mkStdGen $ i `xor` timeSmallBits
+      timeSmallBits = fromIntegral (timeTicks time .&. oneBitsPositiveInt)
+      genNew = SM.mkSMGen $ i `xor` timeSmallBits
   return $! St.evalState r genNew

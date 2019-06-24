@@ -8,7 +8,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import           Data.Binary
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Client (ClientOptions (..), defClientOptions)
 import Game.LambdaHack.Definition.Defs
@@ -26,8 +26,8 @@ data ServerOptions = ServerOptions
   , sgameMode        :: Maybe (GroupName ModeKind)
   , sautomateAll     :: Bool
   , skeepAutomated   :: Bool
-  , sdungeonRng      :: Maybe R.StdGen
-  , smainRng         :: Maybe R.StdGen
+  , sdungeonRng      :: Maybe SM.SMGen
+  , smainRng         :: Maybe SM.SMGen
   , snewGameSer      :: Bool
   , scurChalSer      :: Challenge
   , sdumpInitRngs    :: Bool
@@ -41,8 +41,8 @@ data ServerOptions = ServerOptions
   deriving Show
 
 data RNGs = RNGs
-  { dungeonRandomGenerator  :: Maybe R.StdGen
-  , startingRandomGenerator :: Maybe R.StdGen
+  { dungeonRandomGenerator  :: Maybe SM.SMGen
+  , startingRandomGenerator :: Maybe SM.SMGen
   }
 
 instance Show RNGs where
