@@ -1309,7 +1309,7 @@ generateMenu cmdAction blurb kds gameInfo menuName = do
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
-  let offset = if isSquareFont propFont then 2 else -8
+  let offset = if isSquareFont propFont || length blurb <= 1 then 2 else -8
       bindings =  -- key bindings to display
         let fmt (k, (d, _)) =
               ( Just k
@@ -1332,7 +1332,7 @@ generateMenu cmdAction blurb kds gameInfo menuName = do
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
       introLen = length blurb
-      introMaxLen = maximum $ 0 : map (textSize monoFont . attrLine) blurb
+      introMaxLen = maximum $ 30 : map (textSize monoFont . attrLine) blurb
       introOv = map (\(y, al) ->
                        (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
                 $ zip [max 0 (rheight - introLen - 1) ..] blurb
@@ -1440,10 +1440,11 @@ challengesMenuHuman :: MonadClientUI m
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
   cops <- getsState scops
+  FontSetup{propFont} <- getFontSetup
   snxtScenario <- getsClient snxtScenario
   nxtChal <- getsClient snxtChal
-  let nxtGameName = mname $ nxtGameMode cops snxtScenario
-      tnextScenario = "scenario:" <+> nxtGameName
+  let gameMode = nxtGameMode cops snxtScenario
+      tnextScenario = "scenario:" <+> mname gameMode
       offOn b = if b then "on" else "off"
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
@@ -1460,7 +1461,9 @@ challengesMenuHuman cmdAction = do
       gameInfo = map T.unpack
                    [ "Setup and start new game:"
                    , "" ]
-  generateMenu cmdAction [] kds gameInfo "challenge"
+      width = if isSquareFont propFont then 40 else 80
+      blurb = splitAttrString width $ textToAS $ mdesc gameMode
+  generateMenu cmdAction blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
 
