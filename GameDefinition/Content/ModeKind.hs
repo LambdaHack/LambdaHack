@@ -311,7 +311,7 @@ rosterRaid, rosterBrawl, rosterShootout, rosterHunt, rosterEscape, rosterZoo, ro
 
 rosterRaid = Roster
   { rosterList = [ ( playerHero {fhiCondPoly = hiHeroShort}
-                   , [(-2, 1, "hero")] )
+                   , [(-2, 2, "hero")] )
                  , ( playerAntiHero { fname = "Indigo Founder"
                                     , fhiCondPoly = hiHeroShort }
                    , [(-2, 1, "hero")] )
