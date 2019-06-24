@@ -1302,11 +1302,11 @@ chooseItemMenuHuman cmdAction c = do
 
 generateMenu :: MonadClientUI m
              => (HumanCmd -> m (Either MError ReqUI))
-             -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
+             -> [AttrLine] -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
-generateMenu cmdAction kds gameInfo menuName = do
+generateMenu cmdAction blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
-  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine, rintroScreen}} <-
+  CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
     getsSession sccui
   FontSetup{..} <- getFontSetup
   let offset = if isSquareFont propFont then 2 else -8
@@ -1331,19 +1331,11 @@ generateMenu cmdAction kds gameInfo menuName = do
                  ++ bindings
       (menuOvLines, mkyxs) = unzip $ zipWith generate [0..] rawLines
       kyxs = catMaybes mkyxs
-      glueLines (l1 : l2 : rest) =
-        if | null l1 -> l1 : glueLines (l2 : rest)
-           | null l2 -> l1 : l2 : glueLines rest
-           | otherwise -> (l1 ++ l2) : glueLines rest
-      glueLines ll = ll
-      introALs =
-        map stringToAL
-        $ if isSquareFont propFont then rintroScreen else glueLines rintroScreen
-      introLen = length introALs
-      introMaxLen = maximum $ map (textSize monoFont . attrLine) introALs
+      introLen = length blurb
+      introMaxLen = maximum $ 0 : map (textSize monoFont . attrLine) blurb
       introOv = map (\(y, al) ->
                        (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
-                $ zip [max 0 (rheight - introLen - 1) ..] introALs
+                $ zip [max 0 (rheight - introLen - 1) ..] blurb
       ov = EM.insertWith (++) propFont introOv
            $ EM.singleton squareFont $ offsetOverlayX menuOvLines
   ekm <- displayChoiceScreen menuName ColorFull True
@@ -1359,7 +1351,9 @@ mainMenuHuman :: MonadClientUI m
               => (HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
-  CCUI{coinput=InputContent{bcmdList}} <- getsSession sccui
+  CCUI{ coinput=InputContent{bcmdList}
+      , coscreen=ScreenContent{rintroScreen} } <- getsSession sccui
+  FontSetup{propFont} <- getFontSetup
   gameMode <- getGameMode
   curChal <- getsClient scurChal
   let offOn b = if b then "on" else "off"
@@ -1376,7 +1370,14 @@ mainMenuHuman cmdAction = do
                    , tcurWolf
                    , tcurFish
                    , "" ]
-  generateMenu cmdAction kds gameInfo "main"
+      glueLines (l1 : l2 : rest) =
+        if | null l1 -> l1 : glueLines (l2 : rest)
+           | null l2 -> l1 : l2 : glueLines rest
+           | otherwise -> (l1 ++ l2) : glueLines rest
+      glueLines ll = ll
+      backstory | isSquareFont propFont = rintroScreen
+                | otherwise = glueLines rintroScreen
+  generateMenu cmdAction (map stringToAL backstory) kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1429,7 +1430,7 @@ settingsMenuHuman cmdAction = do
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
-  generateMenu cmdAction kds gameInfo "settings"
+  generateMenu cmdAction [] kds gameInfo "settings"
 
 -- * ChallengesMenu
 
@@ -1459,7 +1460,7 @@ challengesMenuHuman cmdAction = do
       gameInfo = map T.unpack
                    [ "Setup and start new game:"
                    , "" ]
-  generateMenu cmdAction kds gameInfo "challenge"
+  generateMenu cmdAction [] kds gameInfo "challenge"
 
 -- * GameScenarioIncr
 
