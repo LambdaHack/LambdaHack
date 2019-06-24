@@ -169,7 +169,7 @@ handleMouse rf (cell, _) cx cy = do
         let mkey = if | wheelY < -0.01 -> Just K.WheelNorth
                       | wheelY > 0.01 -> Just K.WheelSouth
                       | otherwise -> Nothing  -- probably a glitch
-            pointer = Point cx cy
+            pointer = K.PointUI cx cy
         maybe (return ())
               (\key -> IO.liftIO $ saveKMP rf modifier key pointer) mkey
       saveMouse = do
@@ -181,7 +181,7 @@ handleMouse rf (cell, _) cx cy = do
               1 -> K.MiddleButtonRelease
               2 -> K.RightButtonRelease  -- not handled in contextMenu
               _ -> K.LeftButtonRelease  -- any other is alternate left
-            pointer = Point cx cy
+            pointer = K.PointUI cx cy
         -- IO.liftIO $ putStrLn $
         --   "m: " ++ show but ++ show modifier ++ show pointer
         IO.liftIO $ saveKMP rf modifier key pointer
