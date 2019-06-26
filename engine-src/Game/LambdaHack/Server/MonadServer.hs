@@ -30,7 +30,6 @@ import           Data.Time.LocalTime
 import           System.Exit (exitFailure)
 import           System.FilePath
 import           System.IO (hFlush, stdout)
-import qualified System.Random as R
 import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Atomic

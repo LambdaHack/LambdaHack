@@ -22,7 +22,6 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 import           System.IO.Unsafe (unsafePerformIO)
-import qualified System.Random as R
 import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Common.Area
@@ -65,7 +64,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                   in (tile, (gen2, (pI + 1, assocs)))
            else (outerId, (gen1, (pI + 1, assocs)))
       runUnfold gen =
-        let (gen1, gen2) = R.split gen
+        let (gen1, gen2) = SM.splitSMGen gen
         in (PointArray.unfoldrNA
               rXmax rYmax runCdefTile
               (gen1, (0, IM.assocs $ EM.enumMapToIntMap ltile)), gen2)

@@ -23,7 +23,6 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
-import qualified System.Random as R
 import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Atomic
@@ -93,7 +92,7 @@ reinitGame = do
   mapWithKeyM_ (\fid _ -> do
     -- Different seed for each client, to make sure behaviour is varied.
     gen1 <- getsServer srandom
-    let (clientRandomSeed, gen2) = R.split gen1
+    let (clientRandomSeed, gen2) = SM.splitSMGen gen1
     modifyServer $ \ser -> ser {srandom = gen2}
     execUpdAtomic $ updRestart fid clientRandomSeed) factionD
   dungeon <- getsState sdungeon

@@ -23,10 +23,10 @@ import           Data.Binary
 import           Data.Hashable (Hashable)
 import qualified Data.Text as T
 import           GHC.Generics (Generic)
-import qualified System.Random as R
 import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Random (randomR0)
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
@@ -192,7 +192,7 @@ instance Hashable ThrowMod
 boostItemKindList :: SM.SMGen -> [ItemKind] -> [ItemKind]
 boostItemKindList _ [] = []
 boostItemKindList initialGen l =
-  let (r, _) = R.randomR (0, length l - 1) initialGen
+  let (r, _) = randomR0 (length l - 1) initialGen
   in case splitAt r l of
     (pre, i : post) -> pre ++ boostItemKind i : post
     _               -> error $  "" `showFailure` l
