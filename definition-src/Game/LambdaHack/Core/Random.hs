@@ -3,7 +3,7 @@ module Game.LambdaHack.Core.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, random, oneOf, shuffle, frequency
+  , randomR, randomInt, randomR0, oneOf, shuffle, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -22,7 +22,6 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
 import           Data.Ratio
-import qualified System.Random as R
 import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -31,15 +30,29 @@ import           Game.LambdaHack.Core.Frequency
 -- | The monad of computations with random generator state.
 type Rnd a = St.State SM.SMGen a
 
--- | Get a random object within a range with a uniform distribution.
-randomR :: (R.Random a) => (a, a) -> Rnd a
+-- | Get a random object within a (inclusive) range with a uniform distribution.
+randomR :: Integral a => (a, a) -> Rnd a
 {-# INLINE randomR #-}
-randomR = St.state . R.randomR
+randomR (0, h) = St.state $ randomR0 h
+randomR (l, h) | l > h = randomR (h, l)
+randomR (l, h) = St.state $ \g ->
+  let (x, g') = randomR0 (h - l) g
+  in (x + l, g')
 
--- | Get a random object of a given type with a uniform distribution.
-random :: (R.Random a) => Rnd a
-{-# INLINE random #-}
-random = St.state R.random
+-- | Generate random 'Integral' in @[0, x]@ range.
+randomR0 :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
+randomR0 h g =
+    let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
+        x = fromIntegral w32
+    in if x > h
+       then error (show (fromIntegral x :: Integer, fromIntegral h :: Integer, w32))
+       else (x, g')
+{-# INLINE randomR0 #-}
+
+-- | Get a random 'Int' using full range
+randomInt :: Rnd Int
+randomInt = St.state SM.nextInt
+{-# INLINE randomInt #-}
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
@@ -70,11 +83,11 @@ rollFreq fr g = case runFrequency fr of
                                `showFailure` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
   fs -> let sumf = foldl' (\ !acc (!n, _) -> acc + n) 0 fs
-            (r, ng) = R.randomR (1, sumf) g
+            (r, ng) = randomR0 (pred sumf) g
             frec :: Int -> [(Int, a)] -> a
             frec !m [] = error $ "impossible roll"
                                  `showFailure` (nameFrequency fr, fs, m)
-            frec m ((n, x) : _) | m <= n = x
+            frec m ((n, x) : _) | m < n = x
             frec m ((n, _) : xs) = frec (m - n) xs
         in assert (sumf > 0 `blame` "frequency with nothing to pick"
                             `swith` (nameFrequency fr, fs))
