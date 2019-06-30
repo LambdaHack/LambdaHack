@@ -98,18 +98,23 @@ to the story line and play some of the remaining scenarios, which continue
 the plotline from the tutorial scenarios in the form of flashbacks
 and eventually lead up to the events that start the main crawl adventure.
 The training they provide is more synthetic in nature, drilling
-a particular skill set, even as exotic as opportunity fire management
-and big asymmetric battles. The challenge may be, accordingly, quite tough.
+a particular skill set, even as exotic as opportunity fire management,
+a frantic race to the exit and big asymmetric battles. The challenge may be,
+accordingly, quite tough.
 
-The main scenario, the deep crawl, is the only one that takes place
-in a multi-floor setting, spanning 10 varied levels, requiring lots
-of time and focus to beat and providing considerable replayability.
-The player has a choice of exploring a single level at a time
-or portions of many levels along a single staircase. The scenario
-is the gist and the main challenge of the game, involving strategic
-resource management and area denial elements. The crawl game mode
-is the most replayable, though even the small scenarios can be refreshed
-by increasing difficulty level and striving to beat a high score.
+The main scenario, the long crawl, is the only one that takes place
+in a multi-floor setting, requiring lots of time and focus to beat.
+The player has a choice of exploring a single level at a time or portions
+of many levels along a single staircase. On some levels he may explore
+and loot with a single scout eluding most opponents. On others he may be
+forced to change the pace and perform a complete exterminatory sweep
+involving his whole party. On yet others, his best course of action may be
+to defend a key location until the first wave of attackers is broken.
+The size of the game arena calls for strategic thinking, including
+resource management, area denial and unavoidable temporary retreats
+to other levels. Thus, the crawl game mode is the most replayable,
+but even the small scenarios can be refreshed by increasing difficulty
+level and striving to beat a high score.
 
 
 Exploring the world
