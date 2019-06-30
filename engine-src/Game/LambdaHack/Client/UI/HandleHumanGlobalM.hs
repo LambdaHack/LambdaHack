@@ -1462,7 +1462,10 @@ challengesMenuHuman cmdAction = do
                    [ "Setup and start new game:"
                    , "" ]
       width = if isSquareFont propFont then 42 else 84
-      blurb = splitAttrString width $ textToAS $ mdesc gameMode
+      duplicateEOL '\n' = "\n\n"
+      duplicateEOL c = T.singleton c
+      blurb = splitAttrString width $ textToAS
+              $ T.concatMap duplicateEOL $ mdesc gameMode
   generateMenu cmdAction blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
