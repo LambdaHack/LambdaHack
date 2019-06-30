@@ -45,6 +45,7 @@ import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.Bfs
 import           Game.LambdaHack.Client.BfsM
+import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
@@ -1409,6 +1410,7 @@ settingsMenuHuman cmdAction = do
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
+  noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
   side <- getsClient sside
   factDoctrine <- getsState $ fdoctrine . gplayer . (EM.! side) . sfactionD
   let offOn b = if b then "on" else "off"
@@ -1420,11 +1422,13 @@ settingsMenuHuman cmdAction = do
       tsuspect = "mark suspect terrain:" <+> offOnAll markSuspect
       tvisible = "show visible zone:" <+> offOn markVision
       tsmell = "display smell clues:" <+> offOn markSmell
+      tanim = "play animations:" <+> offOn (not noAnim)
       tdoctrine = "squad doctrine:" <+> Ability.nameDoctrine factDoctrine
       -- Key-description-command tuples.
       kds = [ (K.mkKM "s", (tsuspect, MarkSuspect))
             , (K.mkKM "v", (tvisible, MarkVision))
             , (K.mkKM "c", (tsmell, MarkSmell))
+            , (K.mkKM "a", (tanim, MarkAnim))
             , (K.mkKM "t", (tdoctrine, Doctrine))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack

@@ -12,7 +12,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
   , repeatHuman, recordHuman, allHistoryHuman, lastHistoryHuman
-  , markVisionHuman, markSmellHuman, markSuspectHuman, printScreenHuman
+  , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
+  , printScreenHuman
     -- * Commands specific to aiming
   , cancelHuman, acceptHuman, clearTargetIfItemClearHuman, itemClearHuman
   , moveXhairHuman, aimTgtHuman, aimFloorHuman, aimEnemyHuman, aimItemHuman
@@ -809,7 +810,16 @@ markSuspectHuman = do
   invalidateBfsAll
   modifyClient cycleMarkSuspect
 
+-- * MarkAnim
+
+markAnimHuman :: MonadClient m => m ()
+markAnimHuman = do
+  noAnim <- getsClient $ fromMaybe False . snoAnim . soptions
+  modifyClient $ \cli ->
+    cli {soptions = (soptions cli) {snoAnim = Just $ not noAnim}}
+
 -- * PrintScreen
+
 printScreenHuman :: MonadClientUI m => m ()
 printScreenHuman = do
   promptAdd "Screenshot printed."

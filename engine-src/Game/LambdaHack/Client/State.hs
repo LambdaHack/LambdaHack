@@ -192,6 +192,7 @@ instance Binary StateClient where
     put smarkSuspect
     put scondInMelee
     put svictories
+    put soptions
 #ifdef WITH_EXPENSIVE_ASSERTIONS
     put sfper
 #endif
@@ -210,12 +211,12 @@ instance Binary StateClient where
     smarkSuspect <- get
     scondInMelee <- get
     svictories <- get
+    soptions <- get
     let sbfsD = EM.empty
         sundo = ()
         salter = EM.empty
         srandom = read g
         squit = False
-        soptions = defClientOptions
         stabs = (undefined, undefined)
 #ifndef WITH_EXPENSIVE_ASSERTIONS
         sfper = EM.empty

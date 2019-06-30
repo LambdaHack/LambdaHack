@@ -130,6 +130,7 @@ cmdAction cmd = case cmd of
   MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
   MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
   MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
+  MarkAnim -> markAnimHuman >> settingsMenuHuman cmdAction
   SettingsMenu -> settingsMenuHuman cmdAction
   ChallengesMenu -> challengesMenuHuman cmdAction
   PrintScreen -> addNoError printScreenHuman

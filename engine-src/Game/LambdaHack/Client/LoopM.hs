@@ -55,24 +55,25 @@ loopCli :: ( MonadClientSetup m
            , MonadClientReadResponse m
            , MonadClientWriteRequest m )
         => CCUI -> UIOptions -> ClientOptions -> m ()
-loopCli ccui sUIOptions soptions = do
-  modifyClient $ \cli -> cli {soptions}
+loopCli ccui sUIOptions clientOptions = do
+  modifyClient $ \cli -> cli {soptions = clientOptions}
   hasUI <- clientHasUI
   if not hasUI then initAI else initUI ccui
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   restoredG <- tryRestore
   restored <- case restoredG of
-    Just (cli, msess) | not $ snewGameCli soptions -> do
+    Just (cli, msess) | not $ snewGameCli clientOptions -> do
       -- Restore game.
       schanF <- getsSession schanF
       sccui <- getsSession sccui
       maybe (return ()) (\sess -> modifySession $ const
         sess {schanF, sccui, sUIOptions}) msess
-      putClient cli {soptions}
+      let noAnim = fromMaybe False $ snoAnim $ soptions cli
+      putClient cli {soptions = clientOptions {snoAnim = Just noAnim}}
       return True
     Just (_, msessR) -> do
-      -- Preserve previous history, if any (--newGame).
+      -- Preserve previous history, if any.
       maybe (return ()) (\sessR -> modifySession $ \sess ->
         sess {shistory = shistory sessR}) msessR
       return False

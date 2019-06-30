@@ -166,6 +166,7 @@ data HumanCmd =
   | MarkVision
   | MarkSmell
   | MarkSuspect
+  | MarkAnim
   | SettingsMenu
   | ChallengesMenu
   | PrintScreen
