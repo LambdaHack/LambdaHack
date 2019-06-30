@@ -1,6 +1,6 @@
 -- | Monadic operations on game messages.
 module Game.LambdaHack.Client.UI.MsgM
-  ( msgAddDuplicate, msgAdd, msgLnAdd, msgAdd0, promptAdd, promptAdd0
+  ( msgAddDuplicate, msgAdd, msgLnAdd, msgAdd0, msgLnAdd0, promptAdd, promptAdd0
   , promptMainKeys, recordHistory
   ) where
 
@@ -9,7 +9,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -44,15 +43,21 @@ msgAdd msgClass msg = void $ msgAddDuplicate msg msgClass 1
 -- if any, with newline.
 msgLnAdd :: MonadClientUI m => MsgClass -> Text -> m ()
 msgLnAdd msgClass msg = do
-  history <- getsSession shistory
-  msgAdd msgClass $ if nullFilteredReport $ newReport history
-                    then msg
-                    else T.cons '\n' msg
+  modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
+  msgAdd msgClass msg
 
 -- | Add a message to the current report with 0 copies for the purpose
 -- of collating duplicates. Do not report if it was a duplicate.
 msgAdd0 :: MonadClientUI m => MsgClass -> Text -> m ()
 msgAdd0 msgClass msg = void $ msgAddDuplicate msg msgClass 0
+
+-- | Add a message to the current report with 0 copies for the purpose
+-- of collating duplicates. Do not report if it was a duplicate.
+-- End previously collected report, if any, with newline.
+msgLnAdd0 :: MonadClientUI m => MsgClass -> Text -> m ()
+msgLnAdd0 msgClass msg = do
+  modifySession $ \sess -> sess {shistory = addEolToNewReport $ shistory sess}
+  msgAdd0 msgClass msg
 
 -- | Add a prompt to the current report. Do not report if it was a duplicate.
 promptAdd :: MonadClientUI m => Text -> m ()

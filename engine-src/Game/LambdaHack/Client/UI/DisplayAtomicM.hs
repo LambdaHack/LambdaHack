@@ -440,8 +440,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     msgAdd MsgAdmin $ mdesc mode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
-      msgAdd0 MsgFocus "You take in your surroundings."
-      msgAdd0 MsgLandscape desc
+      msgLnAdd MsgFocus "You take in your surroundings."
+      msgAdd MsgLandscape desc
     -- We can fool the player only once (per scenario), but let's not do it
     -- in the same way each time. TODO: PCG
     blurb <- rndToActionForget $ oneOf
@@ -454,7 +454,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgAdd MsgWarning blurb
+    msgLnAdd MsgWarning blurb
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
@@ -476,11 +476,11 @@ displayRespUpdAtomicUI cmd = case cmd of
       lvl <- getLevel lid
       mode <- getGameMode
       msgAdd MsgAlert $ "Continuing" <+> mname mode <> "."
-      msgAdd MsgPrompt $ mdesc mode
+      msgAdd0 MsgPrompt $ mdesc mode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
-        msgAdd MsgPromptFocus "\nYou remember your surroundings."
-        msgAdd MsgPrompt desc
+        msgLnAdd0 MsgPromptFocus "You remember your surroundings."
+        msgAdd0 MsgPrompt desc
       displayMore ColorFull "\nAre you up for the challenge?"
       promptAdd0 "Prove yourself!"
   UpdResumeServer{} -> return ()
@@ -952,7 +952,7 @@ quitFactionUI fid toSt manalytics = do
                     | smartEnemyCaptured =
                   "\nOh, wait, who is this, hunched among your escaping crew? Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again. How will you play that move?"
                     | otherwise = ""
-            msgAdd0 MsgPlot $ sp1 <> sp2
+            msgAdd MsgPlot $ sp1 <> sp2
             void $ displaySpaceEsc ColorFull ""
         case manalytics of
           Nothing -> return ()
@@ -1286,7 +1286,7 @@ displayRespSfxAtomicUI sfx = case sfx of
                 lvl <- getLevel lid
                 let desc = cdesc $ okind cocave $ lkind lvl
                 unless (T.null desc) $
-                  msgAdd0 MsgLandscape $ desc <> "\n"
+                  msgAdd MsgLandscape $ desc <> "\n"
               [] -> return ()  -- spell fizzles; normally should not be sent
         IK.Escape{} | isOurCharacter -> do
           ours <- getsState $ fidActorNotProjGlobalAssocs side

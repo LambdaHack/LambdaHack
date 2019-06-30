@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Msg
     Msg, toMsg
   , MsgClass(..), interruptsRunning, disturbsResting
     -- * Report
-  , Report, nullReport, nullFilteredReport, consReport
+  , Report, nullReport, consReport, addEolToNewReport
   , renderReport, anyInReport
     -- * History
   , History, newReport, emptyHistory, addToReport, archiveReport, lengthHistory
@@ -15,7 +15,8 @@ module Game.LambdaHack.Client.UI.Msg
     -- * Internal operations
   , isSavedToHistory, isDisplayed, bindsPronouns, msgColor
   , UAttrString, RepMsgN, uToAttrString, attrLineToU
-  , emptyReport, snocReport, renderWholeReport, renderRepetition
+  , emptyReport, nullFilteredReport, snocReport
+  , renderWholeReport, renderRepetition
   , scrapRepetition, renderTimeReport
 #endif
   ) where
@@ -52,10 +53,10 @@ attrLineToU l = U.fromList $ map Color.attrCharW32 l
 -- | The type of a single game message.
 data Msg = Msg
   { msgLine  :: AttrString  -- ^ the colours and characters of the message;
-                          --   not just text, in case there was some colour
-                          --   unrelated to msg class
-  , msgClass :: MsgClass  -- ^ whether message should be displayed,
-                          --   recorded in history, with what color, etc.
+                            --   not just text, in case there was some colour
+                            --   unrelated to msg class
+  , msgClass :: MsgClass    -- ^ whether message should be displayed,
+                            --   recorded in history, with what color, etc.
   }
   deriving (Show, Eq, Generic)
 
@@ -369,6 +370,17 @@ addToReport History{..} msg n time =
   in case scrapRepetition newH of
     Just scrappedH -> (scrappedH, True)
     Nothing -> (newH, False)
+
+-- | Add a newline to end of the new report of history, unless empty.
+addEolToNewReport :: History -> History
+addEolToNewReport hist =
+  if nullFilteredReport $ newReport hist
+  then hist
+  else let addEolToReport (Report []) = error "addEolToReport: empty report"
+           addEolToReport (Report (hd : tl)) = Report $ addEolToRepMsgN hd : tl
+           addEolToRepMsgN rm = rm {repMsg = addEolToMsg $ repMsg rm}
+           addEolToMsg msg = msg {msgLine = msgLine msg ++ stringToAS "\n"}
+       in hist {newReport = addEolToReport $ newReport hist}
 
 -- | Archive old report to history, filtering out messages with 0 duplicates
 -- and prompts. Set up new report with a new timestamp.
