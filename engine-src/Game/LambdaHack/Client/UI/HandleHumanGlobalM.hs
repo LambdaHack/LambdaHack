@@ -1461,7 +1461,7 @@ challengesMenuHuman cmdAction = do
       gameInfo = map T.unpack
                    [ "Setup and start new game:"
                    , "" ]
-      width = if isSquareFont propFont then 40 else 80
+      width = if isSquareFont propFont then 42 else 84
       blurb = splitAttrString width $ textToAS $ mdesc gameMode
   generateMenu cmdAction blurb kds gameInfo "challenge"
 
