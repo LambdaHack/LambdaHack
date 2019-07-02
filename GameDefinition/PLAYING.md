@@ -52,7 +52,7 @@ The game differs from classic roguelikes as follows:
 * combat mechanics is deterministic; randomness comes from enemies
   and procedurally generated terrain only
 * there's (almost) no HP regeneration; attrition ensures all past (silly)
-  decisions matter
+  decisions matter; HP starts at around half max
 * each character has 10 uniform equipment slots, which fill quickly given
   that most melee weapons have cooldowns
 * each faction has a single shared inventory of unlimited size,
