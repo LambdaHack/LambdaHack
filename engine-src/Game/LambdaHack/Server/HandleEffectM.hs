@@ -1706,13 +1706,12 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
             -- Note that the @ThrowMod@ aspect of the actor's trunk is ignored.
             computeTrajectory weight throwVelocity throwLinger path
           ts = Just (trajectory, speed)
-      if null trajectory
+      -- Old and new trajectories are not added; the old one is replaced.
+      if btrajectory tb == ts
       then return UseId  -- e.g., actor is too heavy; but a jerk is noticeable
       else do
         execSfx
-        -- Old and new trajectories are not added; the old one is replaced.
-        unless (btrajectory tb == ts) $
-          execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
+        execUpdAtomic $ UpdTrajectory target (btrajectory tb) ts
         -- If propeller is a projectile, it pushes involuntarily,
         -- so its originator is to blame.
         -- However, we can't easily see whether a pushed non-projectile actor
