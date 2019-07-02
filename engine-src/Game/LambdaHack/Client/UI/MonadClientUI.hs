@@ -190,7 +190,7 @@ getReportUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let underAI = isAIFact fact
       mem = EM.fromList <$> uMessageColors sUIOptions
-      promptAI = toMsg mem MsgPrompt "[press any key for main menu]"
+      promptAI = toMsg mem MsgAlert "<press any key for main menu> "
   return $! if underAI then consReport promptAI report else report
 
 getLeaderUI :: MonadClientUI m => m ActorId
