@@ -42,7 +42,6 @@ import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
-import           Game.LambdaHack.Server.EndM
 import           Game.LambdaHack.Server.HandleEffectM
 import           Game.LambdaHack.Server.HandleRequestM
 import           Game.LambdaHack.Server.MonadServer
@@ -630,6 +629,23 @@ hActors as@(aid : rest) = do
         breakASAP2 <- getsServer sbreakASAP
         -- If breaking out of the game lopp, pretend there was a non-wait move.
         if breakASAP2 then return True else hActors as
+
+dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
+dieSer aid b = do
+  b2 <- if bproj b then return b else do
+    kindId <- getsState $ getIidKindIdServer $ btrunk b
+    execUpdAtomic $ UpdRecordKill aid kindId 1
+    -- At this point the actor's body exists and his items are not dropped.
+    deduceKilled aid
+    -- Most probabaly already done, but just in case (e.g., when actor
+    -- created with 0 HP):
+    electLeader (bfid b) (blid b) aid
+    getsState $ getActorBody aid
+  -- If the actor was a projectile and no effect was triggered by hitting
+  -- an enemy, the item still exists and @OnSmash@ effects will be triggered:
+  dropAllItems aid b2
+  b3 <- getsState $ getActorBody aid
+  execUpdAtomic $ UpdDestroyActor aid b3 []
 
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()

@@ -296,7 +296,6 @@ library
                       Game.LambdaHack.Server.DungeonGen.AreaRnd
                       Game.LambdaHack.Server.DungeonGen.Cave
                       Game.LambdaHack.Server.DungeonGen.Place
-                      Game.LambdaHack.Server.EndM
                       Game.LambdaHack.Server.Fov
                       Game.LambdaHack.Server.FovDigital
                       Game.LambdaHack.Server.HandleAtomicM
