@@ -184,7 +184,7 @@ displayRespUpdAtomicUI cmd = case cmd of
          && (bfid b == side && not (bproj b) || arena == blid b) -> do
          let (firstFall, hurtExtra) = case (bfid b == side, bproj b) of
                (True, True) -> ("drop down", "tumble down")
-               (True, False) -> ("fall down", "suffers woeful mutilation")
+               (True, False) -> ("fall down", "suffer woeful mutilation")
                (False, True) -> ("plummet", "crash")
                (False, False) -> ("collapse", "be reduced to a bloody pulp")
              verbDie = if alreadyDeadBefore then hurtExtra else firstFall
