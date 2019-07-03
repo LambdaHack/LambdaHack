@@ -1,6 +1,6 @@
 -- | Server operations used when ending game and deciding whether to end.
 module Game.LambdaHack.Server.EndM
-  ( endOrLoop, dieSer, writeSaveAll
+  ( endOrLoop, dieSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , gameExit
@@ -14,7 +14,6 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client (sbenchmark)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -24,11 +23,9 @@ import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Server.CommonM
-import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleEffectM
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolM
-import Game.LambdaHack.Server.ServerOptions
 import Game.LambdaHack.Server.State
 
 -- | Continue or exit or restart the game.
@@ -81,41 +78,6 @@ gameExit = do
 --  debugPossiblyPrint "Server: All clients killed."
   return ()
 
-verifyCaches :: MonadServer m => m ()
-verifyCaches = do
-  sperCacheFid <- getsServer sperCacheFid
-  sperValidFid <- getsServer sperValidFid
-  sactorMaxSkills2 <- getsState sactorMaxSkills
-  sfovLucidLid <- getsServer sfovLucidLid
-  sfovClearLid <- getsServer sfovClearLid
-  sfovLitLid <- getsServer sfovLitLid
-  sperFid <- getsServer sperFid
-  actorMaxSkills <- getsState maxSkillsInDungeon
-  ( fovLitLid, fovClearLid, fovLucidLid
-   ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
-  let !_A7 = assert (sfovLitLid == fovLitLid
-                     `blame` "wrong accumulated sfovLitLid"
-                     `swith` (sfovLitLid, fovLitLid)) ()
-      !_A6 = assert (sfovClearLid == fovClearLid
-                     `blame` "wrong accumulated sfovClearLid"
-                     `swith` (sfovClearLid, fovClearLid)) ()
-      !_A5 = assert (sactorMaxSkills2 == actorMaxSkills
-                     `blame` "wrong accumulated sactorMaxSkills"
-                     `swith` (sactorMaxSkills2, actorMaxSkills)) ()
-      !_A4 = assert (sfovLucidLid == fovLucidLid
-                     `blame` "wrong accumulated sfovLucidLid"
-                     `swith` (sfovLucidLid, fovLucidLid)) ()
-      !_A3 = assert (sperValidFid == perValidFid
-                     `blame` "wrong accumulated sperValidFid"
-                     `swith` (sperValidFid, perValidFid)) ()
-      !_A2 = assert (sperCacheFid == perCacheFid
-                     `blame` "wrong accumulated sperCacheFid"
-                     `swith` (sperCacheFid, perCacheFid)) ()
-      !_A1 = assert (sperFid == perFid
-                     `blame` "wrong accumulated perception"
-                     `swith` (sperFid, perFid)) ()
-  return ()
-
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
   b2 <- if bproj b then return b else do
@@ -132,17 +94,3 @@ dieSer aid b = do
   dropAllItems aid b2
   b3 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b3 []
-
--- | Save game on server and all clients.
-writeSaveAll :: MonadServerAtomic m => Bool -> m ()
-writeSaveAll uiRequested = do
-  bench <- getsServer $ sbenchmark . sclientOptions . soptions
-  noConfirmsGame <- isNoConfirmsGame
-  when (uiRequested || not bench && not noConfirmsGame) $ do
-    execUpdAtomic UpdWriteSave
-    saveServer
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-    -- This check is sometimes repeated in @gameExit@, but we don't care about
-    -- speed of shutdown and even more so in WITH_EXPENSIVE_ASSERTIONS mode.
-    verifyCaches
-#endif

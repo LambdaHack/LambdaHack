@@ -2,7 +2,8 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonM
   ( revealItems, moveStores, generalMoveItem
-  , deduceQuits, deduceKilled, electLeader, setFreshLeader
+  , deduceQuits, writeSaveAll, verifyCaches, deduceKilled
+  , electLeader, setFreshLeader
   , updatePer, recomputeCachePer, projectFail
   , addActorFromGroup, registerActor, discoverIfMinorEffects
   , pickWeaponServer, currentSkillsServer, allGroupItems
@@ -186,7 +187,10 @@ deduceQuits fid0 status = do
         let (withUI, withoutUI) =
               partition (factHasUI . snd . snd)
                         ((stOutcome status, (fid0, fact0)) : outfids)
-        mapM_ quitFaction (withoutUI ++ withUI)
+        mapM_ quitFaction withoutUI
+        unless (null withUI) $ do
+          writeSaveAll False  -- in case player closes window at defeat
+          mapM_ quitFaction withUI
       inGameOutcome (fid, fact) = do
         let mout | fid == fid0 = Just $ stOutcome status
                  | otherwise = stOutcome <$> gquit fact
@@ -224,6 +228,55 @@ deduceQuits fid0 status = do
              partition (\(fi, _) -> isFriend fid0 fact0 fi) othersInGame
        mapQuitF $ zip (repeat Escape) victors ++ zip (repeat Defeated) losers
      | otherwise -> quitF status fid0
+
+-- | Save game on server and all clients.
+writeSaveAll :: MonadServerAtomic m => Bool -> m ()
+writeSaveAll uiRequested = do
+  bench <- getsServer $ sbenchmark . sclientOptions . soptions
+  noConfirmsGame <- isNoConfirmsGame
+  when (uiRequested || not bench && not noConfirmsGame) $ do
+    execUpdAtomic UpdWriteSave
+    saveServer
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+    -- This check is sometimes repeated in @gameExit@, but we don't care about
+    -- speed of shutdown and even more so in WITH_EXPENSIVE_ASSERTIONS mode.
+    verifyCaches
+#endif
+
+verifyCaches :: MonadServer m => m ()
+verifyCaches = do
+  sperCacheFid <- getsServer sperCacheFid
+  sperValidFid <- getsServer sperValidFid
+  sactorMaxSkills2 <- getsState sactorMaxSkills
+  sfovLucidLid <- getsServer sfovLucidLid
+  sfovClearLid <- getsServer sfovClearLid
+  sfovLitLid <- getsServer sfovLitLid
+  sperFid <- getsServer sperFid
+  actorMaxSkills <- getsState maxSkillsInDungeon
+  ( fovLitLid, fovClearLid, fovLucidLid
+   ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
+  let !_A7 = assert (sfovLitLid == fovLitLid
+                     `blame` "wrong accumulated sfovLitLid"
+                     `swith` (sfovLitLid, fovLitLid)) ()
+      !_A6 = assert (sfovClearLid == fovClearLid
+                     `blame` "wrong accumulated sfovClearLid"
+                     `swith` (sfovClearLid, fovClearLid)) ()
+      !_A5 = assert (sactorMaxSkills2 == actorMaxSkills
+                     `blame` "wrong accumulated sactorMaxSkills"
+                     `swith` (sactorMaxSkills2, actorMaxSkills)) ()
+      !_A4 = assert (sfovLucidLid == fovLucidLid
+                     `blame` "wrong accumulated sfovLucidLid"
+                     `swith` (sfovLucidLid, fovLucidLid)) ()
+      !_A3 = assert (sperValidFid == perValidFid
+                     `blame` "wrong accumulated sperValidFid"
+                     `swith` (sperValidFid, perValidFid)) ()
+      !_A2 = assert (sperCacheFid == perCacheFid
+                     `blame` "wrong accumulated sperCacheFid"
+                     `swith` (sperCacheFid, perCacheFid)) ()
+      !_A1 = assert (sperFid == perFid
+                     `blame` "wrong accumulated perception"
+                     `swith` (sperFid, perFid)) ()
+  return ()
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
 -- Keeping arena means, if the faction is still in game,
