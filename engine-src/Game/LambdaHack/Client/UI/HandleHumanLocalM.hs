@@ -748,7 +748,7 @@ eitherHistory showAll = do
                          , ButtonWidth propFont 1000 ))
             | sn <- take histBound intSlots ]
   promptAdd0 msg
-  okxs <- overlayToSlideshow (rheight - 2) [K.escKM]
+  okxs <- overlayToSlideshow (rheight - 2) [K.returnKM, K.escKM]
                              (EM.unionWith (++) rhLab rhDesc, kxs)
   let displayAllHistory = do
         ekm <- displayChoiceScreen "history" ColorFull False okxs
