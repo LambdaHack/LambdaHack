@@ -1572,15 +1572,14 @@ strike catch source target iid = assert (source /= target) $ do
       _ -> Just
            <$> rndToActionForget (frequency $ toFreq "msg armor" eqpAndOrgArmor)
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
-          Nothing -> ([], False)
-          Just (iidArmor, itemFullArmor) ->
+          Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
                   partItemShortest (bfid tb) factionD localTime
                                    itemFullArmor (1, [])
-                name | iidArmor == btrunk tb = "trunk"
-                     | otherwise = MU.Phrase [object1, object2]
+                name = MU.Phrase [object1, object2]
             in ( ["with", MU.WownW tpronoun name]
                , Dice.supDice (IK.idamage $ itemKind itemFullArmor) > 0 )
+          _ -> ([], False)
         verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
@@ -1669,6 +1668,7 @@ strike catch source target iid = assert (source /= target) $ do
                         -- mentions object, so we know who is hit
                       && hurtMult > 90
                       && (null condArmor || deadliness < 100)
+                      || null blockWithWhat
                    then ""  -- at most minor armor, relatively to skill
                             -- of the hit, so we don't talk about blocking,
                             -- unless a condition is at play, too
