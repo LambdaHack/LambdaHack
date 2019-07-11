@@ -1585,7 +1585,9 @@ strike catch source target iid = assert (source /= target) $ do
           if iid `EM.member` borgan sb
           then partItemShortWownW side factionD spronoun localTime
           else partItemShortAW side factionD localTime
-        weaponName = partItemChoice itemFullWeapon kitWeapon
+        weaponNameWith = if iid == btrunk tb
+                         then []
+                         else ["with", partItemChoice itemFullWeapon kitWeapon]
         sleepy = if bwatch tb `elem` [WSleep, WWake]
                     && tpart /= "you"
                     && bhp tb > 0
@@ -1708,10 +1710,13 @@ strike catch source target iid = assert (source /= target) $ do
                           [MU.Capitalize $ MU.SubjectVerbSg spart "connect"]
                         <> ", but it may be completely discharged."
                    else makePhrase
-                          [ MU.Capitalize $ MU.SubjectVerbSg spart "try"
-                          , "to", verb, tpart, "with"
-                          , weaponName ]
-                        <> ", but it may be not readied yet."
+                          ([ MU.Capitalize $ MU.SubjectVerbSg spart "try"
+                           , "to"
+                           , verb, tpart ]
+                           ++ weaponNameWith)
+                        <> if null weaponNameWith
+                           then ", but there are no charges left."
+                           else ", but it may be not readied yet."
          msgAdd MsgVeryRare msg  -- and no animation
        | bproj sb && bproj tb -> do  -- server sends unless both are blasts
          -- Short message.
@@ -1723,7 +1728,7 @@ strike catch source target iid = assert (source /= target) $ do
          let adverb = if bproj sb then "lightly" else "delicately"
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]
-               ++ if bproj sb then [] else ["with", weaponName]
+               ++ if bproj sb then [] else weaponNameWith
          msgAdd msgClassMelee msg  -- too common for color
          animate (blid tb) $ subtleHit (bpos sb)
        | bproj sb -> do  -- more terse than melee, because sometimes very spammy
@@ -1747,7 +1752,7 @@ strike catch source target iid = assert (source /= target) $ do
          animate (blid tb) basicAnim
        | bproj tb -> do  -- much less emotion and the victim not active.
          let attackParts =
-               [MU.SubjectVerbSg spart verb, tpart, "with", weaponName]
+               [MU.SubjectVerbSg spart verb, tpart] ++ weaponNameWith
          msgAdd MsgMelee $ makeSentence attackParts
          animate (blid tb) basicAnim
        | otherwise -> do  -- ordinary melee
@@ -1758,8 +1763,8 @@ strike catch source target iid = assert (source /= target) $ do
                               | targetIsFriend = MsgMeleePowerfulUs
                               | otherwise = msgClassMelee
              attackParts =
-               [ MU.SubjectVerbSg spart verb, sleepy, tpart, strongly
-               , "with", weaponName ]
+               [MU.SubjectVerbSg spart verb, sleepy, tpart, strongly]
+               ++ weaponNameWith
              (tmpInfluenceBlurb, msgClassInfluence) =
                if null condArmor || T.null msgArmor
                then ("", msgClassMelee)
