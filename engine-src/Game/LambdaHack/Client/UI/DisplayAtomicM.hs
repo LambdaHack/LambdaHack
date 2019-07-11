@@ -1202,6 +1202,11 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- possibly use the verb from the first embedded item,
           -- but it's meant to go with the item as subject, no the actor
           -- TODO: "harass" when somebody else suffers the effect
+          -- TODO: try something less weird than "exploit", but not as tame,
+          -- vague and unnatural as "interact with staircase down"
+          -- or "use obscene pictogram"; probably per-item verb is needed,
+          -- but there has to be a consistent rule what the verbs represent
+          -- for what class of items, particularly if we just use @iverbHit@
     aidVerbMU msgClass aid $ MU.Text $ verb <+> name
   SfxShun aid _p ->
     aidVerbMU MsgAction aid "shun it"
