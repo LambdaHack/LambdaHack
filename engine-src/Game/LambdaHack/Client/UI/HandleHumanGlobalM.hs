@@ -467,10 +467,12 @@ moveSearchAlter run dir = do
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
-           if moveSkill > 0 then
-             -- A potential invisible actor is hit. War started without asking.
-             return $ Right $ ReqMove dir
-           else failSer MoveUnskilled
+           if | moveSkill > 0 ->
+                -- A potential invisible actor is hit. War started without
+                -- asking.
+                return $ Right $ ReqMove dir
+              | bwatch sb == WSleep -> failSer MoveUnskilledAsleep
+              | otherwise -> failSer MoveUnskilled
        -- Not walkable, so search and/or alter the tile.
        | run -> do
            -- Explicit request to examine the terrain.

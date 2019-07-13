@@ -25,6 +25,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- | Possible causes of failure of request.
 data ReqFailure =
     MoveUnskilled
+  | MoveUnskilledAsleep
   | MoveNothing
   | MeleeUnskilled
   | MeleeSelf
@@ -74,6 +75,7 @@ instance Binary ReqFailure
 impossibleReqFailure :: ReqFailure -> Bool
 impossibleReqFailure reqFailure = case reqFailure of
   MoveUnskilled -> False  -- unidentified skill items
+  MoveUnskilledAsleep -> False  -- unidentified skill items
   MoveNothing -> True
   MeleeUnskilled -> False  -- unidentified skill items
   MeleeSelf -> True
@@ -120,6 +122,7 @@ impossibleReqFailure reqFailure = case reqFailure of
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
   MoveUnskilled -> "too low movement stat"
+  MoveUnskilledAsleep -> "actor asleep; yawn to wake up"
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeUnskilled -> "too low melee combat stat"
   MeleeSelf -> "trying to melee oneself"
