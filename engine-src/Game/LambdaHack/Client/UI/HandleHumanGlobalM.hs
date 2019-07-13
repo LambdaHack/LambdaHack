@@ -575,7 +575,6 @@ goToXhair initialStep run = do
     xhairPos <- xhairToPos
     case xhairPos of
       Nothing -> failWith "crosshair position invalid"
-      Just c | c == bpos b -> failWith "position reached"
       Just c -> do
         running <- getsSession srunning
         case running of
@@ -587,6 +586,7 @@ goToXhair initialStep run = do
               Left stopMsg -> return $ Left stopMsg
               Right (finalGoal, dir) ->
                 moveRunHuman initialStep finalGoal run False dir
+          _ | c == bpos b -> failWith "position reached"
           _ -> do
             let !_A = assert (initialStep || not run) ()
             (bfs, mpath) <- getCacheBfsAndPath leader c
@@ -612,7 +612,9 @@ multiActorGoTo arena c paramOld =
     RunParams{runMembers = []} -> failWith "selected actors no longer there"
     RunParams{runMembers = r : rs, runWaiting} -> do
       onLevel <- getsState $ memActor r arena
-      if not onLevel then do
+      b <- getsState $ getActorBody r
+      xhairPos <- xhairToPos
+      if not onLevel || xhairPos == Just (bpos b) then do
         let paramNew = paramOld {runMembers = rs}
         multiActorGoTo arena c paramNew
       else do
@@ -621,7 +623,6 @@ multiActorGoTo arena c paramOld =
         let runMembersNew = rs ++ [r]
             paramNew = paramOld { runMembers = runMembersNew
                                 , runWaiting = 0}
-        b <- getsState $ getActorBody r
         (bfs, mpath) <- getCacheBfsAndPath r c
         xhairMoused <- getsSession sxhairMoused
         case mpath of
@@ -642,7 +643,7 @@ multiActorGoTo arena c paramOld =
                 -- to avoid cycles. When all wait for each other, fail.
                 multiActorGoTo arena c paramNew{runWaiting=runWaiting + 1}
               _ ->
-                failWith "actor in the way"
+                failWith "collective running finished"  -- usually OK
 
 -- * RunOnceToXhair
 
