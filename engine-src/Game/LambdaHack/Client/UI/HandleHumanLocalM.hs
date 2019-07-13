@@ -928,7 +928,7 @@ aimTgtHuman = do
   lidV <- viewedLevelUI
   modifySession $ \sess -> sess {saimMode = Just $ AimMode lidV}
   doLook
-  failMsg "aiming started"
+  failMsg "flinging started; press again to project"
 
 -- * AimFloor
 
