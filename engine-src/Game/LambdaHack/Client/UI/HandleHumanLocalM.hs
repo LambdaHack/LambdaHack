@@ -194,7 +194,7 @@ chooseItemDialogMode c = do
                 then "condition"
                 else "organ"
               promptFun _ itemFull _ =
-                makeSentence [ partActor bUI, "can't remove"
+                makeSentence [ partActor bUI, "is aware of"
                              , MU.AW $ blurb itemFull ]
               ix0 = fromMaybe (error $ show iid)
                     $ findIndex (== iid) $ EM.elems lSlots
