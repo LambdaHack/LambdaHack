@@ -127,19 +127,20 @@ targetDesc mtarget = do
           return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
     Nothing -> return (Nothing, Nothing)
 
-targetDescXhair :: MonadClientUI m => m (Maybe Text, Maybe (Text, Watchfulness))
+targetDescXhair :: MonadClientUI m
+                => m (Maybe Text, Maybe Text, Maybe Watchfulness)
 targetDescXhair = do
   sxhair <- getsSession sxhair
   (mhairDesc, mxhairHP) <- targetDesc sxhair
-  case mxhairHP of
-    Nothing -> return (mhairDesc, Nothing)
-    Just tHP -> do
-      let aid = case sxhair of
-            Just (TEnemy a) -> a
-            Just (TNonEnemy a) -> a
-            _ -> error $ "HP text for non-actor target" `showFailure` sxhair
+  let maid = case sxhair of
+        Just (TEnemy a) -> Just a
+        Just (TNonEnemy a) -> Just a
+        _ -> Nothing
+  case maid of
+    Nothing -> return (mhairDesc, mxhairHP, Nothing)
+    Just aid -> do
       watchfulness <- bwatch <$> getsState (getActorBody aid)
-      return $ (mhairDesc, Just (tHP, watchfulness))
+      return $ (mhairDesc, mxhairHP, Just watchfulness)
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do
@@ -422,7 +423,7 @@ drawFrameStatus drawnLevelId = do
   mleader <- getsClient sleader
   xhairPos <- xhairToPos
   mbfs <- maybe (return Nothing) (\aid -> Just <$> getCacheBfs aid) mleader
-  (mhairDesc, mxhairHPWatchfulness) <- targetDescXhair
+  (mhairDesc, mxhairHP, mxhairWatchfulness) <- targetDescXhair
   lvl <- getLevel drawnLevelId
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -473,7 +474,7 @@ drawFrameStatus drawnLevelId = do
             text = fromMaybe (pText <+> lText) mt
         in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText xhairPos (fst <$> mxhairHPWatchfulness)
+      pathCsr = displayPathText xhairPos mxhairHP
       trimTgtDesc n t = assert (not (T.null t) && n > 2 `blame` (t, n)) $
         if T.length t <= n then t else T.take (n - 3) t <> "..."
       -- The indicators must fit, they are the actual information.
@@ -498,7 +499,7 @@ drawFrameStatus drawnLevelId = do
                    , MU.CarWs nl "level" <> ","
                    , "stash", MU.Car ns ]
       markSleepTgtDesc
-        | (snd <$> mxhairHPWatchfulness) /= Just WSleep = textToAS
+        | mxhairWatchfulness /= Just WSleep = textToAS
         | otherwise = textFgToAS Color.Green
       xhairBlurb =
         maybe
