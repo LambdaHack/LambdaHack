@@ -121,7 +121,7 @@ impossibleReqFailure reqFailure = case reqFailure of
 
 showReqFailure :: ReqFailure -> Text
 showReqFailure reqFailure = case reqFailure of
-  MoveUnskilled -> "too low movement stat; use equipment menu to take off stat draining gear or wait until a stat draining condition passes as seen in organ menu"
+  MoveUnskilled -> "too low movement stat; use equipment menu to take off stat draining gear or switch to another teammate or wait until a stat draining condition passes as seen in organ menu"
   MoveUnskilledAsleep -> "actor asleep; yawn to wake up"
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeUnskilled -> "too low melee combat stat"
