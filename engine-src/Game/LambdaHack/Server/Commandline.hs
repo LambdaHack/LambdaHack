@@ -24,7 +24,8 @@ import qualified System.Random as R
 -- remaining commandline should be passed and parsed by the client to extract
 -- client and ui options from and singnal an error if anything was left.
 
-import Game.LambdaHack.Client (ClientOptions (..))
+import Game.LambdaHack.Client (ClientOptions (..), )
+import Game.LambdaHack.Client.UI.Frontend (defaultMaxFps)
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Defs
@@ -290,19 +291,26 @@ maxFpsP :: Parser (Maybe Int)
 maxFpsP = optional $ max 1 <$>
   option auto (  long "maxFps"
               <> metavar "N"
+              <> showDefault
+              <> value defaultMaxFps
               <> help "Display at most N frames per second" )
 
 logPriorityP :: Parser (Maybe Int)
 logPriorityP = optional $
   option (auto >>= verifyLogPriority) $
        long "logPriority"
+    <> showDefault
+    <> value 5
     <> metavar "N"
-    <> help "Log only messages of priority at least N, where 1 (all) is the lowest and 5 (errors only) is the default."
+    <> help ( "Log only messages of priority at least N, where 1 (all) is "
+           ++ "the lowest and 5 logs errors only; use value 0 for testing on "
+           ++ "CIs without graphics access; setting priority to 0 causes "
+           ++ "SDL frontend to init and quit at once" )
   where
     verifyLogPriority n = do
-      if (n >= 1 && n <= 5)
+      if (n >= 0 && n <= 5)
       then return n
-      else readerError $ "N has to be a positive integer not larger than 5"
+      else readerError $ "N has to be 0 or a positive integer not larger than 5"
 
 disableAutoYesP :: Parser Bool
 disableAutoYesP =
