@@ -175,19 +175,21 @@ keepAutomatedP =
          <> help "Keep factions automated after game over" )
 
 newGameP :: Parser (Maybe Int)
-newGameP = optional $
+newGameP = optional $ max 1 <$> min difficultyBound <$>
   option auto (  long "newGame"
               <> help "Start a new game, overwriting the save file, with difficulty for all UI players set to N"
+              <> showDefault
+              <> value difficultyDefault
               <> metavar "N" )
 
 stopAfterSecsP :: Parser (Maybe Int)
-stopAfterSecsP = optional $
+stopAfterSecsP = optional $ max 0 <$>
   option auto (  long "stopAfterSeconds"
               <> help "Exit game session after around N seconds"
               <> metavar "N" )
 
 stopAfterFramesP :: Parser (Maybe Int)
-stopAfterFramesP = optional $
+stopAfterFramesP = optional $ max 0 <$>
   option auto (  long "stopAfterFrames"
               <> help "Exit game session after around N frames"
               <> metavar "N" )
@@ -237,7 +239,7 @@ sdlSquareFontFileP = optional $ T.pack <$>
             <> help "Use FONT_FILE for the main game window in SDL2 frontend" )
 
 sdlPropFontSizeP :: Parser (Maybe Int)
-sdlPropFontSizeP = optional $
+sdlPropFontSizeP = optional $ max 0 <$>
   option auto (  long "sdlPropFontSize"
               <> metavar "N"
               <> help "Use font size of N pixels for the message overlay in SDL2 frontend" )
@@ -249,7 +251,7 @@ sdlPropFontFileP = optional $ T.pack <$>
             <> help "Use FONT_FILE for the message overlay in SDL2 frontend" )
 
 sdlMonoFontSizeP :: Parser (Maybe Int)
-sdlMonoFontSizeP = optional $
+sdlMonoFontSizeP = optional $ max 0 <$>
   option auto (  long "sdlMonoFontSize"
               <> metavar "N"
               <> help "Use font size of N pixels for the monospaced rectangular font in SDL2 frontend" )
@@ -280,9 +282,9 @@ scalableFontSizeP = optional $
 
 fontDirP :: Parser (Maybe FilePath)
 fontDirP = optional $
-  option auto (  long "fontDir"
-              <> metavar "FILEPATH"
-              <> help "Take font files for the SDL2 frontend from FILEPATH" )
+  strOption (  long "fontDir"
+            <> metavar "FILEPATH"
+            <> help "Take font files for the SDL2 frontend from FILEPATH" )
 
 maxFpsP :: Parser (Maybe Int)
 maxFpsP = optional $ max 1 <$>
@@ -291,10 +293,16 @@ maxFpsP = optional $ max 1 <$>
               <> help "Display at most N frames per second" )
 
 logPriorityP :: Parser (Maybe Int)
-logPriorityP = optional $ max 0 <$>
-  option auto (  long "logPriority"
-              <> metavar "N"
-              <> help "Log only messages of priority at least N, where 1 (all) is the lowest and 5 (errors only) is the default." )
+logPriorityP = optional $
+  option (auto >>= verifyLogPriority) $
+       long "logPriority"
+    <> metavar "N"
+    <> help "Log only messages of priority at least N, where 1 (all) is the lowest and 5 (errors only) is the default."
+  where
+    verifyLogPriority n = do
+      if (n >= 1 && n <= 5)
+      then return n
+      else readerError $ "N has to be a positive integer not larger than 5"
 
 disableAutoYesP :: Parser Bool
 disableAutoYesP =
