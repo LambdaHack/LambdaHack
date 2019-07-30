@@ -933,32 +933,44 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 alterDirHuman :: MonadClientUI m
               => [TriggerTile] -> m (FailOrCmd RequestTimed)
 alterDirHuman ts = do
-  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
-  let verb1 = case ts of
-        [] -> "alter"
-        tr : _ -> ttverb tr
-      keys = K.escKM
-             : K.leftButtonReleaseKM
-             : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
-      prompt = makePhrase
-        ["Where to", verb1 <> "? [movement key] [pointer]"]
-  promptAdd0 prompt
-  slides <- reportToSlideshow [K.escKM]
-  km <- getConfirms ColorFull keys slides
-  case K.key km of
-    K.LeftButtonRelease -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      K.PointUI x y <- getsSession spointer
-      let (px, py) = (x `div` 2, y - K.mapStartY)
-          dir = Point px py `vectorToFrom` bpos b
-      if isUnit dir
-      then alterTile ts dir
-      else failWith "never mind"
-    _ ->
-      case K.handleDir uVi uLeftHand km of
-        Nothing -> failWith "never mind"
-        Just dir -> alterTile ts dir
+  -- First, we check if there are any open objects nearby.
+  COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lvl <- getLevel $ blid b
+  let vPts = vicinityUnsafe $ bpos b 
+      tkIds = at lvl <$> vPts
+      tkPts = zip (Tile.isClosable cotile <$> tkIds) vPts
+      openPts = [p | (True, p) <- tkPts]
+  case openPts of 
+    -- We close it, if there is just one.
+    [o] -> alterTile ts $ o `vectorToFrom` bpos b
+    -- Otherwise, we ask.
+    _   -> do
+      UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
+      let verb1 = case ts of
+            [] -> "alter"
+            tr : _ -> ttverb tr
+          keys = K.escKM
+                 : K.leftButtonReleaseKM
+                 : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
+          prompt = makePhrase
+            ["Where to", verb1 <> "? [movement key] [pointer]"]
+      promptAdd0 prompt
+      slides <- reportToSlideshow [K.escKM]
+      km <- getConfirms ColorFull keys slides
+      case K.key km of
+        K.LeftButtonRelease -> do
+          K.PointUI x y <- getsSession spointer
+          let (px, py) = (x `div` 2, y - K.mapStartY)
+              dir = Point px py `vectorToFrom` bpos b
+          if isUnit dir
+          then alterTile ts dir
+          else failWith "never mind"
+        _ ->
+          case K.handleDir uVi uLeftHand km of
+            Nothing -> failWith "never mind"
+            Just dir -> alterTile ts dir
 
 -- | Try to alter a tile using a feature in the given direction.
 alterTile :: MonadClientUI m
