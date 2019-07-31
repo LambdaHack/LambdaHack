@@ -95,10 +95,11 @@ flag gtk
   default:            False
   manual:             True
 
-flag sdl
-  description:        switch to the SDL2 frontend
-  default:            False
-  manual:             True
+-- This flag is not used.
+-- flag sdl
+--   description:        switch to the SDL2 frontend
+--   default:            False
+--   manual:             True
 
 flag jsaddle
   description:        switch to the JSaddle frontend (may be bit-rotted)
@@ -348,15 +349,15 @@ library
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Dom
     build-depends:    ghcjs-dom >= 0.9.1.1
     cpp-options:      -DUSE_BROWSER
-  } else { if flag(vty) {
+  } elif flag(vty) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 5
     cpp-options:      -DUSE_VTY
-  } else { if flag(curses) {
+  } elif flag(curses) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1
     cpp-options:      -DUSE_CURSES
-  } else { if flag(gtk) {
+  } elif flag(gtk) {
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk3 >= 0.12.1
     cpp-options:      -DUSE_GTK
@@ -364,7 +365,7 @@ library
     exposed-modules:    Game.LambdaHack.Client.UI.Frontend.Sdl
     build-depends:    sdl2 >= 2, sdl2-ttf >= 2
     cpp-options:      -DUSE_SDL
-  } } } }
+  }
 
   if impl(ghcjs) {
     other-modules:    Game.LambdaHack.Common.JSFile
