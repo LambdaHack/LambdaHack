@@ -128,7 +128,7 @@ install:
 
 
   - IF "%goal%"=="test" (
-      cabal new-install cabal-plan;
+      cabal v1-install cabal-plan;
     )
   - IF "%goal%"=="test" (
       make test-short || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
