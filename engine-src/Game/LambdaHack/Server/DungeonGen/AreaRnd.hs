@@ -23,11 +23,11 @@ import           Data.Functor.Identity (runIdentity)
 import qualified Data.IntSet as IS
 
 import Game.LambdaHack.Common.Area
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Core.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.PlaceKind
+import Game.LambdaHack.Core.Random
+import Game.LambdaHack.Definition.Defs
 
 -- Doesn't respect minimum sizes, because staircases are specified verbatim,
 -- so can't be arbitrarily scaled up.
@@ -49,7 +49,7 @@ mkFixed (xMax, yMax) area p@Point{..} =
 pointInArea :: Area -> Rnd Point
 pointInArea area = do
   let (Point x0 y0, xspan, yspan) = spanArea area
-  pxy <- randomR (0, xspan * yspan - 1)
+  pxy <- randomR0 (xspan * yspan - 1)
   let Point{..} = punindex xspan pxy
   return $! Point (x0 + px) (y0 + py)
 
@@ -72,11 +72,11 @@ findPointInArea area g gnumTries f =
           Nothing -> fallback
       gsearch 0 = fsearch (xspan * yspan * 10)
       gsearch count = do
-        pxy <- randomR (0, xspan * yspan - 1)
+        pxy <- randomR0 (xspan * yspan - 1)
         checkPoint g (gsearch (count - 1)) pxy
       fsearch 0 = return $! runIdentity $ searchAll (xspan * yspan - 1)
       fsearch count = do
-        pxy <- randomR (0, xspan * yspan - 1)
+        pxy <- randomR0 (xspan * yspan - 1)
         checkPoint f (fsearch (count - 1)) pxy
       searchAll (-1) = pure Nothing
       searchAll pxyRelative =
@@ -160,12 +160,12 @@ randomConnection (nx, ny) =
   rb <- oneOf [False, True]
   if rb && nx > 1
   then do
-    rx <- randomR (0, nx-2)
-    ry <- randomR (0, ny-1)
+    rx <- randomR0 (nx - 2)
+    ry <- randomR0 (ny - 1)
     return (Point rx ry, Point (rx+1) ry)
   else do
-    rx <- randomR (0, nx-1)
-    ry <- randomR (0, ny-2)
+    rx <- randomR0 (nx - 1)
+    ry <- randomR0 (ny - 2)
     return (Point rx ry, Point rx (ry+1))
 
 -- Plotting individual corridors between two areas

@@ -130,7 +130,7 @@ computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
 computeRndTimeout localTime ItemFull{itemDisco=ItemDiscoFull itemAspect} = do
   let t = IA.aTimeout itemAspect
   if t /= 0 then do
-    rndT <- randomR (0, t)
+    rndT <- randomR0 t
     let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
     return $ Just $ timeShift localTime rndTurns
   else return Nothing

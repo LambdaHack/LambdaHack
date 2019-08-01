@@ -33,6 +33,8 @@ import qualified Data.EnumSet as ES
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
@@ -43,8 +45,6 @@ import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Defs
 
@@ -239,7 +239,7 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
          where
           search 0 = go tl
           search !k = do
-            pxyRelative <- randomR (0, xspan * yspan - 1)
+            pxyRelative <- randomR0 (xspan * yspan - 1)
             -- Here we can't use @fromEnum@ and/or work with the @Int@
             -- representation, because the span is different than @rXmax@.
             let Point{..} = punindex xspan pxyRelative

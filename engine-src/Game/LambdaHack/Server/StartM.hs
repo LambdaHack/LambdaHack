@@ -361,7 +361,7 @@ populateDungeon = do
         let ps = zip initGroups psFree
         localTime <- getsState $ getLocalTime lid
         forM_ ps $ \ (actorGroup, p) -> do
-          rndDelay <- rndToAction $ randomR (0, clipsInTurn - 1)
+          rndDelay <- rndToAction $ randomR0 (clipsInTurn - 1)
           let delta = timeDeltaScale (Delta timeClip) rndDelay
               rndTime = timeShift localTime delta
           maid <- addActorFromGroup actorGroup fid3 p lid rndTime

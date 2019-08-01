@@ -139,7 +139,7 @@ compatibleVersion v1 v2 = take 3 (versionBranch v1) == take 3 (versionBranch v2)
 delayPrint :: Text -> IO ()
 delayPrint t = do
   smgen <- SM.newSMGen
-  let (delay, _) = randomR0 1000000 smgen
+  let (delay, _) = nextRandom 1000000 smgen
   threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stdout t
   hFlush stdout

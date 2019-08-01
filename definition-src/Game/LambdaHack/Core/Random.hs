@@ -3,7 +3,7 @@ module Game.LambdaHack.Core.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, randomInt, randomR0, oneOf, shuffle, frequency
+  , randomR, randomR0, nextRandom, randomInt, oneOf, shuffle, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -33,21 +33,26 @@ type Rnd a = St.State SM.SMGen a
 -- | Get a random object within a (inclusive) range with a uniform distribution.
 randomR :: Integral a => (a, a) -> Rnd a
 {-# INLINE randomR #-}
-randomR (0, h) = St.state $ randomR0 h
+randomR (0, h) = St.state $ nextRandom h
 randomR (l, h) | l > h = randomR (h, l)
 randomR (l, h) = St.state $ \g ->
-  let (x, g') = randomR0 (h - l) g
+  let (x, g') = nextRandom (h - l) g
   in (x + l, g')
 
 -- | Generate random 'Integral' in @[0, x]@ range.
-randomR0 :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
-randomR0 h g =
+randomR0 :: Integral a => a -> Rnd a
+randomR0 h = St.state $ nextRandom h
+{-# INLINE randomR0 #-}
+
+-- | Generate random 'Integral' in @[0, x]@ range.
+nextRandom :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
+nextRandom h g =
     let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
         x = fromIntegral w32
     in if x > h
        then error (show (fromIntegral x :: Integer, fromIntegral h :: Integer, w32))
        else (x, g')
-{-# INLINE randomR0 #-}
+{-# INLINE nextRandom #-}
 
 -- | Get a random 'Int' using full range
 randomInt :: Rnd Int
@@ -59,7 +64,7 @@ oneOf :: [a] -> Rnd a
 oneOf [] = error $ "oneOf []" `showFailure` ()
 oneOf [x] = return x
 oneOf xs = do
-  r <- randomR (0, length xs - 1)
+  r <- randomR0 (length xs - 1)
   return $! xs !! r
 
 -- | Generates a random permutation. Naive, but good enough for small inputs.
@@ -83,7 +88,7 @@ rollFreq fr g = case runFrequency fr of
                                `showFailure` (nameFrequency fr, n, x)
   [(_, x)] -> (x, g)  -- speedup
   fs -> let sumf = foldl' (\ !acc (!n, _) -> acc + n) 0 fs
-            (r, ng) = randomR0 (pred sumf) g
+            (r, ng) = nextRandom (pred sumf) g
             frec :: Int -> [(Int, a)] -> a
             frec !m [] = error $ "impossible roll"
                                  `showFailure` (nameFrequency fr, fs, m)
