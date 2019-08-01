@@ -94,9 +94,9 @@ fastCrawl:
 	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples --noAnim --maxFps 100000
 
 # different benchmarks use different arguments
-RNGOPTS=--setDungeonRng "SMGen 123 1" --setMainRng "SMGen 123 123"
-RNGOPTS1=--setDungeonRng "SMGen 127 12" --setMainRng "SMGen 127 12"
-RNGOPTS2=--setDungeonRng "SMGen 129 123" --setMainRng "SMGen 129 1"
+RNGOPTS=--setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"
+RNGOPTS1=--setDungeonRng "SMGen 127 123" --setMainRng "SMGen 127 125"
+RNGOPTS2=--setDungeonRng "SMGen 129 123" --setMainRng "SMGen 129 125"
 
 benchMemoryAnim:
 	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --newGame 1 --maxFps 100000 --benchmark --stopAfterFrames 33000 --automateAll --keepAutomated --gameMode crawl $(RNGOPTS2)  --frontendNull --noAnim +RTS -s -A1M -RTS
