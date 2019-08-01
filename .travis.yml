@@ -180,6 +180,7 @@ install:
   - rm -f cabal.project.freeze
   - rm -rf .ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
+  - cabal new-install cabal-plan;
 
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
@@ -252,7 +253,6 @@ script:
     fi
 
   - find dist-newstyle -wholename '*/build/test/test' -exec '{}' \;
-  - cabal new-install cabal-plan;
 
   - touch /tmp/teletypetest.log;
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
