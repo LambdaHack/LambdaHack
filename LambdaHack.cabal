@@ -193,7 +193,6 @@ library definition
                       ,hashable
                       ,keys
                       ,miniutter
-                      ,random
                       ,splitmix
                       ,time
                       ,text
@@ -349,7 +348,6 @@ library
                       optparse-applicative >= 0.13,
                       pretty-show >= 1.6,
                       primitive  >= 0.6.1.0,
-                      random     >= 1.1,
                       splitmix   >= 0.0.3,
                       stm        >= 2.4,
                       time       >= 1.4,
@@ -428,7 +426,6 @@ library this-game-src
                       ,ghc-compact
                       ,optparse-applicative
                       ,primitive
-                      ,random
                       ,splitmix
                       ,template-haskell >= 2.6
                       ,text

@@ -22,13 +22,14 @@ import qualified Data.Text.IO as T
 import           Data.Version
 import           System.FilePath
 import           System.IO (hFlush, stdout)
-import qualified System.Random as R
+import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Common.File
 import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Types
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Core.Random
 
 type ChanSave a = MVar (Maybe a)
 
@@ -137,7 +138,8 @@ compatibleVersion v1 v2 = take 3 (versionBranch v1) == take 3 (versionBranch v2)
 
 delayPrint :: Text -> IO ()
 delayPrint t = do
-  delay <- R.randomRIO (0, 1000000)
+  smgen <- SM.newSMGen
+  let (delay, _) = randomR0 1000000 smgen
   threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stdout t
   hFlush stdout
