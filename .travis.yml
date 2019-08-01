@@ -184,7 +184,7 @@ install:
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
-  - cabal new-install cabal-plan;
+  - (cd .. && cabal new-install cabal-plan)
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
   - mv "."/dist/LambdaHack-*.tar.gz ${DISTDIR}/
