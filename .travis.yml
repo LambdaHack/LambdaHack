@@ -251,10 +251,8 @@ script:
     else exit 7;
     fi
 
-  - ROOTDIR2=$(pwd)
-  - mkdir -p dist/build/LambdaHack
   - find dist-newstyle -wholename '*/build/test/test' -exec '{}' \;
-  - find dist-newstyle -wholename '*/build/LambdaHack/LambdaHack' -exec cp '{}' $ROOTDIR2/dist/build/LambdaHack/ \;
+  - cabal new-install cabal-plan;
 
   - touch /tmp/teletypetest.log;
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"

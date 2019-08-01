@@ -126,6 +126,10 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { C:\"Program Files (x86)"\NSIS\makensis.exe .windows.installer.nsi }
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-installer.exe -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-installer.exe" -DeploymentName "win64 and win32 installer" }
 
+
+  - IF "%goal%"=="test" (
+      cabal new-install cabal-plan;
+    )
   - IF "%goal%"=="test" (
       make test-short || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
     )
