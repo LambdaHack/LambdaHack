@@ -181,7 +181,7 @@ install:
   - rm -rf .ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   - GHCBIN=$(which ${HC})
-  - ln -s GHCBIN $HOME/.local/bin/ghc
+  - ln -s $GHCBIN $HOME/.local/bin/ghc
 
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
