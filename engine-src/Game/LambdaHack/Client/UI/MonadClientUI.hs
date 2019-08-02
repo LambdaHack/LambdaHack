@@ -17,7 +17,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
-  , tryRestore, leaderSkillsClientUI
+  , tryRestore, leaderSkillsClientUI, rndToActionUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , connFrontend, displayFrame, addPressedKey
@@ -28,6 +28,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Control.Monad.Trans.State.Strict as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -74,6 +75,7 @@ import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
+import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- Assumes no interleaving with other clients, because each UI client
@@ -428,3 +430,11 @@ leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
 leaderSkillsClientUI = do
   leader <- getLeaderUI
   getsState $ getActorMaxSkills leader
+
+-- | Invoke pseudo-random computation with the generator kept in the session.
+rndToActionUI :: MonadClientUI m => Rnd a -> m a
+rndToActionUI r = do
+  gen1 <- getsSession srandomUI
+  let (a, gen2) = St.runState r gen1
+  modifySession $ \sess -> sess {srandomUI = gen2}
+  return a

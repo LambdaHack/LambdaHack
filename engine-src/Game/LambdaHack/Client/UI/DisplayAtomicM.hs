@@ -444,7 +444,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgLandscape desc
     -- We can fool the player only once (per scenario), but let's not do it
     -- in the same way each time. TODO: PCG
-    blurb <- rndToActionForget $ oneOf
+    blurb <- rndToActionUI $ oneOf
       [ "You think you saw movement."
       , "Something catches your peripherial vision."
       , "You think you felt a tremor under your feet."
@@ -1382,7 +1382,7 @@ displayRespSfxAtomicUI sfx = case sfx of
       [MU.SubjectVerbSg spart "collide", "painfully with", object]
   SfxTaunt voluntary aid -> do
     spart <- partActorLeader aid
-    (_heardSubject, verb) <- displayTaunt voluntary rndToActionForget aid
+    (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
     msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m (Maybe (MsgClass, Text))
@@ -1575,7 +1575,7 @@ strike catch source target iid = assert (source /= target) $ do
     mblockArmor <- case eqpAndOrgArmor of
       [] -> return Nothing
       _ -> Just
-           <$> rndToActionForget (frequency $ toFreq "msg armor" eqpAndOrgArmor)
+           <$> rndToActionUI (frequency $ toFreq "msg armor" eqpAndOrgArmor)
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =

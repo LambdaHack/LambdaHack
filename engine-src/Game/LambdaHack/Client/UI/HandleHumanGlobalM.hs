@@ -1530,7 +1530,7 @@ gameRestartHuman = do
     let nxtGameGroup = toGroupName $ head $ T.words nxtGameName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
-    msg2 <- rndToActionForget $ oneOf
+    msg2 <- rndToActionUI $ oneOf
               [ "yea, would be a pity to leave them to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2
@@ -1558,7 +1558,7 @@ gameQuitHuman = do
     snxtChal <- getsClient snxtChal
     return $ Right $ ReqUIGameRestart "insert coin" snxtChal
   else do
-    msg2 <- rndToActionForget $ oneOf
+    msg2 <- rndToActionUI $ oneOf
               [ "yea, would be a pity to leave them to die"
               , "yea, a shame to get your team stranded" ]
     failWith msg2

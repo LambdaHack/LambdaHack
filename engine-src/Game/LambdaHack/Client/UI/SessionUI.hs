@@ -27,6 +27,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Definition.Defs
+import qualified System.Random.SplitMix32 as SM
 
 -- | The information that is used across a client playing session,
 -- including many consecutive games in a single session.
@@ -74,6 +75,7 @@ data SessionUI = SessionUI
   , snframes       :: Int           -- ^ this game current frame count
   , sallNframes    :: Int           -- ^ frame count from start of session
                                     --   to current game start
+  , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
 type ItemDictUI = EM.EnumMap ItemId LevelId
@@ -142,6 +144,7 @@ emptySessionUI sUIOptions =
     , sallTime = timeZero
     , snframes = 0
     , sallNframes = 0
+    , srandomUI = SM.mkSMGen 0
     }
 
 toggleMarkVision :: SessionUI -> SessionUI
@@ -203,6 +206,7 @@ instance Binary SessionUI where
         sallTime = timeZero
         snframes = 0
         sallNframes = 0
+        srandomUI = SM.mkSMGen 0
     return $! SessionUI{..}
 
 instance Binary RunParams where

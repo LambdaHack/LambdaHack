@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.MonadClient
   , MonadClient(modifyClient)
     -- * Assorted primitives
   , getClient, putClient
-  , debugPossiblyPrint, createTabBFS, rndToAction, rndToActionForget
+  , debugPossiblyPrint, createTabBFS, rndToAction
   ) where
 
 import Prelude ()
@@ -16,12 +16,9 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict (stToIO)
 import qualified Control.Monad.Trans.State.Strict as St
-import           Data.Bits (finiteBitSize, xor, (.&.))
-import           Data.Word (Word32)
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
-import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
@@ -29,7 +26,6 @@ import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Core.Random
 
@@ -71,17 +67,3 @@ rndToAction r = do
   let (a, gen2) = St.runState r gen1
   modifyClient $ \cli -> cli {srandom = gen2}
   return a
-
--- | Invoke pseudo-random computation, don't change generator kept in state.
--- Modify the used generator by @xoring@ with current global game time.
-rndToActionForget :: MonadClientRead m => Rnd a -> m a
-rndToActionForget r = do
-  gen <- getsClient srandom
-  let i = fst $ SM.nextWord32 gen
-  time <- getsState stime
-  -- Prevent overflow from @Int64@ to @Word32@.
-  let positiveIntSize = finiteBitSize (1 :: Word32) - 1
-      oneBitsPositiveInt = 2 ^ positiveIntSize - 1
-      timeSmallBits = fromIntegral (timeTicks time .&. oneBitsPositiveInt)
-      genNew = SM.mkSMGen $ i `xor` timeSmallBits
-  return $! St.evalState r genNew

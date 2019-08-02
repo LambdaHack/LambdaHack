@@ -196,6 +196,6 @@ fadeOutOrIn :: MonadClientUI m => Bool -> m ()
 fadeOutOrIn out = do
   arena <- getArenaUI
   CCUI{coscreen} <- getsSession sccui
-  animMap <- rndToActionForget $ fadeout coscreen out 2
+  animMap <- rndToActionUI $ fadeout coscreen out 2
   animFrs <- renderFrames True arena animMap
   displayFrames arena (tail animFrs)  -- no basic frame between fadeout and in
