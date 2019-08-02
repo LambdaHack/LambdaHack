@@ -181,11 +181,17 @@ install:
   - rm -rf .ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   - GHCBIN=$(which ${HC})
+  - echo $GHCBIN
   - ln -s GHCBIN $HOME/.local/bin/ghc
+  - which ghc || True
+  - ls -l $HOME/.local/bin/ghc
+  - $HOME/.local/bin/ghc --version
 
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
+  - which ghc || True
+  - ghc --version || True
   - (cd .. && cabal new-install cabal-plan)
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
