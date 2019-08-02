@@ -180,15 +180,12 @@ install:
   - rm -f cabal.project.freeze
   - rm -rf .ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
-  - which ghc
-  - which ${HC}
+  - GHCBIN=$(which ${HC})
+  - ln -s GHCBIN $HOME/.local/bin/ghc
 
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
-  - cabal --version
-  - which ghc
-  - which ${HC}
   - (cd .. && cabal new-install cabal-plan)
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
