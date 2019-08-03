@@ -184,8 +184,12 @@ buildPlace cops@COps{coplace, coTileSpeedup}
   return $! Place {..}
 
 isChancePos :: Int -> Int -> Word32 -> Point -> Bool
-isChancePos k n dsecret (Point x y) = k > 0 && n > 0 &&
-  let z = fromEnum dsecret `Bits.xor` x `Bits.xor` y + x
+isChancePos k' n' dsecret (Point x' y') = k' > 0 && n' > 0 &&
+  let k = toEnum k'
+      n = toEnum n'
+      x = toEnum x'
+      y = toEnum y'
+      z = dsecret `Bits.rotateR` x' `Bits.xor` y + x
   in if k < n
      then z `mod` ((n + k) `divUp` k) == 0
      else z `mod` ((n + k) `divUp` n) /= 0
