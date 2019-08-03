@@ -126,6 +126,7 @@ data HumanCmd =
   | Apply
   | AlterDir [TriggerTile]
   | AlterWithPointer [TriggerTile]
+  | CloseDir
   | Help
   | Hint
   | ItemMenu

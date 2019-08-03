@@ -76,7 +76,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("/", ([CmdMinimal, CmdAim], "cycle crosshair among items", AimItem))
   , ("m", ( [CmdMinimal, CmdMove]
           , "modify door by closing it"
-          , AlterDir closeDoorTriggers ))
+          , CloseDir ))
   , ("%", ([CmdMinimal, CmdMeta], "yell/yawn and stop sleeping", Yell))
 
   -- Item menu, first part of item use commands
