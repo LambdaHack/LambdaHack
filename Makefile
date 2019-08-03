@@ -140,7 +140,9 @@ nodeBenchBattle:
 nodeBench: nodeBenchBattle nodeBenchCrawl
 
 
-test-travis: test-sniff test-short test-medium benchNull
+test-travis: test-short test-medium
+
+test-travis2: test-sniff benchNull
 
 test: test-sniff test-short test-medium benchNull
 
