@@ -90,6 +90,7 @@ cmdAction cmd = case cmd of
   AlterDir ts -> weaveJust <$> (ReqUITimed <$$> alterDirHuman ts)
   AlterWithPointer ts -> weaveJust
                          <$> (ReqUITimed <$$> alterWithPointerHuman ts)
+  CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman)
   Help -> helpHuman cmdAction
   Hint -> hintHuman cmdAction
   ItemMenu -> itemMenuHuman cmdAction

@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman
-  , alterDirHuman, alterWithPointerHuman
+  , alterDirHuman, alterWithPointerHuman, closeDirHuman 
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
   , settingsMenuHuman, challengesMenuHuman
@@ -926,6 +926,45 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
       else do
         modifySession $ \sess -> sess {sitemSel = Nothing}
         failWith "never mind"
+
+-- * CloseDir 
+
+-- | Close nearby open tile. Ask for direction, if there is more than one.
+closeDirHuman :: MonadClientUI m
+              => m (FailOrCmd RequestTimed)
+closeDirHuman = do
+  COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lvl <- getLevel $ blid b
+  let vPts = vicinityUnsafe $ bpos b 
+      openPts = filter (Tile.isClosable cotile . at lvl) vPts
+      closePick p = if p `elem` openPts
+        then do
+          let s = MU.Text . T.unwords . tail . T.words . TK.tname 
+                  $ okind cotile $ lvl `at` p -- ommit first word in tname
+              dir = MU.Text $ compassText $ p `vectorToFrom` bpos b
+          msgAdd MsgDone $ makeSentence ["you", "close", dir, s]
+          return $ Right $ ReqAlter p 
+        else failWith "nothing to close here"
+  case openPts of 
+    [o] -> closePick o
+    _   -> do
+      UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
+      let keys = K.escKM
+               : K.leftButtonReleaseKM
+               : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
+      promptAdd0 "Where to close? [movement key] [pointer]"
+      slides <- reportToSlideshow [K.escKM]
+      km <- getConfirms ColorFull keys slides
+      case K.key km of
+        K.LeftButtonRelease -> do
+          K.PointUI x y <- getsSession spointer
+          closePick $ Point (x `div` 2) (y - K.mapStartY)
+        _ ->
+          case K.handleDir uVi uLeftHand km of
+            Nothing -> failWith "never mind"
+            Just dir -> closePick $ bpos b `shift` dir
 
 -- * AlterDir
 
