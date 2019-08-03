@@ -3,7 +3,7 @@ module Game.LambdaHack.Core.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, randomR0, nextRandom, randomInt, oneOf, shuffle, frequency
+  , randomR, randomR0, nextRandom, randomWord32, oneOf, shuffle, frequency
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
@@ -21,7 +21,9 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Control.Monad.Trans.State.Strict as St
+import           Data.Int (Int32)
 import           Data.Ratio
+import           Data.Word (Word32)
 import qualified System.Random.SplitMix32 as SM
 
 import qualified Game.LambdaHack.Core.Dice as Dice
@@ -44,20 +46,22 @@ randomR0 :: Integral a => a -> Rnd a
 randomR0 h = St.state $ nextRandom h
 {-# INLINE randomR0 #-}
 
--- | Generate random 'Integral' in @[0, x]@ range.
+-- | Generate random 'Integral' in @[0, x]@ range, where @x@ is within @Int32@.
 nextRandom :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
-nextRandom h g =
-    let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
-        x = fromIntegral w32
-    in if x > h
-       then error (show (fromIntegral x :: Integer, fromIntegral h :: Integer, w32))
-       else (x, g')
+nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
+  let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
+      x = fromIntegral w32
+  in if x > h
+     then error $ "nextRandom internal error"
+                  `showFailure`
+                    (fromIntegral x :: Integer, fromIntegral h :: Integer, w32)
+     else (x, g')
 {-# INLINE nextRandom #-}
 
--- | Get a random 'Int' using full range
-randomInt :: Rnd Int
-randomInt = St.state SM.nextInt
-{-# INLINE randomInt #-}
+-- | Get a random 'Word32' using full range
+randomWord32 :: Rnd Word32
+randomWord32 = St.state SM.nextWord32
+{-# INLINE randomWord32 #-}
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a

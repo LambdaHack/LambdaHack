@@ -17,6 +17,7 @@ import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Text as T
+import           Data.Word (Word32)
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Kind
@@ -110,7 +111,7 @@ buildPlace :: COps                -- ^ the game content
            -> ContentId TileKind  -- ^ lit fence tile, if fence hollow
            -> Dice.AbsDepth       -- ^ current level depth
            -> Dice.AbsDepth       -- ^ absolute depth
-           -> Int                 -- ^ secret tile seed
+           -> Word32              -- ^ secret tile seed
            -> Area                -- ^ whole area of the place, fence included
            -> Maybe Area          -- ^ whole inner area of the grid cell
            -> Freqs PlaceKind     -- ^ optional fixed place freq
@@ -182,12 +183,12 @@ buildPlace cops@COps{coplace, coTileSpeedup}
                        dark (pfence kr) qarea
   return $! Place {..}
 
-isChancePos :: Int -> Int -> Int -> Point -> Bool
+isChancePos :: Int -> Int -> Word32 -> Point -> Bool
 isChancePos k n dsecret (Point x y) = k > 0 && n > 0 &&
-  let z = dsecret `Bits.rotateR` x `Bits.xor` y + x
+  let z = fromEnum dsecret `Bits.xor` x `Bits.xor` y + x
   in if k < n
      then z `mod` ((n + k) `divUp` k) == 0
-     else z `mod` ((k + n) `divUp` n) /= 0
+     else z `mod` ((n + k) `divUp` n) /= 0
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: COps -> GroupName TileKind

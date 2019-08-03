@@ -14,16 +14,17 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import           Data.Key (mapWithKeyM)
+import           Data.Word (Word32)
 
 import           Game.LambdaHack.Common.Area
 import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.CaveKind
 import           Game.LambdaHack.Content.PlaceKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
-import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
@@ -68,7 +69,7 @@ buildCave :: COps                -- ^ content definitions
           -> Dice.AbsDepth       -- ^ depth of the level to generate
           -> Dice.AbsDepth       -- ^ absolute depth
           -> Area                -- ^ map area of the cave
-          -> Int                 -- ^ secret tile seed
+          -> Word32              -- ^ secret tile seed
           -> ContentId CaveKind  -- ^ cave kind to use for generation
           -> (X, Y)              -- ^ the dimensions of the grid of places
           -> EM.EnumMap Point SpecialArea  -- ^ pos of stairs, etc.
@@ -313,7 +314,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
   return $! Cave {..}
 
 pickOpening :: COps -> CaveKind -> TileMapEM -> ContentId TileKind
-            -> Int -> Point
+            -> Word32 -> Point
             -> (ContentId TileKind, ContentId TileKind, ContentId PlaceKind)
             -> Rnd (ContentId TileKind)
 pickOpening COps{cotile, coTileSpeedup}

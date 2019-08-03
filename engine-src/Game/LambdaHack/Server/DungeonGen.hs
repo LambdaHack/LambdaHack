@@ -25,13 +25,10 @@ import           System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
@@ -41,6 +38,9 @@ import qualified Game.LambdaHack.Content.PlaceKind as PK
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import           Game.LambdaHack.Core.Random
+import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.DungeonGen.AreaRnd
 import           Game.LambdaHack.Server.DungeonGen.Cave
 import           Game.LambdaHack.Server.DungeonGen.Place
@@ -231,7 +231,7 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
       area = if cfenceApart kc then subArea else darea
       (lgr, gs) = grid fixedCenters (boot ++ bootExtra) area cellSize
-  dsecret <- randomR (1, maxBound)
+  dsecret <- randomWord32
   cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs bootExtra
   cmap <- buildTileMap cops cave
   let lvl = levelFromCave cops cave ldepth cmap lstair pescape

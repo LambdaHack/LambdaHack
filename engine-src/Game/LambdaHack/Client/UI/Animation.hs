@@ -233,8 +233,8 @@ fadeout ScreenContent{rwidth, rheight} out step = do
               | otherwise = mnx
         in EM.findWithDefault ' ' k edge
       rollFrame !n = do
-        r <- randomInt
-        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar r n x y
+        w <- randomWord32
+        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar (fromEnum w) n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}
