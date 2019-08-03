@@ -24,7 +24,7 @@ import qualified System.Random.SplitMix32 as SM
 -- remaining commandline should be passed and parsed by the client to extract
 -- client and ui options from and singnal an error if anything was left.
 
-import Game.LambdaHack.Client (ClientOptions (..), )
+import Game.LambdaHack.Client (ClientOptions (..))
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Defs
@@ -178,8 +178,6 @@ newGameP :: Parser (Maybe Int)
 newGameP = optional $ max 1 <$> min difficultyBound <$>
   option auto (  long "newGame"
               <> help "Start a new game, overwriting the save file, with difficulty for all UI players set to N"
-              <> showDefault
-              <> value difficultyDefault
               <> metavar "N" )
 
 stopAfterSecsP :: Parser (Maybe Int)
@@ -324,6 +322,7 @@ savePrefixP :: Parser String
 savePrefixP =
   strOption (  long "savePrefix"
             <> metavar "PREFIX"
+            <> showDefault
             <> value ""
             <> help "Prepend PREFIX to all savefile names" )
 
