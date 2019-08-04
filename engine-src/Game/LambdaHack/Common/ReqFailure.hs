@@ -44,6 +44,9 @@ data ReqFailure =
   | AlterBlockActor
   | AlterBlockItem
   | AlterNothing
+  | CloseDistant
+  | CloseClosed
+  | CloseNothing
   | WaitUnskilled
   | YellUnskilled
   | MoveItemUnskilled
@@ -94,6 +97,9 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
+  CloseDistant -> False
+  CloseClosed -> False
+  CloseNothing -> False
   WaitUnskilled -> False  -- unidentified skill items
   YellUnskilled -> False  -- unidentified skill items
   MoveItemUnskilled -> False  -- unidentified skill items
@@ -141,6 +147,9 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
+  CloseDistant -> "trying to close a dinstant object"
+  CloseClosed -> "already closed"
+  CloseNothing -> "wasting time on closing nothing"
   WaitUnskilled -> "too low wait stat"
   YellUnskilled -> "actors unskilled in waiting cannot yell/yawn"
   MoveItemUnskilled -> "too low item moving stat"

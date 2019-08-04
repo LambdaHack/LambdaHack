@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), categoryDescription
   , CmdArea(..), areaDescription
   , CmdTriple, AimModeCmd(..), HumanCmd(..)
-  , TriggerItem(..), TriggerTile(..)
+  , TriggerItem(..)
   ) where
 
 import Prelude ()
@@ -17,7 +17,6 @@ import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Common.Vector
-import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Definition.Defs
 
 data CmdCategory =
@@ -124,8 +123,8 @@ data HumanCmd =
   | MoveItem [CStore] CStore (Maybe MU.Part) Bool
   | Project
   | Apply
-  | AlterDir [TriggerTile]
-  | AlterWithPointer [TriggerTile]
+  | AlterDir
+  | AlterWithPointer
   | CloseDir
   | Help
   | Hint
@@ -208,16 +207,3 @@ instance Read TriggerItem where
 instance NFData TriggerItem
 
 instance Binary TriggerItem
-
--- | Description of how tile altering is triggered and communicated
--- to the player.
-data TriggerTile =
-  TriggerTile {ttverb :: MU.Part, ttobject :: MU.Part, ttfeature :: TK.Feature}
-  deriving (Show, Eq, Ord, Generic)
-
-instance Read TriggerTile where
-  readsPrec = error $ "parsing of TriggerTile not implemented" `showFailure` ()
-
-instance NFData TriggerTile
-
-instance Binary TriggerTile
