@@ -87,9 +87,9 @@ cmdAction cmd = case cmd of
     <$> (ReqUITimed <$$> moveItemHuman cLegalRaw toCStore mverb auto)
   Project -> weaveJust <$> (ReqUITimed <$$> projectHuman)
   Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman)
-  AlterDir ts -> weaveJust <$> (ReqUITimed <$$> alterDirHuman ts)
-  AlterWithPointer ts -> weaveJust
-                         <$> (ReqUITimed <$$> alterWithPointerHuman ts)
+  AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman)
+  AlterWithPointer -> weaveJust
+                         <$> (ReqUITimed <$$> alterWithPointerHuman)
   CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman)
   Help -> helpHuman cmdAction
   Hint -> hintHuman cmdAction

@@ -4,7 +4,7 @@ module Client.UI.Content.Input
   ( standardKeysAndMouse
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , closeDoorTriggers, applyTs
+  , applyTs
 #endif
   ) where
 
@@ -14,7 +14,6 @@ import Game.LambdaHack.Core.Prelude
 
 import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Definition.Defs
 
 -- | Description of default key-command bindings.
@@ -95,7 +94,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           $ moveItemTriple [CGround, CStash] CEqp "item" False)
 
   -- Terrain exploration and modification
-  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir []))
+  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
@@ -202,7 +201,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("RightButtonRelease", mouseRMB)
   , ("C-LeftButtonRelease", replaceDesc "" mouseRMB)  -- Mac convention
   , ( "S-RightButtonRelease"
-    , ([CmdMouse], "modify terrain at pointer", AlterWithPointer []) )
+    , ([CmdMouse], "modify terrain at pointer", AlterWithPointer) )
   , ("MiddleButtonRelease", mouseMMB)
   , ("C-RightButtonRelease", replaceDesc "" mouseMMB)
   , ( "C-S-LeftButtonRelease",
@@ -259,22 +258,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                , XhairPointerEnemy ))
   ]
   ++ map defaultHeroSelect [0..9]
-
-closeDoorTriggers :: [TriggerTile]
-closeDoorTriggers =
-  [ TriggerTile { ttverb = "close"
-                , ttobject = "door"
-                , ttfeature = TK.CloseTo "closed vertical door Lit" }
-  , TriggerTile { ttverb = "close"
-                , ttobject = "door"
-                , ttfeature = TK.CloseTo "closed horizontal door Lit" }
-  , TriggerTile { ttverb = "close"
-                , ttobject = "door"
-                , ttfeature = TK.CloseTo "closed vertical door Dark" }
-  , TriggerTile { ttverb = "close"
-                , ttobject = "door"
-                , ttfeature = TK.CloseTo "closed horizontal door Dark" }
-  ]
 
 applyTs :: [TriggerItem]
 applyTs = [TriggerItem { tiverb = "trigger"

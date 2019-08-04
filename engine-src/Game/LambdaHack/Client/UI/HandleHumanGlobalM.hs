@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
-  , applyItem, alterTile, alterTileAtPos, verifyAlters, verifyEscape, guessAlter
+  , applyItem, alterTileAtPos, verifyAlters, verifyEscape 
   , generateMenu, nxtGameMode
 #endif
   ) where
@@ -91,7 +91,6 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Content.TileKind (TileKind)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
@@ -927,87 +926,12 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
         modifySession $ \sess -> sess {sitemSel = Nothing}
         failWith "never mind"
 
--- * CloseDir 
-
--- | Close nearby open tile. Ask for direction, if there is more than one.
-closeDirHuman :: MonadClientUI m
-              => m (FailOrCmd RequestTimed)
-closeDirHuman = do
-  COps{cotile} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  lvl <- getLevel $ blid b
-  let vPts = vicinityUnsafe $ bpos b 
-      openPts = filter (Tile.isClosable cotile . at lvl) vPts
-      closePick p = if p `elem` openPts
-        then do
-          let s = MU.Text . T.unwords . tail . T.words . TK.tname 
-                  $ okind cotile $ lvl `at` p -- ommit first word in tname
-              dir = MU.Text $ compassText $ p `vectorToFrom` bpos b
-          msgAdd MsgDone $ makeSentence ["you", "close", dir, s]
-          return $ Right $ ReqAlter p 
-        else failWith "nothing to close here"
-  case openPts of 
-    [o] -> closePick o
-    _   -> do
-      UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
-      let keys = K.escKM
-               : K.leftButtonReleaseKM
-               : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
-      promptAdd0 "Where to close? [movement key] [pointer]"
-      slides <- reportToSlideshow [K.escKM]
-      km <- getConfirms ColorFull keys slides
-      case K.key km of
-        K.LeftButtonRelease -> do
-          K.PointUI x y <- getsSession spointer
-          closePick $ Point (x `div` 2) (y - K.mapStartY)
-        _ ->
-          case K.handleDir uVi uLeftHand km of
-            Nothing -> failWith "never mind"
-            Just dir -> closePick $ bpos b `shift` dir
-
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile in the specified way, if possible.
 alterDirHuman :: MonadClientUI m
-              => [TriggerTile] -> m (FailOrCmd RequestTimed)
-alterDirHuman ts = do
-  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
-  let verb1 = case ts of
-        [] -> "alter"
-        tr : _ -> ttverb tr
-      keys = K.escKM
-             : K.leftButtonReleaseKM
-             : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
-      prompt = makePhrase
-        ["Where to", verb1 <> "? [movement key] [pointer]"]
-  promptAdd0 prompt
-  slides <- reportToSlideshow [K.escKM]
-  km <- getConfirms ColorFull keys slides
-  case K.key km of
-    K.LeftButtonRelease -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      K.PointUI x y <- getsSession spointer
-      let (px, py) = (x `div` 2, y - K.mapStartY)
-          dir = Point px py `vectorToFrom` bpos b
-      if isUnit dir
-      then alterTile ts dir
-      else failWith "never mind"
-    _ ->
-      case K.handleDir uVi uLeftHand km of
-        Nothing -> failWith "never mind"
-        Just dir -> alterTile ts dir
-
--- | Try to alter a tile using a feature in the given direction.
-alterTile :: MonadClientUI m
-          => [TriggerTile] -> Vector -> m (FailOrCmd RequestTimed)
-alterTile ts dir = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let tpos = bpos b `shift` dir
-      pText = compassText dir
-  alterTileAtPos ts tpos pText
+              => m (FailOrCmd RequestTimed)
+alterDirHuman = pickPoint "alter" >>= alterTileAtPos 
 
 -- | Try to alter a tile using a feature at the given position.
 --
@@ -1016,43 +940,40 @@ alterTile ts dir = do
 -- the action. Consequently, even if all embedded items are recharching,
 -- the time will be wasted and the server will describe the failure in detail.
 alterTileAtPos :: MonadClientUI m
-               => [TriggerTile] -> Point -> Text
+               => Maybe Point
                -> m (FailOrCmd RequestTimed)
-alterTileAtPos ts tpos pText = do
-  cops@COps{cotile, coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  actorSk <- leaderSkillsClientUI
-  lvl <- getLevel $ blid b
-  embeds <- getsState $ getEmbedBag (blid b) tpos
-  let alterSkill = Ability.getSk Ability.SkAlter actorSk
-      t = lvl `at` tpos
-      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-      hasFeat TriggerTile{ttfeature} = Tile.hasFeature cotile ttfeature t
-  case filter hasFeat ts of
-    [] | not $ null ts -> failWith $ guessAlter cops ts t
-    _ | not (Tile.isModifiable coTileSpeedup t)
-        && EM.null embeds -> failSer AlterNothing
-    _ | chessDist tpos (bpos b) > 1 -> failSer AlterDistant
-    _ | alterSkill <= 1 -> failSer AlterUnskilled
-    _ | not (Tile.isSuspect coTileSpeedup t)
-        && alterSkill < alterMinSkill -> failSer AlterUnwalked
-    trs ->
-      if EM.notMember tpos $ lfloor lvl then
-        if not (occupiedBigLvl tpos lvl)
-           && not (occupiedProjLvl tpos lvl) then do
-          let v = case trs of
-                [] -> "alter"
-                tr : _ -> ttverb tr
-          verAlters <- verifyAlters (blid b) tpos
-          case verAlters of
-            Right () -> do
-              let msg = makeSentence ["you", v, MU.Text pText]
-              msgAdd MsgDone msg
-              return $ Right $ ReqAlter tpos
-            Left err -> return $ Left err
-        else failSer AlterBlockActor
-      else failSer AlterBlockItem
+alterTileAtPos mp = case mp of
+  Nothing -> failWith "never mind"
+  Just tpos -> do
+    COps{coTileSpeedup} <- getsState scops
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    actorSk <- leaderSkillsClientUI
+    lvl <- getLevel $ blid b
+    embeds <- getsState $ getEmbedBag (blid b) tpos
+    let alterSkill = Ability.getSk Ability.SkAlter actorSk
+        t = lvl `at` tpos
+        alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+    if | not (Tile.isModifiable coTileSpeedup t) && EM.null embeds
+        -> failSer AlterNothing
+       | chessDist tpos (bpos b) > 1
+        -> failSer AlterDistant
+       | alterSkill <= 1
+        -> failSer AlterUnskilled
+       | not (Tile.isSuspect coTileSpeedup t) && alterSkill < alterMinSkill
+        -> failSer AlterUnwalked
+       | otherwise  
+        -> if EM.notMember tpos $ lfloor lvl then
+             if not (occupiedBigLvl tpos lvl) && not (occupiedProjLvl tpos lvl)
+             then do
+               verAlters <- verifyAlters (blid b) tpos
+               case verAlters of
+                 Right () -> do
+                   msgAddDone tpos "alter"
+                   return $ Right $ ReqAlter tpos
+                 Left err -> return $ Left err
+             else failSer AlterBlockActor
+           else failSer AlterBlockItem
 
 -- | Verify important effects, such as fleeing the dungeon.
 --
@@ -1097,33 +1018,97 @@ verifyEscape = do
     then failWith "here's your chance!"
     else return $ Right ()
 
--- | Guess and report why the bump command failed.
-guessAlter :: COps -> [TriggerTile] -> ContentId TileKind -> Text
-guessAlter COps{cotile} (TriggerTile{ttfeature=TK.OpenTo _} : _) t
-  | Tile.isClosable cotile t = "already open"
-guessAlter _ (TriggerTile{ttfeature=TK.OpenTo _} : _) _ = "cannot be opened"
-guessAlter COps{cotile} (TriggerTile{ttfeature=TK.CloseTo _} : _) t
-  | Tile.isOpenable cotile t = "already closed"
-guessAlter _ (TriggerTile{ttfeature=TK.CloseTo _} : _) _ = "cannot be closed"
-guessAlter _ _ _ = "never mind"
-
 -- * AlterWithPointer
 
 -- | Try to alter a tile using a feature under the pointer.
 alterWithPointerHuman :: MonadClientUI m
-                      => [TriggerTile] -> m (FailOrCmd RequestTimed)
-alterWithPointerHuman ts = do
-  COps{corule=RuleContent{rXmax, rYmax}, cotile} <- getsState scops
-  lidV <- viewedLevelUI
+                      => m (FailOrCmd RequestTimed)
+alterWithPointerHuman = do
+  COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   -- Not @ScreenContent@, because not drawing here.
-  lvl <- getLevel lidV
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y - K.mapStartY)
       tpos = Point px py
-      t = lvl `at` tpos
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
-  then alterTileAtPos ts tpos $ "the" <+> TK.tname (okind cotile t)
-  else failWith "never mind"
+  then alterTileAtPos (Just tpos)
+  else alterTileAtPos Nothing
+
+-- * CloseDir 
+
+-- | Close nearby open tile; ask for direction, if there is more than one.
+closeDirHuman :: MonadClientUI m
+              => m (FailOrCmd RequestTimed)
+closeDirHuman = do
+  COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lvl <- getLevel $ blid b
+  let vPts = vicinityUnsafe $ bpos b 
+      openPts = filter (Tile.isClosable cotile . at lvl) vPts
+  case openPts of 
+    []  -> failSer CloseNothing
+    [o] -> closeTileAtPos $ Just o
+    _   -> pickPoint "close" >>= closeTileAtPos 
+   
+-- | Close tile at given position.
+closeTileAtPos :: MonadClientUI m
+               => Maybe Point -> m (FailOrCmd RequestTimed)
+closeTileAtPos mp = case mp of
+  Nothing -> failWith "never mind"
+  Just p -> do
+    COps{cotile} <- getsState scops
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    if (p `chessDist` bpos b == 1) then do
+      actorSk <- leaderSkillsClientUI
+      lvl <- getLevel $ blid b
+      let alterSkill = Ability.getSk Ability.SkAlter actorSk
+      if | Tile.isOpenable cotile $ lvl `at` p 
+          -> failSer CloseClosed
+         | alterSkill <= 1
+          -> failSer AlterUnskilled
+         | otherwise 
+          -> do
+             msgAddDone p "close"
+             return $ Right $ ReqAlter p 
+    else failSer CloseDistant 
+
+-- | Adds message with proper names.
+msgAddDone :: MonadClientUI m
+           => Point -> Text
+           -> m ()
+msgAddDone p verb = do
+  COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  lvl <- getLevel $ blid b
+  let s = case (T.words . TK.tname $ okind cotile $ lvl `at` p) of
+          [] -> "thing"
+          [x] -> x
+          (_ : xs) -> T.unwords xs
+      dir = compassText $ p `vectorToFrom` bpos b
+  msgAdd MsgDone $ "you" <+> verb <+> "the" <+> s <+> dir
+
+-- | Prompts user to pick a point.
+pickPoint :: MonadClientUI m
+          => Text -> m (Maybe Point)
+pickPoint verb = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
+  let keys = K.escKM
+           : K.leftButtonReleaseKM
+           : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
+  promptAdd0 $ "Where to" <+> verb <> "? [movement key] [pointer]"
+  slides <- reportToSlideshow [K.escKM]
+  km <- getConfirms ColorFull keys slides
+  case K.key km of
+    K.LeftButtonRelease -> do
+      K.PointUI x y <- getsSession spointer
+      let p = Point (x `div` 2) (y - K.mapStartY)
+      if (p == bpos b) then return Nothing
+      else return $ Just p
+    _ -> return $ (shift $ bpos b) <$> (K.handleDir uVi uLeftHand km)
 
 -- * Help
 
