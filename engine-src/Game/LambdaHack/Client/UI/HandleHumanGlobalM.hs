@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , runOnceAheadHuman, moveOnceToXhairHuman
   , runOnceToXhairHuman, continueToXhairHuman
   , moveItemHuman, projectHuman, applyHuman
-  , alterDirHuman, alterWithPointerHuman, closeDirHuman 
+  , alterDirHuman, alterWithPointerHuman, closeDirHuman
   , helpHuman, hintHuman, dashboardHuman, itemMenuHuman, chooseItemMenuHuman
   , mainMenuHuman, mainMenuAutoOnHuman, mainMenuAutoOffHuman
   , settingsMenuHuman, challengesMenuHuman
@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
-  , applyItem, alterTileAtPos, verifyAlters, verifyEscape 
+  , applyItem, alterTileAtPos, verifyAlters, verifyEscape
   , generateMenu, nxtGameMode
 #endif
   ) where
@@ -928,10 +928,10 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 
 -- * AlterDir
 
--- | Ask for a direction and alter a tile in the specified way, if possible.
+-- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => m (FailOrCmd RequestTimed)
-alterDirHuman = pickPoint "alter" >>= alterTileAtPos 
+alterDirHuman = pickPoint "alter" >>= alterTileAtPos
 
 -- | Try to alter a tile using a feature at the given position.
 --
@@ -962,18 +962,18 @@ alterTileAtPos mp = case mp of
         -> failSer AlterUnskilled
        | not (Tile.isSuspect coTileSpeedup t) && alterSkill < alterMinSkill
         -> failSer AlterUnwalked
-       | otherwise  
-        -> if EM.notMember tpos $ lfloor lvl then
-             if not (occupiedBigLvl tpos lvl) && not (occupiedProjLvl tpos lvl)
-             then do
-               verAlters <- verifyAlters (blid b) tpos
-               case verAlters of
-                 Right () -> do
-                   msgAddDone tpos "alter"
-                   return $ Right $ ReqAlter tpos
-                 Left err -> return $ Left err
-             else failSer AlterBlockActor
-           else failSer AlterBlockItem
+       | EM.member tpos $ lfloor lvl
+        -> failSer AlterBlockItem
+       | (occupiedBigLvl tpos lvl) || (occupiedProjLvl tpos lvl)
+        -> failSer AlterBlockActor
+       | otherwise
+        -> do
+           verAlters <- verifyAlters (blid b) tpos
+           case verAlters of
+             Right () -> do
+               msgAddDone tpos "alter"
+               return $ Right (ReqAlter tpos)
+             Left err -> return $ Left err
 
 -- | Verify important effects, such as fleeing the dungeon.
 --
@@ -1025,7 +1025,6 @@ alterWithPointerHuman :: MonadClientUI m
                       => m (FailOrCmd RequestTimed)
 alterWithPointerHuman = do
   COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
-  -- Not @ScreenContent@, because not drawing here.
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y - K.mapStartY)
       tpos = Point px py
@@ -1033,7 +1032,7 @@ alterWithPointerHuman = do
   then alterTileAtPos (Just tpos)
   else alterTileAtPos Nothing
 
--- * CloseDir 
+-- * CloseDir
 
 -- | Close nearby open tile; ask for direction, if there is more than one.
 closeDirHuman :: MonadClientUI m
@@ -1043,35 +1042,47 @@ closeDirHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
-  let vPts = vicinityUnsafe $ bpos b 
+  let vPts = vicinityUnsafe $ bpos b
       openPts = filter (Tile.isClosable cotile . at lvl) vPts
-  case openPts of 
+  case openPts of
     []  -> failSer CloseNothing
     [o] -> closeTileAtPos $ Just o
-    _   -> pickPoint "close" >>= closeTileAtPos 
-   
+    _   -> pickPoint "close" >>= closeTileAtPos
+
 -- | Close tile at given position.
 closeTileAtPos :: MonadClientUI m
                => Maybe Point -> m (FailOrCmd RequestTimed)
 closeTileAtPos mp = case mp of
   Nothing -> failWith "never mind"
   Just p -> do
-    COps{cotile} <- getsState scops
+    COps{cotile, coTileSpeedup} <- getsState scops
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
-    if (p `chessDist` bpos b == 1) then do
-      actorSk <- leaderSkillsClientUI
-      lvl <- getLevel $ blid b
-      let alterSkill = Ability.getSk Ability.SkAlter actorSk
-      if | Tile.isOpenable cotile $ lvl `at` p 
-          -> failSer CloseClosed
-         | alterSkill <= 1
-          -> failSer AlterUnskilled
-         | otherwise 
-          -> do
-             msgAddDone p "close"
-             return $ Right $ ReqAlter p 
-    else failSer CloseDistant 
+    actorSk <- leaderSkillsClientUI
+    lvl <- getLevel $ blid b
+    let alterSkill = Ability.getSk Ability.SkAlter actorSk
+        t = lvl `at` p
+        isOpen = Tile.isClosable cotile t
+        isClosed = Tile.isOpenable cotile t
+        isModifiable = Tile.isModifiable coTileSpeedup t
+    case (isModifiable, isClosed, isOpen) of
+      (False, _, _) -> failSer CloseNothing
+      (True, False, False) -> failSer CloseNonClosable
+      (True, True,  False) -> failSer CloseClosed
+      (True, True,  True) -> failSer TileOpenClosed
+      (True, False, True) ->
+        if | p `chessDist` bpos b > 1
+            -> failSer CloseDistant
+           | alterSkill <= 1
+            -> failSer AlterUnskilled
+           | EM.member p $ lfloor lvl
+            -> failSer AlterBlockItem
+           | occupiedBigLvl p lvl || occupiedProjLvl p lvl
+            -> failSer AlterBlockActor
+           | otherwise
+            -> do
+               msgAddDone p "close"
+               return $ Right (ReqAlter p)
 
 -- | Adds message with proper names.
 msgAddDone :: MonadClientUI m
@@ -1083,11 +1094,11 @@ msgAddDone p verb = do
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let s = case (T.words . TK.tname $ okind cotile $ lvl `at` p) of
-          [] -> "thing"
-          [x] -> x
-          (_ : xs) -> T.unwords xs
+            [] -> "thing"
+            ("open" : xs) -> T.unwords xs
+            xs ->  T.unwords xs
       dir = compassText $ p `vectorToFrom` bpos b
-  msgAdd MsgDone $ "you" <+> verb <+> "the" <+> s <+> dir
+  msgAdd MsgDone $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
 -- | Prompts user to pick a point.
 pickPoint :: MonadClientUI m
@@ -1106,7 +1117,7 @@ pickPoint verb = do
     K.LeftButtonRelease -> do
       K.PointUI x y <- getsSession spointer
       let p = Point (x `div` 2) (y - K.mapStartY)
-      if (p == bpos b) then return Nothing
+      if p == bpos b then return Nothing
       else return $ Just p
     _ -> return $ (shift $ bpos b) <$> (K.handleDir uVi uLeftHand km)
 

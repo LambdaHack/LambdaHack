@@ -47,6 +47,8 @@ data ReqFailure =
   | CloseDistant
   | CloseClosed
   | CloseNothing
+  | CloseNonClosable
+  | TileOpenClosed
   | WaitUnskilled
   | YellUnskilled
   | MoveItemUnskilled
@@ -100,6 +102,8 @@ impossibleReqFailure reqFailure = case reqFailure of
   CloseDistant -> False
   CloseClosed -> False
   CloseNothing -> False
+  CloseNonClosable -> False
+  TileOpenClosed -> True  -- tile is both closed and open
   WaitUnskilled -> False  -- unidentified skill items
   YellUnskilled -> False  -- unidentified skill items
   MoveItemUnskilled -> False  -- unidentified skill items
@@ -147,9 +151,11 @@ showReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
-  CloseDistant -> "trying to close a dinstant object"
+  CloseDistant -> "trying to close a distant position"
   CloseClosed -> "already closed"
-  CloseNothing -> "wasting time on closing nothing"
+  CloseNothing -> "no adjacent terrain can be closed"
+  CloseNonClosable -> "cannot be closed"
+  TileOpenClosed -> "trying to close tile being both open and closed"
   WaitUnskilled -> "too low wait stat"
   YellUnskilled -> "actors unskilled in waiting cannot yell/yawn"
   MoveItemUnskilled -> "too low item moving stat"
