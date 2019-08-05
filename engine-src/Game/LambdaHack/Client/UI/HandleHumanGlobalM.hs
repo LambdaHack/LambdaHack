@@ -931,7 +931,9 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => m (FailOrCmd RequestTimed)
-alterDirHuman = pickPoint "alter" >>= alterTileAtPos
+alterDirHuman = pickPoint "alter" >>= \case
+  Just p -> alterTileAtPos p
+  Nothing -> failWith "never mind"
 
 -- | Try to alter a tile using a feature at the given position.
 --
@@ -940,40 +942,38 @@ alterDirHuman = pickPoint "alter" >>= alterTileAtPos
 -- the action. Consequently, even if all embedded items are recharching,
 -- the time will be wasted and the server will describe the failure in detail.
 alterTileAtPos :: MonadClientUI m
-               => Maybe Point
+               => Point
                -> m (FailOrCmd RequestTimed)
-alterTileAtPos mp = case mp of
-  Nothing -> failWith "never mind"
-  Just tpos -> do
-    COps{coTileSpeedup} <- getsState scops
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    actorSk <- leaderSkillsClientUI
-    lvl <- getLevel $ blid b
-    embeds <- getsState $ getEmbedBag (blid b) tpos
-    let alterSkill = Ability.getSk Ability.SkAlter actorSk
-        t = lvl `at` tpos
-        alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-    if | not (Tile.isModifiable coTileSpeedup t) && EM.null embeds
-        -> failSer AlterNothing
-       | chessDist tpos (bpos b) > 1
-        -> failSer AlterDistant
-       | alterSkill <= 1
-        -> failSer AlterUnskilled
-       | not (Tile.isSuspect coTileSpeedup t) && alterSkill < alterMinSkill
-        -> failSer AlterUnwalked
-       | EM.member tpos $ lfloor lvl
-        -> failSer AlterBlockItem
-       | (occupiedBigLvl tpos lvl) || (occupiedProjLvl tpos lvl)
-        -> failSer AlterBlockActor
-       | otherwise
-        -> do
-           verAlters <- verifyAlters (blid b) tpos
-           case verAlters of
-             Right () -> do
-               msgAddDone tpos "alter"
-               return $ Right (ReqAlter tpos)
-             Left err -> return $ Left err
+alterTileAtPos tpos = do
+  COps{coTileSpeedup} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorSk <- leaderSkillsClientUI
+  lvl <- getLevel $ blid b
+  embeds <- getsState $ getEmbedBag (blid b) tpos
+  let alterSkill = Ability.getSk Ability.SkAlter actorSk
+      t = lvl `at` tpos
+      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+  if | not (Tile.isModifiable coTileSpeedup t) && EM.null embeds
+      -> failSer AlterNothing
+     | chessDist tpos (bpos b) > 1
+      -> failSer AlterDistant
+     | alterSkill <= 1
+      -> failSer AlterUnskilled
+     | not (Tile.isSuspect coTileSpeedup t) && alterSkill < alterMinSkill
+      -> failSer AlterUnwalked
+     | EM.member tpos $ lfloor lvl
+      -> failSer AlterBlockItem
+     | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
+      -> failSer AlterBlockActor
+     | otherwise
+      -> do
+         verAlters <- verifyAlters (blid b) tpos
+         case verAlters of
+           Right () -> do
+             msgAddDone tpos "alter"
+             return $ Right (ReqAlter tpos)
+           Left err -> return $ Left err
 
 -- | Verify important effects, such as fleeing the dungeon.
 --
@@ -1029,8 +1029,8 @@ alterWithPointerHuman = do
   let (px, py) = (x `div` 2, y - K.mapStartY)
       tpos = Point px py
   if px >= 0 && py >= 0 && px < rXmax && py < rYmax
-  then alterTileAtPos (Just tpos)
-  else alterTileAtPos Nothing
+  then alterTileAtPos tpos
+  else failWith "never mind"
 
 -- * CloseDir
 
@@ -1046,43 +1046,43 @@ closeDirHuman = do
       openPts = filter (Tile.isClosable cotile . at lvl) vPts
   case openPts of
     []  -> failSer CloseNothing
-    [o] -> closeTileAtPos $ Just o
-    _   -> pickPoint "close" >>= closeTileAtPos
+    [o] -> closeTileAtPos o
+    _   -> pickPoint "close" >>= \case 
+      Nothing -> failWith "never mind"
+      Just p -> closeTileAtPos p
 
 -- | Close tile at given position.
 closeTileAtPos :: MonadClientUI m
-               => Maybe Point -> m (FailOrCmd RequestTimed)
-closeTileAtPos mp = case mp of
-  Nothing -> failWith "never mind"
-  Just p -> do
-    COps{cotile, coTileSpeedup} <- getsState scops
-    leader <- getLeaderUI
-    b <- getsState $ getActorBody leader
-    actorSk <- leaderSkillsClientUI
-    lvl <- getLevel $ blid b
-    let alterSkill = Ability.getSk Ability.SkAlter actorSk
-        t = lvl `at` p
-        isOpen = Tile.isClosable cotile t
-        isClosed = Tile.isOpenable cotile t
-        isModifiable = Tile.isModifiable coTileSpeedup t
-    case (isModifiable, isClosed, isOpen) of
-      (False, _, _) -> failSer CloseNothing
-      (True, False, False) -> failSer CloseNonClosable
-      (True, True,  False) -> failSer CloseClosed
-      (True, True,  True) -> failSer TileOpenClosed
-      (True, False, True) ->
-        if | p `chessDist` bpos b > 1
-            -> failSer CloseDistant
-           | alterSkill <= 1
-            -> failSer AlterUnskilled
-           | EM.member p $ lfloor lvl
-            -> failSer AlterBlockItem
-           | occupiedBigLvl p lvl || occupiedProjLvl p lvl
-            -> failSer AlterBlockActor
-           | otherwise
-            -> do
-               msgAddDone p "close"
-               return $ Right (ReqAlter p)
+               => Point -> m (FailOrCmd RequestTimed)
+closeTileAtPos tpos = do
+  COps{cotile, coTileSpeedup} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  actorSk <- leaderSkillsClientUI
+  lvl <- getLevel $ blid b
+  let alterSkill = Ability.getSk Ability.SkAlter actorSk
+      t = lvl `at` tpos
+      isOpen = Tile.isClosable cotile t
+      isClosed = Tile.isOpenable cotile t
+      isModifiable = Tile.isModifiable coTileSpeedup t
+  case (isModifiable, isClosed, isOpen) of
+    (False, _, _) -> failSer CloseNothing
+    (True, False, False) -> failSer CloseNonClosable
+    (True, True,  False) -> failSer CloseClosed
+    (True, True,  True) -> error "TileKind content validation"
+    (True, False, True) ->
+      if | tpos `chessDist` bpos b > 1
+          -> failSer CloseDistant
+         | alterSkill <= 1
+          -> failSer AlterUnskilled
+         | EM.member tpos $ lfloor lvl
+          -> failSer AlterBlockItem
+         | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
+          -> failSer AlterBlockActor
+         | otherwise
+          -> do
+             msgAddDone tpos "close"
+             return $ Right (ReqAlter tpos)
 
 -- | Adds message with proper names.
 msgAddDone :: MonadClientUI m
@@ -1093,10 +1093,11 @@ msgAddDone p verb = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
-  let s = case (T.words . TK.tname $ okind cotile $ lvl `at` p) of
+  let tname = TK.tname $ okind cotile $ lvl `at` p
+      s = case T.words tname of
             [] -> "thing"
             ("open" : xs) -> T.unwords xs
-            xs ->  T.unwords xs
+            _ -> tname 
       dir = compassText $ p `vectorToFrom` bpos b
   msgAdd MsgDone $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
@@ -1119,7 +1120,7 @@ pickPoint verb = do
       let p = Point (x `div` 2) (y - K.mapStartY)
       if p == bpos b then return Nothing
       else return $ Just p
-    _ -> return $ (shift $ bpos b) <$> (K.handleDir uVi uLeftHand km)
+    _ -> return $ shift (bpos b) <$> K.handleDir uVi uLeftHand km
 
 -- * Help
 
