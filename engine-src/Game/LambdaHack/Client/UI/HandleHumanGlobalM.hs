@@ -27,8 +27,8 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
   , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
-  , applyItem, alterTileAtPos, verifyAlters, verifyEscape
-  , generateMenu, nxtGameMode
+  , applyItem, alterTileAtPos, verifyAlters, verifyEscape, closeTileAtPos
+  , msgAddDone, pickPoint, generateMenu, nxtGameMode
 #endif
   ) where
 
@@ -1047,7 +1047,7 @@ closeDirHuman = do
   case openPts of
     []  -> failSer CloseNothing
     [o] -> closeTileAtPos o
-    _   -> pickPoint "close" >>= \case 
+    _   -> pickPoint "close" >>= \case
       Nothing -> failWith "never mind"
       Just p -> closeTileAtPos p
 
@@ -1097,7 +1097,7 @@ msgAddDone p verb = do
       s = case T.words tname of
             [] -> "thing"
             ("open" : xs) -> T.unwords xs
-            _ -> tname 
+            _ -> tname
       dir = compassText $ p `vectorToFrom` bpos b
   msgAdd MsgDone $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
