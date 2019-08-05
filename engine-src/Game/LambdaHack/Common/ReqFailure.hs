@@ -98,10 +98,10 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
   AlterNothing -> True
-  CloseDistant -> False
-  CloseClosed -> False
-  CloseNothing -> False
-  CloseNonClosable -> False
+  CloseDistant -> True
+  CloseClosed -> True
+  CloseNothing -> True
+  CloseNonClosable -> True
   WaitUnskilled -> False  -- unidentified skill items
   YellUnskilled -> False  -- unidentified skill items
   MoveItemUnskilled -> False  -- unidentified skill items

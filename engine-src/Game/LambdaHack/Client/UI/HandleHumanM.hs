@@ -88,8 +88,7 @@ cmdAction cmd = case cmd of
   Project -> weaveJust <$> (ReqUITimed <$$> projectHuman)
   Apply -> weaveJust <$> (ReqUITimed <$$> applyHuman)
   AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman)
-  AlterWithPointer -> weaveJust
-                         <$> (ReqUITimed <$$> alterWithPointerHuman)
+  AlterWithPointer -> weaveJust <$> (ReqUITimed <$$> alterWithPointerHuman)
   CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman)
   Help -> helpHuman cmdAction
   Hint -> hintHuman cmdAction
