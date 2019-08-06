@@ -477,8 +477,8 @@ moveSearchAlter run dir = do
            -- Explicit request to examine the terrain.
            promptAdd0 blurb
            failWith $ if alterable
-                      then "potentially alterable"
-                      else "not alterable"
+                      then "potentially modifiable"
+                      else "not modifiable"
        | not alterable -> do
            let name = MU.Text $ TK.tname $ okind cotile t
            failWith $ makePhrase ["there is no point kicking", MU.AW name]
@@ -931,7 +931,7 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m
               => m (FailOrCmd RequestTimed)
-alterDirHuman = pickPoint "alter" >>= \case
+alterDirHuman = pickPoint "modify" >>= \case
   Just p -> alterTileAtPos p
   Nothing -> failWith "never mind"
 
@@ -971,7 +971,7 @@ alterTileAtPos tpos = do
          verAlters <- verifyAlters (blid b) tpos
          case verAlters of
            Right () -> do
-             msgAddDone tpos "alter"
+             msgAddDone tpos "modify"
              return $ Right (ReqAlter tpos)
            Left err -> return $ Left err
 

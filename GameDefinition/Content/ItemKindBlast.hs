@@ -7,12 +7,12 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
-import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Flavour
-import Game.LambdaHack.Content.ItemKind
 
 blasts :: [ItemKind]
 blasts =
@@ -789,7 +789,7 @@ blastBonusStat grp = ItemKind
 blastBonusSkMove = blastBonusStat "more mobile"
 blastBonusSkMelee = blastBonusStat "more combative"
 blastBonusSkDisplace = blastBonusStat "more displacing"
-blastBonusSkAlter = blastBonusStat "more altering"
+blastBonusSkAlter = blastBonusStat "more modifying"
 blastBonusSkWait = blastBonusStat "more patient"
 blastBonusSkMoveItem = blastBonusStat "more tidy"
 blastBonusSkProject = blastBonusStat "more projecting"

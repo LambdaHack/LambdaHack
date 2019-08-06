@@ -148,7 +148,7 @@ slotToSentence es = case es of
   EqpSlotMove -> "Those unskilled in locomotion equip it."
   EqpSlotMelee -> "Those unskilled in close combat equip it."
   EqpSlotDisplace -> "Those unskilled in moving in crowds equip it."
-  EqpSlotAlter -> "Those unskilled in terrain alteration equip it."
+  EqpSlotAlter -> "Those unskilled in terrain modification equip it."
   EqpSlotWait -> "Those unskilled in watchfulness equip it."
   EqpSlotMoveItem -> "Those unskilled in inventory management equip it."
   EqpSlotProject -> "Those unskilled in item flinging equip it."
@@ -170,7 +170,7 @@ skillName :: Skill -> Text
 skillName SkMove = "move stat"
 skillName SkMelee = "melee stat"
 skillName SkDisplace = "displace stat"
-skillName SkAlter = "alter tile stat"
+skillName SkAlter = "modify tile stat"
 skillName SkWait = "wait stat"
 skillName SkMoveItem = "manage items stat"
 skillName SkProject = "fling stat"
@@ -204,7 +204,7 @@ skillDesc skill =
     SkDisplace -> capStatName <+>
       "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
     SkAlter -> capStatName <+>
-      "determines which kinds of terrain can be altered or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
+      "determines which kinds of terrain can be modified or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
     SkWait -> capStatName <+>
       "determines whether the character can wait, brace for combat (potentially blocking the effects of some attacks), sleep and lurk."
     SkMoveItem -> capStatName <+>
@@ -304,7 +304,7 @@ kindAspectToSuffix aspect =
     AddSkill SkMove t -> wrapInParens $ affixDice t <+> "move"
     AddSkill SkMelee t -> wrapInParens $ affixDice t <+> "melee"
     AddSkill SkDisplace t -> wrapInParens $ affixDice t <+> "displace"
-    AddSkill SkAlter t -> wrapInParens $ affixDice t <+> "alter"
+    AddSkill SkAlter t -> wrapInParens $ affixDice t <+> "modify"
     AddSkill SkWait t -> wrapInParens $ affixDice t <+> "wait"
     AddSkill SkMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
     AddSkill SkProject t -> wrapInParens $ affixDice t <+> "fling"

@@ -105,7 +105,7 @@ tmpBonusSkMelee =
 tmpBonusSkDisplace =
   tmpAspects "more displacing" [AddSkill SkDisplace 5]
 tmpBonusSkAlter =
-  tmpAspects "more altering" [AddSkill SkAlter 5]
+  tmpAspects "more modifying" [AddSkill SkAlter 5]
 tmpBonusSkWait =
   tmpAspects "more patient" [AddSkill SkWait 5]
 tmpBonusSkMoveItem =

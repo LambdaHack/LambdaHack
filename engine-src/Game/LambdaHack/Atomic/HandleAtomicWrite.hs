@@ -524,7 +524,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   lvl <- getLevel lid
   let t = lvl `at` p
   if t /= fromTile
-  then atomicFail "tile to alter is different than assumed"
+  then atomicFail "terrain to modify is different than assumed"
   else do
     let adj ts = ts PointArray.// [(p, toTile)]
     updateLevel lid $ updateTile adj
