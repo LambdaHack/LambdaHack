@@ -988,7 +988,7 @@ verifyAlters lid p = do
   getKind <- getsState $ flip getIidKind
   let ks = map getKind $ EM.keys bag
   if | any (any IK.isEffEscape . IK.ieffects) ks -> verifyEscape
-     | null ks && not (Tile.isModifiable coTileSpeedup t) ->
+     | not (Tile.isModifiable coTileSpeedup t) && null ks ->
          failWith "never mind"
      | otherwise -> return $ Right ()
 
@@ -1059,13 +1059,14 @@ closeTileAtPos tpos = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
+  embeds <- getsState $ getEmbedBag (blid b) tpos
   lvl <- getLevel $ blid b
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       t = lvl `at` tpos
       isOpen = Tile.isClosable cotile t
       isClosed = Tile.isOpenable cotile t
-      isModifiable = Tile.isModifiable coTileSpeedup t
-  case (isModifiable, isClosed, isOpen) of
+      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
+  case (alterable, isClosed, isOpen) of
     (False, _, _) -> failSer CloseNothing
     (True, False, False) -> failSer CloseNonClosable
     (True, True,  False) -> failSer CloseClosed
