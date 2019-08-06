@@ -976,21 +976,13 @@ alterTileAtPos tpos = do
            Left err -> return $ Left err
 
 -- | Verify important effects, such as fleeing the dungeon.
---
--- This is contrived for now, the embedded items are not analyzed,
--- but only recognized by name.
 verifyAlters :: MonadClientUI m => LevelId -> Point -> m (FailOrCmd ())
 verifyAlters lid p = do
-  COps{coTileSpeedup} <- getsState scops
-  lvl <- getLevel lid
-  let t = lvl `at` p
   bag <- getsState $ getEmbedBag lid p
   getKind <- getsState $ flip getIidKind
-  let ks = map getKind $ EM.keys bag
-  if | any (any IK.isEffEscape . IK.ieffects) ks -> verifyEscape
-     | not (Tile.isModifiable coTileSpeedup t) && null ks ->
-         failWith "never mind"
-     | otherwise -> return $ Right ()
+  if any (any IK.isEffEscape . IK.ieffects) $ map getKind $ EM.keys bag
+  then verifyEscape
+  else return $ Right ()
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
