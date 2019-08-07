@@ -253,7 +253,8 @@ raid = rogue
   , cactorCoeff   = 250  -- deep level with no kit, so slow spawning
   , cactorFreq    = [("animal", 100)]
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
-  , citemFreq     = [("common item", 100), ("currency", 500)]
+  , citemFreq     = [ ("common item", 100), ("currency", 500)
+                    , ("starting weapon", 100) ]
   , cescapeFreq   = [("escape up", 1)]
   , cstairFreq    = []
   , cdesc         = ""
@@ -276,8 +277,9 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
-  , citemNum      = 5 `d` 6
-  , citemFreq     = [("common item", 100)]
+  , citemNum      = 4 `d` 6
+  , citemFreq     = [ ("common item", 50), ("starting weapon", 100)
+                    , ("torso armor", 400), ("misc armor", 200) ]
   , cplaceFreq    = [("brawl", 1)]
   , cpassable     = True
   , cdefTile      = "brawlSetLit"

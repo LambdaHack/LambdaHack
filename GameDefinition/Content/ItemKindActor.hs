@@ -15,11 +15,11 @@ import Game.LambdaHack.Definition.Flavour
 
 actors :: [ItemKind]
 actors =
-  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush]
+  [warrior, warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, brawler, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush]
   -- LH-specific
   ++ [geyserBoiling, geyserArsenic, geyserSulfur]
 
-warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush :: ItemKind
+warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, ambusher, brawler, soldier, civilian, civilian2, civilian3, civilian4, civilian5, eye, fastEye, nose, elbow, torsor, goldenJackal, griffonVulture, skunk, armadillo, gilaMonster, rattlesnake, hyena, komodoDragon, alligator, rhinoceros, beeSwarm, hornetSwarm, thornbush :: ItemKind
 -- LH-specific
 geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
@@ -114,12 +114,18 @@ ambusher = warrior
                   , ("wooden torch", CStash) ]
   -- , idesc    = ""
   }
-soldier = warrior
+brawler = warrior
+  { iname    = "brawler"
+  , ifreq    = [("brawler hero", 100), ("mobile", 1)]
+  , ikit     = ikit warrior
+               ++ [("starting weapon", CEqp)]
+  -- , idesc    = ""
+  }
+soldier = brawler
   { iname    = "soldier"
   , ifreq    = [("soldier hero", 100), ("mobile", 1)]
-  , ikit     = ikit warrior
-               ++ [ ("starting weapon", CEqp)
-                  , ("explosive", CStash) ]
+  , ikit     = ikit brawler
+               ++ [("explosive", CStash)]
   -- , idesc    = ""
   }
 
