@@ -105,7 +105,8 @@ condInMeleeM lid = do
     Just inM -> return inM
     Nothing -> do
       side <- getsClient sside
-      inM <- getsState $ inMelee side lid
+      actorMaxSkills <- getsState sactorMaxSkills
+      inM <- getsState $ inMelee actorMaxSkills side lid
       modifyClient $ \cli ->
         cli {scondInMelee = EM.insert lid inM condInMelee}
       return inM

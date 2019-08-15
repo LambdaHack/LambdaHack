@@ -471,17 +471,24 @@ armorHurtBonus source target s =
       tMaxSk = getActorMaxSkills target s
   in armorHurtCalculation (bproj sb) sMaxSk tMaxSk
 
--- | Check if any non-dying foe (projectile or not) is adjacent
--- to any of our normal actors (whether they can melee or just need to flee,
--- in which case alert is needed so that they are not slowed down by others).
+-- | Check if any non-dying foe is adjacent to any of our normal actors
+-- and either is a projectile (can fly into them) or can harm them
+-- via melee or can attack from a distance. Otherwise no point meleeing him.
+-- This is regardless of whether our actor can melee or just needs to flee,
+-- in which case alert is needed so that he is not slowed down by others.
 -- This is needed only by AI and computed as lazily as possible.
-inMelee :: FactionId -> LevelId -> State -> Bool
-inMelee !fid !lid s =
+inMelee :: ActorMaxSkills -> FactionId -> LevelId -> State -> Bool
+inMelee !actorMaxSkills !fid !lid s =
   let fact = sfactionD s EM.! fid
-      f !b = blid b == lid
-             && inline isFoe fid fact (bfid b)  -- costly
-             && bhp b > 0  -- uncommon
-      allFoes = filter f $ EM.elems $ sactorD s
+      f (!aid, !b) =
+        let actorMaxSkE = actorMaxSkills EM.! aid
+        in blid b == lid
+           && inline isFoe fid fact (bfid b)  -- costly
+           && (bproj b
+               || Ability.getSk Ability.SkProject actorMaxSkE > 0
+               || actorCanMeleeToHarm actorMaxSkills aid b)
+           && bhp b > 0  -- uncommon
+      allFoes = filter f $ EM.assocs $ sactorD s
       g !b = bfid b == fid
              && blid b == lid
              && not (bproj b)
@@ -498,6 +505,7 @@ inMelee !fid !lid s =
       -- thus increasing allocation a bit, but not by much, because
       -- the set should be rather saturated.
       -- If there are no foes in sight, we don't iterate at all.
-      setFoeVicinity = ES.fromList $ concatMap (vicinityUnsafe . bpos) allFoes
+      setFoeVicinity =
+        ES.fromList $ concatMap (vicinityUnsafe . bpos . snd) allFoes
   in not (ES.null setFoeVicinity)  -- shortcut
      && any (\b -> bpos b `ES.member` setFoeVicinity) allOurs
