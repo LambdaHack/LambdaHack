@@ -569,7 +569,8 @@ harmful discoBenefit iid =
   -- (either they are harmful or they waste eqp space).
   not $ benInEqp $ discoBenefit EM.! iid
 
--- Everybody melees in a pinch, even though some prefer ranged attacks.
+-- If enemy (or even a friend) blocks the way, sometimes melee him
+-- even though normally you wouldn't.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
@@ -616,24 +617,28 @@ meleeBlocker aid = do
     _ -> return reject  -- probably no path to the enemy, if any
 
 -- Everybody melees in a pinch, skills and weapons allowing,
--- even though some prefer ranged attacks.
+-- even though some prefer ranged attacks. However only potentially harmful
+-- enemies or those having loot or moving (can follow and spy) are meleed
+-- (or those that are in the way, see elsewhere).
 meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs b
   let foe (_, b2) = isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
-      adjFoes = map fst $ filter foe adjBigAssocs
+      adjFoes = filter foe adjBigAssocs
   btarget <- getsClient $ getTarget aid
   mtargets <- case btarget of
     Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
       return $! if adjacent (bpos b2) (bpos b) && foe (aid2, b2)
-                then Just [aid2]
+                then Just [(aid2, b2)]
                 else Nothing
     _ -> return Nothing
-  let adjTargets = fromMaybe adjFoes mtargets
-  mels <- mapM (pickWeaponClient aid) adjTargets
+  actorMaxSkills <- getsState sactorMaxSkills
+  let adjTargets = filter (uncurry $ actorWorthMelee actorMaxSkills)
+                   $ fromMaybe adjFoes mtargets
+  mels <- mapM (pickWeaponClient aid . fst) adjTargets
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
 

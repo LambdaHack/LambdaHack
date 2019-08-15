@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
     Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltasSerious, deltasHears, deltaBenign, deltaWasBenign
-  , actorCanMelee, actorCanMeleeToHarm
+  , actorCanMelee, actorCanMeleeToHarm, actorWorthMelee
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -131,6 +131,18 @@ actorCanMeleeToHarm actorMaxSkills aid b =
       condUsableWeapon = bweapon b - bweapBenign b > 0
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
+
+actorWorthMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorWorthMelee actorMaxSkills aid b =
+  let hasLoot = not (EM.null $ beqp b)
+        -- even consider "unreported inventory", for speed and KISS
+      actorMaxSk = actorMaxSkills EM.! aid
+  in bproj b
+     || hasLoot
+     || (Ability.getSk Ability.SkMove actorMaxSk > 0
+         || Ability.getSk Ability.SkProject actorMaxSk > 0
+         || actorCanMeleeToHarm actorMaxSkills aid b)
+        && bhp b > 0
 
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: Ability.Skills -> Speed
