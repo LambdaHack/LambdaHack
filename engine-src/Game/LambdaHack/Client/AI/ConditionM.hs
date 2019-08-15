@@ -95,7 +95,7 @@ condAimEnemyNoMeleeM aid = do
     Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
       actorMaxSkills <- getsState sactorMaxSkills
-      return $ actorCanMelee actorMaxSkills aid2 b2
+      return $ actorCanMeleeToHarm actorMaxSkills aid2 b2
     _ -> return False
 
 condInMeleeM :: MonadClient m => LevelId -> m Bool
@@ -179,7 +179,7 @@ meleeThreatDistList aid s =
         let actorMaxSk = actorMaxSkills EM.! aid2
             nonmoving = Ability.getSk Ability.SkMove actorMaxSk <= 0
         in not (hpTooLow b2 actorMaxSk || nonmoving)
-           && actorCanMelee actorMaxSkills aid2 b2
+           && actorCanMeleeToHarm actorMaxSkills aid2 b2
       allThreats = filter strongActor allAtWar
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   in sortBy (comparing fst) $ map addDist allThreats
