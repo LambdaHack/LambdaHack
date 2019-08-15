@@ -38,12 +38,12 @@ import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.MonadStateRead
+import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.TileKind (TileKind)
-import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
@@ -204,7 +204,7 @@ checkAndRun aid dir = do
                 Nothing -> False
                 Just aid2 -> g aid2 $ actorD EM.! aid2
             g aid2 !b2 = inline isFoe (bfid body) fact (bfid b2)
-                         && actorCanMelee actorMaxSkills aid2 b2
+                         && actorCanMeleeToHarm actorMaxSkills aid2 b2
                          && bhp b2 > 0  -- uncommon
         in any f $ vicinityUnsafe posThere
       projsThere = occupiedProjLvl posThere lvl
