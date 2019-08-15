@@ -450,7 +450,7 @@ condEnoughGearM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let followDoctrine = fdoctrine (gplayer fact)
-                     `elem` [Ability.TFollow, Ability.TFollowNoItems]
+                       `elem` [Ability.TFollow, Ability.TFollowNoItems]
   eqpAssocs <- getsState $ fullAssocs aid [CEqp]
   return $ not followDoctrine  -- keep it lazy
            && (any (IA.checkFlag Ability.Meleeable

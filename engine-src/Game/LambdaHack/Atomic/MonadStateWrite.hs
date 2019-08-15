@@ -193,7 +193,11 @@ insertItemOrgan iid kit aid = do
     b { borgan = upd (borgan b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
                   then bweapon b + 1
-                  else bweapon b }
+                  else bweapon b
+      , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
+                         && IA.checkFlag Ability.Benign arItem
+                      then bweapBenign b + 1
+                      else bweapBenign b }
 
 insertItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 insertItemEqp iid kit aid = do
@@ -204,7 +208,11 @@ insertItemEqp iid kit aid = do
     b { beqp = upd (beqp b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
                   then bweapon b + 1
-                  else bweapon b }
+                  else bweapon b
+      , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
+                         && IA.checkFlag Ability.Benign arItem
+                      then bweapBenign b + 1
+                      else bweapBenign b }
 
 insertItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
 insertItemStash iid kit fid = do
@@ -281,7 +289,11 @@ deleteItemOrgan iid kit aid = do
     b { borgan = rmFromBag kit iid (borgan b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
                   then bweapon b - 1
-                  else bweapon b }
+                  else bweapon b
+      , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
+                         && IA.checkFlag Ability.Benign arItem
+                      then bweapBenign b - 1
+                      else bweapBenign b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
 deleteItemEqp iid kit aid = do
@@ -290,7 +302,11 @@ deleteItemEqp iid kit aid = do
     b { beqp = rmFromBag kit iid (beqp b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
                   then bweapon b - 1
-                  else bweapon b }
+                  else bweapon b
+      , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
+                         && IA.checkFlag Ability.Benign arItem
+                      then bweapBenign b - 1
+                      else bweapBenign b }
 
 deleteItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
 deleteItemStash iid kit fid = do

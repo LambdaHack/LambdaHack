@@ -330,6 +330,7 @@ kindAspectToSuffix aspect =
     SetFlag Durable -> wrapInChevrons "durable"
     SetFlag Equipable -> ""
     SetFlag Meleeable -> ""
+    SetFlag Benign -> ""
     SetFlag Precious -> ""
     SetFlag Blast -> ""
     SetFlag Condition -> ""
@@ -353,6 +354,8 @@ aspectToSentence feat =
     SetFlag Equipable -> Nothing
     SetFlag Meleeable ->
       Just "It is considered for melee strikes by default."
+    SetFlag Benign ->
+      Just "It affects the opponent in a benign way."
     SetFlag Precious -> Just "It seems precious."
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing

@@ -75,6 +75,7 @@ data Flag =
   | Equipable     -- ^ AI and UI flag: consider equipping (may or may not
                   --   have 'EqpSlot', e.g., if the benefit is periodic)
   | Meleeable     -- ^ AI and UI flag: consider meleeing with
+  | Benign        -- ^ AI and UI flag: the item is not meant to harm
   | Precious      -- ^ AI and UI flag: don't risk identifying by use;
                   --   also, can't throw or apply if not calm enough;
                   --   also may be used for UI flavour or AI hints

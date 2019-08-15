@@ -565,7 +565,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
                      | bonusHP /= 0 && not bproj ]
       b = actorTemplate trunkId finalHP calm pos lid fid bproj
       withTrunk =
-        b {bweapon = if IA.checkFlag Ability.Meleeable arItem then 1 else 0}
+        b { bweapon = if IA.checkFlag Ability.Meleeable arItem then 1 else 0
+          , bweapBenign =
+              if IA.checkFlag Ability.Meleeable arItem
+                 && IA.checkFlag Ability.Benign arItem then 1 else 0 }
       bodyTweaked = tweakBody withTrunk
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}

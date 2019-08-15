@@ -3,7 +3,8 @@
 module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
     Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
-  , deltasSerious, deltasHears, deltaBenign, deltaWasBenign, actorCanMelee
+  , deltasSerious, deltasHears, deltaBenign, deltaWasBenign
+  , actorCanMelee, actorCanMeleeToHarm
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -67,6 +68,7 @@ data Actor = Actor
   , borgan      :: ItemBag      -- ^ organs
   , beqp        :: ItemBag      -- ^ personal equipment
   , bweapon     :: Int          -- ^ number of weapons among eqp and organs
+  , bweapBenign :: Int          -- ^ number of benign items among weapons
 
     -- Assorted
   , bwatch      :: Watchfulness -- ^ state of the actor's watchfulness
@@ -123,6 +125,13 @@ actorCanMelee actorMaxSkills aid b =
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
+actorCanMeleeToHarm :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorCanMeleeToHarm actorMaxSkills aid b =
+  let actorMaxSk = actorMaxSkills EM.! aid
+      condUsableWeapon = bweapon b - bweapBenign b > 0
+      canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
+  in condUsableWeapon && canMelee
+
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: Ability.Skills -> Speed
 gearSpeed actorMaxSk = toSpeed $
@@ -137,6 +146,7 @@ actorTemplate btrunk bhp bcalm bpos blid bfid bproj =
       borgan = EM.empty
       beqp = EM.empty
       bweapon = 0
+      bweapBenign = 0
       bwatch = WWatch  -- overriden elsewhere, sometimes
       bhpDelta = ResDelta (0, 0) (0, 0)
       bcalmDelta = ResDelta (0, 0) (0, 0)
