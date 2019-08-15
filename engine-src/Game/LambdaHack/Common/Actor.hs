@@ -140,6 +140,7 @@ actorWorthMelee actorMaxSkills aid b =
   in bproj b
      || hasLoot
      || (Ability.getSk Ability.SkMove actorMaxSk > 0
+         || bwatch b == WWake  -- probably will start moving very soon
          || Ability.getSk Ability.SkProject actorMaxSk > 0
          || actorCanMeleeToHarm actorMaxSkills aid b)
         && bhp b > 0
