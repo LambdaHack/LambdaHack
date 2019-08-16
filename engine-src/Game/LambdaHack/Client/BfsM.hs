@@ -189,7 +189,7 @@ createPath aid tapTgt = do
           _ | null walkable -> TgtAndPath{..}
           [] -> TgtAndPath{..}
           [g] | g == pathGoal -> TgtAndPath{..}
-            -- the exception is when the tile is explicitly targetted
+            -- the exception is when the tile is explicitly targeted
           newGoal : _ ->
             let newTgt = TPoint TBlock (blid b) newGoal
                 newPath = AndPath{ pathSource = bpos b
@@ -258,7 +258,7 @@ furthestKnown aid = do
 -- to find other stairs leading to disconnected areas is not KISS
 -- so we don't do this in AI, so AI is at a disadvantage.
 --
--- If the closest unknown is more than 126 tiles away from the targetting
+-- If the closest unknown is more than 126 tiles away from the targeting
 -- actor, the level will marked as explored. We could complicate the code
 -- and not mark if the unknown is too far as opposed to inaccessible,
 -- but then if it is both too distant and inaccessible, AI would be

@@ -153,15 +153,16 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't target nonmoving actors, including sleeping, unless they have loot
-      -- or can attack at range or already attack ours or are heroes
-      -- or have benign weapons, because nonmoving can't be lured
-      -- nor ambushed nor can chase us.
+      -- Don't target nonmoving actors, including sleeping, because nonmoving
+      -- can't be lured nor ambushed nor can chase us. However, do target
+      -- if they have loot or can attack at range or already attack ours
+      -- or are heroes or have benign weapons. We assume benign weapons
+      -- run out if they are the sole cause of targeting, to avoid stalemate.
       --
       -- This is KISS, but not ideal, because consequently AI doesn't often
       -- fling at nonmoving actors but only at moving ones and so probably
       -- doesn't use ranged combat as much as would be optimal.
-      worthTargetting aidE body = do
+      worthTargeting aidE body = do
         factE <- getsState $ (EM.! bfid body) . sfactionD
         let actorMaxSkE = actorMaxSkills EM.! aidE
             hasLoot = not (EM.null (beqp body))
@@ -207,7 +208,7 @@ computeTarget aid = do
         if adjacent (bpos body) (bpos b)
         then return True  -- target regardless of anything, e.g., to flee
         else do
-          worth <- worthTargetting aidE body
+          worth <- worthTargeting aidE body
           return $! worth && (targetableRanged body || targetableMelee body)
   nearbyFoes <- filterM targetableEnemy allFoes
   discoBenefit <- getsClient sdiscoBenefit
