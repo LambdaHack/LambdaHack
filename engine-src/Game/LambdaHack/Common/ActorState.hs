@@ -481,13 +481,9 @@ inMelee :: ActorMaxSkills -> FactionId -> LevelId -> State -> Bool
 inMelee !actorMaxSkills !fid !lid s =
   let fact = sfactionD s EM.! fid
       f (!aid, !b) =
-        let actorMaxSkE = actorMaxSkills EM.! aid
-        in blid b == lid
-           && inline isFoe fid fact (bfid b)  -- costly
-           && (bproj b
-               || Ability.getSk Ability.SkProject actorMaxSkE > 0
-               || actorCanMeleeToHarm actorMaxSkills aid b)
-           && bhp b > 0  -- uncommon
+        blid b == lid
+        && inline isFoe fid fact (bfid b)  -- costly
+        && actorWorthMelee actorMaxSkills aid b
       allFoes = filter f $ EM.assocs $ sactorD s
       g !b = bfid b == fid
              && blid b == lid

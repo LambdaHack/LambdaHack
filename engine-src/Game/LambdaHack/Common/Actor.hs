@@ -138,8 +138,8 @@ actorWorthMelee actorMaxSkills aid b =
         -- even consider "unreported inventory", for speed and KISS
       actorMaxSk = actorMaxSkills EM.! aid
   in bproj b
-     || hasLoot
-     || (Ability.getSk Ability.SkMove actorMaxSk > 0
+     || (hasLoot
+         || Ability.getSk Ability.SkMove actorMaxSk > 0
          || bwatch b == WWake  -- probably will start moving very soon
          || Ability.getSk Ability.SkProject actorMaxSk > 0
          || actorCanMeleeToHarm actorMaxSkills aid b)
