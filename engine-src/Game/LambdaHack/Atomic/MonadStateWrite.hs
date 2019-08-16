@@ -184,34 +184,36 @@ insertItemActor iid kit aid cstore = case cstore of
     b <- getsState $ getActorBody aid
     insertItemStash iid kit (bfid b)
 
+-- We assume @Meleeable@ and @Benign@ are never secret and so we don't need
+-- to fix the weapon counts when the item is identified later on.
 insertItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
-insertItemOrgan iid kit aid = do
+insertItemOrgan iid kit@(k, _) aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { borgan = upd (borgan b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
-                  then bweapon b + 1
+                  then bweapon b + k
                   else bweapon b
       , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
                          && IA.checkFlag Ability.Benign arItem
-                      then bweapBenign b + 1
+                      then bweapBenign b + k
                       else bweapBenign b }
 
 insertItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
-insertItemEqp iid kit aid = do
+insertItemEqp iid kit@(k, _) aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   let bag = EM.singleton iid kit
       upd = EM.unionWith mergeItemQuant bag
   updateActor aid $ \b ->
     b { beqp = upd (beqp b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
-                  then bweapon b + 1
+                  then bweapon b + k
                   else bweapon b
       , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
                          && IA.checkFlag Ability.Benign arItem
-                      then bweapBenign b + 1
+                      then bweapBenign b + k
                       else bweapBenign b }
 
 insertItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
@@ -283,29 +285,29 @@ deleteItemActor iid kit aid cstore = case cstore of
     deleteItemStash iid kit (bfid b)
 
 deleteItemOrgan :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
-deleteItemOrgan iid kit aid = do
+deleteItemOrgan iid kit@(k, _) aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { borgan = rmFromBag kit iid (borgan b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
-                  then bweapon b - 1
+                  then bweapon b - k
                   else bweapon b
       , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
                          && IA.checkFlag Ability.Benign arItem
-                      then bweapBenign b - 1
+                      then bweapBenign b - k
                       else bweapBenign b }
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> ItemQuant -> ActorId -> m ()
-deleteItemEqp iid kit aid = do
+deleteItemEqp iid kit@(k, _) aid = do
   arItem <- getsState $ aspectRecordFromIid iid
   updateActor aid $ \b ->
     b { beqp = rmFromBag kit iid (beqp b)
       , bweapon = if IA.checkFlag Ability.Meleeable arItem
-                  then bweapon b - 1
+                  then bweapon b - k
                   else bweapon b
       , bweapBenign = if IA.checkFlag Ability.Meleeable arItem
                          && IA.checkFlag Ability.Benign arItem
-                      then bweapBenign b - 1
+                      then bweapBenign b - k
                       else bweapBenign b }
 
 deleteItemStash :: MonadStateWrite m => ItemId -> ItemQuant -> FactionId -> m ()
