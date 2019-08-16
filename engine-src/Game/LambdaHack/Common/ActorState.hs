@@ -483,7 +483,7 @@ inMelee !actorMaxSkills !fid !lid s =
       f (!aid, !b) =
         blid b == lid
         && inline isFoe fid fact (bfid b)  -- costly
-        && actorWorthMelee actorMaxSkills aid b
+        && actorWorthKilling actorMaxSkills aid b
       allFoes = filter f $ EM.assocs $ sactorD s
       g !b = bfid b == fid
              && blid b == lid

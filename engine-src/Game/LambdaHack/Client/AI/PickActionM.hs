@@ -627,7 +627,7 @@ meleeAny aid = do
   adjBigAssocs <- getsState $ adjacentBigAssocs b
   actorMaxSkills <- getsState sactorMaxSkills
   let foe (aid2, b2) = isFoe (bfid b) fact (bfid b2)
-                       && actorWorthMelee actorMaxSkills aid2 b2
+                       && actorWorthKilling actorMaxSkills aid2 b2
       adjFoes = filter foe adjBigAssocs
   btarget <- getsClient $ getTarget aid
   mtargets <- case btarget of
@@ -672,41 +672,45 @@ projectItem aid = do
   seps <- getsClient seps
   case (btarget, mfpos) of
     (_, Just fpos) | adjacent (bpos b) fpos -> return reject
-    (Just TEnemy{}, Just fpos) -> do
-      mnewEps <- makeLine False b fpos seps
-      case mnewEps of
-        Just newEps -> do
-          actorSk <- currentSkillsClient aid
-          let skill = getSk SkProject actorSk
-          -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
-          -- and no actors or obstacles along the path.
-          benList <- condProjectListM skill aid
-          localTime <- getsState $ getLocalTime (blid b)
-          let coeff CGround = 2  -- pickup turn saved
-              coeff COrgan = error $ "" `showFailure` benList
-              coeff CEqp = 1000  -- must hinder currently (or be very potent);
-                                 -- note: not larger, to avoid Int32 overflow
-              coeff CStash = 1
-              fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
-                -- If the item is discharged, neither the kinetic hit nor
-                -- any effects activate, so no point projecting.
-                -- This changes in time, so recharging is not included
-                -- in @condProjectListM@, but checked here, just before fling.
-                let recharged = hasCharge localTime itemFull kit
-                    arItem = aspectRecordFull itemFull
-                    trange = IA.totalRange arItem $ itemKind itemFull
-                    bestRange =
-                      chessDist (bpos b) fpos + 2  -- margin for fleeing
-                    rangeMult =  -- penalize wasted or unsafely low range
-                      10 + max 0 (10 - abs (trange - bestRange))
-                    benR = coeff cstore * benFling
-                in if trange >= chessDist (bpos b) fpos && recharged
-                   then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
-                             , ReqProject fpos newEps iid cstore )
-                   else Nothing
-              benRanged = mapMaybe fRanged benList
-          return $! liftFrequency $ toFreq "projectItem" benRanged
-        _ -> return reject
+    (Just (TEnemy aidE), Just fpos) -> do
+      actorMaxSkills <- getsState sactorMaxSkills
+      body <- getsState $ getActorBody aidE
+      if actorWorthKilling actorMaxSkills aidE body then do
+        mnewEps <- makeLine False b fpos seps
+        case mnewEps of
+          Just newEps -> do
+            actorSk <- currentSkillsClient aid
+            let skill = getSk SkProject actorSk
+            -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
+            -- and no actors or obstacles along the path.
+            benList <- condProjectListM skill aid
+            localTime <- getsState $ getLocalTime (blid b)
+            let coeff CGround = 2  -- pickup turn saved
+                coeff COrgan = error $ "" `showFailure` benList
+                coeff CEqp = 1000  -- must hinder currently (or be very potent);
+                                   -- note: not larger, to avoid Int32 overflow
+                coeff CStash = 1
+                fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
+                  -- If the item is discharged, neither the kinetic hit nor
+                  -- any effects activate, so no point projecting.
+                  -- This changes in time, so recharging is not included
+                  -- in @condProjectListM@, but checked here, just before fling.
+                  let recharged = hasCharge localTime itemFull kit
+                      arItem = aspectRecordFull itemFull
+                      trange = IA.totalRange arItem $ itemKind itemFull
+                      bestRange =
+                        chessDist (bpos b) fpos + 2  -- margin for fleeing
+                      rangeMult =  -- penalize wasted or unsafely low range
+                        10 + max 0 (10 - abs (trange - bestRange))
+                      benR = coeff cstore * benFling
+                  in if trange >= chessDist (bpos b) fpos && recharged
+                     then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
+                               , ReqProject fpos newEps iid cstore )
+                     else Nothing
+                benRanged = mapMaybe fRanged benList
+            return $! liftFrequency $ toFreq "projectItem" benRanged
+          _ -> return reject
+      else return reject
     _ -> return reject
 
 data ApplyItemGroup = ApplyAll | ApplyFirstAid

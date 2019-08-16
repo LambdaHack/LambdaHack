@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
     Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltasSerious, deltasHears, deltaBenign, deltaWasBenign
-  , actorCanMelee, actorCanMeleeToHarm, actorWorthMelee
+  , actorCanMelee, actorCanMeleeToHarm, actorWorthKilling
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -132,8 +132,8 @@ actorCanMeleeToHarm actorMaxSkills aid b =
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
-actorWorthMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
-actorWorthMelee actorMaxSkills aid b =
+actorWorthKilling :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorWorthKilling actorMaxSkills aid b =
   let hasLoot = not (EM.null $ beqp b)
         -- even consider "unreported inventory", for speed and KISS
       moving = Ability.getSk Ability.SkMove actorMaxSk > 0
