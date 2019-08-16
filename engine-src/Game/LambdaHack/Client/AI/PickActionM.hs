@@ -625,7 +625,9 @@ meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs b
-  let foe (_, b2) = isFoe (bfid b) fact (bfid b2) && bhp b2 > 0
+  actorMaxSkills <- getsState sactorMaxSkills
+  let foe (aid2, b2) = isFoe (bfid b) fact (bfid b2)
+                       && actorWorthMelee actorMaxSkills aid2 b2
       adjFoes = filter foe adjBigAssocs
   btarget <- getsClient $ getTarget aid
   mtargets <- case btarget of
@@ -635,9 +637,7 @@ meleeAny aid = do
                 then Just [(aid2, b2)]
                 else Nothing
     _ -> return Nothing
-  actorMaxSkills <- getsState sactorMaxSkills
-  let adjTargets = filter (uncurry $ actorWorthMelee actorMaxSkills)
-                   $ fromMaybe adjFoes mtargets
+  let adjTargets = fromMaybe adjFoes mtargets
   mels <- mapM (pickWeaponClient aid . fst) adjTargets
   let freq = uniformFreq "melee adjacent" $ catMaybes mels
   return $! liftFrequency freq
