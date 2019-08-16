@@ -136,11 +136,12 @@ actorWorthMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
 actorWorthMelee actorMaxSkills aid b =
   let hasLoot = not (EM.null $ beqp b)
         -- even consider "unreported inventory", for speed and KISS
+      moving = Ability.getSk Ability.SkMove actorMaxSk > 0
+               || bwatch b == WWake  -- probably will start moving very soon
       actorMaxSk = actorMaxSkills EM.! aid
   in bproj b
-     || (hasLoot
-         || Ability.getSk Ability.SkMove actorMaxSk > 0
-         || bwatch b == WWake  -- probably will start moving very soon
+     || (moving
+         || hasLoot
          || Ability.getSk Ability.SkProject actorMaxSk > 0
          || actorCanMeleeToHarm actorMaxSkills aid b)
         && bhp b > 0

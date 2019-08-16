@@ -153,15 +153,27 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't target nonmoving actors, including sleeping (unless
-      -- they have loot or attack ours or can attack at range
-      -- or are heroes or have benign weapons),
-      -- because nonmoving can't be lured nor ambushed nor can chase us.
+      -- Don't target nonmoving actors, including sleeping, unless they have loot
+      -- or can attack at range or already attack ours or are heroes
+      -- or have benign weapons, because nonmoving can't be lured
+      -- nor ambushed nor can chase us.
+      --
+      -- This is KISS, but not ideal, because consequently AI doesn't often
+      -- fling at nonmoving actors but only at moving ones and so probably
+      -- doesn't use ranged combat as much as would be optimal.
       worthTargetting aidE body = do
         factE <- getsState $ (EM.! bfid body) . sfactionD
-        let attacksFriends = any (adjacent (bpos body) . bpos) friends
+        let actorMaxSkE = actorMaxSkills EM.! aidE
+            hasLoot = not (EM.null (beqp body))
+              -- even consider "unreported inventory", for speed and KISS
+            moving = Ability.getSk Ability.SkMove actorMaxSkE > 0
+                     || bwatch b == WWake  -- probably will start moving very soon
             isHero = fhasGender (gplayer factE)
-        return $! actorWorthMelee actorMaxSkills aidE body
+            attacksFriends = any (adjacent (bpos body) . bpos) friends
+                             && actorCanMeleeToHarm actorMaxSkills aidE body
+        return $! moving
+                  || hasLoot
+                  || Ability.getSk Ability.SkProject actorMaxSkE > 0
                   || attacksFriends
                   || isHero
                   || bweapBenign body > 0
