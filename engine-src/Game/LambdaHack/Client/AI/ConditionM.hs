@@ -7,7 +7,6 @@ module Game.LambdaHack.Client.AI.ConditionM
   , condInMeleeM
   , condAimCrucialM
   , condTgtNonmovingEnemyM
-  , condAnyFoeAdjM
   , condAdjTriggerableM
   , meleeThreatDistList
   , condBlocksFriendsM
@@ -138,11 +137,6 @@ condTgtNonmovingEnemyM aid = do
       actorMaxSk <- getsState $ getActorMaxSkills enemy
       return $ Ability.getSk Ability.SkMove actorMaxSk <= 0
     _ -> return False
-
--- | Require that any non-dying foe is adjacent, except projectiles
--- that (possibly) explode upon contact.
-condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
-condAnyFoeAdjM aid = getsState $ anyFoeAdj aid
 
 -- | Require the actor stands on or adjacent to a triggerable tile
 -- (e.g., stairs).

@@ -90,7 +90,7 @@ actionStrategy aid retry = do
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
   condAimCrucial <- condAimCrucialM aid
-  condAnyFoeAdj <- condAnyFoeAdjM aid
+  condAnyFoeAdj <- getsState $ anyFoeAdj aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}

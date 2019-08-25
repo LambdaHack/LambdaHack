@@ -440,12 +440,11 @@ anyFoeAdj aid s =
       fact = (EM.! bfid body) . sfactionD $ s
       f !p = case posToBigLvl p lvl of
         Nothing -> False
-        Just aid2 -> g $ getActorBody aid2 s
-      g !b = inline isFoe (bfid body) fact (bfid b)
-             && bhp b > 0  -- uncommon
+        Just aid2 -> g aid2
+      g !aid2 = isFoe (bfid body) fact . bfid $ getActorBody aid2 s
       h !p = case posToProjsLvl p lvl of
         [] -> False
-        aid2 : _ -> g $ getActorBody aid2 s
+        aid2 : _ -> g aid2
   in any (\ p -> f p || h p) $ vicinityUnsafe $ bpos body
 
 adjacentBigAssocs :: Actor -> State -> [(ActorId, Actor)]

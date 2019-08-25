@@ -173,7 +173,7 @@ pickActorToMove maidToAvoid = do
                       && null closeFoes  -- the enemy not visible; a trap!
           -- AI has to be prudent and not lightly waste leader for meleeing,
           -- even if his target is distant
-          actorMeleeing ((aid, _), _) = condAnyFoeAdjM aid
+          actorMeleeing ((aid, _), _) = getsState $ anyFoeAdj aid
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       let (oursFled, oursNotFled) = partition actorFled oursSafe
       (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursNotFled
