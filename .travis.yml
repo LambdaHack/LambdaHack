@@ -255,7 +255,7 @@ script:
     fi
 
   - touch /tmp/teletypetest.log;
-  - "if [[ $GTKVTY != \"brew-sdl2-osx\" ]] ; then ((find dist-newstyle -wholename '*/build/test/test' -exec '{}' ;) || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ $GTKVTY != \"brew-sdl2-osx\" ]] ; then ((find dist-newstyle -wholename */build/test/test -exec {} ;) || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make test-travis2 || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
