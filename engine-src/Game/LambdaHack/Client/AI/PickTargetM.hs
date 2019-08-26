@@ -168,7 +168,7 @@ computeTarget aid = do
             hasLoot = not (EM.null (beqp body))
               -- even consider "unreported inventory", for speed and KISS
             moving = Ability.getSk Ability.SkMove actorMaxSkE > 0
-                     || bwatch b == WWake  -- probably will start moving very soon
+                     || bwatch b == WWake  -- probably will start moving soon
             isHero = fhasGender (gplayer factE)
             attacksFriends = any (adjacent (bpos body) . bpos) friends
                              && actorCanMeleeToHarm actorMaxSkills aidE body
@@ -206,7 +206,8 @@ computeTarget aid = do
         && condCanProject
       targetableEnemy (aidE, body) =
         if adjacent (bpos body) (bpos b)
-        then return True  -- target regardless of anything, e.g., to flee
+        then return $! bweapon body > 0
+               -- target regardless of anything, e.g., to flee
         else do
           worth <- worthTargeting aidE body
           return $! worth && (targetableRanged body || targetableMelee body)
@@ -347,10 +348,11 @@ computeTarget aid = do
         TEnemy a -> do
           body <- getsState $ getActorBody a
           if | (condInMelee  -- fight close foes or nobody at all
+                || bweapon body <= 0  -- possibly uninteresting
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
-               || actorDying body -> -- foe already dying
+               || actorDying body ->  -- foe already dying
                pickNewTarget
              | EM.member aid fleeD -> pickNewTarget
                  -- forget enemy positions to prevent attacking them again soon

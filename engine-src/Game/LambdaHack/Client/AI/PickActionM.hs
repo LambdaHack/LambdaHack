@@ -581,7 +581,8 @@ meleeBlocker aid = do
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=Just AndPath{pathList=q : _, pathGoal} }
-      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy
+      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy,
+                                        -- so not sure if meleeing needed
     Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, pathGoal}} -> do
       -- We prefer the goal position, so that we can kill the foe and enter it,
       -- but we accept any @q@ as well.
@@ -598,9 +599,8 @@ meleeBlocker aid = do
           actorMaxSk2 <- getsState $ getActorMaxSkills aid2
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
-          if | actorDying body2
-               || bproj body2  -- displacing saves a move, so don't melee
-                  && getSk SkDisplace actorSk > 0 ->
+          if | bproj body2  -- displacing saves a move, so don't melee
+               && getSk SkDisplace actorSk > 0 ->
                return reject
              | isFoe (bfid b) fact (bfid body2)
                  -- at war with us, so hit, not displace
