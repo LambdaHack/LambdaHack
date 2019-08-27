@@ -90,7 +90,9 @@ actionStrategy aid retry = do
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
   condAimCrucial <- condAimCrucialM aid
+  actorMaxSkills <- getsState sactorMaxSkills
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
+  condAnyHarmfulFoeAdj <- getsState $ anyHarmfulFoeAdj actorMaxSkills aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
@@ -108,7 +110,6 @@ actionStrategy aid retry = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
   explored <- getsClient sexplored
-  actorMaxSkills <- getsState sactorMaxSkills
   friends <- getsState $ friendRegularList (bfid body) (blid body)
   let anyFriendOnLevelAwake = any (\b ->
         bwatch b /= WSleep && bpos b /= bpos body) friends
@@ -141,6 +142,7 @@ actionStrategy aid retry = do
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
+
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
@@ -171,14 +173,14 @@ actionStrategy aid retry = do
       prefix =
         [ ( [SkApply]
           , applyItem aid ApplyFirstAid
-          , not condAnyFoeAdj && condHpTooLow)
+          , not condAnyHarmfulFoeAdj && condHpTooLow)
         , ( [SkAlter]
           , trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
           , condAdjTriggerable && not condAimEnemyPresent
             && ((condNotCalmEnough || condHpTooLow)  -- flee
-                && condMeleeBad && condThreat 1
+                && condMeleeBad && condAnyHarmfulFoeAdj
                 || (lidExplored || condEnoughGear)  -- explore
                    && not condDesirableFloorItem) )
         , ( [SkDisplace]
@@ -200,7 +202,7 @@ actionStrategy aid retry = do
             -- or from missiles, if hit and enemies are only far away,
             -- can fling at us and we can't well fling at them.
             not condFastThreatAdj
-            && if | condThreat 1 ->
+            && if | condAnyHarmfulFoeAdj ->
                     -- Here we don't check @condInMelee@ because regardless
                     -- of whether our team melees (including the fleeing ones),
                     -- endangered actors should flee from very close foes.
@@ -248,7 +250,7 @@ actionStrategy aid retry = do
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
           , flee aid panicFleeL  -- ultimate panic mode; open tiles, if needed
-          , condAnyFoeAdj )
+          , condAnyHarmfulFoeAdj )
         ]
       -- Order doesn't matter, scaling does.
       -- These are flattened in @stratToFreq@ (taking only the best variant)

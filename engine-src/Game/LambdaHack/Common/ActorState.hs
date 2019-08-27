@@ -17,8 +17,8 @@ module Game.LambdaHack.Common.ActorState
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
-  , lidFromC, posFromC, anyFoeAdj, adjacentBigAssocs, adjacentProjAssocs
-  , armorHurtBonus, inMelee
+  , lidFromC, posFromC, anyFoeAdj, anyHarmfulFoeAdj
+  , adjacentBigAssocs, adjacentProjAssocs, armorHurtBonus, inMelee
   ) where
 
 import Prelude ()
@@ -426,6 +426,22 @@ posFromC (CEmbed _ pos) _ = pos
 posFromC (CActor aid _) s = bpos $ getActorBody aid s
 posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 
+vicinityFoeAdj :: ((ActorId, Actor) -> Bool) -> ActorId -> State -> Bool
+{-# INLINE vicinityFoeAdj #-}
+vicinityFoeAdj predicate aid s =
+  let body = getActorBody aid s
+      lvl = (EM.! blid body) . sdungeon $ s
+      fact = (EM.! bfid body) . sfactionD $ s
+      f !p = case posToBigLvl p lvl of
+        Nothing -> False
+        Just aid2 -> let b2 = getActorBody aid2 s
+                     in isFoe (bfid body) fact (bfid b2)
+                        && predicate (aid2, b2)
+      h !p = case posToProjsLvl p lvl of
+        [] -> False
+        aid2 : _ -> isFoe (bfid body) fact . bfid $ getActorBody aid2 s
+  in any (\p -> f p || h p) $ vicinityUnsafe $ bpos body
+
 -- | Require that any non-dying foe is adjacent. We include even
 -- projectiles that explode when stricken down, because they can be caught
 -- and then they don't explode, so it makes sense to focus on handling them.
@@ -434,18 +450,11 @@ posFromC c@CTrunk{} _ = error $ "" `showFailure` c
 -- if the actor would need to flee instead of meleeing, but fleeing
 -- with *many* projectiles adjacent is a possible waste of a move anyway).
 anyFoeAdj :: ActorId -> State -> Bool
-anyFoeAdj aid s =
-  let body = getActorBody aid s
-      lvl = (EM.! blid body) . sdungeon $ s
-      fact = (EM.! bfid body) . sfactionD $ s
-      f !p = case posToBigLvl p lvl of
-        Nothing -> False
-        Just aid2 -> g aid2
-      g !aid2 = isFoe (bfid body) fact . bfid $ getActorBody aid2 s
-      h !p = case posToProjsLvl p lvl of
-        [] -> False
-        aid2 : _ -> g aid2
-  in any (\ p -> f p || h p) $ vicinityUnsafe $ bpos body
+anyFoeAdj = vicinityFoeAdj (const True)
+
+anyHarmfulFoeAdj :: ActorMaxSkills -> ActorId -> State -> Bool
+anyHarmfulFoeAdj actorMaxSkills =
+  vicinityFoeAdj (\(aid2, b2) -> actorWorthKilling actorMaxSkills aid2 b2)
 
 adjacentBigAssocs :: Actor -> State -> [(ActorId, Actor)]
 {-# INLINE adjacentBigAssocs #-}
