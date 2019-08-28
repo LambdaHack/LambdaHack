@@ -520,6 +520,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
                                  (Vect.V2 (toEnum width) (toEnum boxSize))
         -- Potentially overwrite some of the screen.
         SDL.copy srenderer textTexture Nothing (Just tgtR)
+        SDL.destroyTexture textTexture
         return width
   texture <- readIORef stexture
   SDL.rendererRenderTarget srenderer SDL.$= Just texture
