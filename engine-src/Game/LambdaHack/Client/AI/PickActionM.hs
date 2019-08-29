@@ -110,6 +110,7 @@ actionStrategy aid retry = do
   condFloorWeapon <- condFloorWeaponM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
+  randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
   friends <- getsState $ friendRegularList (bfid body) (blid body)
   let anyFriendOnLevelAwake = any (\b ->
@@ -217,8 +218,12 @@ actionStrategy aid retry = do
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport3 && not condSolo
-                       && not heavilyDistressed
+                    || not condSupport3 && not condSolo && not heavilyDistressed
+                       -- Extra random aggressiveness if can't project.
+                       -- This is hacky; randomness is outside @Strategy@.
+                       && (condCanProject
+                           || Ability.getSk Ability.SkAggression actorMaxSk
+                              < randomAggressionThreshold)
                   | condThreat 5
                     || not condInMelee && condAimEnemyNoMelee && condCanMelee ->
                     -- Too far to flee from melee, too close from ranged,
