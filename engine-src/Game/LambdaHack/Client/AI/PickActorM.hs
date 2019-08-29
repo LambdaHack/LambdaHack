@@ -75,7 +75,7 @@ pickActorToMove maidToAvoid = do
             mtgt <- refreshTarget aidBody
             return (aidBody, mtgt)
       oursTgtRaw <- mapM refresh oursNotSleeping
-      fleeD <- getsClient sfleeD
+      oldFleeD <- getsClient sfleeD
       let goodGeneric (_, Nothing) = Nothing
           goodGeneric (_, Just TgtAndPath{tapPath=Nothing}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
@@ -139,7 +139,9 @@ pickActorToMove maidToAvoid = do
                       not condCanMelee
                       || condManyThreatAdj && not condSupport1 && not condSolo
                     | not condInMelee
-                      && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
+                      && (condThreat 2
+                          || condThreat 5
+                             && (EM.member aid oldFleeD || canFleeFromLight)) ->
                       not condCanMelee
                       || not condSupport3 && not condSolo
                          && not heavilyDistressed
@@ -149,7 +151,7 @@ pickActorToMove maidToAvoid = do
                       not condInMelee
                       && heavilyDistressed
                       -- Different from @PickActionM@:
-                      && not (EM.member aid fleeD)
+                      && not (EM.member aid oldFleeD)
                         -- Make him a leader even if can't delight, etc.
                         -- because he may instead take off light or otherwise
                         -- cope with being pummeled by projectiles.
@@ -157,7 +159,7 @@ pickActorToMove maidToAvoid = do
                         -- to flee, but may cover himself otherwise.
                         -- && (not condCanProject || canFleeFromLight)
               && condCanFlee
-          actorFled ((aid, _), _) = EM.member aid fleeD
+          actorFled ((aid, _), _) = EM.member aid oldFleeD
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=Nothing }) =
             return False

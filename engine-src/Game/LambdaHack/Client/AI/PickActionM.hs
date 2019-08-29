@@ -95,6 +95,7 @@ actionStrategy aid retry = do
   condAnyHarmfulFoeAdj <- getsState $ anyHarmfulFoeAdj actorMaxSkills aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
+  oldFleeD <- getsClient sfleeD
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
@@ -209,7 +210,9 @@ actionStrategy aid retry = do
                     not condCanMelee
                     || condManyThreatAdj && not condSupport1 && not condSolo
                   | not condInMelee
-                    && (condThreat 2 || condThreat 5 && canFleeFromLight) ->
+                    && (condThreat 2
+                        || condThreat 5
+                           && (EM.member aid oldFleeD || canFleeFromLight)) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
