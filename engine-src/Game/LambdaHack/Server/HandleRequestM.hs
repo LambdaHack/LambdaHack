@@ -962,6 +962,7 @@ reqGameRestart aid groupName scurChalSer = do
 -- we shouldn exit the game.
 reqGameDropAndExit :: MonadServerAtomic m => ActorId -> m ()
 reqGameDropAndExit aid = do
+  verifyAssertExplored
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   execUpdAtomic $ UpdQuitFaction
@@ -972,12 +973,26 @@ reqGameDropAndExit aid = do
   modifyServer $ \ser -> ser { sbreakASAP = True
                              , sbreakLoop = True }
 
+verifyAssertExplored :: MonadServer m => m ()
+verifyAssertExplored = do
+  assertExplored <- getsServer $ sassertExplored . soptions
+  case assertExplored of
+    Nothing -> return ()
+    Just lvlN -> do
+      -- Exploration (by any party) verfied via spawning; beware of levels
+      -- with disabled spawning.
+      snumSpawned <- getsServer snumSpawned
+      let !_A = assert (toEnum lvlN `EM.member` snumSpawned
+                        || toEnum (- lvlN) `EM.member` snumSpawned) ()
+      return ()
+
 -- * ReqGameSaveAndExit
 
 -- After we break out of the game loop, we will notice from @Camping@
 -- we shouldn exit the game.
 reqGameSaveAndExit :: MonadServerAtomic m => ActorId -> m ()
 reqGameSaveAndExit aid = do
+  verifyAssertExplored
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD
   execUpdAtomic $ UpdQuitFaction
