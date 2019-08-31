@@ -28,7 +28,7 @@ install:
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
       choco install cabal --version 2.4.1.0
-      choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
+      && choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
       && which cabal
