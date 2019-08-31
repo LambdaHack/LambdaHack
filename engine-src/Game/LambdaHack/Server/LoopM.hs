@@ -653,7 +653,11 @@ restartGame updConn loop mgameMode = do
   soptionsNxt <- getsServer soptionsNxt
   srandom <- getsServer srandom
   s <- gameReset soptionsNxt mgameMode (Just srandom)
-  let optionsBarRngs = soptionsNxt {sdungeonRng = Nothing, smainRng = Nothing}
+  -- Note how we also no longer assert exploration, because there may not be
+  -- enough time left in the debug run to explore again in a new game.
+  let optionsBarRngs = soptionsNxt { sdungeonRng = Nothing
+                                   , smainRng = Nothing
+                                   , sassertExplored = Nothing }
   modifyServer $ \ser -> ser { soptionsNxt = optionsBarRngs
                              , soptions = optionsBarRngs }
   execUpdAtomic $ UpdRestartServer s
