@@ -66,6 +66,7 @@ serverOptionsP = do
   smainRng          <- setMainRngP
   sdumpInitRngs     <- dumpInitRngsP
   sdbgMsgSer        <- dbgMsgSerP
+  sassertExplored   <- assertExploredP
   sgtkFontFamily    <- gtkFontFamilyP
   sdlSquareFontFile <- sdlSquareFontFileP
   sdlPropFontSize   <- sdlPropFontSizeP
@@ -223,6 +224,12 @@ dbgMsgSerP :: Parser Bool
 dbgMsgSerP =
   switch (  long "dbgMsgSer"
          <> help "Emit extra internal server debug messages" )
+
+assertExploredP :: Parser (Maybe Int)
+assertExploredP = optional $ max 1 <$>
+  option auto (  long "assertExplored"
+              <> help "Check that when the session ends, the indicated level has been explored"
+              <> metavar "N" )
 
 gtkFontFamilyP :: Parser (Maybe Text)
 gtkFontFamilyP = optional $ T.pack <$>

@@ -11,9 +11,9 @@ import           Data.Binary
 import qualified System.Random.SplitMix32 as SM
 
 import Game.LambdaHack.Client (ClientOptions (..), defClientOptions)
-import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Definition.Defs
 
 -- | Options that affect the behaviour of the server (including game rules).
 data ServerOptions = ServerOptions
@@ -33,6 +33,7 @@ data ServerOptions = ServerOptions
   , sdumpInitRngs    :: Bool
   , ssavePrefixSer   :: String
   , sdbgMsgSer       :: Bool
+  , sassertExplored  :: Maybe Int
   , sshowItemSamples :: Bool
   , sclientOptions   :: ClientOptions
       -- The client debug inside server debug only holds the client commandline
@@ -67,6 +68,7 @@ instance Binary ServerOptions where
     put scurChalSer
     put ssavePrefixSer
     put sdbgMsgSer
+    put sassertExplored
     put sshowItemSamples
     put sclientOptions
   get = do
@@ -82,6 +84,7 @@ instance Binary ServerOptions where
     scurChalSer <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
+    sassertExplored <- get
     sshowItemSamples <- get
     sclientOptions <- get
     let sdungeonRng = Nothing
@@ -120,6 +123,7 @@ defServerOptions = ServerOptions
   , sdumpInitRngs = False
   , ssavePrefixSer = ""
   , sdbgMsgSer = False
+  , sassertExplored = Nothing
   , sshowItemSamples = False
   , sclientOptions = defClientOptions
   }

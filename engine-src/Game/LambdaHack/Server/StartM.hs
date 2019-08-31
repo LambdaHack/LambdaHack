@@ -430,5 +430,6 @@ applyDebug = do
                                    , sallClear
                                    , sdbgMsgSer
                                    , snewGameSer
+                                   , sassertExplored
                                    , sdumpInitRngs
                                    , sclientOptions }}
