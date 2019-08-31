@@ -27,6 +27,7 @@ install:
   - SET PATH=LambdaHackTheGame;%APPDATA%\cabal\bin;C:\msys64\mingw64\bin;C:\msys64\usr\bin;C:\ProgramData\chocolatey\lib\ghc\tools\ghc-8.4.4\bin;C:\ProgramData\chocolatey\lib\cabal\tools;%PATH%
   - git clone -q --branch=master https://github.com/haskell-game/sdl2
   - IF "true"=="true" (
+      choco install cabal --version 2.4.1.0
       choco install ghc --version 8.4.4 | grep -v '^Extracting the last GHC that works on Windows Vista'
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
@@ -34,7 +35,7 @@ install:
       && cabal --version
       && cabal clean
       && pacman -S -q --noconfirm mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_ttf
-      && cabal new-update
+      && cabal update
       && cabal v1-install --force-reinstalls happy
     )
   - IF "%build64%"=="true" (
@@ -70,7 +71,7 @@ install:
   - ps: if ($env:goal -eq "artifact32and64") { Push-AppveyorArtifact LambdaHack_dev_windows-x86_64.zip -FileName "LambdaHack_$($env:LH_VERSION)-dev-$($env:TIME_STRING)_windows-x86_64.zip" -DeploymentName "win64 binaries archive" }
 
   - IF "%goal%"=="artifact32and64" (
-      cabal test
+      cabal v1-test
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
@@ -92,7 +93,7 @@ install:
       && cabal --version
       && cabal clean
       && pacman -S -q --noconfirm mingw-w64-i686-SDL2 mingw-w64-i686-SDL2_ttf
-      && (IF NOT "true"=="true" cabal new-update)
+      && (IF NOT "true"=="true" cabal update)
       && (IF NOT "true"=="true" cabal v1-install --force-reinstalls happy)
       && cd sdl2
       && cabal v1-install --force-reinstalls -fno-linear
