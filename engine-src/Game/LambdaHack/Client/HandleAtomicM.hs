@@ -4,7 +4,8 @@ module Game.LambdaHack.Client.HandleAtomicM
   , cmdAtomicSemCli
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , invalidateInMelee, wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs
+  , invalidateInMelee, invalidateInMeleeDueToItem
+  , wipeBfsIfItemAffectsSkills, tileChangeAffectsBfs
   , createActor, destroyActor
   , addItemToDiscoBenefit, perception
   , discoverKind, discoverKindAndAspect, coverKind, coverAspectAndKind
@@ -62,9 +63,11 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdCreateItem _ iid _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     addItemToDiscoBenefit iid
+    invalidateInMeleeDueToItem aid store
   UpdCreateItem _ iid _ _ _ -> addItemToDiscoBenefit iid
-  UpdDestroyItem _ _ _ _ (CActor aid store) ->
+  UpdDestroyItem _ _ _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
+    invalidateInMeleeDueToItem aid store
   UpdDestroyItem{} -> return ()
   UpdSpotActor aid b -> do
     ais <- getsState $ getCarriedAssocsAndTrunk b
@@ -73,17 +76,21 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdSpotItem _ iid _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
     addItemToDiscoBenefit iid
+    invalidateInMeleeDueToItem aid store
   UpdSpotItem _ iid _ _ -> addItemToDiscoBenefit iid
-  UpdLoseItem _ _ _ (CActor aid store) ->
+  UpdLoseItem _ _ _ (CActor aid store) -> do
     wipeBfsIfItemAffectsSkills [store] aid
+    invalidateInMeleeDueToItem aid store
   UpdLoseItem{} -> return ()
   UpdSpotItemBag (CActor aid store) bag -> do
     wipeBfsIfItemAffectsSkills [store] aid
     mapM_ addItemToDiscoBenefit $ EM.keys bag
+    invalidateInMeleeDueToItem aid store
   UpdSpotItemBag _ bag -> do
     mapM_ addItemToDiscoBenefit $ EM.keys bag
-  UpdLoseItemBag (CActor aid store) _ ->
+  UpdLoseItemBag (CActor aid store) _ -> do
     wipeBfsIfItemAffectsSkills [store] aid
+    invalidateInMeleeDueToItem aid store
   UpdLoseItemBag{} -> return ()
   UpdMoveActor aid _ _ -> do
     invalidateBfsAid aid
@@ -107,7 +114,10 @@ cmdAtomicSemCli oldState cmd = case cmd of
     tb <- getsState $ getActorBody target
     unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
     invalidateInMelee (blid b)
-  UpdMoveItem _ _ aid s1 s2 -> wipeBfsIfItemAffectsSkills [s1, s2] aid
+  UpdMoveItem _ _ aid s1 s2 -> do
+    wipeBfsIfItemAffectsSkills [s1, s2] aid
+    invalidateInMeleeDueToItem aid s1
+    invalidateInMeleeDueToItem aid s2
   UpdRefillHP{} -> return ()
   UpdRefillCalm{} -> return ()
   UpdTrajectory{} -> return ()
@@ -279,6 +289,12 @@ cmdAtomicSemCli oldState cmd = case cmd of
 invalidateInMelee :: MonadClient m => LevelId -> m ()
 invalidateInMelee lid =
   modifyClient $ \cli -> cli {scondInMelee = EM.delete lid (scondInMelee cli)}
+
+invalidateInMeleeDueToItem :: MonadClient m => ActorId -> CStore -> m ()
+invalidateInMeleeDueToItem aid store =
+  when (store `elem` [CEqp, COrgan]) $ do
+    b <- getsState $ getActorBody aid
+    invalidateInMelee (blid b)
 
 -- For now, only checking the stores.
 wipeBfsIfItemAffectsSkills :: MonadClient m => [CStore] -> ActorId -> m ()
