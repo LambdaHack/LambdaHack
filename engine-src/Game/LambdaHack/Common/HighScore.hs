@@ -41,7 +41,7 @@ data ScoreRecord = ScoreRecord
   , ourVictims   :: EM.EnumMap (ContentId ItemKind) Int  -- ^ allies lost
   , theirVictims :: EM.EnumMap (ContentId ItemKind) Int  -- ^ foes killed
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Ord, Generic)
 
 instance Binary ScoreRecord
 
@@ -143,7 +143,7 @@ getTable = EM.findWithDefault (ScoreTable [])
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
-  fromMaybe (error $ "" `showFailure` (pos, table))
+  fromMaybe (error $ "" `showFailure` pos)
   $ listToMaybe $ drop (pred pos) table
 
 showAward :: Int        -- ^ number of (3-line) scores to be shown
