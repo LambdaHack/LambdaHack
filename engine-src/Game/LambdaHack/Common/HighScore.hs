@@ -128,14 +128,15 @@ showScore tz pos score =
       victims = let nkilled = sum $ EM.elems $ theirVictims score
                     nlost = sum $ EM.elems $ ourVictims score
                 in "killed" <+> tshow nkilled <> ", lost" <+> tshow nlost
-      diff = cdiff $ challenge score
-      diffText | diff == difficultyDefault = ""
-               | otherwise = "difficulty" <+> tshow diff <> ", "
+      -- This may overfill the screen line, but with default fonts
+      -- it's very unlikely and not a big problem in any case.
+      chalText | challenge score == defaultChallenge = ""
+               | otherwise = tshowChallenge (challenge score)
       tturns = makePhrase [MU.CarWs turns "turn"]
   in [ tpos <> "." <+> tscore <+> gplayerName score
        <+> died <> "," <+> victims <> ","
      , "            "
-       <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
+       <> "after" <+> tturns <+> chalText <+> "on" <+> curDate <> "."
      ]
 
 getTable :: ContentId ModeKind -> ScoreDict -> ScoreTable

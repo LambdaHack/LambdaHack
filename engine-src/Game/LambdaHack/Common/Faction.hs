@@ -4,8 +4,8 @@
 module Game.LambdaHack.Common.Faction
   ( FactionDict, Faction(..), Diplomacy(..)
   , Status(..), Challenge(..)
-  , gleader, isHorrorFact, noRunWithMulti, isAIFact, autoDungeonLevel
-  , automatePlayer, isFoe, isFriend
+  , tshowChallenge, gleader, isHorrorFact, noRunWithMulti, isAIFact
+  , autoDungeonLevel, automatePlayer, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
   , defaultChallenge, possibleActorFactions
 #ifdef EXPOSE_INTERNAL
@@ -21,6 +21,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Common.Point
@@ -88,6 +89,15 @@ data Challenge = Challenge
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Challenge
+
+tshowChallenge :: Challenge -> Text
+tshowChallenge Challenge{..} =
+  "("
+  <> T.intercalate ", "
+    (["difficulty" <+> tshow cdiff | cdiff /= difficultyDefault]
+     ++ ["lone wolf" | cwolf]
+     ++ ["cold fish" | cfish])
+  <> ")"
 
 gleader :: Faction -> Maybe ActorId
 gleader = _gleader
