@@ -1500,8 +1500,11 @@ challengesMenuHuman cmdAction = do
       width = if isSquareFont propFont then 42 else 84
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
-      blurb = splitAttrString width $ textToAS
-              $ T.concatMap duplicateEOL $ mdesc gameMode
+      blurb = splitAttrString width $ textToAS $ T.concatMap duplicateEOL
+              $ mdesc gameMode
+                <> if T.null (mnote gameMode)
+                   then "\n"  -- whitespace compensates for the lack of note
+                   else "\n[Note: " <> mnote gameMode <> "]"
   generateMenu cmdAction blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
