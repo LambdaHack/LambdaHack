@@ -438,6 +438,9 @@ displayRespUpdAtomicUI cmd = case cmd of
     recordHistory
     msgAdd MsgWarning $ "New game started in" <+> mname mode <+> "mode."
     msgAdd MsgAdmin $ mdesc mode
+    unless (T.null $ mnote mode) $ do
+      msgAdd MsgWarning "\nNote:"
+      msgAdd MsgAdmin $ mnote mode
     let desc = cdesc $ okind cocave $ lkind lvl
     unless (T.null desc) $ do
       msgLnAdd MsgFocus "You take in your surroundings."
@@ -454,7 +457,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       , "Scarce black motes slowly settle on the ground."
       , "The ground in the immediate area is empty, as if just swiped."
       ]
-    msgLnAdd MsgWarning blurb
+    msgLnAdd MsgDeathThreat blurb
     when (cwolf curChal && not loneMode) $
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
@@ -477,6 +480,9 @@ displayRespUpdAtomicUI cmd = case cmd of
       mode <- getGameMode
       msgAdd MsgAlert $ "Continuing" <+> mname mode <> "."
       msgAdd0 MsgPrompt $ mdesc mode
+      unless (T.null $ mnote mode) $ do
+        msgAdd0 MsgWarning "\nNote:"
+        msgAdd0 MsgAdmin $ mnote mode
       let desc = cdesc $ okind cocave $ lkind lvl
       unless (T.null desc) $ do
         msgLnAdd0 MsgPromptFocus "You remember your surroundings."
