@@ -553,6 +553,7 @@ lookAtItems canSee p aid = do
   is <- getsState $ getFloorBag lidV p
   side <- getsClient sside
   factionD <- getsState sfactionD
+  globalTime <- getsState stime
   let standingOn = p == bpos b && lidV == blid b
       verb = MU.Text $ if | standingOn -> if bhp b > 0
                                           then "stand on"
@@ -570,7 +571,7 @@ lookAtItems canSee p aid = do
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>
   -- to distinguish from a stack of items at a single position.
-  return $! if EM.null is
+  return $! if EM.null is || globalTime == timeZero
             then ""
             else makeSentence [MU.SubjectVerbSg subject verb, object]
 
