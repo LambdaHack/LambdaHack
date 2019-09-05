@@ -282,8 +282,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     when verbose $ do
       side <- getsClient sside
       if fid == side then
-        msgAdd MsgDiplomacy
-               "You set up the shared inventory stash of your team."
+        msgLnAdd MsgDiplomacy
+                 "You set up the shared inventory stash of your team."
       else do
         fact <- getsState $ (EM.! fid) . sfactionD
         let fidName = MU.Text $ gname fact
