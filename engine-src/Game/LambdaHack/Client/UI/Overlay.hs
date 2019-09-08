@@ -18,6 +18,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Char (isSpace)
 import qualified Data.Text as T
 
 import           Game.LambdaHack.Client.UI.Key (PointUI (..))
@@ -59,12 +60,20 @@ infixr 6 <+:>  -- matches Monoid.<>
 nonbreakableRev :: [AttrString]
 nonbreakableRev = map stringToAS ["eht", "a", "na", "ehT", "A", "nA"]
 
+isPrefixOfNonbreakable :: AttrString -> Bool
+isPrefixOfNonbreakable s =
+  let isPrefixOfNb sRev nbRev = case stripPrefix nbRev sRev of
+        Nothing -> False
+        Just [] -> True
+        Just (c : _) -> isSpace $ Color.charFromW32 c
+  in any (isPrefixOfNb s) nonbreakableRev
+
 breakAtSpace :: AttrString -> (AttrString, AttrString)
 breakAtSpace lRev =
   let (pre, post) = break (== Color.spaceAttrW32) lRev
   in case post of
     c : rest | c == Color.spaceAttrW32 ->
-      if any (`isPrefixOf` rest) nonbreakableRev
+      if isPrefixOfNonbreakable rest
       then let (pre2, post2) = breakAtSpace rest
            in (pre ++ c : pre2, post2)
       else (pre, post)
@@ -146,7 +155,7 @@ splitAttrPhrase w (AttrLine xs)
           preRev = reverse pre
           ((ppre, ppost), post) = case postRaw of
             c : rest | c == Color.spaceAttrW32
-                       && not (any (`isPrefixOf` preRev) nonbreakableRev) ->
+                       && not (isPrefixOfNonbreakable preRev) ->
               (([], preRev), rest)
             _ -> (breakAtSpace preRev, postRaw)
           testPost = dropWhileEnd (== Color.spaceAttrW32) ppost
