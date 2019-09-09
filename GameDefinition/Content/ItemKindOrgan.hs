@@ -501,7 +501,7 @@ impressed = armoredSkin
   , iaspects = [ AddSkill SkMaxCalm (-1)  -- to help player notice on HUD
                                           -- and to count as bad condition
                , SetFlag Fragile  -- to announce "no longer" only when
-                                  -- all impressions gone
+                                  -- all copies gone
                , SetFlag Condition ]  -- this is really a condition,
                                       -- just not a timed condition
   , ieffects = [ OnSmash $ verbMsgLess "impressed"
