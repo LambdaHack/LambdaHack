@@ -96,7 +96,9 @@ effectToSuffix detailLevel effect =
       let (preT, postT) =
             if | n == 1 && k == maxBound -> ("one", "kind")
                | n == maxBound && k == maxBound -> ("all", "kinds")
-               | otherwise -> ("", "")
+               | k == 1 || store /= COrgan -> ("", "")
+               | k == maxBound -> ("", "condition fully")
+               | otherwise -> ("", "condition" <+> tshow k <> "-fold")
           (verb, fromStore) =
             if store == COrgan
             then ("nullify", "")
