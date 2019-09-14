@@ -445,7 +445,6 @@ moveSearchAlter run dir = do
   let calmE = calmEnough sb actorMaxSk
       moveSkill = Ability.getSk Ability.SkMove actorSk
       alterSkill = Ability.getSk Ability.SkAlter actorSk
-      applySkill = Ability.getSk Ability.SkApply actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   itemToF <- getsState $ flip itemToFull
@@ -458,8 +457,8 @@ moveSearchAlter run dir = do
       canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
       canApplyEmbed (iid, kit) =
         let itemFull = itemToF iid
-            legal = permittedApply localTime applySkill calmE itemFull kit
-        -- Let even completely unskilled actors trigger basic embeds.
+            -- Let even completely unskilled actors trigger basic embeds.
+            legal = permittedApply localTime maxBound calmE itemFull kit
         in either (const False) (const True) legal
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
       underFeet = tpos == spos  -- if enter and alter, be more permissive
