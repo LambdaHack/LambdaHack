@@ -144,7 +144,7 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a foe supported by teammates"
   AlterUnskilled -> "modify stat is needed to search or exploit terrain"
-  AlterUnwalked -> "too low modify stat to enter or exploit terrain"
+  AlterUnwalked -> "too low modify stat to enter or exploit terrain; find and equip gear that improves the stat or try with a teammate whose skills menu shows a higher stat"
   AlterDistant -> "trying to modify distant terrain"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
