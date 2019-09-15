@@ -49,6 +49,9 @@ The game differs from classic roguelikes in a few ways:
   (turn-based just the same)
 * time passes and factions pursue their goals on a few levels simultaneously,
   while other levels are frozen (but all are persistent)
+* the same laws of simulated nature apply to all factions and all actors,
+  whether player-controlled or AI-controlled; e.g., the same field of view
+  and pathfinding algorithms, skill checks, equipment and item use rules
 * combat mechanics is deterministic; randomness comes from enemies
   and procedurally generated terrain only
 * there's (almost) no HP regeneration; attrition ensures all past (silly)
