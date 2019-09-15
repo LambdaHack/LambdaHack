@@ -237,7 +237,7 @@ including the role of the percentage damage bonus.
 The second, the upper status line describes the current level in relation
 to the party.
 
-    5  Lofty hall    [33% seen] X-hair: dire basilisk    [**__]
+    5  Lofty hall    [33% seen] X-hair: dire basilisk    [__**]
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.

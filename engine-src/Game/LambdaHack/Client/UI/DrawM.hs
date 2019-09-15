@@ -84,8 +84,8 @@ targetDesc mtarget = do
         let percentage =
              100 * bhp b
               `div` xM (max 5 $ Ability.getSk Ability.SkMaxHP actorMaxSk)
-            chs n = "[" <> T.replicate n "*"
-                        <> T.replicate (4 - n) "_" <> "]"
+            chs n = "[" <> T.replicate (4 - n) "_"
+                        <> T.replicate n "*" <> "]"
             stars = chs $ fromEnum $ max 0 $ min 4 $ percentage `div` 20
             hpIndicator = if bfid b == side then Nothing else Just stars
         return (Just $ bname bUI, hpIndicator)
