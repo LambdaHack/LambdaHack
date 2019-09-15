@@ -38,7 +38,7 @@ and literary imagination. To be honest, a lot of imagination is required
 for this modest sample game, but it has its own distinct quirky mood
 and is playable and winnable.
 
-The game differs from classic roguelikes as follows:
+The game differs from classic roguelikes in a few ways:
 
 * player manually controls each member of his squad, though often the best
   tactics is to scout with only one character (a classic roguelike feel)
@@ -87,33 +87,35 @@ to be healed by actors from other factions (this is a significant
 restriction in the long crawl scenario).
 
 The game scenarios, as ordered by their number, lead the player along
-an optional story arc. The first two scenarios also double as tutorials
+an optional story arc. The first two scenarios double as tutorials
 that offer rudimentary preparation for the main game, the long crawl.
 They gradually introduce exploration, stealth and melee combat,
 helping the player develop his repertoire of squad formations
 and move patterns, suitable for different tactical contexts.
-When you die, remember to scan the defeat message of the scenario
+When the player loses, it helps to scan the defeat message of the scenario
 for hints of strategies known to work in the given tactical context.
-Or don't, if you wish to puzzle out the tactics yourself --- there is
-really not so many moving parts to figure, at least in the short scenarios.
-In any case, seriously consider playing the small scenarios alongside
-the main long crawl game mode, or you may miss half the features
-by trying to play the crawl just like a normal roguelike with spare
-heroes (and keep dying horribly).
+Alternatively, the player may postpone reading these messages and instead
+try to puzzle out the tactics himself --- this is not so hard, as there are
+not so many moving parts to figure, at least in the short scenarios.
 
 As soon as the player learns to navigate initial levels of the crawl game
 and starts employing ranged combat, light sources and other means
-of gaining or denying battlefield intel, it makes sense to return
-to the story line and play some of the remaining scenarios, which continue
-the plotline from the tutorial scenarios in the form of flashbacks
+of gaining or denying battlefield intel, and dies a lot, it makes sense
+to return to the remaining short scenarios. They bring forth many extra
+game features and tactics and prevent the player from missing half the fun
+by trying to play the crawl just like a normal roguelike with spare
+heroes (and often fail horribly). The extra scenarios continue
+the plotline from the initial tutorial scenarios in the form of flashbacks
 and eventually lead up to the events that start the main crawl adventure.
 The training they provide is more synthetic in nature, drilling
 a particular skill set, even as exotic as opportunity fire management,
 a frantic race to the exit and big asymmetric battles. The challenge may be,
 accordingly, quite tough.
 
-The main scenario, the long crawl, is the only one that takes place
-in a multi-floor setting, requiring lots of time and focus to beat.
+The main scenario, the long crawl, is the only one that takes
+place in a multi-floor setting, requiring lots of time to beat,
+with focus on resource management, survival, gathering environment
+clues and guessing and countering opponents' strategies.
 The player has a choice of exploring a single level at a time or portions
 of many levels along a single staircase. On some levels he may explore
 and loot with a single scout eluding most opponents. On others he may be
@@ -122,9 +124,9 @@ involving his whole party. On yet others, his best course of action may be
 to defend a key location until the first wave of attackers is broken.
 The size of the game arena calls for strategic thinking, including
 resource management, area denial and unavoidable temporary retreats
-to other levels. Thus, the crawl game mode is the most replayable,
-but even the small scenarios can be refreshed by increasing difficulty
-level and striving to beat a high score.
+to other levels. Thus, the crawl game mode is the most replayable one,
+but even the small scenarios can be refreshed by ramping up difficulty
+settings and striving to beat a high score.
 
 
 Exploring the world
@@ -135,11 +137,13 @@ and each level has a large number of tiles with a particular
 terrain kind on each. The game world is persistent, i.e., every time
 the player visits a level during a single game, its layout is the same.
 
-Terrain is depicted with non-letter and non-digit (except zero `0`)
-characters, the same as items lying on the ground, though blocky
-solid symbol are more likely to be non-passable terrain than items.
-In case of doubt, one of the aiming commands (`/` and keypad `/`, with default
-keybinding) cycles through all visible and remembered items on the level
+Letters and digits on the game screen are likely to represent actors.
+On the other hand, terrain is depicted with non-letter and non-digit
+characters and with zero `0`. Items lying on the ground are represented
+similarly, though blocky solid symbols are likely to be non-passable
+terrain and particularly unlikely to be items. In case of doubt,
+one of the aiming commands (`/` and keypad `/`, with default keybinding)
+cycles through all visible and remembered items on the level
 and another (`*` and keypad `*`, with default keybinding) through all foes.
 Also, pointing at a map position with `MMB` (middle mouse button) displays
 a short description of its contents. The basic terrain kinds are as follows.
@@ -164,13 +168,13 @@ Actors are marked with lower and upper case letters and with
 characters `@` and `1` through `9` (but never `0`). Player-controlled
 heroes are always bright white and by default they are selected
 (e.g., to run together) so they have a blue highlight around their symbol.
-If player manages to control animals or other actors, they retain their
-letter and color, but gain a highlight as well.
+If player manages to take control of animals or other actors, they retain
+their letter and color, but gain a highlight as well.
 
 So, for example, the following map shows a room with a closed door,
 full of actors, connected by a corridor with a room with an open door,
 a pillar, a staircase down and rubble that obscures one of the corners.
-The lower row of the larger room is full of items.
+The lowest row of the larger room is full of items.
 
     ------       ------
     |@19.|       |....&&
@@ -183,7 +187,7 @@ Leading your heroes
 -------------------
 
 The heroes are displayed on the map with bright white color (red if they are
-about to fall down) and symbols `@` and `1` through `9` (never `0`).
+extremely weakened) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party pointman is highlighted on the map with yellow.
 The easiest way to control your team is to run a short distance
 with your pointman using Shift or LMB, switch the pointman with Tab, repeat.
@@ -198,9 +202,10 @@ in its most complex form, looks as follows.
 
 The line starts with the list of party members, with the current pointman
 highlighted in yellow. Most commands involve only the pointman, including
-movement with keyboard's keypad or `LMB` (left mouse button). If more
-heroes are selected (highlighted in blue), they run together
-whenever `:` or `S-LMB` (while holding Shift) over map area is pressed.
+movement with keyboard or keypad or `LMB` (left mouse button).
+If more heroes are selected (highlighted in blue), they run together
+whenever `:` or `S-LMB` (while holding Shift) over map area is pressed,
+though that's usually not a precise enough method of controlling a team.
 Any sleeping hero is highlighted in green and can be woken up
 by yelling with `%`, which also taunts or stresses nearby enemies.
 
@@ -208,18 +213,18 @@ Next on the bottom-most status line is the pointman's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
 and maximum HP (hit points, health). The colon after "Calm" turning
 into a dot signifies that the pointman is in a position without ambient
-illumination, making a stealthy conduct easier. A brace sign instead
+illumination, making stealthy conduct easier. A brace sign instead
 of a colon after "HP" means the pointman is braced for combat
 (see section [Basic Commands](#basic-commands)).
 
 In the second half of the bottom-most status line, the pointman's name
 is shown. Then come damage dice of the pointman's melee weapons and pointman's
 appendages, ordered by their power. The dice of the first recharged weapon,
-the one that would be used in this moment, is adorned with percentage
+the one that is going to be used now, is adorned with percentage
 damage bonus collected from the whole equipment of the pointman.
 If the dice are displayed with upper-case `D` instead of lower-case `d`,
 the weapon has additional effects apart of the usual kinetic damage.
-The nature of the effects can be appraised via the `E`quipment screen.
+The nature of the effects can be appraised via the equipment outfit menu.
 
 Weapon damage and other item properties are displayed using
 the dice notation `xdy`, which denotes `x` rolls of `y`-sided dice.
@@ -251,7 +256,8 @@ For example, this form
 indicates that the party is aiming at an exact spot on the map.
 At the end of the status line comes the length of the shortest
 path from the pointman's position to the spot and the straight-line
-distance between the two points, one that a flung projectile would travel.
+distance between the two points, one that a flung projectile would travel
+if there were no obstacles.
 
 
 Moving and acting
@@ -340,8 +346,8 @@ they are marked with `@` and `1` through `9` in other colours than white.
 When a hero walks and bumps into a monster or a monster attacks
 the hero, melee combat occurs. Hero *running* into and displacing
 a monster (with the `Shift` key and, in case of keypad movement,
-also possibly a `Control` key), or the other way around,
-does not inflict damage, but exchanges places. This gives the opponent
+also possibly a `Control` key), does not involve inflicting a damage,
+but only causes an exchange of places. This gives the opponent
 a free blow, but can improve the tactical situation or aid escape.
 In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.
@@ -357,7 +363,7 @@ capped at 200%) minus the melee armor modifier of the defender
 which means that at least 1% of damage always gets through
 and the damage is always lower than twice the dice roll.
 The current pointman's melee bonus, armor modifier and other detailed
-skills can be viewed via the `#` command.
+stats can be viewed in the skills menu, accessible via the `#` command.
 
 In ranged combat, the projectile is assumed to be attacking the defender
 in melee, using itself as the weapon, with the usual dice and damage bonus.
@@ -372,11 +378,11 @@ In-game detailed item descriptions contain melee and ranged damage estimates.
 They do not take into account damage from effects and, if bonuses are not
 known, guesses are based on averages for the item kind in question.
 The displayed figures are rounded, but the game internally keeps track
-of minute fractions of HP.
+of minute fractions of HP in all calculcations.
 
 The stress of combat drains Calm, gradually limiting viewing radius and,
 if Calm reaches zero and the actor is sufficiently impressed by his foes,
-making him defect and surrender to their domination.
+making him defect and surrender unto their domination.
 Whenever the monster's or hero's hit points reach zero,
 the combatant is incapacitated and promptly dies.
 When the last hero dies or is dominated, the scenario ends in defeat.
@@ -395,8 +401,8 @@ The latter is essential in the rare cases when your non-pointmen
 (via innate skills or rare equipment). Also, if your non-pointman is adjacent
 to more than one enemy, setting his target makes him melee a particular foe.
 
-You can enter the aiming mode with the `*` and keypad '*' keys that
-select enemies or the `/` and keypad '/' keys that cycle among items
+You can enter the aiming mode with the `*` and keypad `*` keys that
+select enemies or the `/` and keypad `/` keys that cycle among items
 on the floor and mark a tile underneath an item. You can move x-hair
 with direction keys and assign a personal target to the pointman
 with a `RET` key (Return, Enter). The details of the shared x-hair mark
@@ -416,7 +422,8 @@ In the latter case, your score is most influenced by the number
 of turns you spent overcoming your foes (the quicker the victory, the better;
 the slower the demise, the better). Bonus points, affected by the number
 of heroes lost, are awarded only if you win. The score is heavily
-modified by the chosen game difficulty, but not by any other challenges.
+modified by the chosen game difficulty, but not by any other challenges
+(which are, however, proudly displayed in the high score listing).
 
 When all your heroes fall, you are going to invariably see a new foolhardy
 party of adventurers clamoring to be led into the unknown perils. They start
