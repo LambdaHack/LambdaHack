@@ -92,7 +92,7 @@ promptMainKeys = do
                | otherwise = "keypad"
       manyTeammates = length ours > 1
       keepTab = if manyTeammates
-                then "Keep TAB of teammates (S-TAB for other levels)."
+                then "Switch to another teammate with Tab (S-Tab for other levels), while all others automatically melee foes, if adjacent, but normally don't chase them."
                 else ""
       describePos = if mmbIsNormal
                     then "Describe map position with MMB."
