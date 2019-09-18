@@ -195,8 +195,23 @@ The currently chosen party pointman is highlighted on the map with yellow.
 The easiest way to control your team is to run a short distance
 with your pointman using Shift or LMB, switch the pointman with Tab, repeat.
 In open terrain, if you keep consistent distance between teammates,
-this resembles the leap frog infantry tactics. For best effects,
+this resembles the leap frog infantry tactics, in which the immobile
+team members cover the movement of the others. For best effects,
 try to end each sprint behind a cover or concealment.
+
+It may be disconcerting that when a single hero gets ambushed and is fighting
+at close quarters, his distant teammates don't jointly come to his rescue.
+Instead they wait for him to come back into the formation so that
+they may assume a frontline and then melee their foes together.
+In fact, the immobile heroes are assumed to be pinned to their positions
+by fear and shock, but also by their imperative to hold formation,
+so as to defend an important position or avoid running piecemeal
+into a trap or into friendly fire or avoid breaking concealment
+and revealing their position or leaving a vantage point from which
+they can observe and relay enemy movement. For untrained teams,
+excluding an unrealistic premise of an off-site leader inspecting
+views from all soldier cameras at once and micromanaging them all,
+simultaneous synchronized squad movement is not feasible.
 
 Pointman hero's attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
