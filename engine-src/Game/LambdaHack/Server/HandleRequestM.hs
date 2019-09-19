@@ -377,7 +377,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
           affectStash source tpos
-          void $ reqAlterFail voluntary source tpos
+          void $ reqAlterFail False voluntary source tpos
             -- possibly alter or activate
        else execFailure source (ReqMove dir) MoveUnskilled
       else
@@ -495,7 +495,8 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- themselves from some projectiles by lowering their apply stat.
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
-        kineticEffectAndDestroy voluntary killer source target iid c mayDestroy
+        kineticEffectAndDestroy False voluntary killer
+                                source target iid c mayDestroy
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do
@@ -579,9 +580,9 @@ reqDisplaceGeneric voluntary source target = do
              affectSmell target
              affectStash source tpos
              affectStash target spos
-             void $ reqAlterFail voluntary source tpos
+             void $ reqAlterFail False voluntary source tpos
                -- possibly alter or activate
-             void $ reqAlterFail voluntary target spos
+             void $ reqAlterFail False voluntary target spos
            _ -> execFailure source req DisplaceMultiple
        else
          -- Client foolishly tries to displace an actor without access.
@@ -592,13 +593,13 @@ reqDisplaceGeneric voluntary source target = do
 -- | Search and/or alter the tile.
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  mfail <- reqAlterFail True source tpos
+  mfail <- reqAlterFail False True source tpos
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
 reqAlterFail :: MonadServerAtomic m
-             => Bool -> ActorId -> Point -> m (Maybe ReqFailure)
-reqAlterFail voluntary source tpos = do
+             => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
+reqAlterFail onCombineOnly voluntary source tpos = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
@@ -636,7 +637,7 @@ reqAlterFail voluntary source tpos = do
             -- to trigger some embeds, knowing that others won't fire.
             execSfxAtomic $ SfxMsgFid (bfid sb)
             $ SfxExpected ("embedded" <+> name) reqFail
-          _ -> itemEffectEmbedded voluntary source lid tpos iid
+          _ -> itemEffectEmbedded onCombineOnly voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
@@ -881,6 +882,13 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
       randomResetTimeout k iid itemFull beforeIt toC
+    when (toCStore == CGround) $
+      void $ reqAlterFail True True aid (bpos b)
+        -- dropping an item engages the item embedded in the ground;
+        -- e.g., ignites grass, if the item is torch;
+        -- note that grass is not ignited by torch spawned on the ground,
+        -- but the next time any item is dropped there, it is ignited,
+        -- which is fine --- the torch must have been wrongly positioned
 
 -- * ReqProject
 

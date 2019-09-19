@@ -82,7 +82,7 @@ applyItem aid iid cstore = do
   -- Treated as if the actor hit himself with the item as a weapon,
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@.
-  kineticEffectAndDestroy True aid aid aid iid c True
+  kineticEffectAndDestroy False True aid aid aid iid c True
 
 applyKineticDamage :: MonadServerAtomic m
                    => ActorId -> ActorId -> ItemId -> m Bool
@@ -155,10 +155,11 @@ cutCalm target = do
 -- Here kinetic damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
 kineticEffectAndDestroy :: MonadServerAtomic m
-                        => Bool -> ActorId -> ActorId -> ActorId
+                        => Bool -> Bool -> ActorId -> ActorId -> ActorId
                         -> ItemId -> Container -> Bool
                         -> m ()
-kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
+kineticEffectAndDestroy onCombineOnly voluntary killer
+                        source target iid c mayDestroy = do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
@@ -185,20 +186,21 @@ kineticEffectAndDestroy voluntary killer source target iid c mayDestroy = do
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         effectAndDestroyAndAddKill
-          voluntary killer False (fst kit <= 1) kineticPerformed
+          onCombineOnly voluntary killer False (fst kit <= 1) kineticPerformed
           source target iid c False itemFull mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
-                           => Bool -> ActorId -> Bool -> Bool
+                           => Bool -> Bool -> ActorId -> Bool -> Bool
                            -> Bool -> ActorId -> ActorId -> ItemId -> Container
                            -> Bool -> ItemFull -> Bool
                            -> m ()
-effectAndDestroyAndAddKill voluntary killer onSmashOnly useAllCopies
-                           kineticPerformed source target iid container
+effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
+                           useAllCopies kineticPerformed
+                           source target iid container
                            periodic itemFull mayDestroy = do
   tbOld <- getsState $ getActorBody target
-  effectAndDestroy onSmashOnly useAllCopies kineticPerformed source target
-                   iid container periodic itemFull mayDestroy
+  effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
+                   source target iid container periodic itemFull mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -212,19 +214,19 @@ effectAndDestroyAndAddKill voluntary killer onSmashOnly useAllCopies
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
 
 effectAndDestroy :: MonadServerAtomic m
-                 => Bool -> Bool -> Bool
+                 => Bool -> Bool -> Bool -> Bool
                  -> ActorId -> ActorId -> ItemId -> Container
                  -> Bool -> ItemFull -> Bool
                  -> m ()
-effectAndDestroy onSmashOnly useAllCopies kineticPerformed
+effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
                  source target iid container periodic
                  itemFull@ItemFull{itemDisco, itemKindId, itemKind}
                  mayDestroy = do
   bag <- getsState $ getContainerBag container
   let (itemK, itemTimer) = bag EM.! iid
-      effs = if onSmashOnly
-             then IK.strengthOnSmash itemKind
-             else IK.ieffects itemKind
+      effs | onSmashOnly = IK.strengthOnSmash itemKind
+           | onCombineOnly = IK.strengthOnCombine itemKind
+           | otherwise = IK.ieffects itemKind
       arItem = case itemDisco of
         ItemDiscoFull itemAspect -> itemAspect
         _ -> error "effectAndDestroy: server ignorant about an item"
@@ -283,6 +285,7 @@ effectAndDestroy onSmashOnly useAllCopies kineticPerformed
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
             || periodic  -- don't spam via fizzled periodic effects
             || bproj sb  -- don't spam, projectiles can be very numerous
+            || onCombineOnly  -- don't spam, embeds may ignore dropping items
             ) $
       execSfxAtomic $ SfxMsgFid (bfid sb) $
         if any IK.forApplyEffect effsManual
@@ -304,8 +307,9 @@ imperishableKit periodic itemFull =
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
 itemEffectEmbedded :: MonadServerAtomic m
-                   => Bool -> ActorId -> LevelId -> Point -> ItemId -> m ()
-itemEffectEmbedded voluntary aid lid tpos iid = do
+                   => Bool -> Bool -> ActorId -> LevelId -> Point -> ItemId
+                   -> m ()
+itemEffectEmbedded onCombineOnly voluntary aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
@@ -313,7 +317,7 @@ itemEffectEmbedded voluntary aid lid tpos iid = do
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@. Information whether this happened due to being pushed
   -- is preserved, but how did the pushing is lost, so we blame the victim.
-  kineticEffectAndDestroy voluntary aid aid aid iid c True
+  kineticEffectAndDestroy onCombineOnly voluntary aid aid aid iid c True
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
@@ -399,6 +403,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
+    IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
     IK.VerbNoLonger _ -> effectVerbNoLonger useAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.Composite l -> effectComposite recursiveCall l
@@ -1365,10 +1370,12 @@ dropCStoreItem verbose store aid b kMax iid (k, _) = do
   if isDestroyed then do
     let -- We don't know if it's voluntary, so we conservatively assume
         -- it is and we blame @aid@.
+        onCombineOnly = False  -- the embed could be combined here, but not @iid@
         voluntary = True
         onSmashOnly = True
         useAllCopies = kMax >= k
-    effectAndDestroyAndAddKill voluntary aid onSmashOnly useAllCopies False
+    effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
+                               useAllCopies False
                                aid aid iid c False itemFull True
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.

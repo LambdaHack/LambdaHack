@@ -374,7 +374,7 @@ applyPeriodicLevel = do
               -- Activate even if effects null or vacuous, to possibly
               -- destroy the item.
               effectAndDestroyAndAddKill
-                True aid False (k <= 1) False
+                False True aid False (k <= 1) False
                 aid aid iid (CActor aid cstore) True itemFull True
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
@@ -526,7 +526,7 @@ advanceTrajectory aid b = do
            -- Will be removed from @strajTime@ in recursive call
            -- to @handleTrajectories@.
            execSfxAtomic $ SfxCollideTile aid tpos
-           mfail <- reqAlterFail False aid tpos
+           mfail <- reqAlterFail False False aid tpos
            lvl2 <- getLevel $ blid b
            case mfail of
              Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos ->

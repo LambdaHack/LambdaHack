@@ -167,6 +167,7 @@ effectToBenefit cops fid factionD eff =
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
+    IK.OnCombine _ -> delta 0  -- not revevant to normal item triggering
     IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.Composite [] -> delta 0

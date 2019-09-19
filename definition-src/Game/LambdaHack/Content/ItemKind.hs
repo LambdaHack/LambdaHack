@@ -4,13 +4,15 @@ module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
-  , strengthOnSmash, getDropOrgans, getMandatoryHideAsFromKind, isEffEscape
-  , isEffEscapeOrAscend, timeoutAspect, onSmashEffect, damageUsefulness
+  , strengthOnCombine, strengthOnSmash, getDropOrgans
+  , getMandatoryHideAsFromKind, isEffEscape, isEffEscapeOrAscend
+  , timeoutAspect, onSmashEffect, onCombineEffect, damageUsefulness
   , verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , boostItemKind, validateSingle, validateAll, validateDups, validateDamage
+  , boostItemKind, onSmashOrCombineEffect
+  , validateSingle, validateAll, validateDups, validateDamage
   , hardwiredItemGroups
 #endif
   ) where
@@ -134,7 +136,9 @@ data Effect =
   | ApplyPerfume          -- ^ remove all smell on the level
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect
-      -- ^ trigger the effect when item smashed (not when applied nor meleed);
+      -- ^ trigger the effect when item smashed (not when applied nor meleed)
+  | OnCombine Effect
+      -- ^ trigger the effect when an item combined with this one
   | Composite [Effect]    -- ^ only fire next effect if previous fully activated
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
@@ -208,11 +212,12 @@ boostItemKind i =
      else i
 
 -- | Whether the effect has a chance of exhibiting any potentially
--- noticeable behaviour, except when the item is destroyed.
+-- noticeable behaviour, except when the item is destroyed or combined.
 -- We assume at least one of @OneOf@ effects must be noticeable.
 forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
+  OnCombine{} -> False
   Composite effs -> any forApplyEffect effs
   VerbNoLonger{} -> False
   VerbMsg{} -> False
@@ -240,9 +245,24 @@ onSmashEffect :: Effect -> Bool
 onSmashEffect OnSmash{} = True
 onSmashEffect _ = False
 
+onCombineEffect :: Effect -> Bool
+onCombineEffect OnCombine{} = True
+onCombineEffect _ = False
+
+onSmashOrCombineEffect :: Effect -> Bool
+onSmashOrCombineEffect OnSmash{} = True
+onSmashOrCombineEffect OnCombine{} = True
+onSmashOrCombineEffect _ = False
+
 strengthOnSmash :: ItemKind -> [Effect]
 strengthOnSmash =
   let f (OnSmash eff) = [eff]
+      f _ = []
+  in concatMap f . ieffects
+
+strengthOnCombine :: ItemKind -> [Effect]
+strengthOnCombine =
+  let f (OnCombine eff) = [eff]
       f _ = []
   in concatMap f . ieffects
 
@@ -364,8 +384,8 @@ validateSingle ik@ItemKind{..} =
           f VerbNoLonger{} = True
           f _ = False
       in validateOnlyOne ieffects "VerbNoLonger" f)  -- may be duped if nested
-  ++ (validateNotNested ieffects "OnSmash" onSmashEffect)
-       -- duplicates permitted
+  ++ (validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect)
+       -- but duplicates permitted
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
@@ -379,6 +399,7 @@ validateNotNested :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
 validateNotNested effs t f =
   let g (OneOf l) = any f l || any g l
       g (OnSmash effect) = f effect || g effect
+      g (OnCombine effect) = f effect || g effect
       g (Composite l) = any f l || any g l
       g _ = False
       ts = filter g effs

@@ -114,9 +114,16 @@ textAllPowers detailLevel skipRecharging
             unSmash eff = eff
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map (ppE . unSmash) smashEffs
+            (combineEffs, noSmashOrCombineEffs) =
+              partition IK.onCombineEffect noSmashEffs
+            unCombine (IK.OnCombine eff) = eff
+            unCombine eff = eff
+            onCombineTs = T.intercalate " " $ filter (not . T.null)
+                        $ map (ppE . unCombine) combineEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
-                             ++ filter (not . T.null) (map ppE noSmashEffs)
+                             ++ filter (not . T.null)
+                                       (map ppE noSmashOrCombineEffs)
             fragile = IA.checkFlag Ability.Fragile arItem
             periodicText =
               if periodic && not skipRecharging && not (T.null rechargingTs)
@@ -134,12 +141,16 @@ textAllPowers detailLevel skipRecharging
                        "(every" <+> reduce_a t <> ":" <+> rechargingTs <> ")"
                      _ -> error $ "" `showFailure` mtimeout
               else ""
-            ppERestEs = if periodic then [periodicText] else map ppE noSmashEffs
+            ppERestEs = if periodic
+                        then [periodicText]
+                        else map ppE noSmashOrCombineEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
                   else ppERestEs ++ map ppA aspects
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
+            onCombine = if T.null onCombineTs then ""
+                        else "(on combine:" <+> onCombineTs <> ")"
             -- Either exact value or dice of @SkHurtMelee@ needed,
             -- never the average, so @arItem@ not consulted directly.
             -- If item not known fully and @SkHurtMelee@ under @Odds@,
@@ -162,7 +173,7 @@ textAllPowers detailLevel skipRecharging
           | detLev > DetailNone && (not periodic || IK.idamage itemKind == 0) ]
           ++ [timeoutText | detLev > DetailNone && not periodic]
           ++ if detLev >= DetailMedium
-             then aes ++ [onSmash | detLev >= DetailAll]
+             then aes ++ if detLev >= DetailAll then [onSmash, onCombine] else []
              else []
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills

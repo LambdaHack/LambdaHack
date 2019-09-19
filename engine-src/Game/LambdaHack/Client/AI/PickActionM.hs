@@ -144,7 +144,6 @@ actionStrategy aid retry = do
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
-
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2

@@ -1362,6 +1362,7 @@ displayRespSfxAtomicUI sfx = case sfx of
                  "The fragrance quells all scents in the vicinity."
         IK.OneOf{} -> return ()
         IK.OnSmash{} -> error $ "" `showFailure` sfx
+        IK.OnCombine{} -> error $ "" `showFailure` sfx
         IK.VerbNoLonger t -> aidVerbMU MsgNoLonger aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
         IK.Composite{} -> error $ "" `showFailure` sfx

@@ -122,6 +122,7 @@ effectToSuffix detailLevel effect =
          then header <+> "[" <> marvels <> "]"
          else header  -- of no wonders :)
     OnSmash _ -> ""  -- printed inside a separate section
+    OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     Composite effs -> T.intercalate " and then "
