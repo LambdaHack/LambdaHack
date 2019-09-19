@@ -92,6 +92,7 @@ effectToSuffix detailLevel effect =
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"
+    DestroyItem{} -> "of loss"
     DropItem n k store grp ->
       let (preT, postT) =
             if | n == 1 && k == maxBound -> ("one", "kind")

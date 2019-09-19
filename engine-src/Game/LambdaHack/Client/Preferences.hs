@@ -131,6 +131,7 @@ effectToBenefit cops fid factionD eff =
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fid factionD
       in (total / fromIntegral count, 0)
+    IK.DestroyItem{} -> delta (-10)  -- potentially harmful
     IK.DropItem _ _ COrgan "condition" ->
       delta 30  -- save for curing own bad conditions
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary

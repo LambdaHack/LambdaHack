@@ -1318,6 +1318,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           aidVerbMU MsgEffectMinor aid "blink"
         IK.Teleport{} -> aidVerbMU MsgEffect aid "teleport"
         IK.CreateItem{} -> return ()
+        IK.DestroyItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
         IK.PolyItem -> do

@@ -110,6 +110,8 @@ data Effect =
   | CreateItem CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given
       --   random timer
+  | DestroyItem Int Int CStore (GroupName ItemKind)
+      -- ^ destroy some items of the group from the store; see below about Ints
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
       --   the first integer says how many item kinds to drop, the second,
@@ -268,7 +270,8 @@ strengthOnCombine =
 
 getDropOrgans :: ItemKind -> [GroupName ItemKind]
 getDropOrgans =
-  let f (DropItem _ _ COrgan grp) = [grp]
+  let f (DestroyItem _ _ COrgan grp) = [grp]
+      f (DropItem _ _ COrgan grp) = [grp]
       f Impress = ["impressed"]
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
       f (Composite l) = concatMap f l  -- not certain, but accepted
@@ -438,6 +441,7 @@ validateAll content coitem =
       g (Explode grp) = Just grp
       g (Summon grp _) = Just grp
       g (CreateItem _ grp _) = Just grp
+      g (DestroyItem _ _ _ grp) = Just grp
       g (DropItem _ _ _ grp) = Just grp
       g _ = Nothing
       missingEffectGroups =

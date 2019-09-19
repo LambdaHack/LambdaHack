@@ -14,9 +14,9 @@ module Game.LambdaHack.Server.HandleEffectM
   , dominateFid, effectImpress, effectPutToSleep, effectYell, effectSummon
   , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
   , effectParalyze, paralyze, effectParalyzeInWater, effectInsertMove
-  , effectTeleport, effectCreateItem, effectDropItem, dropCStoreItem
-  , effectPolyItem, effectRerollItem, effectDupItem, effectIdentify
-  , identifyIid, effectDetect, effectDetectX, effectSendFlying
+  , effectTeleport, effectCreateItem, effectDestroyItem, dropCStoreItem
+  , effectDropItem, effectPolyItem, effectRerollItem, effectDupItem
+  , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectVerbNoLonger, effectVerbMsg, effectComposite
 #endif
@@ -387,6 +387,8 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
       effectCreateItem (Just $ bfid sb) Nothing source target store grp tim
+    IK.DestroyItem n k store grp ->
+      effectDestroyItem execSfx iid n k store grp target
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
     IK.PolyItem -> effectPolyItem execSfx iid target
     IK.RerollItem -> effectRerollItem execSfx iid target
@@ -697,7 +699,7 @@ dominateFid fid source target = do
 -- | Drop all actor's items.
 dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b =
-  mapActorCStore_ CEqp (dropCStoreItem False CEqp aid b maxBound) b
+  mapActorCStore_ CEqp (dropCStoreItem False False CEqp aid b maxBound) b
 
 -- ** Impress
 
@@ -1299,10 +1301,87 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
           execUpdAtomic $ UpdTimeItem iid c afterIt newIt
       return UseUp
 
+-- ** DestroyItem
+
+-- | Make the target actor destroy items in a store from the given group.
+-- The item that caused the effect itself is immune (any copies).
+effectDestroyItem :: MonadServerAtomic m
+               => m () -> ItemId -> Int -> Int -> CStore
+               -> GroupName ItemKind -> ActorId
+               -> m UseResult
+effectDestroyItem execSfx iidId ngroup kcopy store grp target = do
+  tb <- getsState $ getActorBody target
+  isRaw <- allGroupItems store grp target
+  let is = filter ((/= iidId) . fst) isRaw
+  if | bproj tb || null is -> return UseDud
+     | otherwise -> do
+       execSfx
+       mapM_ (uncurry (dropCStoreItem True True store target tb kcopy))
+             (take ngroup is)
+       return UseUp
+
+-- | Drop a single actor's item (though possibly multiple copies).
+-- Note that if there are multiple copies, at most one explodes
+-- to avoid excessive carnage and UI clutter (let's say,
+-- the multiple explosions interfere with each other or perhaps
+-- larger quantities of explosives tend to be packaged more safely).
+-- Note also that @OnSmash@ effects are activated even if item discharged.
+dropCStoreItem :: MonadServerAtomic m
+               => Bool -> Bool -> CStore -> ActorId -> Actor -> Int
+               -> ItemId -> ItemQuant
+               -> m ()
+dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
+  itemFull <- getsState $ itemToFull iid
+  let arItem = aspectRecordFull itemFull
+      c = CActor aid store
+      fragile = IA.checkFlag Ability.Fragile arItem
+      durable = IA.checkFlag Ability.Durable arItem
+      isDestroyed = destroy
+                    || bproj b && (bhp b <= 0 && not durable || fragile)
+                    || IA.checkFlag Ability.Condition arItem
+  if isDestroyed then do
+    let -- We don't know if it's voluntary, so we conservatively assume
+        -- it is and we blame @aid@.
+        onCombineOnly = False  -- the embed could be combined here, but not @iid@
+        voluntary = True
+        onSmashOnly = True
+        useAllCopies = kMax >= k
+    effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
+                               useAllCopies False
+                               aid aid iid c False itemFull True
+    -- One copy was destroyed (or none if the item was discharged),
+    -- so let's mop up.
+    bag <- getsState $ getContainerBag c
+    maybe (return ())
+          (\(k1, it) ->
+             let destroyedSoFar = k - k1
+                 k2 = min (kMax - destroyedSoFar) k1
+                 kit2 = (k2, take k2 it)
+             in when (k2 > 0)
+                $ execUpdAtomic $ UpdLoseItem False iid kit2 c)
+          (EM.lookup iid bag)
+  else do
+    cDrop <- pickDroppable False aid b  -- drop over fog, etc.
+    mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
+    mapM_ execUpdAtomic mvCmd
+
+pickDroppable :: MonadStateRead m => Bool -> ActorId -> Actor -> m Container
+pickDroppable respectNoItem aid b = do
+  cops@COps{coTileSpeedup} <- getsState scops
+  lvl <- getLevel (blid b)
+  let validTile t = not (respectNoItem && Tile.isNoItem coTileSpeedup t)
+  if validTile $ lvl `at` bpos b
+  then return $! CActor aid CGround
+  else do
+    let ps = nearbyFreePoints cops lvl validTile (bpos b)
+    return $! case filter (adjacent $ bpos b) $ take 8 ps of
+      [] -> CActor aid CGround  -- fallback; still correct, though not ideal
+      pos : _ -> CFloor (blid b) pos
+
 -- ** DropItem
 
 -- | Make the target actor drop items in a store from the given group.
--- The item itself is immune (any copies).
+-- The item that caused the effect itself is immune (any copies).
 effectDropItem :: MonadServerAtomic m
                => m () -> ItemId -> Int -> Int -> CStore
                -> GroupName ItemKind -> ActorId
@@ -1345,66 +1424,9 @@ specific than the two general abilities described as desirable above
        return UseUp
      | otherwise -> do
        unless (store == COrgan) execSfx
-       mapM_ (uncurry (dropCStoreItem True store target tb kcopy))
+       mapM_ (uncurry (dropCStoreItem True False store target tb kcopy))
              (take ngroup is)
        return UseUp
-
--- | Drop a single actor's item (though possibly multiple copies).
--- Note that if there are multiple copies, at most one explodes
--- to avoid excessive carnage and UI clutter (let's say,
--- the multiple explosions interfere with each other or perhaps
--- larger quantities of explosives tend to be packaged more safely).
--- Note also that @OnSmash@ effects are activated even if item discharged.
-dropCStoreItem :: MonadServerAtomic m
-               => Bool -> CStore -> ActorId -> Actor -> Int
-               -> ItemId -> ItemQuant
-               -> m ()
-dropCStoreItem verbose store aid b kMax iid (k, _) = do
-  itemFull <- getsState $ itemToFull iid
-  let arItem = aspectRecordFull itemFull
-      c = CActor aid store
-      fragile = IA.checkFlag Ability.Fragile arItem
-      durable = IA.checkFlag Ability.Durable arItem
-      isDestroyed = bproj b && (bhp b <= 0 && not durable || fragile)
-                    || IA.checkFlag Ability.Condition arItem
-  if isDestroyed then do
-    let -- We don't know if it's voluntary, so we conservatively assume
-        -- it is and we blame @aid@.
-        onCombineOnly = False  -- the embed could be combined here, but not @iid@
-        voluntary = True
-        onSmashOnly = True
-        useAllCopies = kMax >= k
-    effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
-                               useAllCopies False
-                               aid aid iid c False itemFull True
-    -- One copy was destroyed (or none if the item was discharged),
-    -- so let's mop up.
-    bag <- getsState $ getContainerBag c
-    maybe (return ())
-          (\(k1, it) ->
-             let destroyedSoFar = k - k1
-                 k2 = min (kMax - destroyedSoFar) k1
-                 kit2 = (k2, take k2 it)
-             in when (k2 > 0)
-                $ execUpdAtomic $ UpdLoseItem False iid kit2 c)
-          (EM.lookup iid bag)
-  else do
-    cDrop <- pickDroppable False aid b  -- drop over fog, etc.
-    mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
-    mapM_ execUpdAtomic mvCmd
-
-pickDroppable :: MonadStateRead m => Bool -> ActorId -> Actor -> m Container
-pickDroppable respectNoItem aid b = do
-  cops@COps{coTileSpeedup} <- getsState scops
-  lvl <- getLevel (blid b)
-  let validTile t = not (respectNoItem && Tile.isNoItem coTileSpeedup t)
-  if validTile $ lvl `at` bpos b
-  then return $! CActor aid CGround
-  else do
-    let ps = nearbyFreePoints cops lvl validTile (bpos b)
-    return $! case filter (adjacent $ bpos b) $ take 8 ps of
-      [] -> CActor aid CGround  -- fallback; still correct, though not ideal
-      pos : _ -> CFloor (blid b) pos
 
 -- ** PolyItem
 
@@ -1787,7 +1809,8 @@ effectDropBestWeapon execSfx iidId target = do
       (_, (_, (iid, _))) : _ -> do
         execSfx
         let kit = beqp tb EM.! iid
-        dropCStoreItem True CEqp target tb 1 iid kit  -- not the whole stack
+        dropCStoreItem True False CEqp target tb 1 iid kit
+          -- not the whole stack
         return UseUp
       [] ->
         return UseDud
