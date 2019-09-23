@@ -57,7 +57,7 @@ before_build:
   - cabal --version
   - cabal %CABOPTS% v2-update
   - cabal %CABOPTS% v2-install happy
-  - cabal %CABOPTS% v2-install sdl2 -fno-linear
+  - cabal %CABOPTS% v2-install sdl2 -fno-linear --lib
 
 build_script:
   - make build-binary-common
