@@ -2,3 +2,8 @@ packages: ./
 
 package sdl2
     flags: +no-linear
+
+source-repository-package
+    type: git
+    location: https://github.com/haskell-game/sdl2
+    tag: master
