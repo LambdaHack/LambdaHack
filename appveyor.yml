@@ -48,8 +48,8 @@ install:
   - refreshenv
   - mkdir %Deps%
   - set PATH=%Deps%;%PATH%
-  - mingw64-pkg install SDL2 $true
-  - mingw64-pkg install SDL2_ttf $true
+  - mingw64-pkg install "\"SDL2 --noconfirm\""
+  - mingw64-pkg install "\"SDL2_ttf --noconfirm\""
 
 before_build:
   - ghc --version
