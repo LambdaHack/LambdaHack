@@ -2,12 +2,12 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
+  ( UseResult(..)
+  , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllItems, pickDroppable
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , UseResult(..)
   , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
   , itemEffectDisco, effectSem
   , effectBurn, effectExplode, effectRefillHP, effectRefillCalm, effectDominate
