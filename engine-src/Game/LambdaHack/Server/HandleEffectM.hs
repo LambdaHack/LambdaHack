@@ -1322,9 +1322,11 @@ effectDestroyItem execSfx iidId ngroup kcopy store grp target = do
   if | bproj tb || null is -> return UseDud
      | otherwise -> do
        execSfx
-       mapM_ (uncurry (dropCStoreItem True True store target tb kcopy))
-             (take ngroup is)
-       return UseUp
+       urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
+                   (take ngroup is)
+       return $! case urs of
+         [] -> UseDud  -- there was no effects
+         _ -> maximum urs
 
 -- | Drop a single actor's item (though possibly multiple copies).
 -- Note that if there are multiple copies, at most one explodes
@@ -1335,7 +1337,7 @@ effectDestroyItem execSfx iidId ngroup kcopy store grp target = do
 dropCStoreItem :: MonadServerAtomic m
                => Bool -> Bool -> CStore -> ActorId -> Actor -> Int
                -> ItemId -> ItemQuant
-               -> m ()
+               -> m UseResult
 dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
@@ -1358,18 +1360,20 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
-    maybe (return ())
+    maybe (return UseDud)
           (\(k1, it) ->
              let destroyedSoFar = k - k1
                  k2 = min (kMax - destroyedSoFar) k1
                  kit2 = (k2, take k2 it)
-             in when (k2 > 0)
-                $ execUpdAtomic $ UpdLoseItem False iid kit2 c)
+             in if k2 <= 0 then return UseDud else do
+               execUpdAtomic $ UpdLoseItem False iid kit2 c
+               return UseUp)
           (EM.lookup iid bag)
   else do
     cDrop <- pickDroppable False aid b  -- drop over fog, etc.
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
     mapM_ execUpdAtomic mvCmd
+    return UseUp
 
 pickDroppable :: MonadStateRead m => Bool -> ActorId -> Actor -> m Container
 pickDroppable respectNoItem aid b = do
@@ -1430,9 +1434,11 @@ specific than the two general abilities described as desirable above
        return UseUp
      | otherwise -> do
        unless (store == COrgan) execSfx
-       mapM_ (uncurry (dropCStoreItem True False store target tb kcopy))
-             (take ngroup is)
-       return UseUp
+       urs <- mapM (uncurry (dropCStoreItem True False store target tb kcopy))
+                   (take ngroup is)
+       return $! case urs of
+         [] -> UseDud  -- there was no effects
+         _ -> maximum urs
 
 -- ** PolyItem
 
@@ -1817,7 +1823,6 @@ effectDropBestWeapon execSfx iidId target = do
         let kit = beqp tb EM.! iid
         dropCStoreItem True False CEqp target tb 1 iid kit
           -- not the whole stack
-        return UseUp
       [] ->
         return UseDud
 
