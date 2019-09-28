@@ -141,7 +141,7 @@ data Effect =
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | OnCombine Effect
       -- ^ trigger the effect when an item combined with this one
-  | Composite [Effect]    -- ^ only fire next effect if previous fully activated
+  | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
       --   text as verb is emitted when the activation causes item to expire;
@@ -220,7 +220,7 @@ forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
   OnCombine{} -> False
-  Composite effs -> any forApplyEffect effs
+  AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   VerbNoLonger{} -> False
   VerbMsg{} -> False
   ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
@@ -229,14 +229,15 @@ forApplyEffect eff = case eff of
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
 isEffEscape (OneOf l) = any isEffEscape l
-isEffEscape (Composite l) = any isEffEscape l
+isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
 isEffEscape _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True
 isEffEscapeOrAscend Escape{} = True
 isEffEscapeOrAscend (OneOf l) = any isEffEscapeOrAscend l
-isEffEscapeOrAscend (Composite l) = any isEffEscapeOrAscend l
+isEffEscapeOrAscend (AndEffect eff1 eff2) =
+  isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend _ = False
 
 timeoutAspect :: Aspect -> Bool
@@ -274,7 +275,7 @@ getDropOrgans =
       f (DropItem _ _ COrgan grp) = [grp]
       f Impress = ["impressed"]
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
-      f (Composite l) = concatMap f l  -- not certain, but accepted
+      f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f _ = []
   in concatMap f . ieffects
 
@@ -403,7 +404,7 @@ validateNotNested effs t f =
   let g (OneOf l) = any f l || any g l
       g (OnSmash effect) = f effect || g effect
       g (OnCombine effect) = f effect || g effect
-      g (Composite l) = any f l || any g l
+      g (AndEffect eff1 eff2) = f eff1 || f eff2 || g eff1 || g eff2
       g _ = False
       ts = filter g effs
   in [ "effect" <+> t <+> "should be specified at top level, not nested"

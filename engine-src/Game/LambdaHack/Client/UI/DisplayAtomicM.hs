@@ -1368,7 +1368,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.OnCombine{} -> error $ "" `showFailure` sfx
         IK.VerbNoLonger t -> aidVerbMU MsgNoLonger aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
-        IK.Composite{} -> error $ "" `showFailure` sfx
+        IK.AndEffect{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of

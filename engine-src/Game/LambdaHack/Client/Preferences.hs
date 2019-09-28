@@ -171,8 +171,7 @@ effectToBenefit cops fid factionD eff =
     IK.OnCombine _ -> delta 0  -- not revevant to normal item triggering
     IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
-    IK.Composite [] -> delta 0
-    IK.Composite (eff1 : _) -> effectToBenefit cops fid factionD eff1
+    IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite

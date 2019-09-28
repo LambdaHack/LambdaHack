@@ -754,7 +754,8 @@ applyItem aid applyGroup = do
       disqualify durable IK.Summon{} =
         durable && (bcalm b < xM 30 || condNotCalmEnough)
       disqualify durable (IK.OneOf l) = any (disqualify durable) l
-      disqualify durable (IK.Composite l) = any (disqualify durable) l
+      disqualify durable (IK.AndEffect eff1 eff2) =
+        disqualify durable eff1 || disqualify durable eff2
       disqualify _ _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
         let arItem = aspectRecordFull itemFull
@@ -791,7 +792,7 @@ applyItem aid applyGroup = do
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             -- Don't include @OneOf@ because other effects may kill you.
             getHP (IK.RefillHP p) | p > 0 = True
-            getHP (IK.Composite l) = any getHP l
+            getHP (IK.AndEffect eff1 eff2) = getHP eff1 || getHP eff2
             getHP _ = False
             heals = any getHP $ IK.ieffects itemKind
             dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included

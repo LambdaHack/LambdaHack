@@ -864,7 +864,7 @@ scroll6 = scrollTemplate
   , irarity  = [(1, 20)]  -- uncommon deep down, where all is known
   , iaspects = ELabel "of scientific explanation"
                : iaspects scrollTemplate
-  , ieffects = [Composite [Identify, RefillCalm 10]]
+  , ieffects = [Identify `AndEffect` RefillCalm 10]
   , idesc    = "The most pressing existential concerns are met with a deeply satisfying scientific answer."
   }
 scroll7 = scrollTemplate
@@ -872,7 +872,7 @@ scroll7 = scrollTemplate
   , irarity  = [(10, 20)]  -- at endgame a crucial item may be missing
   , iaspects = ELabel "of transmutation"
                : iaspects scrollTemplate
-  , ieffects = [Composite [PolyItem, Explode "firecracker"]]
+  , ieffects = [PolyItem `AndEffect` Explode "firecracker"]
   }
 scroll8 = scrollTemplate
   { ifreq    = [("treasure", 100), ("any scroll", 100)]

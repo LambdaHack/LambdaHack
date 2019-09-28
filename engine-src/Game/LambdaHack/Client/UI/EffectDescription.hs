@@ -126,8 +126,9 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
-    Composite effs -> T.intercalate " and then "
-                    $ filter (/= "") $ map (effectToSuffix detailLevel) effs
+    AndEffect eff1 eff2 ->
+      T.intercalate " and then "
+      $ filter (/= "") $ map (effectToSuffix detailLevel) [eff1, eff2]
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of

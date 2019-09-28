@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDropItem, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
-  , effectVerbNoLonger, effectVerbMsg, effectComposite
+  , effectVerbNoLonger, effectVerbMsg, effectAndEffect
 #endif
   ) where
 
@@ -415,7 +415,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
     IK.VerbNoLonger _ -> effectVerbNoLonger useAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
-    IK.Composite l -> effectComposite recursiveCall l
+    IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
 
 -- * Individual semantic functions for effects
 
@@ -1638,7 +1638,8 @@ effectDetect execSfx d radius target pos = do
       effectHasLoot IK.DupItem = True
       effectHasLoot (IK.OneOf l) = any effectHasLoot l
       effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
-      effectHasLoot (IK.Composite l) = any effectHasLoot l
+      effectHasLoot (IK.AndEffect eff1 eff2) =
+        effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot _ = False
       (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
@@ -1876,15 +1877,16 @@ effectVerbMsg execSfx source = do
   return UseUp  -- announcing always successful and this helps
                 -- to destroy the item
 
--- ** Composite
+-- ** AndEffect
 
-effectComposite :: forall m. MonadServerAtomic m
-                => (IK.Effect -> m UseResult) -> [IK.Effect] -> m UseResult
-effectComposite recursiveCall l = do
+effectAndEffect :: forall m. MonadServerAtomic m
+                => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
+                -> m UseResult
+effectAndEffect recursiveCall eff1 eff2 = do
   let f :: IK.Effect -> m UseResult -> m UseResult
       f eff result = do
         ur <- recursiveCall eff
         when (ur == UseUp) $ void result  -- UseResult comes from the first
         return ur
-  foldr f (return UseDud) l
+  foldr f (return UseDud) [eff1, eff2]
   -- no @execSfx@, because individual effects sent them
