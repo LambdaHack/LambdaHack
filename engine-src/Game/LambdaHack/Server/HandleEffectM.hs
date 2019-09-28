@@ -281,17 +281,17 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
     triggeredEffect <- itemEffectDisco useAllCopies kineticPerformed
                                        source target iid itemKindId itemKind
                                        container periodic effsManual
-    let triggered = if kineticPerformed then UseUp else triggeredEffect
-        isEmbed = case container of
-          CEmbed{} -> True
-          _ -> False
     sb <- getsState $ getActorBody source
+    let triggered = if kineticPerformed then UseUp else triggeredEffect
+        isEmbedUnderFeet = case container of
+          CEmbed _ posE -> posE == bpos sb  -- under perpetrator's feet
+          _ -> False
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
             || onSmashOnly
             || periodic  -- don't spam via fizzled periodic effects
             || bproj sb  -- don't spam, projectiles can be very numerous
-            || isEmbed   -- don't spam, embeds may be just flavour
+            || isEmbedUnderFeet  -- don't spam, embeds may be just flavour
             ) $
       execSfxAtomic $ SfxMsgFid (bfid sb) $
         if any IK.forApplyEffect effsManual
