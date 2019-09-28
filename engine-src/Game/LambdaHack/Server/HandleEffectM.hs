@@ -288,6 +288,7 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
+            || onSmashOnly
             || periodic  -- don't spam via fizzled periodic effects
             || bproj sb  -- don't spam, projectiles can be very numerous
             || isEmbed   -- don't spam, embeds may be just flavour
