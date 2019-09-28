@@ -357,19 +357,21 @@ displayRespUpdAtomicUI cmd = case cmd of
         groupsToAlterTo = mapMaybe toAlter feats
         freq = map fst $ filter (\(_, q) -> q > 0)
                $ TK.tfreq $ okind cotile toTile
-    when (null $ intersect freq groupsToAlterTo) $ do
+        unexpected = null $ intersect freq groupsToAlterTo
+    obscuredByActor <- getsState $ isJust . posToBig p lid
+    when (unexpected || obscuredByActor) $ do
       -- Player notices @fromTile can't be altered into @toTIle@,
       -- which is uncanny, so we produce a message.
       -- This happens when the player missed an earlier search of the tile
       -- performed by another faction.
       let subject = ""  -- a hack, because we don't handle adverbs well
           verb = "turn into"
-          msg = makeSentence
+          msg = makeSentence $
             [ "the", MU.Text $ TK.tname $ okind cotile fromTile
-            , "at position", MU.Text $ tshow p
-            , "suddenly"  -- adverb
-            , MU.SubjectVerbSg subject verb
-            , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
+            , "at position", MU.Text $ tshow p ]
+            ++ ["suddenly" | unexpected]  -- adverb
+            ++ [ MU.SubjectVerbSg subject verb
+               , MU.AW $ MU.Text $ TK.tname $ okind cotile toTile ]
       msgAdd MsgTileDisco msg
   UpdAlterExplorable lid _ -> markDisplayNeeded lid
   UpdAlterGold{} -> return ()  -- not displayed on HUD
