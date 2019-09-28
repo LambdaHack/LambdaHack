@@ -727,7 +727,12 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               TK.CloseTo tgroup -> Just tgroup
               TK.ChangeTo tgroup -> Just tgroup
               _ -> Nothing
-          groupsToAlterTo | underFeet = []  -- don't autoclose doors under actor
+          toWalkable feat =  -- assuming the tile originally walkable
+            case feat of
+              TK.ChangeTo tgroup -> Just tgroup
+              _ -> Nothing
+          groupsToAlterTo | underFeet = mapMaybe toWalkable feats
+                                          -- don't autoclose doors under actor
                           | otherwise = mapMaybe toAlter feats
       if null groupsToAlterTo && EM.null embeds then
         return $ Just AlterNothing  -- no altering possible; silly client
