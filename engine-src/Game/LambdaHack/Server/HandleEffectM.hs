@@ -280,12 +280,15 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
                                        source target iid itemKindId itemKind
                                        container periodic effsManual
     let triggered = if kineticPerformed then UseUp else triggeredEffect
+        isEmbed = case container of
+          CEmbed{} -> True
+          _ -> False
     sb <- getsState $ getActorBody source
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
             || periodic  -- don't spam via fizzled periodic effects
             || bproj sb  -- don't spam, projectiles can be very numerous
-            || onCombineOnly  -- don't spam, embeds may ignore dropping items
+            || isEmbed   -- don't spam, embeds may be just flavour
             ) $
       execSfxAtomic $ SfxMsgFid (bfid sb) $
         if any IK.forApplyEffect effsManual
