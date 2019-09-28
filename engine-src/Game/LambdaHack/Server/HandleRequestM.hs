@@ -859,7 +859,7 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
   bagBefore <- getsState $ getContainerBag toC
   if
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
-   | (fromCStore == CEqp || toCStore == CEqp) && not calmE ->
+   | toCStore == CEqp && not calmE ->
      execFailure aid req ItemNotCalm
    | toCStore == CEqp && eqpOverfull b k ->
      execFailure aid req EqpOverfull

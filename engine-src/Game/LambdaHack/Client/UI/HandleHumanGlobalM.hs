@@ -732,7 +732,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   if destCStore == CEqp && not calmE then failSer ItemNotCalm
   else if destCStore == CGround && overStash then failSer ItemOverStash
   else do
-    let cLegalE = cLegalRaw \\ ([CGround | overStash] ++ [CEqp | not calmE])
+    let cLegalE = cLegalRaw \\ [CGround | overStash]
         cLegal = case lastItemMove of
           Just (lastFrom, lastDest) | lastDest == destCStore
                                       && lastFrom `elem` cLegalE ->
@@ -806,7 +806,7 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             -- No recursive call here:
             return []
           _ -> retRec destCStore
-  if CEqp `elem` [fromCStore, destCStore] && not calmE then failSer ItemNotCalm
+  if destCStore == CEqp && not calmE then failSer ItemNotCalm
   else do
     l4 <- ret4 l 0
     return $! if null l4
