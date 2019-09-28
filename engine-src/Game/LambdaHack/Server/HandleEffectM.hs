@@ -82,7 +82,7 @@ applyItem aid iid cstore = do
   -- Treated as if the actor hit himself with the item as a weapon,
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@.
-  kineticEffectAndDestroy False True aid aid aid iid c True
+  void $ kineticEffectAndDestroy False True aid aid aid iid c True
 
 applyKineticDamage :: MonadServerAtomic m
                    => ActorId -> ActorId -> ItemId -> m Bool
@@ -157,7 +157,7 @@ cutCalm target = do
 kineticEffectAndDestroy :: MonadServerAtomic m
                         => Bool -> Bool -> ActorId -> ActorId -> ActorId
                         -> ItemId -> Container -> Bool
-                        -> m ()
+                        -> m UseResult
 kineticEffectAndDestroy onCombineOnly voluntary killer
                         source target iid c mayDestroy = do
   bag <- getsState $ getContainerBag c
@@ -170,7 +170,7 @@ kineticEffectAndDestroy onCombineOnly voluntary killer
       let recharged = hasCharge localTime itemFull kit
       -- If neither kinetic hit nor any effect is activated, there's no chance
       -- the items can be destroyed or even timeout changes, so we abort early.
-      when recharged $ do
+      if not recharged then return UseDud else do
         kineticPerformed <- applyKineticDamage source target iid
         tb <- getsState $ getActorBody target
         -- Sometimes victim heals just after we registered it as killed,
@@ -193,14 +193,15 @@ effectAndDestroyAndAddKill :: MonadServerAtomic m
                            => Bool -> Bool -> ActorId -> Bool -> Bool
                            -> Bool -> ActorId -> ActorId -> ItemId -> Container
                            -> Bool -> ItemFull -> Bool
-                           -> m ()
+                           -> m UseResult
 effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
                            useAllCopies kineticPerformed
                            source target iid container
                            periodic itemFull mayDestroy = do
   tbOld <- getsState $ getActorBody target
-  effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
-                   source target iid container periodic itemFull mayDestroy
+  triggered <-
+    effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
+                     source target iid container periodic itemFull mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -212,12 +213,13 @@ effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
                 | IA.checkFlag Ability.Blast arWeapon = KillOtherBlast
                 | otherwise = KillOtherRanged
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
+  return triggered
 
 effectAndDestroy :: MonadServerAtomic m
                  => Bool -> Bool -> Bool -> Bool
                  -> ActorId -> ActorId -> ItemId -> Container
                  -> Bool -> ItemFull -> Bool
-                 -> m ()
+                 -> m UseResult
 effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
                  source target iid container periodic
                  itemFull@ItemFull{itemDisco, itemKindId, itemKind}
@@ -242,7 +244,7 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
   -- and in case of @OnSmash@, only effects are triggered).
-  when recharged $ do
+  if not recharged then return UseDud else do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) localTime ++ it1
@@ -300,6 +302,7 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
     -- (that the item does not exhibit any effects in the given context).
     unless (imperishable || triggered == UseUp) $
       execUpdAtomic $ UpdSpotItem False iid kit2 container
+    return triggered
 
 imperishableKit :: Bool -> ItemFull -> Bool
 imperishableKit periodic itemFull =
@@ -311,7 +314,7 @@ imperishableKit periodic itemFull =
 -- they are left to be triggered next time.
 itemEffectEmbedded :: MonadServerAtomic m
                    => Bool -> Bool -> ActorId -> LevelId -> Point -> ItemId
-                   -> m ()
+                   -> m UseResult
 itemEffectEmbedded onCombineOnly voluntary aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
@@ -1349,9 +1352,9 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
         voluntary = True
         onSmashOnly = True
         useAllCopies = kMax >= k
-    effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
-                               useAllCopies False
-                               aid aid iid c False itemFull True
+    void $ effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
+                                      useAllCopies False
+                                      aid aid iid c False itemFull True
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c

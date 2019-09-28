@@ -495,8 +495,8 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- themselves from some projectiles by lowering their apply stat.
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
-        kineticEffectAndDestroy False voluntary killer
-                                source target iid c mayDestroy
+        void $ kineticEffectAndDestroy False voluntary killer
+                                       source target iid c mayDestroy
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do
@@ -620,8 +620,12 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       hiddenTile = Tile.hideAs cotile serverTile
       revealEmbeds = unless (EM.null embeds) $
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
-      tryApplyEmbeds = mapM_ tryApplyEmbed
-                             (sortEmbeds cops getKind serverTile embeds)
+      tryApplyEmbeds = do
+        urs <- mapM tryApplyEmbed
+                    (sortEmbeds cops getKind serverTile embeds)
+        return $! case urs of
+          [] -> UseDud  -- there was no effects
+          _ -> maximum urs
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
@@ -631,12 +635,13 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                                                   itemFull (1, [])
             name = makePhrase [object1, object2]
         case legal of
-          Left ApplyNoEffects -> return ()  -- pure flavour embed
-          Left reqFail ->
+          Left ApplyNoEffects -> return UseDud  -- pure flavour embed
+          Left reqFail -> do
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
-            execSfxAtomic $ SfxMsgFid (bfid sb)
-            $ SfxExpected ("embedded" <+> name) reqFail
+            execSfxAtomic $ SfxMsgFid (bfid sb) $
+              SfxExpected ("embedded" <+> name) reqFail
+            return UseDud
           _ -> itemEffectEmbedded onCombineOnly voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
@@ -673,7 +678,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
         -- Can't send @SfxTrigger@ afterwards, because actor may be moved
         -- by the embeds to another level, where @tpos@ is meaningless.
         execSfxAtomic $ SfxTrigger source tpos
-        tryApplyEmbeds
+        void $ tryApplyEmbeds
       return Nothing  -- success
   else if clientTile == serverTile then  -- alters
     if not underFeet && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
@@ -744,7 +749,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- don't display a message, because the change
             -- is visible on the map (unless it changes into itself)
             -- and there's nothing more to speak about.
-            unless (EM.null embeds) $ do
+            triggered <- if EM.null embeds then return UseDud else do
               -- Can't send @SfxTrigger@ afterwards, because actor may be moved
               -- by the embeds to another level, where @tpos@ is meaningless.
               -- However, don't spam with projectiles on ice.
@@ -761,6 +766,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
+              _ | onCombineOnly && triggered /= UseUp -> return ()
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l

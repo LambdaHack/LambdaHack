@@ -373,9 +373,9 @@ applyPeriodicLevel = do
             Just (k, _) ->
               -- Activate even if effects null or vacuous, to possibly
               -- destroy the item.
-              effectAndDestroyAndAddKill
-                False True aid False (k <= 1) False
-                aid aid iid (CActor aid cstore) True itemFull True
+              void $ effectAndDestroyAndAddKill
+                       False True aid False (k <= 1) False
+                       aid aid iid (CActor aid cstore) True itemFull True
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds
