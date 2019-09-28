@@ -29,7 +29,6 @@ install:
   - IF "true"=="true" (
       choco install cabal
       && choco install ghc --version 8.6.5 | grep -v '^Extracting the last GHC that works on Windows Vista'
-      && refreshenv
       && SET PKG_CONFIG_PATH=C:\msys64\mingw64\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw64\share
       && which cabal
@@ -89,7 +88,6 @@ install:
 
   - IF "%build32%"=="true" (
       choco install --force --forcex86 ghc --version 8.6.5 | grep -v '^Extracting '
-      && refreshenv
       && SET PKG_CONFIG_PATH=C:\msys64\mingw32\lib\pkgconfig
       && SET XDG_DATA_DIRS=C:\msys64\mingw32\share
       && cabal --version
