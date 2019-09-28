@@ -766,7 +766,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
-              _ | onCombineOnly && triggered /= UseUp -> return ()
+              _ | underFeet && triggered /= UseUp -> return ()
               [] -> return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
