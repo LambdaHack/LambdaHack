@@ -294,7 +294,7 @@ verbMsgNoLonger :: Text -> Effect
 verbMsgNoLonger name = VerbNoLonger $ "be no longer" <+> name
 
 verbMsgLess :: Text -> Effect
-verbMsgLess name = VerbMsg $ "look less" <+> name
+verbMsgLess name = VerbMsg $ "appear less" <+> name
 
 toVelocity :: Int -> Aspect
 toVelocity n = ToThrow $ ThrowMod n 100 1
