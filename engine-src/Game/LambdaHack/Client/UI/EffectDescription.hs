@@ -118,7 +118,9 @@ effectToSuffix detailLevel effect =
     OneOf l ->
       let subject = if length l <= 5 then "marvel" else "wonder"
           header = makePhrase ["of", MU.CardinalWs (length l) subject]
-          marvels = T.intercalate ", " $ map (effectToSuffix detailLevel) l
+          marvels = T.intercalate ", "
+                    $ filter (/= "")
+                    $ map (effectToSuffix detailLevel) l
       in if detailLevel >= DetailAll && marvels /= ""
          then header <+> "[" <> marvels <> "]"
          else header  -- of no wonders :)
@@ -127,11 +129,15 @@ effectToSuffix detailLevel effect =
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     AndEffect eff1 eff2 ->
-      T.intercalate " and then "
-      $ filter (/= "") $ map (effectToSuffix detailLevel) [eff1, eff2]
+      let t = T.intercalate " and then "
+              $ filter (`elem` ["", "of gain", "of loss"])  -- avoid long chains
+              $ map (effectToSuffix detailLevel) [eff1, eff2]
+      in if T.null t then "of conjunctive processing" else t
     OrEffect eff1 eff2 ->
-      T.intercalate " or else "
-      $ filter (/= "") $ map (effectToSuffix detailLevel) [eff1, eff2]
+      let t = T.intercalate " or else "
+              $ filter (`elem` ["", "of gain", "of loss"])
+              $ map (effectToSuffix detailLevel) [eff1, eff2]
+      in if T.null t then "of alternative processing" else t
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of
