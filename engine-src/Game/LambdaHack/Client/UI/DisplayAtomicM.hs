@@ -1369,6 +1369,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.VerbNoLonger t -> aidVerbMU MsgNoLonger aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
         IK.AndEffect{} -> error $ "" `showFailure` sfx
+        IK.OrEffect{} -> error $ "" `showFailure` sfx
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of

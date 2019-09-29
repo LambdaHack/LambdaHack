@@ -176,6 +176,7 @@ effectToBenefit cops fid factionD eff =
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
       -- effect with the main thing
+    IK.OrEffect eff1 _ -> effectToBenefit cops fid factionD eff1
 
 -- See the comment for @Paralyze@.
 averageTurnValue :: Double

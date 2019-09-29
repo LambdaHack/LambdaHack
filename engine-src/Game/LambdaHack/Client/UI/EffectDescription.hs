@@ -129,6 +129,9 @@ effectToSuffix detailLevel effect =
     AndEffect eff1 eff2 ->
       T.intercalate " and then "
       $ filter (/= "") $ map (effectToSuffix detailLevel) [eff1, eff2]
+    OrEffect eff1 eff2 ->
+      T.intercalate " or else "
+      $ filter (/= "") $ map (effectToSuffix detailLevel) [eff1, eff2]
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of

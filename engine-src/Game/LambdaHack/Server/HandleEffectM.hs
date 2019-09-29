@@ -18,7 +18,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDropItem, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
-  , effectVerbNoLonger, effectVerbMsg, effectAndEffect
+  , effectVerbNoLonger, effectVerbMsg, effectAndEffect, effectOrEffect
 #endif
   ) where
 
@@ -416,6 +416,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.VerbNoLonger _ -> effectVerbNoLonger useAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
+    IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
 
 -- * Individual semantic functions for effects
 
@@ -1640,6 +1641,8 @@ effectDetect execSfx d radius target pos = do
       effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
       effectHasLoot (IK.AndEffect eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
+      effectHasLoot (IK.OrEffect eff1 eff2) =
+        effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot _ = False
       (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
@@ -1883,10 +1886,19 @@ effectAndEffect :: forall m. MonadServerAtomic m
                 => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
                 -> m UseResult
 effectAndEffect recursiveCall eff1 eff2 = do
-  let f :: IK.Effect -> m UseResult -> m UseResult
-      f eff result = do
-        ur <- recursiveCall eff
-        when (ur == UseUp) $ void result  -- UseResult comes from the first
-        return ur
-  foldr f (return UseDud) [eff1, eff2]
+  ur1 <- recursiveCall eff1
+  when (ur1 == UseUp) $ void $ recursiveCall eff2
+  return ur1
+  -- no @execSfx@, because individual effects sent them
+
+-- ** OrEffect
+
+effectOrEffect :: forall m. MonadServerAtomic m
+               => (IK.Effect -> m UseResult) -> IK.Effect -> IK.Effect
+               -> m UseResult
+effectOrEffect recursiveCall eff1 eff2 = do
+  ur1 <- recursiveCall eff1
+  if ur1 == UseUp
+  then return UseUp
+  else recursiveCall eff2
   -- no @execSfx@, because individual effects sent them
