@@ -59,6 +59,11 @@ data Feature =
       -- ^ goes from an open to (randomly opened or) closed tile when altered
   | ChangeTo (GroupName TileKind)
       -- ^ alters tile, but does not change walkability
+  | OpenWith [GroupName ItemKind] (GroupName TileKind)
+      -- ^ alters tile, as before, using up all listed items from the ground;
+      --   not taken into account when pathfinding, even if the list empty
+  | CloseWith [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
+  | ChangeWith [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
   | HideAs (GroupName TileKind)
       -- ^ when hidden, looks as the unique tile of the group
   | BuildAs (GroupName TileKind)
@@ -154,6 +159,9 @@ validateAll coitem content cotile =
       g (OpenTo grp) = Just grp
       g (CloseTo grp) = Just grp
       g (ChangeTo grp) = Just grp
+      g (OpenWith _ grp) = Just grp
+      g (CloseWith _ grp) = Just grp
+      g (ChangeWith _ grp) = Just grp
       g (HideAs grp) = Just grp
       g (BuildAs grp) = Just grp
       g (RevealAs grp) = Just grp
@@ -166,13 +174,16 @@ validateAll coitem content cotile =
               absGroups = filter (not . omemberGroup cotile) grps
         , not $ null absGroups
         ]
-      h :: Feature -> Maybe (GroupName ItemKind)
-      h (Embed grp) = Just grp
-      h _ = Nothing
+      h :: Feature -> [GroupName ItemKind]
+      h (Embed grp) = [grp]
+      h (OpenWith grps _) = grps
+      h (CloseWith grps _) = grps
+      h (ChangeWith grps _) = grps
+      h _ = []
       missingItemGroups =
         [ (tname k, absGroups)
         | k <- content
-        , let grps = mapMaybe h $ tfeature k
+        , let grps = concatMap h $ tfeature k
               absGroups = filter (not . omemberGroup coitem) grps
         , not $ null absGroups
         ]

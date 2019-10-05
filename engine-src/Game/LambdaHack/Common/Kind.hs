@@ -80,24 +80,25 @@ speedupItem coitem =
 -- | A lot of tabulated maps from tile kind identifier to a property
 -- of the tile kind.
 data TileSpeedup = TileSpeedup
-  { isClearTab         :: Tab Bool
-  , isLitTab           :: Tab Bool
-  , isWalkableTab      :: Tab Bool
-  , isDoorTab          :: Tab Bool
-  , isChangableTab     :: Tab Bool
-  , isSuspectTab       :: Tab Bool
-  , isHideAsTab        :: Tab Bool
-  , consideredByAITab  :: Tab Bool
-  , isVeryOftenItemTab :: Tab Bool
-  , isCommonItemTab    :: Tab Bool
-  , isOftenActorTab    :: Tab Bool
-  , isNoItemTab        :: Tab Bool
-  , isNoActorTab       :: Tab Bool
-  , isEasyOpenTab      :: Tab Bool
-  , isEmbedTab         :: Tab Bool
-  , isAquaticTab       :: Tab Bool
-  , alterMinSkillTab   :: Tab Word8
-  , alterMinWalkTab    :: Tab Word8
+  { isClearTab          :: Tab Bool
+  , isLitTab            :: Tab Bool
+  , isWalkableTab       :: Tab Bool
+  , isDoorTab           :: Tab Bool
+  , isChangableTab      :: Tab Bool
+  , isModifiableWithTab :: Tab Bool
+  , isSuspectTab        :: Tab Bool
+  , isHideAsTab         :: Tab Bool
+  , consideredByAITab   :: Tab Bool
+  , isVeryOftenItemTab  :: Tab Bool
+  , isCommonItemTab     :: Tab Bool
+  , isOftenActorTab     :: Tab Bool
+  , isNoItemTab         :: Tab Bool
+  , isNoActorTab        :: Tab Bool
+  , isEasyOpenTab       :: Tab Bool
+  , isEmbedTab          :: Tab Bool
+  , isAquaticTab        :: Tab Bool
+  , alterMinSkillTab    :: Tab Word8
+  , alterMinWalkTab     :: Tab Word8
   }
 
 -- Vectors of booleans can be slower than arrays, because they are not packed,
@@ -111,7 +112,7 @@ emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty

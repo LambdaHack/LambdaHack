@@ -79,6 +79,12 @@ speedupTile allClear cotile =
         let getTo TK.ChangeTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
+      isModifiableWithTab = createTab cotile $ \tk ->
+        let getTo TK.OpenWith{} = True
+            getTo TK.CloseWith{} = True
+            getTo TK.ChangeWith{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
       isSuspectTab = createTab cotile TK.isSuspectKind
       isHideAsTab = createTab cotile $ \tk ->
         let getTo TK.HideAs{} = True
@@ -112,6 +118,9 @@ alterMinSkillKind _k tk =
   let getTo TK.OpenTo{} = True
       getTo TK.CloseTo{} = True
       getTo TK.ChangeTo{} = True
+      getTo TK.OpenWith{} = True
+      getTo TK.CloseWith{} = True
+      getTo TK.ChangeWith{} = True
       getTo TK.HideAs{} = True  -- in case tile swapped, but server sends hidden
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
@@ -166,6 +175,11 @@ isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 isChangable :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isChangable #-}
 isChangable TileSpeedup{isChangableTab} = accessTab isChangableTab
+
+-- | Whether a tile is modifiable with some items.
+isModifiableWith :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isModifiableWith #-}
+isModifiableWith TileSpeedup{isModifiableWithTab} = accessTab isModifiableWithTab
 
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
@@ -332,4 +346,5 @@ isClosable cotile t = TK.isClosableKind $ okind cotile t
 isModifiable :: TileSpeedup -> ContentId TileKind -> Bool
 isModifiable coTileSpeedup t = isDoor coTileSpeedup t
                                || isChangable coTileSpeedup t
+                               || isModifiableWith coTileSpeedup t
                                || isSuspect coTileSpeedup t

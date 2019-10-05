@@ -725,6 +725,36 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItem lid tpos toTile
+          tryChangeWith (grps, tgroup) = do
+            kitAss <- getsState $ kitAssocs source [CGround]
+            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty)) grps of
+              Nothing -> return False
+              Just (_, bagToLose) -> do
+                -- We don't invoke @OnSmash@ effects, so we avoid the risk
+                -- of the first removed item displacing the actor, destroying
+                -- or scattering some pending items ahead of time, etc.
+                -- The embed should provide any requisite fireworks instead.
+                execUpdAtomic $ UpdLoseItemBag (CActor source CGround) bagToLose
+                changeTo tgroup
+                return True
+          subtractGrpfromBag :: Maybe ([(ItemId, ItemFullKit)], ItemBag)
+                             -> GroupName IK.ItemKind
+                             -> Maybe ([(ItemId, ItemFullKit)], ItemBag)
+          subtractGrpfromBag Nothing _ = Nothing
+          subtractGrpfromBag (Just (kitAss, bagToLose)) grp =
+            let grpInItemFull ItemFull{itemKind} =
+                  fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
+                grpInItemKit (_, (itemFull, _)) = grpInItemFull itemFull
+            in case break grpInItemKit kitAss of
+              (_, []) -> Nothing
+              (prefix, (iid, (itemFull, (k, it))) : rest) ->
+                let remainingAssocs = case compare k 1 of
+                      LT -> error "subtractGrpfromBag: no copies in bag"
+                      EQ -> []
+                      GT -> [(iid, (itemFull, (k - 1, drop 1 it)))]
+                    removedBag = EM.singleton iid (1, take 1 it)
+                in Just ( prefix ++ remainingAssocs ++ rest
+                        , EM.unionWith mergeItemQuant removedBag bagToLose )
           feats = TK.tfeature $ okind cotile serverTile
           toAlter feat =
             case feat of
@@ -739,7 +769,20 @@ reqAlterFail onCombineOnly voluntary source tpos = do
           groupsToAlterTo | underFeet = mapMaybe toWalkable feats
                                           -- don't autoclose doors under actor
                           | otherwise = mapMaybe toAlter feats
-      if null groupsToAlterTo && EM.null embeds then
+          toAlterWith feat =
+            case feat of
+              TK.OpenWith grps tgroup -> Just (grps, tgroup)
+              TK.CloseWith grps tgroup -> Just (grps, tgroup)
+              TK.ChangeWith grps tgroup -> Just (grps, tgroup)
+              _ -> Nothing
+          toWalkableWith feat =  -- assuming the tile originally walkable
+            case feat of
+              TK.ChangeWith grps tgroup -> Just (grps, tgroup)
+              _ -> Nothing
+          groupstoAlterWith | underFeet = mapMaybe toWalkableWith feats
+                                            -- don't autoclose doors under actor
+                            | otherwise = mapMaybe toAlterWith feats
+      if null groupsToAlterTo && null groupstoAlterWith && EM.null embeds then
         return $ Just AlterNothing  -- no altering possible; silly client
       else
         if underFeet || EM.notMember tpos (lfloor lvl) then
@@ -767,7 +810,12 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               tryApplyEmbeds
             case groupsToAlterTo of
               _ | not (EM.null embeds) && triggered /= UseUp -> return ()
-              [] -> return ()
+              [] -> void $ foldM (\changed groupToAlterWith ->
+                                    if changed
+                                    then return True
+                                    else tryChangeWith groupToAlterWith)
+                                 False
+                                 groupstoAlterWith
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
             return Nothing  -- success
