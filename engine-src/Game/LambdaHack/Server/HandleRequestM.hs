@@ -828,12 +828,16 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               tryApplyEmbeds
             case groupsToAlterTo of
               _ | not (EM.null embeds) && triggered /= UseUp -> return ()
-              [] -> void $ foldM (\changed groupToAlterWith ->
+              [] -> do
+                altered <- foldM (\changed groupToAlterWith ->
                                     if changed
                                     then return True
                                     else tryChangeWith groupToAlterWith)
                                  False
                                  groupstoAlterWith
+                unless (altered || null groupstoAlterWith) $
+                  execSfxAtomic $ SfxMsgFid (bfid sb)
+                                $ SfxNoItemsForTile $ map fst groupstoAlterWith
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
             return Nothing  -- success

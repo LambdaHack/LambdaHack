@@ -1412,6 +1412,13 @@ ppSfxMsg sfxMsg = case sfxMsg of
            <+> showReqFailure reqFailure <> "." )
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
+  SfxNoItemsForTile ll -> do
+    let tItems = T.intercalate " or "
+                 $ map (\l -> T.intercalate " and " (map fromGroupName l)) ll
+    return $ Just ( MsgWarning
+                  , "To modify the terrain, prepare the following items on the ground and try again:"
+                    <+> tItems <> ". If you don't have any, go get them."
+                  )
   SfxVoidDetection d -> return $
     Just ( MsgMisc
          , makeSentence ["no new", MU.Text $ detectToObject d, "detected"] )
