@@ -736,7 +736,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- of the first removed item displacing the actor, destroying
                 -- or scattering some pending items ahead of time, etc.
                 -- The embed should provide any requisite fireworks instead.
-                execUpdAtomic $ UpdLoseItemBag (CActor source store) bagToLose
+                unless (EM.null bagToLose) $
+                  execUpdAtomic $ UpdLoseItemBag (CActor source store) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
                 let applyItemIfPresent iid = do
