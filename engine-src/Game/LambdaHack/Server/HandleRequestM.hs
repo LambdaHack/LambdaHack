@@ -727,34 +727,50 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               embedItem lid tpos toTile
           tryChangeWith (grps, tgroup) = do
             kitAss <- getsState $ kitAssocs source [CGround]
-            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty)) grps of
+            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
-              Just (_, bagToLose) -> do
+              Just (_, bagToLose, iidsToApply) -> do
                 -- We don't invoke @OnSmash@ effects, so we avoid the risk
                 -- of the first removed item displacing the actor, destroying
                 -- or scattering some pending items ahead of time, etc.
                 -- The embed should provide any requisite fireworks instead.
                 execUpdAtomic $ UpdLoseItemBag (CActor source CGround) bagToLose
+                -- But afterwards we do apply normal effects of durable items,
+                -- even if the actor or other items displaced in the process.
+                let applyItemIfPresent iid = do
+                      bag <- getsState $ getFloorBag (blid sb) (bpos sb)
+                      when (iid `EM.member` bag) $
+                        applyItem source iid CGround
+                mapM_ applyItemIfPresent iidsToApply
                 changeTo tgroup
                 return True
-          subtractGrpfromBag :: Maybe ([(ItemId, ItemFullKit)], ItemBag)
-                             -> GroupName IK.ItemKind
-                             -> Maybe ([(ItemId, ItemFullKit)], ItemBag)
+          subtractGrpfromBag
+            :: Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
+            -> GroupName IK.ItemKind
+            -> Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
           subtractGrpfromBag Nothing _ = Nothing
-          subtractGrpfromBag (Just (kitAss, bagToLose)) grp =
+          subtractGrpfromBag (Just (kitAss, bagToLose, iidsToApply)) grp =
             let grpInItemFull ItemFull{itemKind} =
                   fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
                 grpInItemKit (_, (itemFull, _)) = grpInItemFull itemFull
             in case break grpInItemKit kitAss of
               (_, []) -> Nothing
-              (prefix, (iid, (itemFull, (k, it))) : rest) ->
-                let remainingAssocs = case compare k 1 of
+              (prefix, (iid, (itemFull, (k, it))) : rest) -> Just $
+                let remainingAss = case compare k 1 of
                       LT -> error "subtractGrpfromBag: no copies in bag"
                       EQ -> []
                       GT -> [(iid, (itemFull, (k - 1, drop 1 it)))]
+                    remainingAssocs = prefix ++ remainingAss ++ rest
+                    arItem = aspectRecordFull itemFull
+                    durable = IA.checkFlag Ability.Durable arItem
                     removedBag = EM.singleton iid (1, take 1 it)
-                in Just ( prefix ++ remainingAssocs ++ rest
-                        , EM.unionWith mergeItemQuant removedBag bagToLose )
+                in if durable
+                   then ( remainingAssocs
+                        , bagToLose
+                        , iid : iidsToApply )
+                   else ( remainingAssocs
+                        , EM.unionWith mergeItemQuant removedBag bagToLose
+                        , iidsToApply )
           feats = TK.tfeature $ okind cotile serverTile
           toAlter feat =
             case feat of
