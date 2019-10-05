@@ -54,14 +54,15 @@ data Feature =
       -- ^ initially an item of this group is embedded;
       --   we assume the item has effects and is supposed to be triggered
   | OpenTo (GroupName TileKind)
-      -- ^ goes from a closed to (randomly closed or) open tile when altered
+      -- ^ goes from a closed to closed or open tile when altered
   | CloseTo (GroupName TileKind)
-      -- ^ goes from an open to (randomly opened or) closed tile when altered
+      -- ^ goes from an open to open or closed tile when altered
   | ChangeTo (GroupName TileKind)
       -- ^ alters tile, but does not change walkability
   | OpenWith [GroupName ItemKind] (GroupName TileKind)
-      -- ^ alters tile, as before, using up all listed items from the ground;
-      --   not taken into account when pathfinding, even if the list empty
+      -- ^ alters tile, as before, using up all listed items from the ground
+      --   and equipment; the list never empty; for simplicity, such tiles
+      --   are never taken into account when pathfinding
   | CloseWith [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
   | ChangeWith [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
   | HideAs (GroupName TileKind)
