@@ -828,7 +828,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
-              _ | not (EM.null embeds) && triggered /= UseUp -> return ()
+              _ | not (EM.null embeds) && triggered /= UseUp
+                  || underFeet && not onCombineOnly -> return ()
               [] -> do
                 let tryChangeStore store =
                       foldM (\changed groupToAlterWith ->
