@@ -725,8 +725,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItem lid tpos toTile
+          durableFirst = sortOn $ not . IA.checkFlag Ability.Durable
+                                  . aspectRecordFull . fst . snd
           tryChangeWith (grps, tgroup) = do
-            kitAss <- getsState $ kitAssocs source [CGround]
+            kitAss <- getsState $ durableFirst . kitAssocs source [CGround]
             case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
               Just (_, bagToLose, iidsToApply) -> do
