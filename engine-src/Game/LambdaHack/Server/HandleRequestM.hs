@@ -727,8 +727,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               embedItem lid tpos toTile
           durableFirst = sortOn $ not . IA.checkFlag Ability.Durable
                                   . aspectRecordFull . fst . snd
-          tryChangeWith (grps, tgroup) = do
-            kitAss <- getsState $ durableFirst . kitAssocs source [CGround]
+          tryChangeWith store (grps, tgroup) = do
+            kitAss <- getsState $ durableFirst . kitAssocs source [store]
             case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
               Just (_, bagToLose, iidsToApply) -> do
@@ -736,13 +736,13 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- of the first removed item displacing the actor, destroying
                 -- or scattering some pending items ahead of time, etc.
                 -- The embed should provide any requisite fireworks instead.
-                execUpdAtomic $ UpdLoseItemBag (CActor source CGround) bagToLose
+                execUpdAtomic $ UpdLoseItemBag (CActor source store) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
                 let applyItemIfPresent iid = do
-                      bag <- getsState $ getFloorBag (blid sb) (bpos sb)
+                      bag <- getsState $ getContainerBag (CActor source store)
                       when (iid `EM.member` bag) $
-                        applyItem source iid CGround
+                        applyItem source iid store
                 mapM_ applyItemIfPresent iidsToApply
                 changeTo tgroup
                 return True
@@ -829,12 +829,17 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             case groupsToAlterTo of
               _ | not (EM.null embeds) && triggered /= UseUp -> return ()
               [] -> do
-                altered <- foldM (\changed groupToAlterWith ->
-                                    if changed
-                                    then return True
-                                    else tryChangeWith groupToAlterWith)
-                                 False
-                                 groupstoAlterWith
+                let tryChangeStore store =
+                      foldM (\changed groupToAlterWith ->
+                               if changed
+                               then return True
+                               else tryChangeWith store groupToAlterWith)
+                            False
+                            groupstoAlterWith
+                alteredGround <- tryChangeStore CGround
+                altered <- if alteredGround
+                           then return True
+                           else tryChangeStore CEqp
                 unless (altered || null groupstoAlterWith) $
                   execSfxAtomic $ SfxMsgFid (bfid sb)
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
