@@ -376,9 +376,10 @@ reqMoveGeneric voluntary mayAttack source dir = do
         if abInSkill Ability.SkMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
-          affectStash source tpos
-          void $ reqAlterFail False voluntary source tpos
-            -- possibly alter or activate
+          unless (bproj sb) $ do  -- no remote ransacking nor underfoot effects
+            affectStash source tpos
+            void $ reqAlterFail False voluntary source tpos
+              -- possibly alter or activate
        else execFailure source (ReqMove dir) MoveUnskilled
       else
         -- Client foolishly tries to move into unwalkable tile.
@@ -830,8 +831,6 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
-              _ | not (EM.null embeds) && triggered /= UseUp
-                  || underFeet && not onCombineOnly -> return ()
               [] -> do
                 let tryChangeStore store =
                       foldM (\changed groupToAlterWith ->
@@ -847,6 +846,11 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 unless (altered || null groupstoAlterWith) $
                   execSfxAtomic $ SfxMsgFid (bfid sb)
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
+              _ | not (EM.null embeds) && triggered /= UseUp ->
+                -- Disabling only free terrain alteration, while the one
+                -- with item cost is idependent of the ability to activate
+                -- embedded items.
+                return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               l -> error $ "tile changeable in many ways" `showFailure` l
             return Nothing  -- success

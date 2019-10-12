@@ -1321,7 +1321,7 @@ effectDestroyItem execSfx iidId ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
   isRaw <- allGroupItems store grp target
   let is = filter ((/= iidId) . fst) isRaw
-  if | bproj tb || null is -> return UseDud
+  if | null is -> return UseDud
      | otherwise -> do
        execSfx
        urs <- mapM (uncurry (dropCStoreItem True True store target tb kcopy))
@@ -1352,7 +1352,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
   if isDestroyed then do
     let -- We don't know if it's voluntary, so we conservatively assume
         -- it is and we blame @aid@.
-        onCombineOnly = False  -- the embed could be combined here, but not @iid@
+        onCombineOnly = False  -- the embed could be combined here but not @iid@
         voluntary = True
         onSmashOnly = True
         useAllCopies = kMax >= k

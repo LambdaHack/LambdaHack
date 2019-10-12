@@ -512,34 +512,39 @@ advanceTrajectory aid b = do
                     else reqDisp target
                   (Just _, _) -> reqMoveHit  -- can't displace multiple
               | otherwise -> reqMoveHit  -- if not occupied, just move
-         | bproj b -> do
-           -- @Nothing@ trajectory of a projectile signals an obstacle hit.
-           -- Second call of @actorDying@ above will catch the dead projectile.
-           execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-           -- Kill counts for each blast particle is TMI.
-           when (not (IA.checkFlag Ability.Blast arTrunk)) $ do
-             killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-             addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
-           -- Losing HP due to hitting an obstacle not needed, because
-           -- trajectory is halted, so projectile will die soon anyway.
          | otherwise -> do
            -- Will be removed from @strajTime@ in recursive call
            -- to @handleTrajectories@.
-           execSfxAtomic $ SfxCollideTile aid tpos
+           unless (bproj b) $
+             execSfxAtomic $ SfxCollideTile aid tpos
            mfail <- reqAlterFail False False aid tpos
            lvl2 <- getLevel $ blid b
            case mfail of
              Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos ->
                -- Too late to announce anything, but given that the way
-               -- is opened, continue flight. Don't even lose any HP.
+               -- is opened, continue flight. Don't even lose any HP,
+               -- because it's not a hard collision, but altering.
                return ()
              _ -> do
-               -- Altering failed, probably just a wall, so lose HP
-               -- due to being pushed into an obstacle. Never kill in this way.
+               -- Altering failed to open the passage, probably just a wall,
+               -- so lose HP due to being pushed into an obstacle.
+               -- Never kill in this way.
                -- Note that sometimes this may come already after one faction
                -- wins the game and end game screens are show. This is OK-ish.
+               -- @Nothing@ trajectory of signals an obstacle hit.
+               -- If projectile, second call of @actorDying@ above
+               -- will take care of dropping dead.
                execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-               when (bhp b > oneM) $ do
+               -- If projectile, losing HP due to hitting an obstacle
+               -- not needed, because trajectory is halted, so projectile
+               -- will die soon anyway
+               if bproj b
+               then when (not (IA.checkFlag Ability.Blast arTrunk)) $ do
+                      -- Kill counts for each blast particle is TMI.
+                 killer <- getsServer $ EM.findWithDefault aid aid
+                                        . strajPushedBy
+                 addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
+               else when (bhp b > oneM) $ do
                  execUpdAtomic $ UpdRefillHP aid minusM
                  let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
                  execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
@@ -641,11 +646,26 @@ dieSer aid b = do
     -- created with 0 HP):
     electLeader (bfid b) (blid b) aid
     getsState $ getActorBody aid
-  -- If the actor was a projectile and no effect was triggered by hitting
-  -- an enemy, the item still exists and @OnSmash@ effects will be triggered:
-  dropAllItems aid b2
+  -- If an explosion blast, before the particle is destroyed, it tries
+  -- to modify terrain with it.
+  arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
+  let isBlast = IA.checkFlag Ability.Blast arTrunk
+  when isBlast $
+    void $ reqAlterFail False False aid (bpos b2)
   b3 <- getsState $ getActorBody aid
-  execUpdAtomic $ UpdDestroyActor aid b3 []
+  -- Items need to do dropped now, so that they can be transformed by effects
+  -- of the embedded items, if they are activated.
+  -- If the actor was a projectile and no effect was triggered by hitting
+  -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
+  dropAllItems aid b3
+  -- As the last act of heroism, the actor (even if projectile)
+  -- combines its dropped items with those in terrain, causing some effects.
+  void $ reqAlterFail True False aid (bpos b2)  -- old bpos; OK, safer
+  -- And, unless already tried, changes the terrain with its items, if possible.
+  unless isBlast $
+    void $ reqAlterFail False False aid (bpos b2)  -- old bpos; OK, safer
+  b4 <- getsState $ getActorBody aid
+  execUpdAtomic $ UpdDestroyActor aid b4 []
 
 restartGame :: MonadServerAtomic m
             => m () -> m () -> Maybe (GroupName ModeKind) -> m ()
