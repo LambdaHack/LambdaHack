@@ -681,7 +681,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
         void $ tryApplyEmbeds
       return Nothing  -- success
   else if clientTile == serverTile then  -- alters
-    if not underFeet && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
+    if not (bproj sb || underFeet)  -- skill needed only for standard altering
+       && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
       let changeTo tgroup = do
@@ -814,7 +815,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             triggered <- if EM.null embeds then return UseDud else do
               -- Can't send @SfxTrigger@ afterwards, because actor may be moved
               -- by the embeds to another level, where @tpos@ is meaningless.
-              -- However, don't spam with projectiles on ice.
+              -- However, don't spam with projectiles on ice,
+              -- so message generated only for standard altering.
               unless (bproj sb || underFeet) $
                 execSfxAtomic $ SfxTrigger source tpos
               -- The embeds of the initial tile are activated before the tile
