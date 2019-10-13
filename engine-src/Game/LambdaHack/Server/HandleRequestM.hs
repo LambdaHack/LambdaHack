@@ -378,7 +378,9 @@ reqMoveGeneric voluntary mayAttack source dir = do
           affectSmell source
           unless (bproj sb) $ do  -- no remote ransacking nor underfoot effects
             affectStash source tpos
-            void $ reqAlterFail False voluntary source tpos
+            -- Not voluntary, because possibly the goal was to move
+            -- and modifying terrain is an unwelcome side effect.
+            void $ reqAlterFail False False source tpos
               -- possibly alter or activate
        else execFailure source (ReqMove dir) MoveUnskilled
       else
@@ -581,9 +583,9 @@ reqDisplaceGeneric voluntary source target = do
              affectSmell target
              affectStash source tpos
              affectStash target spos
-             void $ reqAlterFail False voluntary source tpos
+             void $ reqAlterFail False False source tpos
                -- possibly alter or activate
-             void $ reqAlterFail False voluntary target spos
+             void $ reqAlterFail False False target spos
            _ -> execFailure source req DisplaceMultiple
        else
          -- Client foolishly tries to displace an actor without access.
@@ -854,7 +856,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 altered <- if alteredGround
                            then return True
                            else tryChangeStore CEqp
-                unless (altered || null groupstoAlterWith) $
+                unless (altered || null groupstoAlterWith || not voluntary) $
                   execSfxAtomic $ SfxMsgFid (bfid sb)
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
               _ | not (EM.null embeds) && triggered /= UseUp ->
@@ -988,6 +990,8 @@ reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
             Just (_, it2) -> it2
       randomResetTimeout k iid itemFull beforeIt toC
     when (toCStore == CGround) $
+      -- Voluntary, because item dropping is never so essential
+      -- that it can't be done elsewhere, without modifying terrain.
       void $ reqAlterFail True True aid (bpos b)
         -- dropping an item engages the item embedded in the ground;
         -- e.g., ignites grass, if the item is torch;
