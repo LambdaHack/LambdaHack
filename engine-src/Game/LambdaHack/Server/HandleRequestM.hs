@@ -601,9 +601,10 @@ reqAlter source tpos = do
 reqAlterFail :: MonadServerAtomic m
              => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail onCombineOnly voluntary source tpos = do
-  cops@COps{cotile, coTileSpeedup} <- getsState scops
+  cops@COps{coitem, cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
+  discoAspect <- getsState sdiscoAspect
   factionD <- getsState sfactionD
   let calmE = calmEnough sb actorMaxSk
       lid = blid sb
@@ -727,6 +728,15 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItem lid tpos toTile
+          identifyStoreBag store bag =
+            mapM_ (identifyStoreIid store) $ EM.keys bag
+          identifyStoreIid store iid = do
+            itemKindId <- getsState $ getIidKindIdServer iid
+            let arItem = discoAspect EM.! iid
+                c = CActor source store
+                itemKind = okind coitem itemKindId
+            unless (IA.isHumanTrinket itemKind) $  -- a hack
+              execUpdAtomic $ UpdDiscover c iid itemKindId arItem
           durableFirst = sortOn $ not . IA.checkFlag Ability.Durable
                                   . aspectRecordFull . fst . snd
           tryChangeWith store (grps, tgroup) = do
@@ -738,7 +748,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- of the first removed item displacing the actor, destroying
                 -- or scattering some pending items ahead of time, etc.
                 -- The embed should provide any requisite fireworks instead.
-                unless (EM.null bagToLose) $
+                unless (EM.null bagToLose) $ do
+                  identifyStoreBag store bagToLose
                   execUpdAtomic $ UpdLoseItemBag (CActor source store) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
