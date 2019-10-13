@@ -1362,7 +1362,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
-    maybe (return UseDud)
+    maybe (return UseUp)
           (\(k1, it) ->
              let destroyedSoFar = k - k1
                  k2 = min (kMax - destroyedSoFar) k1
