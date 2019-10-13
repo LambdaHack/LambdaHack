@@ -844,7 +844,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
-              [] -> do
+              [] | voluntary || bproj sb -> do
+                -- Waste item only if voluntary or released as projectile.
                 let tryChangeStore store =
                       foldM (\changed groupToAlterWith ->
                                if changed
@@ -865,6 +866,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- embedded items.
                 return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
+              [] -> return ()
               l -> error $ "tile changeable in many ways" `showFailure` l
             return Nothing  -- success
           else return $ Just AlterBlockActor
