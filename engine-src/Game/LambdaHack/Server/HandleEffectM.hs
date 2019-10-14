@@ -901,10 +901,7 @@ effectAscend recursiveCall execSfx up source target pos = do
        -- but there can be other actors at his new position.
        inhabitants <- getsState $ posToAidAssocs pos3 lid2
        case inhabitants of
-         [] -> do
-           switch1
-           switch2
-         (_, b2) : _ -> do
+         (_, b2) : _ | not $ bproj b1 -> do
            -- Alert about the switch.
            execSfxAtomic $ SfxMsgFid (bfid sb) SfxLevelPushed
            -- Only tell one pushed player, even if many actors, because then
@@ -930,6 +927,9 @@ effectAscend recursiveCall execSfx up source target pos = do
                                mbtime_inh mbtimeTraj_inh inhMLead
            mapM_ moveInh inhabitants
            -- Move the actor to his destination.
+           switch2
+         _ -> do  -- no inhabitants or the stair-taker a projectile
+           switch1
            switch2
        return UseUp
 
