@@ -8,7 +8,7 @@ module Game.LambdaHack.Atomic.PosAtomicRead
   , breakUpdAtomic, lidOfPos, seenAtomicCli, seenAtomicSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , posProjBody, singleAid, doubleAid, singleContainer
+  , pointsProjBody, posProjBody, singleAid, doubleAid, singleContainer
 #endif
   ) where
 
@@ -93,9 +93,7 @@ posUpdAtomic cmd = case cmd of
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from environment;
     -- they hear, feel air movement, etc.
-    return $! if bproj b
-              then PosSight (blid b) [fromP, toP]
-              else PosFidAndSight (bfid b) (blid b) [fromP, toP]
+    return $! pointsProjBody b [fromP, toP]
   UpdWaitActor aid _ _ -> singleAid aid
   UpdDisplaceActor source target -> doubleAid source target
   UpdMoveItem _ _ aid cstore1 cstore2 -> do
@@ -124,10 +122,10 @@ posUpdAtomic cmd = case cmd of
   UpdAlterGold{} -> return PosAll
   UpdSearchTile aid p _ -> do
     b <- getsState $ getActorBody aid
-    return $! PosFidAndSight (bfid b) (blid b) [bpos b, p]
+    return $! pointsProjBody b [bpos b, p]
   UpdHideTile aid p _ -> do
     b <- getsState $ getActorBody aid
-    return $! PosFidAndSight (bfid b) (blid b) [bpos b, p]
+    return $! pointsProjBody b [bpos b, p]
   UpdSpotTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps
@@ -184,14 +182,10 @@ posSfxAtomic cmd = case cmd of
   SfxCheck aid _ -> singleAid aid
   SfxTrigger aid p -> do
     body <- getsState $ getActorBody aid
-    if bproj body
-    then return $! PosSight (blid body) [bpos body, p]
-    else return $! PosFidAndSight (bfid body) (blid body) [bpos body, p]
+    return $! pointsProjBody body [bpos body, p]
   SfxShun aid p -> do
     body <- getsState $ getActorBody aid
-    if bproj body
-    then return $! PosSight (blid body) [bpos body, p]
-    else return $! PosFidAndSight (bfid body) (blid body) [bpos body, p]
+    return $! pointsProjBody body [bpos body, p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll
@@ -278,11 +272,14 @@ iidSfxAtomic cmd = case cmd of
   SfxCollideTile{} -> []
   SfxTaunt{} -> []
 
-posProjBody :: Actor -> PosAtomic
-posProjBody body =
+pointsProjBody :: Actor -> [Point] -> PosAtomic
+pointsProjBody body ps =
   if bproj body
-  then PosSight (blid body) [bpos body]
-  else PosFidAndSight (bfid body) (blid body) [bpos body]
+  then PosSight (blid body) ps
+  else PosFidAndSight (bfid body) (blid body) ps
+
+posProjBody :: Actor -> PosAtomic
+posProjBody body = pointsProjBody body [bpos body]
 
 singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
