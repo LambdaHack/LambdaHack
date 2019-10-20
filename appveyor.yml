@@ -93,3 +93,6 @@ test_script:
 #  - make test-short || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
   - make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
   - make testDefense-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+  
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
