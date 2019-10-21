@@ -43,21 +43,21 @@ cache:
   - $(StoreDir)
 
 install:
+  - choco source add -n mistuke -s https://www.myget.org/F/mistuke/api/v2
   - choco install %CHOCOCMD% -y %GHCOPTS% %CHOCOPTS% --ignore-dependencies
-  - choco install -y cabal %CHOCOPTS%
+  - choco install -y cabal-head %CHOCOPTS%
   - refreshenv
   - mkdir %Deps%
   - set PATH=%Deps%;%PATH%
-  - mingw64-pkg install "\"SDL2 --noconfirm\""
-  - mingw64-pkg install "\"SDL2_ttf --noconfirm\""
+  - mingw64-pkg install "SDL2 SDL2_ttf" --noconfirm
 
 before_build:
   - ghc --version
   - which cabal
   - cabal --version
-  - cabal %CABOPTS% v2-update
-  - cabal %CABOPTS% v2-install happy
-  - cabal %CABOPTS% v2-install sdl2 -fno-linear --lib
+  - cabal %CABOPTS% update
+  - cabal %CABOPTS% install happy
+  - cabal %CABOPTS% install sdl2 -fno-linear --lib
 
 build_script:
   - make build-binary-common
