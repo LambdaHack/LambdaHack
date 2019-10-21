@@ -248,15 +248,15 @@ test-short-load:
 
 build-binary-common:
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
-	cabal v2-install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies
-	cabal v2-configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
-	cabal v2-build exe:LambdaHack
-	cabal v2-copy --destdir=LambdaHackTheGameInstall
+	cabal install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies --lib
+	cabal configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
+	cabal build exe:LambdaHack
+	cabal copy --destdir=LambdaHackTheGameInstall
 	([ -f "LambdaHackTheGameInstall/bin/LambdaHack" ] && mv LambdaHackTheGameInstall/bin/LambdaHack LambdaHackTheGame) || exit 0
 	([ -f "LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys64/bin/LambdaHack.exe LambdaHackTheGame) || exit 0
 	([ -f "LambdaHackTheGameInstall/msys32/bin/LambdaHack.exe" ] && mv LambdaHackTheGameInstall/msys32/bin/LambdaHack.exe LambdaHackTheGame) || exit 0
-#	cabal new-build --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies .
-#	cabal new-install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame --enable-executable-stripping exe:LambdaHack
+#	cabal build --disable-library-profiling --disable-profiling --disable-documentation --only-dependencies .
+#	cabal install --disable-library-profiling --disable-profiling --disable-documentation --datadir=. --datasubdir=. --install-method=copy --installdir=LambdaHackTheGame --enable-executable-stripping exe:LambdaHack
 	cp GameDefinition/config.ui.default LambdaHackTheGame/GameDefinition
 	cp GameDefinition/fonts/16x16xw.woff LambdaHackTheGame/GameDefinition/fonts
 	cp GameDefinition/fonts/16x16xw.bdf LambdaHackTheGame/GameDefinition/fonts
