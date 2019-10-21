@@ -45,7 +45,7 @@ cache:
 install:
   - choco source add -n mistuke -s https://www.myget.org/F/mistuke/api/v2
   - choco install %CHOCOCMD% -y %GHCOPTS% %CHOCOPTS% --ignore-dependencies
-  - choco install -y cabal-head %CHOCOPTS%
+  - choco install -y cabal-head %CHOCOPTS% -pre
   - refreshenv
   - mkdir %Deps%
   - set PATH=%Deps%;%PATH%
