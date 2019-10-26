@@ -16,8 +16,8 @@ import           Data.Binary
 import           GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Common.Vector
-import           Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Definition.Defs
 
 data CmdCategory =
     CmdMainMenu | CmdDashboard | CmdItemMenu
@@ -34,8 +34,8 @@ categoryDescription CmdMainMenu = "Main menu"
 categoryDescription CmdDashboard = "Dashboard"
 categoryDescription CmdItemMenu = "Item menu commands"
 categoryDescription CmdMove = "Terrain exploration and modification commands"
-categoryDescription CmdItem = "Complete item-related commands"
-categoryDescription CmdAim = "Complete aiming commands"
+categoryDescription CmdItem = "All item-related commands"
+categoryDescription CmdAim = "All aiming commands"
 categoryDescription CmdMeta = "Assorted commands"
 categoryDescription CmdMouse = "Mouse"
 categoryDescription CmdInternal = "Internal"
