@@ -179,9 +179,13 @@ actorWaitsOrSleeps b = case bwatch b of
   WSleep -> True
   _ -> False
 
+-- | Projectile that ran out of steam or collided with obstacle, dies.
+-- Even if it pierced through an obstacle, but lost its payload
+-- while altering the obstacle during piercing, it dies, too.
 actorDying :: Actor -> Bool
 actorDying b = bhp b <= 0
-               || bproj b && maybe True (null . fst) (btrajectory b)
+               || bproj b && (maybe True (null . fst) (btrajectory b)
+                              || EM.null (beqp b))
 
 hpTooLow :: Actor -> Ability.Skills -> Bool
 hpTooLow b actorMaxSk =

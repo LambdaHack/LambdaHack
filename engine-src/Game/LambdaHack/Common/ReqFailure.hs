@@ -97,7 +97,7 @@ impossibleReqFailure reqFailure = case reqFailure of
   AlterDistant -> True
   AlterBlockActor -> True  -- adjacent actor always visible
   AlterBlockItem -> True  -- adjacent item always visible
-  AlterNothing -> True
+  AlterNothing -> True  -- if tile known, its properties known
   CloseDistant -> True
   CloseClosed -> True
   CloseNothing -> True

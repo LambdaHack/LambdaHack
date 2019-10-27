@@ -659,9 +659,7 @@ dieSer aid b = do
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
   dropAllItems aid b3
   -- As the last act of heroism, the actor (even if projectile)
-  -- combines its dropped items with those in terrain, causing some effects.
-  void $ reqAlterFail True False aid (bpos b2)  -- old bpos; OK, safer
-  -- And, unless already tried, changes the terrain with its items, if possible.
+  -- changes the terrain with its items, if possible.
   unless isBlast $
     void $ reqAlterFail False False aid (bpos b2)  -- old bpos; OK, safer
   b4 <- getsState $ getActorBody aid

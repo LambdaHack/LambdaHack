@@ -596,7 +596,11 @@ reqDisplaceGeneric voluntary source target = do
 -- | Search and/or alter the tile.
 reqAlter :: MonadServerAtomic m => ActorId -> Point -> m ()
 reqAlter source tpos = do
-  mfail <- reqAlterFail False True source tpos
+  COps{coTileSpeedup} <- getsState scops
+  sb <- getsState $ getActorBody source
+  lvl <- getLevel $ blid sb
+  let onCombineOnly = Tile.isWalkable coTileSpeedup (lvl `at` tpos)
+  mfail <- reqAlterFail onCombineOnly True source tpos
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
@@ -683,8 +687,13 @@ reqAlterFail onCombineOnly voluntary source tpos = do
         -- by the embeds to another level, where @tpos@ is meaningless.
         execSfxAtomic $ SfxTrigger source tpos
         void $ tryApplyEmbeds
-      return Nothing  -- success
-  else if clientTile == serverTile then  -- alters
+      return Nothing  -- searching is always success
+  else
+    -- Here either @clientTile == serverTile@ or the client
+    -- is misguided re tile at that position, e.g., it is a projectile
+    -- that can't see the tile and the tile was not revealed so far.
+    -- In either case, try to alter the tile. If the messages
+    -- are confusing, that's fair, situation is confusing.
     if not (bproj sb || underFeet)  -- skill needed only for standard altering
        && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then return $ Just AlterUnskilled  -- don't leak about altering
@@ -713,6 +722,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 Just tHidden ->
                   execUpdAtomic $ UpdAlterTile lid tpos tHidden toTile
                 Nothing -> return ()
+              -- @UpdAlterExplorable@ is received by any client regardless
+              -- of whether the alteration was seen and how.
               case (Tile.isExplorable coTileSpeedup serverTile,
                     Tile.isExplorable coTileSpeedup toTile) of
                 (False, True) -> execUpdAtomic $ UpdAlterExplorable lid 1
@@ -817,7 +828,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                                             -- don't autoclose doors under actor
                             | otherwise = mapMaybe toAlterWith feats
       if null groupsToAlterTo && null groupstoAlterWith && EM.null embeds then
-        return $ Just AlterNothing  -- no altering possible; silly client
+        return $ Just AlterNothing  -- no altering possible; silly client; fail
       else
         if underFeet || EM.notMember tpos (lfloor lvl) then
           if underFeet || not (occupiedBigLvl tpos lvl)
@@ -862,17 +873,15 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
               _ | not (EM.null embeds) && triggered /= UseUp ->
                 -- Disabling only free terrain alteration, while the one
-                -- with item cost is idependent of the ability to activate
+                -- with item cost is independent of the ability to activate
                 -- embedded items.
                 return ()
               [groupToAlterTo] -> changeTo groupToAlterTo
               [] -> return ()
               l -> error $ "tile changeable in many ways" `showFailure` l
-            return Nothing  -- success
+            return Nothing  -- altered as much as items allowed; success
           else return $ Just AlterBlockActor
         else return $ Just AlterBlockItem
-  else  -- client is misguided re tile at that position, so bail out
-    return $ Just AlterNothing
 
 -- * ReqWait
 
