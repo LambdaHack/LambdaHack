@@ -1,7 +1,8 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem, partItemShort, partItemShortest, partItemHigh, partItemWs
-  , partItemWsRanged, partItemShortAW, partItemMediumAW, partItemShortWownW
+  ( partItem, partItemShort, partItemShortest, partItemHigh
+  , partItemWs, partItemWsShort, partItemWsRanged
+  , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -225,12 +226,12 @@ partItemHigh side factionD = partItemN side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
-partItemWsR :: FactionId -> FactionDict -> Bool -> Int -> Time -> ItemFull
-            -> ItemQuant
+partItemWsR :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int -> Time
+            -> ItemFull -> ItemQuant
             -> MU.Part
-partItemWsR side factionD ranged count localTime itemFull kit =
+partItemWsR side factionD ranged detail count localTime itemFull kit =
   let (name, powers) =
-        partItemN side factionD ranged DetailMedium 4 localTime itemFull kit
+        partItemN side factionD ranged detail 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
       periodic = IA.checkFlag Ability.Periodic arItem
       condition = IA.checkFlag Ability.Condition arItem
@@ -249,12 +250,17 @@ partItemWsR side factionD ranged count localTime itemFull kit =
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
            -> MU.Part
-partItemWs side factionD = partItemWsR side factionD False
+partItemWs side factionD = partItemWsR side factionD False DetailMedium
+
+partItemWsShort :: FactionId -> FactionDict -> Int -> Time -> ItemFull
+                -> ItemQuant
+                -> MU.Part
+partItemWsShort side factionD = partItemWsR side factionD False DetailLow
 
 partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
                  -> ItemQuant
                  -> MU.Part
-partItemWsRanged side factionD = partItemWsR side factionD True
+partItemWsRanged side factionD = partItemWsR side factionD True DetailMedium
 
 partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                 -> MU.Part

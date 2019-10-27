@@ -136,17 +136,19 @@ displayRespUpdAtomicUI cmd = case cmd of
     if verbose then do
       ownW <- ppContainerWownW partActorLeader False c
       let verb = MU.Text $ makePhrase $ "disappear from" : ownW
-      itemVerbMU MsgItemDestruction iid kit verb c
+      itemVerbMUShort MsgItemDestruction iid kit verb c
     else do
       lid <- getsState $ lidFromC c
       markDisplayNeeded lid
   UpdSpotActor aid body -> createActorUI False aid body
   UpdLoseActor aid body -> destroyActorUI False aid body
   UpdSpotItem verbose iid kit c -> spotItem verbose iid kit c
-  UpdLoseItem True iid kit c -> do
-    ownW <- ppContainerWownW partActorLeader False c
-    let verb = MU.Text $ makePhrase $ "be removed from" : ownW
-    itemVerbMU MsgItemMove iid kit verb c
+  UpdLoseItem True iid kit c@(CActor aid _) -> do
+    b <- getsState $ getActorBody aid
+    when (not (bproj b) && bhp b > 0) $ do  -- don't spam
+      ownW <- ppContainerWownW partActorLeader False c
+      let verb = MU.Text $ makePhrase $ "be removed from" : ownW
+      itemVerbMUShort MsgItemMove iid kit verb c
   UpdLoseItem{} -> return ()
   UpdSpotItemBag c bag -> do
     mapWithKeyM_ (\iid kit -> spotItem False iid kit c) bag
@@ -160,7 +162,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         mleader <- getsClient sleader
         if Just aid == mleader && not underAI then
           manyItemsAidVerbMU MsgItemMove aid verb bag Right
-        else when (not (bproj b) && bhp b > 0) $  -- don't announce death drops
+        else when (not (bproj b) && bhp b > 0) $  -- don't spam
           manyItemsAidVerbMU MsgItemMove aid verb bag (Left . Just)
       _ -> return ()
   UpdLoseItemBag{} -> return ()  -- rarely interesting and can be very long
@@ -567,20 +569,33 @@ aidVerbDuplicateMU msgClass aid verb = do
   subject <- partActorLeader aid
   msgAddDuplicate (makeSentence [MU.SubjectVerbSg subject verb]) msgClass 1
 
-itemVerbMU :: MonadClientUI m
-           => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
-itemVerbMU msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
+itemVerbMUGeneral :: MonadClientUI m
+                  => Bool -> MsgClass -> ItemId -> ItemQuant -> MU.Part
+                  -> Container
+                  -> m ()
+itemVerbMUGeneral verbose msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemFull <- getsState $ itemToFull iid
   side <- getsClient sside
   factionD <- getsState sfactionD
   let arItem = aspectRecordFull itemFull
-      subject = partItemWs side factionD k localTime itemFull kit
+      partItemWsChosen | verbose = partItemWs
+                       | otherwise =  partItemWsShort
+      subject = partItemWsChosen side factionD k localTime itemFull kit
       msg | k > 1 && not (IA.checkFlag Ability.Condition arItem) =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msgClass msg
+
+itemVerbMU :: MonadClientUI m
+           => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
+itemVerbMU = itemVerbMUGeneral True
+
+itemVerbMUShort :: MonadClientUI m
+                => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container
+                -> m ()
+itemVerbMUShort = itemVerbMUGeneral False
 
 itemAidVerbMU :: MonadClientUI m
               => MsgClass -> ActorId -> MU.Part
