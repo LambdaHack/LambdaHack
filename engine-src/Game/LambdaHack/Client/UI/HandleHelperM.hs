@@ -719,7 +719,7 @@ ppContainerWownW ownerFun addPrepositions c = case c of
     let (preposition, noun) = ppCStore store
         prep = [MU.Text preposition | addPrepositions]
     return $! prep ++ case store of
-      CGround -> [MU.Text noun, "under", owner]
+      CGround -> [MU.Text noun] ++ if bproj b then [] else ["under", owner]
       CStash -> if bfid b /= side
                 then [MU.WownW (MU.Text fidName) (MU.Text noun)]
                 else [MU.Text noun]

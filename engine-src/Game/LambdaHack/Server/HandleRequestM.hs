@@ -813,6 +813,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               _ -> Nothing
           groupsToAlterTo | underFeet = mapMaybe toWalkable feats
                                           -- don't autoclose doors under actor
+                                          -- or close via dropping item inside
                           | otherwise = mapMaybe toAlter feats
           toAlterWith feat =
             case feat of
