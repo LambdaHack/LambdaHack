@@ -26,6 +26,7 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
+import           Data.Key (mapWithKeyM_)
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
@@ -763,7 +764,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- The embed should provide any requisite fireworks instead.
                 unless (EM.null bagToLose) $ do
                   identifyStoreBag store bagToLose
-                  execUpdAtomic $ UpdLoseItemBag (CActor source store) bagToLose
+                  -- Not @UpdLoseItemBag@, to be verbose. Bag is small, anyway.
+                  let c = CActor source store
+                  mapWithKeyM_ (\iid kit ->
+                    execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
                 let applyItemIfPresent iid = do
