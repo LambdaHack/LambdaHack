@@ -1204,13 +1204,20 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxCheck aid iid ->
     itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
   SfxTrigger aid p -> do
-    COps{cotile} <- getsState scops
     b <- getsState $ getActorBody aid
-    lvl <- getLevel $ blid b
-    let name = TK.tname $ okind cotile $ lvl `at` p
-        (msgClass, verb) = if p == bpos b
-                           then (MsgActionMinor, "walk over")
-                           else (MsgAction, "exploit")
+    embeds <- getsState $ getEmbedBag (blid b) p
+    localTime <- getsState $ getLocalTime (blid b)
+    factionD <- getsState sfactionD
+    case EM.keys embeds of
+      [] -> return ()  -- strange; not visible to the client?
+      embed : rest -> do
+        itemFull <- getsState $ itemToFull embed
+        let (object1, object2) =
+              partItemShortest (bfid b) factionD localTime itemFull (1, [])
+            objectRest = if null rest then [] else ["and others"]
+            (msgClass, verb) = if p == bpos b
+                               then (MsgActionMinor, "walk over")
+                               else (MsgAction, "exploit")
           -- TODO: "struggle" when harmful, "wade through" when deep, etc.
           -- possibly use the verb from the first embedded item,
           -- but it's meant to go with the item as subject, no the actor
@@ -1220,7 +1227,8 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- or "use obscene pictogram"; probably per-item verb is needed,
           -- but there has to be a consistent rule what the verbs represent
           -- for what class of items, particularly if we just use @iverbHit@
-    aidVerbMU msgClass aid $ MU.Text $ verb <+> name
+        aidVerbMU msgClass aid $
+          MU.Phrase $ [verb, object1, object2] ++ objectRest
   SfxShun aid _p ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
