@@ -956,20 +956,27 @@ reqMoveItems source l = do
     -- Server accepts item movement based on calm at the start, not end
     -- or in the middle, to avoid interrupted or partially ignored commands.
     let calmE = calmEnough b actorMaxSk
-    mapM_ (reqMoveItem source calmE) l
+    case l of
+      [] -> execFailure source (ReqMoveItems l) ItemNothing
+      iid : rest -> do
+        reqMoveItem False source calmE iid
+        -- Dropping previous may destroy next items.
+        mapM_ (reqMoveItem True source calmE) rest
   else execFailure source (ReqMoveItems l) MoveItemUnskilled
 
 reqMoveItem :: MonadServerAtomic m
-            => ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
-reqMoveItem aid calmE (iid, k, fromCStore, toCStore) = do
+            => Bool -> ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
+reqMoveItem absentPermitted aid calmE (iid, k, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
   let fromC = CActor aid fromCStore
       req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
   toC <- case toCStore of
     CGround -> pickDroppable False aid b  -- drop over fog, etc.
     _ -> return $! CActor aid toCStore
+  bagFrom <- getsState $ getContainerBag (CActor aid fromCStore)
   bagBefore <- getsState $ getContainerBag toC
   if
+   | absentPermitted && iid `EM.notMember` bagFrom -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
    | toCStore == CEqp && not calmE ->
      execFailure aid req ItemNotCalm
