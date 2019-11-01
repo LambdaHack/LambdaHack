@@ -180,12 +180,16 @@ posSfxAtomic cmd = case cmd of
   SfxReceive aid _ -> singleAid aid
   SfxApply aid _ -> singleAid aid
   SfxCheck aid _ -> singleAid aid
-  SfxTrigger aid p -> do
+  SfxTrigger aid lid p -> do
     body <- getsState $ getActorBody aid
-    return $! pointsProjBody body [bpos body, p]
-  SfxShun aid p -> do
+    return $! if bproj body
+              then PosSight lid [p]
+              else PosFidAndSight (bfid body) lid [p]
+  SfxShun aid lid p -> do
     body <- getsState $ getActorBody aid
-    return $! pointsProjBody body [bpos body, p]
+    return $! if bproj body
+              then PosSight lid [p]
+              else PosFidAndSight (bfid body) lid [p]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxRestart -> return PosAll

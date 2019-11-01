@@ -153,8 +153,8 @@ data SfxAtomic =
   | SfxReceive ActorId ItemId
   | SfxApply ActorId ItemId
   | SfxCheck ActorId ItemId
-  | SfxTrigger ActorId Point
-  | SfxShun ActorId Point
+  | SfxTrigger ActorId LevelId Point
+  | SfxShun ActorId LevelId Point
   | SfxEffect FactionId ActorId IK.Effect Int64
   | SfxMsgFid FactionId SfxMsg
   | SfxRestart
@@ -277,8 +277,8 @@ undoSfxAtomic cmd = case cmd of
   SfxReceive aid iid -> SfxProject aid iid
   SfxApply aid iid -> SfxCheck aid iid
   SfxCheck aid iid -> SfxApply aid iid
-  SfxTrigger aid p -> SfxShun aid p
-  SfxShun aid p -> SfxTrigger aid p
+  SfxTrigger aid lid p -> SfxShun aid lid p
+  SfxShun aid lid p -> SfxTrigger aid lid p
   SfxEffect{} -> cmd  -- not ideal?
   SfxMsgFid{} -> cmd
   SfxRestart -> cmd

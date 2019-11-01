@@ -1218,10 +1218,10 @@ displayRespSfxAtomicUI sfx = case sfx of
     itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1)
   SfxCheck aid iid ->
     itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
-  SfxTrigger aid p -> do
+  SfxTrigger aid lid p -> do
     b <- getsState $ getActorBody aid
-    embeds <- getsState $ getEmbedBag (blid b) p
-    localTime <- getsState $ getLocalTime (blid b)
+    embeds <- getsState $ getEmbedBag lid p
+    localTime <- getsState $ getLocalTime lid
     factionD <- getsState sfactionD
     case EM.keys embeds of
       [] -> return ()  -- strange; not visible to the client?
@@ -1230,7 +1230,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         let (object1, object2) =
               partItemShortest (bfid b) factionD localTime itemFull (1, [])
             objectRest = if null rest then [] else ["and others"]
-            (msgClass, verb) = if p == bpos b
+            (msgClass, verb) = if p == bpos b && lid == blid b
                                then (MsgActionMinor, "walk over")
                                else (MsgAction, "exploit")
           -- TODO: "struggle" when harmful, "wade through" when deep, etc.
@@ -1244,7 +1244,7 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- for what class of items, particularly if we just use @iverbHit@
         aidVerbMU msgClass aid $
           MU.Phrase $ [verb, object1, object2] ++ objectRest
-  SfxShun aid _p ->
+  SfxShun aid _ _ ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid

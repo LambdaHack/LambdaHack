@@ -684,10 +684,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       unless (Tile.isDoor coTileSpeedup serverTile
               || Tile.isChangable coTileSpeedup serverTile
               || EM.null embeds) $ do
-        -- Can't send @SfxTrigger@ afterwards, because actor may be moved
-        -- by the embeds to another level, where @tpos@ is meaningless.
-        execSfxAtomic $ SfxTrigger source tpos
-        void $ tryApplyEmbeds
+        triggered <- tryApplyEmbeds
+        when (triggered /= UseDud) $
+          execSfxAtomic $ SfxTrigger source lid tpos
       return Nothing  -- searching is always success
   else
     -- Here either @clientTile == serverTile@ or the client
@@ -843,12 +842,6 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- is visible on the map (unless it changes into itself)
             -- and there's nothing more to speak about.
             triggered <- if EM.null embeds then return UseDud else do
-              -- Can't send @SfxTrigger@ afterwards, because actor may be moved
-              -- by the embeds to another level, where @tpos@ is meaningless.
-              -- However, don't spam with projectiles on ice,
-              -- so message generated only for standard altering.
-              unless (bproj sb || underFeet) $
-                execSfxAtomic $ SfxTrigger source tpos
               -- The embeds of the initial tile are activated before the tile
               -- is altered. This prevents, e.g., trying to activate items
               -- where none are present any more, or very different to what
@@ -859,6 +852,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- (unless it's altered later on, in which case the new one is).
               revealEmbeds
               tryApplyEmbeds
+            -- However, don't spam with projectiles on ice,
+            -- so message generated only for standard altering.
+            unless (bproj sb || underFeet || triggered == UseDud) $
+              execSfxAtomic $ SfxTrigger source lid tpos
             case groupsToAlterTo of
               _ : _ : _ -> error $ "tile changeable in many ways"
                                    `showFailure` groupsToAlterTo
