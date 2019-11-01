@@ -877,7 +877,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 altered <- if alteredGround
                            then return True
                            else tryChangeStore CEqp
-                unless (altered || null groupstoAlterWith || not voluntary) $
+                unless (altered || underFeet
+                        ||null groupstoAlterWith || not voluntary) $
                   execSfxAtomic $ SfxMsgFid (bfid sb)
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
               _ -> return () -- nothing can be changed freely
@@ -963,15 +964,19 @@ reqMoveItems source l = do
 
 reqMoveItem :: MonadServerAtomic m
             => Bool -> ActorId -> Bool -> (ItemId, Int, CStore, CStore) -> m ()
-reqMoveItem absentPermitted aid calmE (iid, k, fromCStore, toCStore) = do
+reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
   b <- getsState $ getActorBody aid
   let fromC = CActor aid fromCStore
-      req = ReqMoveItems [(iid, k, fromCStore, toCStore)]
+      req = ReqMoveItems [(iid, kOld, fromCStore, toCStore)]
   toC <- case toCStore of
     CGround -> pickDroppable False aid b  -- drop over fog, etc.
     _ -> return $! CActor aid toCStore
   bagFrom <- getsState $ getContainerBag (CActor aid fromCStore)
   bagBefore <- getsState $ getContainerBag toC
+  let (k, _) = bagFrom EM.! iid
+  -- The effect of dropping previous items from this series may have
+  -- increased or decrease the number of this item.
+  let !_A = if absentPermitted then True else k == kOld
   if
    | absentPermitted && iid `EM.notMember` bagFrom -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
