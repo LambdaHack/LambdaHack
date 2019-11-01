@@ -860,7 +860,14 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               revealEmbeds
               tryApplyEmbeds
             case groupsToAlterTo of
-              [] | voluntary || bproj sb -> do
+              _ : _ : _ -> error $ "tile changeable in many ways"
+                                   `showFailure` groupsToAlterTo
+              [groupToAlterTo] | EM.null embeds || triggered == UseUp ->
+                -- Disabling only free terrain alteration, while the ones
+                -- with item cost is independent of the ability to activate
+                -- embedded items.
+                changeTo groupToAlterTo
+              _ | voluntary || bproj sb -> do
                 -- Waste item only if voluntary or released as projectile.
                 let tryChangeStore store =
                       foldM (\changed groupToAlterWith ->
@@ -876,14 +883,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 unless (altered || null groupstoAlterWith || not voluntary) $
                   execSfxAtomic $ SfxMsgFid (bfid sb)
                                 $ SfxNoItemsForTile $ map fst groupstoAlterWith
-              _ | not (EM.null embeds) && triggered /= UseUp ->
-                -- Disabling only free terrain alteration, while the one
-                -- with item cost is independent of the ability to activate
-                -- embedded items.
-                return ()
-              [groupToAlterTo] -> changeTo groupToAlterTo
-              [] -> return ()
-              l -> error $ "tile changeable in many ways" `showFailure` l
+              _ -> return () -- nothing can be changed freely
             return Nothing  -- altered as much as items allowed; success
           else return $ Just AlterBlockActor
         else return $ Just AlterBlockItem
