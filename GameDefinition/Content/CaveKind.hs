@@ -1,6 +1,7 @@
 -- | Cave properties.
 module Content.CaveKind
-  ( content
+  ( pattern DEFAULT_RANDOM, pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
+  , content
   ) where
 
 import Prelude ()
@@ -11,6 +12,7 @@ import Data.Ratio
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Core.Dice
+import Game.LambdaHack.Definition.Defs
 
 content :: [CaveKind]
 content =
@@ -18,12 +20,38 @@ content =
 
 rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
+-- * Group name patterns
+
+pattern DEFAULT_RANDOM, CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
+
+pattern DEFAULT_RANDOM = "default random"
+pattern CAVE_ROGUE = "caveRogue"
+pattern CAVE_ARENA = "caveArena"
+pattern CAVE_SMOKING = "caveSmoking"
+pattern CAVE_LABORATORY = "caveLaboratory"
+pattern CAVE_NOISE = "caveNoise"
+pattern CAVE_MINE = "caveMine"
+pattern CAVE_EMPTY = "caveEmpty"
+pattern CAVE_SHALLOW_ROGUE = "caveShallowRogue"
+pattern CAVE_OUTERMOST = "caveOutermost"
+pattern CAVE_RAID = "caveRaid"
+pattern CAVE_BRAWL = "caveBrawl"
+pattern CAVE_SHOOTOUT = "caveShootout"
+pattern CAVE_HUNT = "caveHunt"
+pattern CAVE_ESCAPE = "caveEscape"
+pattern CAVE_ZOO = "caveZoo"
+pattern CAVE_AMBUSH = "caveAmbush"
+pattern CAVE_BATTLE = "caveBattle"
+pattern CAVE_SAFARI_1 = "caveSafari1"
+pattern CAVE_SAFARI_2 = "caveSafari2"
+pattern CAVE_SAFARI_3 = "caveSafari3"
+
 -- * Underground caves; most of mediocre height and size
 
 rogue = CaveKind
   { csymbol       = 'R'
   , cname         = "A maze of twisty passages"
-  , cfreq         = [("default random", 100), ("caveRogue", 1)]
+  , cfreq         = [(DEFAULT_RANDOM, 100), (CAVE_ROGUE, 1)]
   , cXminSize     = 80
   , cYminSize     = 21
   , ccellSize     = DiceXY (2 `d` 4 + 10) 6
@@ -67,7 +95,7 @@ rogue = CaveKind
 arena = rogue
   { csymbol       = 'A'
   , cname         = "Dusty underground library"
-  , cfreq         = [("default random", 60), ("caveArena", 1)]
+  , cfreq         = [(DEFAULT_RANDOM, 60), (CAVE_ARENA, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
   , ccellSize     = DiceXY (3 `d` 3 + 17) (1 `d` 3 + 4)
@@ -98,7 +126,7 @@ arena = rogue
   }
 smoking = arena
   { cname         = "Smoking rooms"
-  , cfreq         = [("caveSmoking", 1)]
+  , cfreq         = [(CAVE_SMOKING, 1)]
   , cdarkOdds     = 41 + 1 `d` 10  -- almost all rooms lit (1 in 10 dark)
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
@@ -110,7 +138,7 @@ smoking = arena
 laboratory = rogue
   { csymbol       = 'L'
   , cname         = "Burnt laboratory"
-  , cfreq         = [("caveLaboratory", 1)]
+  , cfreq         = [(CAVE_LABORATORY, 1)]
   , cXminSize     = 60
   , cYminSize     = 21
   , ccellSize     = DiceXY (1 `d` 2 + 5) 6
@@ -135,7 +163,7 @@ laboratory = rogue
 noise = rogue
   { csymbol       = 'N'
   , cname         = "Leaky burrowed sediment"
-  , cfreq         = [("default random", 30), ("caveNoise", 1)]
+  , cfreq         = [(DEFAULT_RANDOM, 30), (CAVE_NOISE, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
   , ccellSize     = DiceXY (3 `d` 5 + 12) 6
@@ -166,7 +194,7 @@ noise = rogue
   }
 mine = noise
   { cname         = "Frozen derelict mine"
-  , cfreq         = [("caveMine", 1)]
+  , cfreq         = [(CAVE_MINE, 1)]
   , cnightOdds    = 51  -- easier variant, but looks sinister
   , citemNum      = 10 `d` 4  -- an incentive to explore the final labyrinth
   , citemFreq     = [("common item", 20), ("gem", 20)]
@@ -181,7 +209,7 @@ mine = noise
 empty = rogue
   { csymbol       = 'E'
   , cname         = "Tall cavern"
-  , cfreq         = [("caveEmpty", 1)]
+  , cfreq         = [(CAVE_EMPTY, 1)]
   , ccellSize     = DiceXY (2 `d` 2 + 11) (1 `d` 2 + 8)
   , cminPlaceSize = DiceXY 13 11
   , cmaxPlaceSize = DiceXY 37 31  -- favour large rooms
@@ -213,7 +241,7 @@ empty = rogue
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 shallowRogue = rogue
-  { cfreq         = [("caveShallowRogue", 100)]
+  { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
   , cXminSize     = 60
   , cYminSize     = 21
   , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot
@@ -222,7 +250,7 @@ shallowRogue = rogue
 outermost = shallowRogue
   { csymbol       = 'B'
   , cname         = "Cave entrance"
-  , cfreq         = [("caveOutermost", 100)]
+  , cfreq         = [(CAVE_OUTERMOST, 100)]
   , cXminSize     = 40
   , cYminSize     = 21
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
@@ -241,7 +269,7 @@ outermost = shallowRogue
 raid = rogue
   { csymbol       = 'T'
   , cname         = "Typing den"
-  , cfreq         = [("caveRaid", 1)]
+  , cfreq         = [(CAVE_RAID, 1)]
   , cXminSize     = 50
   , cYminSize     = 21
   , ccellSize     = DiceXY (2 `d` 4 + 6) 6
@@ -264,7 +292,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
                -- also, sanctuaries against missiles in shadow under trees
   { csymbol       = 'b'
   , cname         = "Sunny woodland"
-  , cfreq         = [("caveBrawl", 1)]
+  , cfreq         = [(CAVE_BRAWL, 1)]
   , cXminSize     = 60
   , cYminSize     = 21
   , ccellSize     = DiceXY (2 `d` 5 + 5) 6
@@ -299,7 +327,7 @@ shootout = rogue  -- a scenario with strong missiles;
                   -- scenario is about ranged combat at long range
   { csymbol       = 'S'
   , cname         = "Misty meadow"
-  , cfreq         = [("caveShootout", 1)]
+  , cfreq         = [(CAVE_SHOOTOUT, 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 4 4
@@ -334,7 +362,7 @@ shootout = rogue  -- a scenario with strong missiles;
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   { csymbol       = 'H'
   , cname         = "Noon swamp"
-  , cfreq         = [("caveHunt", 1)]
+  , cfreq         = [(CAVE_HUNT, 1)]
   , ccellSize     = DiceXY (1 `d` 2 + 6) 6
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 4 4
@@ -367,7 +395,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                 -- lots of small lights to cross, to have some risks
   { csymbol       = 'E'
   , cname         = "Metropolitan park at dusk"  -- "night" didn't fit
-  , cfreq         = [("caveEscape", 1)]
+  , cfreq         = [(CAVE_ESCAPE, 1)]
   , ccellSize     = DiceXY (1 `d` 3 + 7) 6
   , cminPlaceSize = DiceXY 5 3
   , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
@@ -398,7 +426,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
 zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'Z'
   , cname         = "Menagerie in flames"
-  , cfreq         = [("caveZoo", 1)]
+  , cfreq         = [(CAVE_ZOO, 1)]
   , ccellSize     = DiceXY (1 `d` 3 + 7) 6
   , cminPlaceSize = DiceXY 4 4
   , cmaxPlaceSize = DiceXY 12 5
@@ -437,7 +465,7 @@ ambush = rogue  -- a scenario with strong missiles;
                 -- active scouting, throwing flares and shooting discovers them
   { csymbol       = 'M'
   , cname         = "Burning metropolitan park"
-  , cfreq         = [("caveAmbush", 1)]
+  , cfreq         = [(CAVE_AMBUSH, 1)]
   , ccellSize     = DiceXY (1 `d` 4 + 7) 6
   , cminPlaceSize = DiceXY 5 3
   , cmaxPlaceSize = DiceXY 9 9  -- bias towards larger lamp areas
@@ -468,7 +496,7 @@ ambush = rogue  -- a scenario with strong missiles;
 battle = rogue  -- few lights and many solids, to help the less numerous heroes
   { csymbol       = 'B'
   , cname         = "Old battle ground"
-  , cfreq         = [("caveBattle", 1)]
+  , cfreq         = [(CAVE_BATTLE, 1)]
   , ccellSize     = DiceXY (5 `d` 3 + 11) 5  -- cfenceApart results in 2 rows
   , cminPlaceSize = DiceXY 4 4
   , cmaxPlaceSize = DiceXY 9 7
@@ -498,7 +526,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   }
 safari1 = brawl
   { cname         = "Hunam habitat"
-  , cfreq         = [("caveSafari1", 1)]
+  , cfreq         = [(CAVE_SAFARI_1, 1)]
   , cminPlaceSize = DiceXY 5 3
   , cextraStairs  = 1
   , cstairFreq    = [ ("outdoor walled staircase", 20)
@@ -508,7 +536,7 @@ safari1 = brawl
   }
 safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
   { cname         = "Deep into the jungle"
-  , cfreq         = [("caveSafari2", 1)]
+  , cfreq         = [(CAVE_SAFARI_2, 1)]
   , cextraStairs  = 1
   , cescapeFreq   = []
   , cstairFreq    = [ ("outdoor walled staircase", 20)
@@ -518,7 +546,7 @@ safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
   }
 safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   { cname         = "Jungle in flames"
-  , cfreq         = [("caveSafari3", 1)]
+  , cfreq         = [(CAVE_SAFARI_3, 1)]
   , cminPlaceSize = DiceXY 5 4
   , cescapeFreq   = [("escape outdoor down", 1)]
   , cextraStairs  = 1

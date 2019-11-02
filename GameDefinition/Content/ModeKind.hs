@@ -7,6 +7,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.CaveKind hiding (content)
 import Content.ModeKindPlayer
 import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
@@ -553,29 +554,29 @@ rosterDefenseEmpty = rosterCrawl
 
 cavesRaid, cavesBrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
 
-cavesRaid = [([-2], ["caveRaid"])]
+cavesRaid = [([-2], [CAVE_RAID])]
 
-cavesBrawl = [([-2], ["caveBrawl"])]
+cavesBrawl = [([-2], [CAVE_BRAWL])]
 
-cavesShootout = [([-5], ["caveShootout"])]
+cavesShootout = [([-5], [CAVE_SHOOTOUT])]
 
-cavesHunt = [([-6], ["caveHunt"])]
+cavesHunt = [([-6], [CAVE_HUNT])]
 
-cavesEscape = [([-7], ["caveEscape"])]
+cavesEscape = [([-7], [CAVE_ESCAPE])]
 
-cavesZoo = [([-8], ["caveZoo"])]
+cavesZoo = [([-8], [CAVE_ZOO])]
 
-cavesAmbush = [([-9], ["caveAmbush"])]
+cavesAmbush = [([-9], [CAVE_AMBUSH])]
 
 listCrawl :: [([Int], [GroupName CaveKind])]
 listCrawl =
-  [ ([-1], ["caveOutermost"])
-  , ([-2], ["caveShallowRogue"])
-  , ([-3], ["caveEmpty"])
-  , ([-4, -5, -6], ["default random", "caveRogue", "caveArena"])
-  , ([-7, -8], ["caveRogue", "caveSmoking"])
-  , ([-9], ["caveLaboratory"])
-  , ([-10], ["caveMine"]) ]
+  [ ([-1], [CAVE_OUTERMOST])
+  , ([-2], [CAVE_SHALLOW_ROGUE])
+  , ([-3], [CAVE_EMPTY])
+  , ([-4, -5, -6], [DEFAULT_RANDOM, CAVE_ROGUE, CAVE_ARENA])
+  , ([-7, -8], [CAVE_ROGUE, CAVE_SMOKING])
+  , ([-9], [CAVE_LABORATORY])
+  , ([-10], [CAVE_MINE]) ]
 
 cavesCrawl = listCrawl
 
@@ -593,13 +594,13 @@ cavesSee = let numberCaves n c = ([n], [c])
 
 allCaves :: [GroupName CaveKind]
 allCaves =
-  [ "caveRaid", "caveBrawl", "caveShootout", "caveHunt", "caveEscape", "caveZoo"
-  , "caveAmbush"
-  , "caveRogue", "caveLaboratory", "caveEmpty", "caveArena", "caveSmoking"
-  , "caveNoise", "caveMine" ]
+  [ CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO
+  , CAVE_AMBUSH
+  , CAVE_ROGUE, CAVE_LABORATORY, CAVE_EMPTY, CAVE_ARENA, CAVE_SMOKING
+  , CAVE_NOISE, CAVE_MINE ]
 
-cavesSafari = [ ([-4], ["caveSafari1"])
-              , ([-7], ["caveSafari2"])
-              , ([-10], ["caveSafari3"]) ]
+cavesSafari = [ ([-4], [CAVE_SAFARI_1])
+              , ([-7], [CAVE_SAFARI_2])
+              , ([-10], [CAVE_SAFARI_3]) ]
 
-cavesBattle = [([-5], ["caveBattle"])]
+cavesBattle = [([-5], [CAVE_BATTLE])]
