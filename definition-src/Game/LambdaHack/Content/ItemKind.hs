@@ -36,7 +36,7 @@ import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
 
--- Mandatory item groups
+-- * Mandatory item groups
 
 pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
 hardwiredItemGroups :: [GroupName ItemKind]
@@ -57,7 +57,7 @@ pattern IMPRESSED = "impressed"
 pattern CURRENCY = "currency"
 pattern MOBILE = "mobile"
 
--- Optional item groups, hardwired in Preferences.hs.
+-- * Optional item groups, hardwired in Preferences.hs.
 
 pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_VIAL, POTION, EXPLOSIVE, ANY_JEWELRY, SINGLE_SPARK, FRAGRANCE :: GroupName ItemKind
 pattern CURIOUS_ITEM = "curious item"
