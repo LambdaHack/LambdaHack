@@ -973,12 +973,12 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
     _ -> return $! CActor aid toCStore
   bagFrom <- getsState $ getContainerBag (CActor aid fromCStore)
   bagBefore <- getsState $ getContainerBag toC
-  let (k, _) = bagFrom EM.! iid
   -- The effect of dropping previous items from this series may have
-  -- increased or decrease the number of this item.
+  -- increased or decreased the number of this item.
+  let k = min kOld $ fst $ EM.findWithDefault (0, []) iid bagFrom
   let !_A = if absentPermitted then True else k == kOld
   if
-   | absentPermitted && iid `EM.notMember` bagFrom -> return ()
+   | absentPermitted && k == 0 -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
    | toCStore == CEqp && not calmE ->
      execFailure aid req ItemNotCalm
