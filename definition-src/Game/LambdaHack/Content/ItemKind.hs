@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), makeData
+  ( pattern CONDITION, pattern COMMON_ITEM, pattern BONUS_HP, pattern BRACED, pattern ASLEEP, pattern IMPRESSED, pattern CURRENCY, pattern MOBILE
+  , pattern CURIOUS_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_VIAL, pattern POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern SINGLE_SPARK, pattern FRAGRANCE
+  , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
   , strengthOnCombine, strengthOnSmash, getDropOrgans
@@ -33,6 +35,40 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
+
+-- Mandatory item groups
+
+pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
+hardwiredItemGroups :: [GroupName ItemKind]
+hardwiredItemGroups =
+       [CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE]
+
+-- From Preferences.hs.
+
+pattern CONDITION = "condition"
+pattern COMMON_ITEM = "common item"
+
+-- Assorted.
+
+pattern BONUS_HP = "bonus HP"
+pattern BRACED = "braced"
+pattern ASLEEP = "asleep"
+pattern IMPRESSED = "impressed"
+pattern CURRENCY = "currency"
+pattern MOBILE = "mobile"
+
+-- Optional item groups, hardwired in Preferences.hs.
+
+pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_VIAL, POTION, EXPLOSIVE, ANY_JEWELRY, SINGLE_SPARK, FRAGRANCE :: GroupName ItemKind
+pattern CURIOUS_ITEM = "curious item"
+pattern TREASURE = "treasure"
+pattern ANY_SCROLL = "any scroll"
+pattern ANY_VIAL = "any vial"
+pattern POTION = "potion"
+pattern EXPLOSIVE = "explosive"
+pattern ANY_JEWELRY = "any jewelry"
+pattern SINGLE_SPARK = "single spark"
+pattern FRAGRANCE = "fragrance"
 
 -- | Item properties that are fixed for a given kind of items.
 -- Of these, aspects and effects are jointly called item powers.
@@ -207,9 +243,9 @@ boostItemKindList initialGen l =
 boostItemKind :: ItemKind -> ItemKind
 boostItemKind i =
   let mainlineLabel (label, _) =
-        label `elem` ["common item", "curious item", "treasure"]
+        label `elem` [COMMON_ITEM, CURIOUS_ITEM, TREASURE]
   in if any mainlineLabel (ifreq i)
-     then i { ifreq = ("common item", 10000) : filter (not . mainlineLabel) (ifreq i)
+     then i { ifreq = (COMMON_ITEM, 10000) : filter (not . mainlineLabel) (ifreq i)
             , iaspects = delete (SetFlag Ability.Unique) $ iaspects i
             }
      else i
@@ -278,7 +314,7 @@ getDropOrgans :: ItemKind -> [GroupName ItemKind]
 getDropOrgans =
   let f (DestroyItem _ _ COrgan grp) = [grp]
       f (DropItem _ _ COrgan grp) = [grp]
-      f Impress = ["impressed"]
+      f Impress = [IMPRESSED]
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
@@ -469,16 +505,6 @@ validateAll content coitem =
         | not $ null missingEffectGroups ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
-
-hardwiredItemGroups :: [GroupName ItemKind]
-hardwiredItemGroups =
-  -- From Preferences.hs:
-  ["condition", "common item"]
-    -- the others are optional:
-    -- "curious item", "treasure", "any scroll", "any vial",
-    -- "potion", "explosive", "any jewelry"
-  -- Assorted:
-  ++ ["bonus HP", "braced", "asleep", "impressed", "currency", "mobile"]
 
 makeData :: [ItemKind] -> ContentData ItemKind
 makeData = makeContentData "ItemKind" iname ifreq validateSingle validateAll

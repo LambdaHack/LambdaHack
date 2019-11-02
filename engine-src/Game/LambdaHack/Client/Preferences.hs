@@ -49,8 +49,8 @@ effectToBenefit cops fid factionD eff =
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode "single spark" -> delta (-1)  -- hardwired; probing and flavour
-    IK.Explode "fragrance" -> (1, -5)  -- hardwired; situational
+    IK.Explode IK.SINGLE_SPARK -> delta (-1)  -- hardwired; probing and flavour
+    IK.Explode IK.FRAGRANCE -> (1, -5)  -- hardwired; situational
     IK.Explode _ ->
       -- There is a risk the explosion is focused and harmful to self
       -- or not focused and beneficial to nearby foes, but not to self.
@@ -111,7 +111,7 @@ effectToBenefit cops fid factionD eff =
                      then (0, 0)    -- annoying either way
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
-    IK.CreateItem COrgan "condition" _ ->
+    IK.CreateItem COrgan IK.CONDITION _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
     IK.CreateItem COrgan grp timer ->  -- assumed temporary
       let turnTimer = IK.foldTimer 1 Dice.meanDice Dice.meanDice timer
@@ -120,19 +120,19 @@ effectToBenefit cops fid factionD eff =
       in delta $ total / fromIntegral count
            -- the same when created in me and in foe
            -- average over all matching grps; simplified: rarities ignored
-    IK.CreateItem _ "treasure" _ -> (100, 0)  -- assumed not temporary
-    IK.CreateItem _ "common item" _ -> (70, 0)
-    IK.CreateItem _ "curious item" _ -> (70, 0)
-    IK.CreateItem _ "any scroll" _ -> (50, 0)
-    IK.CreateItem _ "any vial" _ -> (50, 0)
-    IK.CreateItem _ "potion" _ -> (50, 0)
-    IK.CreateItem _ "explosive" _ -> (50, 0)
-    IK.CreateItem _ "any jewelry" _ -> (100, 0)
+    IK.CreateItem _ IK.TREASURE _ -> (100, 0)  -- assumed not temporary
+    IK.CreateItem _ IK.COMMON_ITEM _ -> (70, 0)
+    IK.CreateItem _ IK.CURIOUS_ITEM _ -> (70, 0)
+    IK.CreateItem _ IK.ANY_SCROLL _ -> (50, 0)
+    IK.CreateItem _ IK.ANY_VIAL _ -> (50, 0)
+    IK.CreateItem _ IK.POTION _ -> (50, 0)
+    IK.CreateItem _ IK.EXPLOSIVE _ -> (50, 0)
+    IK.CreateItem _ IK.ANY_JEWELRY _ -> (100, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fid factionD
       in (total / fromIntegral count, 0)
     IK.DestroyItem{} -> delta (-10)  -- potentially harmful
-    IK.DropItem _ _ COrgan "condition" ->
+    IK.DropItem _ _ COrgan IK.CONDITION ->
       delta 30  -- save for curing own bad conditions
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
@@ -515,7 +515,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
           , eqpSum
             + maximum [benApply, - benMeleeAvg, 0] )  -- apply or melee or not
         | (IA.goesIntoEqp arItem
-          || isJust (lookup "condition" $ IK.ifreq itemKind))
+          || isJust (lookup IK.CONDITION $ IK.ifreq itemKind))
                -- hack to record benefit, to use it in calculations later on
           && (eqpSum > 0 || itemSuspect) =  -- weapon or other equippable
           ( True  -- equip; long time bonus usually outweighs fling or apply

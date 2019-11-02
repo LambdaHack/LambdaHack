@@ -229,6 +229,7 @@ language_extensions:
     - NamedFieldPuns
     - DoAndIfThenElse
     - PatternGuards
+    - PatternSynonyms
     - MultiParamTypeClasses
     - FlexibleContexts
     - TypeFamilies
