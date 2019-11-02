@@ -973,7 +973,7 @@ quitFactionUI fid toSt manalytics = do
                                         $ aspectRecordFull trunkFull
                 smartUniqueEnemyCaptured = any uniqueActor smartEnemyOurs
                 smartEnemyCaptured = not $ null smartEnemyOurs
-                won = maybe False ((`elem` [Conquer, Conquer]) . stOutcome) toSt
+                won = maybe False ((`elem` [Conquer, Escape]) . stOutcome) toSt
                 sp2 | not won = ""
                     | smartUniqueEnemyCaptured =
                   "\nOh, wait, who is this, towering behind your escaping crew? This changes everything. For everybody. Everywhere. Forever. Did you plan for this? What was exactly the idea and who decided to carry it through?"
