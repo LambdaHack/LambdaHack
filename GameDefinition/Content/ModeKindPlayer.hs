@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindActor
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Ability
 
@@ -18,7 +19,7 @@ playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, pl
 
 playerHero = Player
   { fname = "Explorer"
-  , fgroups = ["hero"]
+  , fgroups = [HERO]
   , fskillsOther = meleeAdjacent
   , fcanEscape = True
   , fneverEmpty = True
@@ -36,7 +37,7 @@ playerAntiHero = playerHero
 
 playerCivilian = Player
   { fname = "Civilian"
-  , fgroups = ["hero", "civilian"]
+  , fgroups = [HERO, CIVILIAN]
   , fskillsOther = zeroSkills  -- not coordinated by any leadership
   , fcanEscape = False
   , fneverEmpty = True
@@ -49,7 +50,7 @@ playerCivilian = Player
 
 playerMonster = Player
   { fname = "Monster Hive"
-  , fgroups = ["monster", "mobile monster"]
+  , fgroups = [MONSTER, MOBILER_MONSTER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -70,7 +71,7 @@ playerAntiMonster = playerMonster
 
 playerAnimal = Player
   { fname = "Animal Kingdom"
-  , fgroups = ["animal", "mobile animal", "immobile animal", "scavenger"]
+  , fgroups = [ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, SCAVENGER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False

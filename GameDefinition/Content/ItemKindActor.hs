@@ -1,6 +1,7 @@
 -- | Actor (or rather actor body trunk) definitions.
 module Content.ItemKindActor
-  ( actors
+  ( pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILER_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern SCAVENGER, pattern IMMOBILE_ANIMAL
+  , actors
   ) where
 
 import Prelude ()
@@ -23,6 +24,26 @@ warrior,    warrior2, warrior3, warrior4, warrior5, scout, ranger, escapist, amb
 -- LH-specific
 geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
+-- * Group name patterns
+
+pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILER_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, SCAVENGER, IMMOBILE_ANIMAL :: GroupName ItemKind
+
+pattern HERO = "hero"
+pattern SCOUT_HERO = "scout hero"
+pattern RANGER_HERO = "ranger hero"
+pattern ESCAPIST_HERO = "escapist hero"
+pattern AMBUSHER_HERO = "ambusher hero"
+pattern BRAWLER_HERO = "brawler hero"
+pattern SOLDIER_HERO = "soldier hero"
+pattern CIVILIAN = "civilian"
+pattern MONSTER = "monster"
+pattern MOBILER_MONSTER = "mobile monster"
+pattern SCOUT_MONSTER = "scout monster"
+pattern ANIMAL = "animal"
+pattern MOBILE_ANIMAL = "mobile animal"
+pattern SCAVENGER = "scavenger"
+pattern IMMOBILE_ANIMAL = "immobile animal"
+
 -- Note that the actors that appear in the crawl scenario should
 -- be generated with at most ordinary ammo. Otherwise, farming them
 -- may be rational though boring endeavour. Any exceptions to that
@@ -34,7 +55,7 @@ geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 warrior = ItemKind
   { isymbol  = '@'
   , iname    = "warrior"  -- modified if initial actors in hero faction
-  , ifreq    = [("hero", 100), ("mobile", 1)]
+  , ifreq    = [(HERO, 100), (MOBILE, 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 5)]
@@ -75,7 +96,7 @@ warrior5 = warrior
 
 scout = warrior
   { iname    = "scout"
-  , ifreq    = [("scout hero", 100), ("mobile", 1)]
+  , ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
@@ -84,7 +105,7 @@ scout = warrior
   }
 ranger = warrior
   { iname    = "ranger"
-  , ifreq    = [("ranger hero", 100), ("mobile", 1)]
+  , ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
                ++ [ ("armor ranged", CEqp)
                   , ("weak arrow", CStash) ]
@@ -92,7 +113,7 @@ ranger = warrior
   }
 escapist = warrior
   { iname    = "escapist"
-  , ifreq    = [("escapist hero", 100), ("mobile", 1)]
+  , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
                ++ [ ("add sight", CEqp)
                   , ("armor ranged", CEqp)
@@ -104,7 +125,7 @@ escapist = warrior
   }
 ambusher = warrior
   { iname    = "ambusher"
-  , ifreq    = [("ambusher hero", 100), ("mobile", 1)]
+  , ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
                ++ [ ("ring of opportunity sniper", CEqp)
                   , ("any arrow", CStash)
@@ -116,14 +137,14 @@ ambusher = warrior
   }
 brawler = warrior
   { iname    = "brawler"
-  , ifreq    = [("brawler hero", 100), ("mobile", 1)]
+  , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
                ++ [("starting weapon", CEqp)]
   -- , idesc    = ""
   }
 soldier = brawler
   { iname    = "soldier"
-  , ifreq    = [("soldier hero", 100), ("mobile", 1)]
+  , ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit brawler
                ++ [("explosive", CStash)]
   -- , idesc    = ""
@@ -131,7 +152,7 @@ soldier = brawler
 
 civilian = warrior
   { iname    = "clerk"
-  , ifreq    = [("civilian", 100), ("mobile", 1)]
+  , ifreq    = [(CIVILIAN, 100), (MOBILE, 1)]
   , iflavour = zipPlain [BrBlack]
   -- , idesc    = ""
   }
@@ -159,8 +180,8 @@ civilian5 = civilian
 eye = ItemKind
   { isymbol  = 'e'
   , iname    = "reducible eye"
-  , ifreq    = [ ("monster", 100), ("mobile", 1)
-               , ("mobile monster", 100), ("scout monster", 10) ]
+  , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
+               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 10) ]
   , iflavour = zipFancy [BrRed]
   , icount   = 1
   , irarity  = [(3, 0), (4, 10), (10, 8)]
@@ -181,8 +202,8 @@ eye = ItemKind
 fastEye = ItemKind
   { isymbol  = 'j'
   , iname    = "injective jaw"
-  , ifreq    = [ ("monster", 100), ("mobile", 1)
-               , ("mobile monster", 100), ("scout monster", 60) ]
+  , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
+               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 60) ]
   , iflavour = zipFancy [BrBlue]
   , icount   = 1
   , irarity  = [(3, 0), (4, 6), (10, 12)]
@@ -203,7 +224,7 @@ fastEye = ItemKind
 nose = ItemKind  -- depends solely on smell
   { isymbol  = 'n'
   , iname    = "point-free nose"
-  , ifreq    = [("monster", 100), ("mobile", 1), ("mobile monster", 100)]
+  , ifreq    = [(MONSTER, 100), (MOBILE, 1), (MOBILER_MONSTER, 100)]
   , iflavour = zipFancy [BrGreen]
   , icount   = 1
   , irarity  = [(3, 0), (4, 5), (10, 7)]
@@ -224,8 +245,8 @@ nose = ItemKind  -- depends solely on smell
 elbow = ItemKind
   { isymbol  = 'e'
   , iname    = "commutative elbow"
-  , ifreq    = [ ("monster", 100), ("mobile", 1)
-               , ("mobile monster", 100), ("scout monster", 30) ]
+  , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
+               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 30) ]
   , iflavour = zipFancy [BrMagenta]
   , icount   = 1
   , irarity  = [(3, 0), (4, 1), (10, 12)]
@@ -250,7 +271,7 @@ elbow = ItemKind
 torsor = ItemKind
   { isymbol  = 'T'
   , iname    = "Forgetful Torsor"
-  , ifreq    = [("monster", 100), ("mobile", 1)]
+  , ifreq    = [(MONSTER, 100), (MOBILE, 1)]
   , iflavour = zipFancy [BrCyan]
   , icount   = 1
   , irarity  = [(9, 0), (10, 1000)]  -- unique
@@ -287,8 +308,8 @@ torsor = ItemKind
 goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   { isymbol  = 'j'
   , iname    = "golden jackal"
-  , ifreq    = [ ("animal", 100), ("mobile", 1), ("mobile animal", 100)
-               , ("scavenger", 50) ]
+  , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
+               , (SCAVENGER, 50) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(1, 4), (10, 2)]
@@ -307,8 +328,8 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
 griffonVulture = ItemKind
   { isymbol  = 'v'
   , iname    = "griffon vulture"
-  , ifreq    = [ ("animal", 100), ("mobile", 1), ("mobile animal", 100)
-               , ("scavenger", 30) ]
+  , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
+               , (SCAVENGER, 30) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(1, 3), (10, 3)]
@@ -337,7 +358,7 @@ griffonVulture = ItemKind
 skunk = ItemKind
   { isymbol  = 's'
   , iname    = "hog-nosed skunk"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [White]
   , icount   = 1
   , irarity  = [(1, 8), (5, 1)]
@@ -359,7 +380,7 @@ skunk = ItemKind
 armadillo = ItemKind
   { isymbol  = 'a'
   , iname    = "giant armadillo"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 7)]
@@ -380,7 +401,7 @@ armadillo = ItemKind
 gilaMonster = ItemKind
   { isymbol  = 'g'
   , iname    = "Gila monster"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(2, 5), (10, 2)]
@@ -400,7 +421,7 @@ gilaMonster = ItemKind
 rattlesnake = ItemKind
   { isymbol  = 's'
   , iname    = "rattlesnake"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(5, 1), (10, 7)]
@@ -421,8 +442,8 @@ rattlesnake = ItemKind
 hyena = ItemKind
   { isymbol  = 'h'
   , iname    = "spotted hyena"
-  , ifreq    = [ ("animal", 100), ("mobile", 1), ("mobile animal", 100)
-               , ("scavenger", 20) ]
+  , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
+               , (SCAVENGER, 20) ]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , irarity  = [(4, 1), (10, 5)]  -- gets summoned often, so low base rarity
@@ -441,7 +462,7 @@ hyena = ItemKind
 komodoDragon = ItemKind
   { isymbol  = 'k'
   , iname    = "Komodo dragon"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [BrRed]  -- speedy, so bright red
   , icount   = 1
   , irarity  = [(9, 0), (10, 11)]
@@ -463,7 +484,7 @@ komodoDragon = ItemKind
 alligator = ItemKind
   { isymbol  = 'a'
   , iname    = "alligator"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(9, 0), (10, 12)]
@@ -485,7 +506,7 @@ alligator = ItemKind
 rhinoceros = ItemKind
   { isymbol  = 'R'
   , iname    = "Maddened Rhinoceros"
-  , ifreq    = [("animal", 100), ("mobile", 1)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(2, 0), (3, 1000), (4, 0)]  -- unique
@@ -512,7 +533,7 @@ rhinoceros = ItemKind
 beeSwarm = ItemKind
   { isymbol  = 'b'
   , iname    = "bee swarm"
-  , ifreq    = [("animal", 100), ("mobile", 1)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 3), (10, 4)]
@@ -534,7 +555,7 @@ beeSwarm = ItemKind
 hornetSwarm = ItemKind
   { isymbol  = 'h'
   , iname    = "hornet swarm"
-  , ifreq    = [("animal", 100), ("mobile", 1), ("mobile animal", 100)]
+  , ifreq    = [(ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)]
   , iflavour = zipPlain [Magenta]
   , icount   = 1
   , irarity  = [(5, 1), (10, 4)]  -- should be many, because die after a time
@@ -557,7 +578,7 @@ hornetSwarm = ItemKind
 thornbush = ItemKind
   { isymbol  = 't'
   , iname    = "thornbush"
-  , ifreq    = [("animal", 20), ("immobile animal", 20)]
+  , ifreq    = [(ANIMAL, 20), (IMMOBILE_ANIMAL, 20)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 13)]
@@ -576,7 +597,7 @@ thornbush = ItemKind
 geyserBoiling = ItemKind
   { isymbol  = 'g'
   , iname    = "geyser"
-  , ifreq    = [("animal", 8), ("immobile animal", 30)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 30)]
   , iflavour = zipPlain [Blue]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -594,7 +615,7 @@ geyserBoiling = ItemKind
 geyserArsenic = ItemKind
   { isymbol  = 'g'
   , iname    = "arsenic geyser"
-  , ifreq    = [("animal", 8), ("immobile animal", 40)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 40)]
   , iflavour = zipPlain [Cyan]
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
@@ -612,7 +633,7 @@ geyserArsenic = ItemKind
 geyserSulfur = ItemKind
   { isymbol  = 'g'
   , iname    = "sulfur geyser"
-  , ifreq    = [("animal", 8), ("immobile animal", 120)]
+  , ifreq    = [(ANIMAL, 8), (IMMOBILE_ANIMAL, 120)]
   , iflavour = zipPlain [BrYellow]  -- exception, animal with bright color
   , icount   = 1
   , irarity  = [(1, 10), (10, 6)]
