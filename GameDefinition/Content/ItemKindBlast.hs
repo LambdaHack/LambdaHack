@@ -9,6 +9,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindTemporary
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
@@ -101,7 +102,7 @@ burningOil n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 2 ]
   , ieffects = [ Burn 1
-               , toOrganBad "pacified" (1 `d` 2) ]
+               , toOrganBad PACIFIED (1 `d` 2) ]
                    -- slips and frantically puts out fire
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
@@ -204,8 +205,8 @@ spreadConcussion = ItemKind
   , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
                , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
-               , toOrganBad "immobile" 3  -- no balance
-               , toOrganBad "deafened" 23 ]
+               , toOrganBad IMMOBILE 3  -- no balance
+               , toOrganBad DEAFENED 23 ]
   , idesc    = "Shock wave, hot gases, some fire and smoke."
   , ikit     = []
   }
@@ -246,7 +247,7 @@ spreadFlash = ItemKind
   , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
-  , ieffects = [toOrganBad "blind" 5, toOrganBad "weakened" 20]
+  , ieffects = [toOrganBad BLIND 5, toOrganBad WEAKENED 20]
                  -- Wikipedia says: blind for five seconds and afterimage
                  -- for much longer, harming aim
   , idesc    = "A very bright flash of fire."
@@ -256,7 +257,7 @@ spreadFlash8 = spreadFlash
   { iname    = "spark"
   , ifreq    = [(SPARK, 1)]
   , icount   = 8
-  , iverbHit = "blind"
+  , iverbHit = "singe"
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 5 ]
@@ -330,7 +331,7 @@ fragrance = ItemKind
   , idamage  = 0
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [Impress, toOrganGood "rose-smelling" 45]
+  , ieffects = [Impress, toOrganGood ROSE_SMELLING 45]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
   -- before actor turn's end (e.g., via a necklace).
   , idesc    = "A pleasant scent."
@@ -381,8 +382,8 @@ odorDistressing = ItemKind
   , iaspects = [ toLinger 10  -- 2 steps, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [ RefillCalm (-10)
-               , toOrganBad "foul-smelling" (20 + 1 `d` 5)
-               , toOrganBad "impatient" (2 + 1 `d` 2) ]
+               , toOrganBad FOUL_SMELLING (20 + 1 `d` 5)
+               , toOrganBad IMPATIENT (2 + 1 `d` 2) ]
   , idesc    = "It turns the stomach."  -- and so can't stand still
   , ikit     = []
   }
@@ -464,7 +465,7 @@ smoke = ItemKind  -- when stuff burns out  -- unused
   , idamage  = 0
   , iaspects = [ toVelocity 20  -- 4 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganBad "withholding" (5 + 1 `d` 3)]
+  , ieffects = [toOrganBad WITHHOLDING (5 + 1 `d` 3)]
                   -- choking and tears, can roughly see, but not aim
   , idesc    = "Twirling clouds of grey smoke."
   , ikit     = []
@@ -512,8 +513,8 @@ waste = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [ toOrganBad "foul-smelling" (30 + 1 `d` 10)
-               , toOrganBad "dispossessed" (10 + 1 `d` 5) ]
+  , ieffects = [ toOrganBad FOUL_SMELLING (30 + 1 `d` 10)
+               , toOrganBad DISPOSSESSED (10 + 1 `d` 5) ]
   , idesc    = "Sodden and foul-smelling."
   , ikit     = []
   }
@@ -529,7 +530,7 @@ mistAntiSlow = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [DropItem 1 1 COrgan "slowed"]
+  , ieffects = [DropItem 1 1 COrgan SLOWED]
   , idesc    = "A cleansing rain."
   , ikit     = []
   }
@@ -545,7 +546,7 @@ mistAntidote = ItemKind
   , idamage  = 0
   , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [DropItem 1 maxBound COrgan "poisoned"]
+  , ieffects = [DropItem 1 maxBound COrgan POISONED]
   , idesc    = "Washes away death's dew."
   , ikit     = []
   }
@@ -584,7 +585,7 @@ denseShower = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "strengthened" 5]
+  , ieffects = [toOrganGood STRENGTHENED 5]
   , idesc    = "A thick rain of droplets."
   , ikit     = []
   }
@@ -599,7 +600,7 @@ sparseShower = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "weakened" 7]
+  , ieffects = [toOrganBad WEAKENED 7]
   , idesc    = "Light droplets that cling to clothing."
   , ikit     = []
   }
@@ -614,7 +615,7 @@ protectingBalmMelee = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "protected from melee" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood PROTECTED_FROM_MELEE (3 + 1 `d` 3)]
   , idesc    = "A thick ointment that hardens the skin."
   , ikit     = []
   }
@@ -629,7 +630,7 @@ protectingBalmRanged = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "protected from ranged" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood PROTECTED_FROM_RANGED (3 + 1 `d` 3)]
   , idesc    = "Grease that protects from flying death."
   , ikit     = []
   }
@@ -644,7 +645,7 @@ vulnerabilityBalm = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "defenseless" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad DEFENSELESS (3 + 1 `d` 3)]
   , idesc    = "Only the most learned make use of this."
   , ikit     = []
   }
@@ -659,7 +660,7 @@ resolutionDust = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "resolute" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood RESOLUTE (3 + 1 `d` 3)]
                  -- short enough duration that @calmEnough@ not a big problem
   , idesc    = "A handful of honest earth, to strengthen the soul."
   , ikit     = []
@@ -675,7 +676,7 @@ hasteSpray = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "hasted" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood HASTED (3 + 1 `d` 3)]
   , idesc    = "A quick spurt."
   , ikit     = []
   }
@@ -691,7 +692,7 @@ slownessMist = ItemKind
   , idamage  = 0
   , iaspects = [toVelocity 5, SetFlag Fragile, SetFlag Blast]
                  -- 1 step, 1 turn, mist, slow
-  , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad SLOWED (3 + 1 `d` 3)]
   , idesc    = "Clammy fog, making each movement an effort."
   , ikit     = []
   }
@@ -706,7 +707,7 @@ eyeDrop = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "far-sighted" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood FAR_SIGHTED (3 + 1 `d` 3)]
   , idesc    = "Not to be taken orally."
   , ikit     = []
   }
@@ -721,7 +722,7 @@ ironFiling = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganBad "blind" (10 + 1 `d` 10)]
+  , ieffects = [toOrganBad BLIND (10 + 1 `d` 10)]
   , idesc    = "A shaving of bright metal."
   , ikit     = []
   }
@@ -736,7 +737,7 @@ smellyDroplet = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "keen-smelling" (5 + 1 `d` 3)]
+  , ieffects = [toOrganGood KEEN_SMELLING (5 + 1 `d` 3)]
   , idesc    = "A viscous lump that stains the skin."
   , ikit     = []
   }
@@ -751,7 +752,7 @@ eyeShine = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "shiny-eyed" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood SHINY_EYED (3 + 1 `d` 3)]
   , idesc    = "They almost glow in the dark."
   , ikit     = []
   }
@@ -766,7 +767,7 @@ whiskeySpray = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [toOrganGood "drunk" (3 + 1 `d` 3)]
+  , ieffects = [toOrganGood DRUNK (3 + 1 `d` 3)]
   , idesc    = "It burns in the best way."
   , ikit     = []
   }
@@ -781,8 +782,8 @@ youthSprinkle = ItemKind
   , iweight  = 1
   , idamage  = 0
   , iaspects = [toLinger 10, SetFlag Fragile, SetFlag Blast]
-  , ieffects = [ toOrganGood "rose-smelling" (40 + 1 `d` 20)
-               , toOrganNoTimer "regenerating" ]
+  , ieffects = [ toOrganGood ROSE_SMELLING (40 + 1 `d` 20)
+               , toOrganNoTimer REGENERATING ]
   , idesc    = "Bright and smelling of the Spring."
   , ikit     = []
   }
@@ -798,7 +799,7 @@ poisonCloud = ItemKind
   , idamage  = 0
   , iaspects = [ ToThrow $ ThrowMod 10 100 2  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]
-  , ieffects = [toOrganNoTimer "poisoned"]
+  , ieffects = [toOrganNoTimer POISONED]
   , idesc    = "Choking gas that stings the eyes."
   , ikit     = []
   }
@@ -819,14 +820,14 @@ blastNoStat grp = ItemKind
   , idesc    = "Completely disables one personal faculty."
   , ikit     = []
   }
-blastNoSkMove = blastNoStat "immobile"
-blastNoSkMelee = blastNoStat "pacified"
-blastNoSkDisplace = blastNoStat "irreplaceable"
-blastNoSkAlter = blastNoStat "retaining"
-blastNoSkWait = blastNoStat "impatient"
-blastNoSkMoveItem = blastNoStat "dispossessed"
-blastNoSkProject = blastNoStat "withholding"
-blastNoSkApply = blastNoStat "parsimonious"
+blastNoSkMove = blastNoStat IMMOBILE
+blastNoSkMelee = blastNoStat PACIFIED
+blastNoSkDisplace = blastNoStat IRREPLACEABLE
+blastNoSkAlter = blastNoStat RETAINING
+blastNoSkWait = blastNoStat IMPATIENT
+blastNoSkMoveItem = blastNoStat DISPOSSESSED
+blastNoSkProject = blastNoStat WITHHOLDING
+blastNoSkApply = blastNoStat PARSIMONIOUS
 blastBonusStat :: GroupName ItemKind -> ItemKind
 blastBonusStat grp = ItemKind
   { isymbol  = '`'
@@ -844,11 +845,11 @@ blastBonusStat grp = ItemKind
   , idesc    = "Temporarily enhances the given personal faculty."
   , ikit     = []
   }
-blastBonusSkMove = blastBonusStat "more mobile"
-blastBonusSkMelee = blastBonusStat "more combative"
-blastBonusSkDisplace = blastBonusStat "more displacing"
-blastBonusSkAlter = blastBonusStat "more modifying"
-blastBonusSkWait = blastBonusStat "more patient"
-blastBonusSkMoveItem = blastBonusStat "more tidy"
-blastBonusSkProject = blastBonusStat "more projecting"
-blastBonusSkApply = blastBonusStat "more practical"
+blastBonusSkMove = blastBonusStat MORE_MOBILE
+blastBonusSkMelee = blastBonusStat MORE_COMBATIVE
+blastBonusSkDisplace = blastBonusStat MORE_DISPLACING
+blastBonusSkAlter = blastBonusStat MORE_MODIFYING
+blastBonusSkWait = blastBonusStat MORE_PATIENT
+blastBonusSkMoveItem = blastBonusStat MORE_TIDY
+blastBonusSkProject = blastBonusStat MORE_PROJECTING
+blastBonusSkApply = blastBonusStat MORE_PRACTICAL

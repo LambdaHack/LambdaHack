@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindTemporary
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Ability
@@ -121,7 +122,7 @@ hookedClaw = fist
   , idamage  = 2 `d` 1
   , iaspects = Timeout (12 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [toOrganBad "slowed" 2]
+  , ieffects = [toOrganBad SLOWED 2]
   , idesc    = "A curved talon."
   }
 smallClaw = fist
@@ -234,7 +235,7 @@ arsenicFissure = boilingFissure
   , ifreq    = [(ARSENIC_FISSURE, 1)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
-  , ieffects = [ toOrganBad "parsimonious" (5 + 1 `d` 3)
+  , ieffects = [ toOrganBad PARSIMONIOUS (5 + 1 `d` 3)
                -- weaken/poison, impacting intellectual abilities first
                , VerbNoLonger "stop exuding stupefying vapours" ]
   , idesc    = ""
@@ -269,7 +270,7 @@ sting = fist
   , idamage  = 1 `d` 1
   , iaspects = [Timeout $ 10 - 1 `dL` 4, AddSkill SkHurtMelee 40]
                ++ iaspects fist
-  , ieffects = [toOrganBad "retaining" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad RETAINING (3 + 1 `d` 3)]
   , idesc    = "Painful, debilitating and harmful."
   }
 venomTooth = fist
@@ -280,7 +281,7 @@ venomTooth = fist
   , idamage  = 1 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad SLOWED (3 + 1 `d` 3)]
   , idesc    = "A chilling numbness spreads from its bite."
   }
 venomFang = fist
@@ -291,7 +292,7 @@ venomFang = fist
   , idamage  = 0
   , iaspects = Timeout (10 - 1 `dL` 5)
                : iaspects fist
-  , ieffects = [toOrganNoTimer "poisoned"]
+  , ieffects = [toOrganNoTimer POISONED]
   , idesc    = "Dripping with deadly venom."
   }
 screechingBeak = fist
@@ -603,7 +604,7 @@ lip = fist
   , idamage  = 1 `d` 1
   , iaspects = Timeout (3 + 1 `d` 2)
                : iaspects fist
-  , ieffects = [toOrganBad "weakened" (2 + 1 `dL` 3)]
+  , ieffects = [toOrganBad WEAKENED (2 + 1 `dL` 3)]
   , idesc    = ""
   }
 torsionRight = fist
@@ -614,7 +615,7 @@ torsionRight = fist
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [toOrganBad "slowed" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad SLOWED (3 + 1 `d` 3)]
   , idesc    = ""
   }
 torsionLeft = fist
@@ -625,7 +626,7 @@ torsionLeft = fist
   , idamage  = 13 `d` 1
   , iaspects = [Timeout $ 5 + 1 `d` 5, AddSkill SkHurtMelee 20]
                ++ iaspects fist
-  , ieffects = [toOrganBad "weakened" (3 + 1 `d` 3)]
+  , ieffects = [toOrganBad WEAKENED (3 + 1 `d` 3)]
   , idesc    = ""
   }
 pupil = fist
