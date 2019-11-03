@@ -9,6 +9,7 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
+import Content.ItemKindEmbed
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
@@ -126,7 +127,7 @@ wallObscured = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Embed "scratch on wall"
+  , tfeature = [ Embed SCRATCH_ON_WALL
                , HideAs "suspect vertical wall Lit"
                ]
   }
@@ -158,7 +159,7 @@ wallObscuredDefacedH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Embed "obscene pictogram"
+  , tfeature = [ Embed OBSCENE_PICTOGRAM
                , HideAs "suspect horizontal wall Lit"
                ]
   }
@@ -169,7 +170,7 @@ wallObscuredFrescoedH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 5
-  , tfeature = [ Embed "subtle fresco"
+  , tfeature = [ Embed SUBTLE_FRESCO
                , HideAs "suspect horizontal wall Lit"
                ]  -- a bit beneficial, but AI would loop if allowed to trigger
                   -- so no @ConsideredByAI@
@@ -197,7 +198,7 @@ pillarCache = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
-  , tfeature = [ Embed "treasure cache", Embed "treasure cache trap"
+  , tfeature = [ Embed TREASURE_CACHE, Embed TREASURE_CACHE_TRAP
                , ChangeTo "cachable", ConsideredByAI ]
       -- Not explorable, but prominently placed, so hard to miss.
       -- Very beneficial, so AI eager to trigger, unless wary of traps.
@@ -229,7 +230,7 @@ signboardRead = TileKind
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 5
-  , tfeature = [Embed "signboard", HideAs "signboard unread"]
+  , tfeature = [Embed SIGNBOARD, HideAs "signboard unread"]
   }
 tree = TileKind
   { tsymbol  = '0'
@@ -257,7 +258,7 @@ treeBurning = tree
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
-  , tfeature = Embed "big fire" : ChangeTo "tree with fire" : tfeature tree
+  , tfeature = Embed BIG_FIRE : ChangeTo "tree with fire" : tfeature tree
       -- TODO: dousing off the tree will have more sense when it periodically
       -- explodes, hitting and lighting up the team and so betraying it
   }
@@ -272,7 +273,7 @@ rubble = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
-  , tfeature = [OpenTo "floorAshesLit", Embed "rubble"]
+  , tfeature = [OpenTo "floorAshesLit", Embed RUBBLE]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
       -- the item is risky and, e.g., AI doesn't attempt it.
@@ -289,7 +290,7 @@ doorTrapped = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 2
-  , tfeature = [ Embed "doorway trap"
+  , tfeature = [ Embed DOORWAY_TRAP
                , OpenTo "open vertical door Lit"
                , HideAs "suspect vertical wall Lit"
                ]
@@ -310,7 +311,7 @@ doorTrappedH = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 2
-  , tfeature = [ Embed "doorway trap"
+  , tfeature = [ Embed DOORWAY_TRAP
                , OpenTo "open horizontal door Lit"
                , HideAs "suspect horizontal wall Lit"
                ]
@@ -331,7 +332,7 @@ stairsUp = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase up", ConsideredByAI]
+  , tfeature = [Embed STAIRCASE_UP, ConsideredByAI]
   }
 stairsTrappedUp = TileKind
   { tsymbol  = '<'
@@ -340,7 +341,7 @@ stairsTrappedUp = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = talterForStairs
-  , tfeature = [ Embed "staircase up", Embed "staircase trap up"
+  , tfeature = [ Embed STAIRCASE_UP, Embed STAIRCASE_TRAP_UP
                , ConsideredByAI, ChangeTo "ordinary staircase up" ]
                  -- AI uses despite the trap; exploration more important
   }
@@ -360,7 +361,7 @@ stairsDown = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = talterForStairs
-  , tfeature = [Embed "staircase down", ConsideredByAI]
+  , tfeature = [Embed STAIRCASE_DOWN, ConsideredByAI]
   }
 stairsTrappedDown = TileKind
   { tsymbol  = '>'
@@ -369,7 +370,7 @@ stairsTrappedDown = TileKind
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = talterForStairs
-  , tfeature = [ Embed "staircase down", Embed "staircase trap down"
+  , tfeature = [ Embed STAIRCASE_DOWN, Embed STAIRCASE_TRAP_DOWN
                , ConsideredByAI, ChangeTo "ordinary staircase down" ]
   }
 stairsOutdoorDown = stairsDown
@@ -388,7 +389,7 @@ escapeUp = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = 0  -- anybody can escape (or guard escape)
-  , tfeature = [Embed "escape", ConsideredByAI]
+  , tfeature = [Embed ESCAPE, ConsideredByAI]
   }
 escapeDown = TileKind
   { tsymbol  = '>'
@@ -397,7 +398,7 @@ escapeDown = TileKind
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , talter   = 0  -- anybody can escape (or guard escape)
-  , tfeature = [Embed "escape", ConsideredByAI]
+  , tfeature = [Embed ESCAPE, ConsideredByAI]
   }
 escapeOutdoorDown = escapeDown
   { tname    = "exit back to town"
@@ -439,7 +440,7 @@ pillarIce = TileKind
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
-  , tfeature = [Clear, Embed "frost", OpenTo "shallow water Lit"]
+  , tfeature = [Clear, Embed FROST, OpenTo "shallow water Lit"]
       -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
       -- it doesn't generate items nor clues. This saves on the need to
       -- get each ice pillar into sight range when exploring level.
@@ -451,7 +452,7 @@ pulpit = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 5
-  , tfeature = [Clear, Embed "pulpit"]
+  , tfeature = [Clear, Embed PULPIT]
                  -- mixed blessing, so AI ignores, saved for player fun
   }
 bush = TileKind
@@ -479,7 +480,7 @@ bushBurning = bush
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
-  , tfeature = Embed "small fire" : ChangeTo "bush with fire" : tfeature bush
+  , tfeature = Embed SMALL_FIRE : ChangeTo "bush with fire" : tfeature bush
   }
 
 -- ** Walkable
@@ -601,7 +602,7 @@ shallowWater = TileKind
   , tcolor   = BrCyan
   , tcolor2  = Cyan
   , talter   = 0
-  , tfeature = Embed "shallow water" : tfeature floorActor
+  , tfeature = Embed SHALLOW_WATER : tfeature floorActor
   }
 shallowWaterSpice = shallowWater
   { tfreq    = [("fogClumpOver_f_Lit", 40)]
@@ -613,14 +614,14 @@ floorRed = floorCorridor
   , tfreq    = [("trailLit", 70), ("safeTrailLit", 70)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = [Embed "straight path", Trail, Walkable, Clear]
+  , tfeature = [Embed STRAIGHT_PATH, Trail, Walkable, Clear]
   }
 floorBlue = floorRed
   { tname    = "frozen trail"
   , tfreq    = [("trailLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
-  , tfeature = [Embed "frozen ground", Trail, Walkable, Clear]
+  , tfeature = [Embed FROZEN_GROUND, Trail, Walkable, Clear]
   }
 floorGreen = floorRed
   { tname    = "mossy stone path"
