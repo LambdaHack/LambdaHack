@@ -1,6 +1,7 @@
 -- | Actor organ definitions.
 module Content.ItemKindOrgan
-  ( organs
+  ( pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL
+  , organs
   ) where
 
 import Prelude ()
@@ -24,6 +25,64 @@ fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, ho
 -- LH-specific
 tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
+-- * Group name patterns
+
+pattern FIST, FOOT, HOOKED_CLAW, SMALL_CLAW, SNOUT, SMALL_JAW, JAW, LARGE_JAW, ANTLER, HORN, RHINO_HORN, TENTACLE, THORN, BOILING_FISSURE, ARSENIC_FISSURE, SULFUR_FISSURE, BEE_STING, STING, VENOM_TOOTH, VENOM_FANG, SCREECHING_BEAK, LARGE_TAIL, HUGE_TAIL, ARMORED_SKIN, BARK, NOSTRIL, RATLLE, INSECT_MORTALITY, SAPIENT_BRAIN, ANIMAL_BRAIN, SCENT_GLAND, BOILING_VENT, ARSENIC_VENT, SULFUR_VENT, TOOTH, LASH, NOSE_TIP, LIP, RIGHT_TORSION, LEFT_TORSION, PUPIL :: GroupName ItemKind
+
+pattern FIST = "fist"
+pattern FOOT = "foot"
+pattern HOOKED_CLAW = "hooked claw"
+pattern SMALL_CLAW = "small claw"
+pattern SNOUT = "snout"
+pattern SMALL_JAW = "small jaw"
+pattern JAW = "jaw"
+pattern LARGE_JAW = "large jaw"
+pattern ANTLER = "antler"
+pattern HORN = "horn"
+pattern RHINO_HORN = "rhino horn"
+pattern TENTACLE = "tentacle"
+pattern THORN = "thorn"
+pattern BOILING_FISSURE = "boiling fissure"
+pattern ARSENIC_FISSURE = "arsenic fissure"
+pattern SULFUR_FISSURE = "sulfur fissure"
+pattern BEE_STING = "bee sting"
+pattern STING = "sting"
+pattern VENOM_TOOTH = "venom tooth"
+pattern VENOM_FANG = "venom fang"
+pattern SCREECHING_BEAK = "screeching beak"
+pattern LARGE_TAIL = "large tail"
+pattern HUGE_TAIL = "huge tail"
+pattern ARMORED_SKIN = "armored skin"
+pattern BARK = "bark"
+pattern NOSTRIL = "nostril"
+pattern RATLLE = "rattle"
+pattern INSECT_MORTALITY = "insect mortality"
+pattern SAPIENT_BRAIN = "sapient brain"
+pattern ANIMAL_BRAIN = "animal brain"
+pattern SCENT_GLAND = "scent gland"
+pattern BOILING_VENT = "boiling vent"
+pattern ARSENIC_VENT = "arsenic vent"
+pattern SULFUR_VENT = "sulfur vent"
+pattern TOOTH = "tooth"
+pattern LASH = "lash"
+pattern NOSE_TIP = "nose tip"
+pattern LIP = "lip"
+pattern RIGHT_TORSION = "right torsion"
+pattern LEFT_TORSION = "left torsion"
+pattern PUPIL = "pupil"
+
+eyeAt :: Int -> GroupName ItemKind
+eyeAt n = toGroupName $ "eye" <+> tshow n
+
+visionAt :: Int -> GroupName ItemKind
+visionAt n = toGroupName $ "vision" <+> tshow n
+
+earAt :: Int -> GroupName ItemKind
+earAt n = toGroupName $ "ear" <+> tshow n
+
+speedGlandAt :: Int -> GroupName ItemKind
+speedGlandAt n = toGroupName $ "speed gland" <+> tshow n
+
 -- Weapons
 
 -- * Human weapon organs
@@ -31,7 +90,7 @@ tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 fist = ItemKind
   { isymbol  = ','
   , iname    = "fist"
-  , ifreq    = [("fist", 100)]
+  , ifreq    = [(FIST, 1)]
   , iflavour = zipPlain [Red]
   , icount   = 2
   , irarity  = [(1, 1)]
@@ -45,7 +104,7 @@ fist = ItemKind
   }
 foot = fist
   { iname    = "foot"
-  , ifreq    = [("foot", 50)]
+  , ifreq    = [(FOOT, 1)]
   , iverbHit = "kick"
   , idamage  = 4 `d` 1
   , idesc    = "A weapon you can still use if disarmed."
@@ -56,7 +115,7 @@ foot = fist
 
 hookedClaw = fist
   { iname    = "hooked claw"
-  , ifreq    = [("hooked claw", 50)]
+  , ifreq    = [(HOOKED_CLAW, 1)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbHit = "hook"
   , idamage  = 2 `d` 1
@@ -67,14 +126,14 @@ hookedClaw = fist
   }
 smallClaw = fist
   { iname    = "small claw"
-  , ifreq    = [("small claw", 50)]
+  , ifreq    = [(SMALL_CLAW, 1)]
   , iverbHit = "slash"
   , idamage  = 2 `d` 1
   , idesc    = "A pearly spike."
   }
 snout = fist
   { iname    = "snout"
-  , ifreq    = [("snout", 10)]
+  , ifreq    = [(SNOUT, 1)]
   , icount   = 1
   , iverbHit = "bite"
   , idamage  = 2 `d` 1
@@ -82,7 +141,7 @@ snout = fist
   }
 smallJaw = fist
   { iname    = "small jaw"
-  , ifreq    = [("small jaw", 20)]
+  , ifreq    = [(SMALL_JAW, 1)]
   , icount   = 1
   , iverbHit = "rip"
   , idamage  = 3 `d` 1
@@ -90,7 +149,7 @@ smallJaw = fist
   }
 jaw = fist
   { iname    = "jaw"
-  , ifreq    = [("jaw", 20)]
+  , ifreq    = [(JAW, 1)]
   , icount   = 1
   , iverbHit = "rip"
   , idamage  = 5 `d` 1
@@ -98,7 +157,7 @@ jaw = fist
   }
 largeJaw = fist
   { iname    = "large jaw"
-  , ifreq    = [("large jaw", 100)]
+  , ifreq    = [(LARGE_JAW, 1)]
   , icount   = 1
   , iverbHit = "crush"
   , idamage  = 10 `d` 1
@@ -108,7 +167,7 @@ largeJaw = fist
   }
 antler = fist
   { iname    = "antler"
-  , ifreq    = [("antler", 100)]
+  , ifreq    = [(ANTLER, 1)]
   , icount   = 2
   , iverbHit = "ram"
   , idamage  = 4 `d` 1
@@ -120,7 +179,7 @@ antler = fist
   }
 horn = fist
   { iname    = "horn"
-  , ifreq    = [("horn", 100)]
+  , ifreq    = [(HORN, 1)]
   , icount   = 2
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
@@ -131,7 +190,7 @@ horn = fist
   }
 rhinoHorn = fist
   { iname    = "ugly horn"  -- made of keratin, unlike real horns
-  , ifreq    = [("rhino horn", 100)]
+  , ifreq    = [(RHINO_HORN, 1)]
   , icount   = 1  -- single, unlike real horns
   , iverbHit = "gore"
   , idamage  = 5 `d` 1
@@ -142,7 +201,7 @@ rhinoHorn = fist
   }
 tentacle = fist
   { iname    = "tentacle"
-  , ifreq    = [("tentacle", 50)]
+  , ifreq    = [(TENTACLE, 1)]
   , icount   = 4
   , iverbHit = "slap"
   , idamage  = 4 `d` 1
@@ -150,7 +209,7 @@ tentacle = fist
   }
 thorn = fist
   { iname    = "thorn"
-  , ifreq    = [("thorn", 100)]
+  , ifreq    = [(THORN, 1)]
   , icount   = 2 + 1 `d` 3
   , iverbHit = "puncture"
   , idamage  = 2 `d` 1
@@ -160,7 +219,7 @@ thorn = fist
   }
 boilingFissure = fist
   { iname    = "fissure"
-  , ifreq    = [("boiling fissure", 100)]
+  , ifreq    = [(BOILING_FISSURE, 1)]
   , icount   = 5 + 1 `d` 5
   , iverbHit = "hiss at"
   , idamage  = 1 `d` 1
@@ -172,7 +231,7 @@ boilingFissure = fist
   }
 arsenicFissure = boilingFissure
   { iname    = "fissure"
-  , ifreq    = [("arsenic fissure", 100)]
+  , ifreq    = [(ARSENIC_FISSURE, 1)]
   , icount   = 3 + 1 `d` 3
   , idamage  = 2 `d` 1
   , ieffects = [ toOrganBad "parsimonious" (5 + 1 `d` 3)
@@ -182,7 +241,7 @@ arsenicFissure = boilingFissure
   }
 sulfurFissure = boilingFissure
   { iname    = "fissure"
-  , ifreq    = [("sulfur fissure", 100)]
+  , ifreq    = [(SULFUR_FISSURE, 1)]
   , icount   = 2 + 1 `d` 2
   , idamage  = 0  -- heal not via (negative) idamage, for armour would block it
   , iaspects = SetFlag Benign : iaspects boilingFissure
@@ -192,7 +251,7 @@ sulfurFissure = boilingFissure
   }
 beeSting = fist
   { iname    = "bee sting"
-  , ifreq    = [("bee sting", 100)]
+  , ifreq    = [(BEE_STING, 1)]
   , icount   = 1
   , iverbHit = "sting"
   , idamage  = 0
@@ -204,7 +263,7 @@ beeSting = fist
   }
 sting = fist
   { iname    = "sting"
-  , ifreq    = [("sting", 100)]
+  , ifreq    = [(STING, 1)]
   , icount   = 1
   , iverbHit = "inject"
   , idamage  = 1 `d` 1
@@ -215,7 +274,7 @@ sting = fist
   }
 venomTooth = fist
   { iname    = "venom tooth"
-  , ifreq    = [("venom tooth", 100)]
+  , ifreq    = [(VENOM_TOOTH, 1)]
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = 1 `d` 1
@@ -226,7 +285,7 @@ venomTooth = fist
   }
 venomFang = fist
   { iname    = "venom fang"
-  , ifreq    = [("venom fang", 100)]
+  , ifreq    = [(VENOM_FANG, 1)]
   , icount   = 2
   , iverbHit = "bite"
   , idamage  = 0
@@ -237,7 +296,7 @@ venomFang = fist
   }
 screechingBeak = fist
   { iname    = "screeching beak"
-  , ifreq    = [("screeching beak", 100)]
+  , ifreq    = [(SCREECHING_BEAK, 1)]
   , icount   = 1
   , iverbHit = "peck"
   , idamage  = 3 `d` 1
@@ -248,7 +307,7 @@ screechingBeak = fist
   }
 largeTail = fist
   { iname    = "large tail"
-  , ifreq    = [("large tail", 50)]
+  , ifreq    = [(LARGE_TAIL, 1)]
   , icount   = 1
   , iverbHit = "knock"
   , idamage  = 7 `d` 1
@@ -260,7 +319,7 @@ largeTail = fist
   }
 hugeTail = largeTail
   { iname    = "huge tail"
-  , ifreq    = [("huge tail", 50)]
+  , ifreq    = [(HUGE_TAIL, 1)]
   , iverbHit = "upend"
   , iaspects = [Timeout $ 3 + 1 `d` 2, AddSkill SkHurtMelee 20]
                ++ iaspects fist
@@ -276,7 +335,7 @@ hugeTail = largeTail
 armoredSkin = ItemKind
   { isymbol  = ','
   , iname    = "armored skin"
-  , ifreq    = [("armored skin", 100)]
+  , ifreq    = [(ARMORED_SKIN, 1)]
   , iflavour = zipPlain [Red]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -291,7 +350,7 @@ armoredSkin = ItemKind
   }
 bark = armoredSkin
   { iname    = "bark"
-  , ifreq    = [("bark", 100)]
+  , ifreq    = [(BARK, 1)]
   , idesc    = ""
   }
 
@@ -300,7 +359,7 @@ bark = armoredSkin
 eye :: Int -> ItemKind
 eye n = armoredSkin
   { iname    = "eye"
-  , ifreq    = [(toGroupName $ "eye" <+> tshow n, 100)]
+  , ifreq    = [(eyeAt n, 1)]
   , icount   = 2
   , iverbHit = "glare at"
   , iaspects = [ AddSkill SkSight (intToDice n)
@@ -313,7 +372,7 @@ eye8 = eye 8
 vision :: Int -> ItemKind
 vision n = armoredSkin
   { iname    = "vision"
-  , ifreq    = [(toGroupName $ "vision" <+> tshow n, 100)]
+  , ifreq    = [(visionAt n, 1)]
   , iverbHit = "visualize"
   , iaspects = [ AddSkill SkSight (intToDice n)
                , SetFlag Durable ]
@@ -324,7 +383,7 @@ vision12 = vision 12
 vision16 = vision 16
 nostril = armoredSkin
   { iname    = "nostril"
-  , ifreq    = [("nostril", 100)]
+  , ifreq    = [(NOSTRIL, 1)]
   , icount   = 2
   , iverbHit = "snuff"
   , iaspects = [ AddSkill SkSmell 1  -- times 2, from icount
@@ -334,7 +393,7 @@ nostril = armoredSkin
 ear   :: Int -> ItemKind
 ear n = armoredSkin
   { iname    = "ear"
-  , ifreq    = [(toGroupName $ "ear" <+> tshow n, 100)]
+  , ifreq    = [(earAt n, 1)]
   , icount   = 2
   , iverbHit = "overhear"
   , iaspects = [ AddSkill SkHearing (intToDice n)
@@ -349,7 +408,7 @@ ear8 = ear 8
 
 rattleOrgan = armoredSkin
   { iname    = "rattle"
-  , ifreq    = [("rattle", 100)]
+  , ifreq    = [(RATLLE, 1)]
   , iverbHit = "announce"
   , iaspects = [ Timeout $ 10 + (1 `d` 3) * 10  -- long, to limit spam
                , SetFlag Periodic, SetFlag Durable ]
@@ -358,7 +417,7 @@ rattleOrgan = armoredSkin
   }
 insectMortality = armoredSkin
   { iname    = "insect mortality"
-  , ifreq    = [("insect mortality", 100)]
+  , ifreq    = [(INSECT_MORTALITY, 1)]
   , iverbHit = "age"
   , iaspects = [ AddSkill SkAggression 2  -- try to attack before you die
                , Timeout $ 30 + (1 `d` 3) * 10  -- die very slowly
@@ -368,7 +427,7 @@ insectMortality = armoredSkin
   }
 sapientBrain = armoredSkin
   { iname    = "sapient brain"
-  , ifreq    = [("sapient brain", 100)]
+  , ifreq    = [(SAPIENT_BRAIN, 1)]
   , iverbHit = "outbrain"
   , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkMove 4]  -- can move at once when waking up
@@ -380,7 +439,7 @@ sapientBrain = armoredSkin
   }
 animalBrain = armoredSkin
   { iname    = "animal brain"
-  , ifreq    = [("animal brain", 100)]
+  , ifreq    = [(ANIMAL_BRAIN, 1)]
   , iverbHit = "blank"
   , iaspects = [AddSkill sk 1 | sk <- [SkMove .. SkApply]]
                ++ [AddSkill SkMove 4]  -- can move at once when waking up
@@ -398,7 +457,7 @@ animalBrain = armoredSkin
 speedGland :: Int -> ItemKind
 speedGland n = armoredSkin
   { iname    = "speed gland"
-  , ifreq    = [(toGroupName $ "speed gland" <+> tshow n, 100)]
+  , ifreq    = [(speedGlandAt n, 1)]
   , iverbHit = "spit at"
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice (100 `div` n)
@@ -410,7 +469,7 @@ speedGland5 = speedGland 5
 speedGland10 = speedGland 10
 scentGland = armoredSkin
   { iname    = "scent gland"
-  , ifreq    = [("scent gland", 100)]
+  , ifreq    = [(SCENT_GLAND, 1)]
   , icount   = 10 + 1 `d` 3  -- runs out
   , iverbHit = "spray at"
   , iaspects = [ Timeout $ (1 `d` 3) * 10
@@ -424,7 +483,7 @@ scentGland = armoredSkin
   }
 boilingVent = armoredSkin
   { iname    = "vent"
-  , ifreq    = [("boiling vent", 100)]
+  , ifreq    = [(BOILING_VENT, 1)]
   , iflavour = zipPlain [Blue]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
@@ -434,7 +493,7 @@ boilingVent = armoredSkin
   }
 arsenicVent = armoredSkin
   { iname    = "vent"
-  , ifreq    = [("arsenic vent", 100)]
+  , ifreq    = [(ARSENIC_VENT, 1)]
   , iflavour = zipPlain [Cyan]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
@@ -444,7 +503,7 @@ arsenicVent = armoredSkin
   }
 sulfurVent = armoredSkin
   { iname    = "vent"
-  , ifreq    = [("sulfur vent", 100)]
+  , ifreq    = [(SULFUR_VENT, 1)]
   , iflavour = zipPlain [BrYellow]
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
@@ -458,7 +517,7 @@ sulfurVent = armoredSkin
 bonusHP = armoredSkin
   { isymbol  = 'H'  -- '+' reserved for conditions
   , iname    = "bonus HP"
-  , ifreq    = [("bonus HP", 1)]
+  , ifreq    = [(BONUS_HP, 1)]
   , iflavour = zipPlain [BrBlue]
   , iverbHit = "intimidate"
   , iweight  = 0
@@ -468,7 +527,7 @@ bonusHP = armoredSkin
 braced = armoredSkin
   { isymbol  = 'B'
   , iname    = "braced"
-  , ifreq    = [("braced", 1)]
+  , ifreq    = [(BRACED, 1)]
   , iflavour = zipPlain [BrGreen]
   , iverbHit = "brace"
   , iweight  = 0
@@ -480,7 +539,7 @@ braced = armoredSkin
 asleep = armoredSkin
   { isymbol  = 'S'
   , iname    = "asleep"
-  , ifreq    = [("asleep", 1)]
+  , ifreq    = [(ASLEEP, 1)]
   , iflavour = zipPlain [BrGreen]  -- regenerates HP (very slowly)
   , icount   = 5
   , iverbHit = "slay"
@@ -494,7 +553,7 @@ asleep = armoredSkin
 impressed = armoredSkin
   { isymbol  = 'I'
   , iname    = "impressed"
-  , ifreq    = [("impressed", 1), ("condition", 1)]
+  , ifreq    = [(IMPRESSED, 1), (CONDITION, 1)]
   , iflavour = zipPlain [BrRed]
   , iverbHit = "confuse"
   , iweight  = 0
@@ -514,7 +573,7 @@ impressed = armoredSkin
 
 tooth = fist
   { iname    = "tooth"
-  , ifreq    = [("tooth", 20)]
+  , ifreq    = [(TOOTH, 1)]
   , icount   = 3
   , iverbHit = "nail"
   , idamage  = 2 `d` 1
@@ -522,7 +581,7 @@ tooth = fist
   }
 lash = fist
   { iname    = "lash"
-  , ifreq    = [("lash", 100)]
+  , ifreq    = [(LASH, 1)]
   , icount   = 1
   , iverbHit = "lash"
   , idamage  = 3 `d` 1
@@ -530,7 +589,7 @@ lash = fist
   }
 noseTip = fist
   { iname    = "tip"
-  , ifreq    = [("nose tip", 50)]
+  , ifreq    = [(NOSE_TIP, 1)]
   , icount   = 1
   , iverbHit = "poke"
   , idamage  = 2 `d` 1
@@ -538,7 +597,7 @@ noseTip = fist
   }
 lip = fist
   { iname    = "lip"
-  , ifreq    = [("lip", 10)]
+  , ifreq    = [(LIP, 1)]
   , icount   = 1
   , iverbHit = "lap"
   , idamage  = 1 `d` 1
@@ -549,7 +608,7 @@ lip = fist
   }
 torsionRight = fist
   { iname    = "right torsion"
-  , ifreq    = [("right torsion", 100)]
+  , ifreq    = [(RIGHT_TORSION, 1)]
   , icount   = 1
   , iverbHit = "twist"
   , idamage  = 13 `d` 1
@@ -560,7 +619,7 @@ torsionRight = fist
   }
 torsionLeft = fist
   { iname    = "left torsion"
-  , ifreq    = [("left torsion", 100)]
+  , ifreq    = [(LEFT_TORSION, 1)]
   , icount   = 1
   , iverbHit = "untwist"
   , idamage  = 13 `d` 1
@@ -571,7 +630,7 @@ torsionLeft = fist
   }
 pupil = fist
   { iname    = "pupil"
-  , ifreq    = [("pupil", 100)]
+  , ifreq    = [(PUPIL, 1)]
   , icount   = 1
   , iverbHit = "gaze at"
   , idamage  = 1 `d` 1

@@ -47,7 +47,7 @@ pattern SHALLOW_WATER = "shallow water"
 pattern STRAIGHT_PATH = "straight path"
 pattern FROZEN_GROUND = "frozen ground"
 
--- * Content
+-- * Embedded items
 
 -- Make sure very few walls are substantially useful, e.g., caches,
 -- and none that are secret. Otherwise the player will spend a lot of time

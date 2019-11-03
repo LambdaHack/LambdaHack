@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindOrgan
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
@@ -73,9 +74,9 @@ warrior = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = ""  -- "A hardened veteran of combat."
-  , ikit     = [ ("fist", COrgan), ("foot", COrgan)
+  , ikit     = [ (FIST, COrgan), (FOOT, COrgan)
                , ("eye 6", COrgan), ("ear 3", COrgan)
-               , ("sapient brain", COrgan) ]
+               , (SAPIENT_BRAIN, COrgan) ]
   }
 warrior2 = warrior
   { iname    = "adventurer"
@@ -196,8 +197,8 @@ eye = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Under your stare, it reduces to the bits that define its essence. Under introspection, the bits slow down and solidify into an arbitrary form again. It must be huge inside, for holographic principle to manifest so overtly."  -- holographic principle is an anachronism for XIX or most of XX century, but "the cosmological scale effects" is too weak
-  , ikit     = [ ("lash", COrgan), ("pupil", COrgan)  -- at least one non-timed
-               , ("sapient brain", COrgan) ]  -- no hearing, it's all eyes
+  , ikit     = [ (LASH, COrgan), (PUPIL, COrgan)  -- at least one non-timed
+               , (SAPIENT_BRAIN, COrgan) ]  -- no hearing, it's all eyes
   }
 fastEye = ItemKind
   { isymbol  = 'j'
@@ -216,10 +217,10 @@ fastEye = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
-  , ikit     = [ ("tooth", COrgan), ("lip", COrgan)
+  , ikit     = [ (TOOTH, COrgan), (LIP, COrgan)
                , ("speed gland 10", COrgan)
                , ("vision 6", COrgan), ("ear 3", COrgan)
-               , ("sapient brain", COrgan) ]
+               , (SAPIENT_BRAIN, COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
   { isymbol  = 'n'
@@ -238,9 +239,9 @@ nose = ItemKind  -- depends solely on smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
-  , ikit     = [ ("nose tip", COrgan), ("lip", COrgan)
-               , ("nostril", COrgan)
-               , ("sapient brain", COrgan) ]  -- no sight nor hearing
+  , ikit     = [ (NOSE_TIP, COrgan), (LIP, COrgan)
+               , (NOSTRIL, COrgan)
+               , (SAPIENT_BRAIN, COrgan) ]  -- no sight nor hearing
   }
 elbow = ItemKind
   { isymbol  = 'e'
@@ -261,10 +262,10 @@ elbow = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
-  , ikit     = [ ("speed gland 5", COrgan), ("bark", COrgan)
+  , ikit     = [ ("speed gland 5", COrgan), (BARK, COrgan)
                , ("vision 12", COrgan), ("ear 8", COrgan)
                    -- too powerful to get stronger sight
-               , ("sapient brain", COrgan)
+               , (SAPIENT_BRAIN, COrgan)
                , ("any arrow", CStash), ("any arrow", CStash)
                , ("weak arrow", CStash), ("weak arrow", CStash) ]
   }
@@ -289,10 +290,10 @@ torsor = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
-  , ikit     = [ ("right torsion", COrgan), ("left torsion", COrgan)
-               , ("pupil", COrgan), ("tentacle", COrgan)
+  , ikit     = [ (RIGHT_TORSION, COrgan), (LEFT_TORSION, COrgan)
+               , (PUPIL, COrgan), (TENTACLE, COrgan)
                , ("ear 8", COrgan)
-               , ("sapient brain", COrgan)
+               , (SAPIENT_BRAIN, COrgan)
                , ("gem", CStash), ("gem", CStash)
                , ("gem", CStash), ("gem", CStash) ]
   }
@@ -322,8 +323,8 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
   , ieffects = []
   , idesc    = "An opportunistic predator, feeding on carrion and the weak."
   , ikit     = [ ("small jaw", COrgan)
-               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 8", COrgan)
-               , ("animal brain", COrgan) ]
+               , ("eye 6", COrgan), (NOSTRIL, COrgan), ("ear 8", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 griffonVulture = ItemKind
   { isymbol  = 'v'
@@ -349,11 +350,11 @@ griffonVulture = ItemKind
       -- on either side, are just too bothersome.
   , ieffects = []
   , idesc    = "It soars high above, searching for vulnerable prey."
-  , ikit     = [ ("screeching beak", COrgan)  -- in reality it grunts and hisses
-               , ("small claw", COrgan)
+  , ikit     = [ (SCREECHING_BEAK, COrgan)  -- in reality it grunts and hisses
+               , (SMALL_CLAW, COrgan)
                , ("eye 8", COrgan), ("ear 8", COrgan)
                    -- can't shoot, so strong sight is OK
-               , ("animal brain", COrgan) ]
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 skunk = ItemKind
   { isymbol  = 's'
@@ -372,10 +373,10 @@ skunk = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Its only defence is the terrible stench."
-  , ikit     = [ ("scent gland", COrgan)
-               , ("small claw", COrgan), ("snout", COrgan)
+  , ikit     = [ (SCENT_GLAND, COrgan)
+               , (SMALL_CLAW, COrgan), (SNOUT, COrgan)
                , ("eye 3", COrgan), ("ear 6", COrgan)
-               , ("animal brain", COrgan) ]
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 armadillo = ItemKind
   { isymbol  = 'a'
@@ -393,10 +394,10 @@ armadillo = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "When threatened, it rolls into a ball."
-  , ikit     = [ ("hooked claw", COrgan), ("snout", COrgan)
-               , ("armored skin", COrgan), ("armored skin", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ (HOOKED_CLAW, COrgan), (SNOUT, COrgan)
+               , (ARMORED_SKIN, COrgan), (ARMORED_SKIN, COrgan)
+               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 gilaMonster = ItemKind
   { isymbol  = 'g'
@@ -414,9 +415,9 @@ gilaMonster = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
-  , ikit     = [ ("venom tooth", COrgan), ("small claw", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ (VENOM_TOOTH, COrgan), (SMALL_CLAW, COrgan)
+               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 rattlesnake = ItemKind
   { isymbol  = 's'
@@ -434,10 +435,10 @@ rattlesnake = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
-  , ikit     = [ ("venom fang", COrgan)  -- when on cooldown, it's weaponless
-               , ("rattle", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 6", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ (VENOM_FANG, COrgan)  -- when on cooldown, it's weaponless
+               , (RATLLE, COrgan)
+               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 hyena = ItemKind
   { isymbol  = 'h'
@@ -455,9 +456,9 @@ hyena = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Skulking in the shadows, waiting for easy prey."
-  , ikit     = [ ("jaw", COrgan)
-               , ("eye 6", COrgan), ("nostril", COrgan), ("ear 8", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ (JAW, COrgan)
+               , ("eye 6", COrgan), (NOSTRIL, COrgan), ("ear 8", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 komodoDragon = ItemKind
   { isymbol  = 'k'
@@ -475,11 +476,11 @@ komodoDragon = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds as its lesser cousins."
-  , ikit     = [ ("large tail", COrgan), ("jaw", COrgan)
-               , ("hooked claw", COrgan)
-               , ("speed gland 5", COrgan), ("armored skin", COrgan)
-               , ("eye 3", COrgan), ("nostril", COrgan), ("ear 3", COrgan)
-               , ("animal brain", COrgan) ]
+  , ikit     = [ (LARGE_TAIL, COrgan), (JAW, COrgan)
+               , (HOOKED_CLAW, COrgan)
+               , ("speed gland 5", COrgan), (ARMORED_SKIN, COrgan)
+               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 3", COrgan)
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 alligator = ItemKind
   { isymbol  = 'a'
@@ -497,11 +498,11 @@ alligator = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An armored predator from the dawn of time. You better not get within its reach."
-  , ikit     = [ ("huge tail", COrgan), ("large jaw", COrgan)
-               , ("small claw", COrgan)
-               , ("armored skin", COrgan)
+  , ikit     = [ (HUGE_TAIL, COrgan), (LARGE_JAW, COrgan)
+               , (SMALL_CLAW, COrgan)
+               , (ARMORED_SKIN, COrgan)
                , ("eye 6", COrgan), ("ear 8", COrgan)
-               , ("animal brain", COrgan) ]
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 rhinoceros = ItemKind
   { isymbol  = 'R'
@@ -522,10 +523,10 @@ rhinoceros = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
-  , ikit     = [ ("rhino horn", COrgan), ("snout", COrgan)
-               , ("armored skin", COrgan)
+  , ikit     = [ (RHINO_HORN, COrgan), (SNOUT, COrgan)
+               , (ARMORED_SKIN, COrgan)
                , ("eye 3", COrgan), ("ear 8", COrgan)
-               , ("animal brain", COrgan) ]
+               , (ANIMAL_BRAIN, COrgan) ]
   }
 
 -- * Non-animal animals
@@ -548,9 +549,9 @@ beeSwarm = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Every bee would die for the queen."
-  , ikit     = [ ("bee sting", COrgan)  -- weaponless when it's used up
+  , ikit     = [ (BEE_STING, COrgan)  -- weaponless when it's used up
                , ("vision 6", COrgan), ("ear 6", COrgan)
-               , ("insect mortality", COrgan), ("animal brain", COrgan) ]
+               , (INSECT_MORTALITY, COrgan), (ANIMAL_BRAIN, COrgan) ]
   }
 hornetSwarm = ItemKind
   { isymbol  = 'h'
@@ -571,9 +572,9 @@ hornetSwarm = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
-  , ikit     = [ ("sting", COrgan)  -- when on cooldown, it's weaponless
+  , ikit     = [ (STING, COrgan)  -- when on cooldown, it's weaponless
                , ("vision 6", COrgan), ("ear 6", COrgan)
-               , ("insect mortality", COrgan), ("animal brain", COrgan) ]
+               , (INSECT_MORTALITY, COrgan), (ANIMAL_BRAIN, COrgan) ]
   }
 thornbush = ItemKind
   { isymbol  = 't'
@@ -591,8 +592,8 @@ thornbush = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Each branch bears long, curved thorns."
-  , ikit     = [ ("thorn", COrgan)  -- after all run out, it's weaponless
-               , ("bark", COrgan) ]
+  , ikit     = [ (THORN, COrgan)  -- after all run out, it's weaponless
+               , (BARK, COrgan) ]
   }
 geyserBoiling = ItemKind
   { isymbol  = 'g'
@@ -610,7 +611,7 @@ geyserBoiling = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "A jet of acidic water, hot enough to melt flesh."
-  , ikit     = [("boiling vent", COrgan), ("boiling fissure", COrgan)]
+  , ikit     = [(BOILING_VENT, COrgan), (BOILING_FISSURE, COrgan)]
   }
 geyserArsenic = ItemKind
   { isymbol  = 'g'
@@ -628,7 +629,7 @@ geyserArsenic = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The sharp scent betrays the poison within the spray."
-  , ikit     = [("arsenic vent", COrgan), ("arsenic fissure", COrgan)]
+  , ikit     = [(ARSENIC_VENT, COrgan), (ARSENIC_FISSURE, COrgan)]
   }
 geyserSulfur = ItemKind
   { isymbol  = 'g'
@@ -646,5 +647,5 @@ geyserSulfur = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "The pool boils and bubbles, stinking of rotten eggs. Despite the smell, these waters purify and strengthen."
-  , ikit     = [("sulfur vent", COrgan), ("sulfur fissure", COrgan)]
+  , ikit     = [(SULFUR_VENT, COrgan), (SULFUR_FISSURE, COrgan)]
   }
