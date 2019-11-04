@@ -1,6 +1,7 @@
 -- | Game mode definitions.
 module Content.ModeKind
-  ( content
+  ( pattern RAID, pattern CAMPAIGN_SCENARIO, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY, pattern INSERT_COIN, pattern NO_CONFIRMS
+  , content
   ) where
 
 import Prelude ()
@@ -21,6 +22,39 @@ content =
 
 raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
+-- * Group name patterns
+
+pattern RAID, CAMPAIGN_SCENARIO, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY, INSERT_COIN, NO_CONFIRMS :: GroupName ModeKind
+
+pattern RAID = "raid"
+pattern CAMPAIGN_SCENARIO = "campaign scenario"
+pattern BRAWL = "brawl"
+pattern LONG = "long"
+pattern CRAWL = "crawl"
+pattern FOGGY = "foggy"
+pattern SHOOTOUT = "shootout"
+pattern PERILOUS = "perilous"
+pattern HUNT = "hunt"
+pattern NIGHT = "night"
+pattern ESCAPE = "escape"
+pattern BURNING = "burning"
+pattern ZOO = "zoo"
+pattern RANGED = "ranged"
+pattern AMBUSH = "ambush"
+pattern SAFARI = "safari"
+pattern DIG = "dig"
+pattern SEE = "see"
+pattern CRAWL_EMPTY = "crawl empty"
+pattern CRAWL_SURVIVAL = "crawl survival"
+pattern SAFARI_SURVIVAL = "safari survival"
+pattern BATTLE = "battle"
+pattern BATTLE_DEFENSE = "battle defense"
+pattern BATTLE_SURVIVAL = "battle survival"
+pattern DEFENSE = "defense"
+pattern DEFENSE_EMPTY = "defense empty"
+pattern INSERT_COIN = "insert coin"
+pattern NO_CONFIRMS = "no confirms"
+
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone
 -- extreme fun or are impossible as part of a crawl)?
@@ -37,7 +71,7 @@ raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSur
 raid = ModeKind
   { msymbol = 'r'
   , mname   = "raid (tutorial, 1)"
-  , mfreq   = [("raid", 1), ("campaign scenario", 1)]
+  , mfreq   = [(RAID, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterRaid
   , mcaves  = cavesRaid
   , mendMsg = [ (Killed, "This expedition has gone wrong. However, scientific mind does not despair, but analyzes and corrects. Did you perchance awake one animal too many? Did you remember to try using all consumables at your disposal for your immediate survival? Did you choose a challenge with difficulty level within your means? Answer honestly, ponder wisely, experiment methodically.")
@@ -50,7 +84,7 @@ raid = ModeKind
 brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
   { msymbol = 'k'
   , mname   = "brawl (tutorial, 2)"
-  , mfreq   = [("brawl", 1), ("campaign scenario", 1)]
+  , mfreq   = [(BRAWL, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterBrawl
   , mcaves  = cavesBrawl
   , mendMsg = [ (Killed, "The inquisitive scholars turned out to be envious of our deep insight to the point of outright violence. It would still not result in such a defeat and recanting of our thesis if we figured out to use terrain to protect us from missiles or even completely hide our presence. It would also help if we honourably kept our ground together to the end, at the same time preventing the overwhelming enemy forces from brutishly ganging up on our modest-sized, though valiant, research team.")
@@ -62,7 +96,7 @@ brawl = ModeKind  -- sparse melee in daylight, with shade for melee ambush
 crawl = ModeKind
   { msymbol = 'c'
   , mname   = "long crawl (main)"
-  , mfreq   = [("long", 1), ("crawl", 1), ("campaign scenario", 1)]
+  , mfreq   = [(LONG, 1), (CRAWL, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterCrawl
   , mcaves  = cavesCrawl
   , mendMsg = [ (Killed, "To think that followers of science and agents of enlightenment would earn death as their reward! Where did we err in our ways? Perhaps nature should not have been disturbed so brashly and the fell beasts woken up from their slumber so eagerly? Perhaps the gathered items should have been used for scientific experiments on the spot rather than hoarded as if of base covetousness? Or perhaps the challenge, chosen freely but without the foreknowledge of the grisly difficulty, was insurmountable and forlorn from the start, despite the enormous power of educated reason at out disposal?")
@@ -82,7 +116,7 @@ crawl = ModeKind
 shootout = ModeKind  -- sparse ranged in daylight
   { msymbol = 's'
   , mname   = "foggy shootout (3)"
-  , mfreq   = [("foggy", 1), ("shootout", 1), ("campaign scenario", 1)]
+  , mfreq   = [(FOGGY, 1), (SHOOTOUT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterShootout
   , mcaves  = cavesShootout
   , mendMsg = []
@@ -93,7 +127,7 @@ shootout = ModeKind  -- sparse ranged in daylight
 hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
   { msymbol = 'h'
   , mname   = "perilous hunt (4)"
-  , mfreq   = [("perilous", 1), ("hunt", 1), ("campaign scenario", 1)]
+  , mfreq   = [(PERILOUS, 1), (HUNT, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterHunt
   , mcaves  = cavesHunt
   , mendMsg = []
@@ -104,7 +138,7 @@ hunt = ModeKind  -- melee vs ranged with reaction fire in daylight
 escape = ModeKind  -- asymmetric ranged and stealth race at night
   { msymbol = 'e'
   , mname   = "night escape (5)"
-  , mfreq   = [("night", 1), ("escape", 1), ("campaign scenario", 1)]
+  , mfreq   = [(NIGHT, 1), (ESCAPE, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterEscape
   , mcaves  = cavesEscape
   , mendMsg = []
@@ -115,7 +149,7 @@ escape = ModeKind  -- asymmetric ranged and stealth race at night
 zoo = ModeKind  -- asymmetric crowd melee at night
   { msymbol = 'b'
   , mname   = "burning zoo (6)"
-  , mfreq   = [("burning", 1), ("zoo", 1), ("campaign scenario", 1)]
+  , mfreq   = [(BURNING, 1), (ZOO, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterZoo
   , mcaves  = cavesZoo
   , mendMsg = []
@@ -134,7 +168,7 @@ zoo = ModeKind  -- asymmetric crowd melee at night
 ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
   { msymbol = 'm'
   , mname   = "ranged ambush (7)"
-  , mfreq   = [("ranged", 1), ("ambush", 1), ("campaign scenario", 1)]
+  , mfreq   = [(RANGED, 1), (AMBUSH, 1), (CAMPAIGN_SCENARIO, 1)]
   , mroster = rosterAmbush
   , mcaves  = cavesAmbush
   , mendMsg = []
@@ -145,7 +179,7 @@ ambush = ModeKind  -- dense ranged with reaction fire vs melee at night
 safari = ModeKind  -- Easter egg available only via screensaver
   { msymbol = 'f'
   , mname   = "safari"
-  , mfreq   = [("safari", 1)]
+  , mfreq   = [(SAFARI, 1)]
   , mroster = rosterSafari
   , mcaves  = cavesSafari
   , mendMsg = []
@@ -158,7 +192,7 @@ safari = ModeKind  -- Easter egg available only via screensaver
 dig = ModeKind
   { msymbol = 'd'
   , mname   = "dig"
-  , mfreq   = [("dig", 1)]
+  , mfreq   = [(DIG, 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesDig
   , mendMsg = []
@@ -169,7 +203,7 @@ dig = ModeKind
 see = ModeKind
   { msymbol = 'a'
   , mname   = "see"
-  , mfreq   = [("see", 1)]
+  , mfreq   = [(SEE, 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesSee
   , mendMsg = []
@@ -180,7 +214,7 @@ see = ModeKind
 crawlEmpty = ModeKind
   { msymbol = 'c'
   , mname   = "crawl empty"
-  , mfreq   = [("crawl empty", 1)]
+  , mfreq   = [(CRAWL_EMPTY, 1)]
   , mroster = rosterCrawlEmpty
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -191,7 +225,7 @@ crawlEmpty = ModeKind
 crawlSurvival = ModeKind
   { msymbol = 'd'
   , mname   = "crawl survival"
-  , mfreq   = [("crawl survival", 1)]
+  , mfreq   = [(CRAWL_SURVIVAL, 1)]
   , mroster = rosterCrawlSurvival
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -202,7 +236,7 @@ crawlSurvival = ModeKind
 safariSurvival = ModeKind
   { msymbol = 'u'
   , mname   = "safari survival"
-  , mfreq   = [("safari survival", 1)]
+  , mfreq   = [(SAFARI_SURVIVAL, 1)]
   , mroster = rosterSafariSurvival
   , mcaves  = cavesSafari
   , mendMsg = []
@@ -213,7 +247,7 @@ safariSurvival = ModeKind
 battle = ModeKind
   { msymbol = 'b'
   , mname   = "battle"
-  , mfreq   = [("battle", 1)]
+  , mfreq   = [(BATTLE, 1)]
   , mroster = rosterBattle
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -224,7 +258,7 @@ battle = ModeKind
 battleDefense = ModeKind
   { msymbol = 'f'
   , mname   = "battle defense"
-  , mfreq   = [("battle defense", 1)]
+  , mfreq   = [(BATTLE_DEFENSE, 1)]
   , mroster = rosterBattleDefense
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -235,7 +269,7 @@ battleDefense = ModeKind
 battleSurvival = ModeKind
   { msymbol = 'i'
   , mname   = "battle survival"
-  , mfreq   = [("battle survival", 1)]
+  , mfreq   = [(BATTLE_SURVIVAL, 1)]
   , mroster = rosterBattleSurvival
   , mcaves  = cavesBattle
   , mendMsg = []
@@ -246,7 +280,7 @@ battleSurvival = ModeKind
 defense = ModeKind  -- perhaps a real scenario in the future
   { msymbol = 'e'
   , mname   = "defense"
-  , mfreq   = [("defense", 1)]
+  , mfreq   = [(DEFENSE, 1)]
   , mroster = rosterDefense
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -257,7 +291,7 @@ defense = ModeKind  -- perhaps a real scenario in the future
 defenseEmpty = ModeKind
   { msymbol = 'e'
   , mname   = "defense empty"
-  , mfreq   = [("defense empty", 1)]
+  , mfreq   = [(DEFENSE_EMPTY, 1)]
   , mroster = rosterDefenseEmpty
   , mcaves  = cavesCrawl
   , mendMsg = []
@@ -276,55 +310,55 @@ screensave auto r =
 
 screensaverRaid = raid
   { mname   = "auto-raid (1)"
-  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
+  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterRaid
   }
 
 screensaverBrawl = brawl
   { mname   = "auto-brawl (2)"
-  , mfreq   = [("no confirms", 1)]
+  , mfreq   = [(NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterBrawl
   }
 
 screensaverShootout = shootout
   { mname   = "auto-shootout (3)"
-  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
+  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterShootout
   }
 
 screensaverHunt = hunt
   { mname   = "auto-hunt (4)"
-  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
+  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterHunt
   }
 
 screensaverEscape = escape
   { mname   = "auto-escape (5)"
-  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
+  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterEscape
   }
 
 screensaverZoo = zoo
   { mname   = "auto-zoo (6)"
-  , mfreq   = [("no confirms", 1)]
+  , mfreq   = [(NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterZoo
   }
 
 screensaverAmbush = ambush
   { mname   = "auto-ambush (7)"
-  , mfreq   = [("no confirms", 1)]
+  , mfreq   = [(NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterAmbush
   }
 
 screensaverCrawl = crawl
   { mname   = "auto-crawl (long)"
-  , mfreq   = [("no confirms", 1)]
+  , mfreq   = [(NO_CONFIRMS, 1)]
   , mroster = screensave (AutoLeader False False) rosterCrawl
   }
 
 screensaverSafari = safari
   { mname   = "auto-safari"
-  , mfreq   = [("insert coin", 1), ("no confirms", 1)]
+  , mfreq   = [(INSERT_COIN, 1), (NO_CONFIRMS, 1)]
   , mroster = -- changing leader by client needed, because of TFollow
               screensave (AutoLeader False True) rosterSafari
   }
