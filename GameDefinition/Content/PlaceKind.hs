@@ -1,6 +1,9 @@
 -- | Room, hall and passage definitions.
 module Content.PlaceKind
-  ( content
+  ( -- * Group name patterns
+    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern ESCAPE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_OUTDOOR_DOWN, pattern TINY_STARCASE, pattern OPEN_STARCASE, pattern CLOSED_STARCASE, pattern WALLED_STARCASE
+  , -- * Content
+    content
   ) where
 
 import Prelude ()
@@ -12,6 +15,31 @@ import qualified Data.Text as T
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
+
+-- * Group name patterns
+
+pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, ESCAPE_DOWN, ESCAPE_UP, ESCAPE_OUTDOOR_DOWN, TINY_STARCASE, OPEN_STARCASE, CLOSED_STARCASE, WALLED_STARCASE :: GroupName PlaceKind
+
+pattern ROGUE = "rogue"
+pattern LABORATORY = "laboratory"
+pattern ZOO = "zoo"
+pattern BRAWL = "brawl"
+pattern SHOOTOUT = "shootout"
+pattern ARENA = "arena"
+pattern ESCAPE = "escape"
+pattern AMBUSH = "ambush"
+pattern BATTLE = "battle"
+pattern NOISE = "noise"
+pattern MINE = "mine"
+pattern ESCAPE_DOWN = "escape down"
+pattern ESCAPE_UP = "escape up"
+pattern ESCAPE_OUTDOOR_DOWN = "escape outdoor down"
+pattern TINY_STARCASE = "tiny staircase"
+pattern OPEN_STARCASE = "open staircase"
+pattern CLOSED_STARCASE = "closed staircase"
+pattern WALLED_STARCASE = "walled staircase"
+
+-- * Content
 
 content :: [PlaceKind]
 content =
@@ -60,7 +88,7 @@ deadEnd = PlaceKind  -- needs to have index 0
 rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   { psymbol  = 'r'
   , pname    = "a chamber"
-  , pfreq    = [("rogue", 30), ("laboratory", 10)]
+  , pfreq    = [(ROGUE, 30), (LABORATORY, 10)]
   , prarity  = [(1, 10), (10, 6)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -72,11 +100,11 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
   }
 rect2 = rect
   { pname    = "a pen"
-  , pfreq    = [("zoo", 3)]
+  , pfreq    = [(ZOO, 3)]
   }
 rect3 = rect
   { pname    = "a shed"
-  , pfreq    = [("brawl", 10), ("shootout", 1)]
+  , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
   , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
@@ -84,12 +112,12 @@ rect3 = rect
   }
 rect4 = rect3
   { pname    = "cabinet"
-  , pfreq    = [("arena", 10)]
+  , pfreq    = [(ARENA, 10)]
   }
 rectWindows = PlaceKind
   { psymbol  = 'w'
   , pname    = "a hut"
-  , pfreq    = [("escape", 10), ("ambush", 7)]
+  , pfreq    = [(ESCAPE, 10), (AMBUSH, 7)]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -104,7 +132,7 @@ rectWindows = PlaceKind
 glasshouse = PlaceKind
   { psymbol  = 'g'
   , pname    = "a glasshouse"
-  , pfreq    = [("shootout", 4)]
+  , pfreq    = [(SHOOTOUT, 4)]
   , prarity  = [(1, 10), (10, 7)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -118,7 +146,7 @@ glasshouse = PlaceKind
   }
 glasshouse2 = glasshouse
   { pname    = "a glass cage"
-  , pfreq    = [("zoo", 10)]
+  , pfreq    = [(ZOO, 10)]
   , poverrideDark = [ ('=', "glasshouseOver_=_Dark")
                     , ('!', "glasshouseOver_!_Dark") ]
   , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
@@ -126,12 +154,12 @@ glasshouse2 = glasshouse
   }
 glasshouse3 = glasshouse
   { pname    = "a reading room"
-  , pfreq    = [("arena", 40)]
+  , pfreq    = [(ARENA, 40)]
   }
 pulpit = PlaceKind
   { psymbol  = 'p'
   , pname    = "a stand dais"
-  , pfreq    = [("arena", 200), ("zoo", 200)]
+  , pfreq    = [(ARENA, 200), (ZOO, 200)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FGround
@@ -150,7 +178,7 @@ pulpit = PlaceKind
 ruin = PlaceKind
   { psymbol  = 'R'
   , pname    = "ruins"
-  , pfreq    = [("battle", 330)]
+  , pfreq    = [(BATTLE, 330)]
   , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -162,7 +190,7 @@ ruin = PlaceKind
   }
 ruin2 = ruin
   { pname    = "blasted walls"
-  , pfreq    = [("ambush", 50)]
+  , pfreq    = [(AMBUSH, 50)]
   , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
                     , ('-', "wallH Lit") ]
   , poverrideLit = [ ('|', "wall Lit")
@@ -171,7 +199,7 @@ ruin2 = ruin
 collapsed = PlaceKind
   { psymbol  = 'c'
   , pname    = "a collapsed cavern"
-  , pfreq    = [("noise", 1)]
+  , pfreq    = [(NOISE, 1)]
       -- no point taking up space if very little space taken,
       -- but if no other place can be generated, a failsafe is useful
   , prarity  = [(1, 1)]
@@ -183,39 +211,39 @@ collapsed = PlaceKind
   , poverrideLit = []
   }
 collapsed2 = collapsed
-  { pfreq    = [("noise", 1000), ("battle", 200)]
+  { pfreq    = [(NOISE, 1000), (BATTLE, 200)]
   , ptopLeft = [ "X0"
                , "00"
                ]
   }
 collapsed3 = collapsed
-  { pfreq    = [("noise", 2000), ("battle", 200)]
+  { pfreq    = [(NOISE, 2000), (BATTLE, 200)]
   , ptopLeft = [ "XX0"
                , "000"
                ]
   }
 collapsed4 = collapsed
-  { pfreq    = [("noise", 2000), ("battle", 200)]
+  { pfreq    = [(NOISE, 2000), (BATTLE, 200)]
   , ptopLeft = [ "XXX0"
                , "0000"
                ]
   }
 collapsed5 = collapsed
-  { pfreq    = [("noise", 3000), ("battle", 500)]
+  { pfreq    = [(NOISE, 3000), (BATTLE, 500)]
   , ptopLeft = [ "XX0"
                , "X00"
                , "000"
                ]
   }
 collapsed6 = collapsed
-  { pfreq    = [("noise", 4000), ("battle", 1000)]
+  { pfreq    = [(NOISE, 4000), (BATTLE, 1000)]
   , ptopLeft = [ "XXX0"
                , "X000"
                , "0000"
                ]
   }
 collapsed7 = collapsed
-  { pfreq    = [("noise", 4000), ("battle", 1000)]
+  { pfreq    = [(NOISE, 4000), (BATTLE, 1000)]
   , ptopLeft = [ "XXX0"
                , "XX00"
                , "0000"
@@ -224,7 +252,7 @@ collapsed7 = collapsed
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "a hall"
-  , pfreq    = [("rogue", 600), ("laboratory", 2000)]
+  , pfreq    = [(ROGUE, 600), (LABORATORY, 2000)]
   , prarity  = [(1, 1)]
   , pcover   = CStretch
   , pfence   = FNone
@@ -238,7 +266,7 @@ pillar = PlaceKind
   , poverrideLit = []
   }
 pillar2 = pillar
-  { pfreq    = [("rogue", 60), ("laboratory", 200)]
+  { pfreq    = [(ROGUE, 60), (LABORATORY, 200)]
   , ptopLeft = [ "----"
                , "|0··"
                , "|···"
@@ -246,7 +274,7 @@ pillar2 = pillar
                ]
   }
 pillar3 = pillar
-  { pfreq    = [("rogue", 8000), ("laboratory", 25000)]
+  { pfreq    = [(ROGUE, 8000), (LABORATORY, 25000)]
   , ptopLeft = [ "-----"
                , "|0···"
                , "|····"
@@ -256,7 +284,7 @@ pillar3 = pillar
   }
 pillar4 = pillar
   { pname    = "an exquisite hall"
-  , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
+  , pfreq    = [(ROGUE, 30000), (LABORATORY, 100000)]
   , ptopLeft = [ "-----"
                , "|&·0·"
                , "|····"
@@ -268,7 +296,7 @@ pillar4 = pillar
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
-  , pfreq    = [("rogue", 30000), ("laboratory", 100000)]
+  , pfreq    = [(ROGUE, 30000), (LABORATORY, 100000)]
   , ptopLeft = [ "-----"
                , "|&·0·"
                , "|····"
@@ -281,9 +309,9 @@ pillar5 = pillar
 colonnade = PlaceKind
   { psymbol  = 'c'
   , pname    = "a colonnade"
-  , pfreq    = [ ("rogue", 3), ("arena", 20), ("laboratory", 2)
-               , ("empty", 10000), ("mine", 1000), ("brawl", 4)
-               , ("escape", 40), ("ambush", 40) ]
+  , pfreq    = [ (ROGUE, 3), (ARENA, 20), (LABORATORY, 2)
+               , ("empty", 10000), (MINE, 1000), (BRAWL, 4)
+               , (ESCAPE, 40), (AMBUSH, 40) ]
   , prarity  = [(1, 10), (10, 10)]
   , pcover   = CAlternate
   , pfence   = FFloor
@@ -329,7 +357,7 @@ colonnade6 = colonnade
 lampPost = PlaceKind
   { psymbol  = 'l'
   , pname    = "a lamp-lit area"
-  , pfreq    = [("escape", 200), ("ambush", 200), ("zoo", 100), ("battle", 100)]
+  , pfreq    = [(ESCAPE, 200), (AMBUSH, 200), (ZOO, 100), (BATTLE, 100)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FNone
@@ -347,8 +375,8 @@ lampPost2 = lampPost
                ]
   }
 lampPost3 = lampPost
-  { pfreq    = [ ("escape", 3000), ("ambush", 3000), ("zoo", 50)
-               , ("battle", 110) ]
+  { pfreq    = [ (ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50)
+               , (BATTLE, 110) ]
   , ptopLeft = [ "XX·XX"
                , "X···X"
                , "··0··"
@@ -357,7 +385,7 @@ lampPost3 = lampPost
                ]
   }
 lampPost4 = lampPost
-  { pfreq    = [("escape", 3000), ("ambush", 3000), ("zoo", 50), ("battle", 60)]
+  { pfreq    = [(ESCAPE, 3000), (AMBUSH, 3000), (ZOO, 50), (BATTLE, 60)]
   , ptopLeft = [ "X···X"
                , "·····"
                , "··0··"
@@ -368,7 +396,7 @@ lampPost4 = lampPost
 treeShade = PlaceKind
   { psymbol  = 't'
   , pname    = "a tree shade"
-  , pfreq    = [("brawl", 1000)]
+  , pfreq    = [(BRAWL, 1000)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -386,7 +414,7 @@ treeShade = PlaceKind
 fogClump = PlaceKind
   { psymbol  = 'f'
   , pname    = "a foggy patch"
-  , pfreq    = [("shootout", 150), ("empty", 15)]
+  , pfreq    = [(SHOOTOUT, 150), ("empty", 15)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -398,7 +426,7 @@ fogClump = PlaceKind
   , poverrideLit = [('f', "fogClumpOver_f_Lit"), (';', "fog Lit")]
   }
 fogClump2 = fogClump
-  { pfreq    = [("shootout", 500), ("empty", 50)]
+  { pfreq    = [(SHOOTOUT, 500), ("empty", 50)]
   , ptopLeft = [ "X;f"
                , "f;f"
                , ";;f"
@@ -408,7 +436,7 @@ fogClump2 = fogClump
 smokeClump = PlaceKind
   { psymbol  = 's'
   , pname    = "a smoky patch"
-  , pfreq    = [("zoo", 50)]
+  , pfreq    = [(ZOO, 50)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -422,7 +450,7 @@ smokeClump = PlaceKind
                    , ('·', "floorActorLit") ]
   }
 smokeClump2 = smokeClump
-  { pfreq    = [("zoo", 500)]
+  { pfreq    = [(ZOO, 500)]
   , ptopLeft = [ "X;f"
                , "f;f"
                , ";;f"
@@ -431,7 +459,7 @@ smokeClump2 = smokeClump
   }
 smokeClump3FGround = smokeClump
   { pname    = "a burned out area"
-  , pfreq    = [("laboratory", 150)]
+  , pfreq    = [(LABORATORY, 150)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FGround
@@ -446,7 +474,7 @@ smokeClump3FGround = smokeClump
 bushClump = PlaceKind
   { psymbol  = 'b'
   , pname    = "a bushy patch"
-  , pfreq    = [("shootout", 80)]
+  , pfreq    = [(SHOOTOUT, 80)]
   , prarity  = [(1, 1)]
   , pcover   = CMirror
   , pfence   = FNone
@@ -462,7 +490,7 @@ bushClump = PlaceKind
 escapeDown = PlaceKind
   { psymbol  = '>'
   , pname    = "an escape down"
-  , pfreq    = [("escape down", 1)]
+  , pfreq    = [(ESCAPE_DOWN, 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FGround
@@ -474,7 +502,7 @@ escapeDown = PlaceKind
                    , ('-', "wallH Lit") ]
   }
 escapeDown2 = escapeDown
-  { pfreq    = [("escape down", 1000)]
+  { pfreq    = [(ESCAPE_DOWN, 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0"
                , "·>·"
@@ -482,7 +510,7 @@ escapeDown2 = escapeDown
                ]
   }
 escapeDown3 = escapeDown
-  { pfreq    = [("escape down", 2000)]
+  { pfreq    = [(ESCAPE_DOWN, 2000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|0·0|"
@@ -492,7 +520,7 @@ escapeDown3 = escapeDown
                ]
   }
 escapeDown4 = escapeDown
-  { pfreq    = [("escape down", 1000)]
+  { pfreq    = [(ESCAPE_DOWN, 1000)]
   , pcover   = CMirror
   , pfence   = FFloor
   , ptopLeft = [ "0··"
@@ -501,7 +529,7 @@ escapeDown4 = escapeDown
                ]
   }
 escapeDown5 = escapeDown
-  { pfreq    = [("escape down", 2000)]
+  { pfreq    = [(ESCAPE_DOWN, 2000)]
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -514,7 +542,7 @@ escapeDown5 = escapeDown
 staircase = PlaceKind
   { psymbol  = '/'
   , pname    = "a staircase"
-  , pfreq    = [("tiny staircase", 1)]  -- no cover when arriving; low freq
+  , pfreq    = [(TINY_STARCASE, 1)]  -- no cover when arriving; low freq
   , prarity  = [(1, 100), (10, 100)]
   , pcover   = CVerbatim
   , pfence   = FGround
@@ -531,7 +559,7 @@ staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
   }
 staircase2 = staircase
-  { pfreq    = [("tiny staircase", 3)]
+  { pfreq    = [(TINY_STARCASE, 3)]
   , prarity  = [(1, 1)]
   , pfence   = FGround
   , ptopLeft = [ "·<·>·"
@@ -546,7 +574,7 @@ staircase4 = staircase2
   , prarity  = [(1, 1)]
   }
 staircase5 = staircase
-  { pfreq    = [("open staircase", 200)]  -- no cover, open
+  { pfreq    = [(OPEN_STARCASE, 200)]  -- no cover, open
   , pfence   = FGround
   , ptopLeft = [ "0·0"
                , "···"
@@ -556,7 +584,7 @@ staircase5 = staircase
                ]
   }
 staircase6 = staircase
-  { pfreq    = [("open staircase", 300)]
+  { pfreq    = [(OPEN_STARCASE, 300)]
   , pfence   = FGround
   , ptopLeft = [ "0·0·0"
                , "·····"
@@ -566,7 +594,7 @@ staircase6 = staircase
                ]
   }
 staircase7 = staircase
-  { pfreq    = [("open staircase", 500)]
+  { pfreq    = [(OPEN_STARCASE, 500)]
   , pfence   = FGround
   , ptopLeft = [ "0·0·0·0"
                , "·······"
@@ -576,7 +604,7 @@ staircase7 = staircase
                ]
   }
 staircase8 = staircase
-  { pfreq    = [("open staircase", 2000)]
+  { pfreq    = [(OPEN_STARCASE, 2000)]
   , pfence   = FGround
   , ptopLeft = [ "·0·I·0·"
                , "0·····0"
@@ -586,7 +614,7 @@ staircase8 = staircase
                ]
   }
 staircase9 = staircase
-  { pfreq    = [("open staircase", 500)]
+  { pfreq    = [(OPEN_STARCASE, 500)]
   , pfence   = FGround
   , ptopLeft = [ "0·······0"
                , "···<·>···"
@@ -594,7 +622,7 @@ staircase9 = staircase
                ]
   }
 staircase10 = staircase
-  { pfreq    = [("open staircase", 500)]
+  { pfreq    = [(OPEN_STARCASE, 500)]
   , pfence   = FGround
   , ptopLeft = [ "0·····0"
                , "··<·>··"
@@ -602,7 +630,7 @@ staircase10 = staircase
                ]
   }
 staircase11 = staircase
-  { pfreq    = [("closed staircase", 2000)]  -- weak cover, low freq
+  { pfreq    = [(CLOSED_STARCASE, 2000)]  -- weak cover, low freq
   , pfence   = FFloor
   , ptopLeft = [ "·0·"
                , "0·0"
@@ -614,7 +642,7 @@ staircase11 = staircase
                ]
   }
 staircase12 = staircase
-  { pfreq    = [("closed staircase", 4000)]
+  { pfreq    = [(CLOSED_STARCASE, 4000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·0·"
                , "0·0·0"
@@ -626,7 +654,7 @@ staircase12 = staircase
                ]
   }
 staircase13 = staircase
-  { pfreq    = [("closed staircase", 6000)]
+  { pfreq    = [(CLOSED_STARCASE, 6000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·0·0·"
                , "0·0·0·0"
@@ -638,7 +666,7 @@ staircase13 = staircase
                ]
   }
 staircase14 = staircase
-  { pfreq    = [("closed staircase", 10000)]
+  { pfreq    = [(CLOSED_STARCASE, 10000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0·0·0"
                , "·0·0·0·"
@@ -650,7 +678,7 @@ staircase14 = staircase
                ]
   }
 staircase15 = staircase
-  { pfreq    = [("closed staircase", 20000)]
+  { pfreq    = [(CLOSED_STARCASE, 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·0·0·0·"
                , "0·0·0·0·0"
@@ -662,7 +690,7 @@ staircase15 = staircase
                ]
   }
 staircase16 = staircase
-  { pfreq    = [("closed staircase", 20000)]
+  { pfreq    = [(CLOSED_STARCASE, 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0·0·0·0"
                , "·0·0·0·0·"
@@ -674,7 +702,7 @@ staircase16 = staircase
                ]
   }
 staircase17 = staircase
-  { pfreq    = [("closed staircase", 20000)]
+  { pfreq    = [(CLOSED_STARCASE, 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0·0·0·0·0"
                , "·0·0·0·0·0·"
@@ -686,7 +714,7 @@ staircase17 = staircase
                ]
   }
 staircase18 = staircase
-  { pfreq    = [("closed staircase", 80000)]
+  { pfreq    = [(CLOSED_STARCASE, 80000)]
   , pfence   = FFloor
   , ptopLeft = [ "··0·0·0·0··"
                , "·0·0·0·0·0·"
@@ -698,7 +726,7 @@ staircase18 = staircase
                ]
   }
 staircase19 = staircase
-  { pfreq    = [("closed staircase", 20000)]
+  { pfreq    = [(CLOSED_STARCASE, 20000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·0·0·0·0·"
                , "0·0·0·0·0·0"
@@ -710,7 +738,7 @@ staircase19 = staircase
                ]
   }
 staircase20 = staircase
-  { pfreq    = [("closed staircase", 5000)]
+  { pfreq    = [(CLOSED_STARCASE, 5000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·0·0·0·0·"
                , "0·0·····0·0"
@@ -720,7 +748,7 @@ staircase20 = staircase
                ]
   }
 staircase21 = staircase
-  { pfreq    = [("closed staircase", 5000)]
+  { pfreq    = [(CLOSED_STARCASE, 5000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0·I·0·0"
                , "·0·····0·"
@@ -730,7 +758,7 @@ staircase21 = staircase
                ]
   }
 staircase22 = staircase
-  { pfreq    = [("closed staircase", 2000)]
+  { pfreq    = [(CLOSED_STARCASE, 2000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0·····0·0"
                , "·0··<·>··0·"
@@ -738,7 +766,7 @@ staircase22 = staircase
                ]
   }
 staircase23 = staircase
-  { pfreq    = [("closed staircase", 1000)]
+  { pfreq    = [(CLOSED_STARCASE, 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·······0·"
                , "0·0·<·>·0·0"
@@ -746,7 +774,7 @@ staircase23 = staircase
                ]
   }
 staircase24 = staircase
-  { pfreq    = [("closed staircase", 1000)]
+  { pfreq    = [(CLOSED_STARCASE, 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "·0·····0·"
                , "0··<·>··0"
@@ -754,7 +782,7 @@ staircase24 = staircase
                ]
   }
 staircase25 = staircase
-  { pfreq    = [("walled staircase", 10)]
+  { pfreq    = [(WALLED_STARCASE, 10)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|·····|"
@@ -764,7 +792,7 @@ staircase25 = staircase
                ]
   }
 staircase26 = staircase
-  { pfreq    = [("walled staircase", 50)]
+  { pfreq    = [(WALLED_STARCASE, 50)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|·······|"
@@ -774,7 +802,7 @@ staircase26 = staircase
                ]
   }
 staircase27 = staircase
-  { pfreq    = [("walled staircase", 100)]
+  { pfreq    = [(WALLED_STARCASE, 100)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|0·····0|"
@@ -784,7 +812,7 @@ staircase27 = staircase
                ]
   }
 staircase28 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [(WALLED_STARCASE, 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|·····|"
@@ -796,7 +824,7 @@ staircase28 = staircase
                ]
   }
 staircase29 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [(WALLED_STARCASE, 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|0···0|"
@@ -808,7 +836,7 @@ staircase29 = staircase
                ]
   }
 staircase30 = staircase
-  { pfreq    = [("walled staircase", 1000)]
+  { pfreq    = [(WALLED_STARCASE, 1000)]
   , pfence   = FNone
   , ptopLeft = [ "-------"
                , "|0·0·0|"
@@ -820,7 +848,7 @@ staircase30 = staircase
                ]
   }
 staircase31 = staircase
-  { pfreq    = [("walled staircase", 2000)]
+  { pfreq    = [(WALLED_STARCASE, 2000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|·······|"
@@ -832,7 +860,7 @@ staircase31 = staircase
                ]
   }
 staircase32 = staircase
-  { pfreq    = [("walled staircase", 5000)]
+  { pfreq    = [(WALLED_STARCASE, 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|0·····0|"
@@ -844,7 +872,7 @@ staircase32 = staircase
                ]
   }
 staircase33 = staircase
-  { pfreq    = [("walled staircase", 5000)]
+  { pfreq    = [(WALLED_STARCASE, 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|0·0·0·0|"
@@ -856,7 +884,7 @@ staircase33 = staircase
                ]
   }
 staircase34 = staircase
-  { pfreq    = [("walled staircase", 5000)]
+  { pfreq    = [(WALLED_STARCASE, 5000)]
   , pfence   = FNone
   , ptopLeft = [ "---------"
                , "|·0·0·0·|"
@@ -868,7 +896,7 @@ staircase34 = staircase
                ]
   }
 staircase35 = staircase
-  { pfreq    = [("walled staircase", 200)]
+  { pfreq    = [(WALLED_STARCASE, 200)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|·········|"
@@ -878,7 +906,7 @@ staircase35 = staircase
                ]
   }
 staircase36 = staircase
-  { pfreq    = [("walled staircase", 500)]
+  { pfreq    = [(WALLED_STARCASE, 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|·0·····0·|"
@@ -888,7 +916,7 @@ staircase36 = staircase
                ]
   }
 staircase37 = staircase
-  { pfreq    = [("walled staircase", 500)]
+  { pfreq    = [(WALLED_STARCASE, 500)]
   , pfence   = FNone
   , ptopLeft = [ "-----------"
                , "|0·······0|"
@@ -958,7 +986,7 @@ switchEscapeToUp :: PlaceKind -> PlaceKind
 switchEscapeToUp s = s
  { psymbol   = '<'
  , pname     = "an escape up"
- , pfreq     = map (\(_, n) -> ("escape up", n)) $ pfreq s
+ , pfreq     = map (\(_, n) -> (ESCAPE_UP, n)) $ pfreq s
  , poverrideDark = ('>', "escape up") : poverrideDark s
  , poverrideLit = ('>', "escape up") : poverrideLit s
  }
@@ -966,7 +994,7 @@ switchEscapeToUp s = s
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
 switchEscapeToOutdoorDown s = s
  { pname     = "outdoor escape route"
- , pfreq     = map (\(_, n) -> ("escape outdoor down", n)) $ pfreq s
+ , pfreq     = map (\(_, n) -> (ESCAPE_OUTDOOR_DOWN, n)) $ pfreq s
  , poverrideDark = ('>', "escape outdoor down") : poverrideDark s
  , poverrideLit = ('>', "escape outdoor down") : poverrideLit s
  }

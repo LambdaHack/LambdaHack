@@ -10,6 +10,7 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
+import Content.PlaceKind hiding (content)
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
@@ -71,7 +72,7 @@ rogue = CaveKind
   , cactorFreq    = [("monster", 60), ("animal", 40)]
   , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1  -- deep down quality over quantity
   , citemFreq     = [("common item", 40), ("treasure", 60)]
-  , cplaceFreq    = [("rogue", 1)]
+  , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
   , labyrinth     = False
   , cdefTile      = "fillerWall"
@@ -115,7 +116,7 @@ arena = rogue
   , cactorFreq    = [("monster", 30), ("animal", 70)]
   , citemNum      = 4 `d` 5  -- few rooms
   , citemFreq     = [("common item", 20), ("treasure", 40), ("any scroll", 40)]
-  , cplaceFreq    = [("arena", 1)]
+  , cplaceFreq    = [(ARENA, 1)]
   , cpassable     = True
   , cdefTile      = "arenaSetLit"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -153,7 +154,7 @@ laboratory = rogue
   , cactorFreq    = [("monster", 30), ("animal", 70)]
   , citemNum      = 6 `d` 5  -- reward difficulty
   , citemFreq     = [("common item", 20), ("treasure", 40), ("explosive", 40)]
-  , cplaceFreq    = [("laboratory", 1)]
+  , cplaceFreq    = [(LABORATORY, 1)]
   , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
   , clitCorTile   = "labTrailLit"
   , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
@@ -183,7 +184,7 @@ noise = rogue
   , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
   , labyrinth     = True
-  , cplaceFreq    = [("noise", 1)]
+  , cplaceFreq    = [(NOISE, 1)]
   , cdefTile      = "noiseSetLit"
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "damp floor Dark"
@@ -199,7 +200,7 @@ mine = noise
   , citemNum      = 10 `d` 4  -- an incentive to explore the final labyrinth
   , citemFreq     = [("common item", 20), ("gem", 20)]
                       -- can't be "valuable" or template items generated
-  , cplaceFreq    = [("noise", 1), ("mine", 99)]
+  , cplaceFreq    = [(NOISE, 1), (MINE, 99)]
   , cdefTile      = "powerSetDark"
   , cstairFreq    = [ ("gated closed staircase", 50)
                     , ("gated open staircase", 50)
@@ -308,7 +309,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , citemNum      = 4 `d` 6
   , citemFreq     = [ ("common item", 50), ("starting weapon", 100)
                     , ("torso armor", 400), ("misc armor", 200) ]
-  , cplaceFreq    = [("brawl", 1)]
+  , cplaceFreq    = [(BRAWL, 1)]
   , cpassable     = True
   , cdefTile      = "brawlSetLit"
   , cdarkCorTile  = "dirt Lit"
@@ -347,7 +348,7 @@ shootout = rogue  -- a scenario with strong missiles;
                       -- Many consumable buffs are needed in symmetric maps
                       -- so that aggressor prepares them in advance and camper
                       -- needs to waste initial turns to buff for the defence.
-  , cplaceFreq    = [("shootout", 1)]
+  , cplaceFreq    = [(SHOOTOUT, 1)]
   , cpassable     = True
   , cdefTile      = "shootoutSetLit"
   , cdarkCorTile  = "dirt Lit"
@@ -377,7 +378,7 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , citemNum      = 5 `d` 10
   , citemFreq     = [ ("common item", 30)
                     , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
-  , cplaceFreq    = [("brawl", 50), ("shootout", 100)]
+  , cplaceFreq    = [(BRAWL, 50), (SHOOTOUT, 100)]
   , cpassable     = True
   , cdefTile      = "shootoutSetLit"
   , cdarkCorTile  = "dirt Lit"
@@ -410,7 +411,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , citemFreq     = [ ("common item", 30), ("gem", 150)
                     , ("weak arrow", 500), ("harpoon", 400)
                     , ("explosive", 100) ]
-  , cplaceFreq    = [("escape", 1)]
+  , cplaceFreq    = [(ESCAPE, 1)]
   , cpassable     = True
   , cdefTile      = "escapeSetDark"  -- unlike in ambush, tiles not burning yet
   , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
@@ -442,7 +443,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , citemNum      = 7 `d` 8
   , citemFreq     = [ ("common item", 100), ("light source", 1000)
                     , ("starting weapon", 1000) ]
-  , cplaceFreq    = [("zoo", 1)]
+  , cplaceFreq    = [(ZOO, 1)]
   , cpassable     = True
   , cdefTile      = "zooSetDark"
   , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
@@ -478,7 +479,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , citemNum      = 5 `d` 8
   , citemFreq     = [ ("common item", 30)
                     , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
-  , cplaceFreq    = [("ambush", 1)]
+  , cplaceFreq    = [(AMBUSH, 1)]
   , cpassable     = True
   , cdefTile      = "ambushSetDark"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
@@ -511,7 +512,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
   , citemFreq     = [("common item", 100), ("light source", 200)]
-  , cplaceFreq    = [("battle", 50), ("rogue", 50)]
+  , cplaceFreq    = [(BATTLE, 50), (ROGUE, 50)]
   , cpassable     = True
   , cdefTile      = "battleSetDark"
   , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
