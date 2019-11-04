@@ -1,6 +1,6 @@
 -- | Definitions of items embedded in map tiles.
 module Content.ItemKindEmbed
-  ( pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNBOARD, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ESCAPE, pattern STAIRCASE_TRAP_UP, pattern STAIRCASE_TRAP_DOWN, pattern PULPIT, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
+  ( pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
   , embeds
   ) where
 
@@ -18,32 +18,32 @@ import Game.LambdaHack.Definition.Flavour
 
 embeds :: [ItemKind]
 embeds =
-  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, signboardMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround]
+  [scratchOnWall, obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signageExit, signageEmbed, signageMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, stairsTrapUp, stairsTrapDown, lectern, shallowWater, straightPath, frozenGround]
 
-scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signboardExit, signboardEmbed, signboardMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, staircaseTrapUp, staircaseTrapDown, pulpit, shallowWater, straightPath, frozenGround :: ItemKind
+scratchOnWall,    obscenePictogram, subtleFresco, treasureCache, treasureCacheTrap, signageExit, signageEmbed, signageMerchandise, fireSmall, fireBig, frost, rubble, doorwayTrapTemplate, doorwayTrap1, doorwayTrap2, doorwayTrap3, stairsUp, stairsDown, escape, stairsTrapUp, stairsTrapDown, lectern, shallowWater, straightPath, frozenGround :: ItemKind
 
 -- * Group name patterns
 
-pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNBOARD, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRCASE_UP, STAIRCASE_DOWN, ESCAPE, STAIRCASE_TRAP_UP, STAIRCASE_TRAP_DOWN, PULPIT, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND :: GroupName ItemKind
+pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND :: GroupName ItemKind
 
 pattern SCRATCH_ON_WALL = "scratch on wall"
 pattern OBSCENE_PICTOGRAM = "obscene pictogram"
 pattern SUBTLE_FRESCO = "subtle fresco"
 pattern TREASURE_CACHE = "treasure cache"
 pattern TREASURE_CACHE_TRAP = "treasure cache trap"
-pattern SIGNBOARD = "signboard"
+pattern SIGNAGE = "signage"
 pattern SMALL_FIRE = "small fire"
 pattern BIG_FIRE = "big fire"
 pattern FROST = "frost"
 pattern RUBBLE = "rubble"
 pattern DOORWAY_TRAP_UNKNOWN = "doorway trap unknown"
 pattern DOORWAY_TRAP = "doorway trap"
-pattern STAIRCASE_UP = "staircase up"
-pattern STAIRCASE_DOWN = "staircase down"
+pattern STAIRS_UP = "stairs up"
+pattern STAIRS_DOWN = "stairs down"
 pattern ESCAPE = "escape"
-pattern STAIRCASE_TRAP_UP = "staircase trap up"
-pattern STAIRCASE_TRAP_DOWN = "staircase trap down"
-pattern PULPIT = "pulpit"
+pattern STAIRS_TRAP_UP = "stairs trap up"
+pattern STAIRS_TRAP_DOWN = "stairs trap down"
+pattern LECTERN = "lectern"
 pattern SHALLOW_WATER = "shallow water"
 pattern STRAIGHT_PATH = "straight path"
 pattern FROZEN_GROUND = "frozen ground"
@@ -141,10 +141,10 @@ treasureCacheTrap = ItemKind
   , idesc    = "It's a trap!"
   , ikit     = []
   }
-signboardExit = ItemKind
+signageExit = ItemKind
   { isymbol  = '?'
   , iname    = "inscription"
-  , ifreq    = [(SIGNBOARD, 50)]
+  , ifreq    = [(SIGNAGE, 50)]
   , iflavour = zipPlain [BrMagenta]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -156,15 +156,15 @@ signboardExit = ItemKind
   , idesc    = "Crude big arrows hastily carved by unknown hands."
   , ikit     = []
   }
-signboardEmbed = signboardExit
+signageEmbed = signageExit
   { iname    = "notice"
-  , ifreq    = [(SIGNBOARD, 50)]
+  , ifreq    = [(SIGNAGE, 50)]
   , ieffects = [Detect DetectEmbed 12]
   , idesc    = "The battered poster is untitled and unsigned."
   }
-signboardMerchandise = signboardExit
+signageMerchandise = signageExit
   { iname    = "treasure map"
-  , ifreq    = [(SIGNBOARD, 50)]
+  , ifreq    = [(SIGNAGE, 50)]
   , ieffects = [Detect DetectLoot 20]
   , idesc    = "In equal parts cryptic and promising."
   }
@@ -264,7 +264,7 @@ doorwayTrap3 = doorwayTrapTemplate
 stairsUp = ItemKind
   { isymbol  = '<'
   , iname    = "flight"
-  , ifreq    = [(STAIRCASE_UP, 1)]
+  , ifreq    = [(STAIRS_UP, 1)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -279,7 +279,7 @@ stairsUp = ItemKind
   }
 stairsDown = stairsUp
   { isymbol  = '>'
-  , ifreq    = [(STAIRCASE_DOWN, 1)]
+  , ifreq    = [(STAIRS_DOWN, 1)]
   , ieffects = [Ascend False]
   , idesc    = ""
   }
@@ -292,10 +292,10 @@ escape = stairsUp
   , ieffects = [Escape]
   , idesc    = "May this nightmare have an end?"
   }
-staircaseTrapUp = ItemKind
+stairsTrapUp = ItemKind
   { isymbol  = '^'
   , iname    = "staircase trap"
-  , ifreq    = [(STAIRCASE_TRAP_UP, 1)]
+  , ifreq    = [(STAIRS_TRAP_UP, 1)]
   , iflavour = zipPlain [Red]
   , icount   = 1
   , irarity  = [(1, 1)]
@@ -308,20 +308,20 @@ staircaseTrapUp = ItemKind
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
   }
--- Needs to be separate from staircaseTrapUp, to make sure the item is
--- registered after up staircase (not only after down staircase)
+-- Needs to be separate from stairsTrapUp, to make sure the item is
+-- registered after up stairs (not only after down stairs)
 -- so that effects are invoked in the proper order and, e.g., teleport works.
-staircaseTrapDown = staircaseTrapUp
-  { ifreq    = [(STAIRCASE_TRAP_DOWN, 1)]
+stairsTrapDown = stairsTrapUp
+  { ifreq    = [(STAIRS_TRAP_DOWN, 1)]
   , iverbHit = "open up under"
   , ieffects = [ VerbMsg "tumble down the stairwell"
                , toOrganGood DRUNK (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
-pulpit = ItemKind
+lectern = ItemKind
   { isymbol  = '?'
   , iname    = "lectern"
-  , ifreq    = [(PULPIT, 1)]
+  , ifreq    = [(LECTERN, 1)]
   , iflavour = zipFancy [BrYellow]
   , icount   = 1
   , irarity  = [(1, 1)]
