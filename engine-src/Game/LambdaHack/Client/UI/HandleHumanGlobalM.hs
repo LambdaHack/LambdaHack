@@ -1558,7 +1558,7 @@ gameRestartHuman = do
     -- This ignores all but the first word of game mode names picked
     -- via main menu and assumes the fist word of such game modes
     -- is present in their frequencies.
-    let nxtGameGroup = toGroupName $ head $ T.words nxtGameName
+    let nxtGameGroup = GroupName $ head $ T.words nxtGameName
     return $ Right $ ReqUIGameRestart nxtGameGroup snxtChal
   else do
     msg2 <- rndToActionUI $ oneOf
@@ -1569,7 +1569,7 @@ gameRestartHuman = do
 nxtGameMode :: COps -> Int -> ModeKind
 nxtGameMode COps{comode} snxtScenario =
   let f !acc _p _i !a = a : acc
-      campaignModes = ofoldlGroup' comode "campaign scenario" f []
+      campaignModes = ofoldlGroup' comode CAMPAIGN_SCENARIO f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
 
 -- * GameQuit
@@ -1587,7 +1587,7 @@ gameQuitHuman = do
   if b
   then do
     snxtChal <- getsClient snxtChal
-    return $ Right $ ReqUIGameRestart "insert coin" snxtChal
+    return $ Right $ ReqUIGameRestart INSERT_COIN snxtChal
   else do
     msg2 <- rndToActionUI $ oneOf
               [ "yea, would be a pity to leave them to die"

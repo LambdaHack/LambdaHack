@@ -1,7 +1,7 @@
 -- | Cave properties.
 module Content.CaveKind
   ( -- * Group name patterns
-    pattern DEFAULT_RANDOM, pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
+    pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
   , -- * Content
     content
   ) where
@@ -12,37 +12,41 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
-import Content.PlaceKind hiding (content)
-import Content.TileKind hiding (content)
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Core.Dice
-import Game.LambdaHack.Definition.Defs
+import           Content.ItemKind hiding (content)
+import           Content.ItemKindActor
+import           Content.ItemKindBlast
+import           Content.PlaceKind hiding (content)
+import           Content.TileKind hiding (content)
+import           Game.LambdaHack.Content.CaveKind
+import qualified Game.LambdaHack.Content.ItemKind as IK
+import           Game.LambdaHack.Content.TileKind
+import           Game.LambdaHack.Core.Dice
+import           Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-pattern DEFAULT_RANDOM, CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
+pattern CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
 
-pattern DEFAULT_RANDOM = "default random"
-pattern CAVE_ROGUE = "caveRogue"
-pattern CAVE_ARENA = "caveArena"
-pattern CAVE_SMOKING = "caveSmoking"
-pattern CAVE_LABORATORY = "caveLaboratory"
-pattern CAVE_NOISE = "caveNoise"
-pattern CAVE_MINE = "caveMine"
-pattern CAVE_EMPTY = "caveEmpty"
-pattern CAVE_SHALLOW_ROGUE = "caveShallowRogue"
-pattern CAVE_OUTERMOST = "caveOutermost"
-pattern CAVE_RAID = "caveRaid"
-pattern CAVE_BRAWL = "caveBrawl"
-pattern CAVE_SHOOTOUT = "caveShootout"
-pattern CAVE_HUNT = "caveHunt"
-pattern CAVE_ESCAPE = "caveEscape"
-pattern CAVE_ZOO = "caveZoo"
-pattern CAVE_AMBUSH = "caveAmbush"
-pattern CAVE_BATTLE = "caveBattle"
-pattern CAVE_SAFARI_1 = "caveSafari1"
-pattern CAVE_SAFARI_2 = "caveSafari2"
-pattern CAVE_SAFARI_3 = "caveSafari3"
+pattern CAVE_ROGUE = GroupName "caveRogue"
+pattern CAVE_ARENA = GroupName "caveArena"
+pattern CAVE_SMOKING = GroupName "caveSmoking"
+pattern CAVE_LABORATORY = GroupName "caveLaboratory"
+pattern CAVE_NOISE = GroupName "caveNoise"
+pattern CAVE_MINE = GroupName "caveMine"
+pattern CAVE_EMPTY = GroupName "caveEmpty"
+pattern CAVE_SHALLOW_ROGUE = GroupName "caveShallowRogue"
+pattern CAVE_OUTERMOST = GroupName "caveOutermost"
+pattern CAVE_RAID = GroupName "caveRaid"
+pattern CAVE_BRAWL = GroupName "caveBrawl"
+pattern CAVE_SHOOTOUT = GroupName "caveShootout"
+pattern CAVE_HUNT = GroupName "caveHunt"
+pattern CAVE_ESCAPE = GroupName "caveEscape"
+pattern CAVE_ZOO = GroupName "caveZoo"
+pattern CAVE_AMBUSH = GroupName "caveAmbush"
+pattern CAVE_BATTLE = GroupName "caveBattle"
+pattern CAVE_SAFARI_1 = GroupName "caveSafari1"
+pattern CAVE_SAFARI_2 = GroupName "caveSafari2"
+pattern CAVE_SAFARI_3 = GroupName "caveSafari3"
 
 -- * Content
 
@@ -74,14 +78,14 @@ rogue = CaveKind
   , copenChance   = 1%5
   , chidden       = 7
   , cactorCoeff   = 65  -- the maze requires time to explore
-  , cactorFreq    = [("monster", 60), ("animal", 40)]
+  , cactorFreq    = [(MONSTER, 60), (ANIMAL, 40)]
   , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1  -- deep down quality over quantity
-  , citemFreq     = [("common item", 40), ("treasure", 60)]
+  , citemFreq     = [(IK.COMMON_ITEM, 40), (IK.TREASURE, 60)]
   , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
   , labyrinth     = False
   , cdefTile      = FILLER_WALL
-  , cdarkCorTile  = "floorCorridorDark"
+  , cdarkCorTile  = FLOOR_CORRIDOR_DARK
   , clitCorTile   = FLOOR_CORRIDOR_LIT
   , cwallTile     = FILLER_WALL
   , ccornerTile   = FILLER_WALL
@@ -93,8 +97,8 @@ rogue = CaveKind
   , clegendDarkTile = LEGEND_DARK
   , clegendLitTile  = LEGEND_LIT
   , cescapeFreq   = []
-  , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
-                    , ("tiny staircase", 1) ]
+  , cstairFreq    = [ (WALLED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
+                    , (TINY_STAIRCASE, 1) ]
   , cstairAllowed = []
   , cdesc         = "Winding tunnels stretch into the dark."
   }  -- no lit corridors cave alternative, since both lit # and . look bad here
@@ -118,16 +122,17 @@ arena = rogue
   , cextraStairs  = 1 `d` 2
   , chidden       = 0
   , cactorCoeff   = 75  -- small open level, don't rush the player
-  , cactorFreq    = [("monster", 30), ("animal", 70)]
+  , cactorFreq    = [(MONSTER, 30), (ANIMAL, 70)]
   , citemNum      = 4 `d` 5  -- few rooms
-  , citemFreq     = [("common item", 20), ("treasure", 40), ("any scroll", 40)]
+  , citemFreq     = [ (IK.COMMON_ITEM, 20), (IK.TREASURE, 40)
+                    , (IK.ANY_SCROLL, 40) ]
   , cplaceFreq    = [(ARENA, 1)]
   , cpassable     = True
   , cdefTile      = ARENA_SET_LIT
   , cdarkCorTile  = TRAIL_LIT  -- let trails give off light
   , clitCorTile   = TRAIL_LIT  -- may be rolled different than the above
-  , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
-                    , ("tiny staircase", 1) ]
+  , cstairFreq    = [ (WALLED_STAIRCASE, 20), (CLOSED_STAIRCASE, 80)
+                    , (TINY_STAIRCASE, 1) ]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
   }
 smoking = arena
@@ -137,8 +142,8 @@ smoking = arena
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
   , citemNum      = 6 `d` 5  -- rare, so make it exciting
-  , citemFreq     = [("common item", 20), ("treasure", 40), ("any vial", 40)]
-  , cdefTile      = "arenaSetDark"
+  , citemFreq     = [(IK.COMMON_ITEM, 20), (IK.TREASURE, 40), (IK.ANY_VIAL, 40)]
+  , cdefTile      = ARENA_SET_DARK
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
 laboratory = rogue
@@ -156,14 +161,15 @@ laboratory = rogue
   , cextraStairs  = 2
   , cdoorChance   = 1
   , copenChance   = 1%2
-  , cactorFreq    = [("monster", 30), ("animal", 70)]
+  , cactorFreq    = [(MONSTER, 30), (ANIMAL, 70)]
   , citemNum      = 6 `d` 5  -- reward difficulty
-  , citemFreq     = [("common item", 20), ("treasure", 40), ("explosive", 40)]
+  , citemFreq     = [ (IK.COMMON_ITEM, 20), (IK.TREASURE, 40)
+                    , (IK.EXPLOSIVE, 40) ]
   , cplaceFreq    = [(LABORATORY, 1)]
   , cdarkCorTile  = LAB_TRAIL_LIT  -- let lab smoke give off light always
   , clitCorTile   = LAB_TRAIL_LIT
-  , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
-                    , ("tiny staircase", 1) ]
+  , cstairFreq    = [ (WALLED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
+                    , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
   }
 noise = rogue
@@ -185,17 +191,17 @@ noise = rogue
   , cdoorChance   = 1  -- to avoid lit quasi-door tiles
   , chidden       = 0
   , cactorCoeff   = 80  -- the maze requires time to explore; also, small
-  , cactorFreq    = [("monster", 80), ("animal", 20)]
+  , cactorFreq    = [(MONSTER, 80), (ANIMAL, 20)]
   , citemNum      = 6 `d` 5  -- an incentive to explore the labyrinth
   , cpassable     = True
   , labyrinth     = True
   , cplaceFreq    = [(NOISE, 1)]
   , cdefTile      = NOISE_SET_LIT
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
-  , cdarkCorTile  = "damp floor Dark"
+  , cdarkCorTile  = DAMP_FLOOR_DARK
   , clitCorTile   = DAMP_FLOOR_LIT
-  , cstairFreq    = [ ("closed staircase", 50), ("open staircase", 50)
-                    , ("tiny staircase", 1) ]
+  , cstairFreq    = [ (CLOSED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
+                    , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
   }
 mine = noise
@@ -203,13 +209,13 @@ mine = noise
   , cfreq         = [(CAVE_MINE, 1)]
   , cnightOdds    = 51  -- easier variant, but looks sinister
   , citemNum      = 10 `d` 4  -- an incentive to explore the final labyrinth
-  , citemFreq     = [("common item", 20), ("gem", 20)]
+  , citemFreq     = [(IK.COMMON_ITEM, 20), (GEM, 20)]
                       -- can't be "valuable" or template items generated
   , cplaceFreq    = [(NOISE, 1), (MINE, 99)]
   , cdefTile      = POWER_SET_DARK
-  , cstairFreq    = [ ("gated closed staircase", 50)
-                    , ("gated open staircase", 50)
-                    , ("gated tiny staircase", 1) ]
+  , cstairFreq    = [ (GATED_CLOSED_STAIRCASE, 50)
+                    , (GATED_OPEN_STAIRCASE, 50)
+                    , (GATED_TINY_STAIRCASE, 1) ]
   , cdesc         = "Pillars of shining ice create a frozen labyrinth."
   }
 empty = rogue
@@ -229,7 +235,7 @@ empty = rogue
   , copenChance   = 0
   , chidden       = 0
   , cactorCoeff   = 7
-  , cactorFreq    = [("animal", 10), ("immobile animal", 90)]
+  , cactorFreq    = [(ANIMAL, 10), (IMMOBILE_ANIMAL, 90)]
       -- The healing geysers on lvl 3 act like HP resets. Needed to avoid
       -- cascading failure, if the particular starting conditions were
       -- very hard. Items are not reset, even if they are bad, which provides
@@ -237,13 +243,13 @@ empty = rogue
       -- abused, because they spawn less and less often and also HP doesn't
       -- effectively accumulate over max.
   , citemNum      = 4 `d` 5  -- few rooms and geysers are the boon
-  , cplaceFreq    = [("empty", 1)]
+  , cplaceFreq    = [(EMPTY, 1)]
   , cpassable     = True
   , cdefTile      = EMPTY_SET_LIT
-  , cdarkCorTile  = "floorArenaDark"
+  , cdarkCorTile  = FLOOR_ARENA_DARK
   , clitCorTile   = FLOOR_ARENA_LIT
-  , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
-                    , ("tiny staircase", 1) ]
+  , cstairFreq    = [ (WALLED_STAIRCASE, 20), (CLOSED_STAIRCASE, 80)
+                    , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
 shallowRogue = rogue
@@ -263,9 +269,9 @@ outermost = shallowRogue
   , cminStairDist = 10
   , cextraStairs  = 1
   , cactorCoeff   = 80  -- already animals start there; also, pity on the noob
-  , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
+  , cactorFreq    = filter ((/= MONSTER) . fst) $ cactorFreq rogue
   , citemNum      = 6 `d` 5  -- lure them in with loot
-  , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
+  , citemFreq     = filter ((/= IK.TREASURE) . fst) $ citemFreq rogue
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
@@ -285,10 +291,10 @@ raid = rogue
   , cmaxVoid      = 1%10
   , cextraStairs  = 0
   , cactorCoeff   = 250  -- deep level with no kit, so slow spawning
-  , cactorFreq    = [("animal", 100)]
+  , cactorFreq    = [(ANIMAL, 100)]
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
-  , citemFreq     = [ ("common item", 100), ("currency", 500)
-                    , ("starting weapon", 100) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 100), (IK.CURRENCY, 500)
+                    , (STARTING_WEAPON, 100) ]
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
   , cdesc         = ""
@@ -312,8 +318,8 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 4 `d` 6
-  , citemFreq     = [ ("common item", 50), ("starting weapon", 100)
-                    , ("torso armor", 400), ("misc armor", 200) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 50), (STARTING_WEAPON, 100)
+                    , (TORSO_ARMOR, 400), (ARMOR_MISC, 200) ]
   , cplaceFreq    = [(BRAWL, 1)]
   , cpassable     = True
   , cdefTile      = BRAWL_SET_LIT
@@ -348,8 +354,8 @@ shootout = rogue  -- a scenario with strong missiles;
   , citemNum      = 5 `d` 16
                       -- less items in inventory, more to be picked up,
                       -- to reward explorer and aggressor and punish camper
-  , citemFreq     = [ ("common item", 30)
-                    , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 30)
+                    , (ANY_ARROW, 400), (HARPOON, 300), (IK.EXPLOSIVE, 50) ]
                       -- Many consumable buffs are needed in symmetric maps
                       -- so that aggressor prepares them in advance and camper
                       -- needs to waste initial turns to buff for the defence.
@@ -381,8 +387,8 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 10
-  , citemFreq     = [ ("common item", 30)
-                    , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 30)
+                    , (ANY_ARROW, 400), (HARPOON, 300), (IK.EXPLOSIVE, 50) ]
   , cplaceFreq    = [(BRAWL, 50), (SHOOTOUT, 100)]
   , cpassable     = True
   , cdefTile      = SHOOTOUT_SET_LIT
@@ -413,9 +419,9 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 6 `d` 8
-  , citemFreq     = [ ("common item", 30), ("gem", 150)
-                    , ("weak arrow", 500), ("harpoon", 400)
-                    , ("explosive", 100) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 30), (GEM, 150)
+                    , (WEAK_ARROW, 500), (HARPOON, 400)
+                    , (IK.EXPLOSIVE, 100) ]
   , cplaceFreq    = [(ESCAPE, 1)]
   , cpassable     = True
   , cdefTile      = ESCAPE_SET_DARK  -- unlike in ambush, tiles not burning yet
@@ -446,8 +452,8 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 7 `d` 8
-  , citemFreq     = [ ("common item", 100), ("light source", 1000)
-                    , ("starting weapon", 1000) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 100), (LIGHT_MANIPULATION, 1000)
+                    , (STARTING_WEAPON, 1000) ]
   , cplaceFreq    = [(ZOO, 1)]
   , cpassable     = True
   , cdefTile      = ZOO_SET_DARK
@@ -482,8 +488,8 @@ ambush = rogue  -- a scenario with strong missiles;
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
-  , citemFreq     = [ ("common item", 30)
-                    , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
+  , citemFreq     = [ (IK.COMMON_ITEM, 30)
+                    , (ANY_ARROW, 400), (HARPOON, 300), (IK.EXPLOSIVE, 50) ]
   , cplaceFreq    = [(AMBUSH, 1)]
   , cpassable     = True
   , cdefTile      = AMBUSH_SET_DARK
@@ -516,7 +522,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
-  , citemFreq     = [("common item", 100), ("light source", 200)]
+  , citemFreq     = [(IK.COMMON_ITEM, 100), (LIGHT_MANIPULATION, 200)]
   , cplaceFreq    = [(BATTLE, 50), (ROGUE, 50)]
   , cpassable     = True
   , cdefTile      = BATTLE_SET_DARK
@@ -535,9 +541,9 @@ safari1 = brawl
   , cfreq         = [(CAVE_SAFARI_1, 1)]
   , cminPlaceSize = DiceXY 5 3
   , cextraStairs  = 1
-  , cstairFreq    = [ ("outdoor walled staircase", 20)
-                    , ("outdoor closed staircase", 80)
-                    , ("outdoor tiny staircase", 1) ]
+  , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
+                    , (OUTDOOR_CLOSED_STAIRCASE, 80)
+                    , (OUTDOOR_TINY_STAIRCASE, 1) ]
   , cdesc         = "\"Act 1. Hunams scavenge in a forest in their usual disgusting way.\""
   }
 safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
@@ -545,9 +551,9 @@ safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
   , cfreq         = [(CAVE_SAFARI_2, 1)]
   , cextraStairs  = 1
   , cescapeFreq   = []
-  , cstairFreq    = [ ("outdoor walled staircase", 20)
-                    , ("outdoor closed staircase", 80)
-                    , ("outdoor tiny staircase", 1) ]
+  , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
+                    , (OUTDOOR_CLOSED_STAIRCASE, 80)
+                    , (OUTDOOR_TINY_STAIRCASE, 1) ]
   , cdesc         = "\"Act 2. In the dark pure heart of the jungle noble animals roam freely.\""
   }
 safari3 = zoo  -- glass rooms, but ok, it's only a simulation
@@ -556,8 +562,8 @@ safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   , cminPlaceSize = DiceXY 5 4
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cextraStairs  = 1
-  , cstairFreq    = [ ("outdoor walled staircase", 20)
-                    , ("outdoor closed staircase", 80)
-                    , ("outdoor tiny staircase", 1) ]
+  , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
+                    , (OUTDOOR_CLOSED_STAIRCASE, 80)
+                    , (OUTDOOR_TINY_STAIRCASE, 1) ]
   , cdesc         = "\"Act 3. Jealous hunams set jungle on fire and flee.\""
   }

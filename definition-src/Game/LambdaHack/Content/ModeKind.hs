@@ -1,15 +1,16 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( ModeKind(..), makeData
+  ( pattern CAMPAIGN_SCENARIO, pattern INSERT_COIN, pattern NO_CONFIRMS
+  , ModeKind(..), makeData
   , Caves, Roster(..), Outcome(..)
   , HiCondPoly, HiSummand, HiPolynomial, HiIndeterminant(..)
   , Player(..), LeaderMode(..), AutoLeader(..)
-  , horrorGroup, genericEndMessages
+  , genericEndMessages
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
-  , validateSingleRoster, validateSinglePlayer, hardwiredModeGroups
+  , validateSingleRoster, validateSinglePlayer, hardwiredGroups
 #endif
   ) where
 
@@ -22,7 +23,7 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import           Game.LambdaHack.Content.ItemKind (pattern HORROR, ItemKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
@@ -145,9 +146,6 @@ data AutoLeader = AutoLeader
 
 instance Binary AutoLeader
 
-horrorGroup :: GroupName ItemKind
-horrorGroup = "horror"
-
 genericEndMessages :: [(Outcome, Text)]
 genericEndMessages =
   [ (Killed, "Let's hope a rescue party arrives in time!" )
@@ -214,12 +212,12 @@ validateAll cocave coitem content comode =
       missingCave = filter (not . omemberGroup cocave)
                     $ concatMap caveGroups content
       f Roster{rosterList} =
-        concatMap (\(p, l) -> delete horrorGroup (fgroups p)
+        concatMap (\(p, l) -> delete HORROR (fgroups p)
                               ++ map (\(_, _, grp) -> grp) l)
                   rosterList
       missingRosterItems = filter (not . omemberGroup coitem)
                            $ concatMap (f . mroster) content
-      hardwiredAbsent = filter (not . omemberGroup comode) hardwiredModeGroups
+      hardwiredAbsent = filter (not . omemberGroup comode) hardwiredGroups
   in [ "cave groups not in content:" <+> tshow missingCave
      | not $ null missingCave ]
      ++ [ "roster item groups not in content:" <+> tshow missingRosterItems
@@ -227,8 +225,15 @@ validateAll cocave coitem content comode =
      ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 
-hardwiredModeGroups :: [GroupName ModeKind]
-hardwiredModeGroups = ["campaign scenario", "insert coin"]
+pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
+hardwiredGroups :: [GroupName ModeKind]
+hardwiredGroups = [CAMPAIGN_SCENARIO, INSERT_COIN]
+
+pattern CAMPAIGN_SCENARIO = GroupName "campaign scenario"
+pattern INSERT_COIN = GroupName "insert coin"
+
+pattern NO_CONFIRMS :: GroupName ModeKind
+pattern NO_CONFIRMS = GroupName "no confirms"
 
 makeData :: ContentData CaveKind
          -> ContentData ItemKind

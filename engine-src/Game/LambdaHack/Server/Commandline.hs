@@ -163,7 +163,7 @@ gameModeP = optional $ toGameMode <$>
             <> help "Start next game in the scenario indicated by MODE" )
  where
   toGameMode :: String -> GroupName ModeKind
-  toGameMode = toGroupName . T.pack
+  toGameMode = GroupName . T.pack
 
 automateAllP :: Parser Bool
 automateAllP =

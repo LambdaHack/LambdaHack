@@ -1,8 +1,8 @@
 -- | Blast definitions.
 module Content.ItemKindBlast
   ( -- * Group name patterns
-    pattern FIRECRACKER, pattern VIOLENT_FRAGMENTATION, pattern FRAGMENTATION, pattern FOCUSED_FRAGMENTATION, pattern VIOLENT_CONCUSSION, pattern CONCUSSION, pattern FOCUSED_CONCUSSION, pattern VIOLENT_FLASH, pattern SPARK, pattern FOCUSED_fLASH, pattern GLASS_HAIL, pattern FOCUSED_GLASS_HAIL, pattern PHEROMONE, pattern CALMING_MIST, pattern DISTRESSING_ODOR, pattern HEALING_MIST, pattern HEALING_MIST_2, pattern WOUNDING_MIST, pattern DISTORTION, pattern SMOKE, pattern BOILING_WATER, pattern GLUE, pattern WASTE, pattern ANTI_SLOW_MIST, pattern ANTIDOTE_MIST, pattern SLEEP_MIST, pattern DENSE_SHOWER, pattern SPARSE_SHOWER, pattern MELEE_PROTECTIVE_BALM, pattern RANGE_PROTECTIVE_BALM, pattern PHD_DEFENSE_QUESTION, pattern RESOLUTION_DUST, pattern HASTE_SPRAY, pattern SLOWNESS_MIST, pattern EYE_DROP, pattern IRON_FILING, pattern SMELLY_DROPLET, pattern EYE_SHINE, pattern WHISKEY_SPRAY, pattern YOUTH_SPRINKLE, pattern POISON_CLOUD
-  , burningOilAt, blastNoStatOf, blastBonusStatOf
+    pattern FIRECRACKER, pattern VIOLENT_FRAGMENTATION, pattern FRAGMENTATION, pattern FOCUSED_FRAGMENTATION, pattern VIOLENT_CONCUSSION, pattern CONCUSSION, pattern FOCUSED_CONCUSSION, pattern VIOLENT_FLASH, pattern SPARK, pattern FOCUSED_fLASH, pattern GLASS_HAIL, pattern FOCUSED_GLASS_HAIL, pattern PHEROMONE, pattern CALMING_MIST, pattern DISTRESSING_ODOR, pattern HEALING_MIST, pattern HEALING_MIST_2, pattern WOUNDING_MIST, pattern DISTORTION, pattern SMOKE, pattern BOILING_WATER, pattern GLUE, pattern WASTE, pattern ANTI_SLOW_MIST, pattern ANTIDOTE_MIST, pattern SLEEP_MIST, pattern DENSE_SHOWER, pattern SPARSE_SHOWER, pattern MELEE_PROTECTIVE_BALM, pattern RANGE_PROTECTIVE_BALM, pattern PHD_DEFENSE_QUESTION, pattern RESOLUTION_DUST, pattern HASTE_SPRAY, pattern SLOWNESS_MIST, pattern EYE_DROP, pattern IRON_FILING, pattern SMELLY_DROPLET, pattern EYE_SHINE, pattern WHISKEY_SPRAY, pattern YOUTH_SPRINKLE, pattern POISON_CLOUD, pattern ARMOR_MISC, pattern BURNING_OIL_2, pattern BURNING_OIL_3, pattern BURNING_OIL_4
+  , blastNoStatOf, blastBonusStatOf
   , -- * Content
     blasts
   ) where
@@ -21,61 +21,62 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern FIRECRACKER, VIOLENT_FRAGMENTATION, FRAGMENTATION, FOCUSED_FRAGMENTATION, VIOLENT_CONCUSSION, CONCUSSION, FOCUSED_CONCUSSION, VIOLENT_FLASH, SPARK, FOCUSED_fLASH, GLASS_HAIL, FOCUSED_GLASS_HAIL, PHEROMONE, CALMING_MIST, DISTRESSING_ODOR, HEALING_MIST, HEALING_MIST_2, WOUNDING_MIST, DISTORTION, SMOKE, BOILING_WATER, GLUE, WASTE, ANTI_SLOW_MIST, ANTIDOTE_MIST, SLEEP_MIST, DENSE_SHOWER, SPARSE_SHOWER, MELEE_PROTECTIVE_BALM, RANGE_PROTECTIVE_BALM, PHD_DEFENSE_QUESTION, RESOLUTION_DUST, HASTE_SPRAY, SLOWNESS_MIST, EYE_DROP, IRON_FILING, SMELLY_DROPLET, EYE_SHINE, WHISKEY_SPRAY, YOUTH_SPRINKLE, POISON_CLOUD :: GroupName ItemKind
+pattern FIRECRACKER, VIOLENT_FRAGMENTATION, FRAGMENTATION, FOCUSED_FRAGMENTATION, VIOLENT_CONCUSSION, CONCUSSION, FOCUSED_CONCUSSION, VIOLENT_FLASH, SPARK, FOCUSED_fLASH, GLASS_HAIL, FOCUSED_GLASS_HAIL, PHEROMONE, CALMING_MIST, DISTRESSING_ODOR, HEALING_MIST, HEALING_MIST_2, WOUNDING_MIST, DISTORTION, SMOKE, BOILING_WATER, GLUE, WASTE, ANTI_SLOW_MIST, ANTIDOTE_MIST, SLEEP_MIST, DENSE_SHOWER, SPARSE_SHOWER, MELEE_PROTECTIVE_BALM, RANGE_PROTECTIVE_BALM, PHD_DEFENSE_QUESTION, RESOLUTION_DUST, HASTE_SPRAY, SLOWNESS_MIST, EYE_DROP, IRON_FILING, SMELLY_DROPLET, EYE_SHINE, WHISKEY_SPRAY, YOUTH_SPRINKLE, POISON_CLOUD, ARMOR_MISC, BURNING_OIL_2, BURNING_OIL_3, BURNING_OIL_4 :: GroupName ItemKind
 
-pattern FIRECRACKER = "firecracker"
-pattern VIOLENT_FRAGMENTATION = "violent fragmentation"
-pattern FRAGMENTATION = "fragmentation"
-pattern FOCUSED_FRAGMENTATION = "focused fragmentation"
-pattern VIOLENT_CONCUSSION = "violent concussion"
-pattern CONCUSSION = "concussion"
-pattern FOCUSED_CONCUSSION = "focused concussion"
-pattern VIOLENT_FLASH = "violent flash"
-pattern SPARK = "spark"
-pattern FOCUSED_fLASH = "focused flash"
-pattern GLASS_HAIL = "glass hail"
-pattern FOCUSED_GLASS_HAIL = "focused glass hail"
-pattern PHEROMONE = "pheromone"
-pattern CALMING_MIST = "calming mist"
-pattern DISTRESSING_ODOR = "distressing odor"
-pattern HEALING_MIST = "healing mist"
-pattern HEALING_MIST_2 = "healing mist 2"
-pattern WOUNDING_MIST = "wounding mist"
-pattern DISTORTION = "distortion"
-pattern SMOKE = "smoke"
-pattern BOILING_WATER = "boiling water"
-pattern GLUE = "glue"
-pattern WASTE = "waste"
-pattern ANTI_SLOW_MIST = "anti-slow mist"
-pattern ANTIDOTE_MIST = "antidote mist"
-pattern SLEEP_MIST = "sleep mist"
-pattern DENSE_SHOWER = "dense shower"
-pattern SPARSE_SHOWER = "sparse shower"
-pattern MELEE_PROTECTIVE_BALM = "melee protective balm"
-pattern RANGE_PROTECTIVE_BALM = "ranged protective balm"
-pattern PHD_DEFENSE_QUESTION = "PhD defense question"
-pattern RESOLUTION_DUST = "resolution dust"
-pattern HASTE_SPRAY = "haste spray"
-pattern SLOWNESS_MIST = "slowness mist"
-pattern EYE_DROP = "eye drop"
-pattern IRON_FILING = "iron filing"
-pattern SMELLY_DROPLET = "smelly droplet"
-pattern EYE_SHINE = "eye shine"
-pattern WHISKEY_SPRAY = "whiskey spray"
-pattern YOUTH_SPRINKLE = "youth sprinkle"
-pattern POISON_CLOUD = "poison cloud"
-
-burningOilAt :: Int -> GroupName ItemKind
-burningOilAt n = toGroupName $ "burning oil" <+> tshow n
+pattern FIRECRACKER = GroupName "firecracker"
+pattern VIOLENT_FRAGMENTATION = GroupName "violent fragmentation"
+pattern FRAGMENTATION = GroupName "fragmentation"
+pattern FOCUSED_FRAGMENTATION = GroupName "focused fragmentation"
+pattern VIOLENT_CONCUSSION = GroupName "violent concussion"
+pattern CONCUSSION = GroupName "concussion"
+pattern FOCUSED_CONCUSSION = GroupName "focused concussion"
+pattern VIOLENT_FLASH = GroupName "violent flash"
+pattern SPARK = GroupName "spark"
+pattern FOCUSED_fLASH = GroupName "focused flash"
+pattern GLASS_HAIL = GroupName "glass hail"
+pattern FOCUSED_GLASS_HAIL = GroupName "focused glass hail"
+pattern PHEROMONE = GroupName "pheromone"
+pattern CALMING_MIST = GroupName "calming mist"
+pattern DISTRESSING_ODOR = GroupName "distressing odor"
+pattern HEALING_MIST = GroupName "healing mist"
+pattern HEALING_MIST_2 = GroupName "healing mist 2"
+pattern WOUNDING_MIST = GroupName "wounding mist"
+pattern DISTORTION = GroupName "distortion"
+pattern SMOKE = GroupName "smoke"
+pattern BOILING_WATER = GroupName "boiling water"
+pattern GLUE = GroupName "glue"
+pattern WASTE = GroupName "waste"
+pattern ANTI_SLOW_MIST = GroupName "anti-slow mist"
+pattern ANTIDOTE_MIST = GroupName "antidote mist"
+pattern SLEEP_MIST = GroupName "sleep mist"
+pattern DENSE_SHOWER = GroupName "dense shower"
+pattern SPARSE_SHOWER = GroupName "sparse shower"
+pattern MELEE_PROTECTIVE_BALM = GroupName "melee protective balm"
+pattern RANGE_PROTECTIVE_BALM = GroupName "ranged protective balm"
+pattern PHD_DEFENSE_QUESTION = GroupName "PhD defense question"
+pattern RESOLUTION_DUST = GroupName "resolution dust"
+pattern HASTE_SPRAY = GroupName "haste spray"
+pattern SLOWNESS_MIST = GroupName "slowness mist"
+pattern EYE_DROP = GroupName "eye drop"
+pattern IRON_FILING = GroupName "iron filing"
+pattern SMELLY_DROPLET = GroupName "smelly droplet"
+pattern EYE_SHINE = GroupName "eye shine"
+pattern WHISKEY_SPRAY = GroupName "whiskey spray"
+pattern YOUTH_SPRINKLE = GroupName "youth sprinkle"
+pattern POISON_CLOUD = GroupName "poison cloud"
+pattern ARMOR_MISC = GroupName "armor misc"
+pattern BURNING_OIL_2 = GroupName "burning oil 2"
+pattern BURNING_OIL_3 = GroupName "burning oil 3"
+pattern BURNING_OIL_4 = GroupName "burning oil 4"
 
 firecrackerAt :: Int -> GroupName ItemKind
-firecrackerAt n = toGroupName $ "firecracker" <+> tshow n
+firecrackerAt n = GroupName $ "firecracker" <+> tshow n
 
 blastNoStatOf :: GroupName ItemKind -> GroupName ItemKind
-blastNoStatOf grp = toGroupName $ fromGroupName grp <+> "mist"
+blastNoStatOf grp = GroupName $ fromGroupName grp <+> "mist"
 
 blastBonusStatOf :: GroupName ItemKind -> GroupName ItemKind
-blastBonusStatOf grp = toGroupName $ fromGroupName grp <+> "dew"
+blastBonusStatOf grp = GroupName $ fromGroupName grp <+> "dew"
 
 -- * Content
 
@@ -91,11 +92,11 @@ burningOil2,    burningOil3, burningOil4, firecracker1, firecracker2, firecracke
 
 -- * Parameterized blasts
 
-burningOil :: Int -> ItemKind
-burningOil n = ItemKind
+burningOil :: Int -> GroupName ItemKind -> ItemKind
+burningOil n grp = ItemKind
   { isymbol  = '*'
   , iname    = "burning oil"
-  , ifreq    = [(burningOilAt n, 1)]
+  , ifreq    = [(grp, 1)]
   , iflavour = zipPlain [BrYellow]
   , icount   = intToDice (4 + n * 4)
   , irarity  = [(1, 1)]
@@ -111,9 +112,9 @@ burningOil n = ItemKind
   , idesc    = "Sticky oil, burning brightly."
   , ikit     = []
   }
-burningOil2 = burningOil 2  -- 2 steps, 2 turns
-burningOil3 = burningOil 3  -- 3 steps, 2 turns
-burningOil4 = burningOil 4  -- 4 steps, 2 turns
+burningOil2 = burningOil 2 BURNING_OIL_2  -- 2 steps, 2 turns
+burningOil3 = burningOil 3 BURNING_OIL_3  -- 3 steps, 2 turns
+burningOil4 = burningOil 4 BURNING_OIL_4  -- 4 steps, 2 turns
 firecracker :: Int -> ItemKind
 firecracker n = ItemKind
   { isymbol  = '*'
@@ -158,7 +159,7 @@ spreadFragmentation = ItemKind
   , iaspects = [ ToThrow $ ThrowMod 100 20 4  -- 4 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine 3, AddSkill SkHurtMelee $ -12 * 5 ]
-  , ieffects = [DropItem 1 1 COrgan "condition"]
+  , ieffects = [DropItem 1 1 COrgan CONDITION]
   , idesc    = "Flying shards, flame and smoke."
   , ikit     = []
   }
@@ -206,7 +207,7 @@ spreadConcussion = ItemKind
       -- outdoors it has short range, but we only model indoors in the game;
       -- it's much faster than black powder shock wave, but we are beyond
       -- human-noticeable speed differences on short distances anyway
-  , ieffects = [ DropItem maxBound 1 CEqp "misc armor"
+  , ieffects = [ DropItem maxBound 1 CEqp ARMOR_MISC
                , PushActor (ThrowMod 400 25 1)  -- 1 step, fast; after DropItem
                    -- this produces spam for braced actors; too bad
                , toOrganBad IMMOBILE 3  -- no balance

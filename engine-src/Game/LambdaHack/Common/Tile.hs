@@ -103,7 +103,7 @@ speedupTile allClear cotile =
             getTo _ = False
         in any getTo $ TK.tfeature tk
       isAquaticTab = createTab cotile $ \tk ->
-        maybe False (> 0) $ lookup "aquatic" $ TK.tfreq tk
+        maybe False (> 0) $ lookup TK.AQUATIC $ TK.tfreq tk
       alterMinSkillTab = createTabWithKey cotile alterMinSkillKind
       alterMinWalkTab = createTabWithKey cotile alterMinWalkKind
   in TileSpeedup {..}

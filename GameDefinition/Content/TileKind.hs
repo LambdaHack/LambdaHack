@@ -1,7 +1,7 @@
 -- | Terrain tile definitions.
 module Content.TileKind
   ( -- * Group name patterns
-    pattern UNKNOWN_SPACE, pattern UNKNOWN_OUTER_FENCE, pattern BASIC_OUTER_FENCE, pattern FILLER_WALL, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern WALL_LIT, pattern RECT_WINDOWS_OVER_EXCL_LIT, pattern SUSPECT_VERTICAL_WALL_LIT, pattern OBSCURED_VERTICAL_WALL_LIT, pattern WALL_H_LIT, pattern RECT_WINDOWS_OVER_EQ_LIT, pattern SUSPECT_HORIZONTAL_WALL_LIT, pattern OBSCURED_HORIZONTAL_WALL_LIT, pattern CACHABLE, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern EMPTY_SET_LIT, pattern NOISE_SET_LIT, pattern POWER_SET_DARK, pattern BATTLE_SET_DARK, pattern BRAWL_SET_LIT, pattern SHOOTOUT_SET_LIT, pattern ZOO_SET_DARK, pattern CACHE, pattern LAMP_POST_OVER_0, pattern SIGNBOARD_UNREAD, pattern SIGNBOARD, pattern ESCAPE_SET_DARK, pattern ESCAPE_SET_LIT, pattern AMBUSH_SET_LIT, pattern TREE_SHADOW_OVER_0_LIT, pattern AMBUSH_SET_DARK, pattern TREE_WITH_FIRE, pattern RUBBLE_PILE, pattern EMPTY_SET_DARK, pattern SMOKE_CLUMP_OVER_f_LIT, pattern SMOKE_CLUMP_OVER_f_DARK, pattern TRAPPED_VERTICAL_DOOR_LIT, pattern CLOSED_VERTICAL_DOOR_LIT, pattern TRAPPED_HORIZONAL_DOOR_LIT, pattern CLOSED_HORIZONTAL_DOOR_LIT, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN, pattern GLASSHOURSE_OVER_EXCL_LIT, pattern GLASSHOURSE_OVER_EQ_LIT, pattern PULPIT, pattern BUDH_LIT, pattern BUSH_CLUMP_OVER_f_LIT, pattern BUSH_WITH_FIRE, pattern FOG_LIT, pattern FOG_CLUMP_OVER_f_LIT, pattern FOG_CLUMP_OVER_f_DARK, pattern SMOKE_LIT, pattern LAB_TRAIL_LIT, pattern OPEN_VERTICAL_DOOR_LIT, pattern OPEN_HORIZONTAL_DOOR_LIT, pattern FLOOR_CORRIDOR_LIT, pattern FLOOR_ARENA_LIT, pattern ARENA_SET_LIT, pattern POWER_SET_LIT, pattern DAMP_FLOOR_LIT, pattern DIRT_LIT, pattern FLOOR_ACTOR_LIT, pattern FLOOR_ASHES_LIT, pattern FLOOR_ASHES_DARK, pattern SHALLOW_WATER_LIT, pattern TRAIL_LIT, pattern SAFE_TRAIL_LIT, pattern SHADED_GROUND, pattern OUTDOOR_OUTER_FENCE
+    pattern FILLER_WALL, pattern WALL_LIT, pattern RECT_WINDOWS_OVER_EXCL_LIT, pattern RECT_WINDOWS_OVER_EXCL_DARK, pattern SUSPECT_VERTICAL_WALL_LIT, pattern OBSCURED_VERTICAL_WALL_LIT, pattern WALL_H_LIT, pattern RECT_WINDOWS_OVER_EQ_LIT, pattern RECT_WINDOWS_OVER_EQ_DARK, pattern SUSPECT_HORIZONTAL_WALL_LIT, pattern OBSCURED_HORIZONTAL_WALL_LIT, pattern CACHABLE, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern EMPTY_SET_LIT, pattern NOISE_SET_LIT, pattern POWER_SET_DARK, pattern BATTLE_SET_LIT, pattern BATTLE_SET_DARK, pattern BRAWL_SET_LIT, pattern SHOOTOUT_SET_LIT, pattern ZOO_SET_LIT, pattern ZOO_SET_DARK, pattern CACHE, pattern LAMP_POST_OVER_0, pattern SIGNBOARD_UNREAD, pattern SIGNBOARD, pattern ESCAPE_SET_DARK, pattern ESCAPE_SET_LIT, pattern AMBUSH_SET_LIT, pattern TREE_SHADE_OVER_s_LIT, pattern TREE_SHADE_OVER_s_DARK, pattern TREE_SHADE_OVER_0_LIT, pattern TREE_SHADE_OVER_0_DARK, pattern AMBUSH_SET_DARK, pattern TREE_WITH_FIRE, pattern RUBBLE_PILE, pattern EMPTY_SET_DARK, pattern SMOKE_CLUMP_OVER_f_LIT, pattern SMOKE_CLUMP_OVER_f_DARK, pattern TRAPPED_VERTICAL_DOOR_LIT, pattern CLOSED_VERTICAL_DOOR_LIT, pattern TRAPPED_HORIZONAL_DOOR_LIT, pattern CLOSED_HORIZONTAL_DOOR_LIT, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN, pattern GLASSHOUSE_OVER_EXCL_LIT, pattern GLASSHOUSE_OVER_EXCL_DARK, pattern GLASSHOUSE_OVER_EQ_LIT, pattern GLASSHOUSE_OVER_EQ_DARK, pattern PULPIT, pattern BUDH_LIT, pattern BUSH_CLUMP_OVER_f_LIT, pattern BUSH_CLUMP_OVER_f_DARK, pattern BUSH_WITH_FIRE, pattern FOG_LIT, pattern FOG_CLUMP_OVER_f_LIT, pattern FOG_CLUMP_OVER_f_DARK, pattern SMOKE_LIT, pattern LAB_TRAIL_LIT, pattern OPEN_VERTICAL_DOOR_LIT, pattern OPEN_HORIZONTAL_DOOR_LIT, pattern FLOOR_CORRIDOR_LIT, pattern FLOOR_CORRIDOR_DARK, pattern FLOOR_ARENA_LIT, pattern FLOOR_ARENA_DARK, pattern ARENA_SET_LIT, pattern ARENA_SET_DARK, pattern POWER_SET_LIT, pattern DAMP_FLOOR_LIT, pattern DAMP_FLOOR_DARK, pattern DIRT_LIT, pattern FLOOR_ACTOR_LIT, pattern FLOOR_ACTOR_DARK, pattern FLOOR_ASHES_LIT, pattern FLOOR_ASHES_DARK, pattern SHALLOW_WATER_LIT, pattern TRAIL_LIT, pattern SAFE_TRAIL_LIT, pattern SHADED_GROUND, pattern OUTDOOR_OUTER_FENCE
     -- * Content
   , content
   ) where
@@ -19,88 +19,100 @@ import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-pattern UNKNOWN_SPACE, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE, FILLER_WALL, LEGEND_LIT, LEGEND_DARK, WALL_LIT, RECT_WINDOWS_OVER_EXCL_LIT, SUSPECT_VERTICAL_WALL_LIT, OBSCURED_VERTICAL_WALL_LIT, WALL_H_LIT, RECT_WINDOWS_OVER_EQ_LIT, SUSPECT_HORIZONTAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, CACHABLE, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, EMPTY_SET_LIT, NOISE_SET_LIT, POWER_SET_DARK, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_DARK, CACHE, LAMP_POST_OVER_0, SIGNBOARD_UNREAD, SIGNBOARD, ESCAPE_SET_DARK, ESCAPE_SET_LIT, AMBUSH_SET_LIT, TREE_SHADOW_OVER_0_LIT, AMBUSH_SET_DARK, TREE_WITH_FIRE, RUBBLE_PILE, EMPTY_SET_DARK, SMOKE_CLUMP_OVER_f_LIT, SMOKE_CLUMP_OVER_f_DARK, TRAPPED_VERTICAL_DOOR_LIT, CLOSED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, CLOSED_HORIZONTAL_DOOR_LIT, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN, GLASSHOURSE_OVER_EXCL_LIT, GLASSHOURSE_OVER_EQ_LIT, PULPIT, BUDH_LIT, BUSH_CLUMP_OVER_f_LIT, BUSH_WITH_FIRE, FOG_LIT, FOG_CLUMP_OVER_f_LIT, FOG_CLUMP_OVER_f_DARK, SMOKE_LIT, LAB_TRAIL_LIT, OPEN_VERTICAL_DOOR_LIT, OPEN_HORIZONTAL_DOOR_LIT, FLOOR_CORRIDOR_LIT, FLOOR_ARENA_LIT, ARENA_SET_LIT, POWER_SET_LIT, DAMP_FLOOR_LIT, DIRT_LIT, FLOOR_ACTOR_LIT, FLOOR_ASHES_LIT, FLOOR_ASHES_DARK, SHALLOW_WATER_LIT, TRAIL_LIT, SAFE_TRAIL_LIT, SHADED_GROUND, OUTDOOR_OUTER_FENCE :: GroupName TileKind
+pattern FILLER_WALL, WALL_LIT, RECT_WINDOWS_OVER_EXCL_LIT, RECT_WINDOWS_OVER_EXCL_DARK, SUSPECT_VERTICAL_WALL_LIT, OBSCURED_VERTICAL_WALL_LIT, WALL_H_LIT, RECT_WINDOWS_OVER_EQ_LIT, RECT_WINDOWS_OVER_EQ_DARK, SUSPECT_HORIZONTAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, CACHABLE, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, EMPTY_SET_LIT, NOISE_SET_LIT, POWER_SET_DARK, BATTLE_SET_LIT, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_LIT, ZOO_SET_DARK, CACHE, LAMP_POST_OVER_0, SIGNBOARD_UNREAD, SIGNBOARD, ESCAPE_SET_DARK, ESCAPE_SET_LIT, AMBUSH_SET_LIT, TREE_SHADE_OVER_s_LIT, TREE_SHADE_OVER_s_DARK, TREE_SHADE_OVER_0_LIT, TREE_SHADE_OVER_0_DARK, AMBUSH_SET_DARK, TREE_WITH_FIRE, RUBBLE_PILE, EMPTY_SET_DARK, SMOKE_CLUMP_OVER_f_LIT, SMOKE_CLUMP_OVER_f_DARK, TRAPPED_VERTICAL_DOOR_LIT, CLOSED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, CLOSED_HORIZONTAL_DOOR_LIT, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN, GLASSHOUSE_OVER_EXCL_LIT, GLASSHOUSE_OVER_EXCL_DARK, GLASSHOUSE_OVER_EQ_LIT, GLASSHOUSE_OVER_EQ_DARK, PULPIT, BUDH_LIT, BUSH_CLUMP_OVER_f_LIT, BUSH_CLUMP_OVER_f_DARK, BUSH_WITH_FIRE, FOG_LIT, FOG_CLUMP_OVER_f_LIT, FOG_CLUMP_OVER_f_DARK, SMOKE_LIT, LAB_TRAIL_LIT, OPEN_VERTICAL_DOOR_LIT, OPEN_HORIZONTAL_DOOR_LIT, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK, ARENA_SET_LIT, ARENA_SET_DARK, POWER_SET_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, DIRT_LIT, FLOOR_ACTOR_LIT, FLOOR_ACTOR_DARK, FLOOR_ASHES_LIT, FLOOR_ASHES_DARK, SHALLOW_WATER_LIT, TRAIL_LIT, SAFE_TRAIL_LIT, SHADED_GROUND, OUTDOOR_OUTER_FENCE :: GroupName TileKind
 
-pattern UNKNOWN_SPACE = "unknown space"
-pattern UNKNOWN_OUTER_FENCE = "unknown outer fence"
-pattern BASIC_OUTER_FENCE = "basic outer fence"
-pattern FILLER_WALL = "fillerWall"
-pattern LEGEND_LIT = "legendLit"
-pattern LEGEND_DARK = "legendDark"
-pattern WALL_LIT = "wall Lit"
-pattern RECT_WINDOWS_OVER_EXCL_LIT = "rectWindowsOver_!_Lit"
-pattern SUSPECT_VERTICAL_WALL_LIT = "suspect vertical wall Lit"
-pattern OBSCURED_VERTICAL_WALL_LIT = "obscured vertical wall Lit"
-pattern WALL_H_LIT = "wallH Lit"
-pattern RECT_WINDOWS_OVER_EQ_LIT = "rectWindowsOver_=_Lit"
-pattern SUSPECT_HORIZONTAL_WALL_LIT = "suspect horizontal wall Lit"
-pattern OBSCURED_HORIZONTAL_WALL_LIT = "obscured horizontal wall Lit"
-pattern CACHABLE = "cachable"
-pattern STAIR_TERMINAL_LIT = "stair terminal Lit"
-pattern STAIR_TERMINAL_DARK = "stair terminal Dark"
-pattern EMPTY_SET_LIT = "emptySetLit"
-pattern NOISE_SET_LIT = "noiseSetLit"
-pattern POWER_SET_DARK = "powerSetDark"
-pattern BATTLE_SET_DARK = "battleSetDark"
-pattern BRAWL_SET_LIT = "brawlSetLit"
-pattern SHOOTOUT_SET_LIT = "shootoutSetLit"
-pattern ZOO_SET_DARK = "zooSetDark"
-pattern CACHE = "cache"
-pattern LAMP_POST_OVER_0 = "lampPostOver_0"
-pattern SIGNBOARD_UNREAD = "signboard unread"
-pattern SIGNBOARD = "signboard"
-pattern ESCAPE_SET_DARK = "escapeSetDark"
-pattern ESCAPE_SET_LIT = "escapeSetLit"
-pattern AMBUSH_SET_LIT = "ambushSetLit"
-pattern TREE_SHADOW_OVER_0_LIT = "treeShadeOver_0_Lit"
-pattern AMBUSH_SET_DARK = "ambushSetDark"
-pattern TREE_WITH_FIRE = "tree with fire"
-pattern RUBBLE_PILE = "rubble pile"
-pattern EMPTY_SET_DARK = "emptySetDark"
-pattern SMOKE_CLUMP_OVER_f_LIT = "smokeClumpOver_f_Lit"
-pattern SMOKE_CLUMP_OVER_f_DARK = "smokeClumpOver_f_Dark"
-pattern TRAPPED_VERTICAL_DOOR_LIT = "trapped vertical door Lit"
-pattern CLOSED_VERTICAL_DOOR_LIT = "closed vertical door Lit"
-pattern TRAPPED_HORIZONAL_DOOR_LIT = "trapped horizontal door Lit"
-pattern CLOSED_HORIZONTAL_DOOR_LIT = "closed horizontal door Lit"
-pattern STAIRCASE_UP = "staircase up"
-pattern ORDINARY_STAIRCASE_UP = "ordinary staircase up"
-pattern STAIRCASE_OUTDOOR_UP = "staircase outdoor up"
-pattern GATED_STAIRCASE_UP = "gated staircase up"
-pattern STAIRCASE_DOWN = "staircase down"
-pattern ORDINARY_STAIRCASE_DOWN = "ordinary staircase down"
-pattern STAIRCASE_OUTDOOR_DOWN = "staircase outdoor down"
-pattern GATED_STAIRCASE_DOWN = "gated staircase down"
-pattern ESCAPE_UP = "escape up"
-pattern ESCAPE_DOWN = "escape down"
-pattern ESCAPE_OUTDOOR_DOWN = "escape outdoor down"
-pattern GLASSHOURSE_OVER_EXCL_LIT = "glasshouseOver_!_Lit"
-pattern GLASSHOURSE_OVER_EQ_LIT = "glasshouseOver_=_Lit"
-pattern PULPIT = "pulpit"
-pattern BUDH_LIT = "bush Lit"
-pattern BUSH_CLUMP_OVER_f_LIT = "bushClumpOver_f_Lit"
-pattern BUSH_WITH_FIRE = "bush with fire"
-pattern FOG_LIT = "fog Lit"
-pattern FOG_CLUMP_OVER_f_LIT = "fogClumpOver_f_Lit"
-pattern FOG_CLUMP_OVER_f_DARK = "fogClumpOver_f_Dark"
-pattern SMOKE_LIT = "smoke Lit"
-pattern LAB_TRAIL_LIT = "labTrailLit"
-pattern OPEN_VERTICAL_DOOR_LIT = "open vertical door Lit"
-pattern OPEN_HORIZONTAL_DOOR_LIT = "open horizontal door Lit"
-pattern FLOOR_CORRIDOR_LIT = "floorCorridorLit"
-pattern FLOOR_ARENA_LIT = "floorArenaLit"
-pattern ARENA_SET_LIT = "arenaSetLit"
-pattern POWER_SET_LIT = "powerSetLit"
-pattern DAMP_FLOOR_LIT = "damp floor Lit"
-pattern DIRT_LIT = "dirt Lit"
-pattern FLOOR_ACTOR_LIT = "floorActorLit"
-pattern FLOOR_ASHES_LIT = "floorAshesLit"
-pattern FLOOR_ASHES_DARK = "floorAshesDark"
-pattern SHALLOW_WATER_LIT = "shallow water Lit"
-pattern TRAIL_LIT = "trailLit"
-pattern SAFE_TRAIL_LIT = "safeTrailLit"
-pattern SHADED_GROUND = "shaded ground"
-pattern OUTDOOR_OUTER_FENCE = "outdoor outer fence"
+-- Warning, many of these are also sythesized, so typos can happen.
+
+pattern FILLER_WALL = GroupName "fillerWall"
+pattern WALL_LIT = GroupName "wall Lit"
+pattern RECT_WINDOWS_OVER_EXCL_LIT = GroupName "rectWindowsOver_!_Lit"
+pattern RECT_WINDOWS_OVER_EXCL_DARK = GroupName "rectWindowsOver_!_Dark"
+pattern SUSPECT_VERTICAL_WALL_LIT = GroupName "suspect vertical wall Lit"
+pattern OBSCURED_VERTICAL_WALL_LIT = GroupName "obscured vertical wall Lit"
+pattern WALL_H_LIT = GroupName "wallH Lit"
+pattern RECT_WINDOWS_OVER_EQ_LIT = GroupName "rectWindowsOver_=_Lit"
+pattern RECT_WINDOWS_OVER_EQ_DARK = GroupName "rectWindowsOver_=_Dark"
+pattern SUSPECT_HORIZONTAL_WALL_LIT = GroupName "suspect horizontal wall Lit"
+pattern OBSCURED_HORIZONTAL_WALL_LIT = GroupName "obscured horizontal wall Lit"
+pattern CACHABLE = GroupName "cachable"
+pattern STAIR_TERMINAL_LIT = GroupName "stair terminal Lit"
+pattern STAIR_TERMINAL_DARK = GroupName "stair terminal Dark"
+pattern EMPTY_SET_LIT = GroupName "emptySetLit"
+pattern NOISE_SET_LIT = GroupName "noiseSetLit"
+pattern POWER_SET_DARK = GroupName "powerSetDark"
+pattern BATTLE_SET_LIT = GroupName "battleSetLit"
+pattern BATTLE_SET_DARK = GroupName "battleSetDark"
+pattern BRAWL_SET_LIT = GroupName "brawlSetLit"
+pattern SHOOTOUT_SET_LIT = GroupName "shootoutSetLit"
+pattern ZOO_SET_LIT = GroupName "zooSetLit"
+pattern ZOO_SET_DARK = GroupName "zooSetDark"
+pattern CACHE = GroupName "cache"
+pattern LAMP_POST_OVER_0 = GroupName "lampPostOver_0"
+pattern SIGNBOARD_UNREAD = GroupName "signboard unread"
+pattern SIGNBOARD = GroupName "signboard"
+pattern ESCAPE_SET_DARK = GroupName "escapeSetDark"
+pattern ESCAPE_SET_LIT = GroupName "escapeSetLit"
+pattern AMBUSH_SET_LIT = GroupName "ambushSetLit"
+pattern TREE_SHADE_OVER_s_LIT = GroupName "treeShadeOver_s_Lit"
+pattern TREE_SHADE_OVER_s_DARK = GroupName "treeShadeOver_s_Dark"
+pattern TREE_SHADE_OVER_0_LIT = GroupName "treeShadeOver_0_Lit"
+pattern TREE_SHADE_OVER_0_DARK = GroupName "treeShadeOver_0_Dark"
+pattern AMBUSH_SET_DARK = GroupName "ambushSetDark"
+pattern TREE_WITH_FIRE = GroupName "tree with fire"
+pattern RUBBLE_PILE = GroupName "rubble pile"
+pattern EMPTY_SET_DARK = GroupName "emptySetDark"
+pattern SMOKE_CLUMP_OVER_f_LIT = GroupName "smokeClumpOver_f_Lit"
+pattern SMOKE_CLUMP_OVER_f_DARK = GroupName "smokeClumpOver_f_Dark"
+pattern TRAPPED_VERTICAL_DOOR_LIT = GroupName "trapped vertical door Lit"
+pattern CLOSED_VERTICAL_DOOR_LIT = GroupName "closed vertical door Lit"
+pattern TRAPPED_HORIZONAL_DOOR_LIT = GroupName "trapped horizontal door Lit"
+pattern CLOSED_HORIZONTAL_DOOR_LIT = GroupName "closed horizontal door Lit"
+pattern STAIRCASE_UP = GroupName "staircase up"
+pattern ORDINARY_STAIRCASE_UP = GroupName "ordinary staircase up"
+pattern STAIRCASE_OUTDOOR_UP = GroupName "staircase outdoor up"
+pattern GATED_STAIRCASE_UP = GroupName "gated staircase up"
+pattern STAIRCASE_DOWN = GroupName "staircase down"
+pattern ORDINARY_STAIRCASE_DOWN = GroupName "ordinary staircase down"
+pattern STAIRCASE_OUTDOOR_DOWN = GroupName "staircase outdoor down"
+pattern GATED_STAIRCASE_DOWN = GroupName "gated staircase down"
+pattern ESCAPE_UP = GroupName "escape up"
+pattern ESCAPE_DOWN = GroupName "escape down"
+pattern ESCAPE_OUTDOOR_DOWN = GroupName "escape outdoor down"
+pattern GLASSHOUSE_OVER_EXCL_LIT = GroupName "glasshouseOver_!_Lit"
+pattern GLASSHOUSE_OVER_EXCL_DARK = GroupName "glasshouseOver_!_Dark"
+pattern GLASSHOUSE_OVER_EQ_LIT = GroupName "glasshouseOver_=_Lit"
+pattern GLASSHOUSE_OVER_EQ_DARK = GroupName "glasshouseOver_=_Dark"
+pattern PULPIT = GroupName "pulpit"
+pattern BUDH_LIT = GroupName "bush Lit"
+pattern BUSH_CLUMP_OVER_f_LIT = GroupName "bushClumpOver_f_Lit"
+pattern BUSH_CLUMP_OVER_f_DARK = GroupName "bushClumpOver_f_Dark"
+pattern BUSH_WITH_FIRE = GroupName "bush with fire"
+pattern FOG_LIT = GroupName "fog Lit"
+pattern FOG_CLUMP_OVER_f_LIT = GroupName "fogClumpOver_f_Lit"
+pattern FOG_CLUMP_OVER_f_DARK = GroupName "fogClumpOver_f_Dark"
+pattern SMOKE_LIT = GroupName "smoke Lit"
+pattern LAB_TRAIL_LIT = GroupName "labTrailLit"
+pattern OPEN_VERTICAL_DOOR_LIT = GroupName "open vertical door Lit"
+pattern OPEN_HORIZONTAL_DOOR_LIT = GroupName "open horizontal door Lit"
+pattern FLOOR_CORRIDOR_LIT = GroupName "floorCorridorLit"
+pattern FLOOR_CORRIDOR_DARK = GroupName "floorCorridorDark"
+pattern FLOOR_ARENA_LIT = GroupName "floorArenaLit"
+pattern FLOOR_ARENA_DARK = GroupName "floorArenaDark"
+pattern ARENA_SET_LIT = GroupName "arenaSetLit"
+pattern ARENA_SET_DARK = GroupName "arenaSetDark"
+pattern POWER_SET_LIT = GroupName "powerSetLit"
+pattern DAMP_FLOOR_LIT = GroupName "damp floor Lit"
+pattern DAMP_FLOOR_DARK = GroupName "damp floor Dark"
+pattern DIRT_LIT = GroupName "dirt Lit"
+pattern FLOOR_ACTOR_LIT = GroupName "floorActorLit"
+pattern FLOOR_ACTOR_DARK = GroupName "floorActorDark"
+pattern FLOOR_ASHES_LIT = GroupName "floorAshesLit"
+pattern FLOOR_ASHES_DARK = GroupName "floorAshesDark"
+pattern SHALLOW_WATER_LIT = GroupName "shallow water Lit"
+pattern TRAIL_LIT = GroupName "trailLit"
+pattern SAFE_TRAIL_LIT = GroupName "safeTrailLit"
+pattern SHADED_GROUND = GroupName "shaded ground"
+pattern OUTDOOR_OUTER_FENCE = GroupName "outdoor outer fence"
 
 -- * Content
 
@@ -327,7 +339,7 @@ tree = TileKind
   , tname    = "tree"
   , tfreq    = [ (BRAWL_SET_LIT, 140), (SHOOTOUT_SET_LIT, 10)
                , (ESCAPE_SET_LIT, 35), (AMBUSH_SET_LIT, 3)
-               , (TREE_SHADOW_OVER_0_LIT, 1) ]
+               , (TREE_SHADE_OVER_0_LIT, 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -500,7 +512,7 @@ escapeOutdoorDown = escapeDown
 wallGlass = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [(GLASSHOURSE_OVER_EXCL_LIT, 1)]
+  , tfreq    = [(GLASSHOUSE_OVER_EXCL_LIT, 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
@@ -513,7 +525,7 @@ wallGlassSpice = wallGlass
 wallGlassH = TileKind
   { tsymbol  = '-'
   , tname    = "polished crystal wall"
-  , tfreq    = [(GLASSHOURSE_OVER_EQ_LIT, 1)]
+  , tfreq    = [(GLASSHOUSE_OVER_EQ_LIT, 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
@@ -651,7 +663,7 @@ floorArena = floorCorridor
   { tsymbol  = floorSymbol
   , tname    = "stone floor"
   , tfreq    = [ (FLOOR_ARENA_LIT, 1), (ARENA_SET_LIT, 1), (EMPTY_SET_LIT, 900)
-               , ("zooSetLit", 600) ]
+               , (ZOO_SET_LIT, 600) ]
   }
 floorDamp = floorArena
   { tname    = "damp stone floor"
@@ -661,11 +673,11 @@ floorDamp = floorArena
 floorDirt = floorArena
   { tname    = "dirt"
   , tfreq    = [ (SHOOTOUT_SET_LIT, 1000), (ESCAPE_SET_LIT, 1000)
-               , (AMBUSH_SET_LIT, 1000), ("battleSetLit", 1000)
+               , (AMBUSH_SET_LIT, 1000), (BATTLE_SET_LIT, 1000)
                , (BRAWL_SET_LIT, 1000), (DIRT_LIT, 1) ]
   }
 floorDirtSpice = floorDirt
-  { tfreq    = [("treeShadeOver_s_Lit", 1), (BUSH_CLUMP_OVER_f_LIT, 1)]
+  { tfreq    = [(TREE_SHADE_OVER_s_LIT, 1), (BUSH_CLUMP_OVER_f_LIT, 1)]
   , tfeature = Spice : tfeature floorDirt
   }
 floorActor = floorArena
@@ -727,7 +739,7 @@ floorBrown = floorRed
   }
 floorArenaShade = floorActor
   { tname    = "shaded ground"
-  , tfreq    = [(SHADED_GROUND, 1), ("treeShadeOver_s_Lit", 2)]
+  , tfreq    = [(SHADED_GROUND, 1), (TREE_SHADE_OVER_s_LIT, 2)]
   , tcolor2  = BrBlack
   , tfeature = Dark : NoItem : tfeature floorActor
   }
@@ -744,7 +756,7 @@ outdoorFence = TileKind
 
 makeDark :: TileKind -> TileKind
 makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
-                 darkText t = maybe t (toGroupName . (<> "Dark"))
+                 darkText t = maybe t (GroupName . (<> "Dark"))
                               $ T.stripSuffix "Lit" $ fromGroupName t
                  darkFrequency = map (first darkText) $ tfreq k
                  darkFeat (OpenTo t) = Just $ OpenTo $ darkText t

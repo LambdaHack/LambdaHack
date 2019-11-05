@@ -1,7 +1,7 @@
 -- | Game mode definitions.
 module Content.ModeKind
   ( -- * Group name patterns
-    pattern RAID, pattern CAMPAIGN_SCENARIO, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY, pattern INSERT_COIN, pattern NO_CONFIRMS
+    pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
   , -- * Content
     content
   ) where
@@ -13,43 +13,40 @@ import Game.LambdaHack.Core.Prelude
 import Content.CaveKind hiding (content)
 import Content.ItemKindActor
 import Content.ModeKindPlayer
-import Game.LambdaHack.Content.CaveKind (CaveKind)
+import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-pattern RAID, CAMPAIGN_SCENARIO, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY, INSERT_COIN, NO_CONFIRMS :: GroupName ModeKind
+pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
 
-pattern RAID = "raid"
-pattern CAMPAIGN_SCENARIO = "campaign scenario"
-pattern BRAWL = "brawl"
-pattern LONG = "long"
-pattern CRAWL = "crawl"
-pattern FOGGY = "foggy"
-pattern SHOOTOUT = "shootout"
-pattern PERILOUS = "perilous"
-pattern HUNT = "hunt"
-pattern NIGHT = "night"
-pattern ESCAPE = "escape"
-pattern BURNING = "burning"
-pattern ZOO = "zoo"
-pattern RANGED = "ranged"
-pattern AMBUSH = "ambush"
-pattern SAFARI = "safari"
-pattern DIG = "dig"
-pattern SEE = "see"
-pattern CRAWL_EMPTY = "crawl empty"
-pattern CRAWL_SURVIVAL = "crawl survival"
-pattern SAFARI_SURVIVAL = "safari survival"
-pattern BATTLE = "battle"
-pattern BATTLE_DEFENSE = "battle defense"
-pattern BATTLE_SURVIVAL = "battle survival"
-pattern DEFENSE = "defense"
-pattern DEFENSE_EMPTY = "defense empty"
-pattern INSERT_COIN = "insert coin"
-pattern NO_CONFIRMS = "no confirms"
+pattern RAID = GroupName "raid"
+pattern BRAWL = GroupName "brawl"
+pattern LONG = GroupName "long"
+pattern CRAWL = GroupName "crawl"
+pattern FOGGY = GroupName "foggy"
+pattern SHOOTOUT = GroupName "shootout"
+pattern PERILOUS = GroupName "perilous"
+pattern HUNT = GroupName "hunt"
+pattern NIGHT = GroupName "night"
+pattern ESCAPE = GroupName "escape"
+pattern BURNING = GroupName "burning"
+pattern ZOO = GroupName "zoo"
+pattern RANGED = GroupName "ranged"
+pattern AMBUSH = GroupName "ambush"
+pattern SAFARI = GroupName "safari"
+pattern DIG = GroupName "dig"
+pattern SEE = GroupName "see"
+pattern CRAWL_EMPTY = GroupName "crawl empty"
+pattern CRAWL_SURVIVAL = GroupName "crawl survival"
+pattern SAFARI_SURVIVAL = GroupName "safari survival"
+pattern BATTLE = GroupName "battle"
+pattern BATTLE_DEFENSE = GroupName "battle defense"
+pattern BATTLE_SURVIVAL = GroupName "battle survival"
+pattern DEFENSE = GroupName "defense"
+pattern DEFENSE_EMPTY = GroupName "defense empty"
 
 -- * Content
 
@@ -542,7 +539,7 @@ rosterBattle = Roster
                                 , fhiCondPoly = hiHeroLong }
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
-                   , [(-5, 35, MOBILER_MONSTER)] )
+                   , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal {fneverEmpty = True}
                    , [(-5, 30, MOBILE_ANIMAL)] ) ]
   , rosterEnemy = [ ("Explorer", "Monster Hive")
@@ -558,7 +555,7 @@ rosterBattleDefense = rosterBattle
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster { fneverEmpty = True
                                    , fhasUI = True }
-                   , [(-5, 35, MOBILER_MONSTER)] )
+                   , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal {fneverEmpty = True}
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }
 
@@ -570,7 +567,7 @@ rosterBattleSurvival = rosterBattle
                                 , fhasUI = False }
                    , [(-5, 5, SOLDIER_HERO)] )
                  , ( playerMonster {fneverEmpty = True}
-                   , [(-5, 35, MOBILER_MONSTER)] )
+                   , [(-5, 35, MOBILE_MONSTER)] )
                  , ( playerAnimal { fneverEmpty = True
                                   , fhasUI = True }
                    , [(-5, 30, MOBILE_ANIMAL)] ) ] }

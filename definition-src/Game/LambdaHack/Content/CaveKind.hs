@@ -1,9 +1,10 @@
 -- | The type of cave kinds.
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), makeData
+  ( pattern DEFAULT_RANDOM
+  , CaveKind(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll
+  , validateSingle, validateAll, hardwiredGroups
 #endif
   ) where
 
@@ -129,6 +130,8 @@ validateAll coitem coplace cotile content cocave =
       g kind = map ($ kind) tileGroupFuns
       missingTileFreq = filter (not . omemberGroup cotile)
                         $ concatMap g content
+      missingHardwiredGroups =
+        filter (not . omemberGroup cocave) hardwiredGroups
   in [ "cactorFreq item groups not in content:" <+> tshow missingActorFreq
      | not $ null missingActorFreq ]
      ++ [ "citemFreq item groups not in content:" <+> tshow missingItemFreq
@@ -142,8 +145,16 @@ validateAll coitem coplace cotile content cocave =
         | not $ null missingStairFreq ]
      ++ [ "tile groups not in content:" <+> tshow missingTileFreq
         | not $ null missingTileFreq ]
-     ++ [ "no cave defined for \"default random\""
-        | not $ omemberGroup cocave "default random" ]
+     ++ [ "no cave defined for DEFAULT_RANDOM"
+        | not $ omemberGroup cocave DEFAULT_RANDOM ]
+     ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
+        | not $ null missingHardwiredGroups ]
+
+pattern DEFAULT_RANDOM :: GroupName CaveKind
+hardwiredGroups :: [GroupName CaveKind]
+hardwiredGroups = [DEFAULT_RANDOM]
+
+pattern DEFAULT_RANDOM = GroupName "default random"
 
 makeData :: ContentData ItemKind
          -> ContentData PlaceKind

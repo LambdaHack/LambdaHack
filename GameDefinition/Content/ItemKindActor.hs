@@ -1,7 +1,7 @@
 -- | Actor (or rather actor body trunk) definitions.
 module Content.ItemKindActor
   ( -- * Group name patterns
-    pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILER_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern SCAVENGER, pattern IMMOBILE_ANIMAL
+    pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL, pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_MANIPULATION, pattern WOODEN_TORCH, pattern BLANKET, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_WEAPON, pattern GEM
   , -- * Content
     actors
   ) where
@@ -19,23 +19,34 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILER_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, SCAVENGER, IMMOBILE_ANIMAL :: GroupName ItemKind
+pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL, ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_MANIPULATION, WOODEN_TORCH, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM :: GroupName ItemKind
 
-pattern HERO = "hero"
-pattern SCOUT_HERO = "scout hero"
-pattern RANGER_HERO = "ranger hero"
-pattern ESCAPIST_HERO = "escapist hero"
-pattern AMBUSHER_HERO = "ambusher hero"
-pattern BRAWLER_HERO = "brawler hero"
-pattern SOLDIER_HERO = "soldier hero"
-pattern CIVILIAN = "civilian"
-pattern MONSTER = "monster"
-pattern MOBILER_MONSTER = "mobile monster"
-pattern SCOUT_MONSTER = "scout monster"
-pattern ANIMAL = "animal"
-pattern MOBILE_ANIMAL = "mobile animal"
-pattern SCAVENGER = "scavenger"
-pattern IMMOBILE_ANIMAL = "immobile animal"
+pattern HERO = GroupName "hero"
+pattern SCOUT_HERO = GroupName "scout hero"
+pattern RANGER_HERO = GroupName "ranger hero"
+pattern ESCAPIST_HERO = GroupName "escapist hero"
+pattern AMBUSHER_HERO = GroupName "ambusher hero"
+pattern BRAWLER_HERO = GroupName "brawler hero"
+pattern SOLDIER_HERO = GroupName "soldier hero"
+pattern CIVILIAN = GroupName "civilian"
+pattern MONSTER = GroupName "monster"
+pattern MOBILE_MONSTER = GroupName "mobile monster"
+pattern SCOUT_MONSTER = GroupName "scout monster"
+pattern ANIMAL = GroupName "animal"
+pattern MOBILE_ANIMAL = GroupName "mobile animal"
+pattern IMMOBILE_ANIMAL = GroupName "immobile animal"
+
+pattern ADD_SIGHT = GroupName "add sight"
+pattern ARMOR_RANGED = GroupName "armor ranged"
+pattern ADD_NOCTO_1 = GroupName "add nocto 1"
+pattern WEAK_ARROW = GroupName "weak arrow"
+pattern LIGHT_MANIPULATION = GroupName "light manipulation"
+pattern WOODEN_TORCH = GroupName "wooden torch"
+pattern BLANKET = GroupName "blanket"
+pattern RING_OF_OPPORTUNITY_SNIPER = GroupName "ring of opportunity sniper"
+pattern ANY_ARROW = GroupName "any arrow"
+pattern STARTING_WEAPON = GroupName "starting weapon"
+pattern GEM = GroupName "gem"
 
 -- * Content
 
@@ -79,7 +90,7 @@ warrior = ItemKind
   , ieffects = []
   , idesc    = ""  -- "A hardened veteran of combat."
   , ikit     = [ (FIST, COrgan), (FOOT, COrgan)
-               , ("eye 6", COrgan), ("ear 3", COrgan)
+               , (EYE_6, COrgan), (EAR_3, COrgan)
                , (SAPIENT_BRAIN, COrgan) ]
   }
 warrior2 = warrior
@@ -103,55 +114,55 @@ scout = warrior
   { iname    = "scout"
   , ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
-               ++ [ ("add sight", CEqp)
-                  , ("armor ranged", CEqp)
-                  , ("add nocto 1", CStash) ]
+               ++ [ (ADD_SIGHT, CEqp)
+                  , (ARMOR_RANGED, CEqp)
+                  , (ADD_NOCTO_1, CStash) ]
   -- , idesc    = ""
   }
 ranger = warrior
   { iname    = "ranger"
   , ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
-               ++ [ ("armor ranged", CEqp)
-                  , ("weak arrow", CStash) ]
+               ++ [ (ARMOR_RANGED, CEqp)
+                  , (WEAK_ARROW, CStash) ]
   -- , idesc    = ""
   }
 escapist = warrior
   { iname    = "escapist"
   , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
-               ++ [ ("add sight", CEqp)
-                  , ("armor ranged", CEqp)
-                  , ("weak arrow", CStash)  -- mostly for probing
-                  , ("light source", CStash)
-                  , ("wooden torch", CStash)
-                  , ("blanket", CStash) ]
+               ++ [ (ADD_SIGHT, CEqp)
+                  , (ARMOR_RANGED, CEqp)
+                  , (WEAK_ARROW, CStash)  -- mostly for probing
+                  , (LIGHT_MANIPULATION, CStash)
+                  , (WOODEN_TORCH, CStash)
+                  , (BLANKET, CStash) ]
   -- , idesc    = ""
   }
 ambusher = warrior
   { iname    = "ambusher"
   , ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
-               ++ [ ("ring of opportunity sniper", CEqp)
-                  , ("any arrow", CStash)
-                  , ("weak arrow", CStash)
-                  , ("explosive", CStash)
-                  , ("light source", CEqp)
-                  , ("wooden torch", CStash) ]
+               ++ [ (RING_OF_OPPORTUNITY_SNIPER, CEqp)
+                  , (ANY_ARROW, CStash)
+                  , (WEAK_ARROW, CStash)
+                  , (EXPLOSIVE, CStash)
+                  , (LIGHT_MANIPULATION, CEqp)
+                  , (WOODEN_TORCH, CStash) ]
   -- , idesc    = ""
   }
 brawler = warrior
   { iname    = "brawler"
   , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit warrior
-               ++ [("starting weapon", CEqp)]
+               ++ [(STARTING_WEAPON, CEqp)]
   -- , idesc    = ""
   }
 soldier = brawler
   { iname    = "soldier"
   , ifreq    = [(SOLDIER_HERO, 100), (MOBILE, 1)]
   , ikit     = ikit brawler
-               ++ [("explosive", CStash)]
+               ++ [(EXPLOSIVE, CStash)]
   -- , idesc    = ""
   }
 
@@ -186,7 +197,7 @@ eye = ItemKind
   { isymbol  = 'e'
   , iname    = "reducible eye"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
-               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 10) ]
+               , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 10) ]
   , iflavour = zipFancy [BrRed]
   , icount   = 1
   , irarity  = [(3, 0), (4, 10), (10, 8)]
@@ -208,7 +219,7 @@ fastEye = ItemKind
   { isymbol  = 'j'
   , iname    = "injective jaw"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
-               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 60) ]
+               , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 60) ]
   , iflavour = zipFancy [BrBlue]
   , icount   = 1
   , irarity  = [(3, 0), (4, 6), (10, 12)]
@@ -222,14 +233,14 @@ fastEye = ItemKind
   , ieffects = []
   , idesc    = "Hungers but never eats. Bites but never swallows. Burrows its own image through, but never carries anything back."  -- rather weak: not about injective objects, but puny, concrete, injective functions  --- where's the madness in that?
   , ikit     = [ (TOOTH, COrgan), (LIP, COrgan)
-               , ("speed gland 10", COrgan)
-               , ("vision 6", COrgan), ("ear 3", COrgan)
+               , (SPEED_GLAND_10, COrgan)
+               , (VISION_6, COrgan), (EAR_3, COrgan)
                , (SAPIENT_BRAIN, COrgan) ]
   }
 nose = ItemKind  -- depends solely on smell
   { isymbol  = 'n'
   , iname    = "point-free nose"
-  , ifreq    = [(MONSTER, 100), (MOBILE, 1), (MOBILER_MONSTER, 100)]
+  , ifreq    = [(MONSTER, 100), (MOBILE, 1), (MOBILE_MONSTER, 100)]
   , iflavour = zipFancy [BrGreen]
   , icount   = 1
   , irarity  = [(3, 0), (4, 5), (10, 7)]
@@ -251,7 +262,7 @@ elbow = ItemKind
   { isymbol  = 'e'
   , iname    = "commutative elbow"
   , ifreq    = [ (MONSTER, 100), (MOBILE, 1)
-               , (MOBILER_MONSTER, 100), (SCOUT_MONSTER, 30) ]
+               , (MOBILE_MONSTER, 100), (SCOUT_MONSTER, 30) ]
   , iflavour = zipFancy [BrMagenta]
   , icount   = 1
   , irarity  = [(3, 0), (4, 1), (10, 12)]
@@ -266,12 +277,12 @@ elbow = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An arm strung like a bow. A few edges, but none keen enough. A few points, but none piercing. Deadly objects zip out of the void."
-  , ikit     = [ ("speed gland 5", COrgan), (BARK, COrgan)
-               , ("vision 12", COrgan), ("ear 8", COrgan)
+  , ikit     = [ (SPEED_GLAND_5, COrgan), (BARK, COrgan)
+               , (VISION_12, COrgan), (EAR_8, COrgan)
                    -- too powerful to get stronger sight
                , (SAPIENT_BRAIN, COrgan)
-               , ("any arrow", CStash), ("any arrow", CStash)
-               , ("weak arrow", CStash), ("weak arrow", CStash) ]
+               , (ANY_ARROW, CStash), (ANY_ARROW, CStash)
+               , (WEAK_ARROW, CStash), (WEAK_ARROW, CStash) ]
   }
 torsor = ItemKind
   { isymbol  = 'T'
@@ -296,10 +307,10 @@ torsor = ItemKind
   , idesc    = "A principal homogeneous manifold, that acts freely and with enormous force, but whose stabilizers are trivial, making it rather helpless without a support group."
   , ikit     = [ (RIGHT_TORSION, COrgan), (LEFT_TORSION, COrgan)
                , (PUPIL, COrgan), (TENTACLE, COrgan)
-               , ("ear 8", COrgan)
+               , (EAR_8, COrgan)
                , (SAPIENT_BRAIN, COrgan)
-               , ("gem", CStash), ("gem", CStash)
-               , ("gem", CStash), ("gem", CStash) ]
+               , (GEM, CStash), (GEM, CStash)
+               , (GEM, CStash), (GEM, CStash) ]
   }
 -- "ground x" --- for immovable monster that can only tele or prob travel
 -- pullback
@@ -326,8 +337,8 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An opportunistic predator, feeding on carrion and the weak."
-  , ikit     = [ ("small jaw", COrgan)
-               , ("eye 6", COrgan), (NOSTRIL, COrgan), ("ear 8", COrgan)
+  , ikit     = [ (SMALL_JAW, COrgan)
+               , (EYE_6, COrgan), (NOSTRIL, COrgan), (EAR_8, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 griffonVulture = ItemKind
@@ -356,7 +367,7 @@ griffonVulture = ItemKind
   , idesc    = "It soars high above, searching for vulnerable prey."
   , ikit     = [ (SCREECHING_BEAK, COrgan)  -- in reality it grunts and hisses
                , (SMALL_CLAW, COrgan)
-               , ("eye 8", COrgan), ("ear 8", COrgan)
+               , (EYE_8, COrgan), (EAR_8, COrgan)
                    -- can't shoot, so strong sight is OK
                , (ANIMAL_BRAIN, COrgan) ]
   }
@@ -379,7 +390,7 @@ skunk = ItemKind
   , idesc    = "Its only defence is the terrible stench."
   , ikit     = [ (SCENT_GLAND, COrgan)
                , (SMALL_CLAW, COrgan), (SNOUT, COrgan)
-               , ("eye 3", COrgan), ("ear 6", COrgan)
+               , (EYE_3, COrgan), (EYE_6, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 armadillo = ItemKind
@@ -400,7 +411,7 @@ armadillo = ItemKind
   , idesc    = "When threatened, it rolls into a ball."
   , ikit     = [ (HOOKED_CLAW, COrgan), (SNOUT, COrgan)
                , (ARMORED_SKIN, COrgan), (ARMORED_SKIN, COrgan)
-               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (EYE_3, COrgan), (NOSTRIL, COrgan), (EAR_6, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 gilaMonster = ItemKind
@@ -420,7 +431,7 @@ gilaMonster = ItemKind
   , ieffects = []
   , idesc    = "Numbing venom ensures that even the fastest prey has no escape."
   , ikit     = [ (VENOM_TOOTH, COrgan), (SMALL_CLAW, COrgan)
-               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (EYE_3, COrgan), (NOSTRIL, COrgan), (EAR_6, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 rattlesnake = ItemKind
@@ -441,7 +452,7 @@ rattlesnake = ItemKind
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
   , ikit     = [ (VENOM_FANG, COrgan)  -- when on cooldown, it's weaponless
                , (RATLLE, COrgan)
-               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 6", COrgan)
+               , (EYE_3, COrgan), (NOSTRIL, COrgan), (EAR_6, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 hyena = ItemKind
@@ -461,7 +472,7 @@ hyena = ItemKind
   , ieffects = []
   , idesc    = "Skulking in the shadows, waiting for easy prey."
   , ikit     = [ (JAW, COrgan)
-               , ("eye 6", COrgan), (NOSTRIL, COrgan), ("ear 8", COrgan)
+               , (EYE_6, COrgan), (NOSTRIL, COrgan), (EAR_8, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 komodoDragon = ItemKind
@@ -482,8 +493,8 @@ komodoDragon = ItemKind
   , idesc    = "Larger and more aggressive than any other lizard, but as easily recovering from wounds as its lesser cousins."
   , ikit     = [ (LARGE_TAIL, COrgan), (JAW, COrgan)
                , (HOOKED_CLAW, COrgan)
-               , ("speed gland 5", COrgan), (ARMORED_SKIN, COrgan)
-               , ("eye 3", COrgan), (NOSTRIL, COrgan), ("ear 3", COrgan)
+               , (SPEED_GLAND_5, COrgan), (ARMORED_SKIN, COrgan)
+               , (EYE_3, COrgan), (NOSTRIL, COrgan), (EAR_3, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 alligator = ItemKind
@@ -505,7 +516,7 @@ alligator = ItemKind
   , ikit     = [ (HUGE_TAIL, COrgan), (LARGE_JAW, COrgan)
                , (SMALL_CLAW, COrgan)
                , (ARMORED_SKIN, COrgan)
-               , ("eye 6", COrgan), ("ear 8", COrgan)
+               , (EYE_6, COrgan), (EAR_8, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 rhinoceros = ItemKind
@@ -529,7 +540,7 @@ rhinoceros = ItemKind
   , idesc    = "The last of its kind. Blind with rage. Charges at deadly speed."
   , ikit     = [ (RHINO_HORN, COrgan), (SNOUT, COrgan)
                , (ARMORED_SKIN, COrgan)
-               , ("eye 3", COrgan), ("ear 8", COrgan)
+               , (EYE_3, COrgan), (EAR_8, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 
@@ -554,7 +565,7 @@ beeSwarm = ItemKind
   , ieffects = []
   , idesc    = "Every bee would die for the queen."
   , ikit     = [ (BEE_STING, COrgan)  -- weaponless when it's used up
-               , ("vision 6", COrgan), ("ear 6", COrgan)
+               , (VISION_6, COrgan), (EAR_6, COrgan)
                , (INSECT_MORTALITY, COrgan), (ANIMAL_BRAIN, COrgan) ]
   }
 hornetSwarm = ItemKind
@@ -577,7 +588,7 @@ hornetSwarm = ItemKind
   , ieffects = []
   , idesc    = "A vicious cloud of stings and hate."
   , ikit     = [ (STING, COrgan)  -- when on cooldown, it's weaponless
-               , ("vision 6", COrgan), ("ear 6", COrgan)
+               , (VISION_6, COrgan), (EAR_6, COrgan)
                , (INSECT_MORTALITY, COrgan), (ANIMAL_BRAIN, COrgan) ]
   }
 thornbush = ItemKind

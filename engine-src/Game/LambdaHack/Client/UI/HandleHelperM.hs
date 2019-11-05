@@ -235,7 +235,7 @@ itemOverlay lSlots lid bag = do
           Just kit@(k, _) ->
             let itemFull = itemToF iid
                 colorSymbol =
-                  if isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFull
+                  if isJust $ lookup IK.CONDITION $ IK.ifreq $ itemKind itemFull
                   then let color = if benInEqp (discoBenefit EM.! iid)
                                    then Color.BrGreen
                                    else Color.BrRed
@@ -527,7 +527,7 @@ guardItemVerbs body _fact s =
   -- We may want to relax that secrecy, but there are technical hurdles.
   let toReport iid =
         let itemKind = getIidKind iid s
-        in fromMaybe 0 (lookup "unreported inventory" (IK.ifreq itemKind)) <= 0
+        in fromMaybe 0 (lookup IK.UNREPORTED_INVENTORY (IK.ifreq itemKind)) <= 0
       itemsSize = length $ filter toReport $ EM.keys (beqp body)
       belongingsVerbs | itemsSize == 1 = ["fondle a trinket"]
                       | itemsSize > 1 = ["guard a hoard"]

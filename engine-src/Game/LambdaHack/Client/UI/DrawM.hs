@@ -762,7 +762,7 @@ checkWarningCalm UIOptions{uhpWarningPercent} leader calm s =
   let b = getActorBody leader s
       actorMaxSk = getActorMaxSkills leader s
       isImpression iid =
-        maybe False (> 0) $ lookup "impressed" $ IK.ifreq $ getIidKind iid s
+        maybe False (> 0) $ lookup IK.IMPRESSED $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
       maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
   in calm <= xM (uhpWarningPercent * maxCalm `div` 100)

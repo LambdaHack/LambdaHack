@@ -1,7 +1,7 @@
 -- | Actor organ definitions.
 module Content.ItemKindOrgan
   ( -- * Group name patterns
-    pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL
+    pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL, pattern SCAVENGER, pattern EYE_3, pattern EYE_6, pattern EYE_8, pattern VISION_6, pattern VISION_12, pattern VISION_16, pattern EAR_3, pattern EAR_6, pattern EAR_8, pattern SPEED_GLAND_5, pattern SPEED_GLAND_10
   , -- * Content
     organs
   ) where
@@ -10,6 +10,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindBlast
 import Content.ItemKindTemporary
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Dice
@@ -20,61 +21,61 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern FIST, FOOT, HOOKED_CLAW, SMALL_CLAW, SNOUT, SMALL_JAW, JAW, LARGE_JAW, ANTLER, HORN, RHINO_HORN, TENTACLE, THORN, BOILING_FISSURE, ARSENIC_FISSURE, SULFUR_FISSURE, BEE_STING, STING, VENOM_TOOTH, VENOM_FANG, SCREECHING_BEAK, LARGE_TAIL, HUGE_TAIL, ARMORED_SKIN, BARK, NOSTRIL, RATLLE, INSECT_MORTALITY, SAPIENT_BRAIN, ANIMAL_BRAIN, SCENT_GLAND, BOILING_VENT, ARSENIC_VENT, SULFUR_VENT, TOOTH, LASH, NOSE_TIP, LIP, RIGHT_TORSION, LEFT_TORSION, PUPIL :: GroupName ItemKind
+pattern FIST, FOOT, HOOKED_CLAW, SMALL_CLAW, SNOUT, SMALL_JAW, JAW, LARGE_JAW, ANTLER, HORN, RHINO_HORN, TENTACLE, THORN, BOILING_FISSURE, ARSENIC_FISSURE, SULFUR_FISSURE, BEE_STING, STING, VENOM_TOOTH, VENOM_FANG, SCREECHING_BEAK, LARGE_TAIL, HUGE_TAIL, ARMORED_SKIN, BARK, NOSTRIL, RATLLE, INSECT_MORTALITY, SAPIENT_BRAIN, ANIMAL_BRAIN, SCENT_GLAND, BOILING_VENT, ARSENIC_VENT, SULFUR_VENT, TOOTH, LASH, NOSE_TIP, LIP, RIGHT_TORSION, LEFT_TORSION, PUPIL, SCAVENGER, EYE_3, EYE_6, EYE_8, VISION_6, VISION_12, VISION_16, EAR_3, EAR_6, EAR_8, SPEED_GLAND_5, SPEED_GLAND_10 :: GroupName ItemKind
 
-pattern FIST = "fist"
-pattern FOOT = "foot"
-pattern HOOKED_CLAW = "hooked claw"
-pattern SMALL_CLAW = "small claw"
-pattern SNOUT = "snout"
-pattern SMALL_JAW = "small jaw"
-pattern JAW = "jaw"
-pattern LARGE_JAW = "large jaw"
-pattern ANTLER = "antler"
-pattern HORN = "horn"
-pattern RHINO_HORN = "rhino horn"
-pattern TENTACLE = "tentacle"
-pattern THORN = "thorn"
-pattern BOILING_FISSURE = "boiling fissure"
-pattern ARSENIC_FISSURE = "arsenic fissure"
-pattern SULFUR_FISSURE = "sulfur fissure"
-pattern BEE_STING = "bee sting"
-pattern STING = "sting"
-pattern VENOM_TOOTH = "venom tooth"
-pattern VENOM_FANG = "venom fang"
-pattern SCREECHING_BEAK = "screeching beak"
-pattern LARGE_TAIL = "large tail"
-pattern HUGE_TAIL = "huge tail"
-pattern ARMORED_SKIN = "armored skin"
-pattern BARK = "bark"
-pattern NOSTRIL = "nostril"
-pattern RATLLE = "rattle"
-pattern INSECT_MORTALITY = "insect mortality"
-pattern SAPIENT_BRAIN = "sapient brain"
-pattern ANIMAL_BRAIN = "animal brain"
-pattern SCENT_GLAND = "scent gland"
-pattern BOILING_VENT = "boiling vent"
-pattern ARSENIC_VENT = "arsenic vent"
-pattern SULFUR_VENT = "sulfur vent"
-pattern TOOTH = "tooth"
-pattern LASH = "lash"
-pattern NOSE_TIP = "nose tip"
-pattern LIP = "lip"
-pattern RIGHT_TORSION = "right torsion"
-pattern LEFT_TORSION = "left torsion"
-pattern PUPIL = "pupil"
-
-eyeAt :: Int -> GroupName ItemKind
-eyeAt n = toGroupName $ "eye" <+> tshow n
-
-visionAt :: Int -> GroupName ItemKind
-visionAt n = toGroupName $ "vision" <+> tshow n
-
-earAt :: Int -> GroupName ItemKind
-earAt n = toGroupName $ "ear" <+> tshow n
-
-speedGlandAt :: Int -> GroupName ItemKind
-speedGlandAt n = toGroupName $ "speed gland" <+> tshow n
+pattern FIST = GroupName "fist"
+pattern FOOT = GroupName "foot"
+pattern HOOKED_CLAW = GroupName "hooked claw"
+pattern SMALL_CLAW = GroupName "small claw"
+pattern SNOUT = GroupName "snout"
+pattern SMALL_JAW = GroupName "small jaw"
+pattern JAW = GroupName "jaw"
+pattern LARGE_JAW = GroupName "large jaw"
+pattern ANTLER = GroupName "antler"
+pattern HORN = GroupName "horn"
+pattern RHINO_HORN = GroupName "rhino horn"
+pattern TENTACLE = GroupName "tentacle"
+pattern THORN = GroupName "thorn"
+pattern BOILING_FISSURE = GroupName "boiling fissure"
+pattern ARSENIC_FISSURE = GroupName "arsenic fissure"
+pattern SULFUR_FISSURE = GroupName "sulfur fissure"
+pattern BEE_STING = GroupName "bee sting"
+pattern STING = GroupName "sting"
+pattern VENOM_TOOTH = GroupName "venom tooth"
+pattern VENOM_FANG = GroupName "venom fang"
+pattern SCREECHING_BEAK = GroupName "screeching beak"
+pattern LARGE_TAIL = GroupName "large tail"
+pattern HUGE_TAIL = GroupName "huge tail"
+pattern ARMORED_SKIN = GroupName "armored skin"
+pattern BARK = GroupName "bark"
+pattern NOSTRIL = GroupName "nostril"
+pattern RATLLE = GroupName "rattle"
+pattern INSECT_MORTALITY = GroupName "insect mortality"
+pattern SAPIENT_BRAIN = GroupName "sapient brain"
+pattern ANIMAL_BRAIN = GroupName "animal brain"
+pattern SCENT_GLAND = GroupName "scent gland"
+pattern BOILING_VENT = GroupName "boiling vent"
+pattern ARSENIC_VENT = GroupName "arsenic vent"
+pattern SULFUR_VENT = GroupName "sulfur vent"
+pattern TOOTH = GroupName "tooth"
+pattern LASH = GroupName "lash"
+pattern NOSE_TIP = GroupName "nose tip"
+pattern LIP = GroupName "lip"
+pattern RIGHT_TORSION = GroupName "right torsion"
+pattern LEFT_TORSION = GroupName "left torsion"
+pattern PUPIL = GroupName "pupil"
+pattern SCAVENGER = GroupName "scavenger"
+pattern EYE_3 = GroupName "eye 3"
+pattern EYE_6 = GroupName "eye 6"
+pattern EYE_8 = GroupName "eye 8"
+pattern VISION_6 = GroupName "vision 6"
+pattern VISION_12 = GroupName "vision 12"
+pattern VISION_16 = GroupName "vision 16"
+pattern EAR_3 = GroupName "ear 3"
+pattern EAR_6 = GroupName "ear 6"
+pattern EAR_8 = GroupName "ear 8"
+pattern SPEED_GLAND_5 = GroupName "speed gland 5"
+pattern SPEED_GLAND_10 = GroupName "speed gland 10"
 
 -- * Content
 
@@ -230,7 +231,7 @@ boilingFissure = fist
   , idamage  = 1 `d` 1
   , iaspects = [ AddSkill SkHurtMelee 20  -- decreasing as count decreases
                , SetFlag Meleeable ]  -- not Durable
-  , ieffects = [ DropItem 1 1 COrgan "condition"  -- useful; limited
+  , ieffects = [ DropItem 1 1 COrgan CONDITION  -- useful; limited
                , VerbNoLonger "widen the crack, releasing pressure" ]
   , idesc    = "A deep crack to the underworld."
   }
@@ -307,7 +308,7 @@ screechingBeak = fist
   , idamage  = 3 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
                : iaspects fist
-  , ieffects = [Summon "scavenger" $ 1 `dL` 3]
+  , ieffects = [Summon SCAVENGER $ 1 `dL` 3]
   , idesc    = "Both a weapon and a beacon, calling more scavengers to the meal."
   }
 largeTail = fist
@@ -361,31 +362,31 @@ bark = armoredSkin
 
 -- * Sense organs
 
-eye :: Int -> ItemKind
-eye n = armoredSkin
+eye :: Int -> GroupName ItemKind -> ItemKind
+eye n grp = armoredSkin
   { iname    = "eye"
-  , ifreq    = [(eyeAt n, 1)]
+  , ifreq    = [(grp, 1)]
   , icount   = 2
   , iverbHit = "glare at"
   , iaspects = [ AddSkill SkSight (intToDice n)
                , SetFlag Durable ]
   , idesc    = "A piercing stare."
   }
-eye3 = eye 3
-eye6 = eye 6
-eye8 = eye 8
-vision :: Int -> ItemKind
-vision n = armoredSkin
+eye3 = eye 3 EYE_3
+eye6 = eye 6 EYE_6
+eye8 = eye 8 EYE_8
+vision :: Int -> GroupName ItemKind -> ItemKind
+vision n grp = armoredSkin
   { iname    = "vision"
-  , ifreq    = [(visionAt n, 1)]
+  , ifreq    = [(grp, 1)]
   , iverbHit = "visualize"
   , iaspects = [ AddSkill SkSight (intToDice n)
                , SetFlag Durable ]
   , idesc    = ""
   }
-vision6 = vision 6
-vision12 = vision 12
-vision16 = vision 16
+vision6 = vision 6 VISION_6
+vision12 = vision 12 VISION_12
+vision16 = vision 16 VISION_16
 nostril = armoredSkin
   { iname    = "nostril"
   , ifreq    = [(NOSTRIL, 1)]
@@ -395,19 +396,19 @@ nostril = armoredSkin
                , SetFlag Durable ]
   , idesc    = ""
   }
-ear   :: Int -> ItemKind
-ear n = armoredSkin
+ear :: Int -> GroupName ItemKind -> ItemKind
+ear n grp = armoredSkin
   { iname    = "ear"
-  , ifreq    = [(earAt n, 1)]
+  , ifreq    = [(grp, 1)]
   , icount   = 2
   , iverbHit = "overhear"
   , iaspects = [ AddSkill SkHearing (intToDice n)
                , SetFlag Durable ]
   , idesc    = ""
   }
-ear3 = ear 3
-ear6 = ear 6
-ear8 = ear 8
+ear3 = ear 3 EAR_3
+ear6 = ear 6 EAR_6
+ear8 = ear 8 EAR_8
 
 -- * Assorted
 
@@ -459,10 +460,10 @@ animalBrain = armoredSkin
                ++ [SetFlag Durable]
   , idesc    = ""
   }
-speedGland :: Int -> ItemKind
-speedGland n = armoredSkin
+speedGland :: Int -> GroupName ItemKind -> ItemKind
+speedGland n grp = armoredSkin
   { iname    = "speed gland"
-  , ifreq    = [(speedGlandAt n, 1)]
+  , ifreq    = [(grp, 1)]
   , iverbHit = "spit at"
   , iaspects = [ AddSkill SkSpeed $ intToDice n
                , Timeout $ intToDice (100 `div` n)
@@ -470,8 +471,8 @@ speedGland n = armoredSkin
   , ieffects = [RefillHP 1]
   , idesc    = ""
   }
-speedGland5 = speedGland 5
-speedGland10 = speedGland 10
+speedGland5 = speedGland 5 SPEED_GLAND_5
+speedGland10 = speedGland 10 SPEED_GLAND_10
 scentGland = armoredSkin
   { iname    = "scent gland"
   , ifreq    = [(SCENT_GLAND, 1)]
@@ -481,7 +482,7 @@ scentGland = armoredSkin
                , SetFlag Periodic, SetFlag Fragile ]  -- not Durable
   , ieffects = [ VerbNoLonger "look spent"
                , ApplyPerfume
-               , Explode "distressing odor" ]
+               , Explode DISTRESSING_ODOR ]
                    -- keep explosion at the end to avoid the ambiguity of
                    -- "of ([foo explosion] of [bar])"
   , idesc    = ""
@@ -493,7 +494,7 @@ boilingVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [RefillHP 2, Explode "boiling water"]
+  , ieffects = [RefillHP 2, Explode BOILING_WATER]
   , idesc    = ""
   }
 arsenicVent = armoredSkin
@@ -503,7 +504,7 @@ arsenicVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [RefillHP 2, Explode "sparse shower"]
+  , ieffects = [RefillHP 2, Explode SPARSE_SHOWER]
   , idesc    = ""
   }
 sulfurVent = armoredSkin
@@ -513,7 +514,7 @@ sulfurVent = armoredSkin
   , iverbHit = "menace"
   , iaspects = [ Timeout $ (2 + 1 `d` 3) * 5
                , SetFlag Periodic, SetFlag Durable ]
-  , ieffects = [RefillHP 2, Explode "dense shower"]
+  , ieffects = [RefillHP 2, Explode DENSE_SHOWER]
   , idesc    = ""
   }
 
@@ -641,7 +642,7 @@ pupil = fist
   , idamage  = 1 `d` 1
   , iaspects = [AddSkill SkSight 12, Timeout 12]
                ++ iaspects fist
-  , ieffects = [DropItem 1 maxBound COrgan "condition", RefillCalm (-10)]
+  , ieffects = [DropItem 1 maxBound COrgan CONDITION, RefillCalm (-10)]
                  -- can be useful for the player, but Calm drain is a risk
   , idesc    = ""
   }

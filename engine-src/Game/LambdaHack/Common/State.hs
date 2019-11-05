@@ -27,11 +27,8 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Area
-import           Game.LambdaHack.Definition.Defs
-import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import           Game.LambdaHack.Common.Item
@@ -45,7 +42,11 @@ import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
-import           Game.LambdaHack.Content.TileKind (TileKind, unknownId)
+import           Game.LambdaHack.Content.TileKind (TileKind)
+import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
+import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | View on the basic game state.
 -- The @remembered@ fields, in client copies of the state, carry only
@@ -154,7 +155,7 @@ unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> Area
              -> Level
 unknownLevel COps{corule, cotile}
              lkind ldepth larea lstair lescape lexpl lnight =
-  let outerId = ouniqGroup cotile "unknown outer fence"
+  let outerId = ouniqGroup cotile TK.UNKNOWN_OUTER_FENCE
   in Level { lkind
            , ldepth
            , lfloor = EM.empty
@@ -175,7 +176,7 @@ unknownLevel COps{corule, cotile}
 
 unknownTileMap :: Area -> ContentId TileKind -> X -> Y -> TileMap
 unknownTileMap larea outerId rXmax rYmax =
-  let unknownMap = PointArray.replicateA rXmax rYmax unknownId
+  let unknownMap = PointArray.replicateA rXmax rYmax TK.unknownId
       outerUpdate = zip (areaInnerBorder larea) $ repeat outerId
   in unknownMap PointArray.// outerUpdate
 

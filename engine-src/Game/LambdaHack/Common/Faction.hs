@@ -110,7 +110,7 @@ gleader = _gleader
 -- In every game, either all factions for which summoning items exist
 -- should be present or a horror player should be added to host them.
 isHorrorFact :: Faction -> Bool
-isHorrorFact fact = horrorGroup `elem` fgroups (gplayer fact)
+isHorrorFact fact = IK.HORROR `elem` fgroups (gplayer fact)
 
 -- A faction where other actors move at once or where some of leader change
 -- is automatic can't run with multiple actors at once. That would be

@@ -109,8 +109,8 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
           -- Checking skill would be more accurate, but skills can be
           -- inside organs, equipment, condition organs, created organs, etc.
           freqNames = map fst $ IK.ifreq $ itemKind itemFullRaw
-          mobile = "mobile" `elem` freqNames
-          aquatic = "aquatic" `elem` freqNames
+          mobile = IK.MOBILE `elem` freqNames
+          aquatic = IK.AQUATIC `elem` freqNames
       mrolledPos <- case mpos of
         Just{} -> return mpos
         Nothing -> do

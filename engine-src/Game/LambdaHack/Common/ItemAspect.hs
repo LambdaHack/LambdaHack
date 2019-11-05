@@ -182,7 +182,7 @@ totalRange ar itemKind = snd $ snd $ itemTrajectory ar itemKind []
 
 isHumanTrinket :: IK.ItemKind -> Bool
 isHumanTrinket itemKind =
-  maybe False (> 0) $ lookup "valuable" $ IK.ifreq itemKind
+  maybe False (> 0) $ lookup IK.VALUABLE $ IK.ifreq itemKind
     -- risk from treasure hunters
 
 goesIntoEqp :: AspectRecord -> Bool

@@ -3,6 +3,7 @@
 module Game.LambdaHack.Content.ItemKind
   ( pattern CONDITION, pattern COMMON_ITEM, pattern BONUS_HP, pattern BRACED, pattern ASLEEP, pattern IMPRESSED, pattern CURRENCY, pattern MOBILE
   , pattern CURIOUS_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_VIAL, pattern POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern SINGLE_SPARK, pattern FRAGRANCE
+  , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
@@ -15,7 +16,7 @@ module Game.LambdaHack.Content.ItemKind
     -- * Internal operations
   , boostItemKind, onSmashOrCombineEffect
   , validateSingle, validateAll, validateDups, validateDamage
-  , hardwiredItemGroups
+  , hardwiredGroups
 #endif
   ) where
 
@@ -39,36 +40,44 @@ import           Game.LambdaHack.Definition.Flavour
 -- * Mandatory item groups
 
 pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
-hardwiredItemGroups :: [GroupName ItemKind]
-hardwiredItemGroups =
+hardwiredGroups :: [GroupName ItemKind]
+hardwiredGroups =
        [CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE]
 
 -- From Preferences.hs.
 
-pattern CONDITION = "condition"
-pattern COMMON_ITEM = "common item"
+pattern CONDITION = GroupName "condition"
+pattern COMMON_ITEM = GroupName "common item"
 
 -- Assorted.
 
-pattern BONUS_HP = "bonus HP"
-pattern BRACED = "braced"
-pattern ASLEEP = "asleep"
-pattern IMPRESSED = "impressed"
-pattern CURRENCY = "currency"
-pattern MOBILE = "mobile"
+pattern BONUS_HP = GroupName "bonus HP"
+pattern BRACED = GroupName "braced"
+pattern ASLEEP = GroupName "asleep"
+pattern IMPRESSED = GroupName "impressed"
+pattern CURRENCY = GroupName "currency"
+pattern MOBILE = GroupName "mobile"
 
--- * Optional item groups, hardwired in Preferences.hs.
+-- * Optional item groups, used in "Preferences".
 
 pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_VIAL, POTION, EXPLOSIVE, ANY_JEWELRY, SINGLE_SPARK, FRAGRANCE :: GroupName ItemKind
-pattern CURIOUS_ITEM = "curious item"
-pattern TREASURE = "treasure"
-pattern ANY_SCROLL = "any scroll"
-pattern ANY_VIAL = "any vial"
-pattern POTION = "potion"
-pattern EXPLOSIVE = "explosive"
-pattern ANY_JEWELRY = "any jewelry"
-pattern SINGLE_SPARK = "single spark"
-pattern FRAGRANCE = "fragrance"
+pattern CURIOUS_ITEM = GroupName "curious item"
+pattern TREASURE = GroupName "treasure"
+pattern ANY_SCROLL = GroupName "any scroll"
+pattern ANY_VIAL = GroupName "any vial"
+pattern POTION = GroupName "potion"
+pattern EXPLOSIVE = GroupName "explosive"
+pattern ANY_JEWELRY = GroupName "any jewelry"
+pattern SINGLE_SPARK = GroupName "single spark"
+pattern FRAGRANCE = GroupName "fragrance"
+
+-- * Used elsewhere.
+
+pattern HORROR, VALUABLE, UNREPORTED_INVENTORY, AQUATIC :: GroupName ItemKind
+pattern HORROR = GroupName "horror"
+pattern VALUABLE = GroupName "valuable"
+pattern UNREPORTED_INVENTORY = GroupName "unreported inventory"
+pattern AQUATIC = GroupName "aquatic"
 
 -- | Item properties that are fixed for a given kind of items.
 -- Of these, aspects and effects are jointly called item powers.
@@ -496,7 +505,7 @@ validateAll content coitem =
         , not $ null absGroups
         ]
       missingHardwiredGroups =
-        filter (not . omemberGroup coitem) hardwiredItemGroups
+        filter (not . omemberGroup coitem) hardwiredGroups
   in [ "no ikit groups in content:" <+> tshow missingKitGroups
      | not $ null missingKitGroups ]
      ++ [ "HideAs groups not singletons:" <+> tshow wrongHideAsGroups

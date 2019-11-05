@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), Feature(..)
+  ( pattern UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern UNKNOWN_OUTER_FENCE, pattern BASIC_OUTER_FENCE, pattern AQUATIC
+  , TileKind(..), Feature(..)
   , makeData
   , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
@@ -9,7 +10,7 @@ module Game.LambdaHack.Content.TileKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
-  , validateDups, hardwiredTileGroups
+  , validateDups, hardwiredGroups
 #endif
   ) where
 
@@ -189,7 +190,7 @@ validateAll coitem content cotile =
         , not $ null absGroups
         ]
       missingHardwiredGroups =
-        filter (not . omemberGroup cotile) hardwiredTileGroups
+        filter (not . omemberGroup cotile) hardwiredGroups
   in [ "unknown tile (the first) should be the unknown one"
      | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
      ++ [ "no tile other than the unknown (the first) should require skill 1"
@@ -203,10 +204,20 @@ validateAll coitem content cotile =
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
-hardwiredTileGroups :: [GroupName TileKind]
-hardwiredTileGroups =
-  [ "unknown space", "legendLit", "legendDark", "unknown outer fence"
-  , "basic outer fence" ]
+pattern UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE :: GroupName TileKind
+hardwiredGroups :: [GroupName TileKind]
+hardwiredGroups =
+  [ UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE
+  , BASIC_OUTER_FENCE ]
+
+pattern UNKNOWN_SPACE = GroupName "unknown space"
+pattern LEGEND_LIT = GroupName "legendLit"
+pattern LEGEND_DARK = GroupName "legendDark"
+pattern UNKNOWN_OUTER_FENCE = GroupName "unknown outer fence"
+pattern BASIC_OUTER_FENCE = GroupName "basic outer fence"
+
+pattern AQUATIC :: GroupName TileKind
+pattern AQUATIC = GroupName "aquatic"
 
 isUknownSpace :: ContentId TileKind -> Bool
 {-# INLINE isUknownSpace #-}

@@ -12,19 +12,19 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.EnumMap.Strict as EM
 import           Data.Text (Text)
 
-import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
-import           Game.LambdaHack.Core.Frequency
 import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
-import           Game.LambdaHack.Common.Types
-import           Game.LambdaHack.Core.Random
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Core.Frequency
+import           Game.LambdaHack.Core.Random
+import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- | Monad for reading game state. A state monad with state modification
 -- disallowed (another constraint is needed to permit that).
@@ -49,7 +49,7 @@ getGameMode = do
 isNoConfirmsGame :: MonadStateRead m => m Bool
 isNoConfirmsGame = do
   gameMode <- getGameMode
-  return $! maybe False (> 0) $ lookup "no confirms" $ mfreq gameMode
+  return $! maybe False (> 0) $ lookup NO_CONFIRMS $ mfreq gameMode
 
 getEntryArena :: MonadStateRead m => Faction -> m LevelId
 getEntryArena fact = do

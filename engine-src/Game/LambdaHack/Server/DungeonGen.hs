@@ -51,7 +51,7 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Rnd TileMap
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable darea ltile = do
-  let outerId = ouniqGroup cotile "unknown outer fence"
+  let outerId = ouniqGroup cotile TK.UNKNOWN_OUTER_FENCE
       runCdefTile :: (SM.SMGen, (Int, [(Int, ContentId TileKind)]))
                   -> ( ContentId TileKind
                      , (SM.SMGen, (Int, [(Int, ContentId TileKind)])) )
@@ -205,11 +205,11 @@ buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
         $ cstairFreq kc ++ cstairAllowed kc
       fixedStairsDouble = map (second freqDouble) lstairsDouble
       freqUp carried =
-        map (first (\gn -> toGroupName $ fromGroupName gn <+> "up"))
+        map (first (\gn -> GroupName $ fromGroupName gn <+> "up"))
         $ freqDouble carried
       fixedStairsUp = map (second freqUp) lstairsSingleUp
       freqDown =
-        map (first (\gn -> toGroupName $ fromGroupName gn <+> "down"))
+        map (first (\gn -> GroupName $ fromGroupName gn <+> "down"))
         $ cstairFreq kc
       fixedStairsDown = map (, freqDown) pstairsSingleDown
       pallExits = pallUpAndEscape ++ pstairsSingleDown

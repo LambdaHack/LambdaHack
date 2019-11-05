@@ -1,7 +1,7 @@
 -- | Definitions of items embedded in map tiles.
 module Content.ItemKindEmbed
   ( -- * Group name patterns
-    pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
+    pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND, pattern SANDSTONE_ROCK
   , -- * Content
     embeds
   ) where
@@ -10,6 +10,8 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import Content.ItemKindActor
+import Content.ItemKindBlast
 import Content.ItemKindTemporary
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Core.Dice
@@ -20,29 +22,31 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND :: GroupName ItemKind
+pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND, SANDSTONE_ROCK :: GroupName ItemKind
 
-pattern SCRATCH_ON_WALL = "scratch on wall"
-pattern OBSCENE_PICTOGRAM = "obscene pictogram"
-pattern SUBTLE_FRESCO = "subtle fresco"
-pattern TREASURE_CACHE = "treasure cache"
-pattern TREASURE_CACHE_TRAP = "treasure cache trap"
-pattern SIGNAGE = "signage"
-pattern SMALL_FIRE = "small fire"
-pattern BIG_FIRE = "big fire"
-pattern FROST = "frost"
-pattern RUBBLE = "rubble"
-pattern DOORWAY_TRAP_UNKNOWN = "doorway trap unknown"
-pattern DOORWAY_TRAP = "doorway trap"
-pattern STAIRS_UP = "stairs up"
-pattern STAIRS_DOWN = "stairs down"
-pattern ESCAPE = "escape"
-pattern STAIRS_TRAP_UP = "stairs trap up"
-pattern STAIRS_TRAP_DOWN = "stairs trap down"
-pattern LECTERN = "lectern"
-pattern SHALLOW_WATER = "shallow water"
-pattern STRAIGHT_PATH = "straight path"
-pattern FROZEN_GROUND = "frozen ground"
+pattern SCRATCH_ON_WALL = GroupName "scratch on wall"
+pattern OBSCENE_PICTOGRAM = GroupName "obscene pictogram"
+pattern SUBTLE_FRESCO = GroupName "subtle fresco"
+pattern TREASURE_CACHE = GroupName "treasure cache"
+pattern TREASURE_CACHE_TRAP = GroupName "treasure cache trap"
+pattern SIGNAGE = GroupName "signage"
+pattern SMALL_FIRE = GroupName "small fire"
+pattern BIG_FIRE = GroupName "big fire"
+pattern FROST = GroupName "frost"
+pattern RUBBLE = GroupName "rubble"
+pattern DOORWAY_TRAP_UNKNOWN = GroupName "doorway trap unknown"
+pattern DOORWAY_TRAP = GroupName "doorway trap"
+pattern STAIRS_UP = GroupName "stairs up"
+pattern STAIRS_DOWN = GroupName "stairs down"
+pattern ESCAPE = GroupName "escape"
+pattern STAIRS_TRAP_UP = GroupName "stairs trap up"
+pattern STAIRS_TRAP_DOWN = GroupName "stairs trap down"
+pattern LECTERN = GroupName "lectern"
+pattern SHALLOW_WATER = GroupName "shallow water"
+pattern STRAIGHT_PATH = GroupName "straight path"
+pattern FROZEN_GROUND = GroupName "frozen ground"
+
+pattern SANDSTONE_ROCK = GroupName "sandstone rock"
 
 -- * Content
 
@@ -90,7 +94,7 @@ obscenePictogram = ItemKind
   , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , OneOf [ toOrganGood STRENGTHENED (3 + 1 `d` 2)
-                       , CreateItem CStash "sandstone rock" timerNone ] ]
+                       , CreateItem CStash SANDSTONE_ROCK timerNone ] ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -123,7 +127,7 @@ treasureCache = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [CreateItem CGround "common item" timerNone]
+  , ieffects = [CreateItem CGround COMMON_ITEM timerNone]
   , idesc    = "Glittering treasure, just waiting to be taken."
   , ikit     = []
   }
@@ -140,7 +144,7 @@ treasureCacheTrap = ItemKind
   , iaspects = []  -- not Durable, springs at most once
   , ieffects = [OneOf [ toOrganBad BLIND (10 + 1 `d` 10)
                       , RefillCalm (-99)
-                      , Explode "focused concussion"
+                      , Explode FOCUSED_CONCUSSION
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , idesc    = "It's a trap!"
   , ikit     = []
@@ -183,7 +187,7 @@ fireSmall = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [Burn 1, Explode "single spark"]
+  , ieffects = [Burn 1, Explode SINGLE_SPARK]
   , idesc    = "A few small logs, burning brightly."
   , ikit     = []
   }
@@ -192,8 +196,8 @@ fireBig = fireSmall
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
-               , CreateItem CStash "wooden torch" timerNone
-               , Explode "spark" ]
+               , CreateItem CStash WOODEN_TORCH timerNone
+               , Explode SPARK ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
   }
@@ -225,10 +229,10 @@ rubble = ItemKind
   , iweight  = 100000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [OneOf [ Explode "focused glass hail"
-                      , Summon "mobile animal" $ 1 `dL` 2
+  , ieffects = [OneOf [ Explode FOCUSED_GLASS_HAIL
+                      , Summon MOBILE_ANIMAL $ 1 `dL` 2
                       , toOrganNoTimer POISONED
-                      , CreateItem CGround "common item" timerNone
+                      , CreateItem CGround COMMON_ITEM timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , idesc    = "Broken chunks of rock and glass."
@@ -333,11 +337,11 @@ lectern = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [ OneOf [ CreateItem CGround "any scroll" timerNone
+  , ieffects = [ OneOf [ CreateItem CGround ANY_SCROLL timerNone
                        , Detect DetectAll 20
                        , toOrganBad DEFENSELESS $ (1 `dL` 6) * 10
                        , toOrganGood DRUNK (20 + 1 `d` 5) ]
-               , Explode "PhD defense question" ]
+               , Explode PHD_DEFENSE_QUESTION ]
   , idesc    = "A dark wood stand, where strange priests once preached."
   , ikit     = []
   }

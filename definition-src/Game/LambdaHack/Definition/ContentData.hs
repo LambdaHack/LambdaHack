@@ -50,10 +50,11 @@ validateRarity rarity =
             _ -> False ]
 
 validFreqs :: Freqs a -> Bool
-validFreqs freqs = all ((> 0) . snd) freqs
-                   && let groups = sort $ map fst freqs
-                      in all (uncurry (/=)) $ zip groups ("" : groups)
-                           -- this also catches empty group names
+validFreqs freqs =
+  all ((> 0) . snd) freqs
+  && let groups = sort $ map fst freqs
+         tailOfGroups = if null groups then groups else tail groups
+     in all (uncurry (/=)) $ zip groups tailOfGroups
 
 emptyContentData :: ContentData a
 emptyContentData = ContentData V.empty M.empty

@@ -1,6 +1,9 @@
 -- | Item definitions.
 module Content.ItemKind
-  ( content, items, otherItemContent
+  ( -- * Group name patterns
+    pattern HARPOON, pattern EDIBLE_PLANT, pattern RING_OF_OPPORTUNITY_GRENADIER, pattern TORSO_ARMOR, pattern CLOTHING_MISC, pattern CHIC_GEAR
+  , -- * Content
+    content, items, otherItemContent
   ) where
 
 import Prelude ()
@@ -23,38 +26,25 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern SANDSTONE_ROCK, UNREPORTED_INVENTORY, ANY_ARROW, WEAK_ARROW, HARPOON, WOODEN_TORCH, LIGHT_MANIPULATION, BLANKET, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, ADD_NOCTO_1, NECKLACE_UNKNOWN, ADD_SIGHT, RING_UNKNOWN, RING_OF_OPPORTUNITY_SNIPER, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, ARMOR_RANGED, ARMOR_MISC, STARTING_WEAPON, HAMMER_UNKNOWN, GEM_UNKNOWN, VALUABLE, GEM, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
+pattern HARPOON, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
 
-pattern SANDSTONE_ROCK = "sandstone rock"
-pattern UNREPORTED_INVENTORY = "unreported inventory"
-pattern ANY_ARROW = "any arrow"
-pattern WEAK_ARROW = "weak arrow"
-pattern HARPOON = "harpoon"
-pattern WOODEN_TORCH = "wooden torch"
-pattern LIGHT_MANIPULATION = "light manipulation"
-pattern BLANKET = "blanket"
-pattern FLASK_UNKNOWN = "flask unknown"
-pattern POTION_UNKNOWN = "potion unknown"
-pattern EDIBLE_PLANT_UNKNOWN = "edible plant unknown"
-pattern EDIBLE_PLANT = "edible plant"
-pattern SCROLL_UNKNOWN = "scroll unknown"
-pattern ADD_NOCTO_1 = "add nocto 1"
-pattern NECKLACE_UNKNOWN = "necklace unknown"
-pattern ADD_SIGHT = "add sight"
-pattern RING_UNKNOWN = "ring unknown"
-pattern RING_OF_OPPORTUNITY_SNIPER = "ring of opportunity sniper"
-pattern RING_OF_OPPORTUNITY_GRENADIER = "ring of opportunity grenadier"
-pattern TORSO_ARMOR = "torso armor"
-pattern ARMOR_RANGED = "armor ranged"
-pattern ARMOR_MISC = "armor misc"
-pattern STARTING_WEAPON = "starting weapon"
-pattern HAMMER_UNKNOWN = "hammer unknown"
-pattern GEM_UNKNOWN = "gem unknown"
-pattern VALUABLE = "valuable"
-pattern GEM = "gem"
-pattern CURRENCY_UNKNOWN = "currency unknown"
-pattern CLOTHING_MISC = "clothing misc"
-pattern CHIC_GEAR = "chic gear"
+-- The @UNKNOWN@ patterns don't need to be exported. Used internally.
+pattern HARPOON = GroupName "harpoon"
+pattern FLASK_UNKNOWN = GroupName "flask unknown"
+pattern POTION_UNKNOWN = GroupName "potion unknown"
+pattern EDIBLE_PLANT_UNKNOWN = GroupName "edible plant unknown"
+pattern EDIBLE_PLANT = GroupName "edible plant"
+pattern SCROLL_UNKNOWN = GroupName "scroll unknown"
+pattern NECKLACE_UNKNOWN = GroupName "necklace unknown"
+pattern RING_UNKNOWN = GroupName "ring unknown"
+pattern RING_OF_OPPORTUNITY_GRENADIER =
+  GroupName "ring of opportunity grenadier"
+pattern TORSO_ARMOR = GroupName "torso armor"
+pattern HAMMER_UNKNOWN = GroupName "hammer unknown"
+pattern GEM_UNKNOWN = GroupName "gem unknown"
+pattern CURRENCY_UNKNOWN = GroupName "currency unknown"
+pattern CLOTHING_MISC = GroupName "clothing misc"
+pattern CHIC_GEAR = GroupName "chic gear"
 
 -- * Content
 
@@ -321,7 +311,7 @@ light2 = ItemKind
                , EqpSlot EqpSlotShine ]
   , ieffects = [ Burn 1
                , toOrganBad PACIFIED (2 + 1 `d` 2)
-               , OnSmash (Explode "burning oil 2") ]
+               , OnSmash (Explode BURNING_OIL_2) ]
   , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
   , ikit     = []
   }
@@ -340,7 +330,7 @@ light3 = ItemKind
                , EqpSlot EqpSlotShine ]
   , ieffects = [ Burn 1
                , toOrganBad PACIFIED (4 + 1 `d` 2)
-               , OnSmash (Explode "burning oil 4") ]
+               , OnSmash (Explode BURNING_OIL_4) ]
   , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
@@ -495,8 +485,8 @@ flask12 = flaskTemplate
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood DRUNK (20 + 1 `d` 5)
                , Burn 1, RefillHP 3  -- risky exploit possible, good
-               , Summon "mobile animal" 1
-               , OnSmash (Summon "mobile animal" 1)
+               , Summon MOBILE_ANIMAL 1
+               , OnSmash (Summon MOBILE_ANIMAL 1)
                , OnSmash Impress  -- mildly useful when thrown
                , OnSmash (Explode WASTE) ]
   }
@@ -598,7 +588,7 @@ potion3 = potionTemplate
 potion4 = potionTemplate
   { ifreq    = [(COMMON_ITEM, 100), (POTION, 100), (ANY_VIAL, 100)]
   , irarity  = [(1, 6), (10, 10)]
-  , ieffects = [ RefillHP 10, DropItem maxBound maxBound COrgan "condition"
+  , ieffects = [ RefillHP 10, DropItem maxBound maxBound COrgan CONDITION
                , OnSmash (Explode HEALING_MIST_2) ]
   }
 potion5 = potionTemplate
@@ -629,7 +619,7 @@ potion6 = potionTemplate
                , OnSmash (OneOf [ Explode HEALING_MIST_2
                                 , Explode WOUNDING_MIST
                                 , Explode DISTRESSING_ODOR
-                                , Explode "impatient mist"
+                                , Explode $ blastNoStatOf IMPATIENT
                                 , Explode HASTE_SPRAY
                                 , Explode SLOWNESS_MIST
                                 , Explode FRAGRANCE
@@ -640,7 +630,7 @@ potion7 = potionTemplate
                           -- not mix fantasy with too much technical jargon
   , ifreq    = [(COMMON_ITEM, 100), (POTION, 100), (ANY_VIAL, 100)]
   , icount   = 3 `dL` 1
-  , ieffects = [ DropItem 1 maxBound COrgan "condition"
+  , ieffects = [ DropItem 1 maxBound COrgan CONDITION
                , OnSmash (Explode VIOLENT_CONCUSSION) ]
       -- not fragmentation nor glass hail, because not enough glass
   }
@@ -666,8 +656,8 @@ potion9 = potionTemplate
                , toOrganBad PACIFIED (5 + 1 `d` 3)
                    -- the malus has to be weak, or would be too good
                    -- when thrown at foes
-               , OnSmash (Explode "more projecting dew")
-               , OnSmash (Explode "pacified mist") ]
+               , OnSmash (Explode $ blastBonusStatOf MORE_PROJECTING)
+               , OnSmash (Explode $ blastNoStatOf PACIFIED) ]
   , idesc    = "Thick, sluggish fluid with violently-bursting bubbles."
   }
 potion10 = potionTemplate
@@ -680,8 +670,8 @@ potion10 = potionTemplate
                , toOrganBad RETAINING (5 + 1 `d` 3)
                , toOrganBad FRENZIED (40 + 1 `d` 10)
                , OnSmash (Explode DENSE_SHOWER)
-               , OnSmash (Explode "retaining mist")
-               , OnSmash (Explode "retaining mist") ]
+               , OnSmash (Explode $ blastNoStatOf RETAINING)
+               , OnSmash (Explode $ blastNoStatOf RETAINING) ]
   }
 potion11 = potionTemplate
   { ifreq    = [(COMMON_ITEM, 100), (POTION, 100), (ANY_VIAL, 100)]
@@ -694,7 +684,7 @@ potion11 = potionTemplate
                , toOrganBad WITHHOLDING (10 + 1 `d` 5)
                , OnSmash (Explode HASTE_SPRAY)
                , OnSmash (Explode SPARSE_SHOWER)
-               , OnSmash (Explode "withholding mist") ]
+               , OnSmash (Explode $ blastNoStatOf WITHHOLDING) ]
   }
 potion12 = potionTemplate
   { ifreq    = [(COMMON_ITEM, 100), (POTION, 100), (ANY_VIAL, 100)]
@@ -706,7 +696,7 @@ potion12 = potionTemplate
                , toOrganBad IMMOBILE (5 + 1 `d` 5)
                , OnSmash (Explode HASTE_SPRAY)
                , OnSmash (Explode IRON_FILING)
-               , OnSmash (Explode "immobile mist") ]
+               , OnSmash (Explode $ blastNoStatOf IMMOBILE) ]
   }
 
 -- ** Explosives, with the only effect being @Explode@
@@ -863,7 +853,7 @@ scroll1 = scrollTemplate
   , irarity  = [(5, 9), (10, 9)]  -- mixed blessing, so found early for a unique
   , iaspects = [SetFlag Unique, ELabel "of Reckless Beacon"]
                ++ iaspects scrollTemplate
-  , ieffects = [Summon "hero" 1, Summon "mobile animal" (2 + 1 `d` 2)]
+  , ieffects = [Summon HERO 1, Summon MOBILE_ANIMAL (2 + 1 `d` 2)]
   , idesc    = "The bright flame and sweet-smelling smoke of this heavily infused scroll should attract natural creatures inhabiting the area, including human survivors, if any."
   }
 scroll2 = scrollTemplate
@@ -886,7 +876,7 @@ scroll4 = scrollTemplate
   , irarity  = [(10, 14)]
   , ieffects = [ Impress
                , OneOf [ Teleport 20, Ascend False, Ascend True
-                       , Summon "hero" 1, Summon "mobile animal" $ 1 `d` 2
+                       , Summon HERO 1, Summon MOBILE_ANIMAL $ 1 `d` 2
                        , Detect DetectLoot 20  -- the most useful of detections
                        , CreateItem CGround COMMON_ITEM timerNone ] ]
   }
@@ -917,7 +907,7 @@ scroll8 = scrollTemplate
   , irarity  = [(10, 12)]
   , iaspects = [SetFlag Unique, ELabel "of Rescue Proclamation"]
                ++ iaspects scrollTemplate
-  , ieffects = [Summon "hero" 1]
+  , ieffects = [Summon HERO 1]
   , idesc    = "A survivor of past exploration missions is found that enjoys, apparently, complete physiological integrity. We can pronounce him a comrade in arms and let him join our party."
   }
 scroll9 = scrollTemplate
@@ -1007,7 +997,7 @@ seeingItem = ItemKind
                , SetFlag Periodic ]
   , ieffects = [ Detect DetectActor 20  -- rare enough
                , toOrganNoTimer POISONED  -- really can't be worn
-               , Summon "mobile monster" 1 ]
+               , Summon MOBILE_MONSTER 1 ]
   , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
@@ -1094,9 +1084,9 @@ necklace2 = necklaceTemplate
                , AddSkill SkOdor 2
                , SetFlag Durable ]
                ++ iaspects_necklaceTemplate
-  , ieffects = [ DropItem 1 1 COrgan "condition"  -- mildly useful when applied
+  , ieffects = [ DropItem 1 1 COrgan CONDITION  -- mildly useful when applied
                , Impress
-               , Summon "mobile animal" $ 1 `dL` 2
+               , Summon MOBILE_ANIMAL $ 1 `dL` 2
                , Explode WASTE ]
   , idesc    = "A cord hung with lumps of decaying meat. It's better not to think about the source."
   }
@@ -1632,7 +1622,7 @@ swordNullify = sword
   , irarity  = [(5, 1), (8, 6)]
   , iaspects = [SetFlag Unique, Timeout 3, EqpSlot EqpSlotWeaponFast]
                ++ (iaspects sword \\ [Timeout 7, EqpSlot EqpSlotWeaponBig])
-  , ieffects = [ DropItem 1 maxBound COrgan "condition"
+  , ieffects = [ DropItem 1 maxBound COrgan CONDITION
                , RefillCalm (-10)
                , Yell ]
   , idesc    = "Cold, thin blade that pierces deeply and sends its victim into abrupt, sobering shock."
@@ -1757,7 +1747,7 @@ currencyTemplate = ItemKind
   , ikit     = []
   }
 currency = currencyTemplate
-  { ifreq    = [(TREASURE, 100), ("currency", 100), (VALUABLE, 1)]
+  { ifreq    = [(TREASURE, 100), (CURRENCY, 100), (VALUABLE, 1)]
   , iaspects = [AddSkill SkShine 1, AddSkill SkSpeed (-1)]
                ++ iaspects currencyTemplate
 

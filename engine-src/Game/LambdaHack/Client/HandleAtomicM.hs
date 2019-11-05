@@ -242,7 +242,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     svictories <- getsClient svictories
     stabs <- getsClient stabs
     let f !acc _p !i _a = i : acc
-        modes = zip [0..] $ ofoldlGroup' comode "campaign scenario" f []
+        modes = zip [0..] $ ofoldlGroup' comode CAMPAIGN_SCENARIO f []
         g :: (Int, ContentId ModeKind) -> Int
         g (_, mode) = case EM.lookup mode svictories of
           Nothing -> 0

@@ -1,8 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 -- | Basic types for content definitions.
 module Game.LambdaHack.Definition.Defs
-  ( X, Y
-  , GroupName, toGroupName, fromGroupName
+  ( X, Y, GroupName(..)
   , Freqs, Rarity, linearInterpolation
   , ContentId, toContentId, fromContentId, contentIdIndex
   , CStore(..), ppCStore, ppCStoreIn, verbCStore
@@ -14,12 +13,10 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Control.DeepSeq
-import           Data.Binary
-import           Data.Hashable
-import           Data.String (IsString (..))
-import qualified Data.Text as T
-import           GHC.Generics (Generic)
+import Control.DeepSeq
+import Data.Binary
+import Data.Hashable
+import GHC.Generics (Generic)
 
 -- | X spacial dimension for points and vectors.
 type X = Int
@@ -33,14 +30,7 @@ type Y = Int
 newtype GroupName a = GroupName {fromGroupName :: Text}
   deriving (Show, Eq, Ord, Hashable, Binary, Generic)
 
-instance IsString (GroupName a) where
-  fromString = GroupName . T.pack
-
 instance NFData (GroupName a)
-
-toGroupName :: Text -> GroupName a
-{-# INLINE toGroupName #-}
-toGroupName = GroupName
 
 -- | For each group that the kind belongs to, denoted by a @GroupName@
 -- in the first component of a pair, the second component of a pair shows

@@ -137,7 +137,7 @@ calculateTotal fid s =
 
 -- | Price an item, taking count into consideration.
 itemPrice :: Int -> IK.ItemKind -> Int
-itemPrice jcount itemKind = case lookup "valuable" $ IK.ifreq itemKind of
+itemPrice jcount itemKind = case lookup IK.VALUABLE $ IK.ifreq itemKind of
   Just k -> jcount * k
   Nothing -> 0
 

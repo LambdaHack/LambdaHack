@@ -1010,7 +1010,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
   -- We assume "gold grain", not "grain" with label "of gold":
-  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem "currency"
+  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem IK.CURRENCY
       lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
       (itemBag, lSlots) =
@@ -1607,7 +1607,7 @@ strike catch source target iid = assert (source /= target) $ do
     let notCond (_, (itemFullArmor, _)) =
           not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
         isOrdinaryCond (_, (itemFullArmor, _)) =
-          isJust $ lookup "condition" $ IK.ifreq $ itemKind itemFullArmor
+          isJust $ lookup IK.CONDITION $ IK.ifreq $ itemKind itemFullArmor
         rateArmor (iidArmor, (itemFullArmor, (k, _))) =
           ( k * IA.getSkill Ability.SkArmorMelee
                             (aspectRecordFull itemFullArmor)

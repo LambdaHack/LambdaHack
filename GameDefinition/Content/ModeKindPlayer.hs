@@ -11,9 +11,11 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.ItemKindActor
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Definition.Ability
+import           Content.ItemKindActor
+import           Content.ItemKindOrgan
+import qualified Game.LambdaHack.Content.ItemKind as IK
+import           Game.LambdaHack.Content.ModeKind
+import           Game.LambdaHack.Definition.Ability
 
 playerHero, playerAntiHero, playerCivilian, playerMonster, playerAntiMonster, playerAnimal, playerHorror, playerMonsterTourist, playerHunamConvict, playerAnimalMagnificent, playerAnimalExquisite :: Player
 
@@ -50,7 +52,7 @@ playerCivilian = Player
 
 playerMonster = Player
   { fname = "Monster Hive"
-  , fgroups = [MONSTER, MOBILER_MONSTER]
+  , fgroups = [MONSTER, MOBILE_MONSTER]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False
@@ -89,7 +91,7 @@ playerAnimal = Player
 -- should be present or a horror player should be added to host them.
 playerHorror = Player
   { fname = "Horror Den"
-  , fgroups = [horrorGroup]
+  , fgroups = [IK.HORROR]
   , fskillsOther = zeroSkills
   , fcanEscape = False
   , fneverEmpty = False

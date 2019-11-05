@@ -779,11 +779,11 @@ applyItem aid applyGroup = do
   getKind <- getsState $ flip getIidKind
   let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
-        in if isJust $ lookup "condition" $ IK.ifreq itemKind
+        in if isJust $ lookup IK.CONDITION $ IK.ifreq itemKind
            then Just $ if benInEqp (discoBenefit EM.! iid)
-                       then Left $ toGroupName $ IK.iname itemKind
+                       then Left $ GroupName $ IK.iname itemKind
                          -- conveniently, @iname@ matches @ifreq@
-                       else Right $ toGroupName $ IK.iname itemKind
+                       else Right $ GroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
@@ -801,15 +801,15 @@ applyItem aid applyGroup = do
             dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included
             dropsBadOrgans =
               not (null myBadGrps)
-              && ("condition" `elem` dropsGrps
+              && (IK.CONDITION `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myBadGrps)))
             dropsImpressed =
-              "impressed" `elem` myBadGrps
-              && ("condition" `elem` dropsGrps
-                  || "impressed" `elem` dropsGrps)
+              IK.IMPRESSED `elem` myBadGrps
+              && (IK.CONDITION `elem` dropsGrps
+                  || IK.IMPRESSED `elem` dropsGrps)
             dropsGoodOrgans =
               not (null myGoodGrps)
-              && ("condition" `elem` dropsGrps
+              && (IK.CONDITION `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myGoodGrps)))
             wastesDrop = not dropsBadOrgans && not (null dropsGrps)
             wastesHP = hpEnough b actorMaxSk && heals
