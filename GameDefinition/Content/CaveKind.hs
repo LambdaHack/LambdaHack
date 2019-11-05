@@ -1,7 +1,9 @@
 -- | Cave properties.
 module Content.CaveKind
-  ( pattern DEFAULT_RANDOM, pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
-  , content
+  ( -- * Group name patterns
+    pattern DEFAULT_RANDOM, pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
+  , -- * Content
+    content
   ) where
 
 import Prelude ()
@@ -15,12 +17,6 @@ import Content.TileKind hiding (content)
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
-
-content :: [CaveKind]
-content =
-  [rogue, arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
-
-rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 -- * Group name patterns
 
@@ -47,6 +43,14 @@ pattern CAVE_BATTLE = "caveBattle"
 pattern CAVE_SAFARI_1 = "caveSafari1"
 pattern CAVE_SAFARI_2 = "caveSafari2"
 pattern CAVE_SAFARI_3 = "caveSafari3"
+
+-- * Content
+
+content :: [CaveKind]
+content =
+  [rogue, arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
+
+rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 -- * Underground caves; most of mediocre height and size
 

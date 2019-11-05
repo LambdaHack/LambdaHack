@@ -1,7 +1,9 @@
 -- | Game mode definitions.
 module Content.ModeKind
-  ( pattern RAID, pattern CAMPAIGN_SCENARIO, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY, pattern INSERT_COIN, pattern NO_CONFIRMS
-  , content
+  ( -- * Group name patterns
+    pattern RAID, pattern CAMPAIGN_SCENARIO, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY, pattern INSERT_COIN, pattern NO_CONFIRMS
+  , -- * Content
+    content
   ) where
 
 import Prelude ()
@@ -15,12 +17,6 @@ import Game.LambdaHack.Content.CaveKind (CaveKind)
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
-
-content :: [ModeKind]
-content =
-  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
-
-raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- * Group name patterns
 
@@ -54,6 +50,14 @@ pattern DEFENSE = "defense"
 pattern DEFENSE_EMPTY = "defense empty"
 pattern INSERT_COIN = "insert coin"
 pattern NO_CONFIRMS = "no confirms"
+
+-- * Content
+
+content :: [ModeKind]
+content =
+  [raid, brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari]
+
+raid,    brawl, crawl, shootout, hunt, escape, zoo, ambush, crawlEmpty, crawlSurvival, dig, see, safari, safariSurvival, battle, battleDefense, battleSurvival, defense, defenseEmpty, screensaverRaid, screensaverBrawl, screensaverShootout, screensaverHunt, screensaverEscape, screensaverZoo, screensaverAmbush, screensaverCrawl, screensaverSafari :: ModeKind
 
 -- What other symmetric (two only-one-moves factions) and asymmetric vs crowd
 -- scenarios make sense (e.g., are good for a tutorial or for standalone

@@ -1,7 +1,9 @@
 -- | Temporary pseudo-organ (condition) definitions.
 module Content.ItemKindTemporary
-  ( pattern STRENGTHENED, pattern WEAKENED, pattern PROTECTED_FROM_MELEE, pattern PROTECTED_FROM_RANGED, pattern DEFENSELESS, pattern RESOLUTE, pattern HASTED, pattern SLOWED, pattern FAR_SIGHTED, pattern BLIND, pattern KEEN_SMELLING, pattern FOUL_SMELLING, pattern ROSE_SMELLING, pattern SHINY_EYED, pattern DEAFENED, pattern DEAF, pattern DRUNK, pattern FRENZIED, pattern IMMOBILE, pattern PACIFIED, pattern IRREPLACEABLE, pattern RETAINING, pattern IMPATIENT, pattern DISPOSSESSED, pattern WITHHOLDING, pattern PARSIMONIOUS, pattern MORE_MOBILE, pattern MORE_COMBATIVE, pattern MORE_DISPLACING, pattern MORE_MODIFYING, pattern MORE_PATIENT, pattern MORE_TIDY, pattern MORE_PROJECTING, pattern MORE_PRACTICAL, pattern REGENERATING, pattern POISONED, pattern SLOW_RESISTANT, pattern POISON_RESISTANT
-  , temporaries
+  ( -- * Group name patterns
+    pattern STRENGTHENED, pattern WEAKENED, pattern PROTECTED_FROM_MELEE, pattern PROTECTED_FROM_RANGED, pattern DEFENSELESS, pattern RESOLUTE, pattern HASTED, pattern SLOWED, pattern FAR_SIGHTED, pattern BLIND, pattern KEEN_SMELLING, pattern FOUL_SMELLING, pattern ROSE_SMELLING, pattern SHINY_EYED, pattern DEAFENED, pattern DEAF, pattern DRUNK, pattern FRENZIED, pattern IMMOBILE, pattern PACIFIED, pattern IRREPLACEABLE, pattern RETAINING, pattern IMPATIENT, pattern DISPOSSESSED, pattern WITHHOLDING, pattern PARSIMONIOUS, pattern MORE_MOBILE, pattern MORE_COMBATIVE, pattern MORE_DISPLACING, pattern MORE_MODIFYING, pattern MORE_PATIENT, pattern MORE_TIDY, pattern MORE_PROJECTING, pattern MORE_PRACTICAL, pattern REGENERATING, pattern POISONED, pattern SLOW_RESISTANT, pattern POISON_RESISTANT
+  , -- * Content
+    temporaries
   ) where
 
 import Prelude ()
@@ -14,12 +16,6 @@ import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
-
-temporaries :: [ItemKind]
-temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
-
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- * Group name patterns
 
@@ -63,6 +59,14 @@ pattern REGENERATING = "regenerating"
 pattern POISONED = "poisoned"
 pattern SLOW_RESISTANT = "slow resistant"
 pattern POISON_RESISTANT = "poison resistant"
+
+-- * Content
+
+temporaries :: [ItemKind]
+temporaries =
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpVulnerable, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
 
 -- * Condition definitions
 

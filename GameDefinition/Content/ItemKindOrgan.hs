@@ -1,7 +1,9 @@
 -- | Actor organ definitions.
 module Content.ItemKindOrgan
-  ( pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL
-  , organs
+  ( -- * Group name patterns
+    pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL
+  , -- * Content
+    organs
   ) where
 
 import Prelude ()
@@ -15,16 +17,6 @@ import Game.LambdaHack.Definition.Ability
 import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
-
-organs :: [ItemKind]
-organs =
-  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, bark, eye3, eye6, eye8, vision6, vision12, vision16, nostril, ear3, ear6, ear8, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland5, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
-  -- LH-specific
-  ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
-
-fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, bark, eye3, eye6, eye8, vision6, vision12, vision16, nostril, ear3, ear6, ear8, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland5, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
--- LH-specific
-tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
 -- * Group name patterns
 
@@ -83,6 +75,18 @@ earAt n = toGroupName $ "ear" <+> tshow n
 
 speedGlandAt :: Int -> GroupName ItemKind
 speedGlandAt n = toGroupName $ "speed gland" <+> tshow n
+
+-- * Content
+
+organs :: [ItemKind]
+organs =
+  [fist, foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, bark, eye3, eye6, eye8, vision6, vision12, vision16, nostril, ear3, ear6, ear8, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland5, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed]
+  -- LH-specific
+  ++ [tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil]
+
+fist,    foot, hookedClaw, smallClaw, snout, smallJaw, jaw, largeJaw, antler, horn, rhinoHorn, tentacle, thorn, boilingFissure, arsenicFissure, sulfurFissure, beeSting, sting, venomTooth, venomFang, screechingBeak, largeTail, hugeTail, armoredSkin, bark, eye3, eye6, eye8, vision6, vision12, vision16, nostril, ear3, ear6, ear8, rattleOrgan, insectMortality, sapientBrain, animalBrain, speedGland5, speedGland10, scentGland, boilingVent, arsenicVent, sulfurVent, bonusHP, braced, asleep, impressed :: ItemKind
+-- LH-specific
+tooth, lash, noseTip, lip, torsionRight, torsionLeft, pupil :: ItemKind
 
 -- Weapons
 

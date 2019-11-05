@@ -21,6 +21,43 @@ import Game.LambdaHack.Definition.Color
 import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
 
+-- * Group name patterns
+
+pattern SANDSTONE_ROCK, UNREPORTED_INVENTORY, ANY_ARROW, WEAK_ARROW, HARPOON, WOODEN_TORCH, LIGHT_MANIPULATION, BLANKET, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, ADD_NOCTO_1, NECKLACE_UNKNOWN, ADD_SIGHT, RING_UNKNOWN, RING_OF_OPPORTUNITY_SNIPER, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, ARMOR_RANGED, ARMOR_MISC, STARTING_WEAPON, HAMMER_UNKNOWN, GEM_UNKNOWN, VALUABLE, GEM, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
+
+pattern SANDSTONE_ROCK = "sandstone rock"
+pattern UNREPORTED_INVENTORY = "unreported inventory"
+pattern ANY_ARROW = "any arrow"
+pattern WEAK_ARROW = "weak arrow"
+pattern HARPOON = "harpoon"
+pattern WOODEN_TORCH = "wooden torch"
+pattern LIGHT_MANIPULATION = "light manipulation"
+pattern BLANKET = "blanket"
+pattern FLASK_UNKNOWN = "flask unknown"
+pattern POTION_UNKNOWN = "potion unknown"
+pattern EDIBLE_PLANT_UNKNOWN = "edible plant unknown"
+pattern EDIBLE_PLANT = "edible plant"
+pattern SCROLL_UNKNOWN = "scroll unknown"
+pattern ADD_NOCTO_1 = "add nocto 1"
+pattern NECKLACE_UNKNOWN = "necklace unknown"
+pattern ADD_SIGHT = "add sight"
+pattern RING_UNKNOWN = "ring unknown"
+pattern RING_OF_OPPORTUNITY_SNIPER = "ring of opportunity sniper"
+pattern RING_OF_OPPORTUNITY_GRENADIER = "ring of opportunity grenadier"
+pattern TORSO_ARMOR = "torso armor"
+pattern ARMOR_RANGED = "armor ranged"
+pattern ARMOR_MISC = "armor misc"
+pattern STARTING_WEAPON = "starting weapon"
+pattern HAMMER_UNKNOWN = "hammer unknown"
+pattern GEM_UNKNOWN = "gem unknown"
+pattern VALUABLE = "valuable"
+pattern GEM = "gem"
+pattern CURRENCY_UNKNOWN = "currency unknown"
+pattern CLOTHING_MISC = "clothing misc"
+pattern CHIC_GEAR = "chic gear"
+
+-- * Content
+
 content :: [ItemKind]
 content = items ++ otherItemContent
 
@@ -70,41 +107,6 @@ symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle, instrument
 _symbolStaff     = '_'  -- scanner
 symbolFood       = ','  -- also body part; distinct from floor: not middle dot
-
--- * Group name patterns
-
-pattern SANDSTONE_ROCK, UNREPORTED_INVENTORY, ANY_ARROW, WEAK_ARROW, HARPOON, WOODEN_TORCH, LIGHT_MANIPULATION, BLANKET, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, ADD_NOCTO_1, NECKLACE_UNKNOWN, ADD_SIGHT, RING_UNKNOWN, RING_OF_OPPORTUNITY_SNIPER, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, ARMOR_RANGED, ARMOR_MISC, STARTING_WEAPON, HAMMER_UNKNOWN, GEM_UNKNOWN, VALUABLE, GEM, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
-
-pattern SANDSTONE_ROCK = "sandstone rock"
-pattern UNREPORTED_INVENTORY = "unreported inventory"
-pattern ANY_ARROW = "any arrow"
-pattern WEAK_ARROW = "weak arrow"
-pattern HARPOON = "harpoon"
-pattern WOODEN_TORCH = "wooden torch"
-pattern LIGHT_MANIPULATION = "light manipulation"
-pattern BLANKET = "blanket"
-pattern FLASK_UNKNOWN = "flask unknown"
-pattern POTION_UNKNOWN = "potion unknown"
-pattern EDIBLE_PLANT_UNKNOWN = "edible plant unknown"
-pattern EDIBLE_PLANT = "edible plant"
-pattern SCROLL_UNKNOWN = "scroll unknown"
-pattern ADD_NOCTO_1 = "add nocto 1"
-pattern NECKLACE_UNKNOWN = "necklace unknown"
-pattern ADD_SIGHT = "add sight"
-pattern RING_UNKNOWN = "ring unknown"
-pattern RING_OF_OPPORTUNITY_SNIPER = "ring of opportunity sniper"
-pattern RING_OF_OPPORTUNITY_GRENADIER = "ring of opportunity grenadier"
-pattern TORSO_ARMOR = "torso armor"
-pattern ARMOR_RANGED = "armor ranged"
-pattern ARMOR_MISC = "armor misc"
-pattern STARTING_WEAPON = "starting weapon"
-pattern HAMMER_UNKNOWN = "hammer unknown"
-pattern GEM_UNKNOWN = "gem unknown"
-pattern VALUABLE = "valuable"
-pattern GEM = "gem"
-pattern CURRENCY_UNKNOWN = "currency unknown"
-pattern CLOTHING_MISC = "clothing misc"
-pattern CHIC_GEAR = "chic gear"
 
 -- * Generic items, for any epoch
 
