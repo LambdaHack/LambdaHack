@@ -11,6 +11,7 @@ import Game.LambdaHack.Core.Prelude
 import Data.Ratio
 
 import Content.PlaceKind hiding (content)
+import Content.TileKind hiding (content)
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Core.Dice
 import Game.LambdaHack.Definition.Defs
@@ -75,18 +76,18 @@ rogue = CaveKind
   , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
   , labyrinth     = False
-  , cdefTile      = "fillerWall"
+  , cdefTile      = FILLER_WALL
   , cdarkCorTile  = "floorCorridorDark"
-  , clitCorTile   = "floorCorridorLit"
-  , cwallTile     = "fillerWall"
-  , ccornerTile   = "fillerWall"
-  , cfenceTileN   = "basic outer fence"
-  , cfenceTileE   = "basic outer fence"
-  , cfenceTileS   = "basic outer fence"
-  , cfenceTileW   = "basic outer fence"
+  , clitCorTile   = FLOOR_CORRIDOR_LIT
+  , cwallTile     = FILLER_WALL
+  , ccornerTile   = FILLER_WALL
+  , cfenceTileN   = BASIC_OUTER_FENCE
+  , cfenceTileE   = BASIC_OUTER_FENCE
+  , cfenceTileS   = BASIC_OUTER_FENCE
+  , cfenceTileW   = BASIC_OUTER_FENCE
   , cfenceApart   = False
-  , clegendDarkTile = "legendDark"
-  , clegendLitTile  = "legendLit"
+  , clegendDarkTile = LEGEND_DARK
+  , clegendLitTile  = LEGEND_LIT
   , cescapeFreq   = []
   , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
                     , ("tiny staircase", 1) ]
@@ -118,9 +119,9 @@ arena = rogue
   , citemFreq     = [("common item", 20), ("treasure", 40), ("any scroll", 40)]
   , cplaceFreq    = [(ARENA, 1)]
   , cpassable     = True
-  , cdefTile      = "arenaSetLit"
-  , cdarkCorTile  = "trailLit"  -- let trails give off light
-  , clitCorTile   = "trailLit"  -- may be rolled different than the above
+  , cdefTile      = ARENA_SET_LIT
+  , cdarkCorTile  = TRAIL_LIT  -- let trails give off light
+  , clitCorTile   = TRAIL_LIT  -- may be rolled different than the above
   , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
                     , ("tiny staircase", 1) ]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
@@ -155,8 +156,8 @@ laboratory = rogue
   , citemNum      = 6 `d` 5  -- reward difficulty
   , citemFreq     = [("common item", 20), ("treasure", 40), ("explosive", 40)]
   , cplaceFreq    = [(LABORATORY, 1)]
-  , cdarkCorTile  = "labTrailLit"  -- let lab smoke give off light always
-  , clitCorTile   = "labTrailLit"
+  , cdarkCorTile  = LAB_TRAIL_LIT  -- let lab smoke give off light always
+  , clitCorTile   = LAB_TRAIL_LIT
   , cstairFreq    = [ ("walled staircase", 50), ("open staircase", 50)
                     , ("tiny staircase", 1) ]
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
@@ -185,10 +186,10 @@ noise = rogue
   , cpassable     = True
   , labyrinth     = True
   , cplaceFreq    = [(NOISE, 1)]
-  , cdefTile      = "noiseSetLit"
+  , cdefTile      = NOISE_SET_LIT
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = "damp floor Dark"
-  , clitCorTile   = "damp floor Lit"
+  , clitCorTile   = DAMP_FLOOR_LIT
   , cstairFreq    = [ ("closed staircase", 50), ("open staircase", 50)
                     , ("tiny staircase", 1) ]
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
@@ -201,7 +202,7 @@ mine = noise
   , citemFreq     = [("common item", 20), ("gem", 20)]
                       -- can't be "valuable" or template items generated
   , cplaceFreq    = [(NOISE, 1), (MINE, 99)]
-  , cdefTile      = "powerSetDark"
+  , cdefTile      = POWER_SET_DARK
   , cstairFreq    = [ ("gated closed staircase", 50)
                     , ("gated open staircase", 50)
                     , ("gated tiny staircase", 1) ]
@@ -234,9 +235,9 @@ empty = rogue
   , citemNum      = 4 `d` 5  -- few rooms and geysers are the boon
   , cplaceFreq    = [("empty", 1)]
   , cpassable     = True
-  , cdefTile      = "emptySetLit"
+  , cdefTile      = EMPTY_SET_LIT
   , cdarkCorTile  = "floorArenaDark"
-  , clitCorTile   = "floorArenaLit"
+  , clitCorTile   = FLOOR_ARENA_LIT
   , cstairFreq    = [ ("walled staircase", 20), ("closed staircase", 80)
                     , ("tiny staircase", 1) ]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
@@ -261,7 +262,7 @@ outermost = shallowRogue
   , cactorFreq    = filter ((/= "monster") . fst) $ cactorFreq rogue
   , citemNum      = 6 `d` 5  -- lure them in with loot
   , citemFreq     = filter ((/= "treasure") . fst) $ citemFreq rogue
-  , cescapeFreq   = [("escape up", 1)]
+  , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
 
@@ -284,7 +285,7 @@ raid = rogue
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
   , citemFreq     = [ ("common item", 100), ("currency", 500)
                     , ("starting weapon", 100) ]
-  , cescapeFreq   = [("escape up", 1)]
+  , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
   , cdesc         = ""
   }
@@ -311,14 +312,14 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
                     , ("torso armor", 400), ("misc armor", 200) ]
   , cplaceFreq    = [(BRAWL, 1)]
   , cpassable     = True
-  , cdefTile      = "brawlSetLit"
-  , cdarkCorTile  = "dirt Lit"
-  , clitCorTile   = "dirt Lit"
+  , cdefTile      = BRAWL_SET_LIT
+  , cdarkCorTile  = DIRT_LIT
+  , clitCorTile   = DIRT_LIT
   , cstairFreq    = []
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cdesc         = "Sunlight falls through the trees and dapples on the ground."
   }
 shootout = rogue  -- a scenario with strong missiles;
@@ -350,14 +351,14 @@ shootout = rogue  -- a scenario with strong missiles;
                       -- needs to waste initial turns to buff for the defence.
   , cplaceFreq    = [(SHOOTOUT, 1)]
   , cpassable     = True
-  , cdefTile      = "shootoutSetLit"
-  , cdarkCorTile  = "dirt Lit"
-  , clitCorTile   = "dirt Lit"
+  , cdefTile      = SHOOTOUT_SET_LIT
+  , cdarkCorTile  = DIRT_LIT
+  , clitCorTile   = DIRT_LIT
   , cstairFreq    = []
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cdesc         = ""
   }
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
@@ -380,14 +381,14 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
                     , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
   , cplaceFreq    = [(BRAWL, 50), (SHOOTOUT, 100)]
   , cpassable     = True
-  , cdefTile      = "shootoutSetLit"
-  , cdarkCorTile  = "dirt Lit"
-  , clitCorTile   = "dirt Lit"
+  , cdefTile      = SHOOTOUT_SET_LIT
+  , cdarkCorTile  = DIRT_LIT
+  , clitCorTile   = DIRT_LIT
   , cstairFreq    = []
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cdesc         = ""
   }
 escape = rogue  -- a scenario with weak missiles, because heroes don't depend
@@ -413,14 +414,14 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
                     , ("explosive", 100) ]
   , cplaceFreq    = [(ESCAPE, 1)]
   , cpassable     = True
-  , cdefTile      = "escapeSetDark"  -- unlike in ambush, tiles not burning yet
-  , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
-  , clitCorTile   = "safeTrailLit"
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
-  , cescapeFreq   = [("escape outdoor down", 1)]
+  , cdefTile      = ESCAPE_SET_DARK  -- unlike in ambush, tiles not burning yet
+  , cdarkCorTile  = SAFE_TRAIL_LIT  -- let trails give off light
+  , clitCorTile   = SAFE_TRAIL_LIT
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cstairFreq    = []
   , cdesc         = ""
   }
@@ -445,14 +446,14 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
                     , ("starting weapon", 1000) ]
   , cplaceFreq    = [(ZOO, 1)]
   , cpassable     = True
-  , cdefTile      = "zooSetDark"
-  , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
-  , clitCorTile   = "safeTrailLit"
+  , cdefTile      = ZOO_SET_DARK
+  , cdarkCorTile  = SAFE_TRAIL_LIT  -- let trails give off light
+  , clitCorTile   = SAFE_TRAIL_LIT
   , cstairFreq    = []
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cdesc         = ""
   }
 ambush = rogue  -- a scenario with strong missiles;
@@ -481,14 +482,14 @@ ambush = rogue  -- a scenario with strong missiles;
                     , ("any arrow", 400), ("harpoon", 300), ("explosive", 50) ]
   , cplaceFreq    = [(AMBUSH, 1)]
   , cpassable     = True
-  , cdefTile      = "ambushSetDark"
-  , cdarkCorTile  = "trailLit"  -- let trails give off light
-  , clitCorTile   = "trailLit"
+  , cdefTile      = AMBUSH_SET_DARK
+  , cdarkCorTile  = TRAIL_LIT  -- let trails give off light
+  , clitCorTile   = TRAIL_LIT
   , cstairFreq    = []
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cdesc         = ""
   }
 
@@ -514,13 +515,13 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , citemFreq     = [("common item", 100), ("light source", 200)]
   , cplaceFreq    = [(BATTLE, 50), (ROGUE, 50)]
   , cpassable     = True
-  , cdefTile      = "battleSetDark"
-  , cdarkCorTile  = "safeTrailLit"  -- let trails give off light
-  , clitCorTile   = "safeTrailLit"
-  , cfenceTileN   = "outdoor outer fence"
-  , cfenceTileE   = "outdoor outer fence"
-  , cfenceTileS   = "outdoor outer fence"
-  , cfenceTileW   = "outdoor outer fence"
+  , cdefTile      = BATTLE_SET_DARK
+  , cdarkCorTile  = SAFE_TRAIL_LIT  -- let trails give off light
+  , clitCorTile   = SAFE_TRAIL_LIT
+  , cfenceTileN   = OUTDOOR_OUTER_FENCE
+  , cfenceTileE   = OUTDOOR_OUTER_FENCE
+  , cfenceTileS   = OUTDOOR_OUTER_FENCE
+  , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cstairFreq    = []
   , cdesc         = ""
@@ -549,7 +550,7 @@ safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   { cname         = "Jungle in flames"
   , cfreq         = [(CAVE_SAFARI_3, 1)]
   , cminPlaceSize = DiceXY 5 4
-  , cescapeFreq   = [("escape outdoor down", 1)]
+  , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cextraStairs  = 1
   , cstairFreq    = [ ("outdoor walled staircase", 20)
                     , ("outdoor closed staircase", 80)

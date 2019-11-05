@@ -1,7 +1,7 @@
 -- | Room, hall and passage definitions.
 module Content.PlaceKind
   ( -- * Group name patterns
-    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern ESCAPE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_OUTDOOR_DOWN, pattern TINY_STARCASE, pattern OPEN_STARCASE, pattern CLOSED_STARCASE, pattern WALLED_STARCASE
+    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STARCASE, pattern OPEN_STARCASE, pattern CLOSED_STARCASE, pattern WALLED_STARCASE
   , -- * Content
     content
   ) where
@@ -12,13 +12,14 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
+import Content.TileKind hiding (content)
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, ESCAPE_DOWN, ESCAPE_UP, ESCAPE_OUTDOOR_DOWN, TINY_STARCASE, OPEN_STARCASE, CLOSED_STARCASE, WALLED_STARCASE :: GroupName PlaceKind
+pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STARCASE, OPEN_STARCASE, CLOSED_STARCASE, WALLED_STARCASE :: GroupName PlaceKind
 
 pattern ROGUE = "rogue"
 pattern LABORATORY = "laboratory"
@@ -31,9 +32,9 @@ pattern AMBUSH = "ambush"
 pattern BATTLE = "battle"
 pattern NOISE = "noise"
 pattern MINE = "mine"
-pattern ESCAPE_DOWN = "escape down"
-pattern ESCAPE_UP = "escape up"
-pattern ESCAPE_OUTDOOR_DOWN = "escape outdoor down"
+pattern INDOOR_ESCAPE_DOWN = "escape down"
+pattern INDOOR_ESCAPE_UP = "escape up"
+pattern OUTDOOR_ESCAPE_DOWN = "outdoor escape route"
 pattern TINY_STARCASE = "tiny staircase"
 pattern OPEN_STARCASE = "open staircase"
 pattern CLOSED_STARCASE = "closed staircase"
@@ -105,10 +106,10 @@ rect2 = rect
 rect3 = rect
   { pname    = "a shed"
   , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
-  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
-                    , ('-', "wallH Lit") ]
-  , poverrideLit = [ ('|', "wall Lit")
-                   , ('-', "wallH Lit") ]
+  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
+                    , ('-', WALL_H_LIT) ]
+  , poverrideLit = [ ('|', WALL_LIT)
+                   , ('-', WALL_H_LIT) ]
   }
 rect4 = rect3
   { pname    = "cabinet"
@@ -126,8 +127,8 @@ rectWindows = PlaceKind
                ]
   , poverrideDark = [ ('=', "rectWindowsOver_=_Dark")
                     , ('!', "rectWindowsOver_!_Dark") ]
-  , poverrideLit = [ ('=', "rectWindowsOver_=_Lit")
-                   , ('!', "rectWindowsOver_!_Lit") ]
+  , poverrideLit = [ ('=', RECT_WINDOWS_OVER_EQ_LIT)
+                   , ('!', RECT_WINDOWS_OVER_EXCL_LIT) ]
   }
 glasshouse = PlaceKind
   { psymbol  = 'g'
@@ -139,18 +140,18 @@ glasshouse = PlaceKind
   , ptopLeft = [ "=="
                , "!·"
                ]
-  , poverrideDark = [ ('=', "glasshouseOver_=_Lit")  -- visible from afar
-                    , ('!', "glasshouseOver_!_Lit") ]
-  , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
-                   , ('!', "glasshouseOver_!_Lit") ]
+  , poverrideDark = [ ('=', GLASSHOURSE_OVER_EQ_LIT)  -- visible from afar
+                    , ('!', GLASSHOURSE_OVER_EXCL_LIT) ]
+  , poverrideLit = [ ('=', GLASSHOURSE_OVER_EQ_LIT)
+                   , ('!', GLASSHOURSE_OVER_EXCL_LIT) ]
   }
 glasshouse2 = glasshouse
   { pname    = "a glass cage"
   , pfreq    = [(ZOO, 10)]
   , poverrideDark = [ ('=', "glasshouseOver_=_Dark")
                     , ('!', "glasshouseOver_!_Dark") ]
-  , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
-                   , ('!', "glasshouseOver_!_Lit") ]
+  , poverrideLit = [ ('=', GLASSHOURSE_OVER_EQ_LIT)
+                   , ('!', GLASSHOURSE_OVER_EXCL_LIT) ]
   }
 glasshouse3 = glasshouse
   { pname    = "a reading room"
@@ -167,12 +168,12 @@ pulpit = PlaceKind
                , "!··"
                , "··0"
                ]
-  , poverrideDark = [ ('=', "glasshouseOver_=_Lit")
-                    , ('!', "glasshouseOver_!_Lit")
-                    , ('0', "pulpit") ]
-  , poverrideLit = [ ('=', "glasshouseOver_=_Lit")
-                   , ('!', "glasshouseOver_!_Lit")
-                   , ('0', "pulpit") ]
+  , poverrideDark = [ ('=', GLASSHOURSE_OVER_EQ_LIT)
+                    , ('!', GLASSHOURSE_OVER_EXCL_LIT)
+                    , ('0', PULPIT) ]
+  , poverrideLit = [ ('=', GLASSHOURSE_OVER_EQ_LIT)
+                   , ('!', GLASSHOURSE_OVER_EXCL_LIT)
+                   , ('0', PULPIT) ]
       -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
@@ -191,10 +192,10 @@ ruin = PlaceKind
 ruin2 = ruin
   { pname    = "blasted walls"
   , pfreq    = [(AMBUSH, 50)]
-  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
-                    , ('-', "wallH Lit") ]
-  , poverrideLit = [ ('|', "wall Lit")
-                   , ('-', "wallH Lit") ]
+  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
+                    , ('-', WALL_H_LIT) ]
+  , poverrideLit = [ ('|', WALL_LIT)
+                   , ('-', WALL_H_LIT) ]
   }
 collapsed = PlaceKind
   { psymbol  = 'c'
@@ -291,8 +292,8 @@ pillar4 = pillar
                , "|0·0·"
                , "|····"
                ]
-  , poverrideDark = [('&', "cache")]
-  , poverrideLit = [('&', "cache")]
+  , poverrideDark = [('&', CACHE)]
+  , poverrideLit = [('&', CACHE)]
   }
 pillar5 = pillar
   { pname    = "a decorated hall"
@@ -303,8 +304,8 @@ pillar5 = pillar
                , "|0···"
                , "|····"
                ]
-  , poverrideDark = [('&', "cache")]
-  , poverrideLit = [('&', "cache")]
+  , poverrideDark = [('&', CACHE)]
+  , poverrideLit = [('&', CACHE)]
   }
 colonnade = PlaceKind
   { psymbol  = 'c'
@@ -365,8 +366,8 @@ lampPost = PlaceKind
                , "·0·"
                , "X·X"
                ]
-  , poverrideDark = [('0', "lampPostOver_0"), ('·', "floorActorLit")]
-  , poverrideLit = [('0', "lampPostOver_0"), ('·', "floorActorLit")]
+  , poverrideDark = [('0', LAMP_POST_OVER_0), ('·', FLOOR_ACTOR_LIT)]
+  , poverrideLit = [('0', LAMP_POST_OVER_0), ('·', FLOOR_ACTOR_LIT)]
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
@@ -406,10 +407,10 @@ treeShade = PlaceKind
                ]
   , poverrideDark = [ ('0', "treeShadeOver_0_Dark")
                     , ('s', "treeShadeOver_s_Dark")
-                    , ('·', "shaded ground") ]
-  , poverrideLit = [ ('0', "treeShadeOver_0_Lit")
+                    , ('·', SHADED_GROUND) ]
+  , poverrideLit = [ ('0', TREE_SHADOW_OVER_0_LIT)
                    , ('s', "treeShadeOver_s_Lit")
-                   , ('·', "shaded ground") ]
+                   , ('·', SHADED_GROUND) ]
   }
 fogClump = PlaceKind
   { psymbol  = 'f'
@@ -422,8 +423,8 @@ fogClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [('f', "fogClumpOver_f_Dark"), (';', "fog Lit")]
-  , poverrideLit = [('f', "fogClumpOver_f_Lit"), (';', "fog Lit")]
+  , poverrideDark = [('f', FOG_CLUMP_OVER_f_DARK), (';', FOG_LIT)]
+  , poverrideLit = [('f', FOG_CLUMP_OVER_f_LIT), (';', FOG_LIT)]
   }
 fogClump2 = fogClump
   { pfreq    = [(SHOOTOUT, 500), ("empty", 50)]
@@ -444,10 +445,10 @@ smokeClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [ ('f', "smokeClumpOver_f_Dark"), (';', "smoke Lit")
+  , poverrideDark = [ ('f', SMOKE_CLUMP_OVER_f_DARK), (';', SMOKE_LIT)
                     , ('·', "floorActorDark") ]
-  , poverrideLit = [ ('f', "smokeClumpOver_f_Lit"), (';', "smoke Lit")
-                   , ('·', "floorActorLit") ]
+  , poverrideLit = [ ('f', SMOKE_CLUMP_OVER_f_LIT), (';', SMOKE_LIT)
+                   , ('·', FLOOR_ACTOR_LIT) ]
   }
 smokeClump2 = smokeClump
   { pfreq    = [(ZOO, 500)]
@@ -482,27 +483,27 @@ bushClump = PlaceKind
                , ";X"  -- one sure exit needed not to block a corner
                , ";f"
                ]
-  , poverrideDark = [('f', "bushClumpOver_f_Dark"), (';', "bush Lit")]
-  , poverrideLit = [('f', "bushClumpOver_f_Lit"), (';', "bush Lit")]
+  , poverrideDark = [('f', "bushClumpOver_f_Dark"), (';', BUDH_LIT)]
+  , poverrideLit = [('f', BUSH_CLUMP_OVER_f_LIT), (';', BUDH_LIT)]
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
 escapeDown = PlaceKind
   { psymbol  = '>'
   , pname    = "an escape down"
-  , pfreq    = [(ESCAPE_DOWN, 1)]
+  , pfreq    = [(INDOOR_ESCAPE_DOWN, 1)]
   , prarity  = [(1, 1)]
   , pcover   = CVerbatim
   , pfence   = FGround
   , ptopLeft = [ ">"
                ]
-  , poverrideDark = [ ('|', "wall Lit")  -- visible from afar
-                    , ('-', "wallH Lit") ]
-  , poverrideLit = [ ('|', "wall Lit")
-                   , ('-', "wallH Lit") ]
+  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
+                    , ('-', WALL_H_LIT) ]
+  , poverrideLit = [ ('|', WALL_LIT)
+                   , ('-', WALL_H_LIT) ]
   }
 escapeDown2 = escapeDown
-  { pfreq    = [(ESCAPE_DOWN, 1000)]
+  { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
   , pfence   = FFloor
   , ptopLeft = [ "0·0"
                , "·>·"
@@ -510,7 +511,7 @@ escapeDown2 = escapeDown
                ]
   }
 escapeDown3 = escapeDown
-  { pfreq    = [(ESCAPE_DOWN, 2000)]
+  { pfreq    = [(INDOOR_ESCAPE_DOWN, 2000)]
   , pfence   = FNone
   , ptopLeft = [ "-----"
                , "|0·0|"
@@ -520,7 +521,7 @@ escapeDown3 = escapeDown
                ]
   }
 escapeDown4 = escapeDown
-  { pfreq    = [(ESCAPE_DOWN, 1000)]
+  { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
   , pcover   = CMirror
   , pfence   = FFloor
   , ptopLeft = [ "0··"
@@ -529,7 +530,7 @@ escapeDown4 = escapeDown
                ]
   }
 escapeDown5 = escapeDown
-  { pfreq    = [(ESCAPE_DOWN, 2000)]
+  { pfreq    = [(INDOOR_ESCAPE_DOWN, 2000)]
   , pcover   = CMirror
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -548,12 +549,12 @@ staircase = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ "<·>"
                ]
-  , poverrideDark = [ ('<', "staircase up"), ('>', "staircase down")
-                    , ('I', "signboard")
-                    , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
-  , poverrideLit = [ ('<', "staircase up"), ('>', "staircase down")
-                   , ('I', "signboard")
-                   , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- seen from afar
+  , poverrideDark = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
+                    , ('I', SIGNBOARD)
+                    , ('|', WALL_LIT), ('-', WALL_H_LIT) ]  -- seen from afar
+  , poverrideLit = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
+                   , ('I', SIGNBOARD)
+                   , ('|', WALL_LIT), ('-', WALL_H_LIT) ]  -- seen from afar
   }
 staircase1 = staircase
   { prarity  = [(1, 1)]  -- no cover when arriving; so low rarity
@@ -932,9 +933,9 @@ switchStaircaseToUp s = s
  , pname     = pname s <+> "up"
  , pfreq     = map (\(t, k) -> (toGroupName $ fromGroupName t <+> "up", k))
                $ pfreq s
- , poverrideDark = ('>', "stair terminal Dark")
+ , poverrideDark = ('>', STAIR_TERMINAL_DARK)
                    : filter ((/= '>') . fst) (poverrideDark s)
- , poverrideLit = ('>', "stair terminal Lit")
+ , poverrideLit = ('>', STAIR_TERMINAL_LIT)
                   : filter ((/= '>') . fst) (poverrideLit s)
  }
 
@@ -944,17 +945,17 @@ switchStaircaseToDown s = s
  , pname     = pname s <+> "down"
  , pfreq     = map (\(t, k) -> (toGroupName $ fromGroupName t <+> "down", k))
                $ pfreq s
- , poverrideDark = ('<', "stair terminal Dark")
+ , poverrideDark = ('<', STAIR_TERMINAL_DARK)
                    : filter ((/= '<') . fst) (poverrideDark s)
- , poverrideLit = ('<', "stair terminal Lit")
+ , poverrideLit = ('<', STAIR_TERMINAL_LIT)
                   : filter ((/= '<') . fst) (poverrideLit s)
  }
 
 overrideGated :: [(Char, GroupName TileKind)]
 overrideGated =
-  [ ('<', "gated staircase up"), ('>', "gated staircase down")
-  , ('I', "signboard")
-  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
+  [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
+  , ('I', SIGNBOARD)
+  , ('|', WALL_LIT), ('-', WALL_H_LIT) ]  -- visible from afar
 
 switchStaircaseToGated :: PlaceKind -> PlaceKind
 switchStaircaseToGated s = s
@@ -968,9 +969,9 @@ switchStaircaseToGated s = s
 
 overrideOutdoor :: [(Char, GroupName TileKind)]
 overrideOutdoor =
-  [ ('<', "staircase outdoor up"), ('>', "staircase outdoor down")
-  , ('I', "signboard")
-  , ('|', "wall Lit"), ('-', "wallH Lit") ]  -- visible from afar
+  [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
+  , ('I', SIGNBOARD)
+  , ('|', WALL_LIT), ('-', WALL_H_LIT) ]  -- visible from afar
 
 switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
 switchStaircaseToOutdoor s = s
@@ -986,15 +987,15 @@ switchEscapeToUp :: PlaceKind -> PlaceKind
 switchEscapeToUp s = s
  { psymbol   = '<'
  , pname     = "an escape up"
- , pfreq     = map (\(_, n) -> (ESCAPE_UP, n)) $ pfreq s
- , poverrideDark = ('>', "escape up") : poverrideDark s
- , poverrideLit = ('>', "escape up") : poverrideLit s
+ , pfreq     = map (\(_, n) -> (INDOOR_ESCAPE_UP, n)) $ pfreq s
+ , poverrideDark = ('>', ESCAPE_UP) : poverrideDark s
+ , poverrideLit = ('>', ESCAPE_UP) : poverrideLit s
  }
 
 switchEscapeToOutdoorDown :: PlaceKind -> PlaceKind
 switchEscapeToOutdoorDown s = s
  { pname     = "outdoor escape route"
- , pfreq     = map (\(_, n) -> (ESCAPE_OUTDOOR_DOWN, n)) $ pfreq s
- , poverrideDark = ('>', "escape outdoor down") : poverrideDark s
- , poverrideLit = ('>', "escape outdoor down") : poverrideLit s
+ , pfreq     = map (\(_, n) -> (OUTDOOR_ESCAPE_DOWN, n)) $ pfreq s
+ , poverrideDark = ('>', ESCAPE_OUTDOOR_DOWN) : poverrideDark s
+ , poverrideLit = ('>', ESCAPE_OUTDOOR_DOWN) : poverrideLit s
  }
