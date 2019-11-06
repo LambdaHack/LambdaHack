@@ -493,8 +493,8 @@ bushClump = PlaceKind
                , ";X"  -- one sure exit needed not to block a corner
                , ";f"
                ]
-  , poverrideDark = [('f', BUSH_CLUMP_OVER_f_DARK), (';', BUDH_LIT)]
-  , poverrideLit = [('f', BUSH_CLUMP_OVER_f_LIT), (';', BUDH_LIT)]
+  , poverrideDark = [('f', BUSH_CLUMP_OVER_f_DARK), (';', BUSH_LIT)]
+  , poverrideLit = [('f', BUSH_CLUMP_OVER_f_LIT), (';', BUSH_LIT)]
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
