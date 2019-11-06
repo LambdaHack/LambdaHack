@@ -341,7 +341,7 @@ lectern = ItemKind
                        , Detect DetectAll 20
                        , toOrganBad DEFENSELESS $ (1 `dL` 6) * 10
                        , toOrganGood DRUNK (20 + 1 `d` 5) ]
-               , Explode PHD_DEFENSE_QUESTION ]
+               , Explode VULNERABILITY_BALM ]
   , idesc    = "A dark wood stand, where strange priests once preached."
   , ikit     = []
   }
