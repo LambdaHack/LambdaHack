@@ -158,12 +158,19 @@ boostRandItemP =
 
 gameModeP :: Parser (Maybe (GroupName ModeKind))
 gameModeP = optional $ toGameMode <$>
-  strOption (  long "gameMode"
+  option nonEmptyStr
+         (  long "gameMode"
             <> metavar "MODE"
             <> help "Start next game in the scenario indicated by MODE" )
  where
+  -- This ignores all but the first word of a game mode name
+  -- and assumes the fist word is present among its frequencies.
   toGameMode :: String -> GroupName ModeKind
-  toGameMode = GroupName . T.pack
+  toGameMode = GroupName . head . T.words . T.pack
+  nonEmptyStr :: ReadM String
+  nonEmptyStr = eitherReader $ \s -> case s of
+    "" -> Left "name of game mode cannot be empty"
+    ns -> Right ns
 
 automateAllP :: Parser Bool
 automateAllP =
