@@ -390,7 +390,7 @@ skunk = ItemKind
   , idesc    = "Its only defence is the terrible stench."
   , ikit     = [ (SCENT_GLAND, COrgan)
                , (SMALL_CLAW, COrgan), (SNOUT, COrgan)
-               , (EYE_3, COrgan), (EYE_6, COrgan)
+               , (EYE_3, COrgan), (EAR_6, COrgan)
                , (ANIMAL_BRAIN, COrgan) ]
   }
 armadillo = ItemKind
