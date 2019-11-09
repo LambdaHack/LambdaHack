@@ -425,7 +425,7 @@ flask5 = flaskTemplate
   , ieffects = [ toOrganBad DEFENSELESS (20 + 1 `d` 5)
                , Impress
                , Detect DetectExit 20
-               , OnSmash (Explode VULNERABILITY_BALM) ]
+               , OnSmash (Explode DEFENSELESSNESS_RUNOUT) ]
   }
 flask6 = flaskTemplate
   { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_VIAL, 100)]
@@ -604,7 +604,7 @@ potion5 = potionTemplate
                                 , Explode SPARSE_SHOWER
                                 , Explode MELEE_PROTECTIVE_BALM
                                 , Explode RANGE_PROTECTIVE_BALM
-                                , Explode VULNERABILITY_BALM ]) ]
+                                , Explode DEFENSELESSNESS_RUNOUT ]) ]
   }
 potion6 = potionTemplate
   -- needs to be common to show at least a portion of effects
