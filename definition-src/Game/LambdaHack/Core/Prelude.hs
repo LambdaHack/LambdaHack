@@ -18,8 +18,8 @@ module Game.LambdaHack.Core.Prelude
 
 import Prelude ()
 
-import Prelude.Compat hiding (appendFile, length, null, readFile, sum,
-                       writeFile, (<>))
+import Prelude.Compat hiding (appendFile, foldl, foldl1, length, null, readFile,
+                       sum, writeFile, (<>))
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
@@ -34,7 +34,7 @@ import qualified Data.Fixed as Fixed
 import           Data.Hashable
 import qualified Data.HashMap.Strict as HM
 import           Data.Key
-import           Data.List.Compat hiding (length, null, sum)
+import           Data.List.Compat hiding (foldl, foldl1, length, null, sum)
 import qualified Data.List.Compat as List
 import           Data.Maybe
 import           Data.Semigroup.Compat (Semigroup ((<>)))
