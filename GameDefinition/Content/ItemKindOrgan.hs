@@ -1,7 +1,7 @@
 -- | Actor organ definitions.
 module Content.ItemKindOrgan
   ( -- * Group name patterns
-    pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL, pattern SCAVENGER, pattern EYE_3, pattern EYE_6, pattern EYE_8, pattern VISION_6, pattern VISION_12, pattern VISION_16, pattern EAR_3, pattern EAR_6, pattern EAR_8, pattern SPEED_GLAND_5, pattern SPEED_GLAND_10
+    pattern FIST, pattern FOOT, pattern HOOKED_CLAW, pattern SMALL_CLAW, pattern SNOUT, pattern SMALL_JAW, pattern JAW, pattern LARGE_JAW, pattern ANTLER, pattern HORN, pattern RHINO_HORN, pattern TENTACLE, pattern THORN, pattern BOILING_FISSURE, pattern ARSENIC_FISSURE, pattern SULFUR_FISSURE, pattern BEE_STING, pattern STING, pattern VENOM_TOOTH, pattern VENOM_FANG, pattern SCREECHING_BEAK, pattern LARGE_TAIL, pattern HUGE_TAIL, pattern ARMORED_SKIN, pattern BARK, pattern NOSTRIL, pattern RATLLE, pattern INSECT_MORTALITY, pattern SAPIENT_BRAIN, pattern ANIMAL_BRAIN, pattern SCENT_GLAND, pattern BOILING_VENT, pattern ARSENIC_VENT, pattern SULFUR_VENT, pattern SCAVENGER, pattern EYE_3, pattern EYE_6, pattern EYE_8, pattern VISION_6, pattern VISION_12, pattern VISION_16, pattern EAR_3, pattern EAR_6, pattern EAR_8, pattern SPEED_GLAND_5, pattern SPEED_GLAND_10, pattern TOOTH, pattern LASH, pattern NOSE_TIP, pattern LIP, pattern RIGHT_TORSION, pattern LEFT_TORSION, pattern PUPIL
   , -- * Content
     organs
   ) where
@@ -21,7 +21,7 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern FIST, FOOT, HOOKED_CLAW, SMALL_CLAW, SNOUT, SMALL_JAW, JAW, LARGE_JAW, ANTLER, HORN, RHINO_HORN, TENTACLE, THORN, BOILING_FISSURE, ARSENIC_FISSURE, SULFUR_FISSURE, BEE_STING, STING, VENOM_TOOTH, VENOM_FANG, SCREECHING_BEAK, LARGE_TAIL, HUGE_TAIL, ARMORED_SKIN, BARK, NOSTRIL, RATLLE, INSECT_MORTALITY, SAPIENT_BRAIN, ANIMAL_BRAIN, SCENT_GLAND, BOILING_VENT, ARSENIC_VENT, SULFUR_VENT, TOOTH, LASH, NOSE_TIP, LIP, RIGHT_TORSION, LEFT_TORSION, PUPIL, SCAVENGER, EYE_3, EYE_6, EYE_8, VISION_6, VISION_12, VISION_16, EAR_3, EAR_6, EAR_8, SPEED_GLAND_5, SPEED_GLAND_10 :: GroupName ItemKind
+pattern FIST, FOOT, HOOKED_CLAW, SMALL_CLAW, SNOUT, SMALL_JAW, JAW, LARGE_JAW, ANTLER, HORN, RHINO_HORN, TENTACLE, THORN, BOILING_FISSURE, ARSENIC_FISSURE, SULFUR_FISSURE, BEE_STING, STING, VENOM_TOOTH, VENOM_FANG, SCREECHING_BEAK, LARGE_TAIL, HUGE_TAIL, ARMORED_SKIN, BARK, NOSTRIL, RATLLE, INSECT_MORTALITY, SAPIENT_BRAIN, ANIMAL_BRAIN, SCENT_GLAND, BOILING_VENT, ARSENIC_VENT, SULFUR_VENT, SCAVENGER, EYE_3, EYE_6, EYE_8, VISION_6, VISION_12, VISION_16, EAR_3, EAR_6, EAR_8, SPEED_GLAND_5, SPEED_GLAND_10, TOOTH, LASH, NOSE_TIP, LIP, RIGHT_TORSION, LEFT_TORSION, PUPIL :: GroupName ItemKind
 
 pattern FIST = GroupName "fist"
 pattern FOOT = GroupName "foot"
@@ -57,13 +57,6 @@ pattern SCENT_GLAND = GroupName "scent gland"
 pattern BOILING_VENT = GroupName "boiling vent"
 pattern ARSENIC_VENT = GroupName "arsenic vent"
 pattern SULFUR_VENT = GroupName "sulfur vent"
-pattern TOOTH = GroupName "tooth"
-pattern LASH = GroupName "lash"
-pattern NOSE_TIP = GroupName "nose tip"
-pattern LIP = GroupName "lip"
-pattern RIGHT_TORSION = GroupName "right torsion"
-pattern LEFT_TORSION = GroupName "left torsion"
-pattern PUPIL = GroupName "pupil"
 pattern SCAVENGER = GroupName "scavenger"
 pattern EYE_3 = GroupName "eye 3"
 pattern EYE_6 = GroupName "eye 6"
@@ -76,6 +69,15 @@ pattern EAR_6 = GroupName "ear 6"
 pattern EAR_8 = GroupName "ear 8"
 pattern SPEED_GLAND_5 = GroupName "speed gland 5"
 pattern SPEED_GLAND_10 = GroupName "speed gland 10"
+
+-- * LH-specific
+pattern TOOTH = GroupName "tooth"
+pattern LASH = GroupName "lash"
+pattern NOSE_TIP = GroupName "nose tip"
+pattern LIP = GroupName "lip"
+pattern RIGHT_TORSION = GroupName "right torsion"
+pattern LEFT_TORSION = GroupName "left torsion"
+pattern PUPIL = GroupName "pupil"
 
 -- * Content
 
