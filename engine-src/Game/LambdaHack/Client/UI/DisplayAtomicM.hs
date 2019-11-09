@@ -958,7 +958,7 @@ quitFactionUI fid toSt manalytics = do
           Just sp1 -> do
             factionD <- getsState sfactionD
             itemToF <- getsState $ flip itemToFull
-            let getTrunkFull (_, b) = itemToF $ btrunk b
+            let getTrunkFull (aid, b) = (aid, itemToF $ btrunk b)
             ourTrunks <- getsState $ map getTrunkFull
                                      . fidActorNotProjGlobalAssocs side
             let smartFaction fact2 = fleaderMode (gplayer fact2) /= LeaderNull
@@ -968,17 +968,23 @@ quitFactionUI fid toSt manalytics = do
                   let possible =
                         possibleActorFactions (itemKind trunkFull) factionD
                   in not (canBeOurFaction possible) && canBeSmart possible
-                smartEnemyOurs = filter smartEnemy ourTrunks
+                smartEnemiesOurs = filter (smartEnemy . snd) ourTrunks
                 uniqueActor trunkFull = IA.checkFlag Ability.Unique
                                         $ aspectRecordFull trunkFull
-                smartUniqueEnemyCaptured = any uniqueActor smartEnemyOurs
-                smartEnemyCaptured = not $ null smartEnemyOurs
-                won = maybe False ((`elem` [Conquer, Escape]) . stOutcome) toSt
+                uniqueEnemiesOurs = filter (uniqueActor . snd) smartEnemiesOurs
+                smartUniqueEnemyCaptured = not $ null uniqueEnemiesOurs
+                smartEnemyCaptured = not $ null smartEnemiesOurs
+            smartEnemySentence <- case uniqueEnemiesOurs ++ smartEnemiesOurs of
+              [] -> return ""
+              (enemyAid, _) : _ -> do
+                bUI <- getsSession $ getActorUI enemyAid
+                return $! makePhrase [MU.Capitalize (partActor bUI)] <> "?"
+            let won = maybe False ((`elem` [Conquer, Escape]) . stOutcome) toSt
                 sp2 | not won = ""
                     | smartUniqueEnemyCaptured =
-                  "\nOh, wait, who is this, towering behind your escaping crew? This changes everything. For everybody. Everywhere. Forever. Did you plan for this? What was exactly the idea and who decided to carry it through?"
+                  "\nOh, wait, who is this, towering behind your escaping crew?" <+> smartEnemySentence <+> "This changes everything. For everybody. Everywhere. Forever. Did you plan for this? Are you sure it was your idea? What happens now and are things under your control any more?"
                     | smartEnemyCaptured =
-                  "\nOh, wait, who is this, hunched among your escaping crew? Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again. How will you play that move?"
+                  "\nOh, wait, who is this, hunched among your escaping crew?" <+> smartEnemySentence <+> "Suddenly, this makes your crazy story credible. Suddenly, the door of knowledge opens again. How will you play that move?"
                     | otherwise = ""
             msgAdd MsgPlot $ sp1 <> sp2
             void $ displaySpaceEsc ColorFull ""

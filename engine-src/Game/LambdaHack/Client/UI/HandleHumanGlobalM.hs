@@ -998,7 +998,7 @@ verifyEscape = do
                | total == 0 =
                  "Afraid of the challenge? Leaving so soon and without any treasure? Are you sure?"
                | total < dungeonTotal =
-                 "You finally found the way out, but still more valuables are rumoured to hide around here. Really leave already?"
+                 "You've finally found the way out, but you didn't gather all valuables rumoured to be laying around. Really leave already?"
                | otherwise =
                  "This is the way out and you collected all treasure there is to find. Really leave now?"
     -- The player can back off, but we never insist,
