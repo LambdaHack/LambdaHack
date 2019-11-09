@@ -1,7 +1,8 @@
 -- | Room, hall and passage definitions.
 module Content.PlaceKind
   ( -- * Group name patterns
-    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STAIRCASE, pattern OPEN_STAIRCASE, pattern CLOSED_STAIRCASE, pattern WALLED_STAIRCASE, pattern EMPTY, pattern GATED_TINY_STAIRCASE, pattern GATED_OPEN_STAIRCASE, pattern GATED_CLOSED_STAIRCASE, pattern OUTDOOR_TINY_STAIRCASE, pattern OUTDOOR_CLOSED_STAIRCASE, pattern OUTDOOR_WALLED_STAIRCASE
+    pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
+  , pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STAIRCASE, pattern OPEN_STAIRCASE, pattern CLOSED_STAIRCASE, pattern WALLED_STAIRCASE, pattern GATED_TINY_STAIRCASE, pattern GATED_OPEN_STAIRCASE, pattern GATED_CLOSED_STAIRCASE, pattern OUTDOOR_TINY_STAIRCASE, pattern OUTDOOR_CLOSED_STAIRCASE, pattern OUTDOOR_WALLED_STAIRCASE
   , -- * Content
     content
   ) where
@@ -19,7 +20,9 @@ import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE, EMPTY, GATED_TINY_STAIRCASE, GATED_OPEN_STAIRCASE, GATED_CLOSED_STAIRCASE, OUTDOOR_TINY_STAIRCASE, OUTDOOR_CLOSED_STAIRCASE, OUTDOOR_WALLED_STAIRCASE :: GroupName PlaceKind
+pattern ROGUE, LABORATORY, ZOO, BRAWL, SHOOTOUT, ARENA, ESCAPE, AMBUSH, BATTLE, NOISE, MINE, EMPTY :: GroupName PlaceKind
+
+pattern INDOOR_ESCAPE_DOWN, INDOOR_ESCAPE_UP, OUTDOOR_ESCAPE_DOWN, TINY_STAIRCASE, OPEN_STAIRCASE, CLOSED_STAIRCASE, WALLED_STAIRCASE, GATED_TINY_STAIRCASE, GATED_OPEN_STAIRCASE, GATED_CLOSED_STAIRCASE, OUTDOOR_TINY_STAIRCASE, OUTDOOR_CLOSED_STAIRCASE, OUTDOOR_WALLED_STAIRCASE :: GroupName PlaceKind
 
 pattern ROGUE = GroupName "rogue"
 pattern LABORATORY = GroupName "laboratory"
@@ -32,6 +35,8 @@ pattern AMBUSH = GroupName "ambush"
 pattern BATTLE = GroupName "battle"
 pattern NOISE = GroupName "noise"
 pattern MINE = GroupName "mine"
+pattern EMPTY = GroupName "empty"
+
 pattern INDOOR_ESCAPE_DOWN = GroupName "escape down"
 pattern INDOOR_ESCAPE_UP = GroupName "escape up"
 pattern OUTDOOR_ESCAPE_DOWN = GroupName "outdoor escape route"
@@ -39,7 +44,6 @@ pattern TINY_STAIRCASE = GroupName "tiny staircase"
 pattern OPEN_STAIRCASE = GroupName "open staircase"
 pattern CLOSED_STAIRCASE = GroupName "closed staircase"
 pattern WALLED_STAIRCASE = GroupName "walled staircase"
-pattern EMPTY = GroupName "empty"
 
 -- This is a rotten compromise, because these are synthesized below,
 -- so typos can happen.
