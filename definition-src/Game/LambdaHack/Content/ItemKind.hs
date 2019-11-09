@@ -39,17 +39,18 @@ import           Game.LambdaHack.Definition.Flavour
 
 -- * Mandatory item groups
 
-pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
 hardwiredGroups :: [GroupName ItemKind]
 hardwiredGroups =
        [CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE]
 
--- From Preferences.hs.
+pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
+
+-- From Preferences.hs
 
 pattern CONDITION = GroupName "condition"
 pattern COMMON_ITEM = GroupName "common item"
 
--- Assorted.
+-- Assorted
 
 pattern BONUS_HP = GroupName "bonus HP"
 pattern BRACED = GroupName "braced"
@@ -58,9 +59,12 @@ pattern IMPRESSED = GroupName "impressed"
 pattern CURRENCY = GroupName "currency"
 pattern MOBILE = GroupName "mobile"
 
--- * Optional item groups, used in "Preferences".
+-- * Optional item groups
 
 pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_VIAL, POTION, EXPLOSIVE, ANY_JEWELRY, SINGLE_SPARK, FRAGRANCE :: GroupName ItemKind
+
+-- Used in Preferences.hs
+
 pattern CURIOUS_ITEM = GroupName "curious item"
 pattern TREASURE = GroupName "treasure"
 pattern ANY_SCROLL = GroupName "any scroll"
@@ -71,7 +75,7 @@ pattern ANY_JEWELRY = GroupName "any jewelry"
 pattern SINGLE_SPARK = GroupName "single spark"
 pattern FRAGRANCE = GroupName "fragrance"
 
--- * Used elsewhere.
+-- * Used elsewhere
 
 pattern HORROR, VALUABLE, UNREPORTED_INVENTORY, AQUATIC :: GroupName ItemKind
 pattern HORROR = GroupName "horror"

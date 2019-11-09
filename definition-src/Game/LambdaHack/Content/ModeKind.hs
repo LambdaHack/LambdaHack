@@ -225,10 +225,11 @@ validateAll cocave coitem content comode =
      ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
         | not $ null hardwiredAbsent ]
 
-pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
 hardwiredGroups :: [GroupName ModeKind]
-hardwiredGroups = [CAMPAIGN_SCENARIO, INSERT_COIN]
+hardwiredGroups =
+       [CAMPAIGN_SCENARIO, INSERT_COIN]
 
+pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
 pattern CAMPAIGN_SCENARIO = GroupName "campaign scenario"
 pattern INSERT_COIN = GroupName "insert coin"
 

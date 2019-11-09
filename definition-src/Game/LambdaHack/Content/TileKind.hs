@@ -204,11 +204,11 @@ validateAll coitem content cotile =
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
-pattern UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE :: GroupName TileKind
 hardwiredGroups :: [GroupName TileKind]
 hardwiredGroups =
-  [ UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE
-  , BASIC_OUTER_FENCE ]
+       [UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE]
+
+pattern UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE :: GroupName TileKind
 
 pattern UNKNOWN_SPACE = GroupName "unknown space"
 pattern LEGEND_LIT = GroupName "legendLit"
