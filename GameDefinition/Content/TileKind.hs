@@ -5,7 +5,7 @@ module Content.TileKind
     pattern FILLER_WALL, pattern FLOOR_CORRIDOR_LIT, pattern FLOOR_CORRIDOR_DARK, pattern TRAIL_LIT, pattern SAFE_TRAIL_LIT, pattern LAB_TRAIL_LIT, pattern DAMP_FLOOR_LIT, pattern DAMP_FLOOR_DARK, pattern OUTDOOR_OUTER_FENCE, pattern DIRT_LIT, pattern FLOOR_ARENA_LIT, pattern FLOOR_ARENA_DARK
   , pattern EMPTY_SET_LIT, pattern EMPTY_SET_DARK, pattern NOISE_SET_LIT, pattern POWER_SET_LIT, pattern POWER_SET_DARK, pattern BATTLE_SET_LIT, pattern BATTLE_SET_DARK, pattern BRAWL_SET_LIT, pattern SHOOTOUT_SET_LIT, pattern ZOO_SET_LIT, pattern ZOO_SET_DARK, pattern ESCAPE_SET_LIT, pattern ESCAPE_SET_DARK, pattern AMBUSH_SET_LIT, pattern AMBUSH_SET_DARK, pattern ARENA_SET_LIT, pattern ARENA_SET_DARK
     -- ** Used in PlaceKind, but not in CaveKind.
-  , pattern WALL_LIT, pattern RECT_WINDOWS_OVER_EXCL_LIT, pattern RECT_WINDOWS_OVER_EXCL_DARK, pattern WALL_H_LIT, pattern RECT_WINDOWS_OVER_EQ_LIT, pattern RECT_WINDOWS_OVER_EQ_DARK, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern CACHE, pattern LAMP_POST_OVER_0, pattern SIGNBOARD, pattern TREE_SHADE_OVER_s_LIT, pattern TREE_SHADE_OVER_s_DARK, pattern TREE_SHADE_OVER_0_LIT, pattern TREE_SHADE_OVER_0_DARK, pattern SMOKE_CLUMP_OVER_f_LIT, pattern SMOKE_CLUMP_OVER_f_DARK, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN, pattern GLASSHOUSE_OVER_EXCL_LIT, pattern GLASSHOUSE_OVER_EXCL_DARK, pattern GLASSHOUSE_OVER_EQ_LIT, pattern GLASSHOUSE_OVER_EQ_DARK, pattern PULPIT, pattern BUSH_LIT, pattern BUSH_CLUMP_OVER_f_LIT, pattern BUSH_CLUMP_OVER_f_DARK, pattern FOG_LIT, pattern FOG_CLUMP_OVER_f_LIT, pattern FOG_CLUMP_OVER_f_DARK, pattern SMOKE_LIT, pattern FLOOR_ACTOR_LIT, pattern FLOOR_ACTOR_DARK, pattern FLOOR_ASHES_LIT, pattern FLOOR_ASHES_DARK, pattern SHADED_GROUND
+  , pattern WALL_LIT, pattern RECT_WINDOWS_VERTICAL_LIT, pattern RECT_WINDOWS_VERTICAL_DARK, pattern WALL_HORIZONTAL_LIT, pattern RECT_WINDOWS_HORIZONTAL_LIT, pattern RECT_WINDOWS_HORIZONTAL_DARK, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern CACHE, pattern LAMP_POST, pattern SIGNBOARD, pattern TREE_SHADE_WALKABLE_LIT, pattern TREE_SHADE_WALKABLE_DARK, pattern TREE_LIT, pattern TREE_DARK, pattern SMOKE_CLUMP_LIT, pattern SMOKE_CLUMP_DARK, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN, pattern GLASSHOUSE_VERTICAL_LIT, pattern GLASSHOUSE_VERTICAL_DARK, pattern GLASSHOUSE_HORIZONTAL_LIT, pattern GLASSHOUSE_HORIZONTAL_DARK, pattern PULPIT, pattern BUSH_LIT, pattern BUSH_CLUMP_LIT, pattern BUSH_CLUMP_DARK, pattern FOG_LIT, pattern FOG_CLUMP_LIT, pattern FOG_CLUMP_DARK, pattern SMOKE_LIT, pattern FLOOR_ACTOR_LIT, pattern FLOOR_ACTOR_DARK, pattern FLOOR_ASHES_LIT, pattern FLOOR_ASHES_DARK, pattern SHADED_GROUND
     -- * Content
   , content
   ) where
@@ -29,7 +29,7 @@ pattern FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TR
 pattern EMPTY_SET_LIT, EMPTY_SET_DARK, NOISE_SET_LIT, POWER_SET_LIT, POWER_SET_DARK, BATTLE_SET_LIT, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_LIT, ZOO_SET_DARK, ESCAPE_SET_LIT, ESCAPE_SET_DARK, AMBUSH_SET_LIT, AMBUSH_SET_DARK, ARENA_SET_LIT, ARENA_SET_DARK :: GroupName TileKind
 
 -- ** Used in PlaceKind, but not in CaveKind.
-pattern WALL_LIT, RECT_WINDOWS_OVER_EXCL_LIT, RECT_WINDOWS_OVER_EXCL_DARK, WALL_H_LIT, RECT_WINDOWS_OVER_EQ_LIT, RECT_WINDOWS_OVER_EQ_DARK, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, CACHE, LAMP_POST_OVER_0, SIGNBOARD, TREE_SHADE_OVER_s_LIT, TREE_SHADE_OVER_s_DARK, TREE_SHADE_OVER_0_LIT, TREE_SHADE_OVER_0_DARK, SMOKE_CLUMP_OVER_f_LIT, SMOKE_CLUMP_OVER_f_DARK, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN, GLASSHOUSE_OVER_EXCL_LIT, GLASSHOUSE_OVER_EXCL_DARK, GLASSHOUSE_OVER_EQ_LIT, GLASSHOUSE_OVER_EQ_DARK, PULPIT, BUSH_LIT, BUSH_CLUMP_OVER_f_LIT, BUSH_CLUMP_OVER_f_DARK, FOG_LIT, FOG_CLUMP_OVER_f_LIT, FOG_CLUMP_OVER_f_DARK, SMOKE_LIT, FLOOR_ACTOR_LIT, FLOOR_ACTOR_DARK, FLOOR_ASHES_LIT, FLOOR_ASHES_DARK, SHADED_GROUND :: GroupName TileKind
+pattern WALL_LIT, RECT_WINDOWS_VERTICAL_LIT, RECT_WINDOWS_VERTICAL_DARK, WALL_HORIZONTAL_LIT, RECT_WINDOWS_HORIZONTAL_LIT, RECT_WINDOWS_HORIZONTAL_DARK, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, CACHE, LAMP_POST, SIGNBOARD, TREE_SHADE_WALKABLE_LIT, TREE_SHADE_WALKABLE_DARK, TREE_LIT, TREE_DARK, SMOKE_CLUMP_LIT, SMOKE_CLUMP_DARK, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN, GLASSHOUSE_VERTICAL_LIT, GLASSHOUSE_VERTICAL_DARK, GLASSHOUSE_HORIZONTAL_LIT, GLASSHOUSE_HORIZONTAL_DARK, PULPIT, BUSH_LIT, BUSH_CLUMP_LIT, BUSH_CLUMP_DARK, FOG_LIT, FOG_CLUMP_LIT, FOG_CLUMP_DARK, SMOKE_LIT, FLOOR_ACTOR_LIT, FLOOR_ACTOR_DARK, FLOOR_ASHES_LIT, FLOOR_ASHES_DARK, SHADED_GROUND :: GroupName TileKind
 
 -- ** Used only internally in other TileKind definitions or never used.
 pattern OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, SUSPECT_VERTICAL_WALL_LIT, SUSPECT_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, CLOSED_VERTICAL_DOOR_LIT, CLOSED_HORIZONTAL_DOOR_LIT, OPEN_VERTICAL_DOOR_LIT, OPEN_HORIZONTAL_DOOR_LIT, TREE_WITH_FIRE, BUSH_WITH_FIRE, CACHABLE, RUBBLE_PILE, SHALLOW_WATER_LIT, SIGNBOARD_UNREAD :: GroupName TileKind
@@ -68,29 +68,27 @@ pattern ARENA_SET_LIT = GroupName "arenaSetLit"
 pattern ARENA_SET_DARK = GroupName "arenaSetDark"
 
 -- ** Used in PlaceKind, but not in CaveKind.
-pattern RECT_WINDOWS_OVER_EXCL_LIT = GroupName "rectWindowsOver_!_Lit"
-pattern RECT_WINDOWS_OVER_EXCL_DARK = GroupName "rectWindowsOver_!_Dark"
-pattern RECT_WINDOWS_OVER_EQ_LIT = GroupName "rectWindowsOver_=_Lit"
-pattern RECT_WINDOWS_OVER_EQ_DARK = GroupName "rectWindowsOver_=_Dark"
-pattern LAMP_POST_OVER_0 = GroupName "lampPostOver_0"
-pattern TREE_SHADE_OVER_s_LIT = GroupName "treeShadeOver_s_Lit"
-pattern TREE_SHADE_OVER_s_DARK = GroupName "treeShadeOver_s_Dark"
-pattern TREE_SHADE_OVER_0_LIT = GroupName "treeShadeOver_0_Lit"
-pattern TREE_SHADE_OVER_0_DARK = GroupName "treeShadeOver_0_Dark"
-pattern SMOKE_CLUMP_OVER_f_LIT = GroupName "smokeClumpOver_f_Lit"
-pattern SMOKE_CLUMP_OVER_f_DARK = GroupName "smokeClumpOver_f_Dark"
-pattern GLASSHOUSE_OVER_EXCL_LIT = GroupName "glasshouseOver_!_Lit"
-pattern GLASSHOUSE_OVER_EXCL_DARK = GroupName "glasshouseOver_!_Dark"
-pattern GLASSHOUSE_OVER_EQ_LIT = GroupName "glasshouseOver_=_Lit"
-pattern GLASSHOUSE_OVER_EQ_DARK = GroupName "glasshouseOver_=_Dark"
-pattern BUSH_CLUMP_OVER_f_LIT = GroupName "bushClumpOver_f_Lit"
-pattern BUSH_CLUMP_OVER_f_DARK = GroupName "bushClumpOver_f_Dark"
-pattern FOG_CLUMP_OVER_f_LIT = GroupName "fogClumpOver_f_Lit"
-pattern FOG_CLUMP_OVER_f_DARK = GroupName "fogClumpOver_f_Dark"
-
--- ** Used in PlaceKind, but not in CaveKind; simpler names.
+pattern RECT_WINDOWS_VERTICAL_LIT = GroupName "rectWindowsVerticalLit"
+pattern RECT_WINDOWS_VERTICAL_DARK = GroupName "rectWindowsVerticalDark"
+pattern RECT_WINDOWS_HORIZONTAL_LIT = GroupName "rectWindowsHorizontalLit"
+pattern RECT_WINDOWS_HORIZONTAL_DARK = GroupName "rectWindowsHorizontalDark"
+pattern LAMP_POST = GroupName "lamp post"
+pattern TREE_SHADE_WALKABLE_LIT = GroupName "treeShadeWalkableLit"
+pattern TREE_SHADE_WALKABLE_DARK = GroupName "treeShadeWalkableDark"
+pattern TREE_LIT = GroupName "tree Lit"
+pattern TREE_DARK = GroupName "tree Dark"
+pattern SMOKE_CLUMP_LIT = GroupName "smokeClumpLit"
+pattern SMOKE_CLUMP_DARK = GroupName "smokeClumpDark"
+pattern GLASSHOUSE_VERTICAL_LIT = GroupName "glasshouseVerticalLit"
+pattern GLASSHOUSE_VERTICAL_DARK = GroupName "glasshouseVerticalDark"
+pattern GLASSHOUSE_HORIZONTAL_LIT = GroupName "glasshouseHorizontalLit"
+pattern GLASSHOUSE_HORIZONTAL_DARK = GroupName "glasshouseHorizontalDark"
+pattern BUSH_CLUMP_LIT = GroupName "bushClumpLit"
+pattern BUSH_CLUMP_DARK = GroupName "bushClumpDark"
+pattern FOG_CLUMP_LIT = GroupName "fogClumpLit"
+pattern FOG_CLUMP_DARK = GroupName "fogClumpDark"
 pattern WALL_LIT = GroupName "wall Lit"
-pattern WALL_H_LIT = GroupName "wallH Lit"
+pattern WALL_HORIZONTAL_LIT = GroupName "wall horizontal Lit"
 pattern STAIR_TERMINAL_LIT = GroupName "stair terminal Lit"
 pattern STAIR_TERMINAL_DARK = GroupName "stair terminal Dark"
 pattern CACHE = GroupName "cache"
@@ -110,10 +108,10 @@ pattern PULPIT = GroupName "pulpit"
 pattern BUSH_LIT = GroupName "bush Lit"
 pattern FOG_LIT = GroupName "fog Lit"
 pattern SMOKE_LIT = GroupName "smoke Lit"
-pattern FLOOR_ACTOR_LIT = GroupName "floorActorLit"
-pattern FLOOR_ACTOR_DARK = GroupName "floorActorDark"
-pattern FLOOR_ASHES_LIT = GroupName "floorAshesLit"
-pattern FLOOR_ASHES_DARK = GroupName "floorAshesDark"
+pattern FLOOR_ACTOR_LIT = GroupName "floor with actors Lit"
+pattern FLOOR_ACTOR_DARK = GroupName "floor with actors Dark"
+pattern FLOOR_ASHES_LIT = GroupName "floor with ashes Lit"
+pattern FLOOR_ASHES_DARK = GroupName "floor with ashes Dark"
 pattern SHADED_GROUND = GroupName "shaded ground"
 
 -- ** Used only internally in other TileKind definitions or never used.
@@ -225,7 +223,7 @@ wall = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
   , tfreq    = [ (LEGEND_LIT, 100), (WALL_LIT, 100)
-               , (RECT_WINDOWS_OVER_EXCL_LIT, 80) ]
+               , (RECT_WINDOWS_VERTICAL_LIT, 80) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -256,8 +254,8 @@ wallObscured = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "sandstone wall"
-  , tfreq    = [ (LEGEND_LIT, 100), (WALL_H_LIT, 100)
-               , (RECT_WINDOWS_OVER_EQ_LIT, 80) ]
+  , tfreq    = [ (LEGEND_LIT, 100), (WALL_HORIZONTAL_LIT, 100)
+               , (RECT_WINDOWS_HORIZONTAL_LIT, 80) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , talter   = 100
@@ -328,7 +326,7 @@ pillarCache = TileKind
 lampPost = TileKind
   { tsymbol  = '0'
   , tname    = "lamp post"
-  , tfreq    = [(LAMP_POST_OVER_0, 1)]
+  , tfreq    = [(LAMP_POST, 1)]
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 100
@@ -359,7 +357,7 @@ tree = TileKind
   , tname    = "tree"
   , tfreq    = [ (BRAWL_SET_LIT, 140), (SHOOTOUT_SET_LIT, 10)
                , (ESCAPE_SET_LIT, 35), (AMBUSH_SET_LIT, 3)
-               , (TREE_SHADE_OVER_0_LIT, 1) ]
+               , (TREE_LIT, 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 50
@@ -402,7 +400,7 @@ rubble = TileKind
       -- Also, AI doesn't go out of its way to clear the way for heroes.
   }
 rubbleSpice = rubble
-  { tfreq    = [(SMOKE_CLUMP_OVER_f_LIT, 1), (SMOKE_CLUMP_OVER_f_DARK, 1)]
+  { tfreq    = [(SMOKE_CLUMP_LIT, 1), (SMOKE_CLUMP_DARK, 1)]
   , tfeature = Spice : tfeature rubble
   }
 doorTrapped = TileKind
@@ -532,27 +530,27 @@ escapeOutdoorDown = escapeDown
 wallGlass = TileKind
   { tsymbol  = '|'
   , tname    = "polished crystal wall"
-  , tfreq    = [(GLASSHOUSE_OVER_EXCL_LIT, 1)]
+  , tfreq    = [(GLASSHOUSE_VERTICAL_LIT, 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
   , tfeature = [BuildAs CLOSED_VERTICAL_DOOR_LIT, Clear]
   }
 wallGlassSpice = wallGlass
-  { tfreq    = [(RECT_WINDOWS_OVER_EXCL_LIT, 20)]
+  { tfreq    = [(RECT_WINDOWS_VERTICAL_LIT, 20)]
   , tfeature = Spice : tfeature wallGlass
   }
 wallGlassH = TileKind
   { tsymbol  = '-'
   , tname    = "polished crystal wall"
-  , tfreq    = [(GLASSHOUSE_OVER_EQ_LIT, 1)]
+  , tfreq    = [(GLASSHOUSE_HORIZONTAL_LIT, 1)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 10
   , tfeature = [BuildAs CLOSED_HORIZONTAL_DOOR_LIT, Clear]
   }
 wallGlassHSpice = wallGlassH
-  { tfreq    = [(RECT_WINDOWS_OVER_EQ_LIT, 20)]
+  { tfreq    = [(RECT_WINDOWS_HORIZONTAL_LIT, 20)]
   , tfeature = Spice : tfeature wallGlassH
   }
 pillarIce = TileKind
@@ -581,7 +579,7 @@ bush = TileKind
   { tsymbol  = '%'
   , tname    = "bush"
   , tfreq    = [ (BUSH_LIT, 1), (SHOOTOUT_SET_LIT, 30), (ESCAPE_SET_LIT, 40)
-               , (AMBUSH_SET_LIT, 3), (BUSH_CLUMP_OVER_f_LIT, 1) ]
+               , (AMBUSH_SET_LIT, 3), (BUSH_CLUMP_LIT, 1) ]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , talter   = 10
@@ -614,7 +612,7 @@ fog = TileKind
   , tname    = "faint fog"
   , tfreq    = [ (FOG_LIT, 1), (EMPTY_SET_LIT, 50), (NOISE_SET_LIT, 100)
                , (SHOOTOUT_SET_LIT, 20)
-               , (FOG_CLUMP_OVER_f_LIT, 60), (FOG_CLUMP_OVER_f_DARK, 60) ]
+               , (FOG_CLUMP_LIT, 60), (FOG_CLUMP_DARK, 60) ]
       -- lit fog is OK for shootout, because LOS is mutual, as opposed
       -- to dark fog, and so camper has little advantage, especially
       -- on big maps, where he doesn't know on which side of fog patch to hide
@@ -633,7 +631,7 @@ smoke = TileKind
   { tsymbol  = ';'
   , tname    = "billowing smoke"
   , tfreq    = [ (SMOKE_LIT, 1), (LAB_TRAIL_LIT, 1), (STAIR_TERMINAL_LIT, 4)
-               , (SMOKE_CLUMP_OVER_f_LIT, 3), (SMOKE_CLUMP_OVER_f_DARK, 3) ]
+               , (SMOKE_CLUMP_LIT, 3), (SMOKE_CLUMP_DARK, 3) ]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , talter   = 0
@@ -697,7 +695,7 @@ floorDirt = floorArena
                , (BRAWL_SET_LIT, 1000), (DIRT_LIT, 1) ]
   }
 floorDirtSpice = floorDirt
-  { tfreq    = [(TREE_SHADE_OVER_s_LIT, 1), (BUSH_CLUMP_OVER_f_LIT, 1)]
+  { tfreq    = [(TREE_SHADE_WALKABLE_LIT, 1), (BUSH_CLUMP_LIT, 1)]
   , tfeature = Spice : tfeature floorDirt
   }
 floorActor = floorArena
@@ -709,7 +707,7 @@ floorActorItem = floorActor
   , tfeature = VeryOftenItem : tfeature floorActor
   }
 floorAshes = floorActor
-  { tfreq    = [ (SMOKE_CLUMP_OVER_f_LIT, 2), (SMOKE_CLUMP_OVER_f_DARK, 2)
+  { tfreq    = [ (SMOKE_CLUMP_LIT, 2), (SMOKE_CLUMP_DARK, 2)
                , (FLOOR_ASHES_LIT, 1), (FLOOR_ASHES_DARK, 1) ]
   , tname    = "dirt and ash pile"
   , tcolor   = Brown
@@ -727,7 +725,7 @@ shallowWater = TileKind
   , tfeature = Embed SHALLOW_WATER : tfeature floorActor
   }
 shallowWaterSpice = shallowWater
-  { tfreq    = [(FOG_CLUMP_OVER_f_LIT, 40)]
+  { tfreq    = [(FOG_CLUMP_LIT, 40)]
   , tfeature = Spice : tfeature shallowWater
   }
 floorRed = floorCorridor
@@ -759,7 +757,7 @@ floorBrown = floorRed
   }
 floorArenaShade = floorActor
   { tname    = "shaded ground"
-  , tfreq    = [(SHADED_GROUND, 1), (TREE_SHADE_OVER_s_LIT, 2)]
+  , tfreq    = [(SHADED_GROUND, 1), (TREE_SHADE_WALKABLE_LIT, 2)]
   , tcolor2  = BrBlack
   , tfeature = Dark : NoItem : tfeature floorActor
   }
