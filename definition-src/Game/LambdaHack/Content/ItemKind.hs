@@ -190,11 +190,11 @@ data Effect =
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
-      --   text as verb is emitted when the activation causes item to expire;
-      --   no spam is emitted if a projectile
+      --   text as verb that is emitted when an activation causes an item
+      --   to expire; no spam is emitted if a projectile
   | VerbMsg Text
       -- ^ a sentence with the actor causing the effect as subject and the given
-      --   text as verb is emitted whenever the item is activated;
+      --   text as verb that is emitted whenever the item is activated;
       --   no spam is emitted if a projectile
   deriving (Show, Eq, Generic)
 
@@ -441,6 +441,12 @@ validateSingle ik@ItemKind{..} =
       in validateOnlyOne ieffects "VerbNoLonger" f)  -- may be duped if nested
   ++ (validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect)
        -- but duplicates permitted
+  ++ let emptyOneOf :: Effect -> Bool
+         emptyOneOf (OneOf []) = True
+         emptyOneOf _ = False
+         containingEmptyOneOf = filter (checkSubEffectProp emptyOneOf) ieffects
+     in [ "effects with empty OneOf inside:" <+> tshow containingEmptyOneOf
+        | not $ null containingEmptyOneOf ]
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
@@ -452,15 +458,27 @@ validateOnlyOne effs t f =
 -- We check it's not nested one nor more levels.
 validateNotNested :: [Effect] -> Text -> (Effect -> Bool) -> [Text]
 validateNotNested effs t f =
-  let g (OneOf l) = any f l || any g l
-      g (OnSmash effect) = f effect || g effect
-      g (OnCombine effect) = f effect || g effect
-      g (AndEffect eff1 eff2) = f eff1 || f eff2 || g eff1 || g eff2
-      g (OrEffect eff1 eff2) = f eff1 || f eff2 || g eff1 || g eff2
+  let g (OneOf l) = any h l
+      g (OnSmash effect) = h effect
+      g (OnCombine effect) = h effect
+      g (AndEffect eff1 eff2) = h eff1 || h eff2
+      g (OrEffect eff1 eff2) = h eff1 || h eff2
       g _ = False
+      h effect = f effect || g effect
       ts = filter g effs
   in [ "effect" <+> t <+> "should be specified at top level, not nested"
      | length ts > 0 ]
+
+checkSubEffectProp :: (Effect -> Bool) -> Effect -> Bool
+checkSubEffectProp f eff =
+  let g (OneOf l) = any h l
+      g (OnSmash effect) = h effect
+      g (OnCombine effect) = h effect
+      g (AndEffect eff1 eff2) = h eff1 || h eff2
+      g (OrEffect eff1 eff2) = h eff1 || h eff2
+      g _ = False
+      h effect = f effect || g effect
+  in h eff
 
 validateDups :: ItemKind -> Aspect -> [Text]
 validateDups ItemKind{..} feat =
