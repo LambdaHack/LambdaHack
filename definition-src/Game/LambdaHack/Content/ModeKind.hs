@@ -23,7 +23,7 @@ import qualified Data.Text as T
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Content.CaveKind (CaveKind)
-import           Game.LambdaHack.Content.ItemKind (pattern HORROR, ItemKind)
+import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.ContentData
@@ -202,28 +202,11 @@ validateSinglePlayer Player{..} =
      | any ((>= 0) . snd) $ Ability.skillsToList fskillsOther ]
 
 -- | Validate game mode kinds together.
-validateAll :: ContentData CaveKind
-            -> ContentData ItemKind
-            -> [ModeKind]
-            -> ContentData ModeKind
-            -> [Text]
-validateAll cocave coitem content comode =
-  let caveGroups = concatMap snd . mcaves
-      missingCave = filter (not . omemberGroup cocave)
-                    $ concatMap caveGroups content
-      f Roster{rosterList} =
-        concatMap (\(p, l) -> delete HORROR (fgroups p)
-                              ++ map (\(_, _, grp) -> grp) l)
-                  rosterList
-      missingRosterItems = filter (not . omemberGroup coitem)
-                           $ concatMap (f . mroster) content
-      hardwiredAbsent = filter (not . omemberGroup comode) hardwiredGroups
-  in [ "cave groups not in content:" <+> tshow missingCave
-     | not $ null missingCave ]
-     ++ [ "roster item groups not in content:" <+> tshow missingRosterItems
-        | not $ null missingRosterItems ]
-     ++ [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
-        | not $ null hardwiredAbsent ]
+validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]
+validateAll _content comode =
+  let hardwiredAbsent = filter (not . omemberGroup comode) hardwiredGroups
+  in [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
+     | not $ null hardwiredAbsent ]
 
 hardwiredGroups :: [GroupName ModeKind]
 hardwiredGroups =
@@ -236,11 +219,5 @@ pattern INSERT_COIN = GroupName "insert coin"
 pattern NO_CONFIRMS :: GroupName ModeKind
 pattern NO_CONFIRMS = GroupName "no confirms"
 
-makeData :: ContentData CaveKind
-         -> ContentData ItemKind
-         -> [ModeKind]
-         -> [GroupName ModeKind]
-         -> ContentData ModeKind
-makeData cocave coitem =
-  makeContentData "ModeKind" mname mfreq validateSingle
-                  (validateAll cocave coitem)
+makeData :: [ModeKind] -> [GroupName ModeKind] -> ContentData ModeKind
+makeData = makeContentData "ModeKind" mname mfreq validateSingle validateAll

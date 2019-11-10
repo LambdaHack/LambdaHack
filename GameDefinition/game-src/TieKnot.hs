@@ -71,24 +71,21 @@ tieKnotForAsync options@ServerOptions{ sallClear
         else Content.ItemKind.content
       coitem = IK.makeData itemContent Content.ItemKind.groupNames
       coItemSpeedup = speedupItem coitem
-      cotile = TK.makeData coitem Content.TileKind.content
-                                  Content.TileKind.groupNames
+      cotile = TK.makeData Content.TileKind.content Content.TileKind.groupNames
       coTileSpeedup = Tile.speedupTile sallClear cotile
-      coplace = PK.makeData cotile Content.PlaceKind.content
-                                   Content.PlaceKind.groupNames
-      cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
-                                                 Content.CaveKind.groupNames
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
       -- because they are not the source of the failure.
       copsRaw = COps
-        { cocave
+        { cocave = CK.makeData Content.CaveKind.content
+                               Content.CaveKind.groupNames
         , coitem
-        , comode  = MK.makeData cocave coitem Content.ModeKind.content
-                                              Content.ModeKind.groupNames
-        , coplace
-        , corule  = RK.makeData Content.RuleKind.standardRules
+        , comode = MK.makeData Content.ModeKind.content
+                               Content.ModeKind.groupNames
+        , coplace = PK.makeData Content.PlaceKind.content
+                                Content.PlaceKind.groupNames
+        , corule = RK.makeData Content.RuleKind.standardRules
         , cotile
         , coItemSpeedup
         , coTileSpeedup

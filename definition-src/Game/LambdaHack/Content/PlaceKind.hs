@@ -92,16 +92,8 @@ validateSingle PlaceKind{..} =
      ++ validateOverride poverrideLit
 
 -- | Validate all place kinds.
-validateAll :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
-            -> [Text]
-validateAll cotile content _ =
-  let overrides place = poverrideDark place ++ poverrideLit place
-      missingOverride = filter (not . omemberGroup cotile)
-                        $ concatMap (map snd . overrides) content
-  in [ "override tile groups not in content:" <+> tshow missingOverride
-     | not $ null missingOverride ]
+validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
+validateAll _ _ = []  -- so far, always valid
 
-makeData :: ContentData TileKind -> [PlaceKind] -> [GroupName PlaceKind]
-         -> ContentData PlaceKind
-makeData cotile =
-  makeContentData "PlaceKind" pname pfreq validateSingle (validateAll cotile)
+makeData :: [PlaceKind] -> [GroupName PlaceKind] -> ContentData PlaceKind
+makeData = makeContentData "PlaceKind" pname pfreq validateSingle validateAll
