@@ -10,7 +10,7 @@ module Game.LambdaHack.Content.TileKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
-  , validateDups, hardwiredGroups
+  , validateDups, mandatoryGroups, mandatoryGroupsSingleton
 #endif
   ) where
 
@@ -171,8 +171,6 @@ validateAll content cotile =
                 _ -> (undefined, False)
         , notSingleton
         ]
-      missingHardwiredGroups =
-        filter (not . omemberGroup cotile) hardwiredGroups
   in [ "HideAs or BuildAs groups not singletons:" <+> tshow wrongFooAsGroups
      | not $ null wrongFooAsGroups ]
      ++ [ "unknown tile (the first) should be the unknown one"
@@ -182,24 +180,31 @@ validateAll content cotile =
         | all (\tk -> talter tk == 1) (tail content) ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
-     ++ [ "S_UNKNOWN_OUTER_FENCE group not a singleton."
-        | not $ oisSingletonGroup cotile S_UNKNOWN_OUTER_FENCE ]
-     ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
-        | not $ null missingHardwiredGroups ]
 
-hardwiredGroups :: [GroupName TileKind]
-hardwiredGroups =
-       [S_UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE]
+-- * Mandatory item groups
 
-pattern S_UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE :: GroupName TileKind
+mandatoryGroupsSingleton :: [GroupName TileKind]
+mandatoryGroupsSingleton =
+       [S_UNKNOWN_SPACE, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE]
+
+pattern S_UNKNOWN_SPACE, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE :: GroupName TileKind
+
+mandatoryGroups :: [GroupName TileKind]
+mandatoryGroups =
+       [LEGEND_LIT, LEGEND_DARK]
+
+pattern LEGEND_LIT, LEGEND_DARK :: GroupName TileKind
 
 pattern S_UNKNOWN_SPACE = GroupName "unknown space"
-pattern LEGEND_LIT = GroupName "legendLit"
-pattern LEGEND_DARK = GroupName "legendDark"
 pattern S_UNKNOWN_OUTER_FENCE = GroupName "unknown outer fence"
 pattern S_BASIC_OUTER_FENCE = GroupName "basic outer fence"
+pattern LEGEND_LIT = GroupName "legendLit"
+pattern LEGEND_DARK = GroupName "legendDark"
+
+-- * Optional item groups
 
 pattern AQUATIC :: GroupName TileKind
+
 pattern AQUATIC = GroupName "aquatic"
 
 isUknownSpace :: ContentId TileKind -> Bool
@@ -247,5 +252,10 @@ floorSymbol = Char.chr 183
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
 
-makeData :: [TileKind] -> [GroupName TileKind] -> ContentData TileKind
-makeData = makeContentData "TileKind" tname tfreq validateSingle validateAll
+makeData :: [TileKind] -> [GroupName TileKind] -> [GroupName TileKind]
+         -> ContentData TileKind
+makeData content groupNamesAtMostOne groupNames =
+  makeContentData "TileKind" tname tfreq validateSingle validateAll content
+                  []
+                  (mandatoryGroupsSingleton ++ groupNamesAtMostOne)
+                  (mandatoryGroups ++ groupNames)

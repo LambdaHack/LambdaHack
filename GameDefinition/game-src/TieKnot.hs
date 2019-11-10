@@ -69,9 +69,13 @@ tieKnotForAsync options@ServerOptions{ sallClear
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
-      coitem = IK.makeData itemContent Content.ItemKind.groupNames
+      coitem = IK.makeData itemContent
+                           Content.ItemKind.groupNamesSingleton
+                           Content.ItemKind.groupNames
       coItemSpeedup = speedupItem coitem
-      cotile = TK.makeData Content.TileKind.content Content.TileKind.groupNames
+      cotile = TK.makeData Content.TileKind.content
+                           Content.TileKind.groupNamesSingleton
+                           Content.TileKind.groupNames
       coTileSpeedup = Tile.speedupTile sallClear cotile
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
@@ -79,11 +83,14 @@ tieKnotForAsync options@ServerOptions{ sallClear
       -- because they are not the source of the failure.
       copsRaw = COps
         { cocave = CK.makeData Content.CaveKind.content
+                               Content.CaveKind.groupNamesSingleton
                                Content.CaveKind.groupNames
         , coitem
         , comode = MK.makeData Content.ModeKind.content
+                               Content.ModeKind.groupNamesSingleton
                                Content.ModeKind.groupNames
         , coplace = PK.makeData Content.PlaceKind.content
+                                Content.PlaceKind.groupNamesSingleton
                                 Content.PlaceKind.groupNames
         , corule = RK.makeData Content.RuleKind.standardRules
         , cotile

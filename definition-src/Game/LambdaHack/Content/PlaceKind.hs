@@ -95,5 +95,7 @@ validateSingle PlaceKind{..} =
 validateAll :: [PlaceKind] -> ContentData PlaceKind -> [Text]
 validateAll _ _ = []  -- so far, always valid
 
-makeData :: [PlaceKind] -> [GroupName PlaceKind] -> ContentData PlaceKind
-makeData = makeContentData "PlaceKind" pname pfreq validateSingle validateAll
+makeData :: [PlaceKind] -> [GroupName PlaceKind] -> [GroupName PlaceKind]
+         -> ContentData PlaceKind
+makeData content =
+  makeContentData "PlaceKind" pname pfreq validateSingle validateAll content []

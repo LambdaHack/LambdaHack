@@ -16,7 +16,7 @@ module Game.LambdaHack.Content.ItemKind
     -- * Internal operations
   , boostItemKind, onSmashOrCombineEffect
   , validateSingle, validateAll, validateDups, validateDamage
-  , hardwiredGroups
+  , mandatoryGroups, mandatoryGroupsSingleton
 #endif
   ) where
 
@@ -39,11 +39,17 @@ import           Game.LambdaHack.Definition.Flavour
 
 -- * Mandatory item groups
 
-hardwiredGroups :: [GroupName ItemKind]
-hardwiredGroups =
-       [CONDITION, COMMON_ITEM, S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY, MOBILE]
+mandatoryGroupsSingleton :: [GroupName ItemKind]
+mandatoryGroupsSingleton =
+       [S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY]
 
-pattern CONDITION, COMMON_ITEM, S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY, MOBILE :: GroupName ItemKind
+pattern S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY :: GroupName ItemKind
+
+mandatoryGroups :: [GroupName ItemKind]
+mandatoryGroups =
+       [CONDITION, COMMON_ITEM, MOBILE]
+
+pattern CONDITION, COMMON_ITEM, MOBILE :: GroupName ItemKind
 
 -- From Preferences.hs
 
@@ -61,9 +67,12 @@ pattern MOBILE = GroupName "mobile"
 
 -- * Optional item groups
 
-pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, S_SINGLE_SPARK, S_FRAGRANCE :: GroupName ItemKind
+pattern S_SINGLE_SPARK, S_FRAGRANCE, CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, HORROR, VALUABLE, UNREPORTED_INVENTORY, AQUATIC :: GroupName ItemKind
 
 -- Used in Preferences.hs
+
+pattern S_SINGLE_SPARK = GroupName "single spark"
+pattern S_FRAGRANCE = GroupName "fragrance"
 
 pattern CURIOUS_ITEM = GroupName "curious item"
 pattern TREASURE = GroupName "treasure"
@@ -72,12 +81,9 @@ pattern ANY_GLASS = GroupName "any glass"
 pattern ANY_POTION = GroupName "any potion"
 pattern EXPLOSIVE = GroupName "explosive"
 pattern ANY_JEWELRY = GroupName "any jewelry"
-pattern S_SINGLE_SPARK = GroupName "single spark"
-pattern S_FRAGRANCE = GroupName "fragrance"
 
 -- * Used elsewhere
 
-pattern HORROR, VALUABLE, UNREPORTED_INVENTORY, AQUATIC :: GroupName ItemKind
 pattern HORROR = GroupName "horror"
 pattern VALUABLE = GroupName "valuable"
 pattern UNREPORTED_INVENTORY = GroupName "unreported inventory"
@@ -508,14 +514,13 @@ validateAll content coitem =
                 _ -> (undefined, False)
         , notSingleton
         ]
-      missingHardwiredGroups =
-        filter (not . omemberGroup coitem) hardwiredGroups
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
-     ++ [ "S_CURRENCY group not a singleton."
-        | not $ oisSingletonGroup coitem S_CURRENCY ]
-     ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
-        | not $ null missingHardwiredGroups ]
 
-makeData :: [ItemKind] -> [GroupName ItemKind] -> ContentData ItemKind
-makeData = makeContentData "ItemKind" iname ifreq validateSingle validateAll
+makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
+         -> ContentData ItemKind
+makeData content groupNamesSingleton groupNames =
+  makeContentData "ItemKind" iname ifreq validateSingle validateAll content
+                  [S_SINGLE_SPARK, S_FRAGRANCE]
+                  (mandatoryGroupsSingleton ++ groupNamesSingleton)
+                  (mandatoryGroups ++ groupNames)

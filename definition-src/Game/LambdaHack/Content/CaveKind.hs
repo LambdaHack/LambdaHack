@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.CaveKind
   , CaveKind(..), makeData
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , validateSingle, validateAll, hardwiredGroups
+  , validateSingle, validateAll, mandatoryGroups
 #endif
   ) where
 
@@ -108,17 +108,22 @@ validateSingle CaveKind{..} =
 -- Note that names don't have to be unique: we can have several variants
 -- of a cave with a given name.
 validateAll :: [CaveKind] -> ContentData CaveKind -> [Text]
-validateAll _content cocave =
-  let missingHardwiredGroups =
-        filter (not . omemberGroup cocave) hardwiredGroups
-  in [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
-     | not $ null missingHardwiredGroups ]
+validateAll _ _ = []  -- so far, always valid
+
+-- * Mandatory item groups
+
+mandatoryGroups :: [GroupName CaveKind]
+mandatoryGroups =
+       [DEFAULT_RANDOM]
 
 pattern DEFAULT_RANDOM :: GroupName CaveKind
-hardwiredGroups :: [GroupName CaveKind]
-hardwiredGroups = [DEFAULT_RANDOM]
 
 pattern DEFAULT_RANDOM = GroupName "default random"
 
-makeData :: [CaveKind] -> [GroupName CaveKind] -> ContentData CaveKind
-makeData = makeContentData "CaveKind" cname cfreq validateSingle validateAll
+makeData :: [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
+         -> ContentData CaveKind
+makeData content groupNamesSingleton groupNames =
+  makeContentData "CaveKind" cname cfreq validateSingle validateAll content
+                  []
+                  groupNamesSingleton
+                  (mandatoryGroups ++ groupNames)

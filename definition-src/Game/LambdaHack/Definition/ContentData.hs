@@ -71,11 +71,13 @@ makeContentData :: Show c
                      -- ^ validate the whole defined content of this type
                      -- and list all offence
                 -> [c]  -- ^ all content of this type
-                -> [GroupName c]  -- ^ all group names for this content
+                -> [GroupName c]  -- ^ non-mandatory group names of <= 1 content
+                -> [GroupName c]  -- ^ singleton group names for this content
+                -> [GroupName c]  -- ^ remaining group names for this content
                 -> ContentData c
 {-# INLINE makeContentData #-}
 makeContentData contentName getName getFreq validateSingle validateAll
-                content groupNames =
+                content groupNamesAtMostOne groupNamesSingleton groupNames =
   -- The @force@ is needed for @GHC.Compact@.
   let contentVector = V.force $ V.fromList content
       groupFreq =
@@ -93,16 +95,23 @@ makeContentData contentName getName getFreq validateSingle validateAll
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content
-      groupNamesSorted = sort groupNames
-      groupNameUnique = nub groupNamesSorted
-      groupNameNonUnique = groupNamesSorted \\ groupNameUnique
-      missingGroups = filter (not . omemberGroup contentData) groupNames
-  in assert (null groupNameNonUnique
+      allGroupNamesSorted =
+        sort $ groupNamesAtMostOne ++ groupNamesSingleton ++ groupNames
+      allGroupNamesUnique = nub allGroupNamesSorted
+      allGroupNamesNonUnique = allGroupNamesSorted \\ allGroupNamesUnique
+      missingGroups = filter (not . omemberGroup contentData)
+                             (groupNamesSingleton ++ groupNames)
+      groupsMoreThanOne = filter (oisMoreThanOneGroup contentData)
+                                 (groupNamesAtMostOne ++ groupNamesSingleton)
+  in assert (null allGroupNamesNonUnique
              `blame` contentName ++ ": some group names duplicated"
-             `swith` groupNameNonUnique) $
+             `swith` allGroupNamesNonUnique) $
      assert (null missingGroups
              `blame` contentName ++ ": some group names pertain to no content"
              `swith` missingGroups) $
+     assert (null groupsMoreThanOne
+             `blame` contentName ++ ": some group names refer to more than one content, while they shouldn't"
+             `swith` groupsMoreThanOne) $
      assert (null freqsOffenders
              `blame` contentName ++ ": some Freqs values not valid"
              `swith` freqsOffenders) $
@@ -128,6 +137,12 @@ oisSingletonGroup :: ContentData a -> GroupName a -> Bool
 oisSingletonGroup ContentData{groupFreq} cgroup =
   case M.lookup cgroup groupFreq of
     Just [_] -> True
+    _ -> False
+
+oisMoreThanOneGroup :: ContentData a -> GroupName a -> Bool
+oisMoreThanOneGroup ContentData{groupFreq} cgroup =
+  case M.lookup cgroup groupFreq of
+    Just (_:_:_) -> True
     _ -> False
 
 -- | The id of the unique member of a singleton content group.

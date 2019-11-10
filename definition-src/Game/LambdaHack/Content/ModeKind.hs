@@ -10,7 +10,7 @@ module Game.LambdaHack.Content.ModeKind
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , validateSingle, validateAll
-  , validateSingleRoster, validateSinglePlayer, hardwiredGroups
+  , validateSingleRoster, validateSinglePlayer, mandatoryGroups
 #endif
   ) where
 
@@ -203,21 +203,29 @@ validateSinglePlayer Player{..} =
 
 -- | Validate game mode kinds together.
 validateAll :: [ModeKind] -> ContentData ModeKind -> [Text]
-validateAll _content comode =
-  let hardwiredAbsent = filter (not . omemberGroup comode) hardwiredGroups
-  in [ "Hardwired groups not in content:" <+> tshow hardwiredAbsent
-     | not $ null hardwiredAbsent ]
+validateAll _ _ = []  -- so far, always valid
 
-hardwiredGroups :: [GroupName ModeKind]
-hardwiredGroups =
+-- * Mandatory item groups
+
+mandatoryGroups :: [GroupName ModeKind]
+mandatoryGroups =
        [CAMPAIGN_SCENARIO, INSERT_COIN]
 
 pattern CAMPAIGN_SCENARIO, INSERT_COIN :: GroupName ModeKind
+
 pattern CAMPAIGN_SCENARIO = GroupName "campaign scenario"
 pattern INSERT_COIN = GroupName "insert coin"
 
+-- * Optional item groups
+
 pattern NO_CONFIRMS :: GroupName ModeKind
+
 pattern NO_CONFIRMS = GroupName "no confirms"
 
-makeData :: [ModeKind] -> [GroupName ModeKind] -> ContentData ModeKind
-makeData = makeContentData "ModeKind" mname mfreq validateSingle validateAll
+makeData :: [ModeKind] -> [GroupName ModeKind] -> [GroupName ModeKind]
+         -> ContentData ModeKind
+makeData content groupNamesSingleton groupNames =
+  makeContentData "ModeKind" mname mfreq validateSingle validateAll content
+                  []
+                  groupNamesSingleton
+                  (mandatoryGroups ++ groupNames)
