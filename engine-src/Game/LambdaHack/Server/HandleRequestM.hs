@@ -149,7 +149,7 @@ processWatchfulness mwait aid = do
           if not uneasy  -- won't wake up at once
              && canSleep actorMaxSk  -- enough skills
           then do
-            nAll <- removeConditionSingle IK.BRACED aid
+            nAll <- removeConditionSingle IK.S_BRACED aid
             let !_A = assert (nAll == 0) ()
             addSleep aid
           else
@@ -159,13 +159,13 @@ processWatchfulness mwait aid = do
           -- Doze some more before checking sleep eligibility.
           execUpdAtomic $ UpdWaitActor aid (WWait n) (WWait $ n + 1)
       _ -> do
-        nAll <- removeConditionSingle IK.BRACED aid
+        nAll <- removeConditionSingle IK.S_BRACED aid
         let !_A = assert (nAll == 0) ()
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WWatch ->
       when (mwait == Just True) $  -- only long wait switches to wait state
         if Ability.getSk Ability.SkWait actorMaxSk >= 2 then do
-          addCondition False IK.BRACED aid
+          addCondition False IK.S_BRACED aid
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
         else
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)

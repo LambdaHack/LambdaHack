@@ -97,7 +97,7 @@ obscenePictogram = ItemKind
   , iaspects = [Timeout 7, SetFlag Durable]
   , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
-               , OneOf [ toOrganGood STRENGTHENED (3 + 1 `d` 2)
+               , OneOf [ toOrganGood S_STRENGTHENED (3 + 1 `d` 2)
                        , CreateItem CStash SANDSTONE_ROCK timerNone ] ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
@@ -114,8 +114,8 @@ subtleFresco = ItemKind
   , idamage  = 0
   , iaspects = [Timeout 7, SetFlag Durable]
   , ieffects = [ VerbMsg "feel refreshed by the subtle fresco"
-               , toOrganGood FAR_SIGHTED (3 + 1 `d` 2)
-               , toOrganGood KEEN_SMELLING (3 + 1 `d` 2) ]
+               , toOrganGood S_FAR_SIGHTED (3 + 1 `d` 2)
+               , toOrganGood S_KEEN_SMELLING (3 + 1 `d` 2) ]
                  -- hearing gets a boost through bracing, so no need here
   , idesc    = "Expensive yet tasteful."
   , ikit     = []
@@ -146,9 +146,9 @@ treasureCacheTrap = ItemKind
   , iweight  = 1000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [OneOf [ toOrganBad BLIND (10 + 1 `d` 10)
+  , ieffects = [OneOf [ toOrganBad S_BLIND (10 + 1 `d` 10)
                       , RefillCalm (-99)
-                      , Explode FOCUSED_CONCUSSION
+                      , Explode S_FOCUSED_CONCUSSION
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , idesc    = "It's a trap!"
   , ikit     = []
@@ -191,7 +191,7 @@ fireSmall = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [Burn 1, Explode SINGLE_SPARK]
+  , ieffects = [Burn 1, Explode S_SINGLE_SPARK]
   , idesc    = "A few small logs, burning brightly."
   , ikit     = []
   }
@@ -201,7 +201,7 @@ fireBig = fireSmall
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
                , CreateItem CStash WOODEN_TORCH timerNone
-               , Explode SPARK ]
+               , Explode S_SPARK ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
   }
@@ -233,9 +233,9 @@ rubble = ItemKind
   , iweight  = 100000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [OneOf [ Explode FOCUSED_GLASS_HAIL
+  , ieffects = [OneOf [ Explode S_FOCUSED_GLASS_HAIL
                       , Summon MOBILE_ANIMAL $ 1 `dL` 2
-                      , toOrganNoTimer POISONED
+                      , toOrganNoTimer S_POISONED
                       , CreateItem CGround COMMON_ITEM timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
@@ -260,17 +260,17 @@ doorwayTrapTemplate = ItemKind
   }
 doorwayTrap1 = doorwayTrapTemplate
   { ifreq    = [(DOORWAY_TRAP, 50)]
-  , ieffects = [toOrganBad BLIND $ (1 `dL` 4) * 5]
+  , ieffects = [toOrganBad S_BLIND $ (1 `dL` 4) * 5]
   -- , idesc    = ""
   }
 doorwayTrap2 = doorwayTrapTemplate
   { ifreq    = [(DOORWAY_TRAP, 25)]
-  , ieffects = [toOrganBad SLOWED $ (1 `dL` 4) * 10]
+  , ieffects = [toOrganBad S_SLOWED $ (1 `dL` 4) * 10]
   -- , idesc    = ""
   }
 doorwayTrap3 = doorwayTrapTemplate
   { ifreq    = [(DOORWAY_TRAP, 25)]
-  , ieffects = [toOrganBad WEAKENED $ (1 `dL` 4) * 10 ]
+  , ieffects = [toOrganBad S_WEAKENED $ (1 `dL` 4) * 10 ]
   -- , idesc    = ""
   }
 stairsUp = ItemKind
@@ -327,7 +327,7 @@ stairsTrapDown = stairsTrapUp
   { ifreq    = [(STAIRS_TRAP_DOWN, 1)]
   , iverbHit = "open up under"
   , ieffects = [ VerbMsg "tumble down the stairwell"
-               , toOrganGood DRUNK (20 + 1 `d` 5) ]
+               , toOrganGood S_DRUNK (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
 lectern = ItemKind
@@ -343,9 +343,9 @@ lectern = ItemKind
   , iaspects = []  -- not Durable, springs at most once
   , ieffects = [ OneOf [ CreateItem CGround ANY_SCROLL timerNone
                        , Detect DetectAll 20
-                       , toOrganBad DEFENSELESS $ (1 `dL` 6) * 10
-                       , toOrganGood DRUNK (20 + 1 `d` 5) ]
-               , Explode DEFENSELESSNESS_RUNOUT ]
+                       , toOrganBad S_DEFENSELESS $ (1 `dL` 6) * 10
+                       , toOrganGood S_DRUNK (20 + 1 `d` 5) ]
+               , Explode S_DEFENSELESSNESS_RUNOUT ]
   , idesc    = "A dark wood stand, where strange priests once preached."
   , ikit     = []
   }

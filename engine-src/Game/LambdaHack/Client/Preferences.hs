@@ -49,8 +49,9 @@ effectToBenefit cops fid factionD eff =
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode IK.SINGLE_SPARK -> delta (-1)  -- hardwired; probing and flavour
-    IK.Explode IK.FRAGRANCE -> (1, -5)  -- hardwired; situational
+    IK.Explode IK.S_SINGLE_SPARK -> delta (-1)
+                                      -- hardwired; probing and flavour
+    IK.Explode IK.S_FRAGRANCE -> (1, -5)  -- hardwired; situational
     IK.Explode _ ->
       -- There is a risk the explosion is focused and harmful to self
       -- or not focused and beneficial to nearby foes, but not to self.
@@ -124,8 +125,8 @@ effectToBenefit cops fid factionD eff =
     IK.CreateItem _ IK.COMMON_ITEM _ -> (70, 0)
     IK.CreateItem _ IK.CURIOUS_ITEM _ -> (70, 0)
     IK.CreateItem _ IK.ANY_SCROLL _ -> (50, 0)
-    IK.CreateItem _ IK.ANY_VIAL _ -> (50, 0)
-    IK.CreateItem _ IK.POTION _ -> (50, 0)
+    IK.CreateItem _ IK.ANY_GLASS _ -> (50, 0)
+    IK.CreateItem _ IK.ANY_POTION _ -> (50, 0)
     IK.CreateItem _ IK.EXPLOSIVE _ -> (50, 0)
     IK.CreateItem _ IK.ANY_JEWELRY _ -> (100, 0)
     IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny

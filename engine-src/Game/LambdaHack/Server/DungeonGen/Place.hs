@@ -282,7 +282,7 @@ buildFenceRnd COps{cotile}
       allTheSame = all (== cfenceTileN) [cfenceTileE, cfenceTileS, cfenceTileW]
       fenceIdRnd couterFenceTile (xf, yf) = do
         let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
-            tileGroup | isCorner xf yf && not allTheSame = TK.BASIC_OUTER_FENCE
+            tileGroup | isCorner xf yf && not allTheSame = TK.S_BASIC_OUTER_FENCE
                       | otherwise = couterFenceTile
         fenceId <- fromMaybe (error $ "" `showFailure` tileGroup)
                    <$> opick cotile tileGroup (const True)

@@ -605,7 +605,7 @@ highestImpression tb = do
   getKind <- getsState $ flip getIidKindServer
   getItem <- getsState $ flip getItemBody
   let isImpression iid =
-        maybe False (> 0) $ lookup IK.IMPRESSED $ IK.ifreq $ getKind iid
+        maybe False (> 0) $ lookup IK.S_IMPRESSED $ IK.ifreq $ getKind iid
       impressions = EM.filterWithKey (\iid _ -> isImpression iid) $ borgan tb
       f (_, (k, _)) = k
       maxImpression = maximumBy (Ord.comparing f) $ EM.assocs impressions
@@ -663,7 +663,7 @@ dominateFid fid source target = do
   actorMaxSk <- getsState $ getActorMaxSkills target
   getKind <- getsState $ flip getIidKindServer
   let isImpression iid =
-        maybe False (> 0) $ lookup IK.IMPRESSED $ IK.ifreq $ getKind iid
+        maybe False (> 0) $ lookup IK.S_IMPRESSED $ IK.ifreq $ getKind iid
       dropAllImpressions = EM.filterWithKey (\iid _ -> not $ isImpression iid)
       borganNoImpression = dropAllImpressions $ borgan tb
   -- Actor is not pushed nor projectile, so @sactorTime@ suffices.
@@ -692,7 +692,7 @@ dominateFid fid source target = do
   unless gameOver $ do
     -- Add some nostalgia for the old faction.
     void $ effectCreateItem (Just $ bfid tb) (Just 10) source target COrgan
-                            IK.IMPRESSED IK.timerNone
+                            IK.S_IMPRESSED IK.timerNone
     -- Identify organs that won't get identified by use.
     getKindId <- getsState $ flip getIidKindIdServer
     let discoverIf (iid, cstore) = do
@@ -720,7 +720,7 @@ effectImpress recursiveCall execSfx source target = do
   if | bproj tb -> return UseDud
      | bfid tb == bfid sb ->
        -- Unimpress wrt others, but only once. The recursive Sfx suffices.
-       recursiveCall $ IK.DropItem 1 1 COrgan IK.IMPRESSED
+       recursiveCall $ IK.DropItem 1 1 COrgan IK.S_IMPRESSED
      | otherwise -> do
        -- Actors that don't move freely and so are stupid, can't be impressed.
        canTra <- getsState $ canTraverse target
@@ -728,7 +728,7 @@ effectImpress recursiveCall execSfx source target = do
          unless (bhp tb <= 0)
            execSfx  -- avoid spam just before death
          effectCreateItem (Just $ bfid sb) (Just 1) source target COrgan
-                          IK.IMPRESSED IK.timerNone
+                          IK.S_IMPRESSED IK.timerNone
        else return UseDud  -- no message, because common and not crucial
 
 -- ** PutToSleep
@@ -747,7 +747,7 @@ effectPutToSleep execSfx target = do
        execSfx
        case bwatch tb of
          WWait n | n > 0 -> do
-           nAll <- removeConditionSingle IK.BRACED target
+           nAll <- removeConditionSingle IK.S_BRACED target
            let !_A = assert (nAll == 0) ()
            return ()
          _ -> return ()
@@ -1251,7 +1251,7 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
       -- that I'm twice slower due to aspects from two factions and not
       -- as deadly as being poisoned at twice the rate from two factions.
       jfid = if store == COrgan && not (IK.isTimerNone tim)
-                || grp == IK.IMPRESSED
+                || grp == IK.S_IMPRESSED
              then jfidRaw
              else Nothing
       (itemKnown, itemFull) =

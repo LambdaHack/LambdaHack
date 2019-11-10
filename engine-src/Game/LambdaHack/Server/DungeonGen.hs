@@ -51,7 +51,7 @@ convertTileMaps :: COps -> Bool -> Rnd (ContentId TileKind)
                 -> Rnd TileMap
 convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
                 areAllWalkable cdefTile mpickPassable darea ltile = do
-  let outerId = ouniqGroup cotile TK.UNKNOWN_OUTER_FENCE
+  let outerId = ouniqGroup cotile TK.S_UNKNOWN_OUTER_FENCE
       runCdefTile :: (SM.SMGen, (Int, [(Int, ContentId TileKind)]))
                   -> ( ContentId TileKind
                      , (SM.SMGen, (Int, [(Int, ContentId TileKind)])) )

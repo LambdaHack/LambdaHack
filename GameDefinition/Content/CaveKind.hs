@@ -3,7 +3,7 @@ module Content.CaveKind
   ( -- * Group name patterns
     pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
   , -- * Content
-    content, groupNames
+    content, groupNamesSingleton, groupNames
   ) where
 
 import Prelude ()
@@ -12,11 +12,14 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
-import           Content.ItemKind hiding (content, groupNames)
+import           Content.ItemKind hiding (content, groupNames,
+                                   groupNamesSingleton)
 import           Content.ItemKindActor
 import           Content.ItemKindBlast
-import           Content.PlaceKind hiding (content, groupNames)
-import           Content.TileKind hiding (content, groupNames)
+import           Content.PlaceKind hiding (content, groupNames,
+                                    groupNamesSingleton)
+import           Content.TileKind hiding (content, groupNames,
+                                   groupNamesSingleton)
 import           Game.LambdaHack.Content.CaveKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind
@@ -24,6 +27,9 @@ import           Game.LambdaHack.Core.Dice
 import           Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
+
+groupNamesSingleton :: [GroupName CaveKind]
+groupNamesSingleton = []
 
 groupNames :: [GroupName CaveKind]
 groupNames =
@@ -93,10 +99,10 @@ rogue = CaveKind
   , clitCorTile   = FLOOR_CORRIDOR_LIT
   , cwallTile     = FILLER_WALL
   , ccornerTile   = FILLER_WALL
-  , cfenceTileN   = BASIC_OUTER_FENCE
-  , cfenceTileE   = BASIC_OUTER_FENCE
-  , cfenceTileS   = BASIC_OUTER_FENCE
-  , cfenceTileW   = BASIC_OUTER_FENCE
+  , cfenceTileN   = S_BASIC_OUTER_FENCE
+  , cfenceTileE   = S_BASIC_OUTER_FENCE
+  , cfenceTileS   = S_BASIC_OUTER_FENCE
+  , cfenceTileW   = S_BASIC_OUTER_FENCE
   , cfenceApart   = False
   , clegendDarkTile = LEGEND_DARK
   , clegendLitTile  = LEGEND_LIT
@@ -146,7 +152,7 @@ smoking = arena
   -- Trails provide enough light for fun stealth.
   , cnightOdds    = 51  -- always night
   , citemNum      = 6 `d` 5  -- rare, so make it exciting
-  , citemFreq     = [(IK.COMMON_ITEM, 20), (IK.TREASURE, 40), (IK.ANY_VIAL, 40)]
+  , citemFreq     = [(IK.COMMON_ITEM, 20), (IK.TREASURE, 40), (IK.ANY_GLASS, 40)]
   , cdefTile      = ARENA_SET_DARK
   , cdesc         = "Velvet couches exude the strong smell of tobacco."
   }
@@ -297,7 +303,7 @@ raid = rogue
   , cactorCoeff   = 250  -- deep level with no kit, so slow spawning
   , cactorFreq    = [(ANIMAL, 100)]
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
-  , citemFreq     = [ (IK.COMMON_ITEM, 100), (IK.CURRENCY, 500)
+  , citemFreq     = [ (IK.COMMON_ITEM, 100), (IK.S_CURRENCY, 500)
                     , (STARTING_WEAPON, 100) ]
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []

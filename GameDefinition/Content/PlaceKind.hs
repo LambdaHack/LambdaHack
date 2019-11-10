@@ -4,7 +4,7 @@ module Content.PlaceKind
     pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY
   , pattern INDOOR_ESCAPE_DOWN, pattern INDOOR_ESCAPE_UP, pattern OUTDOOR_ESCAPE_DOWN, pattern TINY_STAIRCASE, pattern OPEN_STAIRCASE, pattern CLOSED_STAIRCASE, pattern WALLED_STAIRCASE, pattern GATED_TINY_STAIRCASE, pattern GATED_OPEN_STAIRCASE, pattern GATED_CLOSED_STAIRCASE, pattern OUTDOOR_TINY_STAIRCASE, pattern OUTDOOR_CLOSED_STAIRCASE, pattern OUTDOOR_WALLED_STAIRCASE
   , -- * Content
-    content, groupNames
+    content, groupNamesSingleton, groupNames
   ) where
 
 import Prelude ()
@@ -13,12 +13,15 @@ import Game.LambdaHack.Core.Prelude
 
 import qualified Data.Text as T
 
-import Content.TileKind hiding (content, groupNames)
+import Content.TileKind hiding (content, groupNames, groupNamesSingleton)
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind (TileKind)
 import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
+
+groupNamesSingleton :: [GroupName PlaceKind]
+groupNamesSingleton = []
 
 -- TODO: if we stick to the current system of generating extra kinds and their
 -- group names, let's also add the generated group names to @groupNames@.
@@ -127,10 +130,10 @@ rect2 = rect
 rect3 = rect
   { pname    = "a shed"
   , pfreq    = [(BRAWL, 10), (SHOOTOUT, 1)]
-  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
-                    , ('-', WALL_HORIZONTAL_LIT) ]
-  , poverrideLit = [ ('|', WALL_LIT)
-                   , ('-', WALL_HORIZONTAL_LIT) ]
+  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
+                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+  , poverrideLit = [ ('|', S_WALL_LIT)
+                   , ('-', S_WALL_HORIZONTAL_LIT) ]
   }
 rect4 = rect3
   { pname    = "cabinet"
@@ -191,10 +194,10 @@ pulpit = PlaceKind
                ]
   , poverrideDark = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                     , ('!', GLASSHOUSE_VERTICAL_LIT)
-                    , ('0', PULPIT) ]
+                    , ('0', S_PULPIT) ]
   , poverrideLit = [ ('=', GLASSHOUSE_HORIZONTAL_LIT)
                    , ('!', GLASSHOUSE_VERTICAL_LIT)
-                   , ('0', PULPIT) ]
+                   , ('0', S_PULPIT) ]
       -- except for floor, this will all be lit, regardless of night/dark; OK
   }
 ruin = PlaceKind
@@ -213,10 +216,10 @@ ruin = PlaceKind
 ruin2 = ruin
   { pname    = "blasted walls"
   , pfreq    = [(AMBUSH, 50)]
-  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
-                    , ('-', WALL_HORIZONTAL_LIT) ]
-  , poverrideLit = [ ('|', WALL_LIT)
-                   , ('-', WALL_HORIZONTAL_LIT) ]
+  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
+                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+  , poverrideLit = [ ('|', S_WALL_LIT)
+                   , ('-', S_WALL_HORIZONTAL_LIT) ]
   }
 collapsed = PlaceKind
   { psymbol  = 'c'
@@ -387,8 +390,8 @@ lampPost = PlaceKind
                , "·0·"
                , "X·X"
                ]
-  , poverrideDark = [('0', LAMP_POST), ('·', FLOOR_ACTOR_LIT)]
-  , poverrideLit = [('0', LAMP_POST), ('·', FLOOR_ACTOR_LIT)]
+  , poverrideDark = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
+  , poverrideLit = [('0', S_LAMP_POST), ('·', S_FLOOR_ACTOR_LIT)]
   }
 lampPost2 = lampPost
   { ptopLeft = [ "···"
@@ -426,12 +429,12 @@ treeShade = PlaceKind
                , "s0·"
                , "Xs·"
                ]
-  , poverrideDark = [ ('0', TREE_DARK)
+  , poverrideDark = [ ('0', S_TREE_DARK)
                     , ('s', TREE_SHADE_WALKABLE_DARK)
-                    , ('·', SHADED_GROUND) ]
-  , poverrideLit = [ ('0', TREE_LIT)
+                    , ('·', S_SHADED_GROUND) ]
+  , poverrideLit = [ ('0', S_TREE_LIT)
                    , ('s', TREE_SHADE_WALKABLE_LIT)
-                   , ('·', SHADED_GROUND) ]
+                   , ('·', S_SHADED_GROUND) ]
   }
 fogClump = PlaceKind
   { psymbol  = 'f'
@@ -444,8 +447,8 @@ fogClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [('f', FOG_CLUMP_DARK), (';', FOG_LIT)]
-  , poverrideLit = [('f', FOG_CLUMP_LIT), (';', FOG_LIT)]
+  , poverrideDark = [('f', FOG_CLUMP_DARK), (';', S_FOG_LIT)]
+  , poverrideLit = [('f', FOG_CLUMP_LIT), (';', S_FOG_LIT)]
   }
 fogClump2 = fogClump
   { pfreq    = [(SHOOTOUT, 500), (EMPTY, 50)]
@@ -466,10 +469,10 @@ smokeClump = PlaceKind
                , ";f"
                , ";X"
                ]
-  , poverrideDark = [ ('f', SMOKE_CLUMP_DARK), (';', SMOKE_LIT)
-                    , ('·', FLOOR_ACTOR_DARK) ]
-  , poverrideLit = [ ('f', SMOKE_CLUMP_LIT), (';', SMOKE_LIT)
-                   , ('·', FLOOR_ACTOR_LIT) ]
+  , poverrideDark = [ ('f', SMOKE_CLUMP_DARK), (';', S_SMOKE_LIT)
+                    , ('·', S_FLOOR_ACTOR_DARK) ]
+  , poverrideLit = [ ('f', SMOKE_CLUMP_LIT), (';', S_SMOKE_LIT)
+                   , ('·', S_FLOOR_ACTOR_LIT) ]
   }
 smokeClump2 = smokeClump
   { pfreq    = [(ZOO, 500)]
@@ -504,8 +507,8 @@ bushClump = PlaceKind
                , ";X"  -- one sure exit needed not to block a corner
                , ";f"
                ]
-  , poverrideDark = [('f', BUSH_CLUMP_DARK), (';', BUSH_LIT)]
-  , poverrideLit = [('f', BUSH_CLUMP_LIT), (';', BUSH_LIT)]
+  , poverrideDark = [('f', BUSH_CLUMP_DARK), (';', S_BUSH_LIT)]
+  , poverrideLit = [('f', BUSH_CLUMP_LIT), (';', S_BUSH_LIT)]
       -- should not be used in caves with trails, because bushes can't
       -- grow over such artificial trails
   }
@@ -518,10 +521,10 @@ escapeDown = PlaceKind
   , pfence   = FGround
   , ptopLeft = [ ">"
                ]
-  , poverrideDark = [ ('|', WALL_LIT)  -- visible from afar
-                    , ('-', WALL_HORIZONTAL_LIT) ]
-  , poverrideLit = [ ('|', WALL_LIT)
-                   , ('-', WALL_HORIZONTAL_LIT) ]
+  , poverrideDark = [ ('|', S_WALL_LIT)  -- visible from afar
+                    , ('-', S_WALL_HORIZONTAL_LIT) ]
+  , poverrideLit = [ ('|', S_WALL_LIT)
+                   , ('-', S_WALL_HORIZONTAL_LIT) ]
   }
 escapeDown2 = escapeDown
   { pfreq    = [(INDOOR_ESCAPE_DOWN, 1000)]
@@ -572,11 +575,11 @@ staircase = PlaceKind
                ]
   , poverrideDark = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
                     , ('I', SIGNBOARD)
-                    , ('|', WALL_LIT), ('-', WALL_HORIZONTAL_LIT) ]
+                    , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
                       -- seen from afar
   , poverrideLit = [ ('<', STAIRCASE_UP), ('>', STAIRCASE_DOWN)
                    , ('I', SIGNBOARD)
-                   , ('|', WALL_LIT), ('-', WALL_HORIZONTAL_LIT) ]
+                   , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]
                      -- seen from afar
   }
 staircase1 = staircase
@@ -978,7 +981,7 @@ overrideGated :: [(Char, GroupName TileKind)]
 overrideGated =
   [ ('<', GATED_STAIRCASE_UP), ('>', GATED_STAIRCASE_DOWN)
   , ('I', SIGNBOARD)
-  , ('|', WALL_LIT), ('-', WALL_HORIZONTAL_LIT) ]  -- visible from afar
+  , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToGated :: PlaceKind -> PlaceKind
 switchStaircaseToGated s = s
@@ -994,7 +997,7 @@ overrideOutdoor :: [(Char, GroupName TileKind)]
 overrideOutdoor =
   [ ('<', STAIRCASE_OUTDOOR_UP), ('>', STAIRCASE_OUTDOOR_DOWN)
   , ('I', SIGNBOARD)
-  , ('|', WALL_LIT), ('-', WALL_HORIZONTAL_LIT) ]  -- visible from afar
+  , ('|', S_WALL_LIT), ('-', S_WALL_HORIZONTAL_LIT) ]  -- visible from afar
 
 switchStaircaseToOutdoor :: PlaceKind -> PlaceKind
 switchStaircaseToOutdoor s = s

@@ -155,7 +155,7 @@ chooseItemDialogMode c = do
         MOwned ->
           -- We assume "gold grain", not "grain" with label "of gold":
           let currencyName = IK.iname $ okind coitem
-                             $ ouniqGroup coitem IK.CURRENCY
+                             $ ouniqGroup coitem IK.S_CURRENCY
               dungeonTotal = sgold s
               (_, total) = calculateTotal side s
               n = countItems CStash

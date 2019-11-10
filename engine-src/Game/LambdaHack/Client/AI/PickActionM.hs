@@ -804,9 +804,9 @@ applyItem aid applyGroup = do
               && (IK.CONDITION `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myBadGrps)))
             dropsImpressed =
-              IK.IMPRESSED `elem` myBadGrps
+              IK.S_IMPRESSED `elem` myBadGrps
               && (IK.CONDITION `elem` dropsGrps
-                  || IK.IMPRESSED `elem` dropsGrps)
+                  || IK.S_IMPRESSED `elem` dropsGrps)
             dropsGoodOrgans =
               not (null myGoodGrps)
               && (IK.CONDITION `elem` dropsGrps

@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( pattern UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern UNKNOWN_OUTER_FENCE, pattern BASIC_OUTER_FENCE, pattern AQUATIC
+  ( pattern S_UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern S_UNKNOWN_OUTER_FENCE, pattern S_BASIC_OUTER_FENCE, pattern AQUATIC
   , TileKind(..), Feature(..)
   , makeData
   , isUknownSpace, unknownId
@@ -182,22 +182,22 @@ validateAll content cotile =
         | all (\tk -> talter tk == 1) (tail content) ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
-     ++ [ "UNKNOWN_OUTER_FENCE group not a singleton."
-        | not $ oisSingletonGroup cotile UNKNOWN_OUTER_FENCE ]
+     ++ [ "S_UNKNOWN_OUTER_FENCE group not a singleton."
+        | not $ oisSingletonGroup cotile S_UNKNOWN_OUTER_FENCE ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
 hardwiredGroups :: [GroupName TileKind]
 hardwiredGroups =
-       [UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE]
+       [S_UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE]
 
-pattern UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, UNKNOWN_OUTER_FENCE, BASIC_OUTER_FENCE :: GroupName TileKind
+pattern S_UNKNOWN_SPACE, LEGEND_LIT, LEGEND_DARK, S_UNKNOWN_OUTER_FENCE, S_BASIC_OUTER_FENCE :: GroupName TileKind
 
-pattern UNKNOWN_SPACE = GroupName "unknown space"
+pattern S_UNKNOWN_SPACE = GroupName "unknown space"
 pattern LEGEND_LIT = GroupName "legendLit"
 pattern LEGEND_DARK = GroupName "legendDark"
-pattern UNKNOWN_OUTER_FENCE = GroupName "unknown outer fence"
-pattern BASIC_OUTER_FENCE = GroupName "basic outer fence"
+pattern S_UNKNOWN_OUTER_FENCE = GroupName "unknown outer fence"
+pattern S_BASIC_OUTER_FENCE = GroupName "basic outer fence"
 
 pattern AQUATIC :: GroupName TileKind
 pattern AQUATIC = GroupName "aquatic"

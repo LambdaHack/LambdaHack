@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
-  ( pattern CONDITION, pattern COMMON_ITEM, pattern BONUS_HP, pattern BRACED, pattern ASLEEP, pattern IMPRESSED, pattern CURRENCY, pattern MOBILE
-  , pattern CURIOUS_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_VIAL, pattern POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern SINGLE_SPARK, pattern FRAGRANCE
+  ( pattern CONDITION, pattern COMMON_ITEM, pattern S_BONUS_HP, pattern S_BRACED, pattern S_ASLEEP, pattern S_IMPRESSED, pattern S_CURRENCY, pattern MOBILE
+  , pattern CURIOUS_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_FRAGRANCE
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
@@ -41,9 +41,9 @@ import           Game.LambdaHack.Definition.Flavour
 
 hardwiredGroups :: [GroupName ItemKind]
 hardwiredGroups =
-       [CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE]
+       [CONDITION, COMMON_ITEM, S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY, MOBILE]
 
-pattern CONDITION, COMMON_ITEM, BONUS_HP, BRACED, ASLEEP, IMPRESSED, CURRENCY, MOBILE :: GroupName ItemKind
+pattern CONDITION, COMMON_ITEM, S_BONUS_HP, S_BRACED, S_ASLEEP, S_IMPRESSED, S_CURRENCY, MOBILE :: GroupName ItemKind
 
 -- From Preferences.hs
 
@@ -52,28 +52,28 @@ pattern COMMON_ITEM = GroupName "common item"
 
 -- Assorted
 
-pattern BONUS_HP = GroupName "bonus HP"
-pattern BRACED = GroupName "braced"
-pattern ASLEEP = GroupName "asleep"
-pattern IMPRESSED = GroupName "impressed"
-pattern CURRENCY = GroupName "currency"
+pattern S_BONUS_HP = GroupName "bonus HP"
+pattern S_BRACED = GroupName "braced"
+pattern S_ASLEEP = GroupName "asleep"
+pattern S_IMPRESSED = GroupName "impressed"
+pattern S_CURRENCY = GroupName "currency"
 pattern MOBILE = GroupName "mobile"
 
 -- * Optional item groups
 
-pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_VIAL, POTION, EXPLOSIVE, ANY_JEWELRY, SINGLE_SPARK, FRAGRANCE :: GroupName ItemKind
+pattern CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, S_SINGLE_SPARK, S_FRAGRANCE :: GroupName ItemKind
 
 -- Used in Preferences.hs
 
 pattern CURIOUS_ITEM = GroupName "curious item"
 pattern TREASURE = GroupName "treasure"
 pattern ANY_SCROLL = GroupName "any scroll"
-pattern ANY_VIAL = GroupName "any vial"
-pattern POTION = GroupName "potion"
+pattern ANY_GLASS = GroupName "any glass"
+pattern ANY_POTION = GroupName "any potion"
 pattern EXPLOSIVE = GroupName "explosive"
 pattern ANY_JEWELRY = GroupName "any jewelry"
-pattern SINGLE_SPARK = GroupName "single spark"
-pattern FRAGRANCE = GroupName "fragrance"
+pattern S_SINGLE_SPARK = GroupName "single spark"
+pattern S_FRAGRANCE = GroupName "fragrance"
 
 -- * Used elsewhere
 
@@ -327,7 +327,7 @@ getDropOrgans :: ItemKind -> [GroupName ItemKind]
 getDropOrgans =
   let f (DestroyItem _ _ COrgan grp) = [grp]
       f (DropItem _ _ COrgan grp) = [grp]
-      f Impress = [IMPRESSED]
+      f Impress = [S_IMPRESSED]
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
@@ -512,8 +512,8 @@ validateAll content coitem =
         filter (not . omemberGroup coitem) hardwiredGroups
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
-     ++ [ "CURRENCY group not a singleton."
-        | not $ oisSingletonGroup coitem CURRENCY ]
+     ++ [ "S_CURRENCY group not a singleton."
+        | not $ oisSingletonGroup coitem S_CURRENCY ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 

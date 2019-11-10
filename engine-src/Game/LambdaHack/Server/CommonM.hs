@@ -561,7 +561,7 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       maxHP = min (finalHP + xM 100) (2 * finalHP)
         -- prevent too high max HP resulting in panic when low HP/max HP ratio
       bonusHP = fromEnum (maxHP `div` oneM) - trunkMaxHP
-      healthOrgans = [ (Just bonusHP, (IK.BONUS_HP, COrgan))
+      healthOrgans = [ (Just bonusHP, (IK.S_BONUS_HP, COrgan))
                      | bonusHP /= 0 && not bproj ]
       b = actorTemplate trunkId finalHP calm pos lid fid bproj
       withTrunk =
@@ -704,12 +704,12 @@ removeConditionSingle name aid = do
 addSleep :: MonadServerAtomic m => ActorId -> m ()
 addSleep aid = do
   b <- getsState $ getActorBody aid
-  addCondition True IK.ASLEEP aid
+  addCondition True IK.S_ASLEEP aid
   execUpdAtomic $ UpdWaitActor aid (bwatch b) WSleep
 
 removeSleepSingle :: MonadServerAtomic m => ActorId -> m ()
 removeSleepSingle aid = do
-  nAll <- removeConditionSingle IK.ASLEEP aid
+  nAll <- removeConditionSingle IK.S_ASLEEP aid
   when (nAll == 0) $
     execUpdAtomic $ UpdWaitActor aid WWake WWatch
 

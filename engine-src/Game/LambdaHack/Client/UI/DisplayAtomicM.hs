@@ -1016,7 +1016,7 @@ displayGameOverLoot (heldBag, total) generationAn = do
   COps{coitem} <- getsState scops
   ItemSlots itemSlots <- getsSession sslots
   -- We assume "gold grain", not "grain" with label "of gold":
-  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem IK.CURRENCY
+  let currencyName = IK.iname $ okind coitem $ ouniqGroup coitem IK.S_CURRENCY
       lSlotsRaw = EM.filter (`EM.member` heldBag) $ itemSlots EM.! SItem
       generationItem = generationAn EM.! SItem
       (itemBag, lSlots) =

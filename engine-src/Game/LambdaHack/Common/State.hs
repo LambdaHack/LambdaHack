@@ -155,7 +155,7 @@ unknownLevel :: COps -> ContentId CaveKind -> Dice.AbsDepth -> Area
              -> Level
 unknownLevel COps{corule, cotile}
              lkind ldepth larea lstair lescape lexpl lnight =
-  let outerId = ouniqGroup cotile TK.UNKNOWN_OUTER_FENCE
+  let outerId = ouniqGroup cotile TK.S_UNKNOWN_OUTER_FENCE
   in Level { lkind
            , ldepth
            , lfloor = EM.empty

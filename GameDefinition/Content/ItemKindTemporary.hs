@@ -1,9 +1,9 @@
 -- | Temporary pseudo-organ (condition) definitions.
 module Content.ItemKindTemporary
   ( -- * Group name patterns
-    pattern STRENGTHENED, pattern WEAKENED, pattern PROTECTED_FROM_MELEE, pattern PROTECTED_FROM_RANGED, pattern DEFENSELESS, pattern RESOLUTE, pattern HASTED, pattern SLOWED, pattern FAR_SIGHTED, pattern BLIND, pattern KEEN_SMELLING, pattern FOUL_SMELLING, pattern ROSE_SMELLING, pattern SHINY_EYED, pattern DEAFENED, pattern DEAF, pattern DRUNK, pattern FRENZIED, pattern REGENERATING, pattern POISONED, pattern SLOW_RESISTANT, pattern POISON_RESISTANT, pattern IMMOBILE, pattern PACIFIED, pattern IRREPLACEABLE, pattern RETAINING, pattern IMPATIENT, pattern DISPOSSESSED, pattern WITHHOLDING, pattern PARSIMONIOUS, pattern MORE_MOBILE, pattern MORE_COMBATIVE, pattern MORE_DISPLACING, pattern MORE_MODIFYING, pattern MORE_PATIENT, pattern MORE_TIDY, pattern MORE_PROJECTING, pattern MORE_PRACTICAL
+    pattern S_STRENGTHENED, pattern S_WEAKENED, pattern S_PROTECTED_FROM_MELEE, pattern S_PROTECTED_FROM_RANGED, pattern S_DEFENSELESS, pattern S_RESOLUTE, pattern S_HASTED, pattern S_SLOWED, pattern S_FAR_SIGHTED, pattern S_BLIND, pattern S_KEEN_SMELLING, pattern S_FOUL_SMELLING, pattern S_ROSE_SMELLING, pattern S_SHINY_EYED, pattern S_DEAFENED, pattern S_DEAF, pattern S_DRUNK, pattern S_FRENZIED, pattern S_REGENERATING, pattern S_POISONED, pattern S_SLOW_RESISTANT, pattern S_POISON_RESISTANT, pattern S_IMMOBILE, pattern S_PACIFIED, pattern S_IRREPLACEABLE, pattern S_RETAINING, pattern S_IMPATIENT, pattern S_DISPOSSESSED, pattern S_WITHHOLDING, pattern S_PARSIMONIOUS, pattern S_MORE_MOBILE, pattern S_MORE_COMBATIVE, pattern S_MORE_DISPLACING, pattern S_MORE_MODIFYING, pattern S_MORE_PATIENT, pattern S_MORE_TIDY, pattern S_MORE_PROJECTING, pattern S_MORE_PRACTICAL
   , -- * Content
-    temporaries, temporariesGN, noStatGN, bonusStatGN
+    temporaries, temporariesGNSingleton, noStatGN, bonusStatGN
   ) where
 
 import Prelude ()
@@ -20,55 +20,55 @@ import Game.LambdaHack.Definition.Flavour
 -- * Group name patterns
 
 noStatGN :: [GroupName ItemKind]
-noStatGN = [IMMOBILE, PACIFIED, IRREPLACEABLE, RETAINING, IMPATIENT, DISPOSSESSED, WITHHOLDING, PARSIMONIOUS]
+noStatGN = [S_IMMOBILE, S_PACIFIED, S_IRREPLACEABLE, S_RETAINING, S_IMPATIENT, S_DISPOSSESSED, S_WITHHOLDING, S_PARSIMONIOUS]
 
 bonusStatGN :: [GroupName ItemKind]
-bonusStatGN = [MORE_MOBILE, MORE_COMBATIVE, MORE_DISPLACING, MORE_MODIFYING, MORE_PATIENT, MORE_TIDY, MORE_PROJECTING, MORE_PRACTICAL]
+bonusStatGN = [S_MORE_MOBILE, S_MORE_COMBATIVE, S_MORE_DISPLACING, S_MORE_MODIFYING, S_MORE_PATIENT, S_MORE_TIDY, S_MORE_PROJECTING, S_MORE_PRACTICAL]
 
-temporariesGN :: [GroupName ItemKind]
-temporariesGN =
-       [STRENGTHENED, WEAKENED, PROTECTED_FROM_MELEE, PROTECTED_FROM_RANGED, DEFENSELESS, RESOLUTE, HASTED, SLOWED, FAR_SIGHTED, BLIND, KEEN_SMELLING, FOUL_SMELLING, ROSE_SMELLING, SHINY_EYED, DEAFENED, DEAF, DRUNK, FRENZIED, REGENERATING, POISONED, SLOW_RESISTANT, POISON_RESISTANT] ++ noStatGN ++ bonusStatGN
+temporariesGNSingleton :: [GroupName ItemKind]
+temporariesGNSingleton =
+       [S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT] ++ noStatGN ++ bonusStatGN
 
-pattern STRENGTHENED, WEAKENED, PROTECTED_FROM_MELEE, PROTECTED_FROM_RANGED, DEFENSELESS, RESOLUTE, HASTED, SLOWED, FAR_SIGHTED, BLIND, KEEN_SMELLING, FOUL_SMELLING, ROSE_SMELLING, SHINY_EYED, DEAFENED, DEAF, DRUNK, FRENZIED, REGENERATING, POISONED, SLOW_RESISTANT, POISON_RESISTANT, IMMOBILE, PACIFIED, IRREPLACEABLE, RETAINING, IMPATIENT, DISPOSSESSED, WITHHOLDING, PARSIMONIOUS, MORE_MOBILE, MORE_COMBATIVE, MORE_DISPLACING, MORE_MODIFYING, MORE_PATIENT, MORE_TIDY, MORE_PROJECTING, MORE_PRACTICAL :: GroupName ItemKind
+pattern S_STRENGTHENED, S_WEAKENED, S_PROTECTED_FROM_MELEE, S_PROTECTED_FROM_RANGED, S_DEFENSELESS, S_RESOLUTE, S_HASTED, S_SLOWED, S_FAR_SIGHTED, S_BLIND, S_KEEN_SMELLING, S_FOUL_SMELLING, S_ROSE_SMELLING, S_SHINY_EYED, S_DEAFENED, S_DEAF, S_DRUNK, S_FRENZIED, S_REGENERATING, S_POISONED, S_SLOW_RESISTANT, S_POISON_RESISTANT, S_IMMOBILE, S_PACIFIED, S_IRREPLACEABLE, S_RETAINING, S_IMPATIENT, S_DISPOSSESSED, S_WITHHOLDING, S_PARSIMONIOUS, S_MORE_MOBILE, S_MORE_COMBATIVE, S_MORE_DISPLACING, S_MORE_MODIFYING, S_MORE_PATIENT, S_MORE_TIDY, S_MORE_PROJECTING, S_MORE_PRACTICAL :: GroupName ItemKind
 
-pattern STRENGTHENED = GroupName "strengthened"
-pattern WEAKENED = GroupName "weakened"
-pattern PROTECTED_FROM_MELEE = GroupName "protected from melee"
-pattern PROTECTED_FROM_RANGED = GroupName "protected from ranged"
-pattern DEFENSELESS = GroupName "defenseless"
-pattern RESOLUTE = GroupName "resolute"
-pattern HASTED = GroupName "hasted"
-pattern SLOWED = GroupName "slowed"
-pattern FAR_SIGHTED = GroupName "far-sighted"
-pattern BLIND = GroupName "blind"
-pattern KEEN_SMELLING = GroupName "keen-smelling"
-pattern FOUL_SMELLING = GroupName "foul-smelling"
-pattern ROSE_SMELLING = GroupName "rose-smelling"
-pattern SHINY_EYED = GroupName "shiny-eyed"
-pattern DEAFENED = GroupName "deafened"
-pattern DEAF = GroupName "deaf"
-pattern DRUNK = GroupName "drunk"
-pattern FRENZIED = GroupName "frenzied"
-pattern REGENERATING = GroupName "regenerating"
-pattern POISONED = GroupName "poisoned"
-pattern SLOW_RESISTANT = GroupName "slow resistant"
-pattern POISON_RESISTANT = GroupName "poison resistant"
-pattern IMMOBILE = GroupName "immobile"
-pattern PACIFIED = GroupName "pacified"
-pattern IRREPLACEABLE = GroupName "irreplaceable"
-pattern RETAINING = GroupName "retaining"
-pattern IMPATIENT = GroupName "impatient"
-pattern DISPOSSESSED = GroupName "dispossessed"
-pattern WITHHOLDING = GroupName "withholding"
-pattern PARSIMONIOUS = GroupName "parsimonious"
-pattern MORE_MOBILE = GroupName "more mobile"
-pattern MORE_COMBATIVE = GroupName "more combative"
-pattern MORE_DISPLACING = GroupName "more displacing"
-pattern MORE_MODIFYING = GroupName "more modifying"
-pattern MORE_PATIENT = GroupName "more patient"
-pattern MORE_TIDY = GroupName "more tidy"
-pattern MORE_PROJECTING = GroupName "more projecting"
-pattern MORE_PRACTICAL = GroupName "more practical"
+pattern S_STRENGTHENED = GroupName "strengthened"
+pattern S_WEAKENED = GroupName "weakened"
+pattern S_PROTECTED_FROM_MELEE = GroupName "protected from melee"
+pattern S_PROTECTED_FROM_RANGED = GroupName "protected from ranged"
+pattern S_DEFENSELESS = GroupName "defenseless"
+pattern S_RESOLUTE = GroupName "resolute"
+pattern S_HASTED = GroupName "hasted"
+pattern S_SLOWED = GroupName "slowed"
+pattern S_FAR_SIGHTED = GroupName "far-sighted"
+pattern S_BLIND = GroupName "blind"
+pattern S_KEEN_SMELLING = GroupName "keen-smelling"
+pattern S_FOUL_SMELLING = GroupName "foul-smelling"
+pattern S_ROSE_SMELLING = GroupName "rose-smelling"
+pattern S_SHINY_EYED = GroupName "shiny-eyed"
+pattern S_DEAFENED = GroupName "deafened"
+pattern S_DEAF = GroupName "deaf"
+pattern S_DRUNK = GroupName "drunk"
+pattern S_FRENZIED = GroupName "frenzied"
+pattern S_REGENERATING = GroupName "regenerating"
+pattern S_POISONED = GroupName "poisoned"
+pattern S_SLOW_RESISTANT = GroupName "slow resistant"
+pattern S_POISON_RESISTANT = GroupName "poison resistant"
+pattern S_IMMOBILE = GroupName "immobile"
+pattern S_PACIFIED = GroupName "pacified"
+pattern S_IRREPLACEABLE = GroupName "irreplaceable"
+pattern S_RETAINING = GroupName "retaining"
+pattern S_IMPATIENT = GroupName "impatient"
+pattern S_DISPOSSESSED = GroupName "dispossessed"
+pattern S_WITHHOLDING = GroupName "withholding"
+pattern S_PARSIMONIOUS = GroupName "parsimonious"
+pattern S_MORE_MOBILE = GroupName "more mobile"
+pattern S_MORE_COMBATIVE = GroupName "more combative"
+pattern S_MORE_DISPLACING = GroupName "more displacing"
+pattern S_MORE_MODIFYING = GroupName "more modifying"
+pattern S_MORE_PATIENT = GroupName "more patient"
+pattern S_MORE_TIDY = GroupName "more tidy"
+pattern S_MORE_PROJECTING = GroupName "more projecting"
+pattern S_MORE_PRACTICAL = GroupName "more practical"
 
 -- * Content
 
@@ -114,78 +114,78 @@ tmpEffects grp icount effects =
          , ieffects = effects ++ ieffects tmp
          }
 
-tmpStrengthened = tmpAspects STRENGTHENED [AddSkill SkHurtMelee 20]
-tmpWeakened = tmpAspects WEAKENED
+tmpStrengthened = tmpAspects S_STRENGTHENED [AddSkill SkHurtMelee 20]
+tmpWeakened = tmpAspects S_WEAKENED
                          [AddSkill SkHurtMelee (-30)]  -- don't cancel out ^
-tmpProtectedMelee = tmpAspects PROTECTED_FROM_MELEE
+tmpProtectedMelee = tmpAspects S_PROTECTED_FROM_MELEE
                                [AddSkill SkArmorMelee 50]
-tmpProtectedRanged = tmpAspects PROTECTED_FROM_RANGED
+tmpProtectedRanged = tmpAspects S_PROTECTED_FROM_RANGED
                                 [AddSkill SkArmorRanged 25]
-tmpDefenseless = tmpAspects DEFENSELESS [ AddSkill SkArmorMelee (-50)
-                                        , AddSkill SkArmorRanged (-25) ]
-tmpResolute = tmpAspects RESOLUTE [AddSkill SkMaxCalm 60]
-tmpFast20 = tmpAspects HASTED [AddSkill SkSpeed 20]
-tmpSlow10 = tmpAspects SLOWED [AddSkill SkSpeed (-10)]
-tmpFarSighted = tmpAspects FAR_SIGHTED [AddSkill SkSight 5]
-tmpBlind = tmpAspects BLIND [AddSkill SkSight (-99)]
-tmpKeenSmelling = tmpAspects KEEN_SMELLING [AddSkill SkSmell 2]
-tmpFoulSmelling = tmpAspects FOUL_SMELLING [AddSkill SkOdor 2]
-tmpRoseSmelling = tmpAspects ROSE_SMELLING [AddSkill SkOdor (-4)]
-tmpNoctovision = tmpAspects SHINY_EYED [AddSkill SkNocto 2]
-tmpDeafened = tmpAspects DEAFENED [AddSkill SkHearing (-10)]
-tmpDeaf = tmpAspects DEAF [AddSkill SkHearing (-99)]
-tmpDrunk = tmpAspects DRUNK [ AddSkill SkHurtMelee 30  -- fury
+tmpDefenseless = tmpAspects S_DEFENSELESS [ AddSkill SkArmorMelee (-50)
+                                          , AddSkill SkArmorRanged (-25) ]
+tmpResolute = tmpAspects S_RESOLUTE [AddSkill SkMaxCalm 60]
+tmpFast20 = tmpAspects S_HASTED [AddSkill SkSpeed 20]
+tmpSlow10 = tmpAspects S_SLOWED [AddSkill SkSpeed (-10)]
+tmpFarSighted = tmpAspects S_FAR_SIGHTED [AddSkill SkSight 5]
+tmpBlind = tmpAspects S_BLIND [AddSkill SkSight (-99)]
+tmpKeenSmelling = tmpAspects S_KEEN_SMELLING [AddSkill SkSmell 2]
+tmpFoulSmelling = tmpAspects S_FOUL_SMELLING [AddSkill SkOdor 2]
+tmpRoseSmelling = tmpAspects S_ROSE_SMELLING [AddSkill SkOdor (-4)]
+tmpNoctovision = tmpAspects S_SHINY_EYED [AddSkill SkNocto 2]
+tmpDeafened = tmpAspects S_DEAFENED [AddSkill SkHearing (-10)]
+tmpDeaf = tmpAspects S_DEAF [AddSkill SkHearing (-99)]
+tmpDrunk = tmpAspects S_DRUNK [ AddSkill SkHurtMelee 30  -- fury
                               , AddSkill SkArmorMelee (-20)
                               , AddSkill SkArmorRanged (-20)
                               , AddSkill SkSight (-8)
                               ]
 
 tmpBonusSkAggresion =
-  tmpAspects FRENZIED [AddSkill SkAggression 5]
+  tmpAspects S_FRENZIED [AddSkill SkAggression 5]
 
 tmpRegenerating =
-  tmpEffects REGENERATING (4 + 1 `d` 2) [RefillHP 1]
+  tmpEffects S_REGENERATING (4 + 1 `d` 2) [RefillHP 1]
 tmpPoisoned =
-  tmpEffects POISONED (4 + 1 `d` 2) [RefillHP (-1)]
+  tmpEffects S_POISONED (4 + 1 `d` 2) [RefillHP (-1)]
 tmpSlow10Resistant =
-  tmpEffects POISON_RESISTANT (8 + 1 `d` 4)
-             [DropItem 1 1 COrgan SLOWED]
+  tmpEffects S_POISON_RESISTANT (8 + 1 `d` 4)
+             [DropItem 1 1 COrgan S_SLOWED]
 tmpPoisonResistant =
-  tmpEffects SLOW_RESISTANT (8 + 1 `d` 4)
-             [DropItem 1 maxBound COrgan POISONED]
+  tmpEffects S_SLOW_RESISTANT (8 + 1 `d` 4)
+             [DropItem 1 maxBound COrgan S_POISONED]
 
 tmpNoSkMove =
-  tmpAspects IMMOBILE [AddSkill SkMove (-99)]
+  tmpAspects S_IMMOBILE [AddSkill SkMove (-99)]
 tmpNoSkMelee =
-  tmpAspects PACIFIED [AddSkill SkMelee (-99)]
+  tmpAspects S_PACIFIED [AddSkill SkMelee (-99)]
 tmpNoSkDisplace =
-  tmpAspects IRREPLACEABLE [AddSkill SkDisplace (-99)]
+  tmpAspects S_IRREPLACEABLE [AddSkill SkDisplace (-99)]
 tmpNoSkAlter =
-  tmpAspects RETAINING [AddSkill SkAlter (-99)]
+  tmpAspects S_RETAINING [AddSkill SkAlter (-99)]
 tmpNoSkWait =
-  tmpAspects IMPATIENT [AddSkill SkWait (-99)]
+  tmpAspects S_IMPATIENT [AddSkill SkWait (-99)]
 tmpNoSkMoveItem =
-  tmpAspects DISPOSSESSED [AddSkill SkMoveItem (-99)]
+  tmpAspects S_DISPOSSESSED [AddSkill SkMoveItem (-99)]
 tmpNoSkProject =
-  tmpAspects WITHHOLDING [AddSkill SkProject (-99)]
+  tmpAspects S_WITHHOLDING [AddSkill SkProject (-99)]
 tmpNoSkApply =
-  tmpAspects PARSIMONIOUS [AddSkill SkApply (-99)]
+  tmpAspects S_PARSIMONIOUS [AddSkill SkApply (-99)]
 
 tmpBonusSkMove =
-  tmpAspects MORE_MOBILE [AddSkill SkMove 5]
+  tmpAspects S_MORE_MOBILE [AddSkill SkMove 5]
 tmpBonusSkMelee =
-  tmpAspects MORE_COMBATIVE [AddSkill SkMelee 5]
+  tmpAspects S_MORE_COMBATIVE [AddSkill SkMelee 5]
 tmpBonusSkDisplace =
-  tmpAspects MORE_DISPLACING [AddSkill SkDisplace 5]
+  tmpAspects S_MORE_DISPLACING [AddSkill SkDisplace 5]
 tmpBonusSkAlter =
-  tmpAspects MORE_MODIFYING [AddSkill SkAlter 5]
+  tmpAspects S_MORE_MODIFYING [AddSkill SkAlter 5]
 tmpBonusSkWait =
-  tmpAspects MORE_PATIENT [AddSkill SkWait 5]
+  tmpAspects S_MORE_PATIENT [AddSkill SkWait 5]
 tmpBonusSkMoveItem =
-  tmpAspects MORE_TIDY [AddSkill SkMoveItem 5]
+  tmpAspects S_MORE_TIDY [AddSkill SkMoveItem 5]
 tmpBonusSkProject =
-  tmpAspects MORE_PROJECTING [AddSkill SkProject 8]
+  tmpAspects S_MORE_PROJECTING [AddSkill SkProject 8]
     -- TODO: 11, but let player control potion throwing by non-pointmen;
     -- beware also of capReinforced and other sources of the skill
 tmpBonusSkApply =
-  tmpAspects MORE_PRACTICAL [AddSkill SkApply 5]
+  tmpAspects S_MORE_PRACTICAL [AddSkill SkApply 5]

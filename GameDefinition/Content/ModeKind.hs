@@ -3,14 +3,14 @@ module Content.ModeKind
   ( -- * Group name patterns
     pattern RAID, pattern BRAWL, pattern LONG, pattern CRAWL, pattern FOGGY, pattern SHOOTOUT, pattern PERILOUS, pattern HUNT, pattern NIGHT, pattern ESCAPE, pattern BURNING, pattern ZOO, pattern RANGED, pattern AMBUSH, pattern SAFARI, pattern DIG, pattern SEE, pattern CRAWL_EMPTY, pattern CRAWL_SURVIVAL, pattern SAFARI_SURVIVAL, pattern BATTLE, pattern BATTLE_DEFENSE, pattern BATTLE_SURVIVAL, pattern DEFENSE, pattern DEFENSE_EMPTY
   , -- * Content
-    content, groupNames
+    content, groupNamesSingleton, groupNames
   ) where
 
 import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Content.CaveKind hiding (content, groupNames)
+import Content.CaveKind hiding (content, groupNames, groupNamesSingleton)
 import Content.ItemKindActor
 import Content.ModeKindPlayer
 import Game.LambdaHack.Content.CaveKind (CaveKind, pattern DEFAULT_RANDOM)
@@ -20,11 +20,14 @@ import Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
 
-groupNames :: [GroupName ModeKind]
-groupNames =
+groupNamesSingleton :: [GroupName ModeKind]
+groupNamesSingleton =
        [RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY]
 
 pattern RAID, BRAWL, LONG, CRAWL, FOGGY, SHOOTOUT, PERILOUS, HUNT, NIGHT, ESCAPE, BURNING, ZOO, RANGED, AMBUSH, SAFARI, DIG, SEE, CRAWL_EMPTY, CRAWL_SURVIVAL, SAFARI_SURVIVAL, BATTLE, BATTLE_DEFENSE, BATTLE_SURVIVAL, DEFENSE, DEFENSE_EMPTY :: GroupName ModeKind
+
+groupNames :: [GroupName ModeKind]
+groupNames = []
 
 pattern RAID = GroupName "raid"
 pattern BRAWL = GroupName "brawl"
