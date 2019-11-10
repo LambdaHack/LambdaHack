@@ -93,7 +93,17 @@ makeContentData contentName getName getFreq validateSingle validateAll
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content
-  in assert (null freqsOffenders
+      groupNamesSorted = sort groupNames
+      groupNameUnique = nub groupNamesSorted
+      groupNameNonUnique = groupNamesSorted \\ groupNameUnique
+      missingGroups = filter (not . omemberGroup contentData) groupNames
+  in assert (null groupNameNonUnique
+             `blame` contentName ++ ": some group names duplicated"
+             `swith` groupNameNonUnique) $
+     assert (null missingGroups
+             `blame` contentName ++ ": some group names pertain to no content"
+             `swith` missingGroups) $
+     assert (null freqsOffenders
              `blame` contentName ++ ": some Freqs values not valid"
              `swith` freqsOffenders) $
      assert (null singleOffenders
