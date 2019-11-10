@@ -65,15 +65,19 @@ tieKnotForAsync options@ServerOptions{ sallClear
   initialGen <- maybe SM.newSMGen return sdungeonRng
   let soptionsNxt = options {sdungeonRng = Just initialGen}
       boostedItems = IK.boostItemKindList initialGen Content.ItemKind.items
-      coitem = IK.makeData $
+      itemContent =
         if sboostRandomItem
         then boostedItems ++ Content.ItemKind.otherItemContent
         else Content.ItemKind.content
+      coitem = IK.makeData itemContent Content.ItemKind.groupNames
       coItemSpeedup = speedupItem coitem
       cotile = TK.makeData coitem Content.TileKind.content
+                                  Content.TileKind.groupNames
       coTileSpeedup = Tile.speedupTile sallClear cotile
       coplace = PK.makeData cotile Content.PlaceKind.content
+                                   Content.PlaceKind.groupNames
       cocave = CK.makeData coitem coplace cotile Content.CaveKind.content
+                                                 Content.CaveKind.groupNames
       -- Common content operations, created from content definitions.
       -- Evaluated fully to discover errors ASAP and to free memory.
       -- Fail here, not inside server code, so that savefiles are not removed,
@@ -82,6 +86,7 @@ tieKnotForAsync options@ServerOptions{ sallClear
         { cocave
         , coitem
         , comode  = MK.makeData cocave coitem Content.ModeKind.content
+                                              Content.ModeKind.groupNames
         , coplace
         , corule  = RK.makeData Content.RuleKind.standardRules
         , cotile

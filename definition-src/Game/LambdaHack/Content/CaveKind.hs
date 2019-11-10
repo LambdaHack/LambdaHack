@@ -160,6 +160,7 @@ makeData :: ContentData ItemKind
          -> ContentData PlaceKind
          -> ContentData TileKind
          -> [CaveKind]
+         -> [GroupName CaveKind]
          -> ContentData CaveKind
 makeData coitem coplace cotile =
   makeContentData "CaveKind" cname cfreq validateSingle

@@ -264,6 +264,7 @@ floorSymbol = Char.chr 183
 -- 100  walls
 -- maxBound  impenetrable walls, etc., can never be altered
 
-makeData :: ContentData ItemKind -> [TileKind] -> ContentData TileKind
+makeData :: ContentData ItemKind -> [TileKind] -> [GroupName TileKind]
+         -> ContentData TileKind
 makeData coitem =
   makeContentData "TileKind" tname tfreq validateSingle (validateAll coitem)

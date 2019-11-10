@@ -71,9 +71,11 @@ makeContentData :: Show c
                      -- ^ validate the whole defined content of this type
                      -- and list all offence
                 -> [c]  -- ^ all content of this type
+                -> [GroupName c]  -- ^ all group names for this content
                 -> ContentData c
 {-# INLINE makeContentData #-}
-makeContentData contentName getName getFreq validateSingle validateAll content =
+makeContentData contentName getName getFreq validateSingle validateAll
+                content groupNames =
   -- The @force@ is needed for @GHC.Compact@.
   let contentVector = V.force $ V.fromList content
       groupFreq =

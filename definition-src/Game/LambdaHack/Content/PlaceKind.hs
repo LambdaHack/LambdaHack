@@ -101,6 +101,7 @@ validateAll cotile content _ =
   in [ "override tile groups not in content:" <+> tshow missingOverride
      | not $ null missingOverride ]
 
-makeData :: ContentData TileKind -> [PlaceKind] -> ContentData PlaceKind
+makeData :: ContentData TileKind -> [PlaceKind] -> [GroupName PlaceKind]
+         -> ContentData PlaceKind
 makeData cotile =
   makeContentData "PlaceKind" pname pfreq validateSingle (validateAll cotile)

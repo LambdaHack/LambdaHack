@@ -3,7 +3,7 @@ module Content.ItemKind
   ( -- * Group name patterns
     pattern HARPOON, pattern EDIBLE_PLANT, pattern RING_OF_OPPORTUNITY_GRENADIER, pattern TORSO_ARMOR, pattern CLOTHING_MISC, pattern CHIC_GEAR
   , -- * Content
-    content, items, otherItemContent
+    content, items, otherItemContent, groupNames
   ) where
 
 import Prelude ()
@@ -25,6 +25,10 @@ import Game.LambdaHack.Definition.Defs
 import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
+
+groupNames :: [GroupName ItemKind]
+groupNames =
+       [HARPOON, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR] ++ embedsGN ++ actorsGN ++ organsGN ++ blastsGN ++ temporariesGN
 
 pattern HARPOON, FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, EDIBLE_PLANT, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
 

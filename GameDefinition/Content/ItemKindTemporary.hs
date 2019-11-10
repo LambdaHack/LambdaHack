@@ -1,9 +1,9 @@
 -- | Temporary pseudo-organ (condition) definitions.
 module Content.ItemKindTemporary
   ( -- * Group name patterns
-    pattern STRENGTHENED, pattern WEAKENED, pattern PROTECTED_FROM_MELEE, pattern PROTECTED_FROM_RANGED, pattern DEFENSELESS, pattern RESOLUTE, pattern HASTED, pattern SLOWED, pattern FAR_SIGHTED, pattern BLIND, pattern KEEN_SMELLING, pattern FOUL_SMELLING, pattern ROSE_SMELLING, pattern SHINY_EYED, pattern DEAFENED, pattern DEAF, pattern DRUNK, pattern FRENZIED, pattern IMMOBILE, pattern PACIFIED, pattern IRREPLACEABLE, pattern RETAINING, pattern IMPATIENT, pattern DISPOSSESSED, pattern WITHHOLDING, pattern PARSIMONIOUS, pattern MORE_MOBILE, pattern MORE_COMBATIVE, pattern MORE_DISPLACING, pattern MORE_MODIFYING, pattern MORE_PATIENT, pattern MORE_TIDY, pattern MORE_PROJECTING, pattern MORE_PRACTICAL, pattern REGENERATING, pattern POISONED, pattern SLOW_RESISTANT, pattern POISON_RESISTANT
+    pattern STRENGTHENED, pattern WEAKENED, pattern PROTECTED_FROM_MELEE, pattern PROTECTED_FROM_RANGED, pattern DEFENSELESS, pattern RESOLUTE, pattern HASTED, pattern SLOWED, pattern FAR_SIGHTED, pattern BLIND, pattern KEEN_SMELLING, pattern FOUL_SMELLING, pattern ROSE_SMELLING, pattern SHINY_EYED, pattern DEAFENED, pattern DEAF, pattern DRUNK, pattern FRENZIED, pattern REGENERATING, pattern POISONED, pattern SLOW_RESISTANT, pattern POISON_RESISTANT, pattern IMMOBILE, pattern PACIFIED, pattern IRREPLACEABLE, pattern RETAINING, pattern IMPATIENT, pattern DISPOSSESSED, pattern WITHHOLDING, pattern PARSIMONIOUS, pattern MORE_MOBILE, pattern MORE_COMBATIVE, pattern MORE_DISPLACING, pattern MORE_MODIFYING, pattern MORE_PATIENT, pattern MORE_TIDY, pattern MORE_PROJECTING, pattern MORE_PRACTICAL
   , -- * Content
-    temporaries
+    temporaries, temporariesGN, noStatGN, bonusStatGN
   ) where
 
 import Prelude ()
@@ -19,7 +19,17 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
-pattern STRENGTHENED, WEAKENED, PROTECTED_FROM_MELEE, PROTECTED_FROM_RANGED, DEFENSELESS, RESOLUTE, HASTED, SLOWED, FAR_SIGHTED, BLIND, KEEN_SMELLING, FOUL_SMELLING, ROSE_SMELLING, SHINY_EYED, DEAFENED, DEAF, DRUNK, FRENZIED, IMMOBILE, PACIFIED, IRREPLACEABLE, RETAINING, IMPATIENT, DISPOSSESSED, WITHHOLDING, PARSIMONIOUS, MORE_MOBILE, MORE_COMBATIVE, MORE_DISPLACING, MORE_MODIFYING, MORE_PATIENT, MORE_TIDY, MORE_PROJECTING, MORE_PRACTICAL, REGENERATING, POISONED, SLOW_RESISTANT, POISON_RESISTANT :: GroupName ItemKind
+noStatGN :: [GroupName ItemKind]
+noStatGN = [IMMOBILE, PACIFIED, IRREPLACEABLE, RETAINING, IMPATIENT, DISPOSSESSED, WITHHOLDING, PARSIMONIOUS]
+
+bonusStatGN :: [GroupName ItemKind]
+bonusStatGN = [MORE_MOBILE, MORE_COMBATIVE, MORE_DISPLACING, MORE_MODIFYING, MORE_PATIENT, MORE_TIDY, MORE_PROJECTING, MORE_PRACTICAL]
+
+temporariesGN :: [GroupName ItemKind]
+temporariesGN =
+       [STRENGTHENED, WEAKENED, PROTECTED_FROM_MELEE, PROTECTED_FROM_RANGED, DEFENSELESS, RESOLUTE, HASTED, SLOWED, FAR_SIGHTED, BLIND, KEEN_SMELLING, FOUL_SMELLING, ROSE_SMELLING, SHINY_EYED, DEAFENED, DEAF, DRUNK, FRENZIED, REGENERATING, POISONED, SLOW_RESISTANT, POISON_RESISTANT] ++ noStatGN ++ bonusStatGN
+
+pattern STRENGTHENED, WEAKENED, PROTECTED_FROM_MELEE, PROTECTED_FROM_RANGED, DEFENSELESS, RESOLUTE, HASTED, SLOWED, FAR_SIGHTED, BLIND, KEEN_SMELLING, FOUL_SMELLING, ROSE_SMELLING, SHINY_EYED, DEAFENED, DEAF, DRUNK, FRENZIED, REGENERATING, POISONED, SLOW_RESISTANT, POISON_RESISTANT, IMMOBILE, PACIFIED, IRREPLACEABLE, RETAINING, IMPATIENT, DISPOSSESSED, WITHHOLDING, PARSIMONIOUS, MORE_MOBILE, MORE_COMBATIVE, MORE_DISPLACING, MORE_MODIFYING, MORE_PATIENT, MORE_TIDY, MORE_PROJECTING, MORE_PRACTICAL :: GroupName ItemKind
 
 pattern STRENGTHENED = GroupName "strengthened"
 pattern WEAKENED = GroupName "weakened"
@@ -39,6 +49,10 @@ pattern DEAFENED = GroupName "deafened"
 pattern DEAF = GroupName "deaf"
 pattern DRUNK = GroupName "drunk"
 pattern FRENZIED = GroupName "frenzied"
+pattern REGENERATING = GroupName "regenerating"
+pattern POISONED = GroupName "poisoned"
+pattern SLOW_RESISTANT = GroupName "slow resistant"
+pattern POISON_RESISTANT = GroupName "poison resistant"
 pattern IMMOBILE = GroupName "immobile"
 pattern PACIFIED = GroupName "pacified"
 pattern IRREPLACEABLE = GroupName "irreplaceable"
@@ -55,18 +69,14 @@ pattern MORE_PATIENT = GroupName "more patient"
 pattern MORE_TIDY = GroupName "more tidy"
 pattern MORE_PROJECTING = GroupName "more projecting"
 pattern MORE_PRACTICAL = GroupName "more practical"
-pattern REGENERATING = GroupName "regenerating"
-pattern POISONED = GroupName "poisoned"
-pattern SLOW_RESISTANT = GroupName "slow resistant"
-pattern POISON_RESISTANT = GroupName "poison resistant"
 
 -- * Content
 
 temporaries :: [ItemKind]
 temporaries =
-  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant]
+  [tmpStrengthened, tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply]
 
-tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant :: ItemKind
+tmpStrengthened,    tmpWeakened, tmpProtectedMelee, tmpProtectedRanged, tmpDefenseless, tmpResolute, tmpFast20, tmpSlow10, tmpFarSighted, tmpBlind, tmpKeenSmelling, tmpFoulSmelling, tmpRoseSmelling, tmpNoctovision, tmpDeafened, tmpDeaf, tmpDrunk, tmpBonusSkAggresion, tmpRegenerating, tmpPoisoned, tmpSlow10Resistant, tmpPoisonResistant, tmpNoSkMove, tmpNoSkMelee, tmpNoSkDisplace, tmpNoSkAlter, tmpNoSkWait, tmpNoSkMoveItem, tmpNoSkProject, tmpNoSkApply, tmpBonusSkMove, tmpBonusSkMelee, tmpBonusSkDisplace, tmpBonusSkAlter, tmpBonusSkWait, tmpBonusSkMoveItem, tmpBonusSkProject, tmpBonusSkApply :: ItemKind
 
 -- The @name@ is be used in item description, so it should be an adjective
 -- describing the temporary set of aspects.
@@ -129,8 +139,20 @@ tmpDrunk = tmpAspects DRUNK [ AddSkill SkHurtMelee 30  -- fury
                               , AddSkill SkArmorRanged (-20)
                               , AddSkill SkSight (-8)
                               ]
+
 tmpBonusSkAggresion =
   tmpAspects FRENZIED [AddSkill SkAggression 5]
+
+tmpRegenerating =
+  tmpEffects REGENERATING (4 + 1 `d` 2) [RefillHP 1]
+tmpPoisoned =
+  tmpEffects POISONED (4 + 1 `d` 2) [RefillHP (-1)]
+tmpSlow10Resistant =
+  tmpEffects POISON_RESISTANT (8 + 1 `d` 4)
+             [DropItem 1 1 COrgan SLOWED]
+tmpPoisonResistant =
+  tmpEffects SLOW_RESISTANT (8 + 1 `d` 4)
+             [DropItem 1 maxBound COrgan POISONED]
 
 tmpNoSkMove =
   tmpAspects IMMOBILE [AddSkill SkMove (-99)]
@@ -167,14 +189,3 @@ tmpBonusSkProject =
     -- beware also of capReinforced and other sources of the skill
 tmpBonusSkApply =
   tmpAspects MORE_PRACTICAL [AddSkill SkApply 5]
-
-tmpRegenerating =
-  tmpEffects REGENERATING (4 + 1 `d` 2) [RefillHP 1]
-tmpPoisoned =
-  tmpEffects POISONED (4 + 1 `d` 2) [RefillHP (-1)]
-tmpSlow10Resistant =
-  tmpEffects POISON_RESISTANT (8 + 1 `d` 4)
-             [DropItem 1 1 COrgan SLOWED]
-tmpPoisonResistant =
-  tmpEffects SLOW_RESISTANT (8 + 1 `d` 4)
-             [DropItem 1 maxBound COrgan POISONED]

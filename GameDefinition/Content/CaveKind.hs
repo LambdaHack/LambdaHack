@@ -3,7 +3,7 @@ module Content.CaveKind
   ( -- * Group name patterns
     pattern CAVE_ROGUE, pattern CAVE_ARENA, pattern CAVE_SMOKING, pattern CAVE_LABORATORY, pattern CAVE_NOISE, pattern CAVE_MINE, pattern CAVE_EMPTY, pattern CAVE_SHALLOW_ROGUE, pattern CAVE_OUTERMOST, pattern CAVE_RAID, pattern CAVE_BRAWL, pattern CAVE_SHOOTOUT, pattern CAVE_HUNT, pattern CAVE_ESCAPE, pattern CAVE_ZOO, pattern CAVE_AMBUSH, pattern CAVE_BATTLE, pattern CAVE_SAFARI_1, pattern CAVE_SAFARI_2, pattern CAVE_SAFARI_3
   , -- * Content
-    content
+    content, groupNames
   ) where
 
 import Prelude ()
@@ -12,11 +12,11 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
-import           Content.ItemKind hiding (content)
+import           Content.ItemKind hiding (content, groupNames)
 import           Content.ItemKindActor
 import           Content.ItemKindBlast
-import           Content.PlaceKind hiding (content)
-import           Content.TileKind hiding (content)
+import           Content.PlaceKind hiding (content, groupNames)
+import           Content.TileKind hiding (content, groupNames)
 import           Game.LambdaHack.Content.CaveKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind
@@ -24,6 +24,10 @@ import           Game.LambdaHack.Core.Dice
 import           Game.LambdaHack.Definition.Defs
 
 -- * Group name patterns
+
+groupNames :: [GroupName CaveKind]
+groupNames =
+       [CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3]
 
 pattern CAVE_ROGUE, CAVE_ARENA, CAVE_SMOKING, CAVE_LABORATORY, CAVE_NOISE, CAVE_MINE, CAVE_EMPTY, CAVE_SHALLOW_ROGUE, CAVE_OUTERMOST, CAVE_RAID, CAVE_BRAWL, CAVE_SHOOTOUT, CAVE_HUNT, CAVE_ESCAPE, CAVE_ZOO, CAVE_AMBUSH, CAVE_BATTLE, CAVE_SAFARI_1, CAVE_SAFARI_2, CAVE_SAFARI_3 :: GroupName CaveKind
 

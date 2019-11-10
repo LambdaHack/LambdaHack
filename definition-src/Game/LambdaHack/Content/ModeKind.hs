@@ -239,6 +239,7 @@ pattern NO_CONFIRMS = GroupName "no confirms"
 makeData :: ContentData CaveKind
          -> ContentData ItemKind
          -> [ModeKind]
+         -> [GroupName ModeKind]
          -> ContentData ModeKind
 makeData cocave coitem =
   makeContentData "ModeKind" mname mfreq validateSingle

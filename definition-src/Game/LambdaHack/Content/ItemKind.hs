@@ -537,5 +537,5 @@ validateAll content coitem =
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
-makeData :: [ItemKind] -> ContentData ItemKind
+makeData :: [ItemKind] -> [GroupName ItemKind] -> ContentData ItemKind
 makeData = makeContentData "ItemKind" iname ifreq validateSingle validateAll
