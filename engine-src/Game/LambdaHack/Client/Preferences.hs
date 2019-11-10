@@ -365,7 +365,7 @@ aspectToBenefit asp =
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
-    IK.HideAs{} -> 0
+    IK.PresentAs{} -> 0
     IK.EqpSlot{} -> 0
     IK.Odds{} -> 0
       -- Should be already rolled; if not, can't tell easily.

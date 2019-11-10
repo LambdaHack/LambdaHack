@@ -62,7 +62,7 @@ buildItem :: COps -> IA.AspectRecord -> FlavourMap
           -> Item
 buildItem COps{coitem} arItem (FlavourMap flavourMap)
           (DiscoveryKindRev discoRev) ikChosen =
-  let jkind = case IA.aHideAs arItem of
+  let jkind = case IA.aPresentAs arItem of
         Just grp ->
           let kindHidden = ouniqGroup coitem grp
           in IdentityCovered

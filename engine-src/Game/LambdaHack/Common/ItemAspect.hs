@@ -37,13 +37,13 @@ import           Game.LambdaHack.Definition.Defs
 -- | Record of skills conferred by an item as well as of item flags
 -- and other item aspects.
 data AspectRecord = AspectRecord
-  { aTimeout :: Int
-  , aSkills  :: Ability.Skills
-  , aFlags   :: Ability.Flags
-  , aELabel  :: Text
-  , aToThrow :: IK.ThrowMod
-  , aHideAs  :: Maybe (GroupName IK.ItemKind)
-  , aEqpSlot :: Maybe Ability.EqpSlot
+  { aTimeout   :: Int
+  , aSkills    :: Ability.Skills
+  , aFlags     :: Ability.Flags
+  , aELabel    :: Text
+  , aToThrow   :: IK.ThrowMod
+  , aPresentAs :: Maybe (GroupName IK.ItemKind)
+  , aEqpSlot   :: Maybe Ability.EqpSlot
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -64,11 +64,11 @@ data KindMean = KindMean
 emptyAspectRecord :: AspectRecord
 emptyAspectRecord = AspectRecord
   { aTimeout = 0
-  , aSkills  = Ability.zeroSkills
-  , aFlags   = Ability.Flags ES.empty
-  , aELabel  = ""
+  , aSkills = Ability.zeroSkills
+  , aFlags = Ability.Flags ES.empty
+  , aELabel = ""
   , aToThrow = IK.ThrowMod 100 100 1
-  , aHideAs  = Nothing
+  , aPresentAs = Nothing
   , aEqpSlot = Nothing
   }
 
@@ -89,7 +89,7 @@ castAspect !ldepth !totalDepth !ar !asp =
                              $ ES.insert feat (Ability.flags $ aFlags ar)}
     IK.ELabel t -> return $! ar {aELabel = t}
     IK.ToThrow tt -> return $! ar {aToThrow = tt}
-    IK.HideAs ha -> return $! ar {aHideAs = Just ha}
+    IK.PresentAs ha -> return $! ar {aPresentAs = Just ha}
     IK.EqpSlot slot -> return $! ar {aEqpSlot = Just slot}
     IK.Odds d aspects1 aspects2 -> do
       pick1 <- oddsDice ldepth totalDepth d
@@ -123,7 +123,7 @@ addMeanAspect !ar !asp =
       ar {aFlags = Ability.Flags $ ES.insert feat (Ability.flags $ aFlags ar)}
     IK.ELabel t -> ar {aELabel = t}
     IK.ToThrow tt -> ar {aToThrow = tt}
-    IK.HideAs ha -> ar {aHideAs = Just ha}
+    IK.PresentAs ha -> ar {aPresentAs = Just ha}
     IK.EqpSlot slot -> ar {aEqpSlot = Just slot}
     IK.Odds{} -> ar  -- can't tell, especially since we don't know the level
 
@@ -138,7 +138,7 @@ aspectRecordToList AspectRecord{..} =
   ++ [IK.SetFlag feat | feat <- ES.elems $ Ability.flags aFlags]
   ++ [IK.ELabel aELabel | not $ T.null aELabel]
   ++ [IK.ToThrow aToThrow | not $ aToThrow == IK.ThrowMod 100 100 1]
-  ++ maybe [] (\ha -> [IK.HideAs ha]) aHideAs
+  ++ maybe [] (\ha -> [IK.PresentAs ha]) aPresentAs
   ++ maybe [] (\slot -> [IK.EqpSlot slot]) aEqpSlot
 
 rollAspectRecord :: [IK.Aspect] -> Dice.AbsDepth -> Dice.AbsDepth

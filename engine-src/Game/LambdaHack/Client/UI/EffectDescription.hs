@@ -353,7 +353,7 @@ kindAspectToSuffix aspect =
     SetFlag MinorEffects -> ""  -- cryptic override
     ELabel{} -> ""  -- too late
     ToThrow tmod -> wrapInChevrons $ tmodToSuff "flies" tmod
-    HideAs{} -> ""
+    PresentAs{} -> ""
     EqpSlot{} -> ""  -- used in @slotToSentence@ instead
     Odds{} -> ""
 
@@ -378,7 +378,7 @@ aspectToSentence feat =
     SetFlag MinorEffects -> Nothing
     ELabel{} -> Nothing
     ToThrow{} -> Nothing
-    HideAs{} -> Nothing
+    PresentAs{} -> Nothing
     EqpSlot es -> Just $ slotToSentence es
     Odds{} -> Just "Individual specimens sometimes have yet other properties."
 

@@ -385,7 +385,7 @@ flaskTemplate = ItemKind
   , iverbHit = "splash"
   , iweight  = 500
   , idamage  = 0
-  , iaspects = [ HideAs FLASK_UNKNOWN, SetFlag Lobable, SetFlag Fragile
+  , iaspects = [ PresentAs FLASK_UNKNOWN, SetFlag Lobable, SetFlag Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , ieffects = []
   , idesc    = "A flask of oily liquid of a suspect color. Something seems to be moving inside. Double dose causes twice longer effect."
@@ -556,7 +556,7 @@ potionTemplate = ItemKind
   , iverbHit = "splash"
   , iweight  = 200
   , idamage  = 0
-  , iaspects = [ HideAs POTION_UNKNOWN, SetFlag Lobable, SetFlag Fragile
+  , iaspects = [ PresentAs POTION_UNKNOWN, SetFlag Lobable, SetFlag Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , ieffects = []
   , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
@@ -784,7 +784,7 @@ ediblePlantTemplate = ItemKind
   , iverbHit = "thump"
   , iweight  = 50
   , idamage  = 0
-  , iaspects = [ HideAs EDIBLE_PLANT_UNKNOWN
+  , iaspects = [ PresentAs EDIBLE_PLANT_UNKNOWN
                , toVelocity 30 ]  -- low density, often falling apart
   , ieffects = []
   , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating may reveal the full effects."
@@ -845,7 +845,7 @@ scrollTemplate = ItemKind
   , iverbHit = "thump"
   , iweight  = 50
   , idamage  = 0
-  , iaspects = [ HideAs SCROLL_UNKNOWN
+  , iaspects = [ PresentAs SCROLL_UNKNOWN
                , toVelocity 30 ]  -- bad shape, even rolled up
   , ieffects = []
   , idesc    = "Scraps of haphazardly scribbled mysteries from beyond. Is this equation an alchemical recipe? Is this diagram an extradimensional map? Is this formula a secret call sign?"
@@ -1030,7 +1030,7 @@ motionScanner = ItemKind
 -- to let clients know that the not identified item is periodic jewelry.
 iaspects_necklaceTemplate :: [Aspect]
 iaspects_necklaceTemplate =
-  [ HideAs NECKLACE_UNKNOWN
+  [ PresentAs NECKLACE_UNKNOWN
   , SetFlag Periodic, SetFlag Precious, SetFlag Equipable
   , toVelocity 50 ]  -- not dense enough
 gorget = necklaceTemplate
@@ -1215,7 +1215,7 @@ ringTemplate = ItemKind
   , iverbHit = "knock"
   , iweight  = 15
   , idamage  = 0
-  , iaspects = [HideAs RING_UNKNOWN, SetFlag Precious, SetFlag Equipable]
+  , iaspects = [PresentAs RING_UNKNOWN, SetFlag Precious, SetFlag Equipable]
   , ieffects = []
   , idesc    = "It looks like an ordinary object, but it's in fact a generator of exceptional effects: adding to some of your natural qualities and subtracting from others."
   , ikit     = []
@@ -1536,7 +1536,7 @@ hammerTemplate = ItemKind
   , idamage  = 8 `d` 1  -- we are lying about the dice here, but the dungeon
                         -- is too small and the extra-dice hammers too rare
                         -- to subdivide this identification class by dice
-  , iaspects = [ HideAs HAMMER_UNKNOWN
+  , iaspects = [ PresentAs HAMMER_UNKNOWN
                , SetFlag Durable, SetFlag Meleeable
                , toVelocity 40 ]  -- ensuring it hits with the tip costs speed
   , ieffects = []
@@ -1562,7 +1562,7 @@ hammer3 = hammerTemplate
   , idamage  = 12 `d` 1
   , iaspects = [ Timeout 12  -- balance, or @DupItem@ would break the game
                , EqpSlot EqpSlotWeaponBig]
-               ++ delete (HideAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
   , idesc    = "This hammer sports a long metal handle that increases the momentum of the sharpened head's swing, at the cost of long recovery."
   }
 hammerParalyze = hammerTemplate
@@ -1586,7 +1586,7 @@ hammerSpark = hammerTemplate
                , Timeout 10
                , EqpSlot EqpSlotWeaponBig
                , AddSkill SkShine 3]
-               ++ delete (HideAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
+               ++ delete (PresentAs HAMMER_UNKNOWN) (iaspects hammerTemplate)
   , ieffects = [Explode SPARK]
       -- we can't use a focused explosion, because it would harm the hammer
       -- wielder as well, unlike this one
@@ -1694,7 +1694,7 @@ gemTemplate = ItemKind
   , iverbHit = "tap"
   , iweight  = 50
   , idamage  = 0
-  , iaspects = [HideAs GEM_UNKNOWN, SetFlag Precious]
+  , iaspects = [PresentAs GEM_UNKNOWN, SetFlag Precious]
   , ieffects = []
   , idesc    = "Useless, and still worth around 100 gold each. Would gems of thought and pearls of artful design be valued that much in our age of Science and Progress!"
   , ikit     = []
@@ -1745,7 +1745,7 @@ currencyTemplate = ItemKind
   , iverbHit = "tap"
   , iweight  = 31
   , idamage  = 0
-  , iaspects = [HideAs CURRENCY_UNKNOWN, SetFlag Precious]
+  , iaspects = [PresentAs CURRENCY_UNKNOWN, SetFlag Precious]
   , ieffects = []
   , idesc    = "Reliably valuable in every civilized plane of existence."
   , ikit     = []

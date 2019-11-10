@@ -8,7 +8,7 @@ module Game.LambdaHack.Content.ItemKind
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
   , boostItemKindList, forApplyEffect
   , strengthOnCombine, strengthOnSmash, getDropOrgans
-  , getMandatoryHideAsFromKind, isEffEscape, isEffEscapeOrAscend
+  , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
   , timeoutAspect, onSmashEffect, onCombineEffect, damageUsefulness
   , verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
@@ -125,7 +125,7 @@ data Aspect =
                        -- ^ item feature
   | ELabel Text        -- ^ extra label of the item; it's not pluralized
   | ToThrow ThrowMod   -- ^ parameters modifying a throw
-  | HideAs (GroupName ItemKind)
+  | PresentAs (GroupName ItemKind)
                        -- ^ until identified, presents as this unique kind
   | EqpSlot Ability.EqpSlot
                        -- ^ AI and UI flag that leaks item intended use
@@ -335,9 +335,9 @@ getDropOrgans =
   in concatMap f . ieffects
 
 -- Anything under @Odds@ is ignored, because it's not mandatory.
-getMandatoryHideAsFromKind :: ItemKind -> Maybe (GroupName ItemKind)
-getMandatoryHideAsFromKind itemKind =
-  let f (HideAs grp) = [grp]
+getMandatoryPresentAsFromKind :: ItemKind -> Maybe (GroupName ItemKind)
+getMandatoryPresentAsFromKind itemKind =
+  let f (PresentAs grp) = [grp]
       f _ = []
   in listToMaybe $ concatMap f (iaspects itemKind)
 
@@ -430,10 +430,10 @@ validateSingle ik@ItemKind{..} =
           ts = filter f iaspects
       in ["more than one ToThrow specification" | length ts > 1])
   ++ (let f :: Aspect -> Bool
-          f HideAs{} = True
+          f PresentAs{} = True
           f _ = False
           ts = filter f iaspects
-      in ["more than one HideAs specification" | length ts > 1])
+      in ["more than one PresentAs specification" | length ts > 1])
   ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
   ++ (let f :: Effect -> Bool
           f VerbMsg{} = True
@@ -497,21 +497,21 @@ validateDamage dice = [ "potentially negative dice:" <+> tshow dice
 validateAll :: [ItemKind] -> ContentData ItemKind -> [Text]
 validateAll content coitem =
   let f :: Aspect -> Bool
-      f HideAs{} = True
+      f PresentAs{} = True
       f _ = False
-      wrongHideAsGroups =
+      wrongPresentAsGroups =
         [ cgroup
         | k <- content
         , let (cgroup, notSingleton) = case find f (iaspects k) of
-                Just (HideAs grp) | not $ oisSingletonGroup coitem grp ->
+                Just (PresentAs grp) | not $ oisSingletonGroup coitem grp ->
                   (grp, True)
                 _ -> (undefined, False)
         , notSingleton
         ]
       missingHardwiredGroups =
         filter (not . omemberGroup coitem) hardwiredGroups
-  in [ "HideAs groups not singletons:" <+> tshow wrongHideAsGroups
-     | not $ null wrongHideAsGroups ]
+  in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
+     | not $ null wrongPresentAsGroups ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
