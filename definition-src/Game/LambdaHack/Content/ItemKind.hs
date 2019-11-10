@@ -512,6 +512,8 @@ validateAll content coitem =
         filter (not . omemberGroup coitem) hardwiredGroups
   in [ "PresentAs groups not singletons:" <+> tshow wrongPresentAsGroups
      | not $ null wrongPresentAsGroups ]
+     ++ [ "CURRENCY group not a singleton."
+        | not $ oisSingletonGroup coitem CURRENCY ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 

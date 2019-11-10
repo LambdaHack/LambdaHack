@@ -156,14 +156,34 @@ validateDups TileKind{..} feat =
 -- dungeon generation rules, AI preferences, etc., whithout causing the tedium.
 validateAll :: [TileKind] -> ContentData TileKind -> [Text]
 validateAll content cotile =
-  let missingHardwiredGroups =
+  let f :: Feature -> Bool
+      f HideAs{} = True
+      f BuildAs{} = True
+      f _ = False
+      wrongFooAsGroups =
+        [ cgroup
+        | k <- content
+        , let (cgroup, notSingleton) = case find f (tfeature k) of
+                Just (HideAs grp) | not $ oisSingletonGroup cotile grp ->
+                  (grp, True)
+                Just (BuildAs grp) | not $ oisSingletonGroup cotile grp ->
+                  (grp, True)
+                _ -> (undefined, False)
+        , notSingleton
+        ]
+      missingHardwiredGroups =
         filter (not . omemberGroup cotile) hardwiredGroups
-  in [ "unknown tile (the first) should be the unknown one"
-     | talter (head content) /= 1 || tname (head content) /= "unknown space" ]
+  in [ "HideAs or BuildAs groups not singletons:" <+> tshow wrongFooAsGroups
+     | not $ null wrongFooAsGroups ]
+     ++ [ "unknown tile (the first) should be the unknown one"
+        | talter (head content) /= 1
+          || tname (head content) /= "unknown space" ]
      ++ [ "no tile other than the unknown (the first) should require skill 1"
         | all (\tk -> talter tk == 1) (tail content) ]
      ++ [ "only unknown tile may have talter 1"
         | any ((== 1) . talter) $ tail content ]
+     ++ [ "UNKNOWN_OUTER_FENCE group not a singleton."
+        | not $ oisSingletonGroup cotile UNKNOWN_OUTER_FENCE ]
      ++ [ "hardwired groups not in content:" <+> tshow missingHardwiredGroups
         | not $ null missingHardwiredGroups ]
 
