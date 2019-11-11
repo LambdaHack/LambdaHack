@@ -2,8 +2,9 @@
 module Content.ItemKind
   ( -- * Group name patterns
     pattern HARPOON, pattern EDIBLE_PLANT, pattern RING_OF_OPPORTUNITY_GRENADIER, pattern TORSO_ARMOR, pattern CLOTHING_MISC, pattern CHIC_GEAR
+  , groupNamesSingleton, groupNames
   , -- * Content
-    content, items, otherItemContent, groupNamesSingleton, groupNames
+    content, items, otherItemContent
   ) where
 
 import Prelude ()
@@ -28,13 +29,15 @@ import Game.LambdaHack.Definition.Flavour
 
 groupNamesSingleton :: [GroupName ItemKind]
 groupNamesSingleton =
-       [FLASK_UNKNOWN, ANY_POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN] ++ organsGNSingleton ++ blastsGNSingleton ++ temporariesGNSingleton
+       [FLASK_UNKNOWN, ANY_POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN]
+    ++ organsGNSingleton ++ blastsGNSingleton ++ temporariesGNSingleton
 
 pattern FLASK_UNKNOWN, ANY_POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN :: GroupName ItemKind
 
 groupNames :: [GroupName ItemKind]
 groupNames =
-       [HARPOON, EDIBLE_PLANT, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, CLOTHING_MISC, CHIC_GEAR] ++ embedsGN ++ actorsGN ++ organsGN ++ blastsGN
+       [HARPOON, EDIBLE_PLANT, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, CLOTHING_MISC, CHIC_GEAR]
+    ++ embedsGN ++ actorsGN ++ organsGN ++ blastsGN
 
 pattern HARPOON, EDIBLE_PLANT, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, CLOTHING_MISC, CHIC_GEAR :: GroupName ItemKind
 
@@ -1384,7 +1387,7 @@ gloveJousting = gloveFencing
 hatUshanka = ItemKind
   { isymbol  = symbolMiscArmor
   , iname    = "ushanka hat"
-  , ifreq    = [(COMMON_ITEM, 100), (ARMOR_MISC, 1)]
+  , ifreq    = [(COMMON_ITEM, 100), (ARMOR_MISC, 1), (CLOTHING_MISC, 1)]
   , iflavour = zipPlain [Brown]
   , icount   = 1
   , irarity  = [(1, 6), (10, 1)]

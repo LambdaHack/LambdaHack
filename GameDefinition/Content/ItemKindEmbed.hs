@@ -1,9 +1,11 @@
 -- | Definitions of items embedded in map tiles.
 module Content.ItemKindEmbed
   ( -- * Group name patterns
-    pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND, pattern SANDSTONE_ROCK
+    pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
+  , pattern SANDSTONE_ROCK
+  , embedsGN
   , -- * Content
-    embeds, embedsGN
+    embeds
   ) where
 
 import Prelude ()
@@ -36,7 +38,7 @@ pattern TREASURE_CACHE_TRAP = GroupName "treasure cache trap"
 pattern SIGNAGE = GroupName "signage"
 pattern SMALL_FIRE = GroupName "small fire"
 pattern BIG_FIRE = GroupName "big fire"
-pattern FROST = GroupName "frost"
+pattern FROST = GroupName "frozen mass"
 pattern RUBBLE = GroupName "rubble"
 pattern DOORWAY_TRAP_UNKNOWN = GroupName "doorway trap unknown"
 pattern DOORWAY_TRAP = GroupName "doorway trap"

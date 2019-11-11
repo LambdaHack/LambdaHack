@@ -7,8 +7,9 @@ module Content.TileKind
     -- ** Used in PlaceKind, but not in CaveKind.
   , pattern RECT_WINDOWS_VERTICAL_LIT, pattern RECT_WINDOWS_VERTICAL_DARK, pattern RECT_WINDOWS_HORIZONTAL_LIT, pattern RECT_WINDOWS_HORIZONTAL_DARK, pattern TREE_SHADE_WALKABLE_LIT, pattern TREE_SHADE_WALKABLE_DARK, pattern SMOKE_CLUMP_LIT, pattern SMOKE_CLUMP_DARK, pattern GLASSHOUSE_VERTICAL_LIT, pattern GLASSHOUSE_VERTICAL_DARK, pattern GLASSHOUSE_HORIZONTAL_LIT, pattern GLASSHOUSE_HORIZONTAL_DARK, pattern BUSH_CLUMP_LIT, pattern BUSH_CLUMP_DARK, pattern FOG_CLUMP_LIT, pattern FOG_CLUMP_DARK, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern CACHE, pattern SIGNBOARD, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN
   , pattern S_LAMP_POST, pattern S_TREE_LIT, pattern S_TREE_DARK, pattern S_WALL_LIT, pattern S_WALL_HORIZONTAL_LIT, pattern S_PULPIT, pattern S_BUSH_LIT, pattern S_FOG_LIT, pattern S_SMOKE_LIT, pattern S_FLOOR_ACTOR_LIT, pattern S_FLOOR_ACTOR_DARK, pattern S_FLOOR_ASHES_LIT, pattern S_FLOOR_ASHES_DARK, pattern S_SHADED_GROUND
+  , groupNamesSingleton, groupNames
     -- * Content
-  , content, groupNamesSingleton, groupNames
+  , content
   ) where
 
 import Prelude ()

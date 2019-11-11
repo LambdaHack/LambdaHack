@@ -4,8 +4,9 @@ module Content.ItemKindBlast
     pattern S_FIRECRACKER, pattern S_VIOLENT_FRAGMENTATION, pattern S_FRAGMENTATION, pattern S_FOCUSED_FRAGMENTATION, pattern S_VIOLENT_CONCUSSION, pattern S_CONCUSSION, pattern S_FOCUSED_CONCUSSION, pattern S_VIOLENT_FLASH, pattern S_SPARK, pattern S_FOCUSED_fLASH, pattern S_GLASS_HAIL, pattern S_FOCUSED_GLASS_HAIL, pattern S_PHEROMONE, pattern S_CALMING_MIST, pattern S_DISTRESSING_ODOR, pattern S_HEALING_MIST, pattern S_HEALING_MIST_2, pattern S_WOUNDING_MIST, pattern S_DISTORTION, pattern S_SMOKE, pattern S_BOILING_WATER, pattern S_GLUE, pattern S_WASTE, pattern S_ANTI_SLOW_MIST, pattern S_ANTIDOTE_MIST, pattern S_SLEEP_MIST, pattern S_DENSE_SHOWER, pattern S_SPARSE_SHOWER, pattern S_MELEE_PROTECTIVE_BALM, pattern S_RANGE_PROTECTIVE_BALM, pattern S_DEFENSELESSNESS_RUNOUT, pattern S_RESOLUTION_DUST, pattern S_HASTE_SPRAY, pattern S_SLOWNESS_MIST, pattern S_EYE_DROP, pattern S_IRON_FILING, pattern S_SMELLY_DROPLET, pattern S_EYE_SHINE, pattern S_WHISKEY_SPRAY, pattern S_YOUTH_SPRINKLE, pattern S_POISON_CLOUD, pattern S_BURNING_OIL_2, pattern S_BURNING_OIL_3, pattern S_BURNING_OIL_4
   , blastNoStatOf, blastBonusStatOf
   , pattern ARMOR_MISC
+  , blastsGNSingleton, blastsGN
   , -- * Content
-    blasts, blastsGNSingleton, blastsGN
+    blasts
   ) where
 
 import Prelude ()
