@@ -682,8 +682,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need subsequent altering.
       unless (Tile.isDoor coTileSpeedup serverTile
-              || Tile.isChangable coTileSpeedup serverTile
-              || EM.null embeds) $ do
+              || Tile.isChangable coTileSpeedup serverTile) $ do
         triggered <- tryApplyEmbeds
         when (triggered /= UseDud) $
           execSfxAtomic $ SfxTrigger source lid tpos
@@ -841,7 +840,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- don't display a message, because the change
             -- is visible on the map (unless it changes into itself)
             -- and there's nothing more to speak about.
-            triggered <- if EM.null embeds then return UseDud else do
+            triggered <- do
               -- The embeds of the initial tile are activated before the tile
               -- is altered. This prevents, e.g., trying to activate items
               -- where none are present any more, or very different to what
