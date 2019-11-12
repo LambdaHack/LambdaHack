@@ -612,9 +612,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
   discoAspect <- getsState sdiscoAspect
-  factionD <- getsState sfactionD
-  let calmE = calmEnough sb actorMaxSk
+  let sar = discoAspect EM.! btrunk sb
+      calmE = calmEnough sb actorMaxSk
       lid = blid sb
+  factionD <- getsState sfactionD
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
   itemToF <- getsState $ flip itemToFull
   actorSk <- currentSkillsServer source
@@ -630,11 +631,14 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       revealEmbeds = unless (EM.null embeds) $
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       tryApplyEmbeds = do
-        urs <- mapM tryApplyEmbed
-                    (sortEmbeds cops getKind serverTile embeds)
-        return $! case urs of
-          [] -> UseDud  -- there was no effects
-          _ -> maximum urs
+        if IA.checkFlag Ability.Blast sar
+        then return UseDud  -- prevent embeds triggering each other in a loop
+        else do
+          urs <- mapM tryApplyEmbed
+                      (sortEmbeds cops getKind serverTile embeds)
+          return $! case urs of
+            [] -> UseDud  -- there was no effects
+            _ -> maximum urs
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
