@@ -74,11 +74,12 @@ writeLine offset al = FrameForall $ \v -> do
         writeAt (off + 1) rest
   writeAt offset $ attrLine al
 
--- | An frame that is padded to fill the whole screen with an optional
+-- | A frame that is padded to fill the whole screen with an optional
 -- overlay to display in proportional font.
 --
--- Note that we don't provide a list of color-highlighed positions separately,
--- because overlays need to obscure not only map, but the highlights as well.
+-- Note that we don't provide a list of color-highlighed box positions
+-- to be drawn separately, because overlays need to obscure not only map,
+-- but the highlights as well, so highlights need to be included earlier.
 data SingleFrame = SingleFrame
   { singleArray       :: PointArray.Array Color.AttrCharW32
   , singlePropOverlay :: Overlay

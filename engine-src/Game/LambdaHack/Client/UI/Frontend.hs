@@ -178,8 +178,14 @@ frameTimeoutThread delta fdelay RawFrontend{..} = do
   loop
 
 -- | The name of the chosen frontend.
-frontendName :: String
-frontendName = Chosen.frontendName
+frontendName :: ClientOptions -> String
+frontendName soptions =
+  if | sfrontendNull soptions -> "null test"
+     | sfrontendLazy soptions -> "lazy test"
+#ifndef REMOVE_TELETYPE
+     | sfrontendTeletype soptions -> Teletype.frontendName
+#endif
+     | otherwise -> Chosen.frontendName
 
 lazyStartup :: ScreenContent -> IO RawFrontend
 lazyStartup coscreen = createRawFrontend coscreen (\_ -> return ()) (return ())

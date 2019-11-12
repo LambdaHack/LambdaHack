@@ -563,10 +563,11 @@ drawHudFrame dm drawnLevelId = do
   updPath <- drawFramePath drawnLevelId
   updActor <- drawFrameActor drawnLevelId
   updExtra <- drawFrameExtra dm drawnLevelId
+  soptions <- getsClient soptions
   let upd = FrameForall $ \v -> do
         unFrameForall updContent v
         -- vty frontend is screen-reader friendly, so avoid visual fluff
-        unless (frontendName == "vty") $ unFrameForall updPath v
+        unless (frontendName soptions == "vty") $ unFrameForall updPath v
         unFrameForall updActor v
         unFrameForall updExtra v
   return (baseTerrain, upd)
