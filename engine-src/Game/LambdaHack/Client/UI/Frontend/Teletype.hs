@@ -16,6 +16,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -49,7 +50,7 @@ shutdown = SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr
 display :: ScreenContent
         -> SingleFrame
         -> IO ()
-display coscreen SingleFrame{singleArray} =
+display coscreen SingleFrame{..} = do
   let f w l =
         let acCharRaw = Color.charFromW32 w
             acChar = if acCharRaw == floorSymbol then '.' else acCharRaw
@@ -58,7 +59,9 @@ display coscreen SingleFrame{singleArray} =
       chunk [] = []
       chunk l = let (ch, r) = splitAt (rwidth coscreen) l
                 in ch : chunk r
-  in SIO.hPutStrLn SIO.stderr $ unlines levelChar
+  SIO.hPutStrLn SIO.stderr $ unlines levelChar
+  mapM_ (SIO.hPutStrLn SIO.stderr) $
+    map (map Color.charFromW32 . attrLine . snd) singlePropOverlay
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $

@@ -51,7 +51,6 @@ import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
-import           Game.LambdaHack.Client.UI.Frontend
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -101,18 +100,18 @@ putSession :: MonadClientUI m => SessionUI -> m ()
 putSession s = modifySession (const s)
 
 -- | Write a UI request to the frontend and read a corresponding reply.
-connFrontend :: MonadClientUI m => FrontReq a -> m a
+connFrontend :: MonadClientUI m => Frontend.FrontReq a -> m a
 connFrontend req = do
-  ChanFrontend f <- getsSession schanF
+  Frontend.ChanFrontend f <- getsSession schanF
   liftIO $ f req
 
 displayFrame :: MonadClientUI m => Maybe Frame -> m ()
 displayFrame mf = do
   frame <- case mf of
-    Nothing -> return $! FrontDelay 1
+    Nothing -> return $! Frontend.FrontDelay 1
     Just fr -> do
       modifySession $ \cli -> cli {snframes = snframes cli + 1}
-      return $! FrontFrame fr
+      return $! Frontend.FrontFrame fr
   connFrontend frame
 
 -- | Push frames or delays to the frame queue. The frames depict
@@ -140,36 +139,36 @@ displayFrames lid frs = do
 connFrontendFrontKey :: MonadClientUI m => [K.KM] -> PreFrame3 -> m K.KM
 connFrontendFrontKey frontKeyKeys ((bfr, ffr), (ovProp, ovMono)) = do
   let frontKeyFrame = ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))
-  kmp <- connFrontend $ FrontKey frontKeyKeys frontKeyFrame
+  kmp <- connFrontend $ Frontend.FrontKey frontKeyKeys frontKeyFrame
   modifySession $ \sess -> sess {spointer = K.kmpPointer kmp}
   return $! K.kmpKeyMod kmp
 
 setFrontAutoYes :: MonadClientUI m => Bool -> m ()
-setFrontAutoYes b = connFrontend $ FrontAutoYes b
+setFrontAutoYes b = connFrontend $ Frontend.FrontAutoYes b
 
 frontendShutdown :: MonadClientUI m => m ()
-frontendShutdown = connFrontend FrontShutdown
+frontendShutdown = connFrontend Frontend.FrontShutdown
 
 printScreen :: MonadClientUI m => m ()
-printScreen = connFrontend FrontPrintScreen
+printScreen = connFrontend Frontend.FrontPrintScreen
 
 -- | Initialize the frontend chosen by the player via client options.
 chanFrontend :: MonadClientUI m
-             => ScreenContent -> ClientOptions -> m ChanFrontend
+             => ScreenContent -> ClientOptions -> m Frontend.ChanFrontend
 chanFrontend coscreen soptions =
   liftIO $ Frontend.chanFrontendIO coscreen soptions
 
 anyKeyPressed :: MonadClientUI m => m Bool
-anyKeyPressed = connFrontend FrontPressed
+anyKeyPressed = connFrontend Frontend.FrontPressed
 
 discardPressedKey :: MonadClientUI m => m ()
-discardPressedKey = connFrontend FrontDiscardKey
+discardPressedKey = connFrontend Frontend.FrontDiscardKey
 
 resetPressedKeys :: MonadClientUI m => m ()
-resetPressedKeys = connFrontend FrontResetKeys
+resetPressedKeys = connFrontend Frontend.FrontResetKeys
 
 addPressedKey :: MonadClientUI m => K.KMP -> m ()
-addPressedKey = connFrontend . FrontAdd
+addPressedKey = connFrontend . Frontend.FrontAdd
 
 addPressedControlEsc :: MonadClientUI m => m ()
 addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
@@ -270,7 +269,7 @@ clearAimMode = do
 getFontSetup :: MonadClientUI m => m FontSetup
 getFontSetup = do
   soptions@ClientOptions{sdlPropFontFile} <- getsClient soptions
-  let multiFont = frontendName soptions == "sdl"
+  let multiFont = Frontend.frontendName soptions == "sdl"
                   && maybe False (not . T.null) sdlPropFontFile
   return $! if multiFont then multiFontSetup else singleFontSetup
 

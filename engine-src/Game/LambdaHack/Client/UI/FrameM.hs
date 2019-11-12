@@ -22,6 +22,7 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
+import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -49,10 +50,14 @@ drawOverlay dm onBlank ovs lid = do
                   return (m, FrameForall $ \_v -> return ())
                 else drawHudFrame dm lid
   FontSetup{..} <- getFontSetup
-  let ovProp = if multiFont
+  soptions <- getsClient soptions
+  let isTeletype = Frontend.frontendName soptions == "teletype"
+      ovProp = if multiFont
                then truncateOverlay False (4 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] propFont ovs
-               else []
+               else if isTeletype  -- hack for debug output
+                    then concat $ EM.elems ovs
+                    else []
       ovMono = if multiFont
                then truncateOverlay False (2 * rwidth) rheight True 24 onBlank
                     $ EM.findWithDefault [] monoFont ovs
@@ -64,8 +69,10 @@ drawOverlay dm onBlank ovs lid = do
                      $ EM.findWithDefault [] squareFont ovs
                      -- 14 needed not to leave gaps in, e. g., skills menu;
                      -- usually fine, because square never on the right
-                else truncateOverlay True rwidth rheight True 20 onBlank
-                     $ concat $ EM.elems ovs
+                else if isTeletype  -- hack for debug output
+                     then []
+                     else truncateOverlay True rwidth rheight True 20 onBlank
+                          $ concat $ EM.elems ovs
       overlayedFrame = overlayFrame rwidth ovOther basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
