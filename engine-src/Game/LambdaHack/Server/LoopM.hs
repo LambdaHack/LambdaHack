@@ -476,25 +476,25 @@ hTrajectories aid = do
 -- blocking path of human-controlled actors and alarming the hapless human.
 advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
 {-# INLINE advanceTrajectory #-}
-advanceTrajectory aid b = do
+advanceTrajectory aid b1 = do
   COps{coTileSpeedup} <- getsState scops
-  lvl <- getLevel $ blid b
-  arTrunk <- getsState $ (EM.! btrunk b) . sdiscoAspect
-  case btrajectory b of
+  lvl <- getLevel $ blid b1
+  arTrunk <- getsState $ (EM.! btrunk b1) . sdiscoAspect
+  case btrajectory b1 of
     Just (d : lv, speed) -> do
-      let tpos = bpos b `shift` d  -- target position
+      let tpos = bpos b1 `shift` d  -- target position
       if | Tile.isWalkable coTileSpeedup $ lvl `at` tpos -> do
            -- Hit will clear trajectories in @reqMelee@,
            -- so no need to do that here.
-           execUpdAtomic $ UpdTrajectory aid (btrajectory b) (Just (lv, speed))
-           when (null lv && bproj b
+           execUpdAtomic $ UpdTrajectory aid (btrajectory b1) (Just (lv, speed))
+           when (null lv && bproj b1
                  && not (IA.checkFlag Ability.Blast arTrunk)) $ do
              killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-             addKillToAnalytics killer KillDropLaunch (bfid b) (btrunk b)
+             addKillToAnalytics killer KillDropLaunch (bfid b1) (btrunk b1)
            let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
                reqMoveHit = reqMoveGeneric False True aid d
                reqDisp = reqDisplaceGeneric False aid
-           if | bproj b ->
+           if | bproj b1 ->
                 -- Projectiles always hit; then can't tell friend from foe.
                 reqMoveHit
               | occupied ->
@@ -506,8 +506,8 @@ advanceTrajectory aid b = do
                   (Nothing, _) -> reqMoveHit  -- can't displace multiple
                   (Just target, []) -> do
                     b2 <- getsState $ getActorBody target
-                    fact <- getsState $ (EM.! bfid b) . sfactionD
-                    if isFoe (bfid b) fact (bfid b2)
+                    fact <- getsState $ (EM.! bfid b1) . sfactionD
+                    if isFoe (bfid b1) fact (bfid b2)
                     then reqMoveHit
                     else reqDisp target
                   (Just _, _) -> reqMoveHit  -- can't displace multiple
@@ -515,10 +515,11 @@ advanceTrajectory aid b = do
          | otherwise -> do
            -- Will be removed from @strajTime@ in recursive call
            -- to @handleTrajectories@.
-           unless (bproj b) $
+           unless (bproj b1) $
              execSfxAtomic $ SfxCollideTile aid tpos
            mfail <- reqAlterFail False False aid tpos
-           lvl2 <- getLevel $ blid b
+           b2 <- getsState $ getActorBody aid
+           lvl2 <- getLevel $ blid b2
            case mfail of
              Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos ->
                -- Too late to announce anything, but given that the way
@@ -534,21 +535,21 @@ advanceTrajectory aid b = do
                -- @Nothing@ trajectory of signals an obstacle hit.
                -- If projectile, second call of @actorDying@ above
                -- will take care of dropping dead.
-               execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+               execUpdAtomic $ UpdTrajectory aid (btrajectory b2) Nothing
                -- If projectile, losing HP due to hitting an obstacle
                -- not needed, because trajectory is halted, so projectile
                -- will die soon anyway
-               if bproj b
+               if bproj b2
                then when (not (IA.checkFlag Ability.Blast arTrunk)) $ do
                       -- Kill counts for each blast particle is TMI.
                  killer <- getsServer $ EM.findWithDefault aid aid
                                         . strajPushedBy
-                 addKillToAnalytics killer KillTileLaunch (bfid b) (btrunk b)
-               else when (bhp b > oneM) $ do
+                 addKillToAnalytics killer KillTileLaunch (bfid b2) (btrunk b2)
+               else when (bhp b2 > oneM) $ do
                  execUpdAtomic $ UpdRefillHP aid minusM
                  let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
-                 execSfxAtomic $ SfxEffect (bfid b) aid effect (-1)
-    _ -> error $ "Nothing or empty trajectory" `showFailure` (aid, b)
+                 execSfxAtomic $ SfxEffect (bfid b2) aid effect (-1)
+    _ -> error $ "Nothing or empty trajectory" `showFailure` (aid, b1)
 
 handleActors :: (MonadServerAtomic m, MonadServerComm m)
              => LevelId -> FactionId -> m Bool
