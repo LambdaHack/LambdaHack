@@ -425,8 +425,10 @@ lookAtTile canSee p aid lidV = do
             ik = itemKind itemFull
             desc = IK.idesc ik
         in makeSentence ["There", verb, nWs] <+> desc
+      embedKindList =
+        map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       ilooks = T.intercalate " " $ map itemLook
-                                 $ sortEmbeds cops getKind tkid embeds
+                                 $ sortEmbeds cops tkid embedKindList
   return $! makeSentence [vis, tilePart] <+> elooks <+> ilooks
 
 -- | Produces a textual description of actors at a position.

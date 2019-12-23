@@ -605,7 +605,12 @@ reqAlter source tpos = do
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
-reqAlterFail :: MonadServerAtomic m
+data TileAction =
+    EmbedAction (ItemId, ItemQuant)
+  | ToAction (GroupName TK.TileKind)
+  | WithAction [GroupName IK.ItemKind] (GroupName TK.TileKind)
+
+reqAlterFail :: forall m. MonadServerAtomic m
              => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail onCombineOnly voluntary source tpos = do
   cops@COps{coitem, cotile, coTileSpeedup} <- getsState scops
@@ -630,15 +635,15 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       hiddenTile = Tile.hideAs cotile serverTile
       revealEmbeds = unless (EM.null embeds) $
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
-      tryApplyEmbeds = do
+      embedKindList =
         if IA.checkFlag Ability.Blast sar
-        then return UseDud  -- prevent embeds triggering each other in a loop
-        else do
-          urs <- mapM tryApplyEmbed
-                      (sortEmbeds cops getKind serverTile embeds)
-          return $! case urs of
-            [] -> UseDud  -- there was no effects
-            _ -> maximum urs
+        then []  -- prevent embeds triggering each other in a loop
+        else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
+      tryApplyEmbeds = do
+        urs <- mapM tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
+        return $! case urs of
+          [] -> UseDud  -- there was no effects
+          _ -> maximum urs
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
@@ -807,84 +812,86 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                         , EM.unionWith mergeItemQuant removedBag bagToLose
                         , iidsToApply )
           feats = TK.tfeature $ okind cotile serverTile
-          toAlter feat =
-            case feat of
-              TK.OpenTo tgroup -> Just tgroup
-              TK.CloseTo tgroup -> Just tgroup
-              TK.ChangeTo tgroup -> Just tgroup
-              _ -> Nothing
-          toWalkable feat =  -- assuming the tile originally walkable
-            case feat of
-              TK.ChangeTo tgroup -> Just tgroup
-              _ -> Nothing
-          groupsToAlterTo | underFeet = mapMaybe toWalkable feats
-                                          -- don't autoclose doors under actor
-                                          -- or close via dropping item inside
-                          | otherwise = mapMaybe toAlter feats
-          toAlterWith feat =
-            case feat of
-              TK.OpenWith grps tgroup -> Just (grps, tgroup)
-              TK.CloseWith grps tgroup -> Just (grps, tgroup)
-              TK.ChangeWith grps tgroup -> Just (grps, tgroup)
-              _ -> Nothing
-          toWalkableWith feat =  -- assuming the tile originally walkable
-            case feat of
-              TK.ChangeWith grps tgroup -> Just (grps, tgroup)
-              _ -> Nothing
-          groupstoAlterWith | underFeet = mapMaybe toWalkableWith feats
-                                            -- don't autoclose doors under actor
-                            | otherwise = mapMaybe toAlterWith feats
-      if null groupsToAlterTo && null groupstoAlterWith && EM.null embeds then
+          parseTileAction feat = case feat of
+            TK.Embed igroup ->
+              let f (itemKind, _) =
+                    fromMaybe 0 (lookup igroup $ IK.ifreq itemKind) > 0
+              in case find f embedKindList of
+                Nothing -> Nothing
+                Just (_, iidkit) -> Just $ EmbedAction iidkit
+            TK.OpenTo tgroup | not underFeet -> Just $ ToAction tgroup
+            TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
+            TK.ChangeTo tgroup -> Just $ ToAction tgroup
+            TK.OpenWith grps tgroup | not underFeet ->
+              -- Not when standing on tile, not to autoclose doors under actor
+              -- or close via dropping an item inside.
+              Just $ WithAction grps tgroup
+            TK.CloseWith grps tgroup | not underFeet ->
+              Just $ WithAction grps tgroup
+            TK.ChangeWith grps tgroup -> Just $ WithAction grps tgroup
+            _ -> Nothing
+          tileActions = mapMaybe parseTileAction feats
+          groupWithFromAction action = case action of
+            WithAction grps tgroup -> Just (grps, tgroup)
+            _ -> Nothing
+          groupsToAlterWith = mapMaybe groupWithFromAction tileActions
+          processTileActions :: UseResult -> [TileAction] -> m Bool
+          processTileActions _ [] =
+            return False -- nothing can be changed freely
+          processTileActions useResult (ta : rest) = case ta of
+            EmbedAction iidkit -> do
+              -- Embeds are activated in the order in tile definition
+              -- and never after the tile is changed.
+              triggered <- tryApplyEmbed iidkit
+              processTileActions (max useResult triggered) rest
+            ToAction tgroup ->
+              -- Lack of embedded item triggered up to now is disabling
+              -- only free terrain alteration, while the @WithAction@ with
+              -- item cost below are independent of the ability to activate
+              -- embedded items.
+              if EM.null embeds || useResult == UseUp
+              then do
+                changeTo tgroup
+                return True
+              else processTileActions useResult rest
+            WithAction grps tgroup ->
+              if voluntary || bproj sb
+              then do
+                -- Waste item only if voluntary or released as projectile.
+                alteredGround <- tryChangeWith CGround (grps, tgroup)
+                altered <- if alteredGround
+                           then return True
+                           else tryChangeWith CEqp (grps, tgroup)
+                if altered
+                then return True
+                else processTileActions useResult rest
+              else processTileActions useResult rest
+      -- Note that stray embedded items (not from tile content definition)
+      -- are never activated.
+      if null tileActions then
         return $ Just AlterNothing  -- no altering possible; silly client; fail
       else
         if underFeet || EM.notMember tpos (lfloor lvl) then
           if underFeet || not (occupiedBigLvl tpos lvl)
                           && not (occupiedProjLvl tpos lvl) then do
-            -- If the only thing that happens is the change of the tile,
-            -- don't display a message, because the change
+            -- The items are first revealed for the sake of clients that
+            -- may see the tile as hidden. Note that the tile is not revealed
+            -- (unless it's altered later on, in which case the new one is).
+            revealEmbeds
+            -- If no embeds and the only thing that happens is the change
+            -- of the tile, don't display a message, because the change
             -- is visible on the map (unless it changes into itself)
             -- and there's nothing more to speak about.
-            triggered <- do
-              -- The embeds of the initial tile are activated before the tile
-              -- is altered. This prevents, e.g., trying to activate items
-              -- where none are present any more, or very different to what
-              -- the client expected. Surprise only comes through searching
-              -- as implemented above.
-              -- The items are first revealed for the sake of clients that
-              -- may see the tile as hidden. Note that the tile is not revealed
-              -- (unless it's altered later on, in which case the new one is).
-              revealEmbeds
-              tryApplyEmbeds
-            -- However, don't spam with projectiles on ice,
-            -- so message generated only for standard altering.
-            unless (bproj sb || underFeet || triggered == UseDud) $
+            -- However, even with embeds, don't spam,
+            -- e.g., for projectiles on ice, so the message is generated
+            -- only for standard altering.
+            unless (bproj sb || underFeet || EM.null embeds) $
               execSfxAtomic $ SfxTrigger source lid tpos
-            case groupsToAlterTo of
-              _ : _ : _ -> error $ "tile changeable in many ways"
-                                   `showFailure` groupsToAlterTo
-              [groupToAlterTo] | EM.null embeds || triggered == UseUp ->
-                -- Disabling only free terrain alteration, while the ones
-                -- with item cost is independent of the ability to activate
-                -- embedded items.
-                changeTo groupToAlterTo
-              _ | voluntary || bproj sb -> do
-                -- Waste item only if voluntary or released as projectile.
-                let tryChangeStore store =
-                      foldM (\changed groupToAlterWith ->
-                               if changed
-                               then return True
-                               else tryChangeWith store groupToAlterWith)
-                            False
-                            groupstoAlterWith
-                alteredGround <- tryChangeStore CGround
-                altered <- if alteredGround
-                           then return True
-                           else tryChangeStore CEqp
-                unless (altered || underFeet
-                        ||null groupstoAlterWith || not voluntary) $
-                  execSfxAtomic $ SfxMsgFid (bfid sb)
-                                $ SfxNoItemsForTile $ map fst groupstoAlterWith
-              _ -> return () -- nothing can be changed freely
+            tileChanged <- processTileActions UseDud tileActions
+            when (not tileChanged && not underFeet && voluntary
+                  && not (null groupsToAlterWith)) $
+              execSfxAtomic $ SfxMsgFid (bfid sb)
+                            $ SfxNoItemsForTile $ map fst groupsToAlterWith
             return Nothing  -- altered as much as items allowed; success
           else return $ Just AlterBlockActor
         else return $ Just AlterBlockItem

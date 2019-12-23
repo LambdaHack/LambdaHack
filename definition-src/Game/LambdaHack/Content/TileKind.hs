@@ -45,7 +45,7 @@ data TileKind = TileKind
   , tcolor   :: Color        -- ^ map color
   , tcolor2  :: Color        -- ^ map color when not in FOV
   , talter   :: Word8        -- ^ minimal skill needed to alter the tile
-  , tfeature :: [Feature]    -- ^ properties
+  , tfeature :: [Feature]    -- ^ properties; order matters
   }
   deriving Show  -- No Eq and Ord to make extending logically sound
 

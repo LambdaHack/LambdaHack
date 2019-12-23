@@ -294,14 +294,12 @@ nearbyFreePoints cops lvl f start =
 -- We assume there are no stray embeds, not mentioned in the tile kind.
 -- OTOH, some of those mentioned may be used up and so not in the bag
 -- and it's OK.
-sortEmbeds :: COps -> (ItemId -> IK.ItemKind) -> ContentId TileKind -> ItemBag
+sortEmbeds :: COps -> ContentId TileKind -> [(IK.ItemKind, (ItemId, ItemQuant))]
            -> [(ItemId, ItemQuant)]
-sortEmbeds COps{cotile} getKind tk embedBag =
-  let itemKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
-                         (EM.assocs embedBag)
-      grpList = Tile.embeddedItems cotile tk
+sortEmbeds COps{cotile} tk embedKindList =
+  let grpList = Tile.embeddedItems cotile tk
       f grp (itemKind, _) = fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
-  in map snd $ mapMaybe (\grp -> find (f grp) itemKindList) grpList
+  in map snd $ mapMaybe (\grp -> find (f grp) embedKindList) grpList
 
 instance Binary Level where
   put Level{..} = do
