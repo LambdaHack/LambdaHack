@@ -170,14 +170,14 @@ effectToBenefit cops fid factionD eff =
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.OnCombine _ -> delta 0  -- not revevant to normal item triggering
-    IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
-    IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
     IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
       -- (animations should not fail, after all), and start composite
       -- effect with the main thing
     IK.OrEffect eff1 _ -> effectToBenefit cops fid factionD eff1
+    IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
+    IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
 
 -- See the comment for @Paralyze@.
 averageTurnValue :: Double

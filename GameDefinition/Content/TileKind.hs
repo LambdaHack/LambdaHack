@@ -45,7 +45,7 @@ groupNames =
        [FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK]
     ++ [EMPTY_SET_LIT, EMPTY_SET_DARK, NOISE_SET_LIT, POWER_SET_LIT, POWER_SET_DARK, BATTLE_SET_LIT, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_LIT, ZOO_SET_DARK, ESCAPE_SET_LIT, ESCAPE_SET_DARK, AMBUSH_SET_LIT, AMBUSH_SET_DARK, ARENA_SET_LIT, ARENA_SET_DARK]
     ++ [RECT_WINDOWS_VERTICAL_LIT, RECT_WINDOWS_VERTICAL_DARK, RECT_WINDOWS_HORIZONTAL_LIT, RECT_WINDOWS_HORIZONTAL_DARK, TREE_SHADE_WALKABLE_LIT, TREE_SHADE_WALKABLE_DARK, SMOKE_CLUMP_LIT, SMOKE_CLUMP_DARK, GLASSHOUSE_VERTICAL_LIT, GLASSHOUSE_VERTICAL_DARK, GLASSHOUSE_HORIZONTAL_LIT, GLASSHOUSE_HORIZONTAL_DARK, BUSH_CLUMP_LIT, BUSH_CLUMP_DARK, FOG_CLUMP_LIT, FOG_CLUMP_DARK, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, CACHE, SIGNBOARD, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN]
-    ++ [OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_WITH_FIRE, BUSH_WITH_FIRE, CACHABLE]
+    ++ [OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_BURNING_OR_NOT, BUSH_BURNING_OR_NOT, CACHE_OR_NOT]
 
 pattern FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK :: GroupName TileKind
 
@@ -55,7 +55,7 @@ pattern EMPTY_SET_LIT, EMPTY_SET_DARK, NOISE_SET_LIT, POWER_SET_LIT, POWER_SET_D
 pattern RECT_WINDOWS_VERTICAL_LIT, RECT_WINDOWS_VERTICAL_DARK, RECT_WINDOWS_HORIZONTAL_LIT, RECT_WINDOWS_HORIZONTAL_DARK, TREE_SHADE_WALKABLE_LIT, TREE_SHADE_WALKABLE_DARK, SMOKE_CLUMP_LIT, SMOKE_CLUMP_DARK, GLASSHOUSE_VERTICAL_LIT, GLASSHOUSE_VERTICAL_DARK, GLASSHOUSE_HORIZONTAL_LIT, GLASSHOUSE_HORIZONTAL_DARK, BUSH_CLUMP_LIT, BUSH_CLUMP_DARK, FOG_CLUMP_LIT, FOG_CLUMP_DARK, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, CACHE, SIGNBOARD, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN :: GroupName TileKind
 
 -- ** Used only internally in other TileKind definitions or never used.
-pattern OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_WITH_FIRE, BUSH_WITH_FIRE, CACHABLE :: GroupName TileKind
+pattern OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_BURNING_OR_NOT, BUSH_BURNING_OR_NOT, CACHE_OR_NOT :: GroupName TileKind
 
 -- ** Used in CaveKind and perhaps elsewhere (or a dark/lit version thereof).
 pattern FILLER_WALL = GroupName "fillerWall"
@@ -144,9 +144,9 @@ pattern OBSCURED_VERTICAL_WALL_LIT = GroupName "obscured vertical wall Lit"
 pattern OBSCURED_HORIZONTAL_WALL_LIT = GroupName "obscured horizontal wall Lit"
 pattern TRAPPED_VERTICAL_DOOR_LIT = GroupName "trapped vertical door Lit"
 pattern TRAPPED_HORIZONAL_DOOR_LIT = GroupName "trapped horizontal door Lit"
-pattern TREE_WITH_FIRE = GroupName "tree with fire"
-pattern BUSH_WITH_FIRE = GroupName "bush with fire"
-pattern CACHABLE = GroupName "cachable"
+pattern TREE_BURNING_OR_NOT = GroupName "tree burning or not"
+pattern BUSH_BURNING_OR_NOT = GroupName "bush burning or not"
+pattern CACHE_OR_NOT = GroupName "cache or not"
 
 -- ** Used only internally in other TileKind definitions. Singletons.
 pattern S_SUSPECT_VERTICAL_WALL_LIT = GroupName "suspect vertical wall Lit"
@@ -325,7 +325,7 @@ wallObscuredFrescoedH = TileKind
 pillar = TileKind
   { tsymbol  = '0'
   , tname    = "rock"
-  , tfreq    = [ (CACHABLE, 70)
+  , tfreq    = [ (CACHE_OR_NOT, 70)
                , (STAIR_TERMINAL_LIT, 100), (STAIR_TERMINAL_DARK, 100)
                , (LEGEND_LIT, 100), (LEGEND_DARK, 100)
                , (EMPTY_SET_LIT, 20), (NOISE_SET_LIT, 700)
@@ -340,13 +340,13 @@ pillar = TileKind
 pillarCache = TileKind
   { tsymbol  = '0'
   , tname    = "smoothed rock"
-  , tfreq    = [(CACHABLE, 30), (CACHE, 1), (STAIR_TERMINAL_DARK, 4)]
+  , tfreq    = [(CACHE_OR_NOT, 30), (CACHE, 1), (STAIR_TERMINAL_DARK, 4)]
                  -- treasure only in dark staircases
   , tcolor   = BrBlue
   , tcolor2  = Blue
   , talter   = 5
   , tfeature = [ Embed TREASURE_CACHE, Embed TREASURE_CACHE_TRAP
-               , ChangeTo CACHABLE, ConsideredByAI ]
+               , ChangeTo CACHE_OR_NOT, ConsideredByAI ]
       -- Not explorable, but prominently placed, so hard to miss.
       -- Very beneficial, so AI eager to trigger, unless wary of traps.
   }
@@ -393,7 +393,7 @@ tree = TileKind
 treeBurnt = tree
   { tname    = "burnt tree"
   , tfreq    = [ (AMBUSH_SET_DARK, 3), (ZOO_SET_DARK, 7), (BATTLE_SET_DARK, 50)
-               , (TREE_WITH_FIRE, 30) ]
+               , (TREE_BURNING_OR_NOT, 30) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature tree
@@ -401,11 +401,11 @@ treeBurnt = tree
 treeBurning = tree
   { tname    = "burning tree"
   , tfreq    = [ (AMBUSH_SET_DARK, 15), (ZOO_SET_DARK, 70)
-               , (TREE_WITH_FIRE, 70) ]
+               , (TREE_BURNING_OR_NOT, 70) ]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
-  , tfeature = Embed BIG_FIRE : ChangeTo TREE_WITH_FIRE : tfeature tree
+  , tfeature = Embed BIG_FIRE : ChangeTo TREE_BURNING_OR_NOT : tfeature tree
       -- TODO: dousing off the tree will have more sense when it periodically
       -- explodes, hitting and lighting up the team and so betraying it
   }
@@ -615,7 +615,7 @@ bush = TileKind
 bushBurnt = bush
   { tname    = "burnt bush"
   , tfreq    = [ (BATTLE_SET_DARK, 30), (ZOO_SET_DARK, 30), (AMBUSH_SET_DARK, 3)
-               , (BUSH_WITH_FIRE, 70) ]
+               , (BUSH_BURNING_OR_NOT, 70) ]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = Dark : tfeature bush
@@ -623,11 +623,12 @@ bushBurnt = bush
 bushBurning = bush
   { tname    = "burning bush"
   , tfreq    = [ (AMBUSH_SET_DARK, 15), (ZOO_SET_DARK, 300)
-               , (BUSH_WITH_FIRE, 30) ]
+               , (BUSH_BURNING_OR_NOT, 30) ]
   , tcolor   = BrRed
   , tcolor2  = Red
   , talter   = 5
-  , tfeature = Embed SMALL_FIRE : ChangeTo BUSH_WITH_FIRE : tfeature bush
+  , tfeature = Embed SMALL_FIRE : ChangeTo BUSH_BURNING_OR_NOT
+               : tfeature bush
   }
 
 -- ** Walkable

@@ -366,10 +366,8 @@ aspectToSentence feat =
     SetFlag Lobable -> Nothing
     SetFlag Durable -> Nothing
     SetFlag Equipable -> Nothing
-    SetFlag Meleeable ->
-      Just "It is considered for melee strikes by default."
-    SetFlag Benign ->
-      Just "It affects the opponent in a benign way."
+    SetFlag Meleeable -> Just "It is considered for melee strikes by default."
+    SetFlag Benign -> Just "It affects the opponent in a benign way."
     SetFlag Precious -> Just "It seems precious."
     SetFlag Blast -> Nothing
     SetFlag Condition -> Nothing
