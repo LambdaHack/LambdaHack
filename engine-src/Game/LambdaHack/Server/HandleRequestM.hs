@@ -758,10 +758,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 itemKind = okind coitem itemKindId
             unless (IA.isHumanTrinket itemKind) $  -- a hack
               execUpdAtomic $ UpdDiscover c iid itemKindId arItem
-          durableFirst = sortOn $ not . IA.checkFlag Ability.Durable
-                                  . aspectRecordFull . fst . snd
+          durableLast = sortOn $ IA.checkFlag Ability.Durable
+                                 . aspectRecordFull . fst . snd
           tryChangeWith store (grps, tgroup) = do
-            kitAss <- getsState $ durableFirst . kitAssocs source [store]
+            kitAss <- getsState $ durableLast . kitAssocs source [store]
             case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
               Just (_, bagToLose, iidsToApply) -> do
@@ -777,6 +777,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                     execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
+                -- This makes applying double-purpose tool-weapons costly,
+                -- which is also why durable tools are considered last.
                 let applyItemIfPresent iid = do
                       bag <- getsState $ getContainerBag (CActor source store)
                       when (iid `EM.member` bag) $
