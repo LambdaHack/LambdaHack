@@ -420,7 +420,7 @@ rubble = TileKind
   , tcolor   = BrYellow
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
-  , tfeature = [OpenTo S_FLOOR_ASHES_LIT, Embed RUBBLE]
+  , tfeature = [Embed RUBBLE, OpenTo S_FLOOR_ASHES_LIT]
       -- It's not explorable, due to not being walkable nor clear and due
       -- to being a door (@OpenTo@), which is kind of OK, because getting
       -- the item is risky and, e.g., AI doesn't attempt it.
