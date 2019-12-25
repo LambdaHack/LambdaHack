@@ -758,11 +758,12 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 itemKind = okind coitem itemKindId
             unless (IA.isHumanTrinket itemKind) $  -- a hack
               execUpdAtomic $ UpdDiscover c iid itemKindId arItem
-          durableLast = sortOn $ IA.checkFlag Ability.Durable
-                                 . aspectRecordFull . fst . snd
-          tryChangeWith store (grps, tgroup) = do
-            kitAss <- getsState $ durableLast . kitAssocs source [store]
-            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
+          tryChangeWith :: ([GroupName IK.ItemKind], (GroupName TK.TileKind))
+                        -> CStore -> Bool -> [(ItemId, ItemFullKit)]
+                        -> m Bool
+          tryChangeWith (grps, tgroup) store durable kitAss = do
+            case foldl' (subtractGrpfromBag durable)
+                        (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
               Just (_, bagToLose, iidsToApply) -> do
                 -- We don't invoke @OnSmash@ effects, so we avoid the risk
@@ -787,11 +788,14 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 changeTo tgroup
                 return True
           subtractGrpfromBag
-            :: Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
+            :: Bool
+            -> Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
             -> GroupName IK.ItemKind
             -> Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
-          subtractGrpfromBag Nothing _ = Nothing
-          subtractGrpfromBag (Just (kitAss, bagToLose, iidsToApply)) grp =
+          subtractGrpfromBag _ Nothing _ = Nothing
+          subtractGrpfromBag durable
+                             (Just (kitAss, bagToLose, iidsToApply))
+                             grp =
             let grpInItemFull ItemFull{itemKind} =
                   fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
                 grpInItemKit (_, (itemFull, _)) = grpInItemFull itemFull
@@ -803,8 +807,6 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                       EQ -> []
                       GT -> [(iid, (itemFull, (k - 1, drop 1 it)))]
                     remainingAssocs = prefix ++ remainingAss ++ rest
-                    arItem = aspectRecordFull itemFull
-                    durable = IA.checkFlag Ability.Durable arItem
                     removedBag = EM.singleton iid (1, take 1 it)
                 in if durable
                    then ( remainingAssocs
@@ -860,11 +862,21 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               if voluntary || bproj sb
               then do
                 -- Waste item only if voluntary or released as projectile.
-                alteredGround <- tryChangeWith CGround (grps, tgroup)
-                altered <- if alteredGround
-                           then return True
-                           else tryChangeWith CEqp (grps, tgroup)
-                if altered
+                let tryGrp = tryChangeWith (grps, tgroup)
+                    isDurable = IA.checkFlag Ability.Durable
+                                . aspectRecordFull . fst . snd
+                kitAssG <- getsState $ kitAssocs source [CGround]
+                let (kitAssGT, kitAssGF) = partition isDurable kitAssG
+                kitAssE <- getsState $ kitAssocs source [CEqp]
+                let (kitAssET, kitAssEF) = partition isDurable kitAssE
+                altered1 <- tryGrp CGround True kitAssGT
+                altered2 <- if altered1 then return True
+                            else tryGrp CGround False kitAssGF
+                altered3 <- if altered2 then return True
+                            else tryGrp CEqp True kitAssET
+                altered4 <- if altered3 then return True
+                            else tryGrp CEqp False kitAssEF
+                if altered4
                 then return True
                 else processTileActions useResult rest
               else processTileActions useResult rest
