@@ -114,15 +114,16 @@ effectToSuffix detailLevel effect =
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
     DropBestWeapon -> "of disarming"
-    OneOf l ->
-      let subject = if length l <= 5 then "marvel" else "wonder"
-          header = makePhrase ["of", MU.CardinalWs (length l) subject]
-          marvels = T.intercalate ", "
-                    $ filter (/= "")
-                    $ map (effectToSuffix detailLevel) l
-      in if detailLevel >= DetailAll && marvels /= ""
-         then header <+> "[" <> marvels <> "]"
-         else header  -- of no wonders :)
+    OneOf effs ->
+      let ts = filter (/= "") $ map (effectToSuffix detailLevel) effs
+          subject = if length ts <= 5 then "marvel" else "wonder"
+          header = makePhrase ["of", MU.CardinalWs (length ts) subject]
+          sometimes = if length effs > length ts then "(sometimes)" else ""
+      in case ts of
+        [] -> ""
+        [wonder] -> wonder <+> sometimes
+        _ | detailLevel < DetailAll -> header
+        _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OnSmash _ -> ""  -- printed inside a separate section
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
