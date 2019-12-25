@@ -672,10 +672,8 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
         else return K.escKM
   ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
-    Left km | km == K.spaceKM -> return km
-    Left km | km == K.mkChar '<' -> return km
-    Left km | km == K.mkChar '>' -> return km
-    Left km | km == K.escKM -> return km
+    Left km | km `elem` [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM] ->
+      return km
     Left K.KM{key=K.Char l} -> viewAtSlot $ SlotChar 0 l
       -- other prefixes are not accessible via keys; tough luck; waste of effort
     Left km -> error $ "" `showFailure` km
@@ -686,10 +684,10 @@ cycleLore _ [] = return ()
 cycleLore seen (m : rest) = do  -- @seen@ is needed for SPACE to end cycling
   km <- m
   if | km == K.spaceKM -> cycleLore (m : seen) rest
-     | km == K.mkChar '<' -> if null rest
+     | km == K.mkChar '>' -> if null rest
                              then cycleLore [] (reverse $ m : seen)
                              else cycleLore (m : seen) rest
-     | km == K.mkChar '>' -> case seen of
+     | km == K.mkChar '<' -> case seen of
                                prev : ps -> cycleLore ps (prev : m : rest)
                                [] -> case reverse (m : rest) of
                                  prev : ps -> cycleLore ps [prev]
