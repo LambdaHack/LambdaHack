@@ -24,8 +24,7 @@ import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Definition.Ability
 import           Game.LambdaHack.Definition.Defs
 
-data DetailLevel =
-    DetailNone | DetailLow | DetailMedium | DetailHigh | DetailAll
+data DetailLevel = DetailLow | DetailMedium | DetailHigh | DetailAll
   deriving (Eq, Ord, Enum, Bounded)
 
 -- | Suffix to append to a basic content name if the content causes the effect.

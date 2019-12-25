@@ -1247,9 +1247,10 @@ displayRespSfxAtomicUI sfx = case sfx of
           -- vague and unnatural as "interact with staircase down"
           -- or "use obscene pictogram"; probably per-item verb is needed,
           -- but there has to be a consistent rule what the verbs represent
-          -- for what class of items, particularly if we just use @iverbHit@
+          -- for what class of items, particularly if we just use @iverbHit@;
+          -- also, "disarm the trap", not "exploit"
         aidVerbMU msgClass aid $
-          MU.Phrase $ [verb, object1, object2] ++ objectRest
+          MU.Phrase $ [verb, "the", object1, object2] ++ objectRest
   SfxShun aid _ _ ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do

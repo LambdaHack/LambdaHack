@@ -63,7 +63,9 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
         _ -> []
       ts = lsource
            ++ take maxWordsToShow powerTs
-           ++ ["(...)" | length powerTs > maxWordsToShow && maxWordsToShow > 0]
+           ++ [ "(...)" | length powerTs > maxWordsToShow
+                          && detailLevel > DetailLow
+                          && maxWordsToShow > 0 ]
            ++ [charges | maxWordsToShow > 1]
       name | temporary =
              let adj = if timeout == 0 then "temporarily" else "impermanent"
@@ -171,10 +173,12 @@ textAllPowers detailLevel skipRecharging
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
        in [ damageText
-          | detLev > DetailNone && (not periodic || IK.idamage itemKind == 0) ]
-          ++ [timeoutText | detLev > DetailNone && not periodic]
-          ++ if detLev >= DetailMedium
-             then aes ++ if detLev >= DetailAll then [onSmash, onCombine] else []
+          | detLev > DetailLow && (not periodic || IK.idamage itemKind == 0) ]
+          ++ [timeoutText | detLev > DetailLow && not periodic]
+          ++ if detLev >= DetailLow
+             then aes ++ if detLev >= DetailAll
+                         then [onSmash, onCombine]
+                         else []
              else []
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
@@ -218,7 +222,7 @@ partItemShort side factionD = partItemN side factionD False DetailLow 4
 
 partItemShortest :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                  -> (MU.Part, MU.Part)
-partItemShortest side factionD = partItemN side factionD False DetailNone 1
+partItemShortest side factionD = partItemN side factionD False DetailLow 1
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (MU.Part, MU.Part)
