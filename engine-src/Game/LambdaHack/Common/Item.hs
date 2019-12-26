@@ -8,6 +8,7 @@ module Game.LambdaHack.Common.Item
   , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
+  , mergeItemQuant, listToolsForAltering, subtractGrpfromBag
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -329,3 +330,55 @@ armorHurtCalculation proj sMaxSk tMaxSk =
           then trim200 (Ability.getSk Ability.SkArmorRanged tMaxSk)
           else trim200 (Ability.getSk Ability.SkArmorMelee tMaxSk)
   in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
+
+mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
+mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
+
+listToolsForAltering :: [(ItemId, ItemFullKit)] -> [(ItemId, ItemFullKit)]
+                     -> [((CStore, Bool), (ItemId, ItemFullKit))]
+listToolsForAltering kitAssG kitAssE =
+  let isDurable = IA.checkFlag Ability.Durable
+                  . aspectRecordFull . fst . snd
+      (kitAssGT, kitAssGF) = partition isDurable kitAssG
+      (kitAssET, kitAssEF) = partition isDurable kitAssE
+      -- Non-durable tools take precedence, because durable
+      -- are applied and, usually being weapons,
+      -- may be harmful or may have unintended effects.
+  in zip (repeat (CGround, False)) kitAssGF
+     ++ zip (repeat (CEqp, False)) kitAssEF
+     ++ zip (repeat (CGround, True)) kitAssGT
+     ++ zip (repeat (CEqp, True)) kitAssET
+
+subtractGrpfromBag :: Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
+                            , EM.EnumMap CStore ItemBag
+                            , [(CStore, ItemId)] )
+                   -> GroupName IK.ItemKind
+                   -> Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
+                            , EM.EnumMap CStore ItemBag
+                            , [(CStore, ItemId)] )
+subtractGrpfromBag Nothing _ = Nothing
+subtractGrpfromBag (Just (kitAss, bagsToLose, iidsToApply))
+                   grp =
+  let grpInItemFull ItemFull{itemKind} =
+        fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
+      grpInItemKit (_, (_, (itemFull, _))) = grpInItemFull itemFull
+  in case break grpInItemKit kitAss of
+    (_, []) -> Nothing
+    (prefix, ( (store, durable)
+             , (iid, (itemFull, (k, it))) ) : rest) -> Just $
+      let remainingAss = case compare k 1 of
+            LT -> error "subtractGrpfromBag: no copies in bag"
+            EQ -> []
+            GT -> [( (store, durable)
+                   , (iid, (itemFull, (k - 1, drop 1 it))) )]
+          remainingAssocs = prefix ++ remainingAss ++ rest
+          removedBags = EM.singleton store
+                        $ EM.singleton iid (1, take 1 it)
+      in if durable
+         then ( remainingAssocs
+              , bagsToLose
+              , (store, iid) : iidsToApply )
+         else ( remainingAssocs
+              , EM.unionWith (EM.unionWith mergeItemQuant)
+                             removedBags bagsToLose
+              , iidsToApply )

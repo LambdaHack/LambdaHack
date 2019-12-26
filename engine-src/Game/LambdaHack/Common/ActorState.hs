@@ -5,8 +5,7 @@ module Game.LambdaHack.Common.ActorState
   , fidActorRegularIds, foeRegularAssocs, foeRegularList
   , friendRegularAssocs, friendRegularList, bagAssocs, bagAssocsK
   , posToBig, posToBigAssoc, posToProjs, posToProjAssocs
-  , posToAids, posToAidAssocs
-  , calculateTotal, itemPrice, mergeItemQuant, findIid
+  , posToAids, posToAidAssocs, calculateTotal, itemPrice, findIid
   , combinedGround, combinedOrgan, combinedEqp
   , combinedItems, combinedFromLore
   , getActorBody, getActorMaxSkills, actorCurrentSkills, canTraverse
@@ -140,9 +139,6 @@ itemPrice :: Int -> IK.ItemKind -> Int
 itemPrice jcount itemKind = case lookup IK.VALUABLE $ IK.ifreq itemKind of
   Just k -> jcount * k
   Nothing -> 0
-
-mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
-mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 
 findIid :: ActorId -> FactionId -> ItemId -> State
         -> [(ActorId, (Actor, CStore))]

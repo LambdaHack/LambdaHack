@@ -783,40 +783,6 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 mapM_ applyItemIfPresent iidsToApply
                 changeTo tgroup
                 return True
-          subtractGrpfromBag
-            :: Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
-                     , EM.EnumMap CStore ItemBag
-                     , [(CStore, ItemId)] )
-            -> GroupName IK.ItemKind
-            -> Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
-                     , EM.EnumMap CStore ItemBag
-                     , [(CStore, ItemId)] )
-          subtractGrpfromBag Nothing _ = Nothing
-          subtractGrpfromBag (Just (kitAss, bagsToLose, iidsToApply))
-                             grp =
-            let grpInItemFull ItemFull{itemKind} =
-                  fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
-                grpInItemKit (_, (_, (itemFull, _))) = grpInItemFull itemFull
-            in case break grpInItemKit kitAss of
-              (_, []) -> Nothing
-              (prefix, ( (store, durable)
-                       , (iid, (itemFull, (k, it))) ) : rest) -> Just $
-                let remainingAss = case compare k 1 of
-                      LT -> error "subtractGrpfromBag: no copies in bag"
-                      EQ -> []
-                      GT -> [( (store, durable)
-                             , (iid, (itemFull, (k - 1, drop 1 it))) )]
-                    remainingAssocs = prefix ++ remainingAss ++ rest
-                    removedBags = EM.singleton store
-                                  $ EM.singleton iid (1, take 1 it)
-                in if durable
-                   then ( remainingAssocs
-                        , bagsToLose
-                        , (store, iid) : iidsToApply )
-                   else ( remainingAssocs
-                        , EM.unionWith (EM.unionWith mergeItemQuant)
-                                       removedBags bagsToLose
-                        , iidsToApply )
           feats = TK.tfeature $ okind cotile serverTile
           tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
                                  feats
@@ -849,19 +815,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               if voluntary || bproj sb
               then do
                 -- Waste item only if voluntary or released as projectile.
-                let isDurable = IA.checkFlag Ability.Durable
-                                . aspectRecordFull . fst . snd
                 kitAssG <- getsState $ kitAssocs source [CGround]
-                let (kitAssGT, kitAssGF) = partition isDurable kitAssG
                 kitAssE <- getsState $ kitAssocs source [CEqp]
-                let (kitAssET, kitAssEF) = partition isDurable kitAssE
-                    -- Non-durable tools take precedence, because durable
-                    -- are applied and, usually being weapons,
-                    -- may be harmful or may have unintended effects.
-                    kitAss = zip (repeat (CGround, False)) kitAssGF
-                             ++ zip (repeat (CEqp, False)) kitAssEF
-                             ++ zip (repeat (CGround, True)) kitAssGT
-                             ++ zip (repeat (CEqp, True)) kitAssET
+                let kitAss = listToolsForAltering kitAssG kitAssE
                 altered <- tryChangeWith (grps, tgroup) kitAss
                 if altered
                 then return True
