@@ -754,28 +754,29 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             unless (IA.isHumanTrinket itemKind) $  -- a hack
               execUpdAtomic $ UpdDiscover c iid itemKindId arItem
           tryChangeWith :: ([GroupName IK.ItemKind], (GroupName TK.TileKind))
-                        -> CStore -> Bool -> [(ItemId, ItemFullKit)]
+                        -> [((CStore, Bool), (ItemId, ItemFullKit))]
                         -> m Bool
-          tryChangeWith (grps, tgroup) store durable kitAss = do
-            case foldl' (subtractGrpfromBag durable)
-                        (Just (kitAss, EM.empty, [])) grps of
+          tryChangeWith (grps, tgroup) kitAss = do
+            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> return False
-              Just (_, bagToLose, iidsToApply) -> do
+              Just (_, bagsToLose, iidsToApply) -> do
                 -- We don't invoke @OnSmash@ effects, so we avoid the risk
                 -- of the first removed item displacing the actor, destroying
                 -- or scattering some pending items ahead of time, etc.
                 -- The embed should provide any requisite fireworks instead.
-                unless (EM.null bagToLose) $ do
-                  identifyStoreBag store bagToLose
-                  -- Not @UpdLoseItemBag@, to be verbose. Bag is small, anyway.
-                  let c = CActor source store
-                  mapWithKeyM_ (\iid kit ->
-                    execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
+                forM_ (EM.assocs bagsToLose) $ \(store, bagToLose) ->
+                  unless (EM.null bagToLose) $ do
+                    identifyStoreBag store bagToLose
+                    -- Not @UpdLoseItemBag@, to be verbose.
+                    -- The bag is small, anyway.
+                    let c = CActor source store
+                    mapWithKeyM_ (\iid kit ->
+                      execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
                 -- But afterwards we do apply normal effects of durable items,
                 -- even if the actor or other items displaced in the process.
                 -- This makes applying double-purpose tool-weapons costly,
                 -- which is also why durable tools are considered last.
-                let applyItemIfPresent iid = do
+                let applyItemIfPresent (store, iid) = do
                       bag <- getsState $ getContainerBag (CActor source store)
                       when (iid `EM.member` bag) $
                         applyItem source iid store
@@ -783,32 +784,38 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 changeTo tgroup
                 return True
           subtractGrpfromBag
-            :: Bool
-            -> Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
+            :: Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
+                     , EM.EnumMap CStore ItemBag
+                     , [(CStore, ItemId)] )
             -> GroupName IK.ItemKind
-            -> Maybe ([(ItemId, ItemFullKit)], ItemBag, [ItemId])
-          subtractGrpfromBag _ Nothing _ = Nothing
-          subtractGrpfromBag durable
-                             (Just (kitAss, bagToLose, iidsToApply))
+            -> Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
+                     , EM.EnumMap CStore ItemBag
+                     , [(CStore, ItemId)] )
+          subtractGrpfromBag Nothing _ = Nothing
+          subtractGrpfromBag (Just (kitAss, bagsToLose, iidsToApply))
                              grp =
             let grpInItemFull ItemFull{itemKind} =
                   fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
-                grpInItemKit (_, (itemFull, _)) = grpInItemFull itemFull
+                grpInItemKit (_, (_, (itemFull, _))) = grpInItemFull itemFull
             in case break grpInItemKit kitAss of
               (_, []) -> Nothing
-              (prefix, (iid, (itemFull, (k, it))) : rest) -> Just $
+              (prefix, ( (store, durable)
+                       , (iid, (itemFull, (k, it))) ) : rest) -> Just $
                 let remainingAss = case compare k 1 of
                       LT -> error "subtractGrpfromBag: no copies in bag"
                       EQ -> []
-                      GT -> [(iid, (itemFull, (k - 1, drop 1 it)))]
+                      GT -> [( (store, durable)
+                             , (iid, (itemFull, (k - 1, drop 1 it))) )]
                     remainingAssocs = prefix ++ remainingAss ++ rest
-                    removedBag = EM.singleton iid (1, take 1 it)
+                    removedBags = EM.singleton store
+                                  $ EM.singleton iid (1, take 1 it)
                 in if durable
                    then ( remainingAssocs
-                        , bagToLose
-                        , iid : iidsToApply )
+                        , bagsToLose
+                        , (store, iid) : iidsToApply )
                    else ( remainingAssocs
-                        , EM.unionWith mergeItemQuant removedBag bagToLose
+                        , EM.unionWith (EM.unionWith mergeItemQuant)
+                                       removedBags bagsToLose
                         , iidsToApply )
           feats = TK.tfeature $ okind cotile serverTile
           tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
@@ -842,21 +849,21 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               if voluntary || bproj sb
               then do
                 -- Waste item only if voluntary or released as projectile.
-                let tryGrp = tryChangeWith (grps, tgroup)
-                    isDurable = IA.checkFlag Ability.Durable
+                let isDurable = IA.checkFlag Ability.Durable
                                 . aspectRecordFull . fst . snd
                 kitAssG <- getsState $ kitAssocs source [CGround]
                 let (kitAssGT, kitAssGF) = partition isDurable kitAssG
                 kitAssE <- getsState $ kitAssocs source [CEqp]
                 let (kitAssET, kitAssEF) = partition isDurable kitAssE
-                altered1 <- tryGrp CGround True kitAssGT
-                altered2 <- if altered1 then return True
-                            else tryGrp CGround False kitAssGF
-                altered3 <- if altered2 then return True
-                            else tryGrp CEqp True kitAssET
-                altered4 <- if altered3 then return True
-                            else tryGrp CEqp False kitAssEF
-                if altered4
+                    -- Non-durable tools take precedence, because durable
+                    -- are applied and, usually being weapons,
+                    -- may be harmful or may have unintended effects.
+                    kitAss = zip (repeat (CGround, False)) kitAssGF
+                             ++ zip (repeat (CEqp, False)) kitAssEF
+                             ++ zip (repeat (CGround, True)) kitAssGT
+                             ++ zip (repeat (CEqp, True)) kitAssET
+                altered <- tryChangeWith (grps, tgroup) kitAss
+                if altered
                 then return True
                 else processTileActions useResult rest
               else processTileActions useResult rest
