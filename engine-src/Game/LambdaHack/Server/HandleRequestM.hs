@@ -821,11 +821,13 @@ reqAlterFail onCombineOnly voluntary source tpos = do
           processTileActions _ [] =
             return False -- nothing can be changed freely
           processTileActions useResult (ta : rest) = case ta of
-            Tile.EmbedAction iidkit -> do
+            Tile.EmbedAction (iid, kit) -> do
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
-              triggered <- tryApplyEmbed iidkit
-              processTileActions (max useResult triggered) rest
+              if iid `EM.member` embeds then do
+                triggered <- tryApplyEmbed (iid, kit)
+                processTileActions (max useResult triggered) rest
+              else processTileActions useResult rest
             Tile.ToAction tgroup ->
               -- Lack of embedded item triggered up to now is disabling
               -- only free terrain alteration, while the @WithAction@ with
