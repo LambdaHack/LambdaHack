@@ -605,11 +605,6 @@ reqAlter source tpos = do
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
-data TileAction =
-    EmbedAction (ItemId, ItemQuant)
-  | ToAction (GroupName TK.TileKind)
-  | WithAction [GroupName IK.ItemKind] (GroupName TK.TileKind)
-
 reqAlterFail :: forall m. MonadServerAtomic m
              => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail onCombineOnly voluntary source tpos = do
@@ -816,39 +811,22 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                         , EM.unionWith mergeItemQuant removedBag bagToLose
                         , iidsToApply )
           feats = TK.tfeature $ okind cotile serverTile
-          parseTileAction feat = case feat of
-            TK.Embed igroup ->
-              let f (itemKind, _) =
-                    fromMaybe 0 (lookup igroup $ IK.ifreq itemKind) > 0
-              in case find f embedKindList of
-                Nothing -> Nothing
-                Just (_, iidkit) -> Just $ EmbedAction iidkit
-            TK.OpenTo tgroup | not underFeet -> Just $ ToAction tgroup
-            TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
-            TK.ChangeTo tgroup -> Just $ ToAction tgroup
-            TK.OpenWith grps tgroup | not underFeet ->
-              -- Not when standing on tile, not to autoclose doors under actor
-              -- or close via dropping an item inside.
-              Just $ WithAction grps tgroup
-            TK.CloseWith grps tgroup | not underFeet ->
-              Just $ WithAction grps tgroup
-            TK.ChangeWith grps tgroup -> Just $ WithAction grps tgroup
-            _ -> Nothing
-          tileActions = mapMaybe parseTileAction feats
+          tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
+                                 feats
           groupWithFromAction action = case action of
-            WithAction grps tgroup -> Just (grps, tgroup)
+            Tile.WithAction grps tgroup -> Just (grps, tgroup)
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
-          processTileActions :: UseResult -> [TileAction] -> m Bool
+          processTileActions :: UseResult -> [Tile.TileAction] -> m Bool
           processTileActions _ [] =
             return False -- nothing can be changed freely
           processTileActions useResult (ta : rest) = case ta of
-            EmbedAction iidkit -> do
+            Tile.EmbedAction iidkit -> do
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
               triggered <- tryApplyEmbed iidkit
               processTileActions (max useResult triggered) rest
-            ToAction tgroup ->
+            Tile.ToAction tgroup ->
               -- Lack of embedded item triggered up to now is disabling
               -- only free terrain alteration, while the @WithAction@ with
               -- item cost below are independent of the ability to activate
@@ -858,7 +836,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 changeTo tgroup
                 return True
               else processTileActions useResult rest
-            WithAction grps tgroup ->
+            Tile.WithAction grps tgroup ->
               if voluntary || bproj sb
               then do
                 -- Waste item only if voluntary or released as projectile.

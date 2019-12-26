@@ -24,6 +24,7 @@ module Game.LambdaHack.Common.Tile
   , kindHasFeature, hasFeature, openTo, closeTo, embeddedItems, revealAs
   , obscureAs, hideAs, buildAs
   , isEasyOpenKind, isOpenable, isClosable, isModifiable
+  , TileAction (..), parseTileAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , createTab, createTabWithKey, accessTab, alterMinSkillKind, alterMinWalkKind
@@ -37,8 +38,11 @@ import Game.LambdaHack.Core.Prelude
 import qualified Data.Vector.Unboxed as U
 import           Data.Word (Word8)
 
+import           Game.LambdaHack.Common.Item
 import           Game.LambdaHack.Common.Kind
+import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
+import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind (TileKind, isUknownSpace)
 import qualified Game.LambdaHack.Content.TileKind as TK
 import           Game.LambdaHack.Core.Random
@@ -348,3 +352,29 @@ isModifiable coTileSpeedup t = isDoor coTileSpeedup t
                                || isChangable coTileSpeedup t
                                || isModifiableWith coTileSpeedup t
                                || isSuspect coTileSpeedup t
+
+data TileAction =
+    EmbedAction (ItemId, ItemQuant)
+  | ToAction (GroupName TK.TileKind)
+  | WithAction [GroupName IK.ItemKind] (GroupName TK.TileKind)
+
+parseTileAction :: Bool -> [(IK.ItemKind, (ItemId, ItemQuant))] -> TK.Feature
+                -> Maybe TileAction
+parseTileAction underFeet embedKindList feat = case feat of
+  TK.Embed igroup ->
+    let f (itemKind, _) =
+          fromMaybe 0 (lookup igroup $ IK.ifreq itemKind) > 0
+    in case find f embedKindList of
+      Nothing -> Nothing
+      Just (_, iidkit) -> Just $ EmbedAction iidkit
+  TK.OpenTo tgroup | not underFeet -> Just $ ToAction tgroup
+  TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
+  TK.ChangeTo tgroup -> Just $ ToAction tgroup
+  TK.OpenWith grps tgroup | not underFeet ->
+    -- Not when standing on tile, not to autoclose doors under actor
+    -- or close via dropping an item inside.
+    Just $ WithAction grps tgroup
+  TK.CloseWith grps tgroup | not underFeet ->
+    Just $ WithAction grps tgroup
+  TK.ChangeWith grps tgroup -> Just $ WithAction grps tgroup
+  _ -> Nothing
