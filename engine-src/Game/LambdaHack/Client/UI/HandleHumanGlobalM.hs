@@ -454,12 +454,6 @@ moveSearchAlter run dir = do
   blurb <- lookAtPosition (blid sb) tpos
   let t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-      canApplyEmbeds = any canApplyEmbed $ EM.assocs embeds
-      canApplyEmbed (iid, kit) =
-        let itemFull = itemToF iid
-            -- Let even completely unskilled actors trigger basic embeds.
-            legal = permittedApply localTime maxBound calmE itemFull kit
-        in either (const False) (const True) legal
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
       underFeet = tpos == spos  -- if enter and alter, be more permissive
   runStopOrCmd <-
@@ -492,19 +486,12 @@ moveSearchAlter run dir = do
            -- Rather rare (requires high skill), so describe the tile.
            promptAdd0 blurb
            failSer AlterUnwalked
-       | not $ Tile.isModifiable coTileSpeedup t || canApplyEmbeds -> do
-           -- Rather rare (charging embeds or too low skill for embeds
-           -- that are, e.g., `?`), so describe the tile.
-           -- Unfortunately this includes cases when an actor can exploit
-           -- signboard when hidden, but can't later on when revealed.
-           promptAdd0 blurb
-           failWith "unable to exploit the terrain"
        | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
        | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
            -- Don't mislead describing terrain, if other actor is to blame.
            failSer AlterBlockActor
        | otherwise -> do  -- promising
-           verAlters <- verifyAlters (blid sb) tpos
+           verAlters <- verifyAlters leader tpos
            case verAlters of
              Right () -> return $ Right $ ReqAlter tpos
              Left err -> return $ Left err
@@ -946,16 +933,16 @@ alterTileAtPos :: MonadClientUI m
 alterTileAtPos tpos = do
   COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
+  sb <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
-  lvl <- getLevel $ blid b
-  embeds <- getsState $ getEmbedBag (blid b) tpos
+  lvl <- getLevel $ blid sb
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
   if | not (Tile.isModifiable coTileSpeedup t) && EM.null embeds
       -> failSer AlterNothing
-     | chessDist tpos (bpos b) > 1
+     | chessDist tpos (bpos sb) > 1
       -> failSer AlterDistant
      | alterSkill <= 1
       -> failSer AlterUnskilled
@@ -967,21 +954,72 @@ alterTileAtPos tpos = do
       -> failSer AlterBlockActor
      | otherwise
       -> do
-         verAlters <- verifyAlters (blid b) tpos
+         verAlters <- verifyAlters leader tpos
          case verAlters of
            Right () -> do
              msgAddDone tpos "modify"
              return $ Right (ReqAlter tpos)
            Left err -> return $ Left err
 
--- | Verify important effects, such as fleeing the dungeon.
-verifyAlters :: MonadClientUI m => LevelId -> Point -> m (FailOrCmd ())
-verifyAlters lid p = do
-  bag <- getsState $ getEmbedBag lid p
+-- | Verify that the tile can be transformed or any embedded item effect
+-- triggered and the player is fine, if the effect is dangerous or grave,
+-- such as ending the game.
+verifyAlters :: forall m. MonadClientUI m => ActorId -> Point
+             -> m (FailOrCmd ())
+verifyAlters source tpos = do
+  COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  arItem <- getsState $ aspectRecordFromIid $ btrunk sb
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  lvl <- getLevel $ blid sb
   getKind <- getsState $ flip getIidKind
-  if any (any IK.isEffEscape . IK.ieffects) $ map getKind $ EM.keys bag
-  then verifyEscape
-  else return $ Right ()
+  let embedKindList =
+        if IA.checkFlag Ability.Blast arItem
+        then []  -- prevent embeds triggering each other in a loop
+        else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
+      underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
+      feats = TK.tfeature $ okind cotile $ lvl `at` tpos
+      tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
+                             feats
+  processTileActions source tpos tileActions
+
+processTileActions :: MonadClientUI m
+                   => ActorId -> Point -> [Tile.TileAction] -> m (FailOrCmd ())
+processTileActions source tpos tas = do
+  COps{coTileSpeedup} <- getsState scops
+  sb <- getsState $ getActorBody source
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  lvl <- getLevel $ blid sb
+  kitAssG <- getsState $ kitAssocs source [CGround]
+  kitAssE <- getsState $ kitAssocs source [CEqp]
+  let kitAss = listToolsForAltering kitAssG kitAssE
+      processTA [] = if Tile.isSuspect coTileSpeedup $ lvl `at` tpos
+                     then return $ Right ()
+                     else failSer AlterNothing
+      processTA (ta : rest) = case ta of
+        Tile.EmbedAction (iid, _) -> do
+          -- Embeds are activated in the order in tile definition
+          -- and never after the tile is changed.
+          -- We assume the item would trigger and we let the player
+          -- take the risk of wasted turn to verify the assumption.
+          -- If the item recharges, the passing turns let the player wait.
+          getKind <- getsState $ flip getIidKind
+          if iid `EM.member` embeds
+          then if any IK.isEffEscape . IK.ieffects $ getKind iid
+               then verifyEscape
+               else return $ Right ()  -- no need to check further; effect found
+          else processTA rest
+            -- embed used up; try further
+        Tile.ToAction{} -> if EM.null embeds
+                           then return $ Right ()
+                           else processTA rest
+        Tile.WithAction grps _ ->
+          -- UI requested, so this is voluntary, so item loss is fine.
+          case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
+              Nothing -> processTA rest
+                           -- not enough tools
+              Just{} -> return $ Right ()
+  processTA tas
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
