@@ -437,21 +437,18 @@ displaceAid target = do
 moveSearchAlter :: MonadClientUI m
                 => Bool -> Vector -> m (FailOrCmd RequestTimed)
 moveSearchAlter run dir = do
-  COps{cotile, coTileSpeedup} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   let moveSkill = Ability.getSk Ability.SkMove actorSk
-      alterSkill = Ability.getSk Ability.SkAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
   blurb <- lookAtPosition (blid sb) tpos
   let t = lvl `at` tpos
-      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
-      underFeet = tpos == spos  -- if enter and alter, be more permissive
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -468,42 +465,66 @@ moveSearchAlter run dir = do
            failWith $ if alterable
                       then "potentially modifiable"
                       else "not modifiable"
-       | not alterable -> do
-           let name = MU.Text $ TK.tname $ okind cotile t
-           failWith $ makePhrase ["there is no point kicking", MU.AW name]
-             -- misclick? related to AlterNothing but no searching possible;
-             -- we don't show tile description, because it only comes from
-             -- embedded items and here probably there are none (can be all
-             -- charging, but that's rare)
-       | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
-       | not (Tile.isSuspect coTileSpeedup t)
-         && not underFeet
-         && alterSkill < alterMinSkill -> do
-           -- Rather rare (requires high skill), so describe the tile.
-           promptAdd0 blurb
-           failSer AlterUnwalked
-       | not underFeet && (EM.member tpos $ lfloor lvl) ->
-           failSer AlterBlockItem
-       | not underFeet
-         && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl) ->
-           -- Don't mislead describing terrain, if other actor is to blame.
-           failSer AlterBlockActor
-       | otherwise -> do  -- promising
-           verAlters <- verifyAlters leader tpos
-           case verAlters of
-             Right () -> return $ Right $ ReqAlter tpos
-             Left err -> return $ Left err
-           -- We don't use ReqMove, because we don't hit invisible actors,
-           -- e.g., hidden in a wall. If server performed an attack for free
-           -- on the invisible actor anyway, the player (or AI)
-           -- would be tempted to repeatedly hit random walls
-           -- in hopes of killing a monster residing within.
-           -- If the action had a cost, misclicks would incur the cost, too.
-           -- Right now the player may repeatedly alter tiles trying to learn
-           -- about invisible pass-wall actors, but when an actor detected,
-           -- it costs a turn and does not harm the invisible actors,
-           -- so it's not so tempting.
+       | otherwise -> alterCommon True tpos
   return $! runStopOrCmd
+
+alterCommon :: MonadClientUI m => Bool -> Point -> m (FailOrCmd RequestTimed)
+alterCommon bumping tpos = do
+  COps{cotile, coTileSpeedup} <- getsState scops
+  actorSk <- leaderSkillsClientUI
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
+  let alterSkill = Ability.getSk Ability.SkAlter actorSk
+      spos = bpos sb
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  lvl <- getLevel $ blid sb
+  let t = lvl `at` tpos
+      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
+      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
+      underFeet = tpos == spos  -- if enter and alter, be more permissive
+  if | not alterable -> do
+         let name = MU.Text $ TK.tname $ okind cotile t
+         failWith $ makePhrase ["there is no point kicking", MU.AW name]
+           -- misclick? related to AlterNothing but no searching possible;
+           -- we don't show tile description, because it only comes from
+           -- embedded items and here probably there are none (can be all
+           -- charging, but that's rare)
+     | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
+     | not (Tile.isSuspect coTileSpeedup t)
+       && not underFeet
+       && alterSkill < alterMinSkill -> do
+         -- Rather rare (requires high skill), so describe the tile.
+         blurb <- lookAtPosition (blid sb) tpos
+         promptAdd0 blurb
+         failSer AlterUnwalked
+     | chessDist tpos (bpos sb) > 1 ->
+         -- Checked late to give useful info about distant tiles.
+         failSer AlterDistant
+     | not underFeet && (EM.member tpos $ lfloor lvl) ->
+         failSer AlterBlockItem
+     | not underFeet
+       && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl) ->
+         -- Don't mislead describing terrain, if other actor is to blame.
+         failSer AlterBlockActor
+     | otherwise -> do  -- promising
+         verAlters <- verifyAlters leader tpos
+         case verAlters of
+           Right () -> do
+             unless bumping $
+               msgAddDone tpos "modify"
+             return $ Right (ReqAlter tpos)
+           Left err -> return $ Left err
+         -- Even when bumping, we don't use ReqMove, because we don't want
+         -- to hit invisible actors, e.g., hidden in a wall.
+         -- If server performed an attack for free
+         -- on the invisible actor anyway, the player (or AI)
+         -- would be tempted to repeatedly hit random walls
+         -- in hopes of killing a monster residing within.
+         -- If the action had a cost, misclicks would incur the cost, too.
+         -- Right now the player may repeatedly alter tiles trying to learn
+         -- about invisible pass-wall actors, but when an actor detected,
+         -- it costs a turn and does not harm the invisible actors,
+         -- so it's not so tempting.
 
 -- * RunOnceAhead
 
@@ -928,44 +949,7 @@ alterDirHuman = pickPoint "modify" >>= \case
 alterTileAtPos :: MonadClientUI m
                => Point
                -> m (FailOrCmd RequestTimed)
-alterTileAtPos tpos = do
-  COps{coTileSpeedup} <- getsState scops
-  leader <- getLeaderUI
-  sb <- getsState $ getActorBody leader
-  actorSk <- leaderSkillsClientUI
-  embeds <- getsState $ getEmbedBag (blid sb) tpos
-  lvl <- getLevel $ blid sb
-  blurb <- lookAtPosition (blid sb) tpos
-  let alterSkill = Ability.getSk Ability.SkAlter actorSk
-      t = lvl `at` tpos
-      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
-      underFeet = tpos == bpos sb
-  if | not alterable
-      -> failSer AlterNothing
-     | chessDist tpos (bpos sb) > 1
-      -> failSer AlterDistant
-     | not underFeet && alterSkill <= 1
-      -> failSer AlterUnskilled
-     | not (Tile.isSuspect coTileSpeedup t)
-       && not underFeet
-       && alterSkill < alterMinSkill
-      -> do
-        -- Rather rare (requires high skill), so describe the tile.
-        promptAdd0 blurb
-        failSer AlterUnwalked
-     | not underFeet && (EM.member tpos $ lfloor lvl)
-      -> failSer AlterBlockItem
-     | not underFeet && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl)
-      -> failSer AlterBlockActor
-     | otherwise
-      -> do
-       verAlters <- verifyAlters leader tpos
-       case verAlters of
-         Right () -> do
-           msgAddDone tpos "modify"
-           return $ Right (ReqAlter tpos)
-         Left err -> return $ Left err
+alterTileAtPos tpos = alterCommon False tpos
 
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is fine, if the effect is dangerous or grave,
