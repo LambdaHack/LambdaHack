@@ -747,8 +747,10 @@ reqAlterFail onCombineOnly voluntary source tpos = do
           identifyStoreBag store bag =
             mapM_ (identifyStoreIid store) $ EM.keys bag
           identifyStoreIid store iid = do
+            discoAspect2 <- getsState sdiscoAspect
+              -- might have changed due to embedded items invocations
             itemKindId <- getsState $ getIidKindIdServer iid
-            let arItem = discoAspect EM.! iid
+            let arItem = discoAspect2 EM.! iid
                 c = CActor source store
                 itemKind = okind coitem itemKindId
             unless (IA.isHumanTrinket itemKind) $  -- a hack
@@ -797,7 +799,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             Tile.EmbedAction (iid, kit) -> do
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
-              if iid `EM.member` embeds then do
+              embeds2 <- getsState $ getEmbedBag lid tpos
+                -- might have changed due to embedded items invocations
+              if iid `EM.member` embeds2 then do
                 triggered <- tryApplyEmbed (iid, kit)
                 processTileActions (max useResult triggered) rest
               else processTileActions useResult rest
