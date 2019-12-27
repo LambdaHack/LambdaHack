@@ -247,7 +247,9 @@ rubble = ItemKind
 doorwayTrapTemplate = ItemKind
   { isymbol  = '+'
   , iname    = "doorway trap"
-  , ifreq    = [(DOORWAY_TRAP_UNKNOWN, 1)]
+  , ifreq    = [(DOORWAY_TRAP_UNKNOWN, 1), (DOORWAY_TRAP, 0)]
+      -- the void group needed to pick the item for tile triggering
+      -- even when not yet identified
   , iflavour = zipPlain brightCol
   , icount   = 1
   , irarity  = [(1, 1)]

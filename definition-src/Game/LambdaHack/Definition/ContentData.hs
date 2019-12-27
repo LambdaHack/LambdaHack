@@ -51,7 +51,9 @@ validateRarity rarity =
 
 validFreqs :: Freqs a -> Bool
 validFreqs freqs =
-  all ((> 0) . snd) freqs
+  -- Greater or equal to 0 permitted, e.g., to cover embedded template UNKNOWN
+  -- items not yet identified by the client, but triggerable nevertheless.
+  all ((>= 0) . snd) freqs
   && let groups = sort $ map fst freqs
          tailOfGroups = if null groups then groups else tail groups
      in all (uncurry (/=)) $ zip groups tailOfGroups
