@@ -441,14 +441,10 @@ moveSearchAlter run dir = do
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
-  let calmE = calmEnough sb actorMaxSk
-      moveSkill = Ability.getSk Ability.SkMove actorSk
+  let moveSkill = Ability.getSk Ability.SkMove actorSk
       alterSkill = Ability.getSk Ability.SkAlter actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  itemToF <- getsState $ flip itemToFull
-  localTime <- getsState $ getLocalTime (blid sb)
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
   blurb <- lookAtPosition (blid sb) tpos
@@ -486,8 +482,10 @@ moveSearchAlter run dir = do
            -- Rather rare (requires high skill), so describe the tile.
            promptAdd0 blurb
            failSer AlterUnwalked
-       | EM.member tpos $ lfloor lvl -> failSer AlterBlockItem
-       | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl ->
+       | not underFeet && (EM.member tpos $ lfloor lvl) ->
+           failSer AlterBlockItem
+       | not underFeet
+         && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl) ->
            -- Don't mislead describing terrain, if other actor is to blame.
            failSer AlterBlockActor
        | otherwise -> do  -- promising
@@ -935,31 +933,39 @@ alterTileAtPos tpos = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
-  lvl <- getLevel $ blid sb
   embeds <- getsState $ getEmbedBag (blid sb) tpos
+  lvl <- getLevel $ blid sb
+  blurb <- lookAtPosition (blid sb) tpos
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       t = lvl `at` tpos
       alterMinSkill = Tile.alterMinSkill coTileSpeedup t
-  if | not (Tile.isModifiable coTileSpeedup t) && EM.null embeds
+      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
+      underFeet = tpos == bpos sb
+  if | not alterable
       -> failSer AlterNothing
      | chessDist tpos (bpos sb) > 1
       -> failSer AlterDistant
-     | alterSkill <= 1
+     | not underFeet && alterSkill <= 1
       -> failSer AlterUnskilled
-     | not (Tile.isSuspect coTileSpeedup t) && alterSkill < alterMinSkill
-      -> failSer AlterUnwalked
-     | EM.member tpos $ lfloor lvl
+     | not (Tile.isSuspect coTileSpeedup t)
+       && not underFeet
+       && alterSkill < alterMinSkill
+      -> do
+        -- Rather rare (requires high skill), so describe the tile.
+        promptAdd0 blurb
+        failSer AlterUnwalked
+     | not underFeet && (EM.member tpos $ lfloor lvl)
       -> failSer AlterBlockItem
-     | occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
+     | not underFeet && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl)
       -> failSer AlterBlockActor
      | otherwise
       -> do
-         verAlters <- verifyAlters leader tpos
-         case verAlters of
-           Right () -> do
-             msgAddDone tpos "modify"
-             return $ Right (ReqAlter tpos)
-           Left err -> return $ Left err
+       verAlters <- verifyAlters leader tpos
+       case verAlters of
+         Right () -> do
+           msgAddDone tpos "modify"
+           return $ Right (ReqAlter tpos)
+         Left err -> return $ Left err
 
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is fine, if the effect is dangerous or grave,
