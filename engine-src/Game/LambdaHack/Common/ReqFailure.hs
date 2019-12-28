@@ -180,27 +180,31 @@ showReqFailure reqFailure = case reqFailure of
 
 -- The item should not be applied nor thrown because it's too delicate
 -- to operate when not calm or because it's too precious to identify by use.
-permittedPrecious :: Bool -> Bool -> ItemFull -> Either ReqFailure Bool
-permittedPrecious forced calmE itemFull@ItemFull{itemDisco} =
+permittedPrecious :: Bool -> Bool -> Bool -> ItemFull -> Either ReqFailure Bool
+permittedPrecious projecting forced calmE itemFull@ItemFull{itemDisco} =
   let arItem = aspectRecordFull itemFull
       isPrecious = IA.checkFlag Ability.Precious arItem
+      imperishable = IA.checkFlag Ability.Durable arItem
+                     && (not projecting || IA.checkFlag Ability.Unique arItem)
   in if not forced && not calmE && isPrecious
      then Left NotCalmPrecious
-     else Right $ IA.checkFlag Ability.Durable arItem
+     else Right $ imperishable
                   || case itemDisco of
                        ItemDiscoFull{} -> True
                        _ -> not isPrecious
 
--- Simplified, faster version, for inner AI loop.
+-- Simplified, faster version, for inner AI loop; only for projecting.
 permittedPreciousAI :: Bool -> ItemFull -> Bool
 permittedPreciousAI calmE itemFull@ItemFull{itemDisco} =
   let arItem = aspectRecordFull itemFull
       isPrecious = IA.checkFlag Ability.Precious arItem
+      imperishable = IA.checkFlag Ability.Unique arItem
+                     && IA.checkFlag Ability.Durable arItem
   in (calmE || not isPrecious)
-     && IA.checkFlag Ability.Durable arItem
-        || case itemDisco of
-             ItemDiscoFull{} -> True
-             _ -> not isPrecious
+     && (imperishable
+         || case itemDisco of
+              ItemDiscoFull{} -> True
+              _ -> not isPrecious)
 
 permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedProject forced skill calmE itemFull =
@@ -209,7 +213,7 @@ permittedProject forced skill calmE itemFull =
        | not forced
          && IA.checkFlag Ability.Lobable arItem
          && skill < 3 -> Left ProjectLobable
-       | otherwise -> case permittedPrecious forced calmE itemFull of
+       | otherwise -> case permittedPrecious True forced calmE itemFull of
            Left failure -> Left failure
            Right False -> Right False
            Right True -> Right $
@@ -249,4 +253,4 @@ permittedApply localTime skill calmE
      | otherwise ->
        if null (IK.ieffects itemKind) && not itemSuspect
        then Left ApplyNoEffects
-       else permittedPrecious False calmE itemFull
+       else permittedPrecious False False calmE itemFull

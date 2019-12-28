@@ -1346,9 +1346,14 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
       c = CActor aid store
       fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
+      unique = IA.checkFlag Ability.Unique arItem
+      condition = IA.checkFlag Ability.Condition arItem
+      -- Even durable items get destroyed, to prevent throwing durable tools
+      -- at terrain to avoid harmful effects of the tools.
       isDestroyed = destroy
-                    || bproj b && (bhp b <= 0 && not durable || fragile)
-                    || IA.checkFlag Ability.Condition arItem
+                    || bproj b
+                       && (fragile || bhp b <= 0 && not (durable && unique))
+                    || condition
   if isDestroyed then do
     let -- We don't know if it's voluntary, so we conservatively assume
         -- it is and we blame @aid@.
