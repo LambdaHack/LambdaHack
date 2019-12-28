@@ -1442,9 +1442,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
            <+> showReqFailure reqFailure <> "." )
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
-  SfxNoItemsForTile ll -> do
-    let tItems = T.intercalate " or "
-                 $ map (\l -> T.intercalate " and " (map fromGroupName l)) ll
+  SfxNoItemsForTile toolsToAlterWith -> do
+    let tItems = describeTools toolsToAlterWith
     return $ Just ( MsgWarning
                   , "To transform the terrain, prepare the following items on the ground or in equipment and try again:"
                     <+> tItems <> ". If you don't have any, go get them."

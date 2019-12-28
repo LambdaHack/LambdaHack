@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , skillName, skillDesc, skillToDecorator, skillSlots
-  , kindAspectToSuffix, aspectToSentence, affixDice
+  , kindAspectToSuffix, aspectToSentence, affixDice, describeTools
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , slotToSentence, tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
@@ -396,3 +396,8 @@ wrapInChevrons t = "<" <> t <> ">"
 
 affixDice :: Dice.Dice -> Text
 affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
+
+describeTools :: [[GroupName ItemKind]] -> Text
+describeTools =
+  makePhrase . pure . MU.WWxW "or"
+  . map (fst . squashedWWandW . map (MU.Text . fromGroupName))
