@@ -446,7 +446,6 @@ moveSearchAlter run dir = do
       tpos = spos `shift` dir  -- target position
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
-  blurb <- lookAtPosition (blid sb) tpos
   let t = lvl `at` tpos
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
   runStopOrCmd <-
@@ -461,6 +460,7 @@ moveSearchAlter run dir = do
        -- Not walkable, so search and/or alter the tile.
        | run -> do
            -- Explicit request to examine the terrain.
+           blurb <- lookAtPosition (blid sb) tpos
            promptAdd0 blurb
            failWith $ if alterable
                       then "potentially modifiable"

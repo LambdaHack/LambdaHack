@@ -55,6 +55,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.ReqFailure
 import           Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -581,6 +582,7 @@ lookAtItems canSee p aid = do
 -- level's position.
 lookAtPosition :: MonadClientUI m => LevelId -> Point -> m Text
 lookAtPosition lidV p = do
+  COps{cotile} <- getsState scops
   side <- getsClient sside
   leader <- getLeaderUI
   per <- getPerFid lidV
@@ -589,7 +591,7 @@ lookAtPosition lidV p = do
   tileBlurb <- lookAtTile canSee p leader lidV
   actorsBlurb <- lookAtActors p lidV
   itemsBlurb <- lookAtItems canSee p leader
-  Level{lsmell, ltime} <- getLevel lidV
+  lvl@Level{lsmell, ltime} <- getLevel lidV
   let smellBlurb = case EM.lookup p lsmell of
         Just sml | sml > ltime ->
           let Delta t = smellTimeout `timeDeltaSubtract`
@@ -606,8 +608,35 @@ lookAtPosition lidV p = do
                       <+> "set up their shared inventory stash there."
         _ -> Nothing
       stashBlurb = T.intercalate " " $ mapMaybe locateStash $ EM.assocs factionD
+  embeds <- getsState $ getEmbedBag lidV p
+  getKind <- getsState $ flip getIidKind
+  let embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
+                          (EM.assocs embeds)
+      feats = TK.tfeature $ okind cotile $ lvl `at` p
+      tileActions = mapMaybe (Tile.parseTileAction False embedKindList)
+                             feats
+      isEmbedAction Tile.EmbedAction{} = True
+      isEmbedAction _ = False
+      embedVerb = ["exploited" | any isEmbedAction tileActions]
+      isToAction Tile.ToAction{} = True
+      isToAction _ = False
+      alterVerb = ["easily altered" | any isToAction tileActions]
+      verbs = embedVerb ++ alterVerb
+      alterdBlurb = if null verbs
+                    then ""
+                    else makeSentence ["can be", MU.WWandW verbs]
+      toolFromAction (Tile.WithAction grps _) = Just grps
+      toolFromAction _ = Nothing
+      toolsToAlterWith = mapMaybe toolFromAction tileActions
+      tItems = T.intercalate " or "
+               $ map (\l -> T.intercalate " and " (map fromGroupName l))
+                     toolsToAlterWith
+      transformBlurb = if null toolsToAlterWith
+                       then ""
+                       else "The following items on the ground or in equipment trigger special transformations:"
+                            <+> tItems <> "."  -- not telling to what terrain
   return $! tileBlurb <+> stashBlurb <+> actorsBlurb <+> itemsBlurb
-            <+> smellBlurb
+            <+> smellBlurb <+> alterdBlurb <+> transformBlurb
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int

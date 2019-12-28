@@ -1446,7 +1446,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     let tItems = T.intercalate " or "
                  $ map (\l -> T.intercalate " and " (map fromGroupName l)) ll
     return $ Just ( MsgWarning
-                  , "To modify the terrain, prepare the following items on the ground or in equipment and try again:"
+                  , "To transform the terrain, prepare the following items on the ground or in equipment and try again:"
                     <+> tItems <> ". If you don't have any, go get them."
                   )
   SfxVoidDetection d -> return $
