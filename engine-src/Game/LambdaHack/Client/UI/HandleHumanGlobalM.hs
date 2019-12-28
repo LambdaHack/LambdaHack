@@ -977,6 +977,7 @@ processTileActions :: MonadClientUI m
                    => ActorId -> Point -> [Tile.TileAction] -> m (FailOrCmd ())
 processTileActions source tpos tas = do
   COps{coTileSpeedup} <- getsState scops
+  getKind <- getsState $ flip getIidKind
   sb <- getsState $ getActorBody source
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
@@ -993,7 +994,6 @@ processTileActions source tpos tas = do
           -- We assume the item would trigger and we let the player
           -- take the risk of wasted turn to verify the assumption.
           -- If the item recharges, the passing turns let the player wait.
-          getKind <- getsState $ flip getIidKind
           if iid `EM.member` embeds
           then if any IK.isEffEscape . IK.ieffects $ getKind iid
                then verifyEscape
@@ -1008,7 +1008,14 @@ processTileActions source tpos tas = do
           case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
               Nothing -> processTA rest
                            -- not enough tools
-              Just{} -> return $ Right ()
+              Just (_, _, iidsToApply) -> do
+                let hasEffectOrDmg (_, iid) =
+                      let itemKind = getKind iid
+                      in IK.idamage itemKind /= 0
+                         || any IK.forApplyEffect (IK.ieffects itemKind)
+                case filter hasEffectOrDmg iidsToApply of
+                  [] -> return $ Right ()
+                  (store, iid) : _ -> verifyToolEffect (blid sb) store iid
   processTA tas
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())
@@ -1036,6 +1043,24 @@ verifyEscape = do
     if not go
     then failWith "here's your chance!"
     else return $ Right ()
+
+verifyToolEffect :: MonadClientUI m
+                 => LevelId -> CStore -> ItemId -> m (FailOrCmd ())
+verifyToolEffect lid store iid = do
+  side <- getsClient sside
+  localTime <- getsState $ getLocalTime lid
+  itemFull <- getsState $ itemToFull iid
+  factionD <- getsState sfactionD
+  let object = makePhrase
+                 [partItemWsShort side factionD 1 localTime itemFull (1, [])]
+      prompt = "Do you really want to transform the terrain using the"
+               <+> object
+               <+> "that may cause substantial side-effects?"
+  go <- displayYesNo ColorBW prompt
+  if not go
+  then failWith $ "Replace the" <+> object <+> ppCStoreIn store
+                  <+> "and try again."
+  else return $ Right ()
 
 -- * AlterWithPointer
 

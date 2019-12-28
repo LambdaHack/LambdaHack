@@ -581,7 +581,7 @@ itemVerbMUGeneral verbose msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
   factionD <- getsState sfactionD
   let arItem = aspectRecordFull itemFull
       partItemWsChosen | verbose = partItemWs
-                       | otherwise =  partItemWsShort
+                       | otherwise = partItemWsShort
       subject = partItemWsChosen side factionD k localTime itemFull kit
       msg | k > 1 && not (IA.checkFlag Ability.Condition arItem) =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
