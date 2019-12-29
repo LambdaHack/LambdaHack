@@ -494,22 +494,17 @@ advanceTrajectory aid b1 = do
            let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
                reqMoveHit = reqMoveGeneric False True aid d
                reqDisp = reqDisplaceGeneric False aid
-           if | bproj b1 ->
-                -- Projectiles always hit; then can't tell friend from foe.
-                reqMoveHit
+           if | bproj b1 -> reqMoveHit  -- projectiles always hit
               | occupied ->
-                -- Non-projectiles displace, unless they can hit big enemy.
-                -- Hitting projectiles would stop a possibly important flight.
+                -- Non-projectiles displace if they are ending their flight
+                -- or if only a projectile is in the way.
+                -- So, no chaos of displacing a whole line of enemies.
                 case (posToBigLvl tpos lvl, posToProjsLvl tpos lvl) of
                   (Nothing, []) -> error "advanceTrajectory: not occupied"
                   (Nothing, [target]) -> reqDisp target
                   (Nothing, _) -> reqMoveHit  -- can't displace multiple
-                  (Just target, []) -> do
-                    b2 <- getsState $ getActorBody target
-                    fact <- getsState $ (EM.! bfid b1) . sfactionD
-                    if isFoe (bfid b1) fact (bfid b2)
-                    then reqMoveHit
-                    else reqDisp target
+                  (Just target, []) ->
+                    if null lv then reqDisp target else reqMoveHit
                   (Just _, _) -> reqMoveHit  -- can't displace multiple
               | otherwise -> reqMoveHit  -- if not occupied, just move
          | otherwise -> do
