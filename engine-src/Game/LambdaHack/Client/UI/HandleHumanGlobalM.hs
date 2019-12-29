@@ -485,10 +485,7 @@ alterCommon bumping tpos = do
   if | not alterable -> do
          let name = MU.Text $ TK.tname $ okind cotile t
          failWith $ makePhrase ["there is no point kicking", MU.AW name]
-           -- misclick? related to AlterNothing but no searching possible;
-           -- we don't show tile description, because it only comes from
-           -- embedded items and here probably there are none (can be all
-           -- charging, but that's rare)
+           -- misclick? related to AlterNothing but no searching possible
      | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
      | not (Tile.isSuspect coTileSpeedup t)
        && not underFeet
@@ -990,9 +987,14 @@ processTileActions source tpos tas = do
   kitAssG <- getsState $ kitAssocs source [CGround]
   kitAssE <- getsState $ kitAssocs source [CEqp]
   let kitAss = listToolsForAltering kitAssG kitAssE
-      processTA [] = if Tile.isSuspect coTileSpeedup $ lvl `at` tpos
-                     then return $ Right ()
-                     else failSer AlterNothing
+      processTA [] =
+        if Tile.isSuspect coTileSpeedup $ lvl `at` tpos
+        then return $ Right ()
+        else do
+          blurb <- lookAtPosition (blid sb) tpos
+          promptAdd0 blurb
+          failWith "unable to modify at this time"
+            -- related to, among others, @SfxNoItemsForTile@ on the server
       processTA (ta : rest) = case ta of
         Tile.EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
