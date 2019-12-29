@@ -1,6 +1,6 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem, partItemShort, partItemShortest, partItemHigh
+  ( partItem, partItemShort, partItemShortest, partItemTrunk, partItemHigh
   , partItemWs, partItemWsShort, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
@@ -75,7 +75,9 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
       capName = if IA.checkFlag Ability.Unique arItem
                 then MU.Capitalize $ MU.Text name
                 else MU.Text name
-  in (capName, MU.Phrase $ map MU.Text ts)
+  in (capName, if maxWordsToShow == 0
+               then MU.Text $ IA.aELabel arItem
+               else MU.Phrase $ map MU.Text ts)
 
 -- TODO: simplify the code a lot
 textAllPowers :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
@@ -223,6 +225,10 @@ partItemShort side factionD = partItemN side factionD False DetailLow 4
 partItemShortest :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                  -> (MU.Part, MU.Part)
 partItemShortest side factionD = partItemN side factionD False DetailLow 1
+
+partItemTrunk :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+              -> (MU.Part, MU.Part)
+partItemTrunk side factionD = partItemN side factionD False DetailLow 0
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> (MU.Part, MU.Part)

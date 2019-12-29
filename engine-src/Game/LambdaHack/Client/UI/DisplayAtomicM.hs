@@ -689,8 +689,10 @@ createActorUI born aid body = do
                mhs = map findHeroK [0..]
                n = fromMaybe (error $ show mhs) $ elemIndex False mhs
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
-    let (object1, object2) = partItemShortest (bfid body) factionD localTime
-                                              itemFull (1, [])
+    let (object1, object2) =
+          if bproj body
+          then partItemShortest (bfid body) factionD localTime itemFull (1, [])
+          else partItemTrunk (bfid body) factionD localTime itemFull (1, [])
         (bname, bpronoun) =
           if | bproj body ->
                let adj = case btrajectory body of
