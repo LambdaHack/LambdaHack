@@ -684,9 +684,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       -- The rationale is that the items were all the time present
       -- (just invisible to the client), so they need to be triggered.
       -- The exception is changable tiles, because they are not so easy
-      -- to trigger; they need subsequent altering.
-      unless (Tile.isDoor coTileSpeedup serverTile
-              || Tile.isChangable coTileSpeedup serverTile) $ do
+      -- to trigger; they need previous or subsequent altering.
+      unless (Tile.isModifiable coTileSpeedup serverTile) $ do
         triggered <- tryApplyEmbeds
         when (triggered /= UseDud) $
           execSfxAtomic $ SfxTrigger source lid tpos
