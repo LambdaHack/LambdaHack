@@ -856,17 +856,11 @@ projectItem (fromCStore, (iid, itemFull)) = do
         case psuitReqFun itemFull of
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
-            let arItem = aspectRecordFull itemFull
-                durable = IA.checkFlag Ability.Durable arItem
-                unique = IA.checkFlag Ability.Unique arItem
             Benefit{benFling} <- getsClient $ (EM.! iid) . sdiscoBenefit
-            go <- if | durable && not unique ->
-                       displayYesNo ColorFull
-                         "The item is durable when applied, but breaks upon impact. Do you really want to fling it?"
-                     | benFling > 0 ->
-                       displayYesNo ColorFull
+            go <- if benFling > 0
+                  then displayYesNo ColorFull
                          "The item appears beneficial. Do you really want to fling it?"
-                     | otherwise -> return True
+                  else return True
             if go then do
               -- Set personal target to enemy, so that AI, if it takes over
               -- the actor, is likely to continue the fight even if the foe

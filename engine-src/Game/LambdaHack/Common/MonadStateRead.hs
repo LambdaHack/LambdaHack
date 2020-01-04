@@ -69,7 +69,7 @@ pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
   actorMaxSk <- getsState $ getActorMaxSkills source
   let calmE = calmEnough sb actorMaxSk
       forced = bproj sb
-      permitted = permittedPrecious False forced calmE
+      permitted = permittedPrecious forced calmE
       preferredPrecious = either (const False) id . permitted
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
       strongest = strongestMelee ignoreCharges mdiscoBenefit
