@@ -479,17 +479,18 @@ alterCommon bumping tpos = do
   embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
   let t = lvl `at` tpos
-      alterMinSkill = Tile.alterMinSkill coTileSpeedup t
       alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
       underFeet = tpos == spos  -- if enter and alter, be more permissive
   if | not alterable -> do
          let name = MU.Text $ TK.tname $ okind cotile t
          failWith $ makePhrase ["there is no point kicking", MU.AW name]
            -- misclick? related to AlterNothing but no searching possible
-     | not underFeet && alterSkill <= 1 -> failSer AlterUnskilled
+     | Tile.isSuspect coTileSpeedup t
+       && not underFeet
+       && alterSkill <= 1 -> failSer AlterUnskilled
      | not (Tile.isSuspect coTileSpeedup t)
        && not underFeet
-       && alterSkill < alterMinSkill -> do
+       && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
          blurb <- lookAtPosition (blid sb) tpos
          promptAdd0 blurb
