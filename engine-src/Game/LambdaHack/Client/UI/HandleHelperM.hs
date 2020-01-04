@@ -613,7 +613,7 @@ lookAtPosition lidV p = do
   let embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
                           (EM.assocs embeds)
       feats = TK.tfeature $ okind cotile $ lvl `at` p
-      tileActions = mapMaybe (Tile.parseTileAction False embedKindList)
+      tileActions = mapMaybe (Tile.parseTileAction False False embedKindList)
                              feats
       isEmbedAction Tile.EmbedAction{} = True
       isEmbedAction _ = False

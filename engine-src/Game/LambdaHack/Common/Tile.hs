@@ -361,9 +361,10 @@ data TileAction =
   | ToAction (GroupName TK.TileKind)
   | WithAction [GroupName IK.ItemKind] (GroupName TK.TileKind)
 
-parseTileAction :: Bool -> [(IK.ItemKind, (ItemId, ItemQuant))] -> TK.Feature
+parseTileAction :: Bool -> Bool -> [(IK.ItemKind, (ItemId, ItemQuant))]
+                -> TK.Feature
                 -> Maybe TileAction
-parseTileAction underFeet embedKindList feat = case feat of
+parseTileAction bproj underFeet embedKindList feat = case feat of
   TK.Embed igroup ->
       -- Greater or equal 0 to also cover template UNKNOWN items
       -- not yet identified by the client.
@@ -374,11 +375,18 @@ parseTileAction underFeet embedKindList feat = case feat of
   TK.OpenTo tgroup | not underFeet -> Just $ ToAction tgroup
   TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
   TK.ChangeTo tgroup -> Just $ ToAction tgroup
-  TK.OpenWith grps tgroup | not underFeet ->
+  TK.OpenWith proj grps tgroup | not underFeet ->
     -- Not when standing on tile, not to autoclose doors under actor
     -- or close via dropping an item inside.
-    Just $ WithAction grps tgroup
-  TK.CloseWith grps tgroup | not underFeet ->
-    Just $ WithAction grps tgroup
-  TK.ChangeWith grps tgroup -> Just $ WithAction grps tgroup
+    if proj || not bproj
+    then Just $ WithAction grps tgroup
+    else Nothing
+  TK.CloseWith proj grps tgroup | not underFeet ->
+    if proj || not bproj
+    then Just $ WithAction grps tgroup
+    else Nothing
+  TK.ChangeWith proj grps tgroup ->
+    if proj || not bproj
+    then Just $ WithAction grps tgroup
+    else Nothing
   _ -> Nothing

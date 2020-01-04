@@ -660,8 +660,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
-    -- Only actors with SkAlter > 1 can search for hidden doors, etc.
-    if not underFeet && alterSkill <= 1
+    -- Only non-projectile actors with SkAlter > 1 can search terrain.
+    -- Even projectiles with large altering bonuses can't.
+    if bproj sb || not underFeet && alterSkill <= 1
     then return $ Just AlterUnskilled  -- don't leak about searching
     else do
       -- Blocking by items nor actors does not prevent searching.
@@ -785,8 +786,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 changeTo tgroup
                 return True
           feats = TK.tfeature $ okind cotile serverTile
-          tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
-                                 feats
+          tileActions =
+            mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
+                     feats
           groupWithFromAction action = case action of
             Tile.WithAction grps tgroup -> Just (grps, tgroup)
             _ -> Nothing

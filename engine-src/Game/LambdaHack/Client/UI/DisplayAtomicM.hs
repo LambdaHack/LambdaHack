@@ -355,9 +355,9 @@ displayRespUpdAtomicUI cmd = case cmd of
             TK.OpenTo tgroup -> Just tgroup
             TK.CloseTo tgroup -> Just tgroup
             TK.ChangeTo tgroup -> Just tgroup
-            TK.OpenWith _ tgroup -> Just tgroup
-            TK.CloseWith _ tgroup -> Just tgroup
-            TK.ChangeWith _ tgroup -> Just tgroup
+            TK.OpenWith _ _ tgroup -> Just tgroup
+            TK.CloseWith _ _ tgroup -> Just tgroup
+            TK.ChangeWith _ _ tgroup -> Just tgroup
             _ -> Nothing
         groupsToAlterTo = mapMaybe toAlter feats
         freq = map fst $ filter (\(_, q) -> q > 0)

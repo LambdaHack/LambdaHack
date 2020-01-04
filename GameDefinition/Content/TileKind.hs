@@ -808,12 +808,12 @@ makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
                  darkFeat (OpenTo t) = Just $ OpenTo $ darkText t
                  darkFeat (CloseTo t) = Just $ CloseTo $ darkText t
                  darkFeat (ChangeTo t) = Just $ ChangeTo $ darkText t
-                 darkFeat (OpenWith grps t) =
-                   Just $ OpenWith grps $ darkText t
-                 darkFeat (CloseWith grps t) =
-                   Just $ CloseWith grps $ darkText t
-                 darkFeat (ChangeWith grps t) =
-                   Just $ ChangeWith grps $ darkText t
+                 darkFeat (OpenWith proj grps t) =
+                   Just $ OpenWith proj grps $ darkText t
+                 darkFeat (CloseWith proj grps t) =
+                   Just $ CloseWith proj grps $ darkText t
+                 darkFeat (ChangeWith proj grps t) =
+                   Just $ ChangeWith proj grps $ darkText t
                  darkFeat (HideAs t) = Just $ HideAs $ darkText t
                  darkFeat (BuildAs t) = Just $ BuildAs $ darkText t
                  darkFeat (RevealAs t) = Just $ RevealAs $ darkText t

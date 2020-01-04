@@ -972,8 +972,9 @@ verifyAlters source tpos = do
         else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
       feats = TK.tfeature $ okind cotile $ lvl `at` tpos
-      tileActions = mapMaybe (Tile.parseTileAction underFeet embedKindList)
-                             feats
+      tileActions =
+        mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
+                 feats
   processTileActions source tpos tileActions
 
 processTileActions :: MonadClientUI m
@@ -1014,8 +1015,7 @@ processTileActions source tpos tas = do
         Tile.WithAction grps _ ->
           -- UI requested, so this is voluntary, so item loss is fine.
           case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
-              Nothing -> processTA rest
-                           -- not enough tools
+              Nothing -> processTA rest  -- not enough tools
               Just (_, _, iidsToApply) -> do
                 let hasEffectOrDmg (_, iid) =
                       let itemKind = getKind iid
