@@ -697,7 +697,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
     -- that can't see the tile and the tile was not revealed so far.
     -- In either case, try to alter the tile. If the messages
     -- are confusing, that's fair, situation is confusing.
-    if not (bproj sb || underFeet)  -- skill needed only for standard altering
+    if not (bproj sb || underFeet)  -- no global skill check in these cases
        && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
@@ -802,7 +802,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- and never after the tile is changed.
               embeds2 <- getsState $ getEmbedBag lid tpos
                 -- might have changed due to embedded items invocations
-              if iid `EM.member` embeds2 then do
+              if iid `EM.member` embeds2
+                 && (not (bproj sb) || alterSkill <= 0)  -- proj unskilled
+              then do
                 triggered <- tryApplyEmbed (iid, kit)
                 processTileActions (max useResult triggered) rest
               else processTileActions useResult rest
@@ -811,13 +813,14 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- only free terrain alteration, while the @WithAction@ with
               -- item cost below are independent of the ability to activate
               -- embedded items.
-              if EM.null embeds || useResult == UseUp
+              if (EM.null embeds || useResult == UseUp)
+                 && (not (bproj sb) || alterSkill <= 0)  -- proj unskilled
               then do
                 changeTo tgroup
                 return True
               else processTileActions useResult rest
             Tile.WithAction grps tgroup ->
-              if voluntary || bproj sb
+              if voluntary || bproj sb  -- no local skill check either
               then do
                 -- Waste item only if voluntary or released as projectile.
                 kitAssG <- getsState $ kitAssocs source [CGround]
