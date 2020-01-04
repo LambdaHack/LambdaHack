@@ -794,8 +794,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
           processTileActions :: UseResult -> [Tile.TileAction] -> m Bool
-          processTileActions _ [] =
-            return False -- nothing can be changed freely
+          processTileActions useResult [] =
+            return $! useResult /= UseDud
           processTileActions useResult (ta : rest) = case ta of
             Tile.EmbedAction (iid, kit) -> do
               -- Embeds are activated in the order in tile definition
@@ -852,8 +852,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- only for standard altering.
             unless (bproj sb || underFeet || EM.null embeds) $
               execSfxAtomic $ SfxTrigger source lid tpos
-            tileChanged <- processTileActions UseDud tileActions
-            when (not tileChanged && not underFeet && voluntary
+            tileTriggered <- processTileActions UseDud tileActions
+            when (not tileTriggered && not underFeet && voluntary
                   && not (null groupsToAlterWith)) $
               execSfxAtomic $ SfxMsgFid (bfid sb)
                             $ SfxNoItemsForTile $ map fst groupsToAlterWith
