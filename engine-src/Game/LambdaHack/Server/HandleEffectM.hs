@@ -393,7 +393,8 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
     IK.CreateItem store grp tim ->
-      effectCreateItem (Just $ bfid sb) Nothing source target store grp tim
+      effectCreateItem (Just $ bfid sb) Nothing source target (Just iid)
+                       store grp tim
     IK.DestroyItem n k store grp ->
       effectDestroyItem execSfx iid n k store grp target
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
@@ -691,8 +692,8 @@ dominateFid fid source target = do
   -- Avoid the spam of identifying items, if game over.
   unless gameOver $ do
     -- Add some nostalgia for the old faction.
-    void $ effectCreateItem (Just $ bfid tb) (Just 10) source target COrgan
-                            IK.S_IMPRESSED IK.timerNone
+    void $ effectCreateItem (Just $ bfid tb) (Just 10) source target Nothing
+                            COrgan IK.S_IMPRESSED IK.timerNone
     -- Identify organs that won't get identified by use.
     getKindId <- getsState $ flip getIidKindIdServer
     let discoverIf (iid, cstore) = do
@@ -727,7 +728,7 @@ effectImpress recursiveCall execSfx source target = do
        if canTra then do
          unless (bhp tb <= 0)
            execSfx  -- avoid spam just before death
-         effectCreateItem (Just $ bfid sb) (Just 1) source target COrgan
+         effectCreateItem (Just $ bfid sb) (Just 1) source target Nothing COrgan
                           IK.S_IMPRESSED IK.timerNone
        else return UseDud  -- no message, because common and not crucial
 
@@ -1212,10 +1213,10 @@ effectTeleport execSfx nDm source target = do
 -- ** CreateItem
 
 effectCreateItem :: MonadServerAtomic m
-                 => Maybe FactionId -> Maybe Int -> ActorId -> ActorId -> CStore
-                 -> GroupName ItemKind -> IK.TimerDice
+                 => Maybe FactionId -> Maybe Int -> ActorId -> ActorId
+                 -> Maybe ItemId -> CStore -> GroupName ItemKind -> IK.TimerDice
                  -> m UseResult
-effectCreateItem jfidRaw mcount source target store grp tim = do
+effectCreateItem jfidRaw mcount source target miidCreator store grp tim = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
@@ -1285,6 +1286,11 @@ effectCreateItem jfidRaw mcount source target store grp tim = do
         return UseUp
       else return UseDud  -- probably incorrect content, but let it be
     _ -> do
+      case miidCreator of
+        Just iidCreator | store /= COrgan ->
+          execSfxAtomic $ SfxMsgFid (bfid tb)
+                        $ SfxItemYield iidCreator (blid tb)
+        _ -> return ()
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
       -- already existing items.
@@ -1478,7 +1484,8 @@ effectPolyItem execSfx iidId target = do
            identifyIid iid c itemKindId itemKind
            execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
            effectCreateItem (Just $ bfid tb) Nothing
-                            target target cstore IK.COMMON_ITEM IK.timerNone
+                            target target Nothing cstore
+                            IK.COMMON_ITEM IK.timerNone
 
 -- ** RerollItem
 

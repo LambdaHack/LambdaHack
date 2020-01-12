@@ -570,10 +570,9 @@ aidVerbDuplicateMU msgClass aid verb = do
   msgAddDuplicate (makeSentence [MU.SubjectVerbSg subject verb]) msgClass 1
 
 itemVerbMUGeneral :: MonadClientUI m
-                  => Bool -> MsgClass -> ItemId -> ItemQuant -> MU.Part
-                  -> Container
-                  -> m ()
-itemVerbMUGeneral verbose msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
+                  => Bool -> ItemId -> ItemQuant -> MU.Part -> Container
+                  -> m Text
+itemVerbMUGeneral verbose iid kit@(k, _) verb c = assert (k > 0) $ do
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemFull <- getsState $ itemToFull iid
@@ -586,16 +585,20 @@ itemVerbMUGeneral verbose msgClass iid kit@(k, _) verb c = assert (k > 0) $ do
       msg | k > 1 && not (IA.checkFlag Ability.Condition arItem) =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
-  msgAdd msgClass msg
+  return $! msg
 
 itemVerbMU :: MonadClientUI m
            => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container -> m ()
-itemVerbMU = itemVerbMUGeneral True
+itemVerbMU msgClass iid kit verb c = do
+  msg <- itemVerbMUGeneral True iid kit verb c
+  msgAdd msgClass msg
 
 itemVerbMUShort :: MonadClientUI m
                 => MsgClass -> ItemId -> ItemQuant -> MU.Part -> Container
                 -> m ()
-itemVerbMUShort = itemVerbMUGeneral False
+itemVerbMUShort msgClass iid kit verb c = do
+  msg <- itemVerbMUGeneral False iid kit verb c
+  msgAdd msgClass msg
 
 itemAidVerbMU :: MonadClientUI m
               => MsgClass -> ActorId -> MU.Part
@@ -1588,6 +1591,11 @@ ppSfxMsg sfxMsg = case sfxMsg of
              , makeSentence
                  [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
+  SfxItemYield iid lid -> do
+    let fakeKit = (1, [])
+        fakeC = CFloor lid originPoint
+    msg <- itemVerbMUGeneral False iid fakeKit "yield an item" fakeC
+    return $ Just (MsgItemCreation, msg)
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do

@@ -105,6 +105,7 @@ data TileSpeedup = TileSpeedup
 -- but with growing cache sizes they may as well turn out faster at some point.
 -- The advantage of vectors are exposed internals, in particular unsafe
 -- indexing. Also, in JS, bool arrays are obviously not packed.
+-- An option: https://github.com/Bodigrim/bitvec
 -- | A map morally indexed by @ContentId TileKind@.
 newtype Tab a = Tab (U.Vector a)
 
