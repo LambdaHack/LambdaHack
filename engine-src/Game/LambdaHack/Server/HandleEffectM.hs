@@ -398,6 +398,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.DestroyItem n k store grp ->
       effectDestroyItem execSfx iid n k store grp target
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
+    IK.Discharge nDm -> effectDischarge execSfx iid nDm target
     IK.PolyItem -> effectPolyItem execSfx iid target
     IK.RerollItem -> effectRerollItem execSfx iid target
     IK.DupItem -> effectDupItem execSfx iid target
@@ -1216,7 +1217,7 @@ effectCreateItem :: MonadServerAtomic m
                  => Maybe FactionId -> Maybe Int -> ActorId -> ActorId
                  -> Maybe ItemId -> CStore -> GroupName ItemKind -> IK.TimerDice
                  -> m UseResult
-effectCreateItem jfidRaw mcount source target miidCreator store grp tim = do
+effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
@@ -1286,10 +1287,10 @@ effectCreateItem jfidRaw mcount source target miidCreator store grp tim = do
         return UseUp
       else return UseDud  -- probably incorrect content, but let it be
     _ -> do
-      case miidCreator of
-        Just iidCreator | store /= COrgan ->
+      case miidOriginal of
+        Just iidOriginal | store /= COrgan ->
           execSfxAtomic $ SfxMsgFid (bfid tb)
-                        $ SfxItemYield iidCreator (blid tb)
+                        $ SfxItemYield iidOriginal (blid tb)
         _ -> return ()
       -- No such items or some items, but void delta, so create items.
       -- If it's, e.g., a periodic poison, the new items will stack with any
@@ -1323,10 +1324,10 @@ effectDestroyItem :: MonadServerAtomic m
                => m () -> ItemId -> Int -> Int -> CStore
                -> GroupName ItemKind -> ActorId
                -> m UseResult
-effectDestroyItem execSfx iidId ngroup kcopy store grp target = do
+effectDestroyItem execSfx iidOriginal ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
   isRaw <- allGroupItems store grp target
-  let is = filter ((/= iidId) . fst) isRaw
+  let is = filter ((/= iidOriginal) . fst) isRaw
   if | null is -> return UseDud
      | otherwise -> do
        execSfx
@@ -1404,13 +1405,13 @@ effectDropItem :: MonadServerAtomic m
                => m () -> ItemId -> Int -> Int -> CStore
                -> GroupName ItemKind -> ActorId
                -> m UseResult
-effectDropItem execSfx iidId ngroup kcopy store grp target = do
+effectDropItem execSfx iidOriginal ngroup kcopy store grp target = do
   tb <- getsState $ getActorBody target
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   isRaw <- allGroupItems store grp target
   curChalSer <- getsServer $ scurChalSer . soptions
   factionD <- getsState sfactionD
-  let is = filter ((/= iidId) . fst) isRaw
+  let is = filter ((/= iidOriginal) . fst) isRaw
   if | bproj tb || null is -> return UseDud
      | ngroup == maxBound && kcopy == maxBound
        && store `elem` [CStash, CEqp]
@@ -1448,16 +1449,43 @@ specific than the two general abilities described as desirable above
          [] -> UseDud  -- there was no effects
          _ -> maximum urs
 
+-- ** Discharge
+
+effectDischarge :: MonadServerAtomic m
+                => m () -> ItemId -> Dice.Dice -> ActorId -> m UseResult
+effectDischarge execSfx iidOriginal nDm target = do
+  discoAspect <- getsState sdiscoAspect
+  tb <- getsState $ getActorBody target
+  localTime <- getsState $ getLocalTime (blid tb)
+  totalDepth <- getsState stotalDepth
+  Level{ldepth} <- getLevel (blid tb)
+  power <- rndToAction $ castDice ldepth totalDepth nDm
+  let t = timeShift localTime $ timeDeltaScale (Delta timeClip) power
+      c = CActor target CEqp
+      eqpAss = EM.assocs $ beqp tb
+      hasTimeout (iid, _) = let arItem = discoAspect EM.! iid
+                            in IA.aTimeout arItem /= 0 && iid /= iidOriginal
+      timeoutAss = filter hasTimeout eqpAss
+      resetTimeout (iid, (k, itBefore)) = do
+        let resetIt = replicate k t
+        when (itBefore /= resetIt) $
+          execUpdAtomic $ UpdTimeItem iid c itBefore resetIt
+  mapM_ resetTimeout timeoutAss
+  if null timeoutAss then return UseDud
+  else do
+    execSfx
+    return UseUp
+
 -- ** PolyItem
 
 -- Can't apply to the item itself (any copies).
 effectPolyItem :: MonadServerAtomic m
                => m () -> ItemId -> ActorId -> m UseResult
-effectPolyItem execSfx iidId target = do
+effectPolyItem execSfx iidOriginal target = do
   tb <- getsState $ getActorBody target
   let cstore = CGround
   kitAss <- getsState $ kitAssocs target [cstore]
-  case filter ((/= iidId) . fst) kitAss of
+  case filter ((/= iidOriginal) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxPurposeNothing
       -- Do not spam the source actor player about the failures.
@@ -1492,12 +1520,12 @@ effectPolyItem execSfx iidId target = do
 -- Can't apply to the item itself (any copies).
 effectRerollItem :: forall m . MonadServerAtomic m
                  => m () -> ItemId -> ActorId -> m UseResult
-effectRerollItem execSfx iidId target = do
+effectRerollItem execSfx iidOriginal target = do
   COps{coItemSpeedup} <- getsState scops
   tb <- getsState $ getActorBody target
   let cstore = CGround  -- if ever changed, call @discoverIfMinorEffects@
   kitAss <- getsState $ kitAssocs target [cstore]
-  case filter ((/= iidId) . fst) kitAss of
+  case filter ((/= iidOriginal) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxRerollNothing
       -- Do not spam the source actor player about the failures.
@@ -1537,12 +1565,12 @@ effectRerollItem execSfx iidId target = do
 
 -- Can't apply to the item itself (any copies).
 effectDupItem :: MonadServerAtomic m => m () -> ItemId -> ActorId -> m UseResult
-effectDupItem execSfx iidId target = do
+effectDupItem execSfx iidOriginal target = do
   tb <- getsState $ getActorBody target
   let cstore = CGround  -- beware of other options, e.g., creating in eqp
                         -- and not setting timeout to a random value
   kitAss <- getsState $ kitAssocs target [cstore]
-  case filter ((/= iidId) . fst) kitAss of
+  case filter ((/= iidOriginal) . fst) kitAss of
     [] -> do
       execSfxAtomic $ SfxMsgFid (bfid tb) SfxDupNothing
       -- Do not spam the source actor player about the failures.
@@ -1567,7 +1595,7 @@ effectDupItem execSfx iidId target = do
 
 effectIdentify :: MonadServerAtomic m
                => m () -> ItemId -> ActorId -> m UseResult
-effectIdentify execSfx iidId target = do
+effectIdentify execSfx iidOriginal target = do
   COps{coItemSpeedup} <- getsState scops
   discoAspect <- getsState sdiscoAspect
   -- The actor that causes the application does not determine what item
@@ -1577,7 +1605,7 @@ effectIdentify execSfx iidId target = do
   sClient <- getsServer $ (EM.! bfid tb) . sclientStates
   let tryFull store as = case as of
         [] -> return False
-        (iid, _) : rest | iid == iidId -> tryFull store rest  -- don't id itself
+        (iid, _) : rest | iid == iidOriginal -> tryFull store rest  -- don't id itself
         (iid, ItemFull{itemBase, itemKindId, itemKind}) : rest -> do
           let arItem = discoAspect EM.! iid
               kindIsKnown = case jkind itemBase of
@@ -1820,14 +1848,14 @@ sendFlyingVector source target modePush = do
 -- The item itself is immune (any copies).
 effectDropBestWeapon :: MonadServerAtomic m
                      => m () -> ItemId -> ActorId -> m UseResult
-effectDropBestWeapon execSfx iidId target = do
+effectDropBestWeapon execSfx iidOriginal target = do
   tb <- getsState $ getActorBody target
   if bproj tb then return UseDud else do
     localTime <- getsState $ getLocalTime (blid tb)
     kitAssRaw <- getsState $ kitAssocs target [CEqp]
     let kitAss = filter (\(iid, (i, _)) ->
                           IA.checkFlag Ability.Meleeable (aspectRecordFull i)
-                          && iid /= iidId) kitAssRaw
+                          && iid /= iidOriginal) kitAssRaw
         ignoreCharges = True
     case strongestMelee ignoreCharges Nothing localTime kitAss of
       (_, (_, (iid, _))) : _ -> do

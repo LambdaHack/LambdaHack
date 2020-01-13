@@ -102,8 +102,8 @@ newtype Flags = Flags {flags :: ES.EnumSet Flag}
   deriving (Show, Eq, Ord, Generic, Hashable, Binary)
 
 -- | Doctrine of non-leader actors. Apart of determining AI operation,
--- each doctrine implies a skill modifier, that is added to the non-leader skills
--- defined in @fskillsOther@ field of @Player@.
+-- each doctrine implies a skill modifier, that is added to the non-leader
+-- skills defined in @fskillsOther@ field of @Player@.
 data Doctrine =
     TExplore  -- ^ if enemy nearby, attack, if no items, etc., explore unknown
   | TFollow   -- ^ always follow leader's target or his position if no target

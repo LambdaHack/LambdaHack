@@ -1363,6 +1363,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.DestroyItem{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
+        IK.Discharge{} -> aidVerbMU MsgEffect aid "has cooldowns reset"
         IK.PolyItem -> do
           subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround

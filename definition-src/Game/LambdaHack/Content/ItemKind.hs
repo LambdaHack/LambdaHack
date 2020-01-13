@@ -172,6 +172,10 @@ data Effect =
       --   the first integer says how many item kinds to drop, the second,
       --   how many copies of each kind to drop; for non-organs, beware of
       --   not dropping all, or cluttering store with rubbish becomes beneficial
+  | Discharge Dice.Dice
+      -- ^ set the cooldown of all items in the victim's equipment
+      --   to this number of game clips; if 0, this instantly recharges all;
+      --   this won't lead to micromanagement, because equipping resets cooldown
   | PolyItem
       -- ^ get a suitable (i.e., numerous enough) non-unique common item stack
       --   on the floor and polymorph it to a stack of random common items,
