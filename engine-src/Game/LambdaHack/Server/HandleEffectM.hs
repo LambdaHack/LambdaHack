@@ -1280,10 +1280,10 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
         -- both the extensions he caused and suffered. Other faction causing
         -- that on themselves or on others won't be noticed. TMI.
         execSfxAtomic $ SfxMsgFid (bfid sb)
-                      $ SfxTimerExtended (blid tb) target iid store delta
+                      $ SfxTimerExtended target iid store delta
         when (bfid sb /= bfid tb) $
           execSfxAtomic $ SfxMsgFid (bfid tb)
-                        $ SfxTimerExtended (blid tb) target iid store delta
+                        $ SfxTimerExtended target iid store delta
         return UseUp
       else return UseDud  -- probably incorrect content, but let it be
     _ -> do

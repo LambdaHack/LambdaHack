@@ -1549,9 +1549,10 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxColdFish -> return $
     Just ( MsgMisc  -- repeatable
          , "Healing attempt from another faction is thwarted by your cold fish attitude." )
-  SfxTimerExtended lid aid iid cstore delta -> do
-    aidSeen <- getsState $ memActor aid lid
-    if aidSeen then do
+  SfxTimerExtended aid iid cstore delta -> do
+    aidSeen <- getsState $ EM.member aid . sactorD
+    iidSeen <- getsState $ EM.member iid . sitemD
+    if aidSeen && iidSeen then do
       b <- getsState $ getActorBody aid
       bUI <- getsSession $ getActorUI aid
         -- assume almost always a prior message mentions the object

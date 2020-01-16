@@ -194,7 +194,7 @@ data SfxMsg =
   | SfxDupUnique
   | SfxDupValuable
   | SfxColdFish
-  | SfxTimerExtended LevelId ActorId ItemId CStore (Delta Time)
+  | SfxTimerExtended ActorId ItemId CStore (Delta Time)
       -- This @CStore@ is only printed, so even @CStash@ is safe.
   | SfxCollideActor LevelId ActorId ActorId
   | SfxItemYield ItemId LevelId
