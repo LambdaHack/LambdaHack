@@ -10,12 +10,13 @@ module Game.LambdaHack.Server.HandleEffectM
     -- * Internal operations
   , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
   , itemEffectDisco, effectSem
-  , effectBurn, effectExplode, effectRefillHP, effectRefillCalm, effectDominate
-  , dominateFid, effectImpress, effectPutToSleep, effectYell, effectSummon
-  , effectAscend, findStairExit, switchLevels1, switchLevels2, effectEscape
-  , effectParalyze, paralyze, effectParalyzeInWater, effectInsertMove
-  , effectTeleport, effectCreateItem, effectDestroyItem, dropCStoreItem
-  , effectDropItem, effectPolyItem, effectRerollItem, effectDupItem
+  , effectBurn, effectExplode, effectRefillHP, effectRefillCalm
+  , effectDominate, dominateFid, effectImpress, effectPutToSleep, effectYell
+  , effectSummon, effectAscend, findStairExit, switchLevels1, switchLevels2
+  , effectEscape, effectParalyze, paralyze, effectParalyzeInWater
+  , effectInsertMove, effectTeleport, effectCreateItem
+  , effectDestroyItem, dropCStoreItem, effectDropItem, effectDischarge
+  , effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectVerbNoLonger, effectVerbMsg, effectAndEffect, effectOrEffect
@@ -1459,22 +1460,31 @@ effectDischarge execSfx iidOriginal nDm target = do
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  power <- rndToAction $ castDice ldepth totalDepth nDm
-  let t = timeShift localTime $ timeDeltaScale (Delta timeClip) power
+  power0 <- rndToAction $ castDice ldepth totalDepth nDm
+  let power = max 0 power0
+      t = timeShift localTime $ timeDeltaScale (Delta timeClip) power
       c = CActor target CEqp
       eqpAss = EM.assocs $ beqp tb
-      hasTimeout (iid, _) = let arItem = discoAspect EM.! iid
-                            in IA.aTimeout arItem /= 0 && iid /= iidOriginal
-      timeoutAss = filter hasTimeout eqpAss
-      resetTimeout (iid, (k, itBefore)) = do
-        let resetIt = replicate k t
-        when (itBefore /= resetIt) $
-          execUpdAtomic $ UpdTimeItem iid c itBefore resetIt
-  mapM_ resetTimeout timeoutAss
-  if null timeoutAss then return UseDud
-  else do
-    execSfx
-    return UseUp
+      resetTimeout (iid, (k, itemTimer)) = do
+        let arItem = discoAspect EM.! iid
+            timeout = IA.aTimeout arItem
+            timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+            charging startT = timeShift startT timeoutTurns > localTime
+            it1 = filter charging itemTimer
+            it2 = filter charging
+                  $ replicate k $ timeShift t (timeDeltaReverse timeoutTurns)
+        if iid == iidOriginal || it1 == it2 then return UseDud else do
+          execUpdAtomic $ UpdTimeItem iid c itemTimer it2
+          return UseUp
+  urs <- mapM resetTimeout eqpAss
+  let ur = case urs of
+        [] -> UseDud  -- there was no effects
+        _ -> maximum urs
+  case ur of
+    UseDud -> return UseDud
+    _ -> do
+      execSfx
+      return UseUp
 
 -- ** PolyItem
 
