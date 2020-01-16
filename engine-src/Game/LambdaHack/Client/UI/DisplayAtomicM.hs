@@ -1582,9 +1582,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
               ++ cond ++ ["is extended"] )
       return $ Just (msgClass, makeSentence parts)
     else return Nothing
-  SfxCollideActor lid source target -> do
-    sourceSeen <- getsState $ memActor source lid
-    targetSeen <- getsState $ memActor target lid
+  SfxCollideActor source target -> do
+    sourceSeen <- getsState $ EM.member source . sactorD
+    targetSeen <- getsState $ EM.member target . sactorD
     if sourceSeen && targetSeen then do
       spart <- partActorLeader source
       tpart <- partActorLeader target
@@ -1602,7 +1602,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
-  sourceSeen <- getsState $ memActor source (blid tb)
+  sourceSeen <- getsState $ EM.member source . sactorD
   if not sourceSeen then
     animate (blid tb) $ subtleHit (bpos tb)
   else do
