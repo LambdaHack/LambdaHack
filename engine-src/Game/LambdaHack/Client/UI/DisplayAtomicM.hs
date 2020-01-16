@@ -1594,10 +1594,13 @@ ppSfxMsg sfxMsg = case sfxMsg of
                  [MU.SubjectVerbSg spart "collide", "awkwardly with", tpart] )
     else return Nothing
   SfxItemYield iid lid -> do
-    let fakeKit = (1, [])
-        fakeC = CFloor lid originPoint
-    msg <- itemVerbMUGeneral False iid fakeKit "yield an item" fakeC
-    return $ Just (MsgItemCreation, msg)
+    iidSeen <- getsState $ EM.member iid . sitemD
+    if iidSeen then do
+      let fakeKit = (1, [])
+          fakeC = CFloor lid originPoint
+      msg <- itemVerbMUGeneral False iid fakeKit "yield an item" fakeC
+      return $ Just (MsgItemCreation, msg)
+    else return Nothing
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
