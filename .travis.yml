@@ -255,11 +255,15 @@ install:
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
   - (cd .. && ${CABAL} new-install $WITHCOMPILER cabal-plan)
-  # test that source-distributions can be generated
-  - (cd "." && ${CABAL} sdist)
-  - mv "."/dist-newstyle/sdist/LambdaHack-*.tar.gz ${DISTDIR}/
+  - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
+  # Packaging...
+  - ${CABAL} v2-sdist all
+  # Unpacking...
+  - mv dist-newstyle/sdist/*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
-  - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
+  - find . -maxdepth 1 -type f -name '*.tar.gz' -exec tar -xvf '{}' \;
+  - find . -maxdepth 1 -type f -name '*.tar.gz' -exec rm       '{}' \;
+
   - cd LambdaHack-*
 
   - cp $ROOTDIR/cabal.project .
