@@ -257,7 +257,7 @@ script:
   - (cd .. && ${CABAL} new-install $WITHCOMPILER cabal-plan)
   # test that source-distributions can be generated
   - (cd "." && ${CABAL} sdist)
-  - mv "."/dist/LambdaHack-*.tar.gz ${DISTDIR}/
+  - mv "."/dist-newstyle/sdist/LambdaHack-*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
   - cd LambdaHack-*
