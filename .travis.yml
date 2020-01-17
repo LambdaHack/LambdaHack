@@ -199,6 +199,7 @@ before_install:
   - set -o pipefail
 
 install:
+  - ROOTDIR=$(pwd)
   - ${CABAL} --version
   - echo "$(${HC} --version) [$(${HC} --print-project-git-commit-id 2> /dev/null || echo '?')]"
   - TEST=--enable-tests
