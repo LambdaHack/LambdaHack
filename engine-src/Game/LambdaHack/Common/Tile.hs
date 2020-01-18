@@ -143,9 +143,10 @@ alterMinSkillKind _k tk =
 alterMinWalkKind :: ContentId TileKind -> TileKind -> Word8
 alterMinWalkKind k tk =
   let getTo TK.OpenTo{} = True
-      getTo TK.OpenWith{} = True
-        -- opening this may not be possible, but AI has to try, for there may
-        -- be no other path
+-- enable when AI and humans can cope with unreachable areas
+--      getTo TK.OpenWith{} = True
+--        -- opening this may not be possible, but AI has to try, for there may
+--        -- be no other path
       getTo TK.RevealAs{} = True
       getTo TK.ObscureAs{} = True
       getTo _ = False
