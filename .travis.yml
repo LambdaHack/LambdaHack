@@ -81,7 +81,7 @@ matrix:
       compiler: ghc-8.4.4
       addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.4.4","cabal-install-3.0"]}}
       os: linux
-#    - env: GTKVTY=opt2
+#panic    - env: GTKVTY=opt2
 #      compiler: ghc-8.4.4
 #      addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.4.4","cabal-install-3.0"]}}
 #      os: linux
@@ -331,6 +331,10 @@ script:
   - "if [[ $GTKVTY != \"brew-sdl2-osx\" ]] ; then ((find dist-newstyle -wholename '*/build/test/test' -exec '{}' '+') || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make test-travis2 || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 

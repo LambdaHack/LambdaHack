@@ -60,6 +60,7 @@ serverOptionsP = do
   skeepAutomated    <- keepAutomatedP
   sstopAfterSeconds <- stopAfterSecsP
   sstopAfterFrames  <- stopAfterFramesP
+  sstopAfterGameOver <- stopAfterGameOverP
   sprintEachScreen  <- printEachScreenP
   sbenchmark        <- benchmarkP
   sdungeonRng       <- setDungeonRngP
@@ -199,6 +200,11 @@ stopAfterFramesP = optional $ max 0 <$>
   option auto (  long "stopAfterFrames"
               <> help "Exit game session after around N frames"
               <> metavar "N" )
+
+stopAfterGameOverP :: Parser Bool
+stopAfterGameOverP =
+  switch (  long "stopAfterGameOver"
+         <> help "Exit the application after game over" )
 
 printEachScreenP :: Parser Bool
 printEachScreenP =

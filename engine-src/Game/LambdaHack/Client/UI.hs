@@ -68,7 +68,7 @@ queryUI = do
     if keyPressed && fleaderMode (gplayer fact) /= LeaderNull then do
       -- Menu is entered in @displayRespUpdAtomicUI@ at @UpdAutoFaction@.
       discardPressedKey
-      -- Regaining control of faction cancels --stopAfter*.
+      -- Regaining control of faction cancels some --stopAfter*.
       modifyClient $ \cli ->
         cli {soptions = (soptions cli) { sstopAfterSeconds = Nothing
                                        , sstopAfterFrames = Nothing }}

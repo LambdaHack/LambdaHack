@@ -48,6 +48,7 @@ import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ProtocolM
+import           Game.LambdaHack.Server.ServerOptions
 import           Game.LambdaHack.Server.State
 
 -- | Spawn, possibly, a monster according to the level's actor groups.
@@ -366,10 +367,13 @@ endOrLoop loop restart = do
   mapM_ (\(fid, fact) ->
     execUpdAtomic $ UpdQuitFaction fid (gquit fact) Nothing Nothing) campers
   swriteSave <- getsServer swriteSave
+  sstopAfterGameOver <-
+    getsServer $ sstopAfterGameOver . soptions
   when swriteSave $ do
     modifyServer $ \ser -> ser {swriteSave = False}
     writeSaveAll True
-  if | restartNeeded -> do
+  if | gameOver && sstopAfterGameOver -> gameExit
+     | restartNeeded -> do
        execSfxAtomic SfxRestart
        restart (listToMaybe quitters)
      | not $ null campers -> gameExit  -- and @loop@ is not called

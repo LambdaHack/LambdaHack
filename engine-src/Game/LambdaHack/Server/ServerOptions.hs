@@ -17,25 +17,26 @@ import Game.LambdaHack.Definition.Defs
 
 -- | Options that affect the behaviour of the server (including game rules).
 data ServerOptions = ServerOptions
-  { sknowMap         :: Bool
-  , sknowEvents      :: Bool
-  , sknowItems       :: Bool
-  , sniff            :: Bool
-  , sallClear        :: Bool
-  , sboostRandomItem :: Bool
-  , sgameMode        :: Maybe (GroupName ModeKind)
-  , sautomateAll     :: Bool
-  , skeepAutomated   :: Bool
-  , sdungeonRng      :: Maybe SM.SMGen
-  , smainRng         :: Maybe SM.SMGen
-  , snewGameSer      :: Bool
-  , scurChalSer      :: Challenge
-  , sdumpInitRngs    :: Bool
-  , ssavePrefixSer   :: String
-  , sdbgMsgSer       :: Bool
-  , sassertExplored  :: Maybe Int
-  , sshowItemSamples :: Bool
-  , sclientOptions   :: ClientOptions
+  { sknowMap           :: Bool
+  , sknowEvents        :: Bool
+  , sknowItems         :: Bool
+  , sniff              :: Bool
+  , sallClear          :: Bool
+  , sboostRandomItem   :: Bool
+  , sgameMode          :: Maybe (GroupName ModeKind)
+  , sautomateAll       :: Bool
+  , skeepAutomated     :: Bool
+  , sdungeonRng        :: Maybe SM.SMGen
+  , smainRng           :: Maybe SM.SMGen
+  , snewGameSer        :: Bool
+  , scurChalSer        :: Challenge
+  , sdumpInitRngs      :: Bool
+  , ssavePrefixSer     :: String
+  , sdbgMsgSer         :: Bool
+  , sassertExplored    :: Maybe Int
+  , sshowItemSamples   :: Bool
+  , sstopAfterGameOver :: Bool
+  , sclientOptions     :: ClientOptions
       -- The client debug inside server debug only holds the client commandline
       -- options and is never updated with config options, etc.
   }
@@ -91,6 +92,7 @@ instance Binary ServerOptions where
         smainRng = Nothing
         snewGameSer = False
         sdumpInitRngs = False
+        sstopAfterGameOver = False
     return $! ServerOptions{..}
 
 instance Binary RNGs where
@@ -125,5 +127,6 @@ defServerOptions = ServerOptions
   , sdbgMsgSer = False
   , sassertExplored = Nothing
   , sshowItemSamples = False
+  , sstopAfterGameOver = False
   , sclientOptions = defClientOptions
   }
