@@ -126,6 +126,7 @@ actorCanMelee actorMaxSkills aid b =
   in condUsableWeapon && canMelee
 
 actorCanMeleeToHarm :: ActorMaxSkills -> ActorId -> Actor -> Bool
+{-# INLINE actorCanMeleeToHarm #-}
 actorCanMeleeToHarm actorMaxSkills aid b =
   let actorMaxSk = actorMaxSkills EM.! aid
       condUsableWeapon = bweapon b - bweapBenign b > 0
@@ -136,9 +137,9 @@ actorWorthKilling :: ActorMaxSkills -> ActorId -> Actor -> Bool
 actorWorthKilling actorMaxSkills aid b =
   let hasLoot = not (EM.null $ beqp b)
         -- even consider "unreported inventory", for speed and KISS
+      actorMaxSk = actorMaxSkills EM.! aid
       moving = Ability.getSk Ability.SkMove actorMaxSk > 0
                || bwatch b == WWake  -- probably will start moving very soon
-      actorMaxSk = actorMaxSkills EM.! aid
   in bproj b
      || (moving
          || hasLoot

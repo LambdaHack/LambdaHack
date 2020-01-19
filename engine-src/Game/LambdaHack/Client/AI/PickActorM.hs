@@ -306,7 +306,6 @@ setTargetFromDoctrines oldAid = do
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
   moldTgt <- getsClient $ EM.lookup oldAid . stargetD
-  condInMelee <- condInMeleeM $ blid oldBody
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
@@ -336,7 +335,9 @@ setTargetFromDoctrines oldAid = do
           explore
         Just leader -> do
           onLevel <- getsState $ memActor leader arena
-          -- If leader not on this level, fall back to @TExplore@.
+          condInMelee <- condInMeleeM $ blid oldBody
+          -- If leader not on this level or if we are meleeing,
+          -- and so following is not important, fall back to @TExplore@.
           if not onLevel || condInMelee then explore
           else do
             -- Copy over the leader's target, if any, or follow his position.

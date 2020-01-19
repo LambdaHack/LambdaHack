@@ -480,6 +480,7 @@ armorHurtBonus source target s =
 -- via melee or can attack from a distance. Otherwise no point meleeing him.
 -- This is regardless of whether our actor can melee or just needs to flee,
 -- in which case alert is needed so that he is not slowed down by others.
+-- However, if our actor can't move nor melee, no real combat is taking place.
 -- This is needed only by AI and computed as lazily as possible.
 inMelee :: ActorMaxSkills -> FactionId -> LevelId -> State -> Bool
 inMelee !actorMaxSkills !fid !lid s =
@@ -489,11 +490,14 @@ inMelee !actorMaxSkills !fid !lid s =
         && inline isFoe fid fact (bfid b)  -- costly
         && actorWorthKilling actorMaxSkills aid b
       allFoes = filter f $ EM.assocs $ sactorD s
-      g !b = bfid b == fid
-             && blid b == lid
-             && not (bproj b)
-             && bhp b > 0
-      allOurs = filter g $ EM.elems $ sactorD s
+      g (!aid, !b) = bfid b == fid
+                     && blid b == lid
+                     && not (bproj b)
+                     && bhp b > 0
+                     && let actorMaxSk = actorMaxSkills EM.! aid
+                        in Ability.getSk Ability.SkMove actorMaxSk > 0
+                           || actorCanMeleeToHarm actorMaxSkills aid b
+      allOurs = filter g $ EM.assocs $ sactorD s
       -- We assume foes are less numerous, even though they may come
       -- from multiple factions and they contain projectiles,
       -- because we see all our actors, while many foes may be hidden.
@@ -508,4 +512,4 @@ inMelee !actorMaxSkills !fid !lid s =
       setFoeVicinity =
         ES.fromList $ concatMap (vicinityUnsafe . bpos . snd) allFoes
   in not (ES.null setFoeVicinity)  -- shortcut
-     && any (\b -> bpos b `ES.member` setFoeVicinity) allOurs
+     && any (\(_, b) -> bpos b `ES.member` setFoeVicinity) allOurs

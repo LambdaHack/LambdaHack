@@ -94,7 +94,7 @@ condAimEnemyNoMeleeM aid = do
     Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
       actorMaxSkills <- getsState sactorMaxSkills
-      return $ actorCanMeleeToHarm actorMaxSkills aid2 b2
+      return $! not $ actorCanMeleeToHarm actorMaxSkills aid2 b2
     _ -> return False
 
 condInMeleeM :: MonadClient m => LevelId -> m Bool
