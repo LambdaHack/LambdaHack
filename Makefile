@@ -248,7 +248,7 @@ test-short-load:
 
 build-binary-common:
 	mkdir -p LambdaHackTheGame/GameDefinition/fonts
-	cabal install --force-reinstalls --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies --lib
+	cabal install -v3 --disable-library-profiling --disable-profiling --disable-documentation --enable-optimization --only-dependencies --lib
 	cabal configure --disable-library-profiling --disable-profiling --enable-optimization --prefix=/ --datadir=. --datasubdir=.
 	cabal build exe:LambdaHack
 	cabal copy --destdir=LambdaHackTheGameInstall
