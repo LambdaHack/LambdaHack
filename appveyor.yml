@@ -49,6 +49,7 @@ install:
   - refreshenv
   - mkdir %Deps%
   - set PATH=%Deps%;%PATH%
+  - mingw64-pkg install "pkg-config" --noconfirm
   - mingw64-pkg install "SDL2" --noconfirm
   - mingw64-pkg install "SDL2_ttf" --noconfirm
 
