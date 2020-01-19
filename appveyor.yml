@@ -149,6 +149,7 @@ install:
     )
   - IF "%goal%"=="test" (
       make testDefense-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
+    )
   - IF "%goal%"=="test" (
       make testCrawl-appveyor || (tail -n 500 %APPDATA%\LambdaHack\stderr.txt & exit 77)
     )
