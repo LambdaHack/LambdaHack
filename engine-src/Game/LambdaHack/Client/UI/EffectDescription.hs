@@ -90,9 +90,9 @@ effectToSuffix detailLevel effect =
     CreateItem COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
-    CreateItem{} -> "of gain"
+    CreateItem{} -> "of gain"  -- too much noise from crafting; see @AndEffect@
     DestroyItem{} -> "of loss"
-    ConsumeItems{} -> "of consumption"
+    ConsumeItems{} -> "of consumption"  -- too much noise from crafting
     DropItem n k store grp ->
       let (preT, postT) =
             if | n == 1 && k == maxBound -> ("one", "kind")
@@ -134,14 +134,25 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
+    AndEffect (ConsumeItems CGround grps) (CreateItem _ grp0 _) ->
+      -- Only @CGround@ considered. We assume if @CEqp@ present
+      -- then also @CGround@ present, so it suffices.
+      let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
+      in makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
+                    , "from", MU.WWandW $ map carAWs grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
-              $ filter (`elem` ["", "of gain", "of loss"])  -- avoid long chains
+              $ filter (`notElem` [ "", "of gain", "of loss", "of consumption"
+                                  , "of conjunctive processing"
+                                  , "of alternative processing" ])
+                  -- avoid long chains; probably redundant, too
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of conjunctive processing" else t
     OrEffect eff1 eff2 ->
       let t = T.intercalate " or else "
-              $ filter (`elem` ["", "of gain", "of loss"])
+              $ filter (`notElem` [ "", "of gain", "of loss", "of consumption"
+                                  , "of conjunctive processing"
+                                  , "of alternative processing" ])
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of alternative processing" else t
 
