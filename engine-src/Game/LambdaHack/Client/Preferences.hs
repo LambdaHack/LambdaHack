@@ -112,24 +112,24 @@ effectToBenefit cops fid factionD eff =
                      then (0, 0)    -- annoying either way
                      else (-9, -1)  -- for self, don't derail exploration
                                     -- for foes, fight with one less at a time
-    IK.CreateItem COrgan IK.CONDITION _ ->
+    IK.CreateItem _ COrgan IK.CONDITION _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
-    IK.CreateItem COrgan grp timer ->  -- assumed temporary
+    IK.CreateItem _ COrgan grp timer ->  -- assumed temporary
       let turnTimer = IK.foldTimer 1 Dice.meanDice Dice.meanDice timer
             -- copy count used instead of timer for organs with many copies
           (total, count) = organBenefit turnTimer grp cops fid factionD
       in delta $ total / fromIntegral count
            -- the same when created in me and in foe
            -- average over all matching grps; simplified: rarities ignored
-    IK.CreateItem _ IK.TREASURE _ -> (100, 0)  -- assumed not temporary
-    IK.CreateItem _ IK.COMMON_ITEM _ -> (70, 0)
-    IK.CreateItem _ IK.CURIOUS_ITEM _ -> (70, 0)
-    IK.CreateItem _ IK.ANY_SCROLL _ -> (50, 0)
-    IK.CreateItem _ IK.ANY_GLASS _ -> (50, 0)
-    IK.CreateItem _ IK.ANY_POTION _ -> (50, 0)
-    IK.CreateItem _ IK.EXPLOSIVE _ -> (50, 0)
-    IK.CreateItem _ IK.ANY_JEWELRY _ -> (100, 0)
-    IK.CreateItem _ grp _ ->  -- assumed not temporary and @grp@ tiny
+    IK.CreateItem _ _ IK.TREASURE _ -> (100, 0)  -- assumed not temporary
+    IK.CreateItem _ _ IK.COMMON_ITEM _ -> (70, 0)
+    IK.CreateItem _ _ IK.CURIOUS_ITEM _ -> (70, 0)
+    IK.CreateItem _ _ IK.ANY_SCROLL _ -> (50, 0)
+    IK.CreateItem _ _ IK.ANY_GLASS _ -> (50, 0)
+    IK.CreateItem _ _ IK.ANY_POTION _ -> (50, 0)
+    IK.CreateItem _ _ IK.EXPLOSIVE _ -> (50, 0)
+    IK.CreateItem _ _ IK.ANY_JEWELRY _ -> (100, 0)
+    IK.CreateItem _ _ grp _ ->  -- assumed not temporary and @grp@ tiny
       let (total, count) = recBenefit grp cops fid factionD
       in (total / fromIntegral count, 0)
     IK.DestroyItem{} -> delta (-10)  -- potentially harmful

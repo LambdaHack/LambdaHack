@@ -162,9 +162,9 @@ data Effect =
                           -- ^ paralyze for this many game clips due to water
   | InsertMove Dice.Dice  -- ^ give actor this many extra tenths of actor move
   | Teleport Dice.Dice    -- ^ teleport actor across rougly this distance
-  | CreateItem CStore (GroupName ItemKind) TimerDice
+  | CreateItem (Maybe Int) CStore (GroupName ItemKind) TimerDice
       -- ^ create an item of the group and insert into the store with the given
-      --   random timer
+      --   random timer; it cardinality not specified, roll it
   | DestroyItem Int Int CStore (GroupName ItemKind)
       -- ^ destroy some items of the group from the store; see below about Ints
   | ConsumeItems CStore [(Int, GroupName ItemKind)]
@@ -388,21 +388,13 @@ foldTimer a fgame factor tim = case tim of
   TimerActorTurn nDm -> factor nDm
 
 toOrganBad :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganBad grp nDm =
-  assert (Dice.infDice nDm > 0
-          `blame` "dice at organ creation should always roll above zero"
-          `swith` (grp, nDm))
-  $ CreateItem COrgan grp (TimerGameTurn nDm)
+toOrganBad grp nDm = CreateItem Nothing COrgan grp (TimerGameTurn nDm)
 
 toOrganGood :: GroupName ItemKind -> Dice.Dice -> Effect
-toOrganGood grp nDm =
-  assert (Dice.infDice nDm > 0
-          `blame` "dice at organ creation should always roll above zero"
-          `swith` (grp, nDm))
-  $ CreateItem COrgan grp (TimerActorTurn nDm)
+toOrganGood grp nDm = CreateItem Nothing COrgan grp (TimerActorTurn nDm)
 
 toOrganNoTimer :: GroupName ItemKind -> Effect
-toOrganNoTimer grp = CreateItem COrgan grp TimerNone
+toOrganNoTimer grp = CreateItem Nothing COrgan grp TimerNone
 
 -- | Catch invalid item kind definitions.
 validateSingle :: ItemKind -> [Text]
@@ -469,6 +461,7 @@ validateSingle ik@ItemKind{..} =
      in [ "effects with empty OneOf inside:" <+> tshow containingEmptyOneOf
         | not $ null containingEmptyOneOf ]
   ++ (let nonPositiveEffect :: Effect -> Bool
+          nonPositiveEffect (CreateItem (Just n) _ _ _) | n <= 0 = True
           nonPositiveEffect (DestroyItem n k _ _) | n <= 0 || k <= 0 = True
           nonPositiveEffect (ConsumeItems _ grps)
             | any ((<= 0) . fst) grps = True
@@ -486,9 +479,9 @@ validateSingle ik@ItemKind{..} =
           nonPositiveEffect (ParalyzeInWater d) | Dice.infDice d <= 0 = True
           nonPositiveEffect (InsertMove d) | Dice.infDice d <= 0 = True
           nonPositiveEffect (Teleport d) | Dice.infDice d <= 0 = True
-          nonPositiveEffect (CreateItem _ _ (TimerGameTurn d))
+          nonPositiveEffect (CreateItem _ _ _ (TimerGameTurn d))
             | Dice.infDice d <= 0 = True
-          nonPositiveEffect (CreateItem _ _ (TimerActorTurn d))
+          nonPositiveEffect (CreateItem _ _ _ (TimerActorTurn d))
             | Dice.infDice d <= 0 = True
           nonPositiveEffect (Discharge d) | Dice.infDice d < 0 = True
           nonPositiveEffect _ = False

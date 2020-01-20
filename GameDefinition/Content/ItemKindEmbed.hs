@@ -100,7 +100,7 @@ obscenePictogram = ItemKind
   , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , OneOf [ toOrganGood S_STRENGTHENED (3 + 1 `d` 2)
-                       , CreateItem CStash SANDSTONE_ROCK timerNone ] ]
+                       , CreateItem Nothing CStash SANDSTONE_ROCK timerNone ] ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -133,7 +133,7 @@ treasureCache = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = [SetFlag Durable]
-  , ieffects = [CreateItem CGround COMMON_ITEM timerNone]
+  , ieffects = [CreateItem Nothing CGround COMMON_ITEM timerNone]
   , idesc    = "Glittering treasure, just waiting to be taken."
   , ikit     = []
   }
@@ -202,7 +202,7 @@ fireBig = fireSmall
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
-               , CreateItem CStash WOODEN_TORCH timerNone
+               , CreateItem Nothing CStash WOODEN_TORCH timerNone
                , Explode S_SPARK ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
@@ -238,7 +238,7 @@ rubble = ItemKind
   , ieffects = [OneOf [ Explode S_FOCUSED_GLASS_HAIL
                       , Summon MOBILE_ANIMAL $ 1 `dL` 2
                       , toOrganNoTimer S_POISONED
-                      , CreateItem CGround COMMON_ITEM timerNone
+                      , CreateItem Nothing CGround COMMON_ITEM timerNone
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
                       , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
   , idesc    = "Broken chunks of rock and glass."
@@ -345,7 +345,7 @@ lectern = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [ OneOf [ CreateItem CGround ANY_SCROLL timerNone
+  , ieffects = [ OneOf [ CreateItem Nothing CGround ANY_SCROLL timerNone
                        , Detect DetectAll 20
                        , toOrganBad S_DEFENSELESS $ (1 `dL` 6) * 10
                        , toOrganGood S_DRUNK (20 + 1 `d` 5) ]

@@ -893,7 +893,7 @@ scroll4 = scrollTemplate
                , OneOf [ Teleport 20, Ascend False, Ascend True
                        , Summon HERO 1, Summon MOBILE_ANIMAL $ 1 `d` 2
                        , Detect DetectLoot 20  -- the most useful of detections
-                       , CreateItem CGround COMMON_ITEM timerNone ] ]
+                       , CreateItem Nothing CGround COMMON_ITEM timerNone ] ]
   }
 scroll5 = scrollTemplate
   { ifreq    = [(COMMON_ITEM, 100), (ANY_SCROLL, 100)]

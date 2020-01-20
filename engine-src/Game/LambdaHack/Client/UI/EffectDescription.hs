@@ -87,7 +87,7 @@ effectToSuffix detailLevel effect =
     Teleport dice | Dice.supDice dice <= 9 ->
       "of blinking" <+> wrapInParens (tshow dice)
     Teleport dice -> "of teleport" <+> wrapInParens (tshow dice)
-    CreateItem COrgan grp tim ->
+    CreateItem _ COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"  -- too much noise from crafting; see @AndEffect@
@@ -134,7 +134,7 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
-    AndEffect (ConsumeItems CGround grps) (CreateItem _ grp0 _) ->
+    AndEffect (ConsumeItems CGround grps) (CreateItem _ _ grp0 _) ->
       -- Only @CGround@ considered. We assume if @CEqp@ present
       -- then also @CGround@ present, so it suffices.
       let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)

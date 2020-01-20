@@ -394,8 +394,8 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.ParalyzeInWater nDm -> effectParalyzeInWater execSfx nDm source target
     IK.InsertMove nDm -> effectInsertMove execSfx nDm source target
     IK.Teleport nDm -> effectTeleport execSfx nDm source target
-    IK.CreateItem store grp tim ->
-      effectCreateItem (Just $ bfid sb) Nothing source target (Just iid)
+    IK.CreateItem mcount store grp tim ->
+      effectCreateItem (Just $ bfid sb) mcount source target (Just iid)
                        store grp tim
     IK.DestroyItem n k store grp ->
       effectDestroyItem execSfx iid n k store target grp
@@ -1724,7 +1724,7 @@ effectDetect execSfx d radius target pos = do
       belongingIsLoot iid = itemKindIsLoot $ getKind iid
       embedHasLoot iid = any effectHasLoot $ IK.ieffects $ getKind iid
       reported acc _ _ itemKind = acc && itemKindIsLoot itemKind
-      effectHasLoot (IK.CreateItem cstore grp _) =
+      effectHasLoot (IK.CreateItem _ cstore grp _) =
         cstore `elem` [CGround, CStash, CEqp]
         && ofoldlGroup' coitem grp reported True
       effectHasLoot IK.PolyItem = True
