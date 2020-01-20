@@ -622,9 +622,9 @@ lookAtPosition lidV p = do
       isToAction _ = False
       alterVerb = ["easily altered" | any isToAction tileActions]
       verbs = embedVerb ++ alterVerb
-      alterdBlurb = if null verbs
-                    then ""
-                    else makeSentence ["can be", MU.WWandW verbs]
+      alterBlurb = if null verbs
+                   then ""
+                   else makeSentence ["can be", MU.WWandW verbs]
       toolFromAction (Tile.WithAction grps _) = Just grps
       toolFromAction _ = Nothing
       toolsToAlterWith = mapMaybe toolFromAction tileActions
@@ -634,7 +634,7 @@ lookAtPosition lidV p = do
                        else "The following items on the ground or in equipment trigger special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
   return $! tileBlurb <+> stashBlurb <+> actorsBlurb <+> itemsBlurb
-            <+> smellBlurb <+> alterdBlurb <+> transformBlurb
+            <+> smellBlurb <+> alterBlurb <+> transformBlurb
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int

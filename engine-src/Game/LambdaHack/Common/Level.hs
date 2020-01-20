@@ -300,7 +300,7 @@ sortEmbeds COps{cotile} tk embedKindList =
   let grpList = Tile.embeddedItems cotile tk
       -- Greater or equal 0 to also cover template UNKNOWN items
       -- not yet identified by the client.
-      f grp (itemKind, _) = fromMaybe 0 (lookup grp $ IK.ifreq itemKind) >= 0
+      f grp (itemKind, _) = fromMaybe (-1) (lookup grp $ IK.ifreq itemKind) >= 0
   in map snd $ mapMaybe (\grp -> find (f grp) embedKindList) grpList
 
 instance Binary Level where
