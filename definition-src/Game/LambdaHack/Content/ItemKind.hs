@@ -468,6 +468,35 @@ validateSingle ik@ItemKind{..} =
          containingEmptyOneOf = filter (checkSubEffectProp emptyOneOf) ieffects
      in [ "effects with empty OneOf inside:" <+> tshow containingEmptyOneOf
         | not $ null containingEmptyOneOf ]
+  ++ (let nonPositiveEffect :: Effect -> Bool
+          nonPositiveEffect (DestroyItem n k _ _) | n <= 0 || k <= 0 = True
+          nonPositiveEffect (ConsumeItems _ grps)
+            | any ((<= 0) . fst) grps = True
+          nonPositiveEffect (DropItem n k _ _) | n <= 0 || k <= 0 = True
+          nonPositiveEffect (Detect _ n) | n <= 0 = True
+          nonPositiveEffect _ = False
+          containingNonPositiveEffect =
+            filter (checkSubEffectProp nonPositiveEffect) ieffects
+      in [ "effects with forbidden non-positive parameters:"
+           <+> tshow containingNonPositiveEffect
+         | not $ null containingNonPositiveEffect ])
+  ++ (let nonPositiveEffect :: Effect -> Bool
+          nonPositiveEffect (Summon _ d) | Dice.infDice d <= 0 = True
+          nonPositiveEffect (Paralyze d) | Dice.infDice d <= 0 = True
+          nonPositiveEffect (ParalyzeInWater d) | Dice.infDice d <= 0 = True
+          nonPositiveEffect (InsertMove d) | Dice.infDice d <= 0 = True
+          nonPositiveEffect (Teleport d) | Dice.infDice d <= 0 = True
+          nonPositiveEffect (CreateItem _ _ (TimerGameTurn d))
+            | Dice.infDice d <= 0 = True
+          nonPositiveEffect (CreateItem _ _ (TimerActorTurn d))
+            | Dice.infDice d <= 0 = True
+          nonPositiveEffect (Discharge d) | Dice.infDice d < 0 = True
+          nonPositiveEffect _ = False
+          containingNonPositiveEffect =
+            filter (checkSubEffectProp nonPositiveEffect) ieffects
+      in [ "effects with forbidden potentially non-positive or negative dice:"
+           <+> tshow containingNonPositiveEffect
+         | not $ null containingNonPositiveEffect ])
 
 -- We only check there are no duplicates at top level. If it may be nested,
 -- it may presumably be duplicated inside the nesting as well.
