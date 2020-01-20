@@ -1361,6 +1361,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.Teleport{} -> aidVerbMU MsgEffect aid "teleport"
         IK.CreateItem{} -> return ()
         IK.DestroyItem{} -> return ()
+        IK.ConsumeItems{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
         IK.Discharge{} -> aidVerbMU MsgEffect aid "cool down"

@@ -92,6 +92,7 @@ effectToSuffix detailLevel effect =
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"
     DestroyItem{} -> "of loss"
+    ConsumeItems{} -> "of consumption"
     DropItem n k store grp ->
       let (preT, postT) =
             if | n == 1 && k == maxBound -> ("one", "kind")

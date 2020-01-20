@@ -15,8 +15,9 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectSummon, effectAscend, findStairExit, switchLevels1, switchLevels2
   , effectEscape, effectParalyze, paralyze, effectParalyzeInWater
   , effectInsertMove, effectTeleport, effectCreateItem
-  , effectDestroyItem, dropCStoreItem, effectDropItem, effectDischarge
-  , effectPolyItem, effectRerollItem, effectDupItem
+  , effectDestroyItem, dropCStoreItem, effectDropItem
+  , effectConsumeItems, countConsumeIid
+  , effectDischarge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectVerbNoLonger, effectVerbMsg, effectAndEffect, effectOrEffect
@@ -397,7 +398,9 @@ effectSem useAllCopies source target iid c periodic effect = do
       effectCreateItem (Just $ bfid sb) Nothing source target (Just iid)
                        store grp tim
     IK.DestroyItem n k store grp ->
-      effectDestroyItem execSfx iid n k store grp target
+      effectDestroyItem execSfx iid n k store target grp
+    IK.ConsumeItems store grps ->
+      effectConsumeItems execSfx iid store target grps
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
     IK.Discharge nDm -> effectDischarge execSfx iid nDm target
     IK.PolyItem -> effectPolyItem execSfx iid target
@@ -1322,10 +1325,10 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
 -- | Make the target actor destroy items in a store from the given group.
 -- The item that caused the effect itself is immune (any copies).
 effectDestroyItem :: MonadServerAtomic m
-               => m () -> ItemId -> Int -> Int -> CStore
-               -> GroupName ItemKind -> ActorId
-               -> m UseResult
-effectDestroyItem execSfx iidOriginal ngroup kcopy store grp target = do
+                  => m () -> ItemId -> Int -> Int -> CStore -> ActorId
+                  -> GroupName ItemKind
+                  -> m UseResult
+effectDestroyItem execSfx iidOriginal ngroup kcopy store target grp = do
   tb <- getsState $ getActorBody target
   isRaw <- allGroupItems store grp target
   let is = filter ((/= iidOriginal) . fst) isRaw
@@ -1397,6 +1400,51 @@ pickDroppable respectNoItem aid b = do
     return $! case filter (adjacent $ bpos b) $ take 8 ps of
       [] -> CActor aid CGround  -- fallback; still correct, though not ideal
       pos : _ -> CFloor (blid b) pos
+
+-- ** ConsumeItems
+
+-- | Make the target actor destroy the given items, if all present,
+-- or none at all, if any is missing. To be used in crafting.
+-- The item that caused the effect itself is immune (any copies).
+effectConsumeItems :: MonadServerAtomic m
+                   => m () -> ItemId -> CStore -> ActorId
+                   -> [(Int, GroupName ItemKind)]
+                   -> m UseResult
+effectConsumeItems execSfx iidOriginal store target grps0 = do
+  let c = CActor target store
+  bag <- getsState $ getContainerBag c
+  getKind <- getsState $ flip getIidKindServer
+  let is = filter ((/= iidOriginal) . fst) $ EM.assocs bag
+      f :: (ItemBag, [(Int, GroupName ItemKind)]) -> (ItemId, ItemQuant)
+        -> (ItemBag, [(Int, GroupName ItemKind)])
+      f (bagToDestroy1, grps1) (iid, (n0, it)) =
+        let (nToDestroy, grps2) = countConsumeIid getKind iid n0 grps1
+            bagToDestroy2 = if nToDestroy == 0
+                            then bagToDestroy1
+                            else EM.insert iid (nToDestroy, take nToDestroy it)
+                                               bagToDestroy1
+        in (bagToDestroy2, grps2)
+      (bagToDestroy3, grps3) = foldl' f (EM.empty, grps0) is
+  if all ((== 0) . fst) grps3
+  then do
+    execSfx
+    execUpdAtomic $ UpdLoseItemBag c bagToDestroy3
+    return UseUp
+  else return UseDud
+
+countConsumeIid :: (ItemId -> IK.ItemKind)
+                -> ItemId -> Int
+                -> [(Int, GroupName ItemKind)]
+                -> (Int, [(Int, GroupName ItemKind)])
+countConsumeIid getKind iid n0 grps =
+  let hasGroup grp =
+        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
+      matchGroup nToDestroy (k, grp) =
+        if hasGroup grp
+        then let mnk = min n0 k
+             in (max nToDestroy mnk, (k - mnk, grp))
+        else (nToDestroy, (k, grp))
+  in mapAccumL matchGroup 0 grps
 
 -- ** DropItem
 

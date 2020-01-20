@@ -167,11 +167,18 @@ data Effect =
       --   random timer
   | DestroyItem Int Int CStore (GroupName ItemKind)
       -- ^ destroy some items of the group from the store; see below about Ints
+  | ConsumeItems CStore [(Int, GroupName ItemKind)]
+      -- ^ consume (destroy, but without invoking OnSmash effects)
+      --   the given number of items of the groups from the store;
+      --   if not all items present in all groups, no item destroyed;
+      --   if an item belongs to many groups, counts for all (otherwise,
+      --   some orders of destroying would succeed, while others would not)
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
       --   the first integer says how many item kinds to drop, the second,
-      --   how many copies of each kind to drop; for non-organs, beware of
-      --   not dropping all, or cluttering store with rubbish becomes beneficial
+      --   how many copies of each kind to drop;
+      --   for non-organs, beware of not dropping all kinds, or cluttering
+      --   store with rubbish becomes beneficial
   | Discharge Dice.Dice
       -- ^ set the cooldown of all items in the victim's equipment
       --   to this number of game clips; if 0, this instantly recharges all;
