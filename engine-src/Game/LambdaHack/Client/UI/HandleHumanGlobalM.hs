@@ -982,7 +982,7 @@ processTileActions source tpos tas = do
   lvl <- getLevel $ blid sb
   kitAssG <- getsState $ kitAssocs source [CGround]
   kitAssE <- getsState $ kitAssocs source [CEqp]
-  let kitAss = listToolsForAltering kitAssG kitAssE
+  let kitAss = listToolsToConsume kitAssG kitAssE
       processTA [] =
         if Tile.isSuspect coTileSpeedup $ lvl `at` tpos
         then return $ Right ()

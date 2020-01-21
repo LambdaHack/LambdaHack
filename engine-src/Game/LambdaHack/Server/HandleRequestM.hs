@@ -825,7 +825,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 -- Waste item only if voluntary or released as projectile.
                 kitAssG <- getsState $ kitAssocs source [CGround]
                 kitAssE <- getsState $ kitAssocs source [CEqp]
-                let kitAss = listToolsForAltering kitAssG kitAssE
+                let kitAss = listToolsToConsume kitAssG kitAssE
                 altered <- tryChangeWith (grps, tgroup) kitAss
                 if altered
                 then return True

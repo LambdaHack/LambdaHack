@@ -134,7 +134,7 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
-    AndEffect (ConsumeItems CGround grps) (CreateItem _ _ grp0 _) ->
+    AndEffect (ConsumeItems grps) (CreateItem _ _ grp0 _) ->
       -- Only @CGround@ considered. We assume if @CEqp@ present
       -- then also @CGround@ present, so it suffices.
       let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
@@ -142,17 +142,12 @@ effectToSuffix detailLevel effect =
                     , "from", MU.WWandW $ map carAWs grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
-              $ filter (`notElem` [ "", "of gain", "of loss", "of consumption"
-                                  , "of conjunctive processing"
-                                  , "of alternative processing" ])
-                  -- avoid long chains; probably redundant, too
+              $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of conjunctive processing" else t
     OrEffect eff1 eff2 ->
       let t = T.intercalate " or else "
-              $ filter (`notElem` [ "", "of gain", "of loss", "of consumption"
-                                  , "of conjunctive processing"
-                                  , "of alternative processing" ])
+              $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of alternative processing" else t
 

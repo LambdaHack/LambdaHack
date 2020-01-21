@@ -399,8 +399,7 @@ effectSem useAllCopies source target iid c periodic effect = do
                        store grp tim
     IK.DestroyItem n k store grp ->
       effectDestroyItem execSfx iid n k store target grp
-    IK.ConsumeItems store grps ->
-      effectConsumeItems execSfx iid store target grps
+    IK.ConsumeItems grps -> effectConsumeItems execSfx iid target grps
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
     IK.Discharge nDm -> effectDischarge execSfx iid nDm target
     IK.PolyItem -> effectPolyItem execSfx iid target
@@ -1324,6 +1323,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
 
 -- | Make the target actor destroy items in a store from the given group.
 -- The item that caused the effect itself is immune (any copies).
+-- Durable items are not immune, unlike in @ConsumeItems@.
 effectDestroyItem :: MonadServerAtomic m
                   => m () -> ItemId -> Int -> Int -> CStore -> ActorId
                   -> GroupName ItemKind
@@ -1407,17 +1407,19 @@ pickDroppable respectNoItem aid b = do
 -- or none at all, if any is missing. To be used in crafting.
 -- The item that caused the effect itself is immune (any copies).
 effectConsumeItems :: MonadServerAtomic m
-                   => m () -> ItemId -> CStore -> ActorId
+                   => m () -> ItemId -> ActorId
                    -> [(Int, GroupName ItemKind)]
                    -> m UseResult
-effectConsumeItems execSfx iidOriginal store target grps0 = do
-  let c = CActor target store
-  bag <- getsState $ getContainerBag c
+effectConsumeItems execSfx iidOriginal target grps0 = do
+  kitAssG <- getsState $ kitAssocs target [CGround]
+  kitAssE <- getsState $ kitAssocs target [CEqp]
+  let kitAss = listToolsToConsume kitAssG kitAssE
   getKind <- getsState $ flip getIidKindServer
-  let is = filter ((/= iidOriginal) . fst) $ EM.assocs bag
-      f :: (ItemBag, [(Int, GroupName ItemKind)]) -> (ItemId, ItemQuant)
+  let is = filter ((/= iidOriginal) . fst . snd) kitAss
+      f :: (ItemBag, [(Int, GroupName ItemKind)])
+        -> ((CStore, Bool), (ItemId, ItemFullKit))
         -> (ItemBag, [(Int, GroupName ItemKind)])
-      f (bagToDestroy1, grps1) (iid, (n0, it)) =
+      f (bagToDestroy1, grps1) (_, (iid, (_, (n0, it)))) =
         let (nToDestroy, grps2) = countConsumeIid getKind iid n0 grps1
             bagToDestroy2 = if nToDestroy == 0
                             then bagToDestroy1
@@ -1428,7 +1430,7 @@ effectConsumeItems execSfx iidOriginal store target grps0 = do
   if all ((== 0) . fst) grps3
   then do
     execSfx
-    execUpdAtomic $ UpdLoseItemBag c bagToDestroy3
+-- TODO    execUpdAtomic $ UpdLoseItemBag c bagToDestroy3
     return UseUp
   else return UseDud
 

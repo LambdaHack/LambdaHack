@@ -167,9 +167,11 @@ data Effect =
       --   random timer; it cardinality not specified, roll it
   | DestroyItem Int Int CStore (GroupName ItemKind)
       -- ^ destroy some items of the group from the store; see below about Ints
-  | ConsumeItems CStore [(Int, GroupName ItemKind)]
-      -- ^ consume (destroy, but without invoking OnSmash effects)
-      --   the given number of items of the groups from the store;
+  | ConsumeItems [(Int, GroupName ItemKind)]
+      -- ^ consume (destroy non-durable, without invoking OnSmash effects;
+      --   apply normal effects of durable, without destroying them;
+      --   the same as when transforming terrain using items)
+      --   the given number of items of the groups from @CGround@ and @CEqp@;
       --   if not all items present in all groups, no item destroyed;
       --   if an item belongs to many groups, counts for all (otherwise,
       --   some orders of destroying would succeed, while others would not)
@@ -463,7 +465,7 @@ validateSingle ik@ItemKind{..} =
   ++ (let nonPositiveEffect :: Effect -> Bool
           nonPositiveEffect (CreateItem (Just n) _ _ _) | n <= 0 = True
           nonPositiveEffect (DestroyItem n k _ _) | n <= 0 || k <= 0 = True
-          nonPositiveEffect (ConsumeItems _ grps)
+          nonPositiveEffect (ConsumeItems grps)
             | any ((<= 0) . fst) grps = True
           nonPositiveEffect (DropItem n k _ _) | n <= 0 || k <= 0 = True
           nonPositiveEffect (Detect _ n) | n <= 0 = True

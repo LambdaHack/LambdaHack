@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
-  , mergeItemQuant, listToolsForAltering, subtractGrpfromBag
+  , mergeItemQuant, listToolsToConsume, subtractGrpfromBag
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -334,9 +334,9 @@ armorHurtCalculation proj sMaxSk tMaxSk =
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)
 
-listToolsForAltering :: [(ItemId, ItemFullKit)] -> [(ItemId, ItemFullKit)]
-                     -> [((CStore, Bool), (ItemId, ItemFullKit))]
-listToolsForAltering kitAssG kitAssE =
+listToolsToConsume :: [(ItemId, ItemFullKit)] -> [(ItemId, ItemFullKit)]
+                   -> [((CStore, Bool), (ItemId, ItemFullKit))]
+listToolsToConsume kitAssG kitAssE =
   let isDurable = IA.checkFlag Ability.Durable
                   . aspectRecordFull . fst . snd
       (kitAssGT, kitAssGF) = partition isDurable kitAssG
@@ -344,6 +344,7 @@ listToolsForAltering kitAssG kitAssE =
       -- Non-durable tools take precedence, because durable
       -- are applied and, usually being weapons,
       -- may be harmful or may have unintended effects.
+      -- CGround takes precedence, too.
   in zip (repeat (CGround, False)) kitAssGF
      ++ zip (repeat (CEqp, False)) kitAssEF
      ++ zip (repeat (CGround, True)) kitAssGT
