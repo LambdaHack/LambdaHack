@@ -2,7 +2,8 @@
 module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , skillName, skillDesc, skillToDecorator, skillSlots
-  , kindAspectToSuffix, aspectToSentence, affixDice, describeTools
+  , kindAspectToSuffix, aspectToSentence, affixDice
+  , describeTools, describeToolsAlternative
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , slotToSentence, tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
@@ -412,3 +413,7 @@ describeTools :: [(Int, GroupName ItemKind)] -> MU.Part
 describeTools =
   let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
   in MU.WWandW . map carAWs
+
+describeToolsAlternative :: [[(Int, GroupName ItemKind)]] -> Text
+describeToolsAlternative =
+  T.intercalate "or" . map (\grp -> makePhrase [describeTools grp])

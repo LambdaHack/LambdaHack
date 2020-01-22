@@ -1450,7 +1450,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do
-    let tItems = makePhrase [MU.WWxW "or" $ map describeTools toolsToAlterWith]
+    let tItems = describeToolsAlternative toolsToAlterWith
     return $ Just ( MsgWarning
                   , "To transform the terrain, prepare the following items on the ground or in equipment and try again:"
                     <+> tItems <> ". If you don't have any, go get them."
