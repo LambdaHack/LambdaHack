@@ -16,7 +16,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectEscape, effectParalyze, paralyze, effectParalyzeInWater
   , effectInsertMove, effectTeleport, effectCreateItem
   , effectDestroyItem, dropCStoreItem, effectDropItem
-  , effectConsumeItems, countConsumeIid
+  , effectConsumeItems, consumeItems
   , effectDischarge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
@@ -1414,39 +1414,53 @@ effectConsumeItems execSfx iidOriginal target grps0 = do
   kitAssG <- getsState $ kitAssocs target [CGround]
   kitAssE <- getsState $ kitAssocs target [CEqp]
   let kitAss = listToolsToConsume kitAssG kitAssE
-  getKind <- getsState $ flip getIidKindServer
-  let is = filter ((/= iidOriginal) . fst . snd) kitAss
-      f :: (ItemBag, [(Int, GroupName ItemKind)])
-        -> ((CStore, Bool), (ItemId, ItemFullKit))
-        -> (ItemBag, [(Int, GroupName ItemKind)])
-      f (bagToDestroy1, grps1) (_, (iid, (_, (n0, it)))) =
-        let (nToDestroy, grps2) = countConsumeIid getKind iid n0 grps1
-            bagToDestroy2 = if nToDestroy == 0
-                            then bagToDestroy1
-                            else EM.insert iid (nToDestroy, take nToDestroy it)
-                                               bagToDestroy1
-        in (bagToDestroy2, grps2)
-      (bagToDestroy3, grps3) = foldl' f (EM.empty, grps0) is
-  if all ((== 0) . fst) grps3
-  then do
+      is = filter ((/= iidOriginal) . fst . snd) kitAss
+      (bagsToLose3, iidsToApply3, grps3) =
+        foldl' subtractIidfromGrps (EM.empty, [], grps0) is
+  if all ((== 0) . fst) grps3 then do
     execSfx
--- TODO    execUpdAtomic $ UpdLoseItemBag c bagToDestroy3
+    consumeItems target bagsToLose3 iidsToApply3
     return UseUp
   else return UseDud
 
-countConsumeIid :: (ItemId -> IK.ItemKind)
-                -> ItemId -> Int
-                -> [(Int, GroupName ItemKind)]
-                -> (Int, [(Int, GroupName ItemKind)])
-countConsumeIid getKind iid n0 grps =
-  let hasGroup grp =
-        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
-      matchGroup nToDestroy (k, grp) =
-        if hasGroup grp
-        then let mnk = min n0 k
-             in (max nToDestroy mnk, (k - mnk, grp))
-        else (nToDestroy, (k, grp))
-  in mapAccumL matchGroup 0 grps
+consumeItems :: MonadServerAtomic m
+             => ActorId -> EM.EnumMap CStore ItemBag -> [(CStore, ItemId)]
+             -> m ()
+consumeItems target bagsToLose iidsToApply = do
+  COps{coitem} <- getsState scops
+  let identifyStoreBag store bag =
+        mapM_ (identifyStoreIid store) $ EM.keys bag
+      identifyStoreIid store iid = do
+        discoAspect2 <- getsState sdiscoAspect
+          -- might have changed due to embedded items invocations
+        itemKindId <- getsState $ getIidKindIdServer iid
+        let arItem = discoAspect2 EM.! iid
+            c = CActor target store
+            itemKind = okind coitem itemKindId
+        unless (IA.isHumanTrinket itemKind) $  -- a hack
+          execUpdAtomic $ UpdDiscover c iid itemKindId arItem
+  -- We don't invoke @OnSmash@ effects, so we avoid the risk
+  -- of the first removed item displacing the actor, destroying
+  -- or scattering some pending items ahead of time, etc.
+  -- The embed should provide any requisite fireworks instead.
+  forM_ (EM.assocs bagsToLose) $ \(store, bagToLose) ->
+    unless (EM.null bagToLose) $ do
+      identifyStoreBag store bagToLose
+      -- Not @UpdLoseItemBag@, to be verbose.
+      -- The bag is small, anyway.
+      let c = CActor target store
+      mapWithKeyM_ (\iid kit ->
+        execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
+  -- But afterwards we do apply normal effects of durable items,
+  -- even if the actor or other items displaced in the process.
+  -- This makes applying double-purpose tool-weapons costly,
+  -- which is also why durable tools are considered last.
+  let applyItemIfPresent (store, iid) = do
+        let c = CActor target store
+        bag <- getsState $ getContainerBag c
+        when (iid `EM.member` bag) $
+          applyItem target iid store
+  mapM_ applyItemIfPresent iidsToApply
 
 -- ** DropItem
 

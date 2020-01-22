@@ -169,7 +169,7 @@ data SfxMsg =
   | SfxExpected Text ReqFailure
   | SfxFizzles
   | SfxNothingHappens
-  | SfxNoItemsForTile [[GroupName ItemKind]]
+  | SfxNoItemsForTile [[(Int, GroupName ItemKind)]]
   | SfxVoidDetection IK.DetectKind
   | SfxUnimpressed ActorId
   | SfxSummonLackCalm ActorId

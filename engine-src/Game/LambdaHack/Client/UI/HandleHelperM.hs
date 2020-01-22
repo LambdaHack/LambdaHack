@@ -628,7 +628,7 @@ lookAtPosition lidV p = do
       toolFromAction (Tile.WithAction grps _) = Just grps
       toolFromAction _ = Nothing
       toolsToAlterWith = mapMaybe toolFromAction tileActions
-      tItems = describeTools toolsToAlterWith
+      tItems = makePhrase [MU.WWxW "or" $ map describeTools toolsToAlterWith]
       transformBlurb = if null toolsToAlterWith
                        then ""
                        else "The following items on the ground or in equipment trigger special transformations:"

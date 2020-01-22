@@ -26,7 +26,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Key (mapWithKeyM_)
 import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
@@ -608,7 +607,7 @@ reqAlter source tpos = do
 reqAlterFail :: forall m. MonadServerAtomic m
              => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
 reqAlterFail onCombineOnly voluntary source tpos = do
-  cops@COps{coitem, cotile, coTileSpeedup} <- getsState scops
+  cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
   discoAspect <- getsState sdiscoAspect
@@ -744,47 +743,18 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItem lid tpos toTile
-          identifyStoreBag store bag =
-            mapM_ (identifyStoreIid store) $ EM.keys bag
-          identifyStoreIid store iid = do
-            discoAspect2 <- getsState sdiscoAspect
-              -- might have changed due to embedded items invocations
-            itemKindId <- getsState $ getIidKindIdServer iid
-            let arItem = discoAspect2 EM.! iid
-                c = CActor source store
-                itemKind = okind coitem itemKindId
-            unless (IA.isHumanTrinket itemKind) $  -- a hack
-              execUpdAtomic $ UpdDiscover c iid itemKindId arItem
-          tryChangeWith :: ([GroupName IK.ItemKind], (GroupName TK.TileKind))
+          tryChangeWith :: ( [(Int, GroupName IK.ItemKind)]
+                           , (GroupName TK.TileKind) )
                         -> [((CStore, Bool), (ItemId, ItemFullKit))]
                         -> m Bool
-          tryChangeWith (grps, tgroup) kitAss = do
-            case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
-              Nothing -> return False
-              Just (_, bagsToLose, iidsToApply) -> do
-                -- We don't invoke @OnSmash@ effects, so we avoid the risk
-                -- of the first removed item displacing the actor, destroying
-                -- or scattering some pending items ahead of time, etc.
-                -- The embed should provide any requisite fireworks instead.
-                forM_ (EM.assocs bagsToLose) $ \(store, bagToLose) ->
-                  unless (EM.null bagToLose) $ do
-                    identifyStoreBag store bagToLose
-                    -- Not @UpdLoseItemBag@, to be verbose.
-                    -- The bag is small, anyway.
-                    let c = CActor source store
-                    mapWithKeyM_ (\iid kit ->
-                      execUpdAtomic $ UpdLoseItem True iid kit c) bagToLose
-                -- But afterwards we do apply normal effects of durable items,
-                -- even if the actor or other items displaced in the process.
-                -- This makes applying double-purpose tool-weapons costly,
-                -- which is also why durable tools are considered last.
-                let applyItemIfPresent (store, iid) = do
-                      bag <- getsState $ getContainerBag (CActor source store)
-                      when (iid `EM.member` bag) $
-                        applyItem source iid store
-                mapM_ applyItemIfPresent iidsToApply
-                changeTo tgroup
-                return True
+          tryChangeWith (grps0, tgroup) kitAss = do
+            let (bagsToLose, iidsToApply, grps) =
+                  foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
+            if all ((== 0) . fst) grps then do
+              consumeItems source bagsToLose iidsToApply
+              changeTo tgroup
+              return True
+            else return False
           feats = TK.tfeature $ okind cotile serverTile
           tileActions =
             mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)

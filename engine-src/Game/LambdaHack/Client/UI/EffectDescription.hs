@@ -137,9 +137,8 @@ effectToSuffix detailLevel effect =
     AndEffect (ConsumeItems grps) (CreateItem _ _ grp0 _) ->
       -- Only @CGround@ considered. We assume if @CEqp@ present
       -- then also @CGround@ present, so it suffices.
-      let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
-      in makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
-                    , "from", MU.WWandW $ map carAWs grps ]
+      makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
+                 , "from", describeTools grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
               $ filter (not . T.null)
@@ -409,7 +408,7 @@ wrapInChevrons t = "<" <> t <> ">"
 affixDice :: Dice.Dice -> Text
 affixDice d = maybe "+?" affixBonus $ Dice.reduceDice d
 
-describeTools :: [[GroupName ItemKind]] -> Text
+describeTools :: [(Int, GroupName ItemKind)] -> MU.Part
 describeTools =
-  makePhrase . pure . MU.WWxW "or"
-  . map (fst . squashedWWandW . map (MU.Text . fromGroupName))
+  let carAWs (k, grp) = MU.CarAWs k (MU.Text $ fromGroupName grp)
+  in MU.WWandW . map carAWs

@@ -60,13 +60,13 @@ data Feature =
       -- ^ goes from an open to open or closed tile when altered
   | ChangeTo (GroupName TileKind)
       -- ^ alters tile, but does not change walkability
-  | OpenWith Bool [GroupName ItemKind] (GroupName TileKind)
+  | OpenWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
       -- ^ alters tile, as before, using up all listed items from the ground
       --   and equipment; the list never empty; for simplicity, such tiles
       --   are never taken into account when pathfinding; the boolean
       --   determines if projectiles may trigger the action
-  | CloseWith Bool [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
-  | ChangeWith Bool [GroupName ItemKind] (GroupName TileKind)  -- ^ see above
+  | CloseWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
+  | ChangeWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
   | HideAs (GroupName TileKind)
       -- ^ when hidden, looks as the unique tile of the group
   | BuildAs (GroupName TileKind)

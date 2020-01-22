@@ -1007,18 +1007,19 @@ processTileActions source tpos tas = do
         Tile.ToAction{} -> if EM.null embeds
                            then return $ Right ()
                            else processTA rest
-        Tile.WithAction grps _ ->
+        Tile.WithAction grps0 _ -> do
           -- UI requested, so this is voluntary, so item loss is fine.
-          case foldl' subtractGrpfromBag (Just (kitAss, EM.empty, [])) grps of
-              Nothing -> processTA rest  -- not enough tools
-              Just (_, _, iidsToApply) -> do
-                let hasEffectOrDmg (_, iid) =
-                      let itemKind = getKind iid
-                      in IK.idamage itemKind /= 0
-                         || any IK.forApplyEffect (IK.ieffects itemKind)
-                case filter hasEffectOrDmg iidsToApply of
-                  [] -> return $ Right ()
-                  (store, iid) : _ -> verifyToolEffect (blid sb) store iid
+          let (_, iidsToApply, grps) =
+                foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
+          if all ((== 0) . fst) grps then do
+            let hasEffectOrDmg (_, iid) =
+                  let itemKind = getKind iid
+                  in IK.idamage itemKind /= 0
+                     || any IK.forApplyEffect (IK.ieffects itemKind)
+            case filter hasEffectOrDmg iidsToApply of
+              [] -> return $ Right ()
+              (store, iid) : _ -> verifyToolEffect (blid sb) store iid
+          else processTA rest  -- not enough tools
   processTA tas
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())

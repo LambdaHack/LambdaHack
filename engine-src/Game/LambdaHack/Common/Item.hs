@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Item
   , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
-  , mergeItemQuant, listToolsToConsume, subtractGrpfromBag
+  , mergeItemQuant, listToolsToConsume, countIidConsumed, subtractIidfromGrps
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , valueAtEqpSlot, unknownAspect
@@ -350,36 +350,38 @@ listToolsToConsume kitAssG kitAssE =
      ++ zip (repeat (CGround, True)) kitAssGT
      ++ zip (repeat (CEqp, True)) kitAssET
 
-subtractGrpfromBag :: Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
-                            , EM.EnumMap CStore ItemBag
-                            , [(CStore, ItemId)] )
-                   -> GroupName IK.ItemKind
-                   -> Maybe ( [((CStore, Bool), (ItemId, ItemFullKit))]
-                            , EM.EnumMap CStore ItemBag
-                            , [(CStore, ItemId)] )
-subtractGrpfromBag Nothing _ = Nothing
-subtractGrpfromBag (Just (kitAss, bagsToLose, iidsToApply))
-                   grp =
-  let grpInItemFull ItemFull{itemKind} =
-        fromMaybe 0 (lookup grp $ IK.ifreq itemKind) > 0
-      grpInItemKit (_, (_, (itemFull, _))) = grpInItemFull itemFull
-  in case break grpInItemKit kitAss of
-    (_, []) -> Nothing
-    (prefix, ( (store, durable)
-             , (iid, (itemFull, (k, it))) ) : rest) -> Just $
-      let remainingAss = case compare k 1 of
-            LT -> error "subtractGrpfromBag: no copies in bag"
-            EQ -> []
-            GT -> [( (store, durable)
-                   , (iid, (itemFull, (k - 1, drop 1 it))) )]
-          remainingAssocs = prefix ++ remainingAss ++ rest
-          removedBags = EM.singleton store
-                        $ EM.singleton iid (1, take 1 it)
-      in if durable
-         then ( remainingAssocs
-              , bagsToLose
-              , (store, iid) : iidsToApply )
-         else ( remainingAssocs
-              , EM.unionWith (EM.unionWith mergeItemQuant)
-                             removedBags bagsToLose
-              , iidsToApply )
+countIidConsumed :: ItemFullKit
+                 -> [(Int, GroupName IK.ItemKind)]
+                 -> (Int, [(Int, GroupName IK.ItemKind)])
+countIidConsumed (ItemFull{itemKind}, (k, _)) grps =
+  let hasGroup grp =
+        maybe False (> 0) $ lookup grp $ IK.ifreq itemKind
+      matchGroup nToDestroy (n, grp) =
+        if hasGroup grp
+        then let mkn = min k n
+             in (max nToDestroy mkn, (n - mkn, grp))
+        else (nToDestroy, (n, grp))
+  in mapAccumL matchGroup 0 grps
+
+subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
+                       , [(CStore, ItemId)]
+                       , [(Int, GroupName IK.ItemKind)] )
+                    -> ((CStore, Bool), (ItemId, ItemFullKit))
+                    -> ( EM.EnumMap CStore ItemBag
+                       , [(CStore, ItemId)]
+                       , [(Int, GroupName IK.ItemKind)] )
+subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
+                    ((store, durable), (iid, itemFullKit@(_, (_, it)))) =
+  case countIidConsumed itemFullKit grps1 of
+    (0, _) -> (bagsToLose1, iidsToApply1, grps1)
+    (nToDestroy, grps2) ->
+      if durable
+      then ( bagsToLose1
+           , (store, iid) : iidsToApply1
+           , grps2 )
+      else ( let kit2 = (nToDestroy, take nToDestroy it)
+                 removedBags = EM.singleton store $ EM.singleton iid kit2
+             in EM.unionWith (EM.unionWith mergeItemQuant)
+                             removedBags bagsToLose1
+           , iidsToApply1
+           , grps2 )

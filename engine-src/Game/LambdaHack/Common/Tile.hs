@@ -360,7 +360,7 @@ isModifiable coTileSpeedup t = isDoor coTileSpeedup t
 data TileAction =
     EmbedAction (ItemId, ItemQuant)
   | ToAction (GroupName TK.TileKind)
-  | WithAction [GroupName IK.ItemKind] (GroupName TK.TileKind)
+  | WithAction [(Int, GroupName ItemKind)] (GroupName TK.TileKind)
 
 parseTileAction :: Bool -> Bool -> [(IK.ItemKind, (ItemId, ItemQuant))]
                 -> TK.Feature
