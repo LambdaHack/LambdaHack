@@ -1417,7 +1417,7 @@ effectConsumeItems execSfx iidOriginal target grps0 = do
       is = filter ((/= iidOriginal) . fst . snd) kitAss
       (bagsToLose3, iidsToApply3, grps3) =
         foldl' subtractIidfromGrps (EM.empty, [], grps0) is
-  if all ((== 0) . fst) grps3 then do
+  if null grps3 then do
     execSfx
     consumeItems target bagsToLose3 iidsToApply3
     return UseUp

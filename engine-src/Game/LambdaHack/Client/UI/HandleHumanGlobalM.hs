@@ -1011,7 +1011,7 @@ processTileActions source tpos tas = do
           -- UI requested, so this is voluntary, so item loss is fine.
           let (_, iidsToApply, grps) =
                 foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
-          if all ((== 0) . fst) grps then do
+          if null grps then do
             let hasEffectOrDmg (_, iid) =
                   let itemKind = getKind iid
                   in IK.idamage itemKind /= 0

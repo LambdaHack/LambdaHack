@@ -750,7 +750,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
           tryChangeWith (grps0, tgroup) kitAss = do
             let (bagsToLose, iidsToApply, grps) =
                   foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
-            if all ((== 0) . fst) grps then do
+            if null grps then do
               consumeItems source bagsToLose iidsToApply
               changeTo tgroup
               return True

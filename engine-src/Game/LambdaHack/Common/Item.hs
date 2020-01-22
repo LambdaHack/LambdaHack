@@ -8,10 +8,10 @@ module Game.LambdaHack.Common.Item
   , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
-  , mergeItemQuant, listToolsToConsume, countIidConsumed, subtractIidfromGrps
+  , mergeItemQuant, listToolsToConsume, subtractIidfromGrps
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , valueAtEqpSlot, unknownAspect
+  , valueAtEqpSlot, unknownAspect, countIidConsumed
 #endif
   ) where
 
@@ -353,15 +353,18 @@ listToolsToConsume kitAssG kitAssE =
 countIidConsumed :: ItemFullKit
                  -> [(Int, GroupName IK.ItemKind)]
                  -> (Int, [(Int, GroupName IK.ItemKind)])
-countIidConsumed (ItemFull{itemKind}, (k, _)) grps =
+countIidConsumed (ItemFull{itemKind}, (k, _)) grps0 =
   let hasGroup grp =
         maybe False (> 0) $ lookup grp $ IK.ifreq itemKind
-      matchGroup nToDestroy (n, grp) =
+      matchGroup (nToDestroy, grps) (n, grp) =
         if hasGroup grp
         then let mkn = min k n
-             in (max nToDestroy mkn, (n - mkn, grp))
-        else (nToDestroy, (n, grp))
-  in mapAccumL matchGroup 0 grps
+             in ( max nToDestroy mkn
+                , if n - mkn > 0
+                  then (n - mkn, grp) : grps
+                  else grps )
+        else (nToDestroy, (n, grp) : grps)
+  in foldl' matchGroup (0, []) grps0
 
 subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
                        , [(CStore, ItemId)]
