@@ -119,12 +119,15 @@ textAllPowers detailLevel skipRecharging
             unSmash eff = eff
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map (ppE . unSmash) smashEffs
-            (combineEffs, noSmashOrCombineEffs) =
+            (combineEffsRaw, noSmashOrCombineEffs) =
               partition IK.onCombineEffect noSmashEffs
+            -- Avoid repeating long crafting recipes.
+            combineEffsUn = map unCombine combineEffsRaw
+            combineEffs = combineEffsUn \\ noSmashOrCombineEffs
             unCombine (IK.OnCombine eff) = eff
             unCombine eff = eff
             onCombineTs = T.intercalate " " $ filter (not . T.null)
-                        $ map (ppE . unCombine) combineEffs
+                        $ map ppE combineEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
                              ++ filter (not . T.null)
@@ -154,7 +157,10 @@ textAllPowers detailLevel skipRecharging
                   else ppERestEs ++ map ppA aspects
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
-            onCombine = if T.null onCombineTs then ""
+            onCombine = if T.null onCombineTs
+                        then if combineEffsUn /= combineEffs
+                             then "(on combine: some of the above)"
+                             else ""
                         else "(on combine:" <+> onCombineTs <> ")"
             -- Either exact value or dice of @SkHurtMelee@ needed,
             -- never the average, so @arItem@ not consulted directly.

@@ -144,12 +144,12 @@ effectToSuffix detailLevel effect =
                       , "from", describeTools grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
-              $ filter (not . T.null)
+              $ filter (not . T.null) $ nub
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of conjunctive processing" else t
     OrEffect eff1 eff2 ->
       let t = T.intercalate " or else "
-              $ filter (not . T.null)
+              $ filter (not . T.null) $ nub
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of alternative processing" else t
 
