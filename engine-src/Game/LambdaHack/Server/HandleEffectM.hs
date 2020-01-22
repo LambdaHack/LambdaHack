@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.HandleEffectM
   ( UseResult(..)
   , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
-  , dropAllItems, pickDroppable
+  , dropAllItems, pickDroppable, consumeItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
@@ -16,7 +16,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectEscape, effectParalyze, paralyze, effectParalyzeInWater
   , effectInsertMove, effectTeleport, effectCreateItem
   , effectDestroyItem, dropCStoreItem, effectDropItem
-  , effectConsumeItems, consumeItems
+  , effectConsumeItems
   , effectDischarge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
