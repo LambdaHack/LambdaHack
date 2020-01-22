@@ -136,10 +136,12 @@ effectToSuffix detailLevel effect =
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     AndEffect (ConsumeItems grps) (CreateItem _ _ grp0 _) ->
-      -- Only @CGround@ considered. We assume if @CEqp@ present
-      -- then also @CGround@ present, so it suffices.
-      makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
-                 , "from", describeTools grps ]
+      if detailLevel < DetailAll
+      then "of crafting"
+      else -- Only @CGround@ considered. We assume if @CEqp@ present
+           -- then also @CGround@ present, so it suffices.
+           makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
+                      , "from", describeTools grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
               $ filter (not . T.null)
