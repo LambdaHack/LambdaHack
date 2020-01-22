@@ -418,4 +418,4 @@ describeTools =
 
 describeToolsAlternative :: [[(Int, GroupName ItemKind)]] -> Text
 describeToolsAlternative =
-  T.intercalate "or" . map (\grp -> makePhrase [describeTools grp])
+  T.intercalate " or " . map (\grp -> makePhrase [describeTools grp])
