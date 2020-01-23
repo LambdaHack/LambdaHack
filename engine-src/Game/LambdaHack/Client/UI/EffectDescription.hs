@@ -107,10 +107,10 @@ effectToSuffix detailLevel effect =
             else ("drop", "from" <+> snd (ppCStore store))
       in "of" <+> verb <+> preT <+> fromGroupName grp <+> postT <+> fromStore
     Discharge dice -> case Dice.reduceDice dice of
-      Nothing -> "of cooldowns at" <+> tshow dice <+> "* 0.05s"
-      Just 0 -> "of remove cooldowns"
+      Nothing -> "of discharge to" <+> tshow dice <+> "* 0.05s"
+      Just 0 -> "recharging"
       Just p -> let dt = timeDeltaScale (Delta timeClip) p
-                in "of cooldowns at" <+> timeDeltaInSecondsText dt
+                in "of discharge to" <+> timeDeltaInSecondsText dt
     PolyItem -> "of repurpose on the ground"
     RerollItem -> "of deeply reshape on the ground"
     DupItem -> "of multiplication on the ground"
