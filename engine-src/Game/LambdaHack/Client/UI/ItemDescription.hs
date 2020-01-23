@@ -153,9 +153,9 @@ textAllPowers detailLevel skipRecharging
               else ([], noSmashCombineEffs)
             unOr (IK.OrEffect eff1 eff2) = unOr eff1 ++ unOr eff2
             unOr eff = [eff]
-            ppOr eff = T.intercalate " or else\n"
-                       $ nub $ filter (not . T.null)
-                       $ map ppE $ unOr eff
+            ppOr eff = "*" <+> T.intercalate " or else\n* "
+                               (nub $ filter (not . T.null)
+                                    $ map ppE $ unOr eff)
             orTs = filter (not . T.null) $ map ppOr orEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
