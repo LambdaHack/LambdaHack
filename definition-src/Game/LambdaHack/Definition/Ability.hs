@@ -44,7 +44,7 @@ data Skill =
   | SkMaxHP
   | SkMaxCalm
   | SkSpeed
-  | SkSight  -- ^ FOV radius, where 1 means a single tile FOV
+  | SkSight  -- ^ FOV radius, where 1 means a single tile FOV area
   | SkSmell
   | SkShine
   | SkNocto

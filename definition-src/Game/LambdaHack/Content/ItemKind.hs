@@ -9,7 +9,7 @@ module Game.LambdaHack.Content.ItemKind
   , boostItemKindList, forApplyEffect
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
-  , timeoutAspect, onSmashEffect, onCombineEffect, damageUsefulness
+  , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, damageUsefulness
   , verbMsgNoLonger, verbMsgLess, toVelocity, toLinger
   , timerNone, isTimerNone, foldTimer, toOrganBad, toOrganGood, toOrganNoTimer
 #ifdef EXPOSE_INTERNAL
@@ -316,6 +316,10 @@ isEffEscapeOrAscend _ = False
 timeoutAspect :: Aspect -> Bool
 timeoutAspect Timeout{} = True
 timeoutAspect _ = False
+
+orEffect :: Effect -> Bool
+orEffect OrEffect{} = True
+orEffect _ = False
 
 onSmashEffect :: Effect -> Bool
 onSmashEffect OnSmash{} = True

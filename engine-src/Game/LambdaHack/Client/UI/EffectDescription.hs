@@ -137,19 +137,19 @@ effectToSuffix detailLevel effect =
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     AndEffect (ConsumeItems grps) (CreateItem _ _ grp0 _) ->
       if detailLevel < DetailAll
-      then "of crafting"
+      then "of crafting (recipes in lore menu)"
       else -- Only @CGround@ considered. We assume if @CEqp@ present
            -- then also @CGround@ present, so it suffices.
            makePhrase [ "of crafting", MU.Text $ fromGroupName grp0
                       , "from", describeTools grps ]
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
-              $ filter (not . T.null) $ nub
+              $ nub $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of conjunctive processing" else t
     OrEffect eff1 eff2 ->
       let t = T.intercalate " or else "
-              $ filter (not . T.null) $ nub
+              $ nub $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of alternative processing" else t
 

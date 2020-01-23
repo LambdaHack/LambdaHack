@@ -33,14 +33,24 @@ import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Definition.Flavour
 
--- | The part of speech describing the item parameterized by the number
--- of effects/aspects to show.
 partItemN :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
           -> Time -> ItemFull -> ItemQuant
           -> (MU.Part, MU.Part)
 partItemN side factionD ranged detailLevel maxWordsToShow localTime
-          itemFull@ItemFull{itemBase, itemKind, itemSuspect}
-          (itemK, itemTimer) =
+          itemFull kit =
+  let (_, r2, r3) =
+        partItemN3 side factionD ranged detailLevel maxWordsToShow localTime
+                   itemFull kit
+  in (r2, r3)
+
+-- | The part of speech describing the item parameterized by the number
+-- of effects/aspects to show.
+partItemN3 :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
+           -> Time -> ItemFull -> ItemQuant
+           -> ([Text], MU.Part, MU.Part)
+partItemN3 side factionD ranged detailLevel maxWordsToShow localTime
+           itemFull@ItemFull{itemBase, itemKind, itemSuspect}
+           (itemK, itemTimer) =
   let flav = flavourToName $ jflavour itemBase
       arItem = aspectRecordFull itemFull
       timeout = IA.aTimeout arItem
@@ -52,7 +62,7 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
               | itemK == lenCh = "(all charging)"
               | otherwise = "(" <> tshow lenCh <+> "charging)"
       skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
-      (powerTsRaw, rangedDamage) =
+      (orTs, powerTsRaw, rangedDamage) =
         textAllPowers detailLevel skipRecharging itemFull
       powerTs = powerTsRaw ++ if ranged then rangedDamage else []
       lsource = case jfid itemBase of
@@ -75,12 +85,12 @@ partItemN side factionD ranged detailLevel maxWordsToShow localTime
       capName = if IA.checkFlag Ability.Unique arItem
                 then MU.Capitalize $ MU.Text name
                 else MU.Text name
-  in (capName, if maxWordsToShow == 0
-               then MU.Text $ IA.aELabel arItem
-               else MU.Phrase $ map MU.Text ts)
+  in (orTs, capName, if maxWordsToShow == 0
+                     then MU.Text $ IA.aELabel arItem
+                     else MU.Phrase $ map MU.Text ts)
 
 -- TODO: simplify the code a lot
-textAllPowers :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text])
+textAllPowers :: DetailLevel -> Bool -> ItemFull -> ([Text], [Text], [Text])
 textAllPowers detailLevel skipRecharging
               itemFull@ItemFull{itemKind, itemDisco} =
   let arItem = aspectRecordFull itemFull
@@ -105,7 +115,7 @@ textAllPowers detailLevel skipRecharging
       hurtMeleeAspect (IK.AddSkill Ability.SkHurtMelee _) = True
       hurtMeleeAspect _ = False
       active = IA.goesIntoEqp arItem
-      splitA :: DetailLevel -> [IK.Aspect] -> [Text]
+      splitA :: DetailLevel -> [IK.Aspect] -> ([Text], [Text])
       splitA detLev aspects =
         let ppA = kindAspectToSuffix
             ppE = effectToSuffix detLev
@@ -119,19 +129,38 @@ textAllPowers detailLevel skipRecharging
             unSmash eff = eff
             onSmashTs = T.intercalate " " $ filter (not . T.null)
                         $ map (ppE . unSmash) smashEffs
-            (combineEffsRaw, noSmashOrCombineEffs) =
+            unCombine (IK.OnCombine eff) = eff
+            unCombine eff = eff
+            (combineEffsRaw, noSmashCombineEffs) =
               partition IK.onCombineEffect noSmashEffs
             -- Avoid repeating long crafting recipes.
             combineEffsUn = map unCombine combineEffsRaw
-            combineEffs = combineEffsUn \\ noSmashOrCombineEffs
-            unCombine (IK.OnCombine eff) = eff
-            unCombine eff = eff
+            combineEffs = combineEffsUn \\ noSmashCombineEffs
+            -- Beware, all @OrEffect@ not repeated outside @OnCombine@
+            -- are printed inline, in the main effects description.
+            -- So any @OrEffect@ printed with newlines concern normal
+            -- activation, not @OnCombine@. Similarly for @OnSmash@.
             onCombineTs = T.intercalate " " $ filter (not . T.null)
-                        $ map ppE combineEffs
+                          $ map ppE combineEffs
+            (orEffsRaw, noOrSmashCombineEffsRaw) =
+              partition IK.orEffect noSmashCombineEffs
+            orTsTooLarge =
+              detailLevel >= DetailAll
+              && any (\t -> T.length t > 120) (map ppE orEffsRaw)
+            (orEffs, noOrSmashCombineEffs) =
+              if orTsTooLarge
+              then (orEffsRaw, noOrSmashCombineEffsRaw)
+              else ([], noSmashCombineEffs)
+            unOr (IK.OrEffect eff1 eff2) = unOr eff1 ++ unOr eff2
+            unOr eff = [eff]
+            ppOr eff = T.intercalate " or else\n"
+                       $ nub $ filter (not . T.null)
+                       $ map ppE $ unOr eff
+            orTs = filter (not . T.null) $ map ppOr orEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
                              ++ filter (not . T.null)
-                                       (map ppE noSmashOrCombineEffs)
+                                       (map ppE noOrSmashCombineEffs)
             fragile = IA.checkFlag Ability.Fragile arItem
             periodicText =
               if periodic && not skipRecharging && not (T.null rechargingTs)
@@ -151,15 +180,17 @@ textAllPowers detailLevel skipRecharging
               else ""
             ppERestEs = if periodic
                         then [periodicText]
-                        else map ppE noSmashOrCombineEffs
+                        else map ppE noOrSmashCombineEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
                   else ppERestEs ++ map ppA aspects
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
+            aboveOrBelow = if orTsTooLarge then "below" else "above"
             onCombine = if T.null onCombineTs
                         then if combineEffsUn /= combineEffs
-                             then "(on combine: some of the above)"
+                             then "(on combine: some of the"
+                                  <+> aboveOrBelow <> ")"
                              else ""
                         else "(on combine:" <+> onCombineTs <> ")"
             -- Either exact value or dice of @SkHurtMelee@ needed,
@@ -180,14 +211,15 @@ textAllPowers detailLevel skipRecharging
               Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
-       in [ damageText
-          | detLev > DetailLow && (not periodic || IK.idamage itemKind == 0) ]
-          ++ [timeoutText | detLev > DetailLow && not periodic]
-          ++ if detLev >= DetailLow
-             then aes ++ if detLev >= DetailAll
-                         then [onSmash, onCombine]
-                         else []
-             else []
+       in ( orTs
+          , [ damageText
+            | detLev > DetailLow && (not periodic || IK.idamage itemKind == 0) ]
+            ++ [timeoutText | detLev > DetailLow && not periodic]
+            ++ if detLev >= DetailLow
+               then aes ++ if detLev >= DetailAll
+                           then [onSmash, onCombine]
+                           else []
+               else [] )
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
       dmg = Dice.meanDice $ IK.idamage itemKind
@@ -204,20 +236,24 @@ textAllPowers detailLevel skipRecharging
       splitTry ass =
         let splits = map (`splitA` ass) [minBound..maxBound]
             splitsToTry = drop (fromEnum detailLevel) splits
-            splitsValid | T.null elab = filter (/= []) splitsToTry
+            splitsValid | T.null elab = filter (/= ([], [])) splitsToTry
                         | otherwise = splitsToTry
-        in concat $ take 1 splitsValid
-      aspectDescs =
+        in case splitsValid of
+          (orTsSplit, tsSplit) : _ -> (orTsSplit, tsSplit)
+          [] -> ([], [])
+      (orTsAss, aspectDescs) =
         let aMain IK.AddSkill{} = True
             aMain _ = False
             (aspectsMain, aspectsAux) = partition aMain aspectsFull
-        in filter (/= "")
-           $ elab
-             : splitTry aspectsMain
-             ++ if detailLevel >= DetailAll
-                then map kindAspectToSuffix aspectsAux
-                else []
-  in (aspectDescs, rangedDamageDesc)
+            (orTsSplit, tsSplit) = splitTry aspectsMain
+        in ( orTsSplit
+           , filter (/= "")
+             $ elab
+               : tsSplit
+               ++ if detailLevel >= DetailAll
+                  then map kindAspectToSuffix aspectsAux
+                  else [] )
+  in (orTsAss, aspectDescs, rangedDamageDesc)
 
 -- | The part of speech describing the item.
 partItem :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
@@ -237,8 +273,8 @@ partItemTrunk :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
 partItemTrunk side factionD = partItemN side factionD False DetailLow 0
 
 partItemHigh :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-             -> (MU.Part, MU.Part)
-partItemHigh side factionD = partItemN side factionD False DetailAll 100
+             -> ([Text], MU.Part, MU.Part)
+partItemHigh side factionD = partItemN3 side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
@@ -315,7 +351,7 @@ itemDesc :: Bool -> FactionId -> FactionDict -> Int -> CStore -> Time -> LevelId
          -> AttrString
 itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
          itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect} kit =
-  let (name, powers) = partItemHigh side factionD localTime itemFull kit
+  let (orTs, name, powers) = partItemHigh side factionD localTime itemFull kit
       arItem = aspectRecordFull itemFull
       npowers = makePhrase [name, powers]
       IK.ThrowMod{IK.throwVelocity, IK.throwLinger} = IA.aToThrow arItem
@@ -404,10 +440,12 @@ itemDesc markParagraphs side factionD aHurtMeleeOfOwner store localTime jlid
       blurb =
         ((" "
           <> npowers
-          <> (if markParagraphs then ":\n\n" else ": ")
+          <> (if markParagraphs then "\n\n" else " ")
+          <> T.intercalate "\n\n" orTs
+          <> (if markParagraphs && not (null orTs) then "\n\n" else "")
           <> desc
           <> (if markParagraphs && not (T.null desc) then "\n\n" else ""))
-         <+> (if weight > 0
+        <+> (if weight > 0
               then makeSentence
                      ["Weighs around", MU.Text scaledWeight <> unitWeight]
               else ""))
