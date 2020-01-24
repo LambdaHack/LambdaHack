@@ -40,6 +40,7 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanM
+import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -148,25 +149,30 @@ humanCommand = do
               modifySession $ \sess -> sess {sreportNull = True}
               -- Display base frame at the end.
               return []
-        LastRecord seqCurrent seqPrevious k <- getsSession slastRecord
-        let slastRecord
-              | k == 0 = LastRecord [] seqCurrent 0
-              | otherwise = LastRecord [] (seqCurrent ++ seqPrevious) (k - 1)
-        modifySession $ \sess -> sess {slastRecord}
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
         km <- promptGetKey ColorFull (EM.fromList [(propFont, over)]) False []
+        recording <- getsSession srecording
+        when recording $ do
+           -- If we're recording a in-game macro, we want to record each key.
+           macro <- getsSession smacroBuffer
+           modifySession $ \sess -> sess {smacroBuffer = km : macro}
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
           case km `M.lookup` bcmdMap of
+            -- We can repeat every last action except 'repeat last action' action,
+            -- so we don't record that in last action's buffer.
+            Just (_, _, RepeatLast) -> cmdHumanSem RepeatLast
             Just (_, _, cmd) -> do
               modifySession $ \sess -> sess
-                {swaitTimes = if swaitTimes sess > 0
-                              then - swaitTimes sess
-                              else 0}
+                { swaitTimes = if swaitTimes sess > 0
+                               then - swaitTimes sess
+                               else 0
+                , slastAction = Just km -- Last user's action.
+                }
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)

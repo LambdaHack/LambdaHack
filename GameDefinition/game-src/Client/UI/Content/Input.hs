@@ -181,6 +181,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
   , ("v", ([CmdMeta], "voice again the recorded commands", Repeat 1))
+  , ("A-v", ([CmdMeta], "repeat last action", RepeatLast))
   , ("V", repeatTriple 100)
   , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 1000)
   , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
