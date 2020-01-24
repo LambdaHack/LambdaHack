@@ -163,16 +163,20 @@ humanCommand = do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
           case km `M.lookup` bcmdMap of
-            -- We can repeat every last action except 'repeat last action' action,
-            -- so we don't record that in last action's buffer.
-            Just (_, _, RepeatLast) -> cmdHumanSem RepeatLast
+            Just (_, _, RepeatLast) -> do
+              -- We can repeat every last action except 'repeat last action'
+              -- action, so we don't record that in last action's buffer.
+              modifySession $ \sess -> 
+                sess { swaitTimes = if swaitTimes sess > 0
+                                    then - swaitTimes sess
+                                    else 0 }
+              cmdHumanSem RepeatLast
             Just (_, _, cmd) -> do
-              modifySession $ \sess -> sess
-                { swaitTimes = if swaitTimes sess > 0
-                               then - swaitTimes sess
-                               else 0
-                , slastAction = Just km -- Last user's action.
-                }
+              modifySession $ \sess ->
+                sess { swaitTimes = if swaitTimes sess > 0
+                                    then - swaitTimes sess
+                                    else 0
+                     , slastAction = Just km } -- Record user's last action.
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
