@@ -682,7 +682,10 @@ repeatHuman n = do
   recording <- getsSession srecording
   when (not recording) $ do 
     macro <- getsSession smacroBuffer
-    let nmacro = concat $ replicate n $ reverse macro
+    let nmacro = concat . replicate n . reverse 
+               $ case macro of   -- Remove heading keystroke
+                   [] -> []      -- that stops recording.
+                   (_:xs) -> xs
     modifySession $ \sess -> sess {slastPlay = nmacro ++ slastPlay sess}
 
 -- * RepeatLast
@@ -691,7 +694,7 @@ repeatHuman n = do
 repeatLastHuman :: MonadClientUI m => m ()
 repeatLastHuman = do
   lastAct <- getsSession slastAction
-  let cmd = fromMaybe [] $ pure <$> lastAct
+  let cmd = maybeToList lastAct
   modifySession $ \sess -> sess {slastPlay = cmd ++ slastPlay sess}
 
 -- * Record
@@ -702,12 +705,7 @@ recordHuman = do
   if isRecording 
   then do
     -- Stop recording.
-    macro <- getsSession smacroBuffer
-    modifySession $ \sess ->
-      sess { srecording = False
-           , smacroBuffer = tail macro
-             -- Cut off heading key that stops recording.
-           }
+    modifySession $ \sess -> sess { srecording = False }
     promptAdd0 "Macro recording stopped."
   else do
     -- Clear the macro buffer and start a new recording.
