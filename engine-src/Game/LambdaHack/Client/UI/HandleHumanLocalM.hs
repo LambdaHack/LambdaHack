@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
-  , repeatHuman, recordHuman, allHistoryHuman, lastHistoryHuman
+  , repeatHuman, repeatLastHuman, recordHuman, allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , printScreenHuman
     -- * Commands specific to aiming
@@ -679,37 +679,44 @@ selectWithPointerHuman = do
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  LastRecord _ seqPrevious k <- getsSession slastRecord
-  let macro = concat $ replicate n $ reverse seqPrevious
-  modifySession $ \sess -> sess {slastPlay = macro ++ slastPlay sess}
-  let slastRecord = LastRecord [] [] (if k == 0 then 0 else maxK)
-  modifySession $ \sess -> sess {slastRecord}
+  recording <- getsSession srecording
+  when (not recording) $ do 
+    macro <- getsSession smacroBuffer
+    let nmacro = concat $ replicate n $ reverse macro
+    modifySession $ \sess -> sess {slastPlay = nmacro ++ slastPlay sess}
 
-maxK :: Int
-maxK = 100
+-- * RepeatLast
+
+-- | Repeats last user's action.
+repeatLastHuman :: MonadClientUI m => m ()
+repeatLastHuman = do
+  lastAct <- getsSession slastAction
+  let cmd = fromMaybe [] $ pure <$> lastAct
+  modifySession $ \sess -> sess {slastPlay = cmd ++ slastPlay sess}
 
 -- * Record
 
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  lastPlayOld <- getsSession slastPlay
-  LastRecord _seqCurrent seqPrevious k <- getsSession slastRecord
-  case k of
-    0 -> do
-      let slastRecord = LastRecord [] [] maxK
-      modifySession $ \sess -> sess {slastRecord}
-      when (null lastPlayOld) $
-        -- Don't spam if recording is a part of playing back a macro.
-        promptAdd0 $ "Macro will be recorded for up to"
-                     <+> tshow maxK
-                     <+> "actions. Stop recording with the same key."
-    _ -> do
-      let slastRecord = LastRecord seqPrevious [] 0
-      modifySession $ \sess -> sess {slastRecord}
-      when (null lastPlayOld) $
-        -- Don't spam if recording is a part of playing back a macro.
-        promptAdd0 $ "Macro recording stopped after"
-                     <+> tshow (maxK - k - 1) <+> "actions."
+  isRecording <- getsSession srecording
+  if isRecording 
+  then do
+    -- Stop recording.
+    macro <- getsSession smacroBuffer
+    modifySession $ \sess ->
+      sess { srecording = False
+           , smacroBuffer = tail macro
+             -- Cut off heading key that stops recording.
+           }
+    promptAdd0 "Macro recording stopped."
+  else do
+    -- Clear the macro buffer and start a new recording.
+    modifySession $ \sess ->
+      sess { srecording = True
+           , smacroBuffer = []
+           }
+    promptAdd0 "Recording a macro. Stop recording with the same key."
+
 
 -- * AllHistory
 

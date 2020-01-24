@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..), LastRecord(..)
+  ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..)
   , HintMode(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
@@ -54,7 +54,9 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
-  , slastRecord    :: LastRecord    -- ^ state of key sequence recording
+  , slastAction    :: Maybe K.KM    -- ^ last pressed key
+  , smacroBuffer   :: [K.KM]        -- ^ in-game recorded macro
+  , srecording     :: Bool          -- ^ recording status
   , slastPlay      :: [K.KM]        -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
@@ -95,13 +97,6 @@ data RunParams = RunParams
   }
   deriving (Show)
 
--- | State of last recorded and currently being recorded key sequences.
-data LastRecord = LastRecord
-  { currentKeys  :: [K.KM]  -- ^ accumulated keys of the current command
-  , previousKeys :: [K.KM]  -- ^ keys of the rest of the recorded command batch
-  , freeSpace    :: Int     -- ^ space left for commands to record in this batch
-  }
-
 data HintMode =
     HintAbsent
   | HintShown
@@ -128,7 +123,9 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
-    , slastRecord = LastRecord [] [] 0
+    , slastAction = Nothing
+    , smacroBuffer = []
+    , srecording = False
     , slastPlay = []
     , slastLost = ES.empty
     , swaitTimes = 0
@@ -193,8 +190,10 @@ instance Binary SessionUI where
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = K.PointUI 0 0
-        slastRecord = LastRecord [] [] 0
+        slastAction = Nothing
+        smacroBuffer = []
         slastPlay = []
+        srecording = False
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False
