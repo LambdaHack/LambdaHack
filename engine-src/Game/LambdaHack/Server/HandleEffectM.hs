@@ -188,22 +188,23 @@ kineticEffectAndDestroy onCombineOnly voluntary killer
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
         effectAndDestroyAndAddKill
-          onCombineOnly voluntary killer False (fst kit <= 1) kineticPerformed
-          source target iid c False itemFull mayDestroy
+          onCombineOnly voluntary killer False False (fst kit <= 1)
+          kineticPerformed source target iid c False itemFull mayDestroy
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
-                           => Bool -> Bool -> ActorId -> Bool -> Bool
+                           => Bool -> Bool -> ActorId -> Bool -> Bool -> Bool
                            -> Bool -> ActorId -> ActorId -> ItemId -> Container
                            -> Bool -> ItemFull -> Bool
                            -> m UseResult
 effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
-                           useAllCopies kineticPerformed
+                           ignoreCharging useAllCopies kineticPerformed
                            source target iid container
                            periodic itemFull mayDestroy = do
   tbOld <- getsState $ getActorBody target
   triggered <-
-    effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
-                     source target iid container periodic itemFull mayDestroy
+    effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
+                     kineticPerformed source target iid container periodic
+                     itemFull mayDestroy
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -218,12 +219,12 @@ effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
   return triggered
 
 effectAndDestroy :: MonadServerAtomic m
-                 => Bool -> Bool -> Bool -> Bool
+                 => Bool -> Bool -> Bool -> Bool -> Bool
                  -> ActorId -> ActorId -> ItemId -> Container
                  -> Bool -> ItemFull -> Bool
                  -> m UseResult
-effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
-                 source target iid container periodic
+effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
+                 kineticPerformed source target iid container periodic
                  itemFull@ItemFull{itemDisco, itemKindId, itemKind}
                  mayDestroy = do
   bag <- getsState $ getContainerBag container
@@ -241,7 +242,7 @@ effectAndDestroy onCombineOnly onSmashOnly useAllCopies kineticPerformed
                 charging startT = timeShift startT timeoutTurns > localTime
             in filter charging itemTimer
       len = length it1
-      recharged = len < itemK || onSmashOnly
+      recharged = len < itemK || onSmashOnly || ignoreCharging
   -- If the item has no charges and the effects are not @OnSmash@
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
@@ -1368,7 +1369,7 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
         onSmashOnly = True
         useAllCopies = kMax >= k
     void $ effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
-                                      useAllCopies False
+                                      False useAllCopies False
                                       aid aid iid c False itemFull True
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
@@ -1464,8 +1465,10 @@ consumeItems target bagsToLose iidsToApply = do
           -- Treated as if the actor only activated the item on himself,
           -- without kinetic damage, to avoid the exploit of wearing armor
           -- when using tools or transforming terrain.
+          -- Also, timeouts of the item ignored to prevent exploit
+          -- by discharging the item before using it.
           void $ effectAndDestroyAndAddKill
-            False True target False False False
+            False True target False True False False
             target target iid c False itemFull False
   mapM_ applyItemIfPresent iidsToApply
 
