@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..)
-  , HintMode(..)
+  , HintMode(..), Macro(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
@@ -55,9 +55,9 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroBuffer   :: Either [K.KM] [K.KM]
+  , smacroBuffer   :: Either Macro [K.KM]
                                     -- ^ in-game recorded macro
-  , slastPlay      :: [K.KM]        -- ^ state of key sequence playback
+  , slastPlay      :: Macro         -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
@@ -85,6 +85,10 @@ type ItemDictUI = EM.EnumMap ItemId LevelId
 -- | Current aiming mode of a client.
 newtype AimMode = AimMode { aimLevelId :: LevelId }
   deriving (Show, Eq, Binary)
+
+-- | Recorded in-game macro.
+newtype Macro = InGameMacro { unMacro :: [K.KM] }
+  deriving (Eq, Binary, Semigroup, Monoid)
 
 -- | Parameters of the current run.
 data RunParams = RunParams
@@ -124,8 +128,8 @@ emptySessionUI sUIOptions =
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
     , slastAction = Nothing
-    , smacroBuffer = Left []
-    , slastPlay = []
+    , smacroBuffer = Left mempty
+    , slastPlay = mempty
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
@@ -190,8 +194,8 @@ instance Binary SessionUI where
         sxhairMoused = True
         spointer = K.PointUI 0 0
         slastAction = Nothing
-        smacroBuffer = Left []
-        slastPlay = []
+        smacroBuffer = Left mempty
+        slastPlay = mempty
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False

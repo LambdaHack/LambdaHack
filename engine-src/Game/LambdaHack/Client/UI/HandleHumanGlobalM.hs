@@ -308,7 +308,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       cli {srunning = Just runParams}
     when runAhead $
       modifySession $ \cli ->
-        cli {slastPlay = map K.mkKM macroRun25 ++ slastPlay cli}
+        cli {slastPlay = (InGameMacro . map K.mkKM $ macroRun25) <> slastPlay cli}
   -- When running, the invisible actor is hit (not displaced!),
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors
