@@ -38,6 +38,7 @@ import qualified Data.EnumSet as ES
 import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import           Data.Either (fromLeft)
 
 import           Game.LambdaHack.Client.BfsM
 import           Game.LambdaHack.Client.ClientOptions
@@ -679,14 +680,12 @@ selectWithPointerHuman = do
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  recording <- getsSession srecording
-  when (not recording) $ do 
-    macro <- getsSession smacroBuffer
-    let nmacro = concat . replicate n . reverse 
-               $ case macro of   -- Remove heading keystroke
-                   [] -> []      -- that stops recording.
-                   (_:xs) -> xs
-    modifySession $ \sess -> sess {slastPlay = nmacro ++ slastPlay sess}
+  macro <- getsSession smacroBuffer
+  let nmacro k | k == 1 = reverse . fromLeft [] $ macro
+               -- Don't repeat macro while recording one.
+               | otherwise = concat . replicate k $ nmacro 1
+  modifySession $ \sess -> 
+    sess {slastPlay = nmacro n ++ slastPlay sess}
 
 -- * RepeatLast
 
@@ -701,20 +700,14 @@ repeatLastHuman = do
 
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  isRecording <- getsSession srecording
-  if isRecording 
-  then do
-    -- Stop recording.
-    modifySession $ \sess -> sess { srecording = False }
-    promptAdd0 "Macro recording stopped."
-  else do
-    -- Clear the macro buffer and start a new recording.
-    modifySession $ \sess ->
-      sess { srecording = True
-           , smacroBuffer = []
-           }
-    promptAdd0 "Recording a macro. Stop recording with the same key."
-
+  macro <- getsSession smacroBuffer
+  case macro of
+     Left _ -> do 
+       modifySession $ \sess -> sess { smacroBuffer = Right [] }
+       promptAdd0 "Recording a macro. Stop recording with the same key."
+     Right xs -> do
+       modifySession $ \sess -> sess { smacroBuffer = Left xs }
+       promptAdd0 "Macro recording stopped."
 
 -- * AllHistory
 

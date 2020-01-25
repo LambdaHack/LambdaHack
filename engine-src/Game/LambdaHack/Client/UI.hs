@@ -154,29 +154,29 @@ humanCommand = do
         when (bhp b <= 0 && Just leader /= mOldLeader) $ displayMore ColorBW
           "If you move, the exertion will kill you. Consider asking for first aid instead."
         km <- promptGetKey ColorFull (EM.fromList [(propFont, over)]) False []
-        recording <- getsSession srecording
-        when recording $ do
-           -- If we're recording a in-game macro, we want to record each key.
-           macro <- getsSession smacroBuffer
-           modifySession $ \sess -> sess {smacroBuffer = km : macro}
         abortOrCmd <- do
           -- Look up the key.
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
           case km `M.lookup` bcmdMap of
-            Just (_, _, RepeatLast) -> do
-              -- We can repeat every last action except 'repeat last action'
-              -- action, so we don't record that in last action's buffer.
-              modifySession $ \sess -> 
-                sess { swaitTimes = if swaitTimes sess > 0
-                                    then - swaitTimes sess
-                                    else 0 }
-              cmdHumanSem RepeatLast
             Just (_, _, cmd) -> do
               modifySession $ \sess ->
-                sess { swaitTimes = if swaitTimes sess > 0
-                                    then - swaitTimes sess
-                                    else 0
-                     , slastAction = Just km } -- Record user's last action.
+                sess { swaitTimes = 
+                         if swaitTimes sess > 0
+                         then - swaitTimes sess
+                         else 0
+                     , slastAction =
+                         if cmd == RepeatLast 
+                         then slastAction sess
+                         -- We can repeat every last action except 'repeat last 
+                         -- action' action, so here we ommit that one.
+                         else Just km  
+                     , smacroBuffer = 
+                         if cmd == Record
+                         then smacroBuffer sess
+                         -- Exclude from in-game macros keystrokes that
+                         -- start/stop recording a macro.
+                         else (km :) <$> smacroBuffer sess
+                     } 
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
