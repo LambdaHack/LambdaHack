@@ -55,8 +55,8 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroBuffer   :: [K.KM]        -- ^ in-game recorded macro
-  , srecording     :: Bool          -- ^ recording status
+  , smacroBuffer   :: Either [K.KM] [K.KM]
+                                    -- ^ in-game recorded macro
   , slastPlay      :: [K.KM]        -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
@@ -124,8 +124,7 @@ emptySessionUI sUIOptions =
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
     , slastAction = Nothing
-    , smacroBuffer = []
-    , srecording = False
+    , smacroBuffer = Left []
     , slastPlay = []
     , slastLost = ES.empty
     , swaitTimes = 0
@@ -191,9 +190,8 @@ instance Binary SessionUI where
         sxhairMoused = True
         spointer = K.PointUI 0 0
         slastAction = Nothing
-        smacroBuffer = []
+        smacroBuffer = Left []
         slastPlay = []
-        srecording = False
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False
