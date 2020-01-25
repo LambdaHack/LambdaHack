@@ -93,7 +93,8 @@ import           Game.LambdaHack.Definition.Defs
 
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
-  modifySession $ \sess -> sess {slastPlay = map K.mkKM kms ++ slastPlay sess}
+  modifySession $ \sess -> 
+    sess {slastPlay = (InGameMacro $ K.mkKM <$> kms) <> slastPlay sess}
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
 -- * ChooseItem
@@ -681,11 +682,11 @@ selectWithPointerHuman = do
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
   macro <- getsSession smacroBuffer
-  let nmacro k | k == 1 = reverse . fromLeft [] $ macro
+  let nmacro k | k == 1 = reverse . unMacro . fromLeft mempty $ macro
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
   modifySession $ \sess -> 
-    sess {slastPlay = nmacro n ++ slastPlay sess}
+    sess {slastPlay = (InGameMacro $ nmacro n) <> slastPlay sess}
 
 -- * RepeatLast
 
@@ -693,8 +694,8 @@ repeatHuman n = do
 repeatLastHuman :: MonadClientUI m => m ()
 repeatLastHuman = do
   lastAct <- getsSession slastAction
-  let cmd = maybeToList lastAct
-  modifySession $ \sess -> sess {slastPlay = cmd ++ slastPlay sess}
+  let cmd = InGameMacro $ maybeToList lastAct
+  modifySession $ \sess -> sess {slastPlay = cmd <> slastPlay sess}
 
 -- * Record
 
@@ -706,7 +707,7 @@ recordHuman = do
        modifySession $ \sess -> sess { smacroBuffer = Right [] }
        promptAdd0 "Recording a macro. Stop recording with the same key."
      Right xs -> do
-       modifySession $ \sess -> sess { smacroBuffer = Left xs }
+       modifySession $ \sess -> sess { smacroBuffer = Left . InGameMacro $ xs }
        promptAdd0 "Macro recording stopped."
 
 -- * AllHistory

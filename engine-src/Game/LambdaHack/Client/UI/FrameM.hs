@@ -105,14 +105,14 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   report <- getsSession $ newReport . shistory
   let msgDisturbs = anyInReport disturbsResting report
-  lastPlayOld <- getsSession slastPlay
+  InGameMacro lastPlayOld <- getsSession slastPlay
   km <- case lastPlayOld of
     km : kms | not keyPressed
                && (null frontKeyKeys || km `elem` frontKeyKeys)
                && not msgDisturbs -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
-      modifySession $ \sess -> sess {slastPlay = kms}
+      modifySession $ \sess -> sess {slastPlay = InGameMacro kms}
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
       return km
     _ : _ -> do
@@ -148,8 +148,9 @@ stopPlayBack = msgAdd0 MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()
 resetPlayBack = do
-  lastPlayOld <- getsSession slastPlay
-  unless (null lastPlayOld) $ modifySession $ \sess -> sess {slastPlay = []}
+  InGameMacro lastPlayOld <- getsSession slastPlay
+  unless (null lastPlayOld) 
+    $ modifySession $ \sess -> sess {slastPlay = mempty}
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
