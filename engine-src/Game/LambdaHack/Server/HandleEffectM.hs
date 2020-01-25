@@ -1424,7 +1424,8 @@ effectConsumeItems execSfx iidOriginal target grps0 = do
   else return UseDud
 
 consumeItems :: MonadServerAtomic m
-             => ActorId -> EM.EnumMap CStore ItemBag -> [(CStore, ItemId)]
+             => ActorId -> EM.EnumMap CStore ItemBag
+             -> [(CStore, (ItemId, ItemFull))]
              -> m ()
 consumeItems target bagsToLose iidsToApply = do
   COps{coitem} <- getsState scops
@@ -1455,11 +1456,17 @@ consumeItems target bagsToLose iidsToApply = do
   -- even if the actor or other items displaced in the process.
   -- This makes applying double-purpose tool-weapons costly,
   -- which is also why durable tools are considered last.
-  let applyItemIfPresent (store, iid) = do
+  let applyItemIfPresent (store, (iid, itemFull)) = do
         let c = CActor target store
         bag <- getsState $ getContainerBag c
-        when (iid `EM.member` bag) $
-          applyItem target iid store
+        when (iid `EM.member` bag) $ do
+          execSfxAtomic $ SfxApply target iid
+          -- Treated as if the actor only activated the item on himself,
+          -- without kinetic damage, to avoid the exploit of wearing armor
+          -- when using tools or transforming terrain.
+          void $ effectAndDestroyAndAddKill
+            False True target False False False
+            target target iid c False itemFull False
   mapM_ applyItemIfPresent iidsToApply
 
 -- ** DropItem

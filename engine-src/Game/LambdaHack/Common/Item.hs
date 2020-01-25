@@ -367,20 +367,20 @@ countIidConsumed (ItemFull{itemKind}, (k, _)) grps0 =
   in foldl' matchGroup (0, []) grps0
 
 subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
-                       , [(CStore, ItemId)]
+                       , [(CStore, (ItemId, ItemFull))]
                        , [(Int, GroupName IK.ItemKind)] )
                     -> ((CStore, Bool), (ItemId, ItemFullKit))
                     -> ( EM.EnumMap CStore ItemBag
-                       , [(CStore, ItemId)]
+                       , [(CStore, (ItemId, ItemFull))]
                        , [(Int, GroupName IK.ItemKind)] )
 subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
-                    ((store, durable), (iid, itemFullKit@(_, (_, it)))) =
+                    ((store, durable), (iid, itemFullKit@(itemFull, (_, it)))) =
   case countIidConsumed itemFullKit grps1 of
     (0, _) -> (bagsToLose1, iidsToApply1, grps1)
     (nToDestroy, grps2) ->
       if durable
       then ( bagsToLose1
-           , (store, iid) : iidsToApply1
+           , (store, (iid, itemFull)) : iidsToApply1
            , grps2 )
       else ( let kit2 = (nToDestroy, take nToDestroy it)
                  removedBags = EM.singleton store $ EM.singleton iid kit2

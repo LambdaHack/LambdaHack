@@ -1012,13 +1012,13 @@ processTileActions source tpos tas = do
           let (_, iidsToApply, grps) =
                 foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
           if null grps then do
-            let hasEffectOrDmg (_, iid) =
-                  let itemKind = getKind iid
-                  in IK.idamage itemKind /= 0
-                     || any IK.forApplyEffect (IK.ieffects itemKind)
+            let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
+                  IK.idamage itemKind /= 0
+                  || any IK.forApplyEffect (IK.ieffects itemKind)
             case filter hasEffectOrDmg iidsToApply of
               [] -> return $ Right ()
-              (store, iid) : _ -> verifyToolEffect (blid sb) store iid
+              (store, (_, itemFull)) : _ ->
+                verifyToolEffect (blid sb) store itemFull
           else processTA rest  -- not enough tools
   processTA tas
 
@@ -1049,11 +1049,10 @@ verifyEscape = do
     else return $ Right ()
 
 verifyToolEffect :: MonadClientUI m
-                 => LevelId -> CStore -> ItemId -> m (FailOrCmd ())
-verifyToolEffect lid store iid = do
+                 => LevelId -> CStore -> ItemFull -> m (FailOrCmd ())
+verifyToolEffect lid store itemFull = do
   side <- getsClient sside
   localTime <- getsState $ getLocalTime lid
-  itemFull <- getsState $ itemToFull iid
   factionD <- getsState sfactionD
   let object = makePhrase
                  [partItemWsShort side factionD 1 localTime itemFull (1, [])]
