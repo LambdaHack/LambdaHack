@@ -2,7 +2,7 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( UseResult(..)
+  ( UseResult(..), EffApplyFlags(..)
   , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllItems, pickDroppable, consumeItems
@@ -77,6 +77,17 @@ import           Game.LambdaHack.Server.State
 data UseResult = UseDud | UseId | UseUp
  deriving (Eq, Ord)
 
+data EffApplyFlags = EffApplyFlags
+  { effOnCombineOnly    :: Bool
+  , effOnSmashOnly      :: Bool
+  , effVoluntary        :: Bool
+  , effIgnoreCharging   :: Bool
+  , effUseAllCopies     :: Bool
+  , effKineticPerformed :: Bool
+  , effPeriodic         :: Bool
+  , effMayDestroy       :: Bool
+  }
+
 applyItem :: MonadServerAtomic m => ActorId -> ItemId -> CStore -> m ()
 applyItem aid iid cstore = do
   execSfxAtomic $ SfxApply aid iid
@@ -84,7 +95,17 @@ applyItem aid iid cstore = do
   -- Treated as if the actor hit himself with the item as a weapon,
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@.
-  void $ kineticEffectAndDestroy False True aid aid aid iid c True
+  let effApplyFlags = EffApplyFlags
+        { effOnCombineOnly    = False
+        , effOnSmashOnly      = False
+        , effVoluntary        = True
+        , effIgnoreCharging   = False
+        , effUseAllCopies     = False
+        , effKineticPerformed = False
+        , effPeriodic         = False
+        , effMayDestroy       = True
+        }
+  void $ kineticEffectAndDestroy effApplyFlags aid aid aid iid c
 
 applyKineticDamage :: MonadServerAtomic m
                    => ActorId -> ActorId -> ItemId -> m Bool
@@ -157,11 +178,11 @@ cutCalm target = do
 -- Here kinetic damage is applied. This is necessary so that the same
 -- AI benefit calculation may be used for flinging and for applying items.
 kineticEffectAndDestroy :: MonadServerAtomic m
-                        => Bool -> Bool -> ActorId -> ActorId -> ActorId
-                        -> ItemId -> Container -> Bool
+                        => EffApplyFlags
+                        -> ActorId -> ActorId -> ActorId -> ItemId -> Container
                         -> m UseResult
-kineticEffectAndDestroy onCombineOnly voluntary killer
-                        source target iid c mayDestroy = do
+kineticEffectAndDestroy effApplyFlags0@EffApplyFlags{..}
+                        killer source target iid c = do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Nothing -> error $ "" `showFailure` (source, target, iid, c)
@@ -173,38 +194,38 @@ kineticEffectAndDestroy onCombineOnly voluntary killer
       -- If neither kinetic hit nor any effect is activated, there's no chance
       -- the items can be destroyed or even timeout changes, so we abort early.
       if not recharged then return UseDud else do
-        kineticPerformed <- applyKineticDamage source target iid
+        effKineticPerformed2 <- applyKineticDamage source target iid
         tb <- getsState $ getActorBody target
         -- Sometimes victim heals just after we registered it as killed,
         -- but that's OK, an actor killed two times is similar enough
         -- to two killed.
-        when (kineticPerformed  -- speedup
+        when (effKineticPerformed2  -- speedup
               && bhp tb <= 0 && bhp tbOld > 0) $ do
           sb <- getsState $ getActorBody source
           arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
           let killHow | not (bproj sb) =
-                        if voluntary then KillKineticMelee else KillKineticPush
+                        if effVoluntary
+                        then KillKineticMelee
+                        else KillKineticPush
                       | IA.checkFlag Ability.Blast arWeapon = KillKineticBlast
                       | otherwise = KillKineticRanged
           addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
-        effectAndDestroyAndAddKill
-          onCombineOnly voluntary killer False False (fst kit <= 1)
-          kineticPerformed source target iid c False itemFull mayDestroy
+        let effApplyFlags = effApplyFlags0
+              { effUseAllCopies     = fst kit <= 1
+              , effKineticPerformed = effKineticPerformed2
+              }
+        effectAndDestroyAndAddKill effApplyFlags
+                                   killer source target iid c itemFull
 
 effectAndDestroyAndAddKill :: MonadServerAtomic m
-                           => Bool -> Bool -> ActorId -> Bool -> Bool -> Bool
-                           -> Bool -> ActorId -> ActorId -> ItemId -> Container
-                           -> Bool -> ItemFull -> Bool
+                           => EffApplyFlags
+                           -> ActorId -> ActorId -> ActorId -> ItemId
+                           -> Container -> ItemFull
                            -> m UseResult
-effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
-                           ignoreCharging useAllCopies kineticPerformed
-                           source target iid container
-                           periodic itemFull mayDestroy = do
+effectAndDestroyAndAddKill effApplyFlags0@EffApplyFlags{..}
+                           killer source target iid c itemFull = do
   tbOld <- getsState $ getActorBody target
-  triggered <-
-    effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
-                     kineticPerformed source target iid container periodic
-                     itemFull mayDestroy
+  triggered <- effectAndDestroy effApplyFlags0 source target iid c itemFull
   tb <- getsState $ getActorBody target
   -- Sometimes victim heals just after we registered it as killed,
   -- but that's OK, an actor killed two times is similar enough to two killed.
@@ -212,25 +233,22 @@ effectAndDestroyAndAddKill onCombineOnly voluntary killer onSmashOnly
     sb <- getsState $ getActorBody source
     arWeapon <- getsState $ (EM.! iid) . sdiscoAspect
     let killHow | not (bproj sb) =
-                  if voluntary then KillOtherMelee else KillOtherPush
+                  if effVoluntary then KillOtherMelee else KillOtherPush
                 | IA.checkFlag Ability.Blast arWeapon = KillOtherBlast
                 | otherwise = KillOtherRanged
     addKillToAnalytics killer killHow (bfid tbOld) (btrunk tbOld)
   return triggered
 
 effectAndDestroy :: MonadServerAtomic m
-                 => Bool -> Bool -> Bool -> Bool -> Bool
-                 -> ActorId -> ActorId -> ItemId -> Container
-                 -> Bool -> ItemFull -> Bool
+                 => EffApplyFlags
+                 -> ActorId -> ActorId -> ItemId -> Container -> ItemFull
                  -> m UseResult
-effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
-                 kineticPerformed source target iid container periodic
-                 itemFull@ItemFull{itemDisco, itemKindId, itemKind}
-                 mayDestroy = do
+effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
+                 itemFull@ItemFull{itemDisco, itemKindId, itemKind} = do
   bag <- getsState $ getContainerBag container
   let (itemK, itemTimer) = bag EM.! iid
-      effs | onSmashOnly = IK.strengthOnSmash itemKind
-           | onCombineOnly = IK.strengthOnCombine itemKind
+      effs | effOnSmashOnly = IK.strengthOnSmash itemKind
+           | effOnCombineOnly = IK.strengthOnCombine itemKind
            | otherwise = IK.ieffects itemKind
       arItem = case itemDisco of
         ItemDiscoFull itemAspect -> itemAspect
@@ -242,14 +260,15 @@ effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
                 charging startT = timeShift startT timeoutTurns > localTime
             in filter charging itemTimer
       len = length it1
-      recharged = len < itemK || onSmashOnly || ignoreCharging
+      recharged = len < itemK || effOnSmashOnly || effIgnoreCharging
   -- If the item has no charges and the special cases don't apply
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
-  -- and in case of @OnSmash@ and @ignoreCharging@, only effects are triggered).
+  -- and in case of @OnSmash@ and @effIgnoreCharging@,
+  -- only effects are triggered).
   if not recharged then return UseDud else do
     let it2 = if timeout /= 0 && recharged
-              then if periodic && IA.checkFlag Ability.Fragile arItem
+              then if effPeriodic && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) localTime ++ it1
                            -- copies are spares only; one fires, all discharge
                    else take (itemK - length it1) [localTime] ++ it1
@@ -268,7 +287,7 @@ effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
     -- This is OK, because we don't remove the item type from various
     -- item dictionaries, just an individual copy from the container,
     -- so, e.g., the item can be identified after it's removed.
-    let imperishable = not mayDestroy || imperishableKit periodic itemFull
+    let imperishable = not effMayDestroy || imperishableKit effPeriodic itemFull
     unless imperishable $
       execUpdAtomic $ UpdLoseItem False iid kit2 container
     -- At this point, the item is potentially no longer in container
@@ -276,23 +295,22 @@ effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
     -- If the item activation is not periodic, but the item itself is,
     -- only the first effect gets activated (and the item may be destroyed,
     -- unlike with periodic activations).
-    let effsManual = if not periodic
+    let effsManual = if not effPeriodic
                         && IA.checkFlag Ability.Periodic arItem
                         && not (IA.checkFlag Ability.Condition arItem)
                      then take 1 effs  -- may be empty
                      else effs
-    triggeredEffect <- itemEffectDisco useAllCopies kineticPerformed
-                                       source target iid itemKindId itemKind
-                                       container periodic effsManual
+    triggeredEffect <- itemEffectDisco effApplyFlags0 source target iid
+                                       itemKindId itemKind container effsManual
     sb <- getsState $ getActorBody source
-    let triggered = if kineticPerformed then UseUp else triggeredEffect
+    let triggered = if effKineticPerformed then UseUp else triggeredEffect
         isEmbed = case container of
           CEmbed{} -> True
           _ -> False
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
-            || onSmashOnly
-            || periodic  -- periodic effects repeat and so spam
+            || effOnSmashOnly
+            || effPeriodic  -- periodic effects repeat and so spam
             || bproj sb  -- projectiles can be very numerous
             || isEmbed   -- embeds may be just flavour
             ) $
@@ -319,7 +337,7 @@ imperishableKit periodic itemFull =
 itemEffectEmbedded :: MonadServerAtomic m
                    => Bool -> Bool -> ActorId -> LevelId -> Point -> ItemId
                    -> m UseResult
-itemEffectEmbedded onCombineOnly voluntary aid lid tpos iid = do
+itemEffectEmbedded effOnCombineOnly effVoluntary aid lid tpos iid = do
   -- First embedded item may move actor to another level, so @lid@
   -- may be unequal to @blid sb@.
   let c = CEmbed lid tpos
@@ -327,7 +345,17 @@ itemEffectEmbedded onCombineOnly voluntary aid lid tpos iid = do
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@. Information whether this happened due to being pushed
   -- is preserved, but how did the pushing is lost, so we blame the victim.
-  kineticEffectAndDestroy onCombineOnly voluntary aid aid aid iid c True
+  let effApplyFlags = EffApplyFlags
+        { effOnCombineOnly
+        , effOnSmashOnly      = False
+        , effVoluntary
+        , effIgnoreCharging   = False
+        , effUseAllCopies     = False
+        , effKineticPerformed = False
+        , effPeriodic         = False
+        , effMayDestroy       = True
+        }
+  kineticEffectAndDestroy effApplyFlags aid aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
@@ -348,19 +376,18 @@ itemEffectEmbedded onCombineOnly voluntary aid lid tpos iid = do
 -- until we want to add sticky armor that can't be easily taken off
 -- (and, e.g., has some maluses).
 itemEffectDisco :: MonadServerAtomic m
-                => Bool -> Bool-> ActorId -> ActorId -> ItemId
-                -> ContentId ItemKind -> ItemKind
-                -> Container -> Bool -> [IK.Effect]
+                => EffApplyFlags
+                -> ActorId -> ActorId -> ItemId
+                -> ContentId ItemKind -> ItemKind -> Container -> [IK.Effect]
                 -> m UseResult
-itemEffectDisco useAllCopies kineticPerformed
-                source target iid itemKindId itemKind
-                c periodic effs = do
-  urs <- mapM (effectSem useAllCopies source target iid c periodic) effs
+itemEffectDisco effApplyFlags0@EffApplyFlags{..}
+                source target iid itemKindId itemKind c effs = do
+  urs <- mapM (effectSem effApplyFlags0 source target iid c) effs
   let ur = case urs of
         [] -> UseDud  -- there was no effects
         _ -> maximum urs
   -- Note: @UseId@ suffices for identification, @UseUp@ is not necessary.
-  when (ur >= UseId || kineticPerformed) $
+  when (ur >= UseId || effKineticPerformed) $
     identifyIid iid c itemKindId itemKind
   return ur
 
@@ -368,11 +395,12 @@ itemEffectDisco useAllCopies kineticPerformed
 -- Both actors are on the current level and can be the same actor.
 -- The item may or may not still be in the container.
 effectSem :: MonadServerAtomic m
-          => Bool -> ActorId -> ActorId -> ItemId -> Container -> Bool
-          -> IK.Effect
+          => EffApplyFlags
+          -> ActorId -> ActorId -> ItemId -> Container -> IK.Effect
           -> m UseResult
-effectSem useAllCopies source target iid c periodic effect = do
-  let recursiveCall = effectSem useAllCopies source target iid c periodic
+effectSem effApplyFlags0@EffApplyFlags{..}
+          source target iid c effect = do
+  let recursiveCall = effectSem effApplyFlags0 source target iid c
   sb <- getsState $ getActorBody source
   pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
@@ -388,7 +416,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.Impress -> effectImpress recursiveCall execSfx source target
     IK.PutToSleep -> effectPutToSleep execSfx target
     IK.Yell -> effectYell execSfx target
-    IK.Summon grp nDm -> effectSummon grp nDm iid source target periodic
+    IK.Summon grp nDm -> effectSummon grp nDm iid source target effPeriodic
     IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
     IK.Escape{} -> effectEscape execSfx source target
     IK.Paralyze nDm -> effectParalyze execSfx nDm source target
@@ -419,7 +447,7 @@ effectSem useAllCopies source target iid c periodic effect = do
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbNoLonger _ -> effectVerbNoLonger useAllCopies execSfxSource source
+    IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
@@ -1362,15 +1390,20 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
                     || bproj b && (bhp b <= 0 && not durable || fragile)
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
-    let -- We don't know if it's voluntary, so we conservatively assume
-        -- it is and we blame @aid@.
-        onCombineOnly = False  -- the embed could be combined here but not @iid@
-        voluntary = True
-        onSmashOnly = True
-        useAllCopies = kMax >= k
-    void $ effectAndDestroyAndAddKill onCombineOnly voluntary aid onSmashOnly
-                                      False useAllCopies False
-                                      aid aid iid c False itemFull True
+    let effApplyFlags = EffApplyFlags
+          { effOnCombineOnly    = False
+              -- the embed could be combined here but not @iid@
+          , effOnSmashOnly      = True
+          , effVoluntary        = True
+              -- we don't know if it's effVoluntary, so we conservatively assume
+              -- it is and we blame @aid@
+          , effIgnoreCharging   = False
+          , effUseAllCopies     = kMax >= k
+          , effKineticPerformed = False
+          , effPeriodic         = False
+          , effMayDestroy       = True
+          }
+    void $ effectAndDestroyAndAddKill effApplyFlags aid aid aid iid c itemFull
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
@@ -1467,9 +1500,18 @@ consumeItems target bagsToLose iidsToApply = do
           -- when using tools or transforming terrain.
           -- Also, timeouts of the item ignored to prevent exploit
           -- by discharging the item before using it.
-          void $ effectAndDestroyAndAddKill
-            False True target False True False False
-            target target iid c False itemFull False
+          let effApplyFlags = EffApplyFlags
+                { effOnCombineOnly    = False
+                , effOnSmashOnly      = False
+                , effVoluntary        = True
+                , effIgnoreCharging   = True
+                , effUseAllCopies     = False
+                , effKineticPerformed = False
+                , effPeriodic         = False
+                , effMayDestroy       = False
+                }
+          void $ effectAndDestroyAndAddKill effApplyFlags
+                                            target target target iid c itemFull
   mapM_ applyItemIfPresent iidsToApply
 
 -- ** DropItem
@@ -1983,9 +2025,9 @@ effectOneOf recursiveCall l = do
 
 effectVerbNoLonger :: MonadServerAtomic m
                    => Bool -> m () -> ActorId -> m UseResult
-effectVerbNoLonger useAllCopies execSfx source = do
+effectVerbNoLonger effUseAllCopies execSfx source = do
   b <- getsState $ getActorBody source
-  when (useAllCopies  -- @UseUp@ below ensures that if all used, all destroyed
+  when (effUseAllCopies  -- @UseUp@ ensures that if all used, all destroyed
         && not (bproj b)) $  -- no spam when projectiles activate
     execSfx  -- announce that all copies have run out (or whatever message)
   return UseUp  -- help to destroy the copy, even if not all used up

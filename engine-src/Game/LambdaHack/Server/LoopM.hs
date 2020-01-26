@@ -370,12 +370,22 @@ applyPeriodicLevel = do
           bag <- getsState $ getBodyStoreBag b2 cstore
           case iid `EM.lookup` bag of
             Nothing -> return ()  -- item dropped
-            Just (k, _) ->
+            Just (k, _) -> do
               -- Activate even if effects null or vacuous, to possibly
               -- destroy the item.
+              let effApplyFlags = EffApplyFlags
+                    { effOnCombineOnly    = False
+                    , effOnSmashOnly      = False
+                    , effVoluntary        = True
+                    , effIgnoreCharging   = False
+                    , effUseAllCopies     = k <= 1
+                    , effKineticPerformed = False
+                    , effPeriodic         = True
+                    , effMayDestroy       = True
+                    }
               void $ effectAndDestroyAndAddKill
-                       False True aid False False (k <= 1) False
-                       aid aid iid (CActor aid cstore) True itemFull True
+                       effApplyFlags
+                       aid aid aid iid (CActor aid cstore) itemFull
       applyPeriodicActor (aid, b) =
         -- While it's fun when projectiles flash or speed up mid-air,
         -- it's very exotic and quite time-intensive whenever hundreds

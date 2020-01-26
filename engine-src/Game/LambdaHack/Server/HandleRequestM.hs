@@ -498,8 +498,18 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- themselves from some projectiles by lowering their apply stat.
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
-        void $ kineticEffectAndDestroy False voluntary killer
-                                       source target iid c mayDestroy
+        let effApplyFlags = EffApplyFlags
+              { effOnCombineOnly    = False
+              , effOnSmashOnly      = False
+              , effVoluntary        = voluntary
+              , effIgnoreCharging   = False
+              , effUseAllCopies     = False
+              , effKineticPerformed = False
+              , effPeriodic         = False
+              , effMayDestroy       = mayDestroy
+              }
+        void $ kineticEffectAndDestroy effApplyFlags
+                                       killer source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
         Just{} -> do
