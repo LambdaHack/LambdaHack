@@ -243,17 +243,17 @@ effectAndDestroy onCombineOnly onSmashOnly ignoreCharging useAllCopies
             in filter charging itemTimer
       len = length it1
       recharged = len < itemK || onSmashOnly || ignoreCharging
-  -- If the item has no charges and the effects are not @OnSmash@
+  -- If the item has no charges and the special cases don't apply
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
-  -- and in case of @OnSmash@, only effects are triggered).
+  -- and in case of @OnSmash@ and @ignoreCharging@, only effects are triggered).
   if not recharged then return UseDud else do
     let it2 = if timeout /= 0 && recharged
               then if periodic && IA.checkFlag Ability.Fragile arItem
                    then replicate (itemK - length it1) localTime ++ it1
                            -- copies are spares only; one fires, all discharge
-                   else localTime : it1
-                           -- copies all fire, turn by turn; one discharges
+                   else take (itemK - length it1) [localTime] ++ it1
+                           -- copies all fire, turn by turn; <= 1 discharges
               else itemTimer
         kit2 = (1, take 1 it2)
         !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
