@@ -195,10 +195,13 @@ textAllPowers detailLevel skipRecharging
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
             aboveOrBelow = if orTsTooLarge then "below" else "above"
+            someOf = if combineEffsUn == orEffsRaw
+                     then "the crafting"
+                     else "some of the"
             onCombine = if T.null onCombineTs
                         then if combineEffsUn /= combineEffs
-                             then "(on combine: some of the"
-                                  <+> aboveOrBelow <> ")"
+                             then "(on combine:"
+                                   <+> someOf <+> aboveOrBelow <> ")"
                              else ""
                         else "(on combine:" <+> onCombineTs <> ")"
             -- Either exact value or dice of @SkHurtMelee@ needed,
