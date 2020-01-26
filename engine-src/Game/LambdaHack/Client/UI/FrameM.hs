@@ -106,16 +106,16 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   report <- getsSession $ newReport . shistory
   let msgDisturbs = anyInReport disturbsResting report
   lastPlayOld <- getsSession slastPlay
-  km <- case unMacro lastPlayOld of
-    km : kms | not keyPressed
-               && (null frontKeyKeys || km `elem` frontKeyKeys)
-               && not msgDisturbs -> do
+  km <- case lastPlayOld of
+    KeyMacro (km : kms) | not keyPressed
+                          && (null frontKeyKeys || km `elem` frontKeyKeys)
+                          && not msgDisturbs -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess -> sess {slastPlay = KeyMacro kms}
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
       return km
-    _ : _ -> do
+    KeyMacro (_ : _) -> do
       -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
       resetPlayBack
       resetPressedKeys
@@ -126,7 +126,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
-    [] -> do
+    KeyMacro [] -> do
       -- If we ask for a key, then we don't want to run any more
       -- and we want to avoid changing leader back to initial run leader
       -- at the nearest @stopPlayBack@, etc.
