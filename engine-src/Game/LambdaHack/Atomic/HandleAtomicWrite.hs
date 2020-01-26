@@ -640,7 +640,8 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
   bag <- getsState $ getContainerBag c
   case iid `EM.lookup` bag of
     Just (k, it) -> do
-      let !_A = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
+      let !_A1 = assert (fromIt == it `blame` (k, it, iid, c, fromIt, toIt)) ()
+          !_A2 = assert (length toIt <= k `blame` (k, toIt, iid, c, fromIt)) ()
       deleteItemContainer iid (k, fromIt) c
       insertItemContainer iid (k, toIt) c
     Nothing -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)

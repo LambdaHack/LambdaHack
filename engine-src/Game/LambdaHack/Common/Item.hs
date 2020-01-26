@@ -142,7 +142,8 @@ type ItemTimer = [Time]
 
 -- | Number of items in a bag, together with recharging timer, in case of
 -- items that need recharging, exists only temporarily or auto-activate
--- at regular intervals.
+-- at regular intervals. Data invariant: the length of the timer
+-- should be less or equal to the number of items.
 type ItemQuant = (Int, ItemTimer)
 
 -- | A bag of items, e.g., one of the stores of an actor or the items
