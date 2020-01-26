@@ -308,7 +308,7 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       cli {srunning = Just runParams}
     when runAhead $
       modifySession $ \cli ->
-        cli {slastPlay = (InGameMacro . map K.mkKM $ macroRun25) <> slastPlay cli}
+        cli {slastPlay = (KeyMacro . map K.mkKM $ macroRun25) <> slastPlay cli}
   -- When running, the invisible actor is hit (not displaced!),
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors
@@ -947,7 +947,7 @@ alterDirHuman = pickPoint "modify" >>= \case
 alterTileAtPos :: MonadClientUI m
                => Point
                -> m (FailOrCmd RequestTimed)
-alterTileAtPos tpos = alterCommon False tpos
+alterTileAtPos = alterCommon False
 
 -- | Verify that the tile can be transformed or any embedded item effect
 -- triggered and the player is fine, if the effect is dangerous or grave,
@@ -992,7 +992,7 @@ processTileActions source tpos tas = do
           failWith "unable to modify at this time"
             -- related to, among others, @SfxNoItemsForTile@ on the server
       processTA (ta : rest) = case ta of
-        Tile.EmbedAction (iid, _) -> do
+        Tile.EmbedAction (iid, _) ->
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
           -- We assume the item would trigger and we let the player

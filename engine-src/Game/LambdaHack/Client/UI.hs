@@ -23,6 +23,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Bifunctor as B
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -175,7 +176,7 @@ humanCommand = do
                          then smacroBuffer sess
                          -- Exclude from in-game macros keystrokes that
                          -- start/stop recording a macro.
-                         else (km :) <$> smacroBuffer sess
+                         else (km :) `B.first` smacroBuffer sess
                      } 
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
