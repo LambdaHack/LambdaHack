@@ -53,8 +53,11 @@ drawOverlay dm onBlank ovs lid = do
   soptions <- getsClient soptions
   let isTeletype = Frontend.frontendName soptions == "teletype"
       ovProp = if multiFont
-               then truncateOverlay False (4 * rwidth) rheight False 0 onBlank
+               then truncateOverlay False (4 * rwidth) rheight True 72 onBlank
                     $ EM.findWithDefault [] propFont ovs
+                      -- True and 48 are best effort to mimic mono behaviour,
+                      -- despite very narrow space character, in order
+                      -- to make, e.g., crafting recipes readable
                else if isTeletype  -- hack for debug output
                     then concat $ EM.elems ovs
                     else []
