@@ -11,18 +11,22 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Bifunctor as Bi
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Map.Strict as M
 import qualified Data.Vector.Unboxed as U
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
 import           Game.LambdaHack.Client.UI.Frame
 import qualified Game.LambdaHack.Client.UI.Frontend as Frontend
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -140,7 +144,24 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
           resetPressedKeys
       recordHistory
       connFrontendFrontKey frontKeyKeys frontKeyFrame
-  modifySession $ \sess -> sess { sdisplayNeeded = False }
+  -- In-game macros need to be recorded here, not in @UI.humanCommand@,
+  -- to also capture choice of items from menus, etc.
+  -- Notice that keys coming from macros (in-game, content, config)
+  -- are recorded as well and this is well defined and essential.
+  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
+  let mKeyRecord = case M.lookup HumanCmd.Record brevMap of
+        Nothing -> Nothing
+        Just (k : _) -> Just k
+        Just [] -> error $ "" `showFailure` brevMap
+  modifySession $ \sess ->
+    sess { sdisplayNeeded = False
+         , smacroBuffer = -- Exclude from in-game macros keystrokes that
+                          -- start/stop recording a macro.
+                          if Just km == mKeyRecord
+                          then smacroBuffer sess
+                          else -- This is noop when not recording a macro,
+                               -- which is exactly the required semantics.
+                               (km :) `Bi.first` smacroBuffer sess }
   return km
 
 stopPlayBack :: MonadClientUI m => m ()

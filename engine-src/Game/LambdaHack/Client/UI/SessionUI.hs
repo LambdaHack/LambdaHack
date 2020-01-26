@@ -87,8 +87,9 @@ type ItemDictUI = EM.EnumMap ItemId LevelId
 newtype AimMode = AimMode { aimLevelId :: LevelId }
   deriving (Show, Eq, Binary)
 
--- | In-game macros. We record only the keystrokes that are bound to commands,
--- with one exception -- we exclude keys that invoke Record command.
+-- | In-game macros. We record menu navigation keystrokes and keystrokes
+-- bound to commands with one exception --- we exclude keys that invoke
+-- the @Record@ command, to avoid surprises.
 -- Keys are kept in the same order in which they're meant to be replayed,
 -- i.e. the first element of the list is replayed also as the first one.
 newtype Macro = KeyMacro { unMacro :: [K.KM] }

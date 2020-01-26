@@ -93,7 +93,7 @@ import           Game.LambdaHack.Definition.Defs
 
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman kms = do
-  modifySession $ \sess -> 
+  modifySession $ \sess ->
     sess {slastPlay = (KeyMacro $ K.mkKM <$> kms) <> slastPlay sess}
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " kms)
 
@@ -685,7 +685,7 @@ repeatHuman n = do
   let nmacro k | k == 1 = unMacro . fromRight mempty $ macro
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
-  modifySession $ \sess -> 
+  modifySession $ \sess ->
     sess {slastPlay = KeyMacro (nmacro n) <> slastPlay sess}
 
 -- * RepeatLast
@@ -703,11 +703,11 @@ recordHuman :: MonadClientUI m => m ()
 recordHuman = do
   macro <- getsSession smacroBuffer
   case macro of
-     Right _ -> do 
+     Right _ -> do
        modifySession $ \sess -> sess { smacroBuffer = Left [] }
        promptAdd0 "Recording a macro. Stop recording with the same key."
      Left xs -> do
-       modifySession $ \sess -> 
+       modifySession $ \sess ->
          sess { smacroBuffer = Right . KeyMacro . reverse $ xs }
        promptAdd0 "Macro recording stopped."
 

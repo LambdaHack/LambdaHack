@@ -23,7 +23,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.Bifunctor as B
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -41,7 +40,7 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanM
-import           Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -160,24 +159,20 @@ humanCommand = do
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
           case km `M.lookup` bcmdMap of
             Just (_, _, cmd) -> do
+              -- Repeating last action key does not cover menu navigation
+              -- keypresses, so here's the right place to record it.
               modifySession $ \sess ->
-                sess { swaitTimes = 
+                sess { swaitTimes =
                          if swaitTimes sess > 0
                          then - swaitTimes sess
                          else 0
                      , slastAction =
-                         if cmd == RepeatLast 
+                         if cmd == HumanCmd.RepeatLast
                          then slastAction sess
-                         -- We can repeat every last action except 'repeat last 
+                         -- We can repeat every last action except 'repeat last
                          -- action' action, so here we ommit that one.
-                         else Just km  
-                     , smacroBuffer = 
-                         if cmd == Record
-                         then smacroBuffer sess
-                         -- Exclude from in-game macros keystrokes that
-                         -- start/stop recording a macro.
-                         else (km :) `B.first` smacroBuffer sess
-                     } 
+                         else Just km
+                     }
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
