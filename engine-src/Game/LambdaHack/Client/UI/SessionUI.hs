@@ -2,7 +2,7 @@
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..)
-  , HintMode(..), Macro(..)
+  , HintMode(..), KeyMacro(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
@@ -55,10 +55,10 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroBuffer   :: Either [K.KM] Macro
+  , smacroBuffer   :: Either [K.KM] KeyMacro
                                     -- ^ state of recording a macro; if Left,
                                     --   record keystrokes
-  , slastPlay      :: Macro         -- ^ state of key sequence playback
+  , slastPlay      :: KeyMacro      -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
@@ -92,7 +92,7 @@ newtype AimMode = AimMode { aimLevelId :: LevelId }
 -- the @Record@ command, to avoid surprises.
 -- Keys are kept in the same order in which they're meant to be replayed,
 -- i.e. the first element of the list is replayed also as the first one.
-newtype Macro = KeyMacro { unMacro :: [K.KM] }
+newtype KeyMacro = KeyMacro { unKeyMacro :: [K.KM] }
   deriving (Eq, Binary, Semigroup, Monoid)
 
 -- | Parameters of the current run.

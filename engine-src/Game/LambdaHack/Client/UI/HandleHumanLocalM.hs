@@ -682,7 +682,7 @@ selectWithPointerHuman = do
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
   macro <- getsSession smacroBuffer
-  let nmacro k | k == 1 = unMacro . fromRight mempty $ macro
+  let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ macro
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
   modifySession $ \sess ->
