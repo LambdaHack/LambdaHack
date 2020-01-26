@@ -151,11 +151,19 @@ textAllPowers detailLevel skipRecharging
               if orTsTooLarge
               then (orEffsRaw, noOrSmashCombineEffsRaw)
               else ([], noSmashCombineEffs)
+            unCreate (IK.CreateItem (Just k) _ grp _) = [(k, grp)]
+            unCreate (IK.AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
+            unCreate _ = []
             unOr (IK.OrEffect eff1 eff2) = unOr eff1 ++ unOr eff2
             unOr eff = [eff]
+            ppAnd (IK.AndEffect (IK.ConsumeItems grps) eff) =
+              makePhrase ["of crafting", describeTools $ unCreate eff]
+              <> "\n"
+              <> makePhrase ["--- from", describeTools grps]
+            ppAnd eff = ppE eff
             ppOr eff = "*" <+> T.intercalate " or else\n* "
                                (nub $ filter (not . T.null)
-                                    $ map ppE $ unOr eff)
+                                    $ map ppAnd $ unOr eff)
             orTs = filter (not . T.null) $ map ppOr orEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
