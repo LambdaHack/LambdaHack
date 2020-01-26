@@ -55,7 +55,7 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroBuffer   :: Either Macro [K.KM]
+  , smacroBuffer   :: Either [K.KM] Macro 
                                     -- ^ in-game recorded macro
   , slastPlay      :: Macro         -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
@@ -86,8 +86,11 @@ type ItemDictUI = EM.EnumMap ItemId LevelId
 newtype AimMode = AimMode { aimLevelId :: LevelId }
   deriving (Show, Eq, Binary)
 
--- | Recorded in-game macro.
-newtype Macro = InGameMacro { unMacro :: [K.KM] }
+-- | In-game macros. We record only the keystrokes that are bound to commands,
+-- with one exception -- we exclude keys that invoke Record command.
+-- Keys are kept in reverse order, i.e. the first element of the list is
+-- replayed as the last.
+newtype Macro = KeyMacro { unMacro :: [K.KM] }
   deriving (Eq, Binary, Semigroup, Monoid)
 
 -- | Parameters of the current run.
@@ -128,7 +131,7 @@ emptySessionUI sUIOptions =
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
     , slastAction = Nothing
-    , smacroBuffer = Left mempty
+    , smacroBuffer = Right mempty
     , slastPlay = mempty
     , slastLost = ES.empty
     , swaitTimes = 0
@@ -194,7 +197,7 @@ instance Binary SessionUI where
         sxhairMoused = True
         spointer = K.PointUI 0 0
         slastAction = Nothing
-        smacroBuffer = Left mempty
+        smacroBuffer = Right mempty
         slastPlay = mempty
         slastLost = ES.empty
         swaitTimes = 0
