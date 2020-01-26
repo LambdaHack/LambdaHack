@@ -682,7 +682,7 @@ selectWithPointerHuman = do
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
   macro <- getsSession smacroBuffer
-  let nmacro k | k == 1 = reverse . unMacro . fromRight mempty $ macro
+  let nmacro k | k == 1 = unMacro . fromRight mempty $ macro
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
   modifySession $ \sess -> 
@@ -707,7 +707,8 @@ recordHuman = do
        modifySession $ \sess -> sess { smacroBuffer = Left [] }
        promptAdd0 "Recording a macro. Stop recording with the same key."
      Left xs -> do
-       modifySession $ \sess -> sess { smacroBuffer = Right . KeyMacro $ xs }
+       modifySession $ \sess -> 
+         sess { smacroBuffer = Right . KeyMacro . reverse $ xs }
        promptAdd0 "Macro recording stopped."
 
 -- * AllHistory

@@ -55,8 +55,9 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroBuffer   :: Either [K.KM] Macro 
-                                    -- ^ in-game recorded macro
+  , smacroBuffer   :: Either [K.KM] Macro
+                                    -- ^ state of recording a macro; if Left,
+                                    --   record keystrokes
   , slastPlay      :: Macro         -- ^ state of key sequence playback
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
@@ -88,8 +89,8 @@ newtype AimMode = AimMode { aimLevelId :: LevelId }
 
 -- | In-game macros. We record only the keystrokes that are bound to commands,
 -- with one exception -- we exclude keys that invoke Record command.
--- Keys are kept in reverse order, i.e. the first element of the list is
--- replayed as the last.
+-- Keys are kept in the same order in which they're meant to be replayed,
+-- i.e. the first element of the list is replayed also as the first one.
 newtype Macro = KeyMacro { unMacro :: [K.KM] }
   deriving (Eq, Binary, Semigroup, Monoid)
 
