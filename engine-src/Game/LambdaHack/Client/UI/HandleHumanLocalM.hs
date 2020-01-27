@@ -691,10 +691,10 @@ repeatHuman n = do
 -- * RepeatLast
 
 -- | Repeats last user's action.
-repeatLastHuman :: MonadClientUI m => m ()
-repeatLastHuman = do
+repeatLastHuman :: MonadClientUI m => Int -> m ()
+repeatLastHuman n = do
   lastAct <- getsSession slastAction
-  let cmd = KeyMacro $ maybeToList lastAct
+  let cmd = KeyMacro . concat . replicate n . maybeToList $ lastAct
   modifySession $ \sess -> sess {slastPlay = cmd <> slastPlay sess}
 
 -- * Record

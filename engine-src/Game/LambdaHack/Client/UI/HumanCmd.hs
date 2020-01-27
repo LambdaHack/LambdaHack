@@ -160,7 +160,7 @@ data HumanCmd =
   | SelectNone
   | SelectWithPointer
   | Repeat Int
-  | RepeatLast
+  | RepeatLast Int
   | Record
   | AllHistory
   | LastHistory
