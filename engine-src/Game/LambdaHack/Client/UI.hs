@@ -166,12 +166,11 @@ humanCommand = do
                          if swaitTimes sess > 0
                          then - swaitTimes sess
                          else 0
-                     , slastAction =
-                         if cmd == HumanCmd.RepeatLast
-                         then slastAction sess
+                     , slastAction = case cmd of
+                         (HumanCmd.RepeatLast _) -> slastAction sess
                          -- We can repeat every last action except 'repeat last
                          -- action' action, so here we ommit that one.
-                         else Just km
+                         _ -> Just km
                      }
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"

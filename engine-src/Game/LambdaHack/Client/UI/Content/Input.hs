@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.UI.Content.Input
   ( InputContentRaw(..), InputContent(..), makeData
   , evalKeyDef
-  , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple
+  , addCmdCategory, replaceDesc, moveItemTriple, repeatTriple, repeatLastTriple
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
@@ -142,6 +142,11 @@ repeatTriple n = ( [CmdMeta]
                  , "voice recorded commands" <+> tshow n <+> "times"
                  , Repeat n )
 
+repeatLastTriple :: Int -> CmdTriple
+repeatLastTriple n = ( [CmdMeta]
+                     , "repeat last action" <+> tshow n <+> "times in a row"
+                     , RepeatLast n )
+
 -- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.
 mouseLMB :: HumanCmd -> Text -> CmdTriple
 mouseLMB goToOrRunTo desc =
@@ -163,9 +168,9 @@ mouseLMB goToOrRunTo desc =
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
---    , (CaCalmGauge, Macro ["KP_Begin", "C-V"])
+--    , (CaCalmGauge, Macro ["KP_Begin", "A-V"])
     , (CaCalmValue, Yell)
-    , (CaHPGauge, Macro ["KP_Begin", "C-V"])
+    , (CaHPGauge, Macro ["KP_Begin", "A-V"])
     , (CaHPValue, Wait)
     , (CaLeaderDesc, projectICmd flingTs) ]
 
@@ -204,15 +209,15 @@ mouseRMB = ( [CmdMouse]
 -- This is duplicated wrt content, instead of included via @semicolon@,
 -- because the C- commands are less likely to be modified by the player.
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "A-V"]
 
 -- This is duplicated wrt content, instead of included via @colon@,
 -- because the C- commands are less likely to be modified by the player.
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "C-V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "A-V"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["C-?", "C-quotedbl", "C-V"]
+autoexploreCmd = Macro ["C-?", "C-quotedbl", "A-V"]
 
 autoexplore25Cmd :: HumanCmd
 autoexplore25Cmd = Macro ["'", "C-?", "C-quotedbl", "'", "C-V"]

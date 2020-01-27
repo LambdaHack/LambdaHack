@@ -124,7 +124,7 @@ cmdAction cmd = case cmd of
   SelectNone -> addNoError selectNoneHuman
   SelectWithPointer -> Left <$> selectWithPointerHuman
   Repeat n -> addNoError $ repeatHuman n
-  RepeatLast -> addNoError $ repeatLastHuman
+  RepeatLast n -> addNoError $ repeatLastHuman n
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
   LastHistory -> addNoError lastHistoryHuman
