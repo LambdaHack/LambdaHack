@@ -702,14 +702,19 @@ repeatLastHuman n = do
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
   macro <- getsSession smacroBuffer
+  KeyMacro lastPlay <- getsSession slastPlay
   case macro of
-     Right _ -> do
-       modifySession $ \sess -> sess { smacroBuffer = Left [] }
-       promptAdd0 "Recording a macro. Stop recording with the same key."
-     Left xs -> do
-       modifySession $ \sess ->
-         sess { smacroBuffer = Right . KeyMacro . reverse $ xs }
-       promptAdd0 "Macro recording stopped."
+    Right _ -> do
+      modifySession $ \sess -> sess { smacroBuffer = Left [] }
+      when (null lastPlay) $
+        -- Don't spam if recording is a part of playing back a macro.
+        promptAdd0 "Recording a macro. Stop recording with the same key."
+    Left xs -> do
+      modifySession $ \sess ->
+        sess { smacroBuffer = Right . KeyMacro . reverse $ xs }
+      when (null lastPlay) $
+        -- Don't spam if recording is a part of playing back a macro.
+        promptAdd0 "Macro recording stopped."
 
 -- * AllHistory
 
