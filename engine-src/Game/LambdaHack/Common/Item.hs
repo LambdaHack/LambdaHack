@@ -178,7 +178,7 @@ aspectRecordFull itemFull =
     ItemDiscoFull itemAspect -> itemAspect
     ItemDiscoMean itemAspectMean -> IA.kmMean itemAspectMean
 
--- This ignores items that don't go into equipment, as determined in @inEqp@.
+-- This ignores items that don't go into equipment, as determined in @benInEqp@.
 -- They are removed from equipment elsewhere via @harmful@.
 strongestSlot :: DiscoveryBenefit -> Ability.EqpSlot -> [(ItemId, ItemFullKit)]
               -> [(Int, (ItemId, ItemFullKit))]

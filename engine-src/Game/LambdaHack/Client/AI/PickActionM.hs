@@ -415,7 +415,7 @@ pickup aid onlyWeapon = do
             else returN "pickup" $ ReqMoveItems prepared
 
 -- This only concerns items that can be equipped, that is with a slot
--- and with @inEqp@ (which implies @goesIntoEqp@).
+-- and with @benInEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
 -- from stash to eqp.
 equipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
@@ -492,7 +492,7 @@ yieldUnneeded aid = do
             else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
 
 -- This only concerns items that can be equipped, that is with a slot
--- and with @inEqp@ (which implies @goesIntoEqp@).
+-- and with @benInEqp@ (which implies @goesIntoEqp@).
 -- Such items are moved between any stores, as needed. In this case,
 -- from eqp to stash.
 unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
