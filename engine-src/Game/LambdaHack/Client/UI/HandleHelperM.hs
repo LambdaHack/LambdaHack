@@ -419,7 +419,7 @@ lookAtTile canSee p aid lidV = do
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             arItem = aspectRecordFull itemFull
-            nWs = partItemWs side factionD k localTime itemFull kit
+            nWs = partItemWsLong side factionD k localTime itemFull kit
             verb = if k == 1 || IA.checkFlag Ability.Condition arItem
                    then "is"
                    else "are"

@@ -135,15 +135,17 @@ effectToSuffix detailLevel effect =
     OnCombine _ -> ""  -- printed inside a separate section
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
-    AndEffect (ConsumeItems grps) eff ->
-      if detailLevel < DetailAll
-      then "of crafting (recipes in lore menu)"
-      else let unCreate (CreateItem (Just k) _ grp _) = [(k, grp)]
-               unCreate (AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
-               unCreate _ = []
-               grpsCreate = unCreate eff
-           in makePhrase [ "of crafting", describeTools grpsCreate
-                         , "from", describeTools grps ]
+    AndEffect (ConsumeItems grps) eff -> case detailLevel of
+      DetailAll ->
+        let unCreate (CreateItem (Just k) _ grp _) = [(k, grp)]
+            unCreate (AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
+            unCreate _ = []
+            grpsCreate = unCreate eff
+        in makePhrase [ "of crafting", describeTools grpsCreate
+                      , "from", describeTools grps ]
+
+      DetailHigh -> "of crafting (recipes in lore menu)"
+      _ -> "of crafting"
     AndEffect eff1 eff2 ->
       let t = T.intercalate " and then "
               $ nub $ filter (not . T.null)
