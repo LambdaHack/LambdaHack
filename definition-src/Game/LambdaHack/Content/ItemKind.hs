@@ -419,9 +419,19 @@ validateSingle ik@ItemKind{..} =
           f EqpSlot{} = True
           f _ = False
           ts = filter f iaspects
+          equipable = SetFlag Ability.Equipable `elem` iaspects
+          meleeable = SetFlag Ability.Meleeable `elem` iaspects
+          likelyTemplate = case ifreq of
+            [(grp, 1)] -> "unknown" `T.isSuffixOf` fromGroupName grp
+            _ -> False
+          likelyException = isymbol `elem` [',', '"'] || likelyTemplate
       in [ "EqpSlot specified but not Equipable nor Meleeable"
-         | length ts > 0 && SetFlag Ability.Equipable `notElem` iaspects
-                         && SetFlag Ability.Meleeable `notElem` iaspects ])
+         | length ts == 1 && not equipable && not meleeable ]
+         ++ [ "EqpSlot not specified but Equipable or Meleeable and not a likely organ or necklace or template"
+            | not likelyException
+              && length ts == 0 && (equipable || meleeable) ]
+         ++ [ "More than one EqpSlot specified"
+            | length ts > 1 ] )
   ++ [ "Redundant Equipable or Meleeable"
      | SetFlag Ability.Equipable `elem` iaspects
        && SetFlag Ability.Meleeable `elem` iaspects ]

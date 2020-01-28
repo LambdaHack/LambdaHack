@@ -361,8 +361,9 @@ blanket = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkShine (-10)
                , AddSkill SkArmorMelee 2, AddSkill SkMaxCalm 5
-               , SetFlag Lobable, SetFlag Equipable ]
-                   -- not Fragile; reusable douse implement;
+               , SetFlag Lobable, SetFlag Equipable
+               , EqpSlot EqpSlotArmorMelee ]
+                  -- not Fragile; reusable douse implement;
                    -- douses torch, lamp and lantern in one action,
                    -- both in equipment and when thrown at the floor
   , ieffects = []
