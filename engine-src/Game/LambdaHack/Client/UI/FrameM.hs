@@ -63,21 +63,41 @@ drawOverlay dm onBlank ovs lid = do
                     then concat $ EM.elems ovs
                     else []
       ovMono = if multiFont
-               then truncateOverlay False (2 * rwidth) rheight True 24 onBlank
+               then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
-                      -- True and 24 are OK, because Mono overwritten by others
-                      -- and because the filler space has a fixed size
                else []
       ovOther = if multiFont
-                then truncateOverlay True rwidth rheight False 14 onBlank
+                then truncateOverlay True rwidth rheight False 0 onBlank
                      $ EM.findWithDefault [] squareFont ovs
-                     -- 14 needed not to leave gaps in, e. g., skills menu;
-                     -- usually fine, because square never on the right
                 else if isTeletype  -- hack for debug output
                      then []
                      else truncateOverlay True rwidth rheight True 20 onBlank
                           $ concat $ EM.elems ovs
-      overlayedFrame = overlayFrame rwidth ovOther basicFrame
+                            -- 20 needed not to leave gaps in skills menu
+                            -- in the absence of backdrop
+      ovBackdrop =
+        if multiFont
+        then let propOutline =
+                   truncateOverlay False (4 * rwidth) rheight True 0 onBlank
+                   $ EM.findWithDefault [] propFont ovs
+                 monoOutline =
+                   truncateOverlay False (2 * rwidth) rheight True 0 onBlank
+                    $ EM.findWithDefault [] monoFont ovs
+                 g x al Nothing = Just (x, x + length (attrLine al) - 1)
+                 g x al (Just (xmin, xmax)) =
+                   Just (min xmin x, max xmax (x + length (attrLine al) - 1))
+                 f em (K.PointUI x y, al) = EM.alter (g x al) y em
+                 extentMap = foldl' f EM.empty $ propOutline ++ monoOutline
+                 listBackdrop (y, (xmin, xmax)) =
+                   ( K.PointUI (2 * (xmin `div` 2)) y
+                   , attrStringToAL
+                     $ blankAttrString
+                       $ min (rwidth - 2 * (xmin `div` 2))
+                             (1 + xmax `divUp` 2 - xmin `div` 2) )
+             in map listBackdrop $ EM.assocs extentMap
+        else []
+      overlayedFrame = overlayFrame rwidth ovOther
+                       $ overlayFrame rwidth ovBackdrop basicFrame
   return (overlayedFrame, (ovProp, ovMono))
 
 -- | Push the frame depicting the current level to the frame queue.

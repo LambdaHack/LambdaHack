@@ -99,7 +99,7 @@ instance Show KM where
 data KMP = KMP { kmpKeyMod  :: KM
                , kmpPointer :: PointUI }
 
--- | UI character coordinates, independent of map coordinates.
+-- | UI (small monospace) character coordinates, independent of map coordinates.
 data PointUI = PointUI Int Int
   deriving (Eq, Show)
 

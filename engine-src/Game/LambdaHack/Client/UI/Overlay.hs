@@ -167,12 +167,12 @@ splitAttrPhrase w (AttrLine xs)
 
 -- * Overlay
 
--- | A series of screen lines with points at which they should ber overlayed
--- over the base frame or a blank screen, depending on context.
--- The point is represented as in integer that is an index into the
+-- | A series of screen lines with start positions at which they should
+-- be overlayed over the base frame or a blank screen, depending on context.
+-- The position point is represented as in integer that is an index into the
 -- frame character array.
 -- The lines either fit the width of the screen or are intended
--- for truncation when displayed. The positions of lines may fall outside
+-- for truncation when displayed. The start positions of lines may fall outside
 -- the length of the screen, too, unlike in @SingleFrame@. Then they are
 -- simply not shown.
 type Overlay = [(PointUI, AttrLine)]
