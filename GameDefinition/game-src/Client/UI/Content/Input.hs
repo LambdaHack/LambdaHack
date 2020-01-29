@@ -99,17 +99,17 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
                   , "go to crosshair for 25 steps"
-                  , Macro ["C-semicolon", "C-quotedbl", "C-V"] ))
+                  , Macro ["C-semicolon", "C-quotedbl", "A-V"] ))
   , ("colon", ( [CmdMove]
               , "run to crosshair collectively for 25 steps"
-              , Macro ["C-colon", "C-quotedbl", "C-V"] ))
+              , Macro ["C-colon", "C-quotedbl", "A-V"] ))
   , ("[", ( [CmdMove]
           , "explore nearest unknown spot"
           , autoexploreCmd ))
   , ("]", ( [CmdMove]
           , "autoexplore 25 times"
           , autoexplore25Cmd ))
-  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-V"]))
+  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "A-V"]))
   , ("C-R", ( [CmdMove], "heed (lurk 0.1 turns 100 times)"
             , Macro ["C-KP_Begin", "V"] ))
 
@@ -185,7 +185,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("A-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
   , ("V", repeatLastTriple 100)
   , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 1000)
-  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
+  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
