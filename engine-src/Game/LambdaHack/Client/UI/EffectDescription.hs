@@ -108,7 +108,7 @@ effectToSuffix detailLevel effect =
       in "of" <+> verb <+> preT <+> fromGroupName grp <+> postT <+> fromStore
     Discharge dice -> case Dice.reduceDice dice of
       Nothing -> "of discharge to" <+> tshow dice <+> "* 0.05s"
-      Just 0 -> "recharging"
+      Just 0 -> "of recharging"
       Just p -> let dt = timeDeltaScale (Delta timeClip) p
                 in "of discharge to" <+> timeDeltaInSecondsText dt
     PolyItem -> "of repurpose on the ground"
