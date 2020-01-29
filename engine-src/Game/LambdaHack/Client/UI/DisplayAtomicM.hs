@@ -1088,12 +1088,14 @@ displayGameOverAnalytics factionAn generationAn = do
              in (bag, slots)
         else (killedBag, lSlotsRaw)
       total = sum $ filter (> 0) $ map fst $ EM.elems trunkBag
+      -- Not just "killed 1 out of 4", because it's sometimes "2 out of 1",
+      -- if an enemy was revived.
       promptFun :: ItemId -> ItemFull-> Int -> Text
       promptFun iid _ k =
         let n = generationTrunk EM.! iid
-        in makePhrase [ "You recall the adversary, which you killed"
-                      , MU.CarWs (max 0 k) "time", "out of"
-                      , MU.CarWs n "individual", "reported:" ]
+        in makePhrase [ "You recall the adversary, which you killed on"
+                      , MU.CarWs (max 0 k) "occasion", "while reports mention"
+                      , MU.CarWs n "individual", "in total:" ]
       prompt = makeSentence ["your team vanquished", MU.CarWs total "adversary"]
                  -- total reported would include our own, so not given
                <+> (if sexposeActors
