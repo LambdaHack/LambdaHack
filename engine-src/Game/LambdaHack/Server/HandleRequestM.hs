@@ -53,6 +53,7 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
@@ -641,7 +642,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       embedKindList =
         if IA.checkFlag Ability.Blast sar
-        then []  -- prevent embeds triggering each other in a loop
+           && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
+        then []  -- prevent embeds triggering each other via feeble mists,
+                 -- in the worst case in a loop
         else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       tryApplyEmbeds = do
         urs <- mapM tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
