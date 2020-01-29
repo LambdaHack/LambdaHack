@@ -12,9 +12,9 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import           Game.LambdaHack.Client.UI.Content.Input
-import           Game.LambdaHack.Client.UI.HumanCmd
-import           Game.LambdaHack.Definition.Defs
+import Game.LambdaHack.Client.UI.Content.Input
+import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Definition.Defs
 
 -- | Description of default key-command bindings.
 --
@@ -185,7 +185,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("A-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
   , ("V", repeatLastTriple 100)
   , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 1000)
-  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
+  , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
