@@ -44,7 +44,8 @@ data TileKind = TileKind
   , tfreq    :: Freqs TileKind  -- ^ frequency within groups
   , tcolor   :: Color        -- ^ map color
   , tcolor2  :: Color        -- ^ map color when not in FOV
-  , talter   :: Word8        -- ^ minimal skill needed to alter the tile
+  , talter   :: Word8        -- ^ minimal skill needed to activate embeds
+                             --   and to alter the tile without using a tool
   , tfeature :: [Feature]    -- ^ properties; order matters
   }
   deriving Show  -- No Eq and Ord to make extending logically sound

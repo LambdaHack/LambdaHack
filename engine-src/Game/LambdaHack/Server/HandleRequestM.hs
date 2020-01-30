@@ -642,16 +642,20 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       revealEmbeds = unless (EM.null embeds) $
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       embedKindList =
-        if IA.checkFlag Ability.Blast sar
-           && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
-        then []  -- prevent embeds triggering each other via feeble mists,
-                 -- in the worst case in a loop
-        else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
-      tryApplyEmbeds = do
-        urs <- mapM tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
-        return $! case urs of
-          [] -> UseDud  -- there was no effects
-          _ -> maximum urs
+        map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
+      sourceIsMist = IA.checkFlag Ability.Blast sar
+                     && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
+      -- Prevent embeds triggering each other via feeble mists, in the worst
+      -- case in a loop. However, if a tile can be changed with an item
+      -- (e.g., the mist trunk) but without embeds, mists do fine.
+      tryApplyEmbeds =
+        if sourceIsMist
+        then return UseDud
+        else do
+          urs <- mapM tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
+          return $! case urs of
+            [] -> UseDud  -- there was no effects
+            _ -> maximum urs
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
@@ -796,7 +800,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 let useResult = fromMaybe UseDud museResult
                 -- Skill check for non-projectiles performed much earlier.
                 -- All projectiles have 0 skill regardless of their trunk.
-                if bproj sb && tileMinSkill > 0  -- local skill check
+                if sourceIsMist
+                   || bproj sb && tileMinSkill > 0  -- local skill check
                 then processTileActions (Just useResult) rest
                 else do
                   triggered <- tryApplyEmbed (iid, kit)
@@ -809,6 +814,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 return True
               else processTileActions museResult rest
             Tile.WithAction grps tgroup ->
+              -- Even mist can transform a tile (e.g., fire mist),
+              -- but only if it managed to activate all previous embeds,
+              -- (with mist, that means all such embeds were consumed earlier).
               if maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
               then do

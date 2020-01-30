@@ -334,28 +334,34 @@ imperishableKit periodic itemFull =
 
 -- The item is triggered exactly once. If there are more copies,
 -- they are left to be triggered next time.
+-- If the embed no longer exists at the given position, effect fizzles.
 itemEffectEmbedded :: MonadServerAtomic m
                    => Bool -> Bool -> ActorId -> LevelId -> Point -> ItemId
                    -> m UseResult
 itemEffectEmbedded effOnCombineOnly effVoluntary aid lid tpos iid = do
-  -- First embedded item may move actor to another level, so @lid@
-  -- may be unequal to @blid sb@.
-  let c = CEmbed lid tpos
-  -- Treated as if the actor hit himself with the embedded item as a weapon,
-  -- incurring both the kinetic damage and effect, hence the same call
-  -- as in @reqMelee@. Information whether this happened due to being pushed
-  -- is preserved, but how did the pushing is lost, so we blame the victim.
-  let effApplyFlags = EffApplyFlags
-        { effOnCombineOnly
-        , effOnSmashOnly      = False
-        , effVoluntary
-        , effIgnoreCharging   = False
-        , effUseAllCopies     = False
-        , effKineticPerformed = False
-        , effPeriodic         = False
-        , effMayDestroy       = True
-        }
-  kineticEffectAndDestroy effApplyFlags aid aid aid iid c
+  embeds2 <- getsState $ getEmbedBag lid tpos
+    -- might have changed due to other embedded items invocations
+  if iid `EM.notMember` embeds2
+  then return UseDud
+  else do
+    -- First embedded item may move actor to another level, so @lid@
+    -- may be unequal to @blid sb@.
+    let c = CEmbed lid tpos
+    -- Treated as if the actor hit himself with the embedded item as a weapon,
+    -- incurring both the kinetic damage and effect, hence the same call
+    -- as in @reqMelee@. Information whether this happened due to being pushed
+    -- is preserved, but how did the pushing is lost, so we blame the victim.
+    let effApplyFlags = EffApplyFlags
+          { effOnCombineOnly
+          , effOnSmashOnly      = False
+          , effVoluntary
+          , effIgnoreCharging   = False
+          , effUseAllCopies     = False
+          , effKineticPerformed = False
+          , effPeriodic         = False
+          , effMayDestroy       = True
+          }
+    kineticEffectAndDestroy effApplyFlags aid aid aid iid c
 
 -- | The source actor affects the target actor, with a given item.
 -- If any of the effects fires up, the item gets identified.
