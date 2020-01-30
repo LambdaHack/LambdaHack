@@ -630,7 +630,6 @@ reqAlterFail onCombineOnly voluntary source tpos = do
   itemToF <- getsState $ flip itemToFull
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
-  let alterSkill = Ability.getSk Ability.SkAlter actorSk
   embeds <- getsState $ getEmbedBag lid tpos
   lvl <- getLevel lid
   getKind <- getsState $ flip getIidKindServer
@@ -638,6 +637,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
       lvlClient = (EM.! lid) . sdungeon $ sClient
       clientTile = lvlClient `at` tpos
       hiddenTile = Tile.hideAs cotile serverTile
+      alterSkill = Ability.getSk Ability.SkAlter actorSk
+      tileMinSkill = Tile.alterMinSkill coTileSpeedup serverTile
       revealEmbeds = unless (EM.null embeds) $
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       embedKindList =
@@ -710,7 +711,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
     -- In either case, try to alter the tile. If the messages
     -- are confusing, that's fair, situation is confusing.
     if not (bproj sb || underFeet)  -- no global skill check in these cases
-       && alterSkill < Tile.alterMinSkill coTileSpeedup serverTile
+       && alterSkill < tileMinSkill
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
       let changeTo tgroup = do
@@ -776,34 +777,40 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             Tile.WithAction grps tgroup -> Just (grps, tgroup)
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
-          processTileActions :: UseResult -> [Tile.TileAction] -> m Bool
-          processTileActions useResult [] =
-            return $! useResult /= UseDud
-          processTileActions useResult (ta : rest) = case ta of
+          processTileActions :: Maybe UseResult -> [Tile.TileAction] -> m Bool
+          processTileActions museResult [] =
+            return $! maybe False (/= UseDud) museResult
+          processTileActions museResult (ta : rest) = case ta of
             Tile.EmbedAction (iid, kit) -> do
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
+              -- If any embedded item was present and processed,
+              -- but none was triggered, both free and item-consuming terrain
+              -- alteration is disabled.
               embeds2 <- getsState $ getEmbedBag lid tpos
                 -- might have changed due to embedded items invocations
-              if iid `EM.member` embeds2
-                 && (not (bproj sb) || alterSkill <= 0)  -- proj unskilled
-              then do
-                triggered <- tryApplyEmbed (iid, kit)
-                processTileActions (max useResult triggered) rest
-              else processTileActions useResult rest
+              if iid `EM.notMember` embeds2 then
+                -- Not present any more, so irrelevant.
+                processTileActions museResult rest
+              else do
+                let useResult = fromMaybe UseDud museResult
+                -- Skill check for non-projectiles performed much earlier.
+                -- All projectiles have 0 skill regardless of their trunk.
+                if bproj sb && tileMinSkill > 0  -- local skill check
+                then processTileActions (Just useResult) rest
+                else do
+                  triggered <- tryApplyEmbed (iid, kit)
+                  processTileActions (Just $ max useResult triggered) rest
             Tile.ToAction tgroup ->
-              -- Lack of embedded item triggered up to now is disabling
-              -- only free terrain alteration, while the @WithAction@ with
-              -- item cost below are independent of the ability to activate
-              -- embedded items.
-              if (EM.null embeds || useResult == UseUp)
-                 && (not (bproj sb) || alterSkill <= 0)  -- proj unskilled
+              if maybe True (== UseUp) museResult
+                 && not (bproj sb && tileMinSkill > 0)  -- local skill check
               then do
                 changeTo tgroup
                 return True
-              else processTileActions useResult rest
+              else processTileActions museResult rest
             Tile.WithAction grps tgroup ->
-              if voluntary || bproj sb  -- no local skill check either
+              if maybe True (== UseUp) museResult
+                 && (voluntary || bproj sb)  -- no local skill check
               then do
                 -- Waste item only if voluntary or released as projectile.
                 kitAssG <- getsState $ kitAssocs source [CGround]
@@ -812,8 +819,8 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                 altered <- tryChangeWith (grps, tgroup) kitAss
                 if altered
                 then return True
-                else processTileActions useResult rest
-              else processTileActions useResult rest
+                else processTileActions museResult rest
+              else processTileActions museResult rest
       -- Note that stray embedded items (not from tile content definition)
       -- are never activated.
       if null tileActions then
@@ -835,7 +842,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- only for standard altering.
             unless (bproj sb || underFeet || EM.null embeds) $
               execSfxAtomic $ SfxTrigger source lid tpos
-            tileTriggered <- processTileActions UseDud tileActions
+            tileTriggered <- processTileActions Nothing tileActions
             when (not tileTriggered && not underFeet && voluntary
                   && not (null groupsToAlterWith)) $
               execSfxAtomic $ SfxMsgFid (bfid sb)
