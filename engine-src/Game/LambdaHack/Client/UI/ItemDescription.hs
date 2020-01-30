@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.ItemDescription
   , viewItem, itemDesc
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , partItemN, textAllPowers, partItemWsR
+  , partItemN, textAllPowers
 #endif
   ) where
 
@@ -289,10 +289,10 @@ partItemHigh side factionD = partItemN3 side factionD False DetailAll 100
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
-partItemWsR :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int -> Time
-            -> ItemFull -> ItemQuant
-            -> MU.Part
-partItemWsR side factionD ranged detail count localTime itemFull kit =
+partItemWsRanged :: FactionId -> FactionDict -> Bool -> DetailLevel -> Int
+                 -> Time -> ItemFull -> ItemQuant
+                 -> MU.Part
+partItemWsRanged side factionD ranged detail count localTime itemFull kit =
   let (name, powers) =
         partItemN side factionD ranged detail 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
@@ -313,22 +313,17 @@ partItemWsR side factionD ranged detail count localTime itemFull kit =
 
 partItemWs :: FactionId -> FactionDict -> Int -> Time -> ItemFull -> ItemQuant
            -> MU.Part
-partItemWs side factionD = partItemWsR side factionD False DetailMedium
+partItemWs side factionD = partItemWsRanged side factionD False DetailMedium
 
 partItemWsShort :: FactionId -> FactionDict -> Int -> Time -> ItemFull
                 -> ItemQuant
                 -> MU.Part
-partItemWsShort side factionD = partItemWsR side factionD False DetailLow
+partItemWsShort side factionD = partItemWsRanged side factionD False DetailLow
 
 partItemWsLong :: FactionId -> FactionDict -> Int -> Time -> ItemFull
                -> ItemQuant
                -> MU.Part
-partItemWsLong side factionD = partItemWsR side factionD False DetailHigh
-
-partItemWsRanged :: FactionId -> FactionDict -> Int -> Time -> ItemFull
-                 -> ItemQuant
-                 -> MU.Part
-partItemWsRanged side factionD = partItemWsR side factionD True DetailMedium
+partItemWsLong side factionD = partItemWsRanged side factionD False DetailHigh
 
 partItemShortAW :: FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
                 -> MU.Part

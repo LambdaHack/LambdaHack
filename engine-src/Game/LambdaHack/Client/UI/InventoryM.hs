@@ -481,7 +481,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
             }
       runDefItemKey keyDefs placesDef io slotKeys promptChosen cCur
     _ -> do
-      io <- itemOverlay lSlots (blid body) bagFiltered
+      let displayRanged =
+            cCur `notElem` [MStore COrgan, MOrgans, MLore SOrgan, MLore STrunk]
+      io <- itemOverlay lSlots (blid body) bagFiltered displayRanged
       let slotKeys = mapMaybe (keyOfEKM numPrefix . Right)
                      $ EM.keys bagItemSlots
       runDefItemKey keyDefs lettersDef io slotKeys promptChosen cCur

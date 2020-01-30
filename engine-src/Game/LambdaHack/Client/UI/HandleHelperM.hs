@@ -207,8 +207,8 @@ pickLeaderWithPointer = do
            Just (aid, b, _) -> pick (aid, b)
 
 itemOverlay :: MonadClientUI m
-            => SingleItemSlots -> LevelId -> ItemBag -> m OKX
-itemOverlay lSlots lid bag = do
+            => SingleItemSlots -> LevelId -> ItemBag -> Bool -> m OKX
+itemOverlay lSlots lid bag displayRanged = do
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState $ flip itemToFull
   side <- getsClient sside
@@ -244,7 +244,8 @@ itemOverlay lSlots lid bag = do
                                                (IK.isymbol $ itemKind itemFull)
                   else viewItem itemFull
                 phrase = makePhrase
-                  [partItemWsRanged side factionD k localTime itemFull kit]
+                  [partItemWsRanged side factionD displayRanged DetailMedium
+                                    k localTime itemFull kit]
                 al1 = attrStringToAL
                       $ textToAS (markEqp iid $ slotLabel l)
                         ++ (if isSquareFont propFont
@@ -675,16 +676,16 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
 
 viewLoreItems :: MonadClientUI m
               => String -> SingleItemSlots -> ItemBag -> Text
-              -> (Int -> SingleItemSlots -> m Bool)
+              -> (Int -> SingleItemSlots -> m Bool) -> Bool
               -> m K.KM
-viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
+viewLoreItems menuName lSlotsRaw trunkBag prompt examItem displayRanged = do
   CCUI{coscreen=ScreenContent{rheight}} <- getsSession sccui
   arena <- getArenaUI
   itemToF <- getsState $ flip itemToFull
   let keysPre = [K.spaceKM, K.mkChar '<', K.mkChar '>', K.escKM]
       lSlots = sortSlotMap itemToF lSlotsRaw
   promptAdd0 prompt
-  io <- itemOverlay lSlots arena trunkBag
+  io <- itemOverlay lSlots arena trunkBag displayRanged
   itemSlides <- overlayToSlideshow (rheight - 2) keysPre io
   let keyOfEKM (Left km) = km
       keyOfEKM (Right SlotChar{slotChar}) = [K.mkChar slotChar]
@@ -695,7 +696,8 @@ viewLoreItems menuName lSlotsRaw trunkBag prompt examItem = do
                             (findIndex (== slot) $ EM.keys lSlots)
         go2 <- examItem ix0 lSlots
         if go2
-        then viewLoreItems menuName lSlots trunkBag prompt examItem
+        then viewLoreItems menuName lSlots trunkBag prompt
+                           examItem displayRanged
         else return K.escKM
   ekm <- displayChoiceScreen menuName ColorFull False itemSlides keysMain
   case ekm of
