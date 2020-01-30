@@ -485,11 +485,16 @@ hTrajectories aid = do
 -- Otherwise, with some timings, it can stay on the game map dead,
 -- blocking path of human-controlled actors and alarming the hapless human.
 advanceTrajectory :: MonadServerAtomic m => ActorId -> Actor -> m ()
-{-# INLINE advanceTrajectory #-}
 advanceTrajectory aid b1 = do
   COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel $ blid b1
   arTrunk <- getsState $ (EM.! btrunk b1) . sdiscoAspect
+  let registerKill killHow = do
+        -- Kill counts for each blast particle is TMI.
+        when (bproj b1
+              && not (IA.checkFlag Ability.Blast arTrunk)) $ do
+          killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
+          addKillToAnalytics killer killHow (bfid b1) (btrunk b1)
   case btrajectory b1 of
     Just (d : lv, speed) -> do
       let tpos = bpos b1 `shift` d  -- target position
@@ -497,10 +502,7 @@ advanceTrajectory aid b1 = do
            -- Hit will clear trajectories in @reqMelee@,
            -- so no need to do that here.
            execUpdAtomic $ UpdTrajectory aid (btrajectory b1) (Just (lv, speed))
-           when (null lv && bproj b1
-                 && not (IA.checkFlag Ability.Blast arTrunk)) $ do
-             killer <- getsServer $ EM.findWithDefault aid aid . strajPushedBy
-             addKillToAnalytics killer KillDropLaunch (bfid b1) (btrunk b1)
+           when (null lv) $ registerKill KillDropLaunch
            let occupied = occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl
                reqMoveHit = reqMoveGeneric False True aid d
                reqDisp = reqDisplaceGeneric False aid
@@ -522,15 +524,31 @@ advanceTrajectory aid b1 = do
            -- to @handleTrajectories@.
            unless (bproj b1) $
              execSfxAtomic $ SfxCollideTile aid tpos
+           embedsPre <- getsState $ getEmbedBag (blid b1) tpos
            mfail <- reqAlterFail False False aid tpos
+           embedsPost <- getsState $ getEmbedBag (blid b1) tpos
            b2 <- getsState $ getActorBody aid
            lvl2 <- getLevel $ blid b2
            case mfail of
-             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos ->
+             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos -> do
                -- Too late to announce anything, but given that the way
-               -- is opened, continue flight. Don't even lose any HP,
+               -- is opened, continue flight. Don't even normally lose any HP,
                -- because it's not a hard collision, but altering.
-               return ()
+               -- However, if embed was possibly destroyed, lose HP.
+               if embedsPre /= embedsPost && not (EM.null embedsPre) then do
+                 if bhp b2 > oneM then do
+                   execUpdAtomic $ UpdRefillHP aid minusM
+                   b3 <- getsState $ getActorBody aid
+                   advanceTrajectory aid b3
+                 else do
+                   -- Projectile has too low HP to pierce; terminate its flight.
+                   execUpdAtomic $ UpdTrajectory aid (btrajectory b2)
+                                 $ Just ([], speed)
+                   registerKill KillTileLaunch
+               else
+                 -- Try again with the cleared path and possibly actors
+                 -- spawned in the way, etc.
+                 advanceTrajectory aid b2
              _ -> do
                -- Altering failed to open the passage, probably just a wall,
                -- so lose HP due to being pushed into an obstacle.
@@ -545,11 +563,7 @@ advanceTrajectory aid b1 = do
                -- not needed, because trajectory is halted, so projectile
                -- will die soon anyway
                if bproj b2
-               then when (not (IA.checkFlag Ability.Blast arTrunk)) $ do
-                      -- Kill counts for each blast particle is TMI.
-                 killer <- getsServer $ EM.findWithDefault aid aid
-                                        . strajPushedBy
-                 addKillToAnalytics killer KillTileLaunch (bfid b2) (btrunk b2)
+               then registerKill KillTileLaunch
                else when (bhp b2 > oneM) $ do
                  execUpdAtomic $ UpdRefillHP aid minusM
                  let effect = IK.RefillHP (-2)  -- -2 is a lie to ensure display
