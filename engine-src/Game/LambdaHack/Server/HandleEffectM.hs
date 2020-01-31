@@ -1279,7 +1279,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   freq <- prepareItemKind 0 (blid tb) [(grp, 1)]
   m2 <- rollItemAspect freq (blid tb)
   let (itemKnownRaw, (itemFullRaw, kitRaw)) =
-        fromMaybe (error $ "" `showFailure` (blid tb, freq, c)) m2
+        fromMaybe (error $ "" `showFailure` (blid tb, grp, freq, c)) m2
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
