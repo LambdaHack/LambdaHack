@@ -65,7 +65,12 @@ onlyRegisterItem itemKnown@(ItemKnown _ arItem _) = do
 registerItem :: MonadServerAtomic m
              => Bool -> ItemFullKit -> ItemKnown -> Container -> m ItemId
 registerItem verbose (itemFull@ItemFull{itemBase, itemKindId, itemKind}, kit)
-             itemKnown@(ItemKnown _ arItem _) container = do
+             itemKnown@(ItemKnown _ arItem _) containerRaw = do
+  container <- case containerRaw of
+    CActor aid CEqp -> do
+      b <- getsState $ getActorBody aid
+      return $! if eqpFreeN b >= fst kit then containerRaw else CActor aid CStash
+    _ -> return containerRaw
   iid <- onlyRegisterItem itemKnown
   let slore = IA.loreFromContainer arItem container
   modifyServer $ \ser ->
