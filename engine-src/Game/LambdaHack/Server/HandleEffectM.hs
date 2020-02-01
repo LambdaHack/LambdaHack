@@ -1278,8 +1278,9 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   -- Power depth of new items unaffected by number of spawned actors.
   freq <- prepareItemKind 0 (blid tb) [(grp, 1)]
   m2 <- rollItemAspect freq (blid tb)
-  let (itemKnownRaw, (itemFullRaw, kitRaw)) =
-        fromMaybe (error $ "" `showFailure` (blid tb, grp, freq, c)) m2
+  case m2 of
+    Nothing -> return UseDud  -- e.g., unique already generated
+    Just (itemKnownRaw, (itemFullRaw, kitRaw)) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1290,69 +1291,70 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
       -- e.g., slowness, the message is less misleading, and it's interesting
       -- that I'm twice slower due to aspects from two factions and not
       -- as deadly as being poisoned at twice the rate from two factions.
-      jfid = if store == COrgan && not (IK.isTimerNone tim)
-                || grp == IK.S_IMPRESSED
-             then jfidRaw
-             else Nothing
-      (itemKnown, itemFull) =
-        let ItemKnown kindIx ar _ = itemKnownRaw
-        in ( ItemKnown kindIx ar jfid
-           , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
-      kitNew = case mcount of
-        Just itemK -> (itemK, [])
-        Nothing -> kitRaw
-  itemRev <- getsServer sitemRev
-  let mquant = case HM.lookup itemKnown itemRev of
-        Nothing -> Nothing
-        Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
-  case mquant of
-    Just (iid, (_, afterIt@(timer : rest))) | not $ IK.isTimerNone tim -> do
-      -- Already has such items and timer change requested, so only increase
-      -- the timer of the first item by the delta, but don't create items.
-      let newIt = timer `timeShift` delta : rest
-      if afterIt /= newIt then do
-        execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-        -- It's hard for the client to tell this timer change from charge use,
-        -- timer reset on pickup, etc., so we create the msg manually.
-        -- Sending to both involved factions lets the player notice
-        -- both the extensions he caused and suffered. Other faction causing
-        -- that on themselves or on others won't be noticed. TMI.
-        execSfxAtomic $ SfxMsgFid (bfid sb)
-                      $ SfxTimerExtended target iid store delta
-        when (bfid sb /= bfid tb) $
-          execSfxAtomic $ SfxMsgFid (bfid tb)
-                        $ SfxTimerExtended target iid store delta
-        return UseUp
-      else return UseDud  -- probably incorrect content, but let it be
-    _ -> do
-      case miidOriginal of
-        Just iidOriginal | store /= COrgan ->
-          execSfxAtomic $ SfxMsgFid (bfid tb)
-                        $ SfxItemYield iidOriginal (blid tb)
-        _ -> return ()
-      -- No such items or some items, but void delta, so create items.
-      -- If it's, e.g., a periodic poison, the new items will stack with any
-      -- already existing items.
-      iid <- registerItem True (itemFull, kitNew) itemKnown c
-      -- If created not on the ground, ID it, because it won't be on pickup.
-      -- If ground and stash coincide, unindentified item enters stash,
-      -- so will be identified when equipped, used or dropped and picked again.
-      when (store /= CGround) $
-        discoverIfMinorEffects c iid (itemKindId itemFull)
-      -- Now, if timer change requested, change the timer, but in the new items,
-      -- possibly increased in number wrt old items.
-      when (not $ IK.isTimerNone tim) $ do
-        tb2 <- getsState $ getActorBody target
-        bagAfter <- getsState $ getBodyStoreBag tb2 store
-        localTime <- getsState $ getLocalTime (blid tb)
-        let newTimer = localTime `timeShift` delta
-            (afterK, afterIt) =
-              fromMaybe (error $ "" `showFailure` (iid, bagAfter, c))
-                        (iid `EM.lookup` bagAfter)
-            newIt = replicate afterK newTimer
-        when (afterIt /= newIt) $
-          execUpdAtomic $ UpdTimeItem iid c afterIt newIt
-      return UseUp
+      let jfid = if store == COrgan && not (IK.isTimerNone tim)
+                    || grp == IK.S_IMPRESSED
+                 then jfidRaw
+                 else Nothing
+          (itemKnown, itemFull) =
+            let ItemKnown kindIx ar _ = itemKnownRaw
+            in ( ItemKnown kindIx ar jfid
+               , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
+          kitNew = case mcount of
+            Just itemK -> (itemK, [])
+            Nothing -> kitRaw
+      itemRev <- getsServer sitemRev
+      let mquant = case HM.lookup itemKnown itemRev of
+            Nothing -> Nothing
+            Just iid -> (iid,) <$> iid `EM.lookup` bagBefore
+      case mquant of
+        Just (iid, (_, afterIt@(timer : rest))) | not $ IK.isTimerNone tim -> do
+          -- Already has such items and timer change requested, so only increase
+          -- the timer of the first item by the delta, but don't create items.
+          let newIt = timer `timeShift` delta : rest
+          if afterIt /= newIt then do
+            execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+            -- It's hard for the client to tell this timer change from charge
+            -- use, timer reset on pickup, etc., so we create the msg manually.
+            -- Sending to both involved factions lets the player notice
+            -- both the extensions he caused and suffered. Other faction causing
+            -- that on themselves or on others won't be noticed. TMI.
+            execSfxAtomic $ SfxMsgFid (bfid sb)
+                          $ SfxTimerExtended target iid store delta
+            when (bfid sb /= bfid tb) $
+              execSfxAtomic $ SfxMsgFid (bfid tb)
+                            $ SfxTimerExtended target iid store delta
+            return UseUp
+          else return UseDud  -- probably incorrect content, but let it be
+        _ -> do
+          case miidOriginal of
+            Just iidOriginal | store /= COrgan ->
+              execSfxAtomic $ SfxMsgFid (bfid tb)
+                            $ SfxItemYield iidOriginal (blid tb)
+            _ -> return ()
+          -- No such items or some items, but void delta, so create items.
+          -- If it's, e.g., a periodic poison, the new items will stack with any
+          -- already existing items.
+          iid <- registerItem True (itemFull, kitNew) itemKnown c
+          -- If created not on the ground, ID it, because it won't be on pickup.
+          -- If ground and stash coincide, unindentified item enters stash,
+          -- so will be identified when equipped, used or dropped
+          -- and picked again.
+          when (store /= CGround) $
+            discoverIfMinorEffects c iid (itemKindId itemFull)
+          -- Now, if timer change requested, change the timer,
+          -- but in the new items, possibly increased in number wrt old items.
+          when (not $ IK.isTimerNone tim) $ do
+            tb2 <- getsState $ getActorBody target
+            bagAfter <- getsState $ getBodyStoreBag tb2 store
+            localTime <- getsState $ getLocalTime (blid tb)
+            let newTimer = localTime `timeShift` delta
+                (afterK, afterIt) =
+                  fromMaybe (error $ "" `showFailure` (iid, bagAfter, c))
+                            (iid `EM.lookup` bagAfter)
+                newIt = replicate afterK newTimer
+            when (afterIt /= newIt) $
+              execUpdAtomic $ UpdTimeItem iid c afterIt newIt
+          return UseUp
 
 -- ** DestroyItem
 
