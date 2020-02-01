@@ -357,14 +357,14 @@ countIidConsumed :: ItemFullKit
 countIidConsumed (ItemFull{itemKind}, (k, _)) grps0 =
   let hasGroup grp =
         maybe False (> 0) $ lookup grp $ IK.ifreq itemKind
-      matchGroup (nToDestroy, grps) (n, grp) =
+      matchGroup (nToUse, grps) (n, grp) =
         if hasGroup grp
-        then let mkn = min k n
-             in ( max nToDestroy mkn
+        then let mkn = min k n  -- even if durable, use each copy only once
+             in ( max nToUse mkn
                 , if n - mkn > 0
                   then (n - mkn, grp) : grps
                   else grps )
-        else (nToDestroy, (n, grp) : grps)
+        else (nToUse, (n, grp) : grps)
   in foldl' matchGroup (0, []) grps0
 
 subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
@@ -378,12 +378,12 @@ subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                     ((store, durable), (iid, itemFullKit@(itemFull, (_, it)))) =
   case countIidConsumed itemFullKit grps1 of
     (0, _) -> (bagsToLose1, iidsToApply1, grps1)
-    (nToDestroy, grps2) ->
+    (nToUse, grps2) ->
       if durable
       then ( bagsToLose1
-           , (store, (iid, itemFull)) : iidsToApply1
+           , replicate nToUse (store, (iid, itemFull)) ++ iidsToApply1
            , grps2 )
-      else ( let kit2 = (nToDestroy, take nToDestroy it)
+      else ( let kit2 = (nToUse, take nToUse it)
                  removedBags = EM.singleton store $ EM.singleton iid kit2
              in EM.unionWith (EM.unionWith mergeItemQuant)
                              removedBags bagsToLose1

@@ -1447,7 +1447,7 @@ pickDroppable respectNoItem aid b = do
 
 -- | Make the target actor destroy the given items, if all present,
 -- or none at all, if any is missing. To be used in crafting.
--- The item that caused the effect itself is immune (any copies).
+-- The item that caused the effect itself is not considered (any copies).
 effectConsumeItems :: MonadServerAtomic m
                    => m () -> ItemId -> ActorId
                    -> [(Int, GroupName ItemKind)]

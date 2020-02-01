@@ -174,7 +174,8 @@ data Effect =
       --   the given number of items of the groups from @CGround@ and @CEqp@;
       --   if not all items present in all groups, no item destroyed;
       --   if an item belongs to many groups, counts for all (otherwise,
-      --   some orders of destroying would succeed, while others would not)
+      --   some orders of destroying would succeed, while others would not);
+      --   even if item durable, as many copies needed and applied as specified
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
       --   the first integer says how many item kinds to drop, the second,
