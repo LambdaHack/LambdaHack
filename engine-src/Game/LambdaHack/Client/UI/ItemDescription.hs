@@ -152,20 +152,14 @@ textAllPowers width detailLevel skipRecharging
               if orTsTooLarge
               then (orEffsRaw, noOrSmashCombineEffsRaw)
               else ([], noSmashCombineEffs)
-            unCreate (IK.CreateItem (Just k) _ grp _) = [(k, grp)]
-            unCreate (IK.AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
-            unCreate _ = []
             unOr (IK.OrEffect eff1 eff2) = unOr eff1 ++ unOr eff2
             unOr eff = [eff]
             ppAnd (IK.AndEffect (IK.ConsumeItems tools raw) eff) =
-              let tcraft = makePhrase [ "of crafting"
-                                      , describeTools $ unCreate eff ]
-                  traw = makePhrase [describeTools raw]
-                  ttools = makePhrase [describeTools tools]
+              let (tcraft, traw, ttools) = describeCrafting tools raw eff
               in if T.length tcraft + T.length traw + T.length ttools
-                    <= width - 15
-                 then tcraft <+> "from" <+> traw <+> "using" <+> ttools
-                 else tcraft <> "\n--- from" <+> traw <> "\n--- using" <+> ttools
+                    <= width - 4
+                 then tcraft <+> traw <+> ttools
+                 else tcraft <> "\n---" <+> traw <> "\n---" <+> ttools
             ppAnd eff = ppE eff
             ppOr eff = "*" <+> T.intercalate "\n* "
                                (nub $ filter (not . T.null)

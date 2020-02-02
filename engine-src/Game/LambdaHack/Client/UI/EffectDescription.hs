@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI.EffectDescription
   ( DetailLevel(..), effectToSuffix, detectToObject, detectToVerb
   , skillName, skillDesc, skillToDecorator, skillSlots
   , kindAspectToSuffix, aspectToSentence, affixDice
-  , describeTools, describeToolsAlternative
+  , describeToolsAlternative, describeCrafting
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , slotToSentence, tmodToSuff, affixBonus, wrapInParens, wrapInChevrons
@@ -137,13 +137,8 @@ effectToSuffix detailLevel effect =
     VerbMsg _ -> ""  -- no description for an effect that prints a description
     AndEffect (ConsumeItems tools raw) eff -> case detailLevel of
       DetailAll ->
-        let unCreate (CreateItem (Just k) _ grp _) = [(k, grp)]
-            unCreate (AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
-            unCreate _ = []
-            grpsCreate = unCreate eff
-        in makePhrase [ "of crafting", describeTools grpsCreate
-                      , "from", describeTools raw
-                      , "using", describeTools tools ]
+       let (tcraft, traw, ttools) = describeCrafting tools raw eff
+       in tcraft <+> traw <+> ttools
       DetailHigh -> "of crafting (recipes in lore menu)"
       _ -> "of crafting"
     AndEffect eff1 eff2 ->
@@ -423,3 +418,27 @@ describeTools =
 describeToolsAlternative :: [[(Int, GroupName ItemKind)]] -> Text
 describeToolsAlternative =
   T.intercalate " or " . map (\grp -> makePhrase [describeTools grp])
+
+describeCrafting :: [(Int, GroupName ItemKind)]
+                 -> [(Int, GroupName ItemKind)]
+                 -> Effect
+                 -> (Text, Text, Text)
+describeCrafting tools raw eff =
+  let unCreate (CreateItem (Just k) _ grp _) = [(k, grp)]
+      unCreate (AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
+      unCreate _ = []
+      grpsCreate = unCreate eff
+      tcraft = makePhrase $
+        ["of crafting"]
+        ++ (if null grpsCreate
+            then ["nothing"]
+            else [describeTools grpsCreate])
+      traw = makePhrase $
+        if null raw
+        then []
+        else ["from", describeTools raw]
+      ttools = makePhrase $
+        if null tools
+        then []
+        else ["using", describeTools tools]
+  in (tcraft, traw, ttools)
