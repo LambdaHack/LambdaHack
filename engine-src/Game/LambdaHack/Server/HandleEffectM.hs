@@ -1339,7 +1339,12 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
           -- If ground and stash coincide, unindentified item enters stash,
           -- so will be identified when equipped, used or dropped
           -- and picked again.
-          when (store /= CGround) $
+          discoAspect <- getsState sdiscoAspect
+          let arItem = discoAspect EM.! iid
+          if isJust mcount  -- not a random effect, so probably crafting
+             && not (IA.isHumanTrinket (itemKind itemFull))
+          then execUpdAtomic $ UpdDiscover c iid (itemKindId itemFull) arItem
+          else when (store /= CGround) $
             discoverIfMinorEffects c iid (itemKindId itemFull)
           -- Now, if timer change requested, change the timer,
           -- but in the new items, possibly increased in number wrt old items.
