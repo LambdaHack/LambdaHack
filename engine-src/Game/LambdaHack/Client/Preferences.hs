@@ -164,8 +164,8 @@ effectToBenefit cops fid factionD eff =
     IK.PullActor _ -> (0, -100)   -- pushing others may crush them against wall
     IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
-    IK.OneOf efs ->
-      let bs = map (effectToBenefit cops fid factionD) efs
+    IK.OneOf effs ->
+      let bs = map (effectToBenefit cops fid factionD) effs
           f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
           (effSelf, effFoe) = foldr f (0, 0) bs
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
@@ -178,8 +178,16 @@ effectToBenefit cops fid factionD eff =
       -- (animations should not fail, after all), and start composite
       -- effect with the main thing
     IK.OrEffect eff1 _ -> effectToBenefit cops fid factionD eff1
+    IK.SeqEffect effs -> effectToBenefits cops fid factionD effs
     IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
+
+effectToBenefits :: COps -> FactionId -> FactionDict -> [IK.Effect]
+                 -> (Double, Double)
+effectToBenefits cops fid factionD effs =
+  let effPairs = map (effectToBenefit cops fid factionD) effs
+      f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
+  in foldr f (0, 0) effPairs
 
 -- See the comment for @Paralyze@.
 averageTurnValue :: Double
@@ -426,10 +434,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       timeoutSqrt = sqrt $ max 2 timeout
       scaleTimeout v = v / timeoutSqrt
       (effSelf, effFoe) =
-        let effPairs = map (effectToBenefit cops fid factionD)
-                           (IK.ieffects itemKind)
-            f (self, foe) (accSelf, accFoe) = (self + accSelf, foe + accFoe)
-        in foldr f (0, 0) effPairs
+        effectToBenefits cops fid factionD (IK.ieffects itemKind)
       -- Durability doesn't have any numerical impact on @eqpSum,
       -- because item is never consumed by just being stored in equipment.
       -- Also no numerical impact for flinging, because we can't fling it again

@@ -758,6 +758,8 @@ applyItem aid applyGroup = do
         disqualify durable eff1 || disqualify durable eff2
       disqualify durable (IK.OrEffect eff1 eff2) =
         disqualify durable eff1 || disqualify durable eff2
+      disqualify durable (IK.SeqEffect effs) =
+        or $ map (disqualify durable) effs
       disqualify _ _ = False
       q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
         let arItem = aspectRecordFull itemFull
@@ -796,6 +798,7 @@ applyItem aid applyGroup = do
             getHP (IK.RefillHP p) | p > 0 = True
             getHP (IK.AndEffect eff1 eff2) = getHP eff1 || getHP eff2
             getHP (IK.OrEffect eff1 eff2) = getHP eff1 || getHP eff2
+            getHP (IK.SeqEffect effs) = or $ map getHP effs
             getHP _ = False
             heals = any getHP $ IK.ieffects itemKind
             dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included

@@ -91,7 +91,7 @@ effectToSuffix detailLevel effect =
     CreateItem _ COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
-    CreateItem{} -> "of gain"  -- too much noise from crafting; see @AndEffect@
+    CreateItem{} -> "of gain"  -- too much noise from crafting; see @SeqEffect@
     DestroyItem{} -> "of loss"
     ConsumeItems{} -> "of consumption"  -- too much noise from crafting
     DropItem n k store grp ->
@@ -133,8 +133,6 @@ effectToSuffix detailLevel effect =
         _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OnSmash _ -> ""  -- printed inside a separate section
     OnCombine _ -> ""  -- printed inside a separate section
-    VerbNoLonger _ -> ""  -- no description for a flavour effect
-    VerbMsg _ -> ""  -- no description for an effect that prints a description
     AndEffect (ConsumeItems tools raw) eff -> case detailLevel of
       DetailAll ->
        let (tcraft, traw, ttools) = describeCrafting tools raw eff
@@ -151,6 +149,13 @@ effectToSuffix detailLevel effect =
               $ nub $ filter (not . T.null)
               $ map (effectToSuffix detailLevel) [eff1, eff2]
       in if T.null t then "of alternative processing" else t
+    SeqEffect effs ->
+      let t = T.intercalate " then "
+              $ nub $ filter (not . T.null)
+              $ map (effectToSuffix detailLevel) effs
+      in if T.null t then "of sequential processing" else t
+    VerbNoLonger _ -> ""  -- no description for a flavour effect
+    VerbMsg _ -> ""  -- no description for an effect that prints a description
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of
@@ -425,7 +430,7 @@ describeCrafting :: [(Int, GroupName ItemKind)]
                  -> (Text, Text, Text)
 describeCrafting tools raw eff =
   let unCreate (CreateItem (Just k) _ grp _) = [(k, grp)]
-      unCreate (AndEffect eff1 eff2) = unCreate eff1 ++ unCreate eff2
+      unCreate (SeqEffect effs) = concatMap unCreate effs
       unCreate _ = []
       grpsCreate = unCreate eff
       tcraft = makePhrase $

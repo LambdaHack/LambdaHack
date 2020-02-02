@@ -20,7 +20,8 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectDischarge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
-  , effectVerbNoLonger, effectVerbMsg, effectAndEffect, effectOrEffect
+  , effectAndEffect, effectOrEffect, effectSeqEffect
+  , effectVerbNoLonger, effectVerbMsg
 #endif
   ) where
 
@@ -453,10 +454,11 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
-    IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
-    IK.VerbMsg _ -> effectVerbMsg execSfxSource source
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
+    IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
+    IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
+    IK.VerbMsg _ -> effectVerbMsg execSfxSource source
 
 -- * Individual semantic functions for effects
 
@@ -1823,6 +1825,8 @@ effectDetect execSfx d radius target pos = do
         effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot (IK.OrEffect eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
+      effectHasLoot (IK.SeqEffect effs) =
+        or $ map effectHasLoot effs
       effectHasLoot _ = False
       (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
@@ -2040,26 +2044,6 @@ effectOneOf recursiveCall l = do
   foldr f (return UseDud) call99
   -- no @execSfx@, because individual effects sent them
 
--- ** VerbNoLonger
-
-effectVerbNoLonger :: MonadServerAtomic m
-                   => Bool -> m () -> ActorId -> m UseResult
-effectVerbNoLonger effUseAllCopies execSfx source = do
-  b <- getsState $ getActorBody source
-  when (effUseAllCopies  -- @UseUp@ ensures that if all used, all destroyed
-        && not (bproj b)) $  -- no spam when projectiles activate
-    execSfx  -- announce that all copies have run out (or whatever message)
-  return UseUp  -- help to destroy the copy, even if not all used up
-
--- ** VerbMsg
-
-effectVerbMsg :: MonadServerAtomic m => m () -> ActorId -> m UseResult
-effectVerbMsg execSfx source = do
-  b <- getsState $ getActorBody source
-  unless (bproj b) execSfx  -- don't spam when projectiles activate
-  return UseUp  -- announcing always successful and this helps
-                -- to destroy the item
-
 -- ** AndEffect
 
 effectAndEffect :: forall m. MonadServerAtomic m
@@ -2082,3 +2066,33 @@ effectOrEffect recursiveCall eff1 eff2 = do
   then return UseUp
   else recursiveCall eff2
   -- no @execSfx@, because individual effects sent them
+
+-- ** SeqEffect
+
+effectSeqEffect :: forall m. MonadServerAtomic m
+                => (IK.Effect -> m UseResult) -> [IK.Effect]
+                -> m UseResult
+effectSeqEffect recursiveCall effs = do
+  mapM_ recursiveCall effs
+  return UseUp
+  -- no @execSfx@, because individual effects sent them
+
+-- ** VerbNoLonger
+
+effectVerbNoLonger :: MonadServerAtomic m
+                   => Bool -> m () -> ActorId -> m UseResult
+effectVerbNoLonger effUseAllCopies execSfx source = do
+  b <- getsState $ getActorBody source
+  when (effUseAllCopies  -- @UseUp@ ensures that if all used, all destroyed
+        && not (bproj b)) $  -- no spam when projectiles activate
+    execSfx  -- announce that all copies have run out (or whatever message)
+  return UseUp  -- help to destroy the copy, even if not all used up
+
+-- ** VerbMsg
+
+effectVerbMsg :: MonadServerAtomic m => m () -> ActorId -> m UseResult
+effectVerbMsg execSfx source = do
+  b <- getsState $ getActorBody source
+  unless (bproj b) execSfx  -- don't spam when projectiles activate
+  return UseUp  -- announcing always successful and this helps
+                -- to destroy the item

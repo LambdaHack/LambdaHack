@@ -219,6 +219,7 @@ data Effect =
       -- ^ trigger the effect when an item combined with this one
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
+  | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
   | VerbNoLonger Text
       -- ^ a sentence with the actor causing the effect as subject and the given
       --   text as verb that is emitted when an activation causes an item
@@ -299,6 +300,7 @@ forApplyEffect eff = case eff of
   OnCombine{} -> False
   AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
+  SeqEffect effs -> or $ map forApplyEffect effs
   VerbNoLonger{} -> False
   VerbMsg{} -> False
   ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
@@ -309,6 +311,7 @@ isEffEscape Escape{} = True
 isEffEscape (OneOf l) = any isEffEscape l
 isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
 isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
+isEffEscape (SeqEffect effs) = or $ map isEffEscape effs
 isEffEscape _ = False
 
 isEffEscapeOrAscend :: Effect -> Bool
@@ -319,6 +322,8 @@ isEffEscapeOrAscend (AndEffect eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend (OrEffect eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
+isEffEscapeOrAscend (SeqEffect effs) =
+  or $ map isEffEscapeOrAscend effs
 isEffEscapeOrAscend _ = False
 
 timeoutAspect :: Aspect -> Bool
@@ -362,6 +367,7 @@ getDropOrgans =
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
+      f (SeqEffect effs) = concatMap f effs
       f _ = []
   in concatMap f . ieffects
 
@@ -530,6 +536,7 @@ validateNotNested effs t f =
       g (OnCombine effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
+      g (SeqEffect effs2) = or $ map h effs2
       g _ = False
       h effect = f effect || g effect
       ts = filter g effs
@@ -543,6 +550,7 @@ checkSubEffectProp f eff =
       g (OnCombine effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
+      g (SeqEffect effs) = or $ map h effs
       g _ = False
       h effect = f effect || g effect
   in h eff
