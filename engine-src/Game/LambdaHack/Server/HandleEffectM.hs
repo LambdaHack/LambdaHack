@@ -1505,9 +1505,10 @@ consumeItems target bagsToLose iidsToApply = do
         let itemBase = itemD EM.! iid
         in execUpdAtomic $ UpdDestroyItem True iid itemBase kit c) bagToLose
   -- But afterwards we do apply normal effects of durable items,
-  -- even if the actor or other items displaced in the process.
-  -- This makes applying double-purpose tool-weapons costly,
-  -- which is also why durable tools are considered last.
+  -- even if the actor or other items displaced in the process,
+  -- as long as a number of the items is still there.
+  -- So if a harmful double-purpose tool-component is both to be used
+  -- and destroyed, it will be lost, but at least it won't harm anybody.
   let applyItemIfPresent (store, (iid, itemFull)) = do
         let c = CActor target store
         bag <- getsState $ getContainerBag c

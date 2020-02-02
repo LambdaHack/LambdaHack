@@ -174,12 +174,15 @@ data Effect =
       --   the same behaviour as when transforming terrain using items)
       --   and destroys items matching @toDestroy@, invoking no effects,
       --   regardless of durability;
-      --   the items are taken from @CGround@ and @CEqp@, preferring non-durable;
-      --   if not all items are present in for all groups at once,
-      --   no item are destroyed; if an item belongs to many groups,
-      --   counts for all (otherwise, some orders of destroying would succeed,
+      --   the items are taken from @CGround@ and @CEqp@, preferring
+      --   @CGround@ and non-durable (since durable can harm when used
+      --   and may be more vauable when destroyed); if not all required items
+      --   are present, no item are destroyed; if an item belongs to many groups
+      --   in the sum of @toUse@ and @toDestroy@, it counts for all
+      --   (otherwise, some orders of destroying would succeed,
       --   while others would not); even if item durable, as many copies
-      --   are needed and applied as specified
+      --   are needed as specified, not just one applied many times;
+      --   items are first destroyed and then, if any copies left, applied
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
       --   the first integer says how many item kinds to drop, the second,

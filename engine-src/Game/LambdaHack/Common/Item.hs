@@ -385,16 +385,16 @@ subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
                        , [(Bool, Int, GroupName IK.ItemKind)] )
 subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                     ((store, durable), (iid, itemFullKit@(itemFull, (_, it)))) =
-  case countIidConsumed itemFullKit grps1 of
-    (nToApplyIfDurable, nToDestroyAlways, grps2) ->
-      let (nToApply, nToDestroy) = if durable
-                                 then (nToApplyIfDurable, nToDestroyAlways)
-                                 else (0, nToApplyIfDurable + nToDestroyAlways)
-      in ( if nToDestroy == 0
-           then bagsToLose1  -- avoid vacuus @UpdLoseItem@
-           else let kit2 = (nToDestroy, take nToDestroy it)
-                    removedBags = EM.singleton store $ EM.singleton iid kit2
-                in EM.unionWith (EM.unionWith mergeItemQuant)
-                                removedBags bagsToLose1
-         , replicate nToApply (store, (iid, itemFull)) ++ iidsToApply1
-         , grps2 )
+  let (nToApplyIfDurable, nToDestroyAlways, grps2) =
+        countIidConsumed itemFullKit grps1
+      (nToApply, nToDestroy) = if durable
+                               then (nToApplyIfDurable, nToDestroyAlways)
+                               else (0, max nToApplyIfDurable nToDestroyAlways)
+  in ( if nToDestroy == 0
+       then bagsToLose1  -- avoid vacuus @UpdLoseItem@
+       else let kit2 = (nToDestroy, take nToDestroy it)
+                removedBags = EM.singleton store $ EM.singleton iid kit2
+            in EM.unionWith (EM.unionWith mergeItemQuant)
+                            removedBags bagsToLose1
+     , replicate nToApply (store, (iid, itemFull)) ++ iidsToApply1
+     , grps2 )
