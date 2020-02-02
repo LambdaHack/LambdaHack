@@ -1007,9 +1007,10 @@ processTileActions source tpos tas = do
         Tile.ToAction{} -> if EM.null embeds
                            then return $ Right ()
                            else processTA rest
-        Tile.WithAction grps0 _ -> do
+        Tile.WithAction tools0 _ -> do
           -- UI requested, so this is voluntary, so item loss is fine.
-          let (_, iidsToApply, grps) =
+          let grps0 = map (\(x, y) -> (False, x, y)) tools0  -- apply if durable
+              (_, iidsToApply, grps) =
                 foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
           if null grps then do
             let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
@@ -1051,11 +1052,13 @@ verifyEscape = do
 verifyToolEffect :: MonadClientUI m
                  => LevelId -> CStore -> ItemFull -> m (FailOrCmd ())
 verifyToolEffect lid store itemFull = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   localTime <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   let object = makePhrase
-                 [partItemWsShort side factionD 1 localTime itemFull (1, [])]
+                 [partItemWsShort rwidth side factionD 1 localTime
+                                  itemFull (1, [])]
       prompt = "Do you really want to transform the terrain using the"
                <+> object
                <+> "that may cause substantial side-effects?"
@@ -1273,7 +1276,7 @@ itemMenuHuman cmdAction = do
           let foundPrefix = textToAS $
                 if null foundTexts then "" else "The item is also in:"
               markParagraphs = rheight >= 45
-              descAl = itemDesc markParagraphs (bfid b) factionD
+              descAl = itemDesc rwidth markParagraphs (bfid b) factionD
                                 (Ability.getSk Ability.SkHurtMelee actorMaxSk)
                                 fromCStore localTime jlid itemFull kit
               (descSymAl, descBlurbAl) = span (/= Color.spaceAttrW32) descAl

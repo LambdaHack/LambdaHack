@@ -352,40 +352,49 @@ listToolsToConsume kitAssG kitAssE =
      ++ zip (repeat (CEqp, True)) kitAssET
 
 countIidConsumed :: ItemFullKit
-                 -> [(Int, GroupName IK.ItemKind)]
-                 -> (Int, [(Int, GroupName IK.ItemKind)])
+                 -> [(Bool, Int, GroupName IK.ItemKind)]
+                 -> (Int, Int, [(Bool, Int, GroupName IK.ItemKind)])
 countIidConsumed (ItemFull{itemKind}, (k, _)) grps0 =
   let hasGroup grp =
         maybe False (> 0) $ lookup grp $ IK.ifreq itemKind
-      matchGroup (nToUse, grps) (n, grp) =
+      matchGroup (nToApplyIfDurable, nToDestroyAlways, grps)
+                 (destroyAlways, n, grp) =
         if hasGroup grp
         then let mkn = min k n  -- even if durable, use each copy only once
-             in ( max nToUse mkn
-                , if n - mkn > 0
-                  then (n - mkn, grp) : grps
-                  else grps )
-        else (nToUse, (n, grp) : grps)
-  in foldl' matchGroup (0, []) grps0
+                 grps2 = if n - mkn > 0
+                         then (destroyAlways, n - mkn, grp) : grps
+                         else grps
+             in if destroyAlways
+                then ( nToApplyIfDurable
+                     , max nToDestroyAlways mkn
+                     , grps2 )
+                else ( max nToApplyIfDurable mkn
+                     , nToDestroyAlways
+                     , grps2 )
+        else ( nToApplyIfDurable
+             , nToDestroyAlways
+             , (destroyAlways, n, grp) : grps )
+  in foldl' matchGroup (0, 0, []) grps0
 
 subtractIidfromGrps :: ( EM.EnumMap CStore ItemBag
                        , [(CStore, (ItemId, ItemFull))]
-                       , [(Int, GroupName IK.ItemKind)] )
+                       , [(Bool, Int, GroupName IK.ItemKind)] )
                     -> ((CStore, Bool), (ItemId, ItemFullKit))
                     -> ( EM.EnumMap CStore ItemBag
                        , [(CStore, (ItemId, ItemFull))]
-                       , [(Int, GroupName IK.ItemKind)] )
+                       , [(Bool, Int, GroupName IK.ItemKind)] )
 subtractIidfromGrps (bagsToLose1, iidsToApply1, grps1)
                     ((store, durable), (iid, itemFullKit@(itemFull, (_, it)))) =
   case countIidConsumed itemFullKit grps1 of
-    (0, _) -> (bagsToLose1, iidsToApply1, grps1)
-    (nToUse, grps2) ->
-      if durable
-      then ( bagsToLose1
-           , replicate nToUse (store, (iid, itemFull)) ++ iidsToApply1
-           , grps2 )
-      else ( let kit2 = (nToUse, take nToUse it)
-                 removedBags = EM.singleton store $ EM.singleton iid kit2
-             in EM.unionWith (EM.unionWith mergeItemQuant)
-                             removedBags bagsToLose1
-           , iidsToApply1
-           , grps2 )
+    (nToApplyIfDurable, nToDestroyAlways, grps2) ->
+      let (nToApply, nToDestroy) = if durable
+                                 then (nToApplyIfDurable, nToDestroyAlways)
+                                 else (0, nToApplyIfDurable + nToDestroyAlways)
+      in ( if nToDestroy == 0
+           then bagsToLose1  -- avoid vacuus @UpdLoseItem@
+           else let kit2 = (nToDestroy, take nToDestroy it)
+                    removedBags = EM.singleton store $ EM.singleton iid kit2
+                in EM.unionWith (EM.unionWith mergeItemQuant)
+                                removedBags bagsToLose1
+         , replicate nToApply (store, (iid, itemFull)) ++ iidsToApply1
+         , grps2 )

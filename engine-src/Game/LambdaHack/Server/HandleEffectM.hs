@@ -434,7 +434,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
                        store grp tim
     IK.DestroyItem n k store grp ->
       effectDestroyItem execSfx iid n k store target grp
-    IK.ConsumeItems grps -> effectConsumeItems execSfx iid target grps
+    IK.ConsumeItems tools raw -> effectConsumeItems execSfx iid target tools raw
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
     IK.Discharge nDm -> effectDischarge execSfx iid nDm target
     IK.PolyItem -> effectPolyItem execSfx iid target
@@ -1451,12 +1451,15 @@ pickDroppable respectNoItem aid b = do
 effectConsumeItems :: MonadServerAtomic m
                    => m () -> ItemId -> ActorId
                    -> [(Int, GroupName ItemKind)]
+                   -> [(Int, GroupName ItemKind)]
                    -> m UseResult
-effectConsumeItems execSfx iidOriginal target grps0 = do
+effectConsumeItems execSfx iidOriginal target tools0 raw0 = do
   kitAssG <- getsState $ kitAssocs target [CGround]
   kitAssE <- getsState $ kitAssocs target [CEqp]
   let kitAss = listToolsToConsume kitAssG kitAssE
       is = filter ((/= iidOriginal) . fst . snd) kitAss
+      grps0 = map (\(x, y) -> (False, x, y)) tools0  -- apply if durable
+              ++ map (\(x, y) -> (True, x, y)) raw0  -- destroy always
       (bagsToLose3, iidsToApply3, grps3) =
         foldl' subtractIidfromGrps (EM.empty, [], grps0) is
   if null grps3 then do

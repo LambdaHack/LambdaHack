@@ -36,6 +36,8 @@ import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
+import           Game.LambdaHack.Client.UI.Content.Screen
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend (frontendName)
 import           Game.LambdaHack.Client.UI.ItemDescription
@@ -111,8 +113,9 @@ targetDesc mtarget = do
                 itemFull <- getsState $ itemToFull iid
                 side <- getsClient sside
                 factionD <- getsState sfactionD
+                CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
                 let (name, powers) =
-                      partItem side factionD localTime itemFull kit
+                      partItem rwidth side factionD localTime itemFull kit
                 return $! makePhrase [MU.Car1Ws k name, powers]
               _ -> return $! "many items at" <+> tshow p
           else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
@@ -521,8 +524,9 @@ drawFrameStatus drawnLevelId = do
                 localTime <- getsState $ getLocalTime (blid b)
                 itemFull <- getsState $ itemToFull iid
                 factionD <- getsState sfactionD
+                CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
                 let (name, powers) =
-                      partItem (bfid b) factionD localTime itemFull kit
+                      partItem rwidth (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
                 return (textToAS $ "Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
         | otherwise =

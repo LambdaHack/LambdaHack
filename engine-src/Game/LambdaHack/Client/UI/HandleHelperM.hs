@@ -209,6 +209,7 @@ pickLeaderWithPointer = do
 itemOverlay :: MonadClientUI m
             => SingleItemSlots -> LevelId -> ItemBag -> Bool -> m OKX
 itemOverlay lSlots lid bag displayRanged = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   localTime <- getsState $ getLocalTime lid
   itemToF <- getsState $ flip itemToFull
   side <- getsClient sside
@@ -244,8 +245,8 @@ itemOverlay lSlots lid bag displayRanged = do
                                                (IK.isymbol $ itemKind itemFull)
                   else viewItem itemFull
                 phrase = makePhrase
-                  [partItemWsRanged side factionD displayRanged DetailMedium
-                                    k localTime itemFull kit]
+                  [partItemWsRanged rwidth side factionD displayRanged
+                                    DetailMedium k localTime itemFull kit]
                 al1 = attrStringToAL
                       $ textToAS (markEqp iid $ slotLabel l)
                         ++ (if isSquareFont propFont
@@ -391,6 +392,7 @@ lookAtTile :: MonadClientUI m
            -> LevelId    -- ^ level the position is at
            -> m Text
 lookAtTile canSee p aid lidV = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -420,7 +422,7 @@ lookAtTile canSee p aid lidV = do
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             arItem = aspectRecordFull itemFull
-            nWs = partItemWsLong side factionD k localTime itemFull kit
+            nWs = partItemWsLong rwidth side factionD k localTime itemFull kit
             verb = if k == 1 || IA.checkFlag Ability.Condition arItem
                    then "is"
                    else "are"
@@ -439,6 +441,7 @@ lookAtActors :: MonadClientUI m
              -> LevelId    -- ^ level the position is at
              -> m Text
 lookAtActors p lidV = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   inhabitants <- getsState $ \s -> posToAidAssocs p lidV s
   sactorUI <- getsSession sactorUI
@@ -469,7 +472,8 @@ lookAtActors p lidV = do
               projDesc | not $ bproj body = ""
                        | otherwise =
                 let kit = beqp body EM.! btrunk body
-                    ps = [partItemMediumAW side factionD localTime itemFull kit]
+                    ps = [partItemMediumAW rwidth side factionD localTime
+                                           itemFull kit]
                     tailWords = tail . T.words . makePhrase
                 in if tailWords ps == tailWords subjects
                    then ""
@@ -547,6 +551,7 @@ lookAtItems :: MonadClientUI m
             -> ActorId    -- ^ the actor that looks
             -> m Text
 lookAtItems canSee p aid = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   itemToF <- getsState $ flip itemToFull
   b <- getsState $ getActorBody aid
   -- Not using @viewedLevelUI@, because @aid@ may be temporarily not a leader.
@@ -565,7 +570,7 @@ lookAtItems canSee p aid = do
                           | canSee -> "notice"
                           | otherwise -> "remember"
       nWs (iid, kit@(k, _)) =
-        partItemWs side factionD k localTime (itemToF iid) kit
+        partItemWs rwidth side factionD k localTime (itemToF iid) kit
       object = case EM.assocs is of
         ii : _ : _ : _ | standingOn && bfid b == side ->
           MU.Phrase [nWs ii, "and other items"]
@@ -655,7 +660,7 @@ displayItemLore itemBag meleeSkill promptFun slotIndex lSlots = do
   -- The hacky level 0 marks items never seen, but sent by server at gameover.
   jlid <- getsSession $ fromMaybe (toEnum 0) <$> EM.lookup iid2 . sitemUI
   FontSetup{propFont} <- getFontSetup
-  let attrLine = itemDesc True side factionD meleeSkill
+  let attrLine = itemDesc rwidth True side factionD meleeSkill
                           CGround localTime jlid itemFull2 kit2
       ov = EM.singleton propFont $ offsetOverlay
            $ splitAttrString rwidth attrLine

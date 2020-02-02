@@ -661,8 +661,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             -- Let even completely apply-unskilled actors trigger basic embeds.
             -- See the note about no skill check when melee triggers effects.
             legal = permittedApply localTime maxBound calmE itemFull kit
-            (object1, object2) = partItemShortest (bfid sb) factionD localTime
-                                                  itemFull (1, [])
+            (object1, object2) =
+              partItemShortest maxBound (bfid sb) factionD localTime
+                               itemFull (1, [])
             name = makePhrase [object1, object2]
         case legal of
           Left ApplyNoEffects -> return UseDud  -- pure flavour embed
@@ -765,7 +766,9 @@ reqAlterFail onCombineOnly voluntary source tpos = do
                            , (GroupName TK.TileKind) )
                         -> [((CStore, Bool), (ItemId, ItemFullKit))]
                         -> m Bool
-          tryChangeWith (grps0, tgroup) kitAss = do
+          tryChangeWith (tools0, tgroup) kitAss = do
+            let grps0 = map (\(x, y) -> (False, x, y)) tools0
+                  -- apply if durable
             let (bagsToLose, iidsToApply, grps) =
                   foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
             if null grps then do

@@ -167,15 +167,19 @@ data Effect =
       --   random timer; it cardinality not specified, roll it
   | DestroyItem Int Int CStore (GroupName ItemKind)
       -- ^ destroy some items of the group from the store; see below about Ints
-  | ConsumeItems [(Int, GroupName ItemKind)]
-      -- ^ consume (destroy non-durable, without invoking OnSmash effects;
-      --   apply normal effects of durable, without destroying them;
-      --   the same as when transforming terrain using items)
-      --   the given number of items of the groups from @CGround@ and @CEqp@;
-      --   if not all items present in all groups, no item destroyed;
-      --   if an item belongs to many groups, counts for all (otherwise,
-      --   some orders of destroying would succeed, while others would not);
-      --   even if item durable, as many copies needed and applied as specified
+  | ConsumeItems [(Int, GroupName ItemKind)] [(Int, GroupName ItemKind)]
+      -- ^ @ConsumeItems toUse toDestroy@ uses items matching @toUse@
+      --   (destroys non-durable, without invoking OnSmash effects;
+      --   applies normal effects of durable, without destroying them;
+      --   the same behaviour as when transforming terrain using items)
+      --   and destroys items matching @toDestroy@, invoking no effects,
+      --   regardless of durability;
+      --   the items are taken from @CGround@ and @CEqp@, preferring non-durable;
+      --   if not all items are present in for all groups at once,
+      --   no item are destroyed; if an item belongs to many groups,
+      --   counts for all (otherwise, some orders of destroying would succeed,
+      --   while others would not); even if item durable, as many copies
+      --   are needed and applied as specified
   | DropItem Int Int CStore (GroupName ItemKind)
       -- ^ make the actor drop items of the given group from the given store;
       --   the first integer says how many item kinds to drop, the second,
@@ -480,8 +484,8 @@ validateSingle ik@ItemKind{..} =
   ++ (let nonPositiveEffect :: Effect -> Bool
           nonPositiveEffect (CreateItem (Just n) _ _ _) | n <= 0 = True
           nonPositiveEffect (DestroyItem n k _ _) | n <= 0 || k <= 0 = True
-          nonPositiveEffect (ConsumeItems grps)
-            | any ((<= 0) . fst) grps = True
+          nonPositiveEffect (ConsumeItems tools raw)
+            | any ((<= 0) . fst) (tools ++ raw) = True
           nonPositiveEffect (DropItem n k _ _) | n <= 0 || k <= 0 = True
           nonPositiveEffect (Detect _ n) | n <= 0 = True
           nonPositiveEffect _ = False

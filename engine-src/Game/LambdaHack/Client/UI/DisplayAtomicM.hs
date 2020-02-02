@@ -573,6 +573,7 @@ itemVerbMUGeneral :: MonadClientUI m
                   => Bool -> ItemId -> ItemQuant -> MU.Part -> Container
                   -> m Text
 itemVerbMUGeneral verbose iid kit@(k, _) verb c = assert (k > 0) $ do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   lid <- getsState $ lidFromC c
   localTime <- getsState $ getLocalTime lid
   itemFull <- getsState $ itemToFull iid
@@ -581,7 +582,7 @@ itemVerbMUGeneral verbose iid kit@(k, _) verb c = assert (k > 0) $ do
   let arItem = aspectRecordFull itemFull
       partItemWsChosen | verbose = partItemWs
                        | otherwise = partItemWsShort
-      subject = partItemWsChosen side factionD k localTime itemFull kit
+      subject = partItemWsChosen rwidth side factionD k localTime itemFull kit
       msg | k > 1 && not (IA.checkFlag Ability.Condition arItem) =
               makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
@@ -605,6 +606,7 @@ itemAidVerbMU :: MonadClientUI m
               -> ItemId -> Either (Maybe Int) Int
               -> m ()
 itemAidVerbMU msgClass aid verb iid ek = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -615,13 +617,16 @@ itemAidVerbMU msgClass aid verb iid ek = do
   -- The item may no longer be in @c@, but it was.
   itemFull <- getsState $ itemToFull iid
   let object = case ek of
-        Left (Just n) -> partItemWs side factionD n localTime itemFull fakeKit
-        Left Nothing -> let (name, powers) =
-                              partItem side factionD localTime itemFull fakeKit
-                        in MU.Phrase [name, powers]
-        Right n -> let (name1, powers) =
-                         partItemShort side factionD localTime itemFull fakeKit
-                   in MU.Phrase ["the", MU.Car1Ws n name1, powers]
+        Left (Just n) ->
+          partItemWs rwidth side factionD n localTime itemFull fakeKit
+        Left Nothing ->
+          let (name, powers) =
+                partItem rwidth side factionD localTime itemFull fakeKit
+          in MU.Phrase [name, powers]
+        Right n ->
+          let (name1, powers) =
+                partItemShort rwidth side factionD localTime itemFull fakeKit
+          in MU.Phrase ["the", MU.Car1Ws n name1, powers]
       msg = makeSentence [MU.SubjectVerbSg subject verb, object]
   msgAdd msgClass msg
 
@@ -630,6 +635,7 @@ manyItemsAidVerbMU :: MonadClientUI m
                    -> ItemBag -> (Int -> Either (Maybe Int) Int)
                    -> m ()
 manyItemsAidVerbMU msgClass aid verb bag ekf = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   body <- getsState $ getActorBody aid
   side <- getsClient sside
   factionD <- getsState sfactionD
@@ -642,19 +648,23 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
   let object (iid, (k, _)) =
         let itemFull = itemToF iid
         in case ekf k of
-          Left (Just n) -> partItemWs side factionD n localTime itemFull fakeKit
-          Left Nothing -> let (name, powers) = partItem side factionD localTime
-                                                        itemFull fakeKit
-                          in MU.Phrase [name, powers]
-          Right n -> let (name1, powers) = partItemShort side factionD localTime
-                                                         itemFull fakeKit
-                     in MU.Phrase ["the", MU.Car1Ws n name1, powers]
+          Left (Just n) ->
+            partItemWs rwidth side factionD n localTime itemFull fakeKit
+          Left Nothing ->
+            let (name, powers) =
+                  partItem rwidth side factionD localTime itemFull fakeKit
+            in MU.Phrase [name, powers]
+          Right n ->
+            let (name1, powers) =
+                  partItemShort rwidth side factionD localTime itemFull fakeKit
+            in MU.Phrase ["the", MU.Car1Ws n name1, powers]
       msg = makeSentence [ MU.SubjectVerbSg subject verb
                          , MU.WWandW $ map object $ EM.assocs bag]
   msgAdd msgClass msg
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
 createActorUI born aid body = do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
   when (bfid body == side && not (bproj body)) $ do
     let upd = ES.insert aid
@@ -694,8 +704,10 @@ createActorUI born aid body = do
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
     let (object1, object2) =
           if bproj body
-          then partItemShortest (bfid body) factionD localTime itemFull (1, [])
-          else partItemTrunk (bfid body) factionD localTime itemFull (1, [])
+          then partItemShortest rwidth (bfid body) factionD localTime
+                                itemFull (1, [])
+          else partItemTrunk rwidth (bfid body) factionD localTime
+                             itemFull (1, [])
         (bname, bpronoun) =
           if | bproj body ->
                let adj = case btrajectory body of
@@ -1132,6 +1144,7 @@ displayGameOverLore slore exposeCount generationAn = do
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
   COps{coitem} <- getsState scops
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   lid <- getsState $ lidFromC c
   globalTime <- getsState stime
   localTime <- getsState $ getLocalTime lid
@@ -1152,7 +1165,7 @@ discover c iid = do
       -- the special reveal at game over, using fake @CTrunk@; don't spam
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag  -- may be used up by that time
-      knownName = partItemMediumAW side factionD localTime itemFull kit
+      knownName = partItemMediumAW rwidth side factionD localTime itemFull kit
       -- Make sure the two names in the message differ. We may end up with
       -- "the pair turns out to be a pair of trousers of destruction",
       -- but that's almost sensible. The fun of English.
@@ -1233,6 +1246,7 @@ displayRespSfxAtomicUI sfx = case sfx of
   SfxCheck aid iid ->
     itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
   SfxTrigger aid lid p -> do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     b <- getsState $ getActorBody aid
     embeds <- getsState $ getEmbedBag lid p
     localTime <- getsState $ getLocalTime lid
@@ -1242,7 +1256,8 @@ displayRespSfxAtomicUI sfx = case sfx of
       embed : rest -> do
         itemFull <- getsState $ itemToFull embed
         let (object1, object2) =
-              partItemShortest (bfid b) factionD localTime itemFull (1, [])
+              partItemShortest rwidth (bfid b) factionD localTime
+                               itemFull (1, [])
             objectRest = if null rest then [] else ["and others"]
             (msgClass, verb) = if p == bpos b && lid == blid b
                                then (MsgActionMinor, "walk over")
@@ -1554,6 +1569,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
     Just ( MsgMisc  -- repeatable
          , "Healing attempt from another faction is thwarted by your cold fish attitude." )
   SfxTimerExtended aid iid cstore delta -> do
+    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
     aidSeen <- getsState $ EM.member aid . sactorD
     iidSeen <- getsState $ EM.member iid . sitemD
     if aidSeen && iidSeen then do
@@ -1565,7 +1581,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
       itemFull <- getsState $ itemToFull iid
       side <- getsClient sside
       let kit = (1, [])
-          (name, powers) = partItem (bfid b) factionD localTime itemFull kit
+          (name, powers) =
+            partItem rwidth (bfid b) factionD localTime itemFull kit
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
@@ -1581,8 +1598,8 @@ ppSfxMsg sfxMsg = case sfxMsg of
             -- that caused this extension can be invisible to some onlookers.
             -- So their narrative context needs to be taken into account.
             ( MsgLonger
-            , [partItemShortWownW side factionD (partActor bUI) localTime
-                                       itemFull (1, [])]
+            , [partItemShortWownW rwidth side factionD (partActor bUI) localTime
+                                  itemFull (1, [])]
               ++ cond ++ ["is extended"] )
       return $ Just (msgClass, makeSentence parts)
     else return Nothing
@@ -1608,6 +1625,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
 
 strike :: MonadClientUI m => Bool -> ActorId -> ActorId -> ItemId -> m ()
 strike catch source target iid = assert (source /= target) $ do
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   tb <- getsState $ getActorBody target
   sourceSeen <- getsState $ EM.member source . sactorD
   if not sourceSeen then
@@ -1650,7 +1668,7 @@ strike catch source target iid = assert (source /= target) $ do
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
-                  partItemShortest (bfid tb) factionD localTime
+                  partItemShortest rwidth (bfid tb) factionD localTime
                                    itemFullArmor (1, [])
                 name = MU.Phrase [object1, object2]
             in ( ["with", MU.WownW tpronoun name]
@@ -1659,8 +1677,8 @@ strike catch source target iid = assert (source /= target) $ do
         verb = MU.Text $ IK.iverbHit $ itemKind itemFullWeapon
         partItemChoice =
           if iid `EM.member` borgan sb
-          then partItemShortWownW side factionD spronoun localTime
-          else partItemShortAW side factionD localTime
+          then partItemShortWownW rwidth side factionD spronoun localTime
+          else partItemShortAW rwidth side factionD localTime
         weaponNameWith = if iid == btrunk tb
                          then []
                          else ["with", partItemChoice itemFullWeapon kitWeapon]
@@ -1848,7 +1866,7 @@ strike catch source target iid = assert (source /= target) $ do
                  let (armor, (_, itemFullArmor)) =
                        maximumBy (Ord.comparing $ abs . fst) condArmor
                      (object1, object2) =
-                       partItemShortest (bfid tb) factionD localTime
+                       partItemShortest rwidth (bfid tb) factionD localTime
                                         itemFullArmor (1, [])
                      name = makePhrase [object1, object2]
                      msgText =
