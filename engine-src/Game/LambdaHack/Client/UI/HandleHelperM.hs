@@ -639,8 +639,8 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment trigger special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
-  return $! tileBlurb <+> stashBlurb <+> actorsBlurb <+> itemsBlurb
-            <+> smellBlurb <+> alterBlurb <+> transformBlurb
+  return $! tileBlurb <+> alterBlurb <+> transformBlurb
+            <+> stashBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
