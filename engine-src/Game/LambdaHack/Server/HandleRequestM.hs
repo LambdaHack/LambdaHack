@@ -377,11 +377,17 @@ reqMoveGeneric voluntary mayAttack source dir = do
         if abInSkill Ability.SkMove then do
           execUpdAtomic $ UpdMoveActor source spos tpos
           affectSmell source
-          unless (bproj sb) $ do  -- no remote ransacking nor underfoot effects
+          -- No remote ransacking nor underfoot effects by projectiles,
+          -- through which a projectile could cook its only item,
+          -- but retain the old raw name and which would spam water
+          -- slowness every time a projectile flies over water.
+          unless (bproj sb) $ do
             affectStash source tpos
             -- Not voluntary, because possibly the goal was to move
             -- and modifying terrain is an unwelcome side effect.
-            void $ reqAlterFail False False source tpos
+            -- Barged into a tile, so normal effects need to activate,
+            -- while crafting requires explicit altering.
+            void $ reqAlterFail EffBare False source tpos
               -- possibly alter or activate
        else execFailure source (ReqMove dir) MoveUnskilled
       else
@@ -500,8 +506,7 @@ reqMeleeChecked voluntary source target iid cstore = do
         -- Also, the animal faction won't have too much benefit from that info,
         -- so the problem is not balance, but the goofy message.
         let effApplyFlags = EffApplyFlags
-              { effOnCombineOnly    = False
-              , effOnSmashOnly      = False
+              { effToUse            = EffBare
               , effVoluntary        = voluntary
               , effIgnoreCharging   = False
               , effUseAllCopies     = False
@@ -594,9 +599,9 @@ reqDisplaceGeneric voluntary source target = do
              affectSmell target
              affectStash source tpos
              affectStash target spos
-             void $ reqAlterFail False False source tpos
+             void $ reqAlterFail EffBare False source tpos
                -- possibly alter or activate
-             void $ reqAlterFail False False target spos
+             void $ reqAlterFail EffBare False target spos
            _ -> execFailure source req DisplaceMultiple
        else
          -- Client foolishly tries to displace an actor without access.
@@ -610,14 +615,21 @@ reqAlter source tpos = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   lvl <- getLevel $ blid sb
-  let onCombineOnly = Tile.isWalkable coTileSpeedup (lvl `at` tpos)
-  mfail <- reqAlterFail onCombineOnly True source tpos
+  -- This is explicit tile triggering. Walkable tiles are sparse enough
+  -- that crafting effects can be activated without any others
+  -- and without changing the tile and this is usually beneficial,
+  -- so always attempted. OTOH, squeezing a hand into a non-walkable tile
+  -- or barging into walkable tiles (but not as a projectile) activates all.
+  let effToUse = if Tile.isWalkable coTileSpeedup (lvl `at` tpos)
+                 then EffOnCombine
+                 else EffBareAndOnCombine
+  mfail <- reqAlterFail effToUse True source tpos
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
 reqAlterFail :: forall m. MonadServerAtomic m
-             => Bool -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
-reqAlterFail onCombineOnly voluntary source tpos = do
+             => EffToUse -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
+reqAlterFail effToUse voluntary source tpos = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
@@ -673,7 +685,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             execSfxAtomic $ SfxMsgFid (bfid sb) $
               SfxExpected ("embedded" <+> name) reqFail
             return UseDud
-          _ -> itemEffectEmbedded onCombineOnly voluntary source lid tpos iid
+          _ -> itemEffectEmbedded effToUse voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
@@ -812,6 +824,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
             Tile.ToAction tgroup ->
               if maybe True (== UseUp) museResult
                  && not (bproj sb && tileMinSkill > 0)  -- local skill check
+                 && effToUse /= EffOnCombine
               then do
                 changeTo tgroup
                 return True
@@ -822,6 +835,7 @@ reqAlterFail onCombineOnly voluntary source tpos = do
               -- (with mist, that means all such embeds were consumed earlier).
               if maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
+                 && effToUse /= EffOnCombine
               then do
                 -- Waste item only if voluntary or released as projectile.
                 kitAssG <- getsState $ kitAssocs source [CGround]
@@ -993,12 +1007,15 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
     when (toCStore == CGround) $
       -- Voluntary, because item dropping is never so essential
       -- that it can't be done elsewhere, without modifying terrain.
-      void $ reqAlterFail True True aid (bpos b)
+      -- Only crafting effects triggered, because the others, potentially
+      -- harmful, were activated when the tile was entered; usually.
+      void $ reqAlterFail EffOnCombine True aid (bpos b)
         -- dropping an item engages the item embedded in the ground;
         -- e.g., ignites grass, if the item is torch;
         -- note that grass is not ignited by torch spawned on the ground,
         -- but the next time any item is dropped there, it is ignited,
-        -- which is fine --- the torch must have been wrongly positioned
+        -- which is fine --- the torch must have been harmlessly set up
+        -- the first time around
 
 -- * ReqProject
 

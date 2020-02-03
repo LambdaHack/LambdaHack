@@ -2,7 +2,7 @@
 -- | Handle effects. They are most often caused by requests sent by clients
 -- but sometimes also caused by projectiles or periodically activated items.
 module Game.LambdaHack.Server.HandleEffectM
-  ( UseResult(..), EffApplyFlags(..)
+  ( UseResult(..), EffToUse(..), EffApplyFlags(..)
   , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
   , dropAllItems, pickDroppable, consumeItems
@@ -76,11 +76,13 @@ import           Game.LambdaHack.Server.State
 -- * Semantics of effects
 
 data UseResult = UseDud | UseId | UseUp
- deriving (Eq, Ord)
+  deriving (Eq, Ord)
+
+data EffToUse = EffBare | EffBareAndOnCombine | EffOnCombine | EffOnSmash
+  deriving Eq
 
 data EffApplyFlags = EffApplyFlags
-  { effOnCombineOnly    :: Bool
-  , effOnSmashOnly      :: Bool
+  { effToUse            :: EffToUse
   , effVoluntary        :: Bool
   , effIgnoreCharging   :: Bool
   , effUseAllCopies     :: Bool
@@ -97,8 +99,7 @@ applyItem aid iid cstore = do
   -- incurring both the kinetic damage and effect, hence the same call
   -- as in @reqMelee@.
   let effApplyFlags = EffApplyFlags
-        { effOnCombineOnly    = False
-        , effOnSmashOnly      = False
+        { effToUse            = EffBareAndOnCombine
         , effVoluntary        = True
         , effIgnoreCharging   = False
         , effUseAllCopies     = False
@@ -248,9 +249,12 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
                  itemFull@ItemFull{itemDisco, itemKindId, itemKind} = do
   bag <- getsState $ getContainerBag container
   let (itemK, itemTimer) = bag EM.! iid
-      effs | effOnSmashOnly = IK.strengthOnSmash itemKind
-           | effOnCombineOnly = IK.strengthOnCombine itemKind
-           | otherwise = IK.ieffects itemKind
+      effs = case effToUse of
+        EffBare -> IK.ieffects itemKind
+        EffBareAndOnCombine ->
+          IK.ieffects itemKind ++ IK.strengthOnCombine itemKind
+        EffOnCombine -> IK.strengthOnCombine itemKind
+        EffOnSmash -> IK.strengthOnSmash itemKind
       arItem = case itemDisco of
         ItemDiscoFull itemAspect -> itemAspect
         _ -> error "effectAndDestroy: server ignorant about an item"
@@ -261,7 +265,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
                 charging startT = timeShift startT timeoutTurns > localTime
             in filter charging itemTimer
       len = length it1
-      recharged = len < itemK || effOnSmashOnly || effIgnoreCharging
+      recharged = len < itemK || effToUse == EffOnSmash || effIgnoreCharging
   -- If the item has no charges and the special cases don't apply
   -- we speed up by shortcutting early, because we don't need to activate
   -- effects and we know kinetic hit was not performed (no charges to do so
@@ -310,7 +314,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
           _ -> False
     -- Announce no effect, which is rare and wastes time, so noteworthy.
     unless (triggered == UseUp  -- effects triggered; feedback comes from them
-            || effOnSmashOnly
+            || effToUse == EffOnSmash
             || effPeriodic  -- periodic effects repeat and so spam
             || bproj sb  -- projectiles can be very numerous
             || isEmbed   -- embeds may be just flavour
@@ -337,9 +341,9 @@ imperishableKit periodic itemFull =
 -- they are left to be triggered next time.
 -- If the embed no longer exists at the given position, effect fizzles.
 itemEffectEmbedded :: MonadServerAtomic m
-                   => Bool -> Bool -> ActorId -> LevelId -> Point -> ItemId
+                   => EffToUse -> Bool -> ActorId -> LevelId -> Point -> ItemId
                    -> m UseResult
-itemEffectEmbedded effOnCombineOnly effVoluntary aid lid tpos iid = do
+itemEffectEmbedded effToUse effVoluntary aid lid tpos iid = do
   embeds2 <- getsState $ getEmbedBag lid tpos
     -- might have changed due to other embedded items invocations
   if iid `EM.notMember` embeds2
@@ -353,8 +357,7 @@ itemEffectEmbedded effOnCombineOnly effVoluntary aid lid tpos iid = do
     -- as in @reqMelee@. Information whether this happened due to being pushed
     -- is preserved, but how did the pushing is lost, so we blame the victim.
     let effApplyFlags = EffApplyFlags
-          { effOnCombineOnly
-          , effOnSmashOnly      = False
+          { effToUse
           , effVoluntary
           , effIgnoreCharging   = False
           , effUseAllCopies     = False
@@ -1406,9 +1409,8 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
                     || IA.checkFlag Ability.Condition arItem
   if isDestroyed then do
     let effApplyFlags = EffApplyFlags
-          { effOnCombineOnly    = False
-              -- the embed could be combined here but not @iid@
-          , effOnSmashOnly      = True
+          { effToUse            = EffOnSmash
+              -- the embed could be combined at this point but @iid@ cannot
           , effVoluntary        = True
               -- we don't know if it's effVoluntary, so we conservatively assume
               -- it is and we blame @aid@
@@ -1522,8 +1524,7 @@ consumeItems target bagsToLose iidsToApply = do
           -- Also, timeouts of the item ignored to prevent exploit
           -- by discharging the item before using it.
           let effApplyFlags = EffApplyFlags
-                { effOnCombineOnly    = False
-                , effOnSmashOnly      = False
+                { effToUse            = EffBare  -- crafting not intended
                 , effVoluntary        = True
                 , effIgnoreCharging   = True
                 , effUseAllCopies     = False

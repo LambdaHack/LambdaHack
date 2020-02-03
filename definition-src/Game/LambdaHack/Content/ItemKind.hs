@@ -216,7 +216,11 @@ data Effect =
   | OnSmash Effect
       -- ^ trigger the effect when item smashed (not when applied nor meleed)
   | OnCombine Effect
-      -- ^ trigger the effect when an item combined with this one
+      -- ^ trigger the effect only when the actor explicitly desires
+      --   to combine items items and otherwise subtly tinker with an
+      --   item or a tile, e.g., craft items from other items in a worshop;
+      --   in particular, don't trigger the effects when entering a tile;
+      --   trigger exclusively the effects when activating walkable terrain
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed

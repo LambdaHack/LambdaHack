@@ -374,8 +374,7 @@ applyPeriodicLevel = do
               -- Activate even if effects null or vacuous, to possibly
               -- destroy the item.
               let effApplyFlags = EffApplyFlags
-                    { effOnCombineOnly    = False
-                    , effOnSmashOnly      = False
+                    { effToUse            = EffBare  -- no periodic crafting
                     , effVoluntary        = True
                     , effIgnoreCharging   = False
                     , effUseAllCopies     = k <= 1
@@ -525,7 +524,9 @@ advanceTrajectory aid b1 = do
            unless (bproj b1) $
              execSfxAtomic $ SfxCollideTile aid tpos
            embedsPre <- getsState $ getEmbedBag (blid b1) tpos
-           mfail <- reqAlterFail False False aid tpos
+           -- No crafting by projectiles that bump tiles. The only way is
+           -- if they land in a tile (are engulfed by it) and have enough skill.
+           mfail <- reqAlterFail EffBare False aid tpos
            embedsPost <- getsState $ getEmbedBag (blid b1) tpos
            b2 <- getsState $ getActorBody aid
            lvl2 <- getLevel $ blid b2
@@ -671,7 +672,7 @@ dieSer aid b = do
   arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
   let isBlast = IA.checkFlag Ability.Blast arTrunk
   when isBlast $
-    void $ reqAlterFail False False aid (bpos b2)
+    void $ reqAlterFail EffBare False aid (bpos b2)
   b3 <- getsState $ getActorBody aid
   -- Items need to do dropped now, so that they can be transformed by effects
   -- of the embedded items, if they are activated.
@@ -679,9 +680,9 @@ dieSer aid b = do
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
   dropAllItems aid b3
   -- As the last act of heroism, the actor (even if projectile)
-  -- changes the terrain with its items, if possible.
+  -- changes the terrain with its embedded items, if possible.
   unless isBlast $
-    void $ reqAlterFail False False aid (bpos b2)  -- old bpos; OK, safer
+    void $ reqAlterFail EffBare False aid (bpos b2)  -- old bpos; OK, safer
   b4 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b4 []
 

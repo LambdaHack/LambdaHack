@@ -171,7 +171,7 @@ effectToBenefit cops fid factionD eff =
       in (effSelf / fromIntegral (length bs), effFoe / fromIntegral (length bs))
     IK.OnSmash _ -> delta 0
       -- can be beneficial; we'd need to analyze explosions, range, etc.
-    IK.OnCombine _ -> delta 0  -- not revevant to normal item triggering
+    IK.OnCombine eff1 -> effectToBenefit cops fid factionD eff1
     IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect

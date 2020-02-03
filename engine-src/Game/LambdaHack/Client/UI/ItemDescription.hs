@@ -132,26 +132,16 @@ textAllPowers width detailLevel skipRecharging
                         $ map (ppE . unSmash) smashEffs
             unCombine (IK.OnCombine eff) = eff
             unCombine eff = eff
-            (combineEffsRaw, noSmashCombineEffs) =
+            (combineEffsRaw, noSmashCombineEffsRaw) =
               partition IK.onCombineEffect noSmashEffs
-            -- Avoid repeating long crafting recipes.
-            combineEffsUn = map unCombine combineEffsRaw
-            combineEffs = combineEffsUn \\ noSmashCombineEffs
-            -- Beware, all @OrEffect@ not repeated outside @OnCombine@
-            -- are printed inline, in the main effects description.
-            -- So any @OrEffect@ printed with newlines concern normal
-            -- activation, not @OnCombine@. Similarly for @OnSmash@.
-            onCombineTs = T.intercalate " " $ filter (not . T.null)
-                          $ map ppE combineEffs
-            (orEffsRaw, noOrSmashCombineEffsRaw) =
-              partition IK.orEffect noSmashCombineEffs
-            orTsTooLarge =
-              detailLevel >= DetailAll
-              && any (\t -> T.length t > 120) (map ppE orEffsRaw)
-            (orEffs, noOrSmashCombineEffs) =
-              if orTsTooLarge
-              then (orEffsRaw, noOrSmashCombineEffsRaw)
-              else ([], noSmashCombineEffs)
+            onCombineRawTs = T.intercalate " " $ filter (not . T.null)
+                             $ map (ppE . unCombine) combineEffsRaw
+            onCombineRawTsTooLarge =
+              detailLevel >= DetailAll && T.length onCombineRawTs > 120
+            (combineEffs, noSmashCombineEffs) =
+              if onCombineRawTsTooLarge
+              then (combineEffsRaw, noSmashCombineEffsRaw)
+              else ([], noSmashEffs)
             unOr (IK.OrEffect eff1 eff2) = unOr eff1 ++ unOr eff2
             unOr eff = [eff]
             ppAnd (IK.AndEffect (IK.ConsumeItems tools raw) eff) =
@@ -164,11 +154,12 @@ textAllPowers width detailLevel skipRecharging
             ppOr eff = "*" <+> T.intercalate "\n* "
                                (nub $ filter (not . T.null)
                                     $ map ppAnd $ unOr eff)
-            orTs = filter (not . T.null) $ map ppOr orEffs
+            onCombineTs =
+              filter (not . T.null) $ map ppOr $ map unCombine combineEffs
             rechargingTs = T.intercalate " "
                            $ [damageText | IK.idamage itemKind /= 0]
                              ++ filter (not . T.null)
-                                       (map ppE noOrSmashCombineEffs)
+                                       (map ppE noSmashCombineEffs)
             fragile = IA.checkFlag Ability.Fragile arItem
             periodicText =
               if periodic && not skipRecharging && not (T.null rechargingTs)
@@ -188,22 +179,15 @@ textAllPowers width detailLevel skipRecharging
               else ""
             ppERestEs = if periodic
                         then [periodicText]
-                        else map ppE noOrSmashCombineEffs
+                        else map ppE noSmashCombineEffs
             aes = if active
                   then map ppA aspects ++ ppERestEs
                   else ppERestEs ++ map ppA aspects
             onSmash = if T.null onSmashTs then ""
                       else "(on smash:" <+> onSmashTs <> ")"
-            aboveOrBelow = if orTsTooLarge then "below" else "above"
-            someOf = if combineEffsUn == orEffsRaw
-                     then "the crafting"
-                     else "some of the"
-            onCombine = if T.null onCombineTs
-                        then if combineEffsUn /= combineEffs
-                             then "(on combine:"
-                                   <+> someOf <+> aboveOrBelow <> ")"
-                             else ""
-                        else "(on combine:" <+> onCombineTs <> ")"
+            onCombine = if null combineEffs && not (T.null onCombineRawTs)
+                        then "(on combine:" <+> onCombineRawTs <> ")"
+                        else ""
             -- Either exact value or dice of @SkHurtMelee@ needed,
             -- never the average, so @arItem@ not consulted directly.
             -- If item not known fully and @SkHurtMelee@ under @Odds@,
@@ -222,14 +206,14 @@ textAllPowers width detailLevel skipRecharging
               Just (IK.Timeout t) -> "(cooldown" <+> reduce_a t <> ")"
                                        -- timeout is called "cooldown" in UI
               _ -> error $ "" `showFailure` mtimeout
-       in ( orTs
+       in ( onCombineTs
           , [ damageText
             | detLev > DetailLow && (not periodic || IK.idamage itemKind == 0) ]
             ++ [timeoutText | detLev > DetailLow && not periodic]
             ++ if detLev >= DetailLow
                then aes ++ if detLev >= DetailAll
-                           then [onSmash, onCombine]
-                           else []
+                           then [onCombine, onSmash]
+                           else [onCombineRawTs]
                else [] )
       hurtMult = armorHurtCalculation True (IA.aSkills arItem)
                                            Ability.zeroSkills
@@ -250,21 +234,21 @@ textAllPowers width detailLevel skipRecharging
             splitsValid | T.null elab = filter (/= ([], [])) splitsToTry
                         | otherwise = splitsToTry
         in case splitsValid of
-          (orTsSplit, tsSplit) : _ -> (orTsSplit, tsSplit)
+          (onCombineTsSplit, tsSplit) : _ -> (onCombineTsSplit, tsSplit)
           [] -> ([], [])
-      (orTsAss, aspectDescs) =
+      (onCombineTsAss, aspectDescs) =
         let aMain IK.AddSkill{} = True
             aMain _ = False
             (aspectsMain, aspectsAux) = partition aMain aspectsFull
-            (orTsSplit, tsSplit) = splitTry aspectsMain
-        in ( orTsSplit
+            (onCombineTsSplit, tsSplit) = splitTry aspectsMain
+        in ( onCombineTsSplit
            , filter (/= "")
              $ elab
                : tsSplit
                ++ if detailLevel >= DetailAll
                   then map kindAspectToSuffix aspectsAux
                   else [] )
-  in (orTsAss, aspectDescs, rangedDamageDesc)
+  in (onCombineTsAss, aspectDescs, rangedDamageDesc)
 
 -- | The part of speech describing the item.
 partItem :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
