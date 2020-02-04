@@ -361,6 +361,7 @@ data TileAction =
     EmbedAction (ItemId, ItemQuant)
   | ToAction (GroupName TK.TileKind)
   | WithAction [(Int, GroupName ItemKind)] (GroupName TK.TileKind)
+  deriving Show
 
 parseTileAction :: Bool -> Bool -> [(IK.ItemKind, (ItemId, ItemQuant))]
                 -> TK.Feature
@@ -369,7 +370,7 @@ parseTileAction bproj underFeet embedKindList feat = case feat of
   TK.Embed igroup ->
       -- Greater or equal 0 to also cover template UNKNOWN items
       -- not yet identified by the client.
-    let f (itemKind, _) = fromMaybe 0 (lookup igroup $ IK.ifreq itemKind) >= 0
+    let f (itemKind, _) = fromMaybe (-1) (lookup igroup $ IK.ifreq itemKind) >= 0
     in case find f embedKindList of
       Nothing -> Nothing
       Just (_, iidkit) -> Just $ EmbedAction iidkit
