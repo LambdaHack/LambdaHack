@@ -1466,6 +1466,22 @@ ppSfxMsg sfxMsg = case sfxMsg of
     Just ( MsgWarning
          , "The" <+> itemName <+> "is not triggered:"
            <+> showReqFailure reqFailure <> "." )
+  SfxExpectedEmbed iid lid reqFailure -> do
+    iidSeen <- getsState $ EM.member iid . sitemD
+    if iidSeen then do
+      itemFull <- getsState $ itemToFull iid
+      side <- getsClient sside
+      factionD <- getsState sfactionD
+      localTime <- getsState $ getLocalTime lid
+      let (object1, object2) =
+            partItemShortest maxBound side factionD localTime
+                             itemFull (1, [])
+          name = makePhrase [object1, object2]
+      return $
+        Just ( MsgWarning
+             , "The" <+> "embedded" <+> name <+> "is not triggered:"
+               <+> showReqFailure reqFailure <> "." )
+    else return Nothing
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do

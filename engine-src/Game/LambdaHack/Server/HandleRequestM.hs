@@ -32,7 +32,6 @@ import qualified Text.Show.Pretty as Show.Pretty
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client (ReqAI (..), ReqUI (..),
                                          RequestTimed (..))
-import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
@@ -637,7 +636,6 @@ reqAlterFail effToUse voluntary source tpos = do
   let sar = discoAspect EM.! btrunk sb
       calmE = calmEnough sb actorMaxSk
       lid = blid sb
-  factionD <- getsState sfactionD
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
   itemToF <- getsState $ flip itemToFull
   actorSk <- currentSkillsServer source
@@ -673,17 +671,13 @@ reqAlterFail effToUse voluntary source tpos = do
             -- Let even completely apply-unskilled actors trigger basic embeds.
             -- See the note about no skill check when melee triggers effects.
             legal = permittedApply localTime maxBound calmE itemFull kit
-            (object1, object2) =
-              partItemShortest maxBound (bfid sb) factionD localTime
-                               itemFull (1, [])
-            name = makePhrase [object1, object2]
         case legal of
           Left ApplyNoEffects -> return UseDud  -- pure flavour embed
           Left reqFail -> do
             -- The failure is fully expected, because client may choose
             -- to trigger some embeds, knowing that others won't fire.
-            execSfxAtomic $ SfxMsgFid (bfid sb) $
-              SfxExpected ("embedded" <+> name) reqFail
+            execSfxAtomic $ SfxMsgFid (bfid sb)
+                          $ SfxExpectedEmbed iid lid reqFail
             return UseDud
           _ -> itemEffectEmbedded effToUse voluntary source lid tpos iid
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive

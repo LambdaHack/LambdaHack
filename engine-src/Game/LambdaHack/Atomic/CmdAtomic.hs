@@ -167,6 +167,7 @@ data SfxAtomic =
 data SfxMsg =
     SfxUnexpected ReqFailure
   | SfxExpected Text ReqFailure
+  | SfxExpectedEmbed ItemId LevelId ReqFailure
   | SfxFizzles
   | SfxNothingHappens
   | SfxNoItemsForTile [[(Int, GroupName ItemKind)]]
