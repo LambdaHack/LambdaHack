@@ -680,6 +680,9 @@ reqAlterFail effToUse voluntary source tpos = do
                           $ SfxExpectedEmbed iid lid reqFail
             return UseDud
           _ -> itemEffectEmbedded effToUse voluntary source lid tpos iid
+                 -- when @effToUse == EffOnCombine@, terrain, e.g., fire,
+                 -- may be removed safely, without adverse effects
+                 -- by crafting, even any silly crafting as an exploit; OK
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
@@ -818,7 +821,6 @@ reqAlterFail effToUse voluntary source tpos = do
             Tile.ToAction tgroup ->
               if maybe True (== UseUp) museResult
                  && not (bproj sb && tileMinSkill > 0)  -- local skill check
-                 && effToUse /= EffOnCombine
               then do
                 changeTo tgroup
                 return True
@@ -829,7 +831,6 @@ reqAlterFail effToUse voluntary source tpos = do
               -- (with mist, that means all such embeds were consumed earlier).
               if maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
-                 && effToUse /= EffOnCombine
               then do
                 -- Waste item only if voluntary or released as projectile.
                 kitAssG <- getsState $ kitAssocs source [CGround]
