@@ -21,7 +21,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectAndEffect, effectOrEffect, effectSeqEffect
-  , effectVerbNoLonger, effectVerbMsg
+  , effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
 #endif
   ) where
 
@@ -462,6 +462,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
     IK.VerbNoLonger _ -> effectVerbNoLonger effUseAllCopies execSfxSource source
     IK.VerbMsg _ -> effectVerbMsg execSfxSource source
+    IK.VerbMsgFail _ -> effectVerbMsgFail execSfxSource source
 
 -- * Individual semantic functions for effects
 
@@ -2097,3 +2098,11 @@ effectVerbMsg execSfx source = do
   unless (bproj b) execSfx  -- don't spam when projectiles activate
   return UseUp  -- announcing always successful and this helps
                 -- to destroy the item
+
+-- ** VerbMsgFail
+
+effectVerbMsgFail :: MonadServerAtomic m => m () -> ActorId -> m UseResult
+effectVerbMsgFail execSfx source = do
+  b <- getsState $ getActorBody source
+  unless (bproj b) execSfx  -- don't spam when projectiles activate
+  return UseDud

@@ -1431,6 +1431,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.SeqEffect{} -> error $ "" `showFailure` sfx
         IK.VerbNoLonger t -> aidVerbMU MsgNoLonger aid $ MU.Text t
         IK.VerbMsg t -> aidVerbMU MsgEffectMinor aid $ MU.Text t
+        IK.VerbMsgFail t -> aidVerbMU MsgWarning aid $ MU.Text t
   SfxMsgFid _ sfxMsg -> do
     mleader <- getsClient sleader
     case mleader of

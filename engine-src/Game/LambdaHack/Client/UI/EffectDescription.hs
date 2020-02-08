@@ -156,6 +156,7 @@ effectToSuffix detailLevel effect =
       in if T.null t then "of sequential processing" else t
     VerbNoLonger _ -> ""  -- no description for a flavour effect
     VerbMsg _ -> ""  -- no description for an effect that prints a description
+    VerbMsgFail _ -> ""
 
 detectToObject :: DetectKind -> Text
 detectToObject d = case d of

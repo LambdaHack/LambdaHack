@@ -181,6 +181,7 @@ effectToBenefit cops fid factionD eff =
     IK.SeqEffect effs -> effectToBenefits cops fid factionD effs
     IK.VerbNoLonger{} -> delta 0  -- flavour only, no benefit
     IK.VerbMsg{} -> delta 0  -- flavour only, no benefit
+    IK.VerbMsgFail{} -> delta 0
 
 effectToBenefits :: COps -> FactionId -> FactionDict -> [IK.Effect]
                  -> (Double, Double)

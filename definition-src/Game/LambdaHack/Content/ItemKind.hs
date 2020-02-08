@@ -232,6 +232,8 @@ data Effect =
       -- ^ a sentence with the actor causing the effect as subject and the given
       --   text as verb that is emitted whenever the item is activated;
       --   no spam is emitted if a projectile
+  | VerbMsgFail Text
+      -- ^ as @VerbMsg@, but a failed effect (emits @UseDud@)
   deriving (Show, Eq, Generic)
 
 data DetectKind =
@@ -307,6 +309,7 @@ forApplyEffect eff = case eff of
   SeqEffect effs -> or $ map forApplyEffect effs
   VerbNoLonger{} -> False
   VerbMsg{} -> False
+  VerbMsgFail{} -> False
   ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
   _ -> True
 
@@ -479,13 +482,17 @@ validateSingle ik@ItemKind{..} =
       in ["more than one PresentAs specification" | length ts > 1])
   ++ concatMap (validateDups ik) (map SetFlag [minBound .. maxBound])
   ++ (let f :: Effect -> Bool
+          f VerbNoLonger{} = True
+          f _ = False
+      in validateOnlyOne ieffects "VerbNoLonger" f)  -- may be duped if nested
+  ++ (let f :: Effect -> Bool
           f VerbMsg{} = True
           f _ = False
       in validateOnlyOne ieffects "VerbMsg" f)  -- may be duplicated if nested
   ++ (let f :: Effect -> Bool
-          f VerbNoLonger{} = True
+          f VerbMsgFail{} = True
           f _ = False
-      in validateOnlyOne ieffects "VerbNoLonger" f)  -- may be duped if nested
+      in validateOnlyOne ieffects "VerbMsgFail" f)  -- may be duped if nested
   ++ (validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect)
        -- but duplicates permitted
   ++ let emptyOneOf :: Effect -> Bool

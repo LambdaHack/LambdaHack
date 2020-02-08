@@ -319,7 +319,7 @@ stairsTrapUp = ItemKind
   , iweight  = 10000
   , idamage  = 0
   , iaspects = []  -- not Durable, springs at most once
-  , ieffects = [ VerbMsg "be caught in an updraft"
+  , ieffects = [ VerbMsgFail "be caught in an updraft"
                , Teleport $ 3 + 1 `dL` 10 ]
   , idesc    = "A hidden spring, to help the unwary soar."
   , ikit     = []
@@ -330,7 +330,7 @@ stairsTrapUp = ItemKind
 stairsTrapDown = stairsTrapUp
   { ifreq    = [(STAIRS_TRAP_DOWN, 1)]
   , iverbHit = "open up under"
-  , ieffects = [ VerbMsg "tumble down the stairwell"
+  , ieffects = [ VerbMsgFail "tumble down the stairwell"
                , toOrganGood S_DRUNK (20 + 1 `d` 5) ]
   , idesc    = "A treacherous slab, to teach those who are too proud."
   }
