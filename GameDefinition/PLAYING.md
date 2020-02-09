@@ -380,8 +380,11 @@ capped at 200%) minus the melee armor modifier of the defender
 (capped at 200%, as well), with the outcome bounded between -99% and 99%,
 which means that at least 1% of damage always gets through
 and the damage is always lower than twice the dice roll.
+
 The current pointman's melee bonus, armor modifier and other detailed
-stats can be viewed in the skills menu, accessible via the `#` command.
+stats can be viewed in the skills menu, accessible via the `#` command,
+which summarized all the stats conferred by organs and conditions listed
+in the organ menu, invoked by `@`.
 
 In ranged combat, the projectile is assumed to be attacking the defender
 in melee, using itself as the weapon, with the usual dice and damage bonus.
