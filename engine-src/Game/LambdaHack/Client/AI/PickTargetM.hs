@@ -66,7 +66,6 @@ refreshTarget (aid, body) = do
       return Nothing
     Just tgtMPath -> do
       -- _debugoldTgt <- getsClient $ EM.lookup aid . stargetD
-      -- Choose a target from those proposed by AI for the actor.
       modifyClient $ \cli ->
         cli {stargetD = EM.insert aid tgtMPath (stargetD cli)}
       return mtarget

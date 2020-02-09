@@ -852,10 +852,12 @@ reqAlterFail effToUse voluntary source tpos = do
             -- (unless it's altered later on, in which case the new one is).
             revealEmbeds
             tileTriggered <- processTileActions Nothing tileActions
+            let potentiallyMissing =
+                  filter (not . null) $ map fst groupsToAlterWith
             when (not tileTriggered && not underFeet && voluntary
-                  && not (null groupsToAlterWith)) $
+                  && not (null potentiallyMissing)) $
               execSfxAtomic $ SfxMsgFid (bfid sb)
-                            $ SfxNoItemsForTile $ map fst groupsToAlterWith
+                            $ SfxNoItemsForTile potentiallyMissing
             return Nothing  -- altered as much as items allowed; success
           else return $ Just AlterBlockActor
         else return $ Just AlterBlockItem

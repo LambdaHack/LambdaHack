@@ -422,8 +422,9 @@ describeTools =
   in MU.WWandW . map carAWs
 
 describeToolsAlternative :: [[(Int, GroupName ItemKind)]] -> Text
-describeToolsAlternative =
-  T.intercalate " or " . map (\grp -> makePhrase [describeTools grp])
+describeToolsAlternative grps =
+  T.intercalate " or " $ map (\grp -> makePhrase [describeTools grp])
+                       $ filter (not . null) grps
 
 describeCrafting :: [(Int, GroupName ItemKind)]
                  -> [(Int, GroupName ItemKind)]

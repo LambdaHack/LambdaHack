@@ -641,7 +641,9 @@ meleeAny aid = do
   mtargets <- case btarget of
     Just (TEnemy aid2) -> do
       b2 <- getsState $ getActorBody aid2
-      return $! if adjacent (bpos b2) (bpos b) then Just [(aid2, b2)] else Nothing
+      return $! if adjacent (bpos b2) (bpos b)
+                then Just [(aid2, b2)]
+                else Nothing
     _ -> return Nothing
   let adjTargets = filter (uncurry $ actorWorthKilling actorMaxSkills)
                    $ fromMaybe adjFoes mtargets

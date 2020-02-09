@@ -626,7 +626,11 @@ lookAtPosition lidV p = do
       embedVerb = ["exploited" | any isEmbedAction tileActions]
       isToAction Tile.ToAction{} = True
       isToAction _ = False
-      alterVerb = ["easily altered" | any isToAction tileActions]
+      isEmptyWithAction (Tile.WithAction [] _) = True
+      isEmptyWithAction _ = False
+      alterVerb | any isEmptyWithAction tileActions = ["very easily altered"]
+                | any isToAction tileActions = ["easily altered"]
+                | otherwise = []
       verbs = embedVerb ++ alterVerb
       alterBlurb = if null verbs
                    then ""
@@ -635,7 +639,7 @@ lookAtPosition lidV p = do
       toolFromAction _ = Nothing
       toolsToAlterWith = mapMaybe toolFromAction tileActions
       tItems = describeToolsAlternative toolsToAlterWith
-      transformBlurb = if null toolsToAlterWith
+      transformBlurb = if T.null tItems
                        then ""
                        else "The following items on the ground or in equipment trigger special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
