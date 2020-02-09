@@ -177,6 +177,11 @@ humanCommand = do
                  in weaveJust <$> failWith (T.pack msgKey)
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
+        KeyMacro kms <- getsSession slastPlay
+        when (null kms) $ modifySession $ \sess ->
+          sess { smacroStack = [last $ smacroStack sess] }
+          -- GC all macro buffers, except in-game macro buffer, if there's
+          -- nothing left to do.
         case abortOrCmd of
           Right cmdS ->
             -- Exit the loop and let other actors act. No next key needed
