@@ -36,6 +36,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either (fromRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map.Strict as M
 import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -47,6 +48,7 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
+import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
@@ -92,10 +94,27 @@ import           Game.LambdaHack.Definition.Defs
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()
-macroHuman kms = do
+macroHuman ys = do
+  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
+  let kms = K.mkKM <$> ys
+      mKeyRecord = case M.lookup Record brevMap of
+        Nothing -> Nothing
+        Just (k : _) -> Just k
+        Just [] -> error $ "" `showFailure` brevMap
+      hasRecord = any (\km -> Just km == mKeyRecord) kms
   modifySession $ \sess ->
-    sess {slastPlay = (KeyMacro $ K.mkKM <$> kms) <> slastPlay sess}
-  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " kms)
+    sess { slastPlay = KeyMacro kms <> slastPlay sess
+         , smacroStack = if hasRecord
+                         -- Push new temporary macro buffer, if macro
+                         -- records a macro by itself.
+                         then case smacroStack sess of
+                           Right _ : (Left _ : _) ->
+                             Right mempty : tail (smacroStack sess)
+                           -- Recycle a previous buffer; this way we don't
+                           -- stack multiple Right buffers.
+                           _ -> Right mempty : smacroStack sess
+                         else smacroStack sess }
+  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
 
 -- * ChooseItem
 
@@ -681,8 +700,8 @@ selectWithPointerHuman = do
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  macro <- getsSession smacroBuffer
-  let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ macro
+  macros <- getsSession smacroStack
+  let nmacro k | k == 1 = unKeyMacro . fromRight mempty . head $ macros
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
   modifySession $ \sess ->
@@ -699,22 +718,40 @@ repeatLastHuman n = do
 
 -- * Record
 
+-- | Starts and stops recording of macros. All the macros are placed in a stack
+-- of Either macro buffers, since macros can be nested. Bottom of stack 
+-- is reserved for the user's in-game macro buffer, so the stack is never empty.
+-- We record keystrokes in the topmost Left macro buffer. At any time there's
+-- at most one Right macro buffer, i.e. a buffer that's not available to record
+-- to, but ready to be repeated from the macro bellow it.
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  macro <- getsSession smacroBuffer
-  KeyMacro lastPlay <- getsSession slastPlay
-  case macro of
-    Right _ -> do
-      modifySession $ \sess -> sess { smacroBuffer = Left [] }
-      when (null lastPlay) $
-        -- Don't spam if recording is a part of playing back a macro.
-        promptAdd0 "Recording a macro. Stop recording with the same key."
-    Left xs -> do
+  macros <- getsSession smacroStack
+  case macros of
+    [Right _] -> do
+      -- Start recording in-game macro.
+      modifySession $ \sess -> sess { smacroStack = [Left []] }
+      promptAdd0 "Recording a macro. Stop recording with the same key."
+    [Left xs] -> do
+      -- Stop recording in-game macro.
       modifySession $ \sess ->
-        sess { smacroBuffer = Right . KeyMacro . reverse $ xs }
-      when (null lastPlay) $
-        -- Don't spam if recording is a part of playing back a macro.
-        promptAdd0 "Macro recording stopped."
+        sess { smacroStack = [Right . KeyMacro . reverse $ xs] }
+      promptAdd0 "Macro recording stopped."
+    Right (KeyMacro []) : xs -> modifySession $ \sess ->
+      sess { smacroStack = Left [] : xs }
+      -- Start recording a macro in new temporary buffer.
+    Right _ : ((Left xs) : ys) -> modifySession $ \sess ->
+      sess { smacroStack = (Right . KeyMacro . reverse $ xs) : ys }
+      -- If there's already macro on top of the stack, end recording previous
+      -- macro.
+    Right _ : xs -> modifySession $ \sess ->
+      sess { smacroStack = Left [] : xs }
+      -- If theres non-empty Right buffer on top of the stack and theres no Left
+      -- macro next to it, clear it and start recording keystrokes there.
+    Left xs : ys -> modifySession $ \sess ->
+      sess { smacroStack = (Right . KeyMacro . reverse $ xs) : ys }
+      -- Stop recording a macro in temporary buffer.
+    _ -> error "no in-game macro buffer"
 
 -- * AllHistory
 

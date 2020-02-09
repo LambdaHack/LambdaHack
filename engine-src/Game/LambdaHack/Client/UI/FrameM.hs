@@ -11,7 +11,6 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import qualified Data.Bifunctor as Bi
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Vector.Unboxed as U
@@ -172,13 +171,18 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
         Just [] -> error $ "" `showFailure` brevMap
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
-         , smacroBuffer = -- Exclude from in-game macros keystrokes that
-                          -- start/stop recording a macro.
-                          if Just km == mKeyRecord
-                          then smacroBuffer sess
-                          else -- This is noop when not recording a macro,
-                               -- which is exactly the required semantics.
-                               (km :) `Bi.first` smacroBuffer sess }
+         , smacroStack =
+             if Just km == mKeyRecord then smacroStack sess
+             -- Exclude from in-game macros keystrokes that
+             -- start/stop recording a macro.
+             else case smacroStack sess of
+               -- This is noop when not recording a macro,
+               -- which is exactly the required semantics.
+               Left xs : ys -> Left (km : xs) : ys
+               Right xs : (Left ys : zs) -> Right xs : (Left (km : ys) : zs)
+               -- Record keystrokes in the first Left buffer on the stack;
+               -- there's at most one Right temporary macro buffer.
+               _ -> smacroStack sess }
   return km
 
 stopPlayBack :: MonadClientUI m => m ()
@@ -188,7 +192,14 @@ resetPlayBack :: MonadClientUI m => m ()
 resetPlayBack = do
   lastPlayOld <- getsSession slastPlay
   unless (lastPlayOld == mempty)
-    $ modifySession $ \sess -> sess {slastPlay = mempty}
+    $ modifySession $ \sess ->
+       sess { slastPlay = mempty
+            , smacroStack = case smacroStack sess of
+                -- If interrupted, leave on stack user's macro buffer
+                -- (it's always on the bottom) and pop all the rest
+                -- of temporary macro buffers.
+                [_] -> smacroStack sess
+                _ -> [last $ smacroStack sess] }
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
