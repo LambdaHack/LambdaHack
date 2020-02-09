@@ -534,5 +534,9 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
               else 0)  -- don't remove from equipment by using up
         | otherwise =
           (False, max benApply (- benFling))  -- apply or fling
-      benPickup = max benPickupRaw $ if itemSuspect then 10 else 0
+      benPickupRaw2 = max benPickupRaw $ if itemSuspect then 10 else 0
+      -- If periodic, pick up to deny to foes and sometimes to apply
+      -- to activate the first effect only (easier than computing if the first
+      -- effect is really beneficial, while all effects detrimental).
+      benPickup = if periodic then max 1 benPickupRaw2 else benPickupRaw2
   in Benefit{..}
