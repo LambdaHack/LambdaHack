@@ -713,10 +713,8 @@ reqAlterFail effToUse voluntary source tpos = do
       -- (just invisible to the client), so they need to be triggered.
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need previous or subsequent altering.
-      unless (Tile.isModifiable coTileSpeedup serverTile) $ do
-        triggered <- tryApplyEmbeds
-        when (triggered /= UseDud) $
-          execSfxAtomic $ SfxTrigger source lid tpos
+      unless (Tile.isModifiable coTileSpeedup serverTile) $
+        void tryApplyEmbeds
       return Nothing  -- searching is always success
   else
     -- Here either @clientTile == serverTile@ or the client
@@ -853,15 +851,6 @@ reqAlterFail effToUse voluntary source tpos = do
             -- may see the tile as hidden. Note that the tile is not revealed
             -- (unless it's altered later on, in which case the new one is).
             revealEmbeds
-            -- If no embeds and the only thing that happens is the change
-            -- of the tile, don't display a message, because the change
-            -- is visible on the map (unless it changes into itself)
-            -- and there's nothing more to speak about.
-            -- However, even with embeds, don't spam,
-            -- e.g., for projectiles on ice, so the message is generated
-            -- only for standard altering.
-            unless (bproj sb || underFeet || EM.null embeds) $
-              execSfxAtomic $ SfxTrigger source lid tpos
             tileTriggered <- processTileActions Nothing tileActions
             when (not tileTriggered && not underFeet && voluntary
                   && not (null groupsToAlterWith)) $
