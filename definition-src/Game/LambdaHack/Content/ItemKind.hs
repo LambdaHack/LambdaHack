@@ -495,11 +495,18 @@ validateSingle ik@ItemKind{..} =
       in validateOnlyOne ieffects "VerbMsgFail" f)  -- may be duped if nested
   ++ (validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect)
        -- but duplicates permitted
+  ++ let nonPositiveBurn :: Effect -> Bool
+         nonPositiveBurn (Burn d) = Dice.infDice d <= 0
+         nonPositiveBurn _ = False
+         containingNonPositiveBurn =
+           filter (checkSubEffectProp nonPositiveBurn) ieffects
+     in [ "effects with non-positive Burn:" <+> tshow containingNonPositiveBurn
+        | not $ null containingNonPositiveBurn ]
   ++ let emptyOneOf :: Effect -> Bool
          emptyOneOf (OneOf []) = True
          emptyOneOf _ = False
          containingEmptyOneOf = filter (checkSubEffectProp emptyOneOf) ieffects
-     in [ "effects with empty OneOf inside:" <+> tshow containingEmptyOneOf
+     in [ "effects with empty OneOf:" <+> tshow containingEmptyOneOf
         | not $ null containingEmptyOneOf ]
   ++ (let nonPositiveEffect :: Effect -> Bool
           nonPositiveEffect (CreateItem (Just n) _ _ _) | n <= 0 = True

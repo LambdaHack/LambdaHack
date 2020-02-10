@@ -476,7 +476,7 @@ effectBurn nDm source target = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   n0 <- rndToAction $ castDice ldepth totalDepth nDm
-  let n = max 1 n0  -- avoid 0 and negative burn
+  let n = max 1 n0  -- avoid 0 and negative burn; validated in content anyway
       deltaHP = - xM n
   sb <- getsState $ getActorBody source
   -- Display the effect more accurately.
