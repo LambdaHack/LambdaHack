@@ -302,13 +302,16 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
         if pfence (okind coplace qkind) `elem` [FFloor, FGround]
         then EM.map (const $ PAround qkind) qfence
         else EM.empty
+      pickRepresentant Place{..} =
+        let (representant, _, _) = spanArea qarea
+        in EM.singleton representant $ PExists qkind
       dentry = EM.unions $
-        EM.map (\(_, _, pk) -> PEntry pk) interCor
-        : map (\(place, _) -> aroundFence place) (EM.elems dplaces)
-        ++  -- for @FNone@ fences with walkable tiles on the edges
-         [EM.map (\(_, _, pk) -> PEnd pk) $
-            let mergeCorAlways pl (cor, pk) = (pl, cor, pk)
-            in EM.intersectionWith mergeCorAlways lplaces lplcorOuter]
+        [EM.map (\(_, _, pk) -> PEntry pk) interCor]
+        ++ map (\(place, _) -> aroundFence place) (EM.elems dplaces)
+        ++ -- for @FNone@ fences with walkable tiles on the edges
+           -- that may have no intersection with corridots,
+           -- particularly if @X@ is used
+           map (\(place, _) -> pickRepresentant place) (EM.elems dplaces)
       dmap = EM.unions [doorMap, lplacesObscured, lcorOuter, lcorInner, fence]
         -- order matters
   return $! Cave {..}

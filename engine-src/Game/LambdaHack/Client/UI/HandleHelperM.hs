@@ -309,16 +309,15 @@ placesFromState coplace ClientOptions{sexposePlaces} =
               EM.insertWith addEntries pk (ES.singleton lid, 1, 0, 0) em
             f (PK.PAround pk) em =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 1, 0) em
-            f (PK.PEnd pk) em =
+            f (PK.PExists pk) em =
               EM.insertWith addEntries pk (ES.singleton lid, 0, 0, 1) em
         in EM.foldr' f initialPlaces lentry
   in EM.unionsWith addEntries . map placesFromLevel . EM.assocs . sdungeon
 
 placeParts :: (ES.EnumSet LevelId, Int, Int, Int) -> [MU.Part]
-placeParts (_, ne, na, nd) =
+placeParts (_, ne, na, _) =
   ["(" <> MU.CarWs ne "entrance" <> ")" | ne > 0]
   ++ ["(" <> MU.CarWs na "surrounding" <> ")" | na > 0]
-  ++ ["(" <> MU.CarWs nd "end" <> ")" | nd > 0]
 
 placesOverlay :: MonadClientUI m => m OKX
 placesOverlay = do
@@ -418,7 +417,7 @@ lookAtTile canSee p aid lidV = do
         Nothing -> ""
         Just (PK.PEntry pk) -> entrySentence pk "it is an entrance to"
         Just (PK.PAround pk) -> entrySentence pk "it surrounds"
-        Just (PK.PEnd pk) -> entrySentence pk "it ends"
+        Just (PK.PExists _) -> ""
       itemLook (iid, kit@(k, _)) =
         let itemFull = itemToF iid
             arItem = aspectRecordFull itemFull
