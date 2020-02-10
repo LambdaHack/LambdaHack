@@ -274,11 +274,10 @@ chooseItemDialogMode c = do
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
               let slot = allSlots !! slotIndex
-                  (pk, figures@(es, _, _, _)) =
+                  (pk, (es, ne, na, _)) =
                     places !! fromMaybe (error $ show slot)
                                         (elemIndex slot allSlots)
                   pkind = okind coplace pk
-                  partsPhrase = makePhrase $ placeParts figures
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
                     , MU.Text $ PK.pname pkind ]
@@ -293,16 +292,22 @@ chooseItemDialogMode c = do
                        , MU.CarWs (ES.size es) "level" <> ":"
                        , MU.WWandW $ map MU.Car $ sort
                                    $ map (abs . fromEnum) $ ES.elems es ]]
+                  placeParts = ["it has" | ne > 0 || na > 0]
+                               ++ [MU.CarWs ne "entrance" | ne > 0]
+                               ++ ["and" | ne > 0 && na > 0]
+                               ++ [MU.CarWs na "surrounding" | na > 0]
+                  partsSentence | null placeParts = ""
+                                | otherwise = makeSentence placeParts
                   -- Ideally, place layout would be in SquareFont and the rest
                   -- in PropFont, but this is mostly a debug screen, so KISS.
                   ov0 = EM.singleton monoFont
                         $ offsetOverlay
                         $ concatMap (indentSplitAttrString rwidth . textToAS)
-                        $ (if sexposePlaces soptions
-                           then [ "", partsPhrase
-                                , "", freqsText
-                                , "" ] ++ PK.ptopLeft pkind
-                           else [])
+                        $ ["", partsSentence]
+                          ++ (if sexposePlaces soptions
+                              then [ "", freqsText
+                                   , "" ] ++ PK.ptopLeft pkind
+                              else [])
                           ++ [""] ++ onLevels
                   keys = [K.spaceKM, K.escKM]
                          ++ [K.upKM | slotIndex /= 0]
