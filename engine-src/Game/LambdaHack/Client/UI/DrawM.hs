@@ -668,24 +668,38 @@ drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
   actorSk <- leaderSkillsClientUI
   actorMaxSk <- getsState $ getActorMaxSkills leader
-  let hasTimeout itemFull =
+  let unBurn (IK.Burn d) = Just d
+      unBurn _ = Nothing
+      unRefillHP (IK.RefillHP n) = Just n
+      unRefillHP _ = Nothing
+      hasTimeout itemFull =
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
       hasEffect itemFull =
         any IK.forApplyEffect $ IK.ieffects $ itemKind itemFull
-      ppDice :: (Int, ItemFullKit) -> [(Bool, AttrString)]
+      ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
       ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
+            tBurn = maybe "" (('+' :) . show)  $ listToMaybe $ mapMaybe unBurn
+                                               $ IK.ieffects $ itemKind itemFull
+            nRefillHP = maybe 0 (min 0) $ listToMaybe $ mapMaybe unRefillHP
+                                        $ IK.ieffects $ itemKind itemFull
+            tRefillHP | nRefillHP < 0 = '+' : show (- nRefillHP)
+                      | otherwise = ""
             tdiceEffect = if hasEffect itemFull
                           then map Char.toUpper tdice
                           else tdice
+            ldice color = map (Color.attrChar2ToW32 color) tdiceEffect
+            lBurnHP charged =
+              let cburn = if charged then Color.BrRed else Color.Red
+                  chp = if charged then Color.BrMagenta else Color.Magenta
+              in map (Color.attrChar2ToW32 cburn) tBurn
+                 ++ map (Color.attrChar2ToW32 chp) tRefillHP
         in if hasTimeout itemFull
-           then replicate (k - nch)
-                  (False, map (Color.attrChar2ToW32 Color.Cyan) tdiceEffect)
-                ++ replicate nch
-                     (True, map (Color.attrChar2ToW32 Color.BrCyan) tdiceEffect)
-           else [(True, map (Color.attrChar2ToW32 Color.BrBlue) tdiceEffect)]
+           then replicate (k - nch) (False, (ldice Color.Cyan, lBurnHP False))
+                ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
+           else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk
@@ -715,9 +729,15 @@ drawLeaderDamage width leader = do
       (ldischarged, lrest) = span (not . fst) lToDisplay
       lWithBonus = case map snd lrest of
         [] -> []  -- unlikely; means no timeout-free organ
-        l1 : rest -> (l1 ++ lbonus) : rest
+        (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
+      displayDmgAndExtra (ldmg, lextra) =
+        if map Color.charFromW32 ldmg == "0"
+        then case lextra of
+          [] -> ldmg
+          _plus : lextraRest -> lextraRest
+        else ldmg ++ lextra
       lFlat = intercalate [Color.spaceAttrW32]
-              $ map snd ldischarged ++ lWithBonus
+              $ map displayDmgAndExtra $ map snd ldischarged ++ lWithBonus
       lFits = if length lFlat > width
               then take (width - 3) lFlat ++ stringToAS "..."
               else lFlat
