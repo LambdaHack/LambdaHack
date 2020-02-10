@@ -241,7 +241,8 @@ appendages, ordered by their power. The dice of the first recharged weapon,
 the one that is going to be used now, is adorned with percentage
 damage bonus collected from the whole equipment of the pointman.
 If the dice are displayed with upper-case `D` instead of lower-case `d`,
-the weapon has additional effects apart of the usual kinetic damage.
+the weapon has additional effects apart of the usual kinetic damage
+and any additional direct damage, such as wounding or burning.
 The nature of the effects can be appraised via the equipment outfit menu.
 
 Weapon damage and other item properties are displayed using
@@ -305,8 +306,8 @@ damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`
 (the same key with Shift or Control) to lurk 0.1 of a turn, without bracing.
 Displace enemies by running into them with Shift/Control or S-LMB. Search,
 open, descend and attack by bumping into walls, doors, stairs and enemies.
-The best melee weapon is automatically chosen from your equipment
-and from among your body parts.
+The best, on average, melee weapon is automatically chosen from your
+equipment and from among your body parts.
 
 The following commands, joined with the basic set above,
 let you accomplish anything in the game, though
@@ -370,16 +371,17 @@ a free blow, but can improve the tactical situation or aid escape.
 In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.
 
-In melee combat, the best recharged equipped weapon (or the best fighting
-organ that is not on cooldown) of each opponent is taken into account
-for determining the damage and any extra effects of the blow.
-To determine the damage dealt, the outcome of the weapon's damage dice roll
-is multiplied by a percentage bonus. The bonus is calculated by taking
-the damage bonus (summed from the equipped items of the attacker,
-capped at 200%) minus the melee armor modifier of the defender
-(capped at 200%, as well), with the outcome bounded between -99% and 99%,
-which means that at least 1% of damage always gets through
-and the damage is always lower than twice the dice roll.
+In melee combat, the best, in general, recharged equipped weapon
+(or the best fighting organ that is not on cooldown) of each opponent
+is taken into account for determining the damage and any extra effects
+of the blow. To determine the damage dealt, the outcome of the weapon's
+damage dice roll (but not rolls for any additional direct damage effect,
+such as wounding or burning) is multiplied by a percentage bonus. The bonus
+is calculated by taking the damage bonus (summed from the equipped items
+of the attacker, capped at 200%) minus the melee armor modifier
+of the defender (capped at 200%, as well), with the outcome bounded
+between -99% and 99%, which means that at least 1% of damage always
+gets through and the damage is always lower than twice the dice roll.
 
 The current pointman's melee bonus, armor modifier and other detailed
 stats can be viewed in the skills menu, accessible via the `#` command,
