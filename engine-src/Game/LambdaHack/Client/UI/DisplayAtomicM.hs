@@ -1800,6 +1800,13 @@ strike catch source target iid = assert (source /= target) $ do
                            -- warning if anybody hits our friends
         msgClassMelee = if targetIsFriend then MsgMeleeUs else MsgMelee
         msgClassRanged = if targetIsFriend then MsgRangedUs else MsgRanged
+        isBurn IK.Burn{} = True
+        isBurn _ = False
+        unRefillHP (IK.RefillHP n) = Just n
+        unRefillHP _ = Nothing
+        anyBurn = any isBurn $ IK.ieffects $ itemKind itemFullWeapon
+        anyKillHP = any (< 0) $ mapMaybe unRefillHP
+                              $ IK.ieffects $ itemKind itemFullWeapon
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1824,7 +1831,8 @@ strike catch source target iid = assert (source /= target) $ do
                    else makePhrase
                           ([ MU.Capitalize $ MU.SubjectVerbSg spart "try"
                            , "to"
-                           , verb, tpart ]
+                           , verb
+                           , tpart ]
                            ++ weaponNameWith)
                         <> if null weaponNameWith
                            then ", but there are no charges left."
@@ -1836,7 +1844,9 @@ strike catch source target iid = assert (source /= target) $ do
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
-       | IK.idamage (itemKind itemFullWeapon) == 0 -> do
+       | IK.idamage (itemKind itemFullWeapon) == 0
+         -- We ignore nested effects, because they are, in general, avoidable.
+         && not anyBurn && not anyKillHP -> do
          let adverb = if bproj sb then "lightly" else "delicately"
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]

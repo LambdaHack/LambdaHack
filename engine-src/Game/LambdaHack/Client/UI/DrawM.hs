@@ -681,6 +681,7 @@ drawLeaderDamage width leader = do
       ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
       ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
+            -- We ignore nested effects because they are, in general, avoidable.
             tBurn = maybe "" (('+' :) . show)  $ listToMaybe $ mapMaybe unBurn
                                                $ IK.ieffects $ itemKind itemFull
             nRefillHP = maybe 0 (min 0) $ listToMaybe $ mapMaybe unRefillHP
