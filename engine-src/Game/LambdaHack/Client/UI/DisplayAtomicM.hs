@@ -1325,15 +1325,19 @@ displayRespSfxAtomicUI sfx = case sfx of
                | otherwise ->
                  aidVerbMU MsgEffectMinor aid
                  $ MU.Text "decide abruptly to switch allegiance"
-            fidName <- getsState $ gname . (EM.! fid) . sfactionD
-            let verb = "be no longer controlled by"
+            fidNameRaw <- getsState $ gname . (EM.! fid) . sfactionD
+            -- Avoid "controlled by Controlled foo".
+            let fidName = T.unwords $ tail $ T.words fidNameRaw
+                verb = "be no longer controlled by"
             msgAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidName]
             when isOurAlive $ displayMoreKeep ColorFull ""
           else do
             -- After domination, possibly not seen, if actor (already) not ours.
-            fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
-            let verb = "be now under"
+            fidSourceNameRaw <- getsState $ gname . (EM.! fidSource) . sfactionD
+            -- Avoid "Controlled control".
+            let fidSourceName = T.unwords $ tail $ T.words fidSourceNameRaw
+                verb = "be now under"
             msgAdd MsgEffectMajor $ makeSentence
               [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
         IK.Impress -> aidVerbMU MsgEffectMinor aid "be awestruck"
