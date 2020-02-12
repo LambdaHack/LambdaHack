@@ -53,6 +53,7 @@ data StateClient = StateClient
       --   but they are costly to generate and not too large
   , sfper         :: PerLid         -- ^ faction perception indexed by level
   , salter        :: AlterLid       -- ^ cached alter skill data for positions
+                                    --   (actually, @Tile.alterMinWalk@ instead)
   , srandom       :: SM.SMGen       -- ^ current random generator
   , _sleader      :: Maybe ActorId  -- ^ candidate new leader of the faction;
                                     --   Faction.gleader is the old leader

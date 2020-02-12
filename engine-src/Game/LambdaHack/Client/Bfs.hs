@@ -214,8 +214,9 @@ actorsAvoidedDist = 5
 --
 -- An unwelcome side effect of avoiding actors is that friends will sometimes
 -- avoid displacing and instead perform two separate moves, wasting 1 turn
--- in total. But in corridors they will still displace and elsewhere
--- this scenario was quite rare already.
+-- in total (only if they had opposed direction of their goals; unlikely).
+-- But in corridors they will still displace and elsewhere this scenario
+-- was quite rare already.
 findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (PointI -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
