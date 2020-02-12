@@ -133,9 +133,10 @@ computeTarget aid = do
                                    -- by enemy or congestion, so serious,
                                    -- so reconsider target, not only path
     Nothing -> return Nothing  -- no target assigned yet
-  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
-  let canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
+  factionD <- getsState sfactionD
+  let fact = factionD EM.! bfid b
+      canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
                 || Ability.getSk Ability.SkDisplace actorMaxSk > 0
                 -- Needed for now, because AI targets and shoots enemies
                 -- based on the path to them, not LOS to them:
@@ -162,8 +163,8 @@ computeTarget aid = do
       -- fling at nonmoving actors but only at moving ones and so probably
       -- doesn't use ranged combat as much as would be optimal.
       worthTargeting aidE body = do
-        factE <- getsState $ (EM.! bfid body) . sfactionD
-        let actorMaxSkE = actorMaxSkills EM.! aidE
+        let factE = factionD EM.! bfid body
+            actorMaxSkE = actorMaxSkills EM.! aidE
             hasLoot = not (EM.null (beqp body))
               -- even consider "unreported inventory", for speed and KISS
             moving = Ability.getSk Ability.SkMove actorMaxSkE > 0
@@ -252,89 +253,98 @@ computeTarget aid = do
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
-        let f aidToIgnore = filter ((/= aidToIgnore) . fst) nearbyFoes
-            notIgnoredFoes = maybe nearbyFoes f maidToIgnore
-        cfoes <- closestFoes notIgnoredFoes aid
-        case cfoes of
-          (_, (aid2, _)) : _ -> setPath $ TEnemy aid2
-          [] | condInMelee -> return Nothing  -- don't slow down fighters
-            -- this looks a bit strange, because teammates stop in their tracks
-            -- all around the map (unless very close to the combatant),
-            -- but the intuition is, not being able to help immediately,
-            -- and not being too friendly to each other, they just wait and see
-            -- and also shout to the teammate to flee and lure foes into ambush
+        cstashes <- closestStashes factionD aid
+        case cstashes of
+          (_, (fid2, pos2)) : _ -> setPath $ TPoint (TStash fid2) (blid b) pos2
           [] -> do
-            citemsRaw <- closestItems aid
-            let citems = toFreq "closestItems"
-                         $ filter desirableFloor citemsRaw
-            if nullFreq citems then do
-              ctriggersRaw <- closestTriggers ViaAnything aid
-              let ctriggers = toFreq "ctriggers" ctriggersRaw
-              if nullFreq ctriggers then do
-                -- Tracking enemies is more important than exploring, but smell
-                -- is unreliable and may lead to allies, not foes, so avoid it.
-                smpos <- if canSmell
-                         then closestSmell aid
-                         else return []
-                case smpos of
-                  [] -> do
-                    let vToTgt v0 = do
-                          let vFreq = toFreq "vFreq"
-                                      $ (20, v0) : map (1,) moves
-                          v <- rndToAction $ frequency vFreq
-                          -- Items and smells, etc. considered every 7 moves.
-                          let pathSource = bpos b
-                              tra = trajectoryToPathBounded
-                                      rXmax rYmax pathSource (replicate 7 v)
-                              pathList = map head $ group tra
-                              pathGoal = last pathList
-                              pathLen = length pathList
-                          return $ Just $
-                            TgtAndPath
-                              { tapTgt = TVector v
-                              , tapPath = if pathLen == 0
-                                          then Nothing
-                                          else Just AndPath{..} }
-                        oldpos = fromMaybe (bpos b) (boldpos b)
-                        vOld = bpos b `vectorToFrom` oldpos
-                        pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                    if slackDoctrine && not isStuck
-                       && isUnit vOld && bpos b /= pNew
-                            -- both are needed, e.g., when just teleported
-                            -- or when the shift bounded by level borders
-                       && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
-                    then vToTgt vOld
-                    else do
-                      upos <- closestUnknown aid
-                      case upos of
-                        Nothing -> do
-                          -- If can't move (and so no BFS data), no info gained.
-                          -- Or if can't alter and possibly stuck among rubble.
-                          when (canMove && canAlter) $
-                            modifyClient $ \cli -> cli {sexplored =
-                              ES.insert (blid b) (sexplored cli)}
-                          ctriggersRaw2 <- closestTriggers ViaExit aid
-                          let ctriggers2 = toFreq "ctriggers2" ctriggersRaw2
-                          if nullFreq ctriggers2 then do
-                            afoes <- closestFoes allFoes aid
-                            case afoes of
-                              (_, (aid2, _)) : _ ->
-                                -- All stones turned, time to win or die.
-                                setPath $ TEnemy aid2
-                              [] -> do
-                                furthest <- furthestKnown aid
-                                setPath $ TPoint TKnown (blid b) furthest
-                          else do
-                            (p, (p0, bag)) <- rndToAction $ frequency ctriggers2
-                            setPath $ TPoint (TEmbed bag p0) (blid b) p
-                        Just p -> setPath $ TPoint TUnknown (blid b) p
-                  (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
-              else do
-                (p, (p0, bag)) <- rndToAction $ frequency ctriggers
-                setPath $ TPoint (TEmbed bag p0) (blid b) p
-            else do
-              (p, bag) <- rndToAction $ frequency citems
-              setPath $ TPoint (TItem bag) (blid b) p
+            let f aidToIgnore = filter ((/= aidToIgnore) . fst) nearbyFoes
+                notIgnoredFoes = maybe nearbyFoes f maidToIgnore
+            cfoes <- closestFoes notIgnoredFoes aid
+            case cfoes of
+              (_, (aid2, _)) : _ -> setPath $ TEnemy aid2
+              [] | condInMelee -> return Nothing  -- don't slow down fighters
+                -- this looks a bit strange, because teammates stop
+                -- in their tracks all around the map (unless very close
+                -- to the combatant), but the intuition is, not being able
+                -- to help immediately, and not being too friendly
+                -- to each other, they just wait and see and also shout
+                -- to the teammate to flee and lure foes into ambush
+              [] -> do
+                citemsRaw <- closestItems aid
+                let citems = toFreq "closestItems"
+                             $ filter desirableFloor citemsRaw
+                if nullFreq citems then do
+                  ctriggersRaw <- closestTriggers ViaAnything aid
+                  let ctriggers = toFreq "ctriggers" ctriggersRaw
+                  if nullFreq ctriggers then do
+                    -- Tracking enemies is more important than exploring,
+                    -- but smell is unreliable and may lead to allies,
+                    -- not foes, so avoid it.
+                    smpos <- if canSmell
+                             then closestSmell aid
+                             else return []
+                    case smpos of
+                      [] -> do
+                        let vToTgt v0 = do
+                              let vFreq = toFreq "vFreq"
+                                          $ (20, v0) : map (1,) moves
+                              v <- rndToAction $ frequency vFreq
+                              -- Items and smells, etc. considered
+                              -- every 7 moves.
+                              let pathSource = bpos b
+                                  tra = trajectoryToPathBounded
+                                          rXmax rYmax pathSource (replicate 7 v)
+                                  pathList = map head $ group tra
+                                  pathGoal = last pathList
+                                  pathLen = length pathList
+                              return $ Just $
+                                TgtAndPath
+                                  { tapTgt = TVector v
+                                  , tapPath = if pathLen == 0
+                                              then Nothing
+                                              else Just AndPath{..} }
+                            oldpos = fromMaybe (bpos b) (boldpos b)
+                            vOld = bpos b `vectorToFrom` oldpos
+                            pNew = shiftBounded rXmax rYmax (bpos b) vOld
+                        if slackDoctrine && not isStuck
+                           && isUnit vOld && bpos b /= pNew
+                                -- both are needed, e.g., when just teleported
+                                -- or when the shift bounded by level borders
+                           && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
+                        then vToTgt vOld
+                        else do
+                          upos <- closestUnknown aid
+                          case upos of
+                            Nothing -> do
+                              -- If can't move (and so no BFS data),
+                              -- no info gained. Or if can't alter
+                              -- and possibly stuck among rubble.
+                              when (canMove && canAlter) $
+                                modifyClient $ \cli -> cli {sexplored =
+                                  ES.insert (blid b) (sexplored cli)}
+                              ctriggersRaw2 <- closestTriggers ViaExit aid
+                              let ctriggers2 = toFreq "ctriggers2" ctriggersRaw2
+                              if nullFreq ctriggers2 then do
+                                afoes <- closestFoes allFoes aid
+                                case afoes of
+                                  (_, (aid2, _)) : _ ->
+                                    -- All stones turned, time to win or die.
+                                    setPath $ TEnemy aid2
+                                  [] -> do
+                                    furthest <- furthestKnown aid
+                                    setPath $ TPoint TKnown (blid b) furthest
+                              else do
+                                (p, (p0, bag)) <-
+                                  rndToAction $ frequency ctriggers2
+                                setPath $ TPoint (TEmbed bag p0) (blid b) p
+                            Just p -> setPath $ TPoint TUnknown (blid b) p
+                      (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
+                  else do
+                    (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                    setPath $ TPoint (TEmbed bag p0) (blid b) p
+                else do
+                  (p, bag) <- rndToAction $ frequency citems
+                  setPath $ TPoint (TItem bag) (blid b) p
       tellOthersNothingHere pos = do
         let f TgtAndPath{tapTgt} = case tapTgt of
               TPoint _ lid p -> p /= pos || lid /= blid b
@@ -380,11 +390,15 @@ computeTarget aid = do
                                          && not (occupiedProjLvl q lvl)
                    then return $ Just tap{tapPath=mpath}
                    else pickNewTargetIgnore (Just a)
-        -- In this case, need to retarget, to focus on foes that melee ours
-        -- and not, e.g., on remembered foes or items.
-        _ | condInMelee -> pickNewTarget
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint tgoal lid pos -> case tgoal of
+          TStash fid2 -> assert (fid2 /= bfid b) $
+            if gstash (factionD EM.! fid2) == Just (lid, pos)
+            then return $ Just tap
+            else pickNewTarget
+          -- In this case, need to retarget, to focus on foes that melee ours
+          -- and not, e.g., on remembered foes or items.
+          _ | condInMelee -> pickNewTarget
           TEnemyPos _  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere pos
             | EM.member aid fleeD -> pickNewTarget
@@ -398,8 +412,8 @@ computeTarget aid = do
                      nearbyFoes
               then pickNewTarget
               else return $ Just tap
-          _ | not $ null nearbyFoes ->
-            pickNewTarget  -- prefer close foes to anything else
+          -- Prefer close foes to anything else below.
+          _ | not $ null nearbyFoes -> pickNewTarget
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
           -- and only in this case it is invalidated.
@@ -462,8 +476,7 @@ computeTarget aid = do
                     -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
             else return $ Just tap
-        _ | not $ null nearbyFoes ->
-          pickNewTarget  -- prefer close foes to any vector
+        _ | condInMelee || (not $ null nearbyFoes) -> pickNewTarget
         TNonEnemy _ | mleader == Just aid ->  -- a leader, never follow
           pickNewTarget
         TNonEnemy a -> do

@@ -820,6 +820,7 @@ spotItem verbose iid kit@(k, _) c = do
           case sxhairOld of
             Just TEnemy{} -> return ()  -- probably too important to overwrite
             Just (TPoint TEnemyPos{} _ _) -> return ()
+            Just (TPoint TStash{} _ _) -> return ()
             _ -> do
               -- Don't steal xhair if it's only an item on another level.
               -- For enemies, OTOH, capture xhair to alarm player.

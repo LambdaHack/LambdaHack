@@ -9,6 +9,7 @@ module Game.LambdaHack.Client.BfsM
   , furthestKnown, closestUnknown, closestSmell
   , FleeViaStairsOrEscape(..)
   , embedBenefit, closestTriggers, condEnoughGearM, closestItems, closestFoes
+  , closestStashes
 #ifdef EXPOSE_INTERNAL
   , unexploredDepth, updatePathFromBfs
 #endif
@@ -504,4 +505,20 @@ closestFoes foes aid =
     _ -> do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\x@(_, b) -> fmap (,x) (accessBfs bfs (bpos b))) foes
+      return $! sortBy (comparing fst) ds
+
+-- | Closest (wrt paths) enemy stash locations.
+closestStashes :: MonadClient m
+               => FactionDict -> ActorId -> m [(Int, (FactionId, Point))]
+closestStashes factionD aid = do
+  b <- getsState $ getActorBody aid
+  let qualifyStash (fid, Faction{gstash}) = case gstash of
+        Nothing -> Nothing
+        Just (lid, pos) ->
+          if fid == bfid b || lid /= blid b then Nothing else Just (fid, pos)
+  case mapMaybe qualifyStash $ EM.assocs factionD of
+    [] -> return []
+    stashes -> do
+      bfs <- getCacheBfs aid
+      let ds = mapMaybe (\x@(_, pos) -> fmap (,x) (accessBfs bfs pos)) stashes
       return $! sortBy (comparing fst) ds
