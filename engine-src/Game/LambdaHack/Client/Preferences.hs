@@ -150,7 +150,9 @@ effectToBenefit cops fid factionD eff =
                  - total / fromIntegral count
                    -- the same when dropped from me and foe
     IK.DropItem{} -> delta (-10)  -- depends a lot on what is dropped
-    IK.Discharge d -> delta $ 10 - Dice.meanDice d  -- context-dependent
+    IK.Discharge d -> if Dice.infDice d == 0
+                      then (1, 0)  -- may fizzle, so AI never uses (could loop)
+                      else delta $ 10 - Dice.meanDice d  -- context-dependent
     IK.PolyItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.RerollItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)
     IK.DupItem -> (1, 0)  -- may fizzle, so AI never uses (could loop)

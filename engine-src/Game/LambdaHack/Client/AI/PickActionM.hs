@@ -748,6 +748,7 @@ applyItem aid applyGroup = do
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
+      disqualify _ IK.Discharge{} = True
       disqualify _ IK.PolyItem = True
       disqualify _ IK.RerollItem = True
       disqualify _ IK.DupItem = True
