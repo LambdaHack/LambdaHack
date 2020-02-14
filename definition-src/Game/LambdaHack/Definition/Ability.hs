@@ -82,9 +82,9 @@ data Flag =
   | Blast         -- ^ the item is an explosion blast particle
   | Condition     -- ^ item is a condition (buff or de-buff) of an actor
                   --   and is displayed as such;
-                  --   this differs from belonging to the @condition@ group,
+                  --   this differs from belonging to the @CONDITION@ group,
                   --   which doesn't guarantee display as a condition,
-                  --   but governs removal by items that drop @condition@
+                  --   but governs removal by items that drop @CONDITION@
   | Unique        -- ^ at most one copy can ever be generated
   | Periodic      -- ^ at most one of any copies without cooldown (timeout)
                   --   activates each turn; the cooldown required after

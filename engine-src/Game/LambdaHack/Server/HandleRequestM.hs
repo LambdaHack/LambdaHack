@@ -169,19 +169,18 @@ processWatchfulness mwait aid = do
         else
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
 
-affectStash :: MonadServerAtomic m => ActorId -> Actor -> m ()
-affectStash aid b = do
-  actorSk <- currentSkillsServer aid
-  let abInSkill sk = isJust (btrajectory b)
-                     || Ability.getSk sk actorSk > 0
-  when (abInSkill Ability.SkMoveItem) $ do
-    let locateStash (fid, fact) = case gstash fact of
-          Just (lidS, posS)
-            | lidS == blid b && posS == (bpos b) && fid /= bfid b ->
-              execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
-          _ -> return ()
-    factionD <- getsState sfactionD
-    mapM_ locateStash $ EM.assocs factionD
+-- Even very primitive actors that can't pick up items can take over stash,
+-- to prevent them inadvertedly protecting enemy stash from skilled ones
+-- by standing over it (which AI tends to do).
+affectStash :: MonadServerAtomic m => Actor -> m ()
+affectStash b = do
+  let locateStash (fid, fact) = case gstash fact of
+        Just (lidS, posS)
+          | lidS == blid b && posS == (bpos b) && fid /= bfid b ->
+            execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
+        _ -> return ()
+  factionD <- getsState sfactionD
+  mapM_ locateStash $ EM.assocs factionD
 
 handleRequestTimed :: MonadServerAtomic m
                    => FactionId -> ActorId -> RequestTimed -> m Bool
@@ -207,7 +206,7 @@ handleRequestTimed fid aid cmd = do
 managePerRequest :: MonadServerAtomic m => ActorId -> m ()
 managePerRequest aid = do
   b <- getsState $ getActorBody aid
-  affectStash aid b
+  affectStash b
   let clearMark = 0
   unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
     -- Clear delta for the next actor move.
