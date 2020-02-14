@@ -2108,4 +2108,4 @@ effectVerbMsgFail :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectVerbMsgFail execSfx source = do
   b <- getsState $ getActorBody source
   unless (bproj b) execSfx  -- don't spam when projectiles activate
-  return UseDud
+  return UseId  -- not @UseDud@ so that @OneOf@ doesn't ignore it
