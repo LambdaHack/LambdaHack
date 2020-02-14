@@ -142,12 +142,16 @@ the player visits a level during a single game, its layout is the same.
 
 Letters and digits on the game screen are likely to represent actors.
 On the other hand, terrain is depicted with non-letter and non-digit
-characters and with zero `0`. Items lying on the ground are represented
-similarly, though blocky solid symbols are likely to be non-passable
-terrain and particularly unlikely to be items. In case of doubt,
+characters and with zero `0`. Blocky solid symbols are likely to be
+non-passable and/or not translucent terrain. White, cyan and green terrain
+is usually inert, red is burning or trapped, blue activable or trapped,
+magenta searchable or activable.
+
+Items lying on the ground are represented with non-letter and non-digit
+characters, as well, though rarely with blocky symbols. In case of doubt,
 one of the aiming commands (`/` and keypad `/`, with default keybinding)
-cycles through all visible and remembered items on the level
-and another (`*` and keypad `*`, with default keybinding) through all foes.
+cycles through all visible and remembered items on the level and another
+(`*` and keypad `*`, with default keybinding) through all foes.
 Also, pointing at a map position with `MMB` (middle mouse button) displays
 a short description of its contents. The basic terrain kinds are as follows.
 
