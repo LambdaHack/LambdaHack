@@ -1400,9 +1400,12 @@ dropCStoreItem :: MonadServerAtomic m
                -> ItemId -> ItemQuant
                -> m UseResult
 dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
+ let c = CActor aid store
+ bag0 <- getsState $ getContainerBag c
+  -- @OnSmash@ effects of previous items may remove next items, so better check.
+ if iid `EM.notMember` bag0 then return UseDud else do
   itemFull <- getsState $ itemToFull iid
   let arItem = aspectRecordFull itemFull
-      c = CActor aid store
       fragile = IA.checkFlag Ability.Fragile arItem
       durable = IA.checkFlag Ability.Durable arItem
       isDestroyed = destroy
@@ -1425,15 +1428,15 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
     -- One copy was destroyed (or none if the item was discharged),
     -- so let's mop up.
     bag <- getsState $ getContainerBag c
-    maybe (return UseUp)
-          (\(k1, it) ->
+    maybe (return ())
+          (\(k1, it) -> do
              let destroyedSoFar = k - k1
                  k2 = min (kMax - destroyedSoFar) k1
                  kit2 = (k2, take k2 it)
-             in if k2 <= 0 then return UseDud else do
-               execUpdAtomic $ UpdLoseItem False iid kit2 c
-               return UseUp)
+             when (k2 > 0) $
+               execUpdAtomic $ UpdLoseItem False iid kit2 c)
           (EM.lookup iid bag)
+    return UseUp
   else do
     cDrop <- pickDroppable False aid b  -- drop over fog, etc.
     mvCmd <- generalMoveItem verbose iid (min kMax k) (CActor aid store) cDrop
