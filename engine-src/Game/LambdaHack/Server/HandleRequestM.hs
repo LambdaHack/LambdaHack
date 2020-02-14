@@ -13,8 +13,8 @@ module Game.LambdaHack.Server.HandleRequestM
   , reqGameDropAndExit, reqGameSaveAndExit
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , execFailure, checkWaiting, processWatchfulness, managePerRequest
-  , handleRequestTimedCases, affectSmell, affectStash
+  , execFailure, checkWaiting, processWatchfulness, affectStash
+  , managePerRequest, handleRequestTimedCases, affectSmell
   , reqMove, reqMelee, reqMeleeChecked, reqDisplace, reqAlter
   , reqWait, reqWait10, reqYell, reqMoveItems, reqMoveItem, reqProject, reqApply
   , reqGameRestart, reqGameSave, reqDoctrine, reqAutomate
@@ -169,6 +169,20 @@ processWatchfulness mwait aid = do
         else
           execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
 
+affectStash :: MonadServerAtomic m => ActorId -> Actor -> m ()
+affectStash aid b = do
+  actorSk <- currentSkillsServer aid
+  let abInSkill sk = isJust (btrajectory b)
+                     || Ability.getSk sk actorSk > 0
+  when (abInSkill Ability.SkMoveItem) $ do
+    let locateStash (fid, fact) = case gstash fact of
+          Just (lidS, posS)
+            | lidS == blid b && posS == (bpos b) && fid /= bfid b ->
+              execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
+          _ -> return ()
+    factionD <- getsState sfactionD
+    mapM_ locateStash $ EM.assocs factionD
+
 handleRequestTimed :: MonadServerAtomic m
                    => FactionId -> ActorId -> RequestTimed -> m Bool
 handleRequestTimed fid aid cmd = do
@@ -193,6 +207,7 @@ handleRequestTimed fid aid cmd = do
 managePerRequest :: MonadServerAtomic m => ActorId -> m ()
 managePerRequest aid = do
   b <- getsState $ getActorBody aid
+  affectStash aid b
   let clearMark = 0
   unless (bcalmDelta b == ResDelta (0, 0) (0, 0)) $
     -- Clear delta for the next actor move.
@@ -278,21 +293,6 @@ affectSmell aid = do
                  else newTime
       when (oldS /= newS) $
         execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
-
-affectStash :: MonadServerAtomic m => ActorId -> Point -> m ()
-affectStash aid tpos = do
-  b <- getsState $ getActorBody aid
-  actorSk <- currentSkillsServer aid
-  let abInSkill sk = isJust (btrajectory b)
-                     || Ability.getSk sk actorSk > 0
-  when (abInSkill Ability.SkMoveItem) $ do
-    let locateStash (fid, fact) = case gstash fact of
-          Just (lidS, posS)
-            | lidS == blid b && posS == tpos && fid /= bfid b ->
-              execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
-          _ -> return ()
-    factionD <- getsState sfactionD
-    mapM_ locateStash $ EM.assocs factionD
 
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
@@ -381,7 +381,6 @@ reqMoveGeneric voluntary mayAttack source dir = do
           -- but retain the old raw name and which would spam water
           -- slowness every time a projectile flies over water.
           unless (bproj sb) $ do
-            affectStash source tpos
             -- Not voluntary, because possibly the goal was to move
             -- and modifying terrain is an unwelcome side effect.
             -- Barged into a tile, so normal effects need to activate,
@@ -596,8 +595,6 @@ reqDisplaceGeneric voluntary source target = do
              -- so sometimes smellers will backtrack once to wipe smell. OK.
              affectSmell source
              affectSmell target
-             affectStash source tpos
-             affectStash target spos
              void $ reqAlterFail EffBare False source tpos
                -- possibly alter or activate
              void $ reqAlterFail EffBare False target spos
