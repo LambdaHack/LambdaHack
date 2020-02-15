@@ -158,10 +158,10 @@ tmpRegenerating =
 tmpPoisoned =
   tmpEffects S_POISONED (4 + 1 `d` 2) [RefillHP (-1)]
 tmpSlow10Resistant =
-  tmpEffects S_POISON_RESISTANT (8 + 1 `d` 4)
+  tmpEffects S_SLOW_RESISTANT (8 + 1 `d` 4)
              [DropItem 1 1 COrgan S_SLOWED]
 tmpPoisonResistant =
-  tmpEffects S_SLOW_RESISTANT (8 + 1 `d` 4)
+  tmpEffects S_POISON_RESISTANT (8 + 1 `d` 4)
              [DropItem 1 maxBound COrgan S_POISONED]
 
 tmpNoSkMove =
