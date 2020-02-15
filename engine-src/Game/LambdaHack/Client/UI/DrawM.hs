@@ -676,8 +676,9 @@ drawLeaderDamage width leader = do
         let arItem = aspectRecordFull itemFull
             timeout = IA.aTimeout arItem
         in timeout > 0
-      hasEffect itemFull =
-        any IK.forApplyEffect $ IK.ieffects $ itemKind itemFull
+      haNonDamagesEffect itemFull =
+        any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
+            (IK.ieffects $ itemKind itemFull)
       ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
       ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
@@ -688,7 +689,7 @@ drawLeaderDamage width leader = do
                                         $ IK.ieffects $ itemKind itemFull
             tRefillHP | nRefillHP < 0 = '+' : show (- nRefillHP)
                       | otherwise = ""
-            tdiceEffect = if hasEffect itemFull
+            tdiceEffect = if haNonDamagesEffect itemFull
                           then map Char.toUpper tdice
                           else tdice
             ldice color = map (Color.attrChar2ToW32 color) tdiceEffect

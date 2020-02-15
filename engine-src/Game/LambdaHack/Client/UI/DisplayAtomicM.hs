@@ -1435,6 +1435,7 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.OneOf{} -> return ()
         IK.OnSmash{} -> error $ "" `showFailure` sfx
         IK.OnCombine{} -> error $ "" `showFailure` sfx
+        IK.OnUser{} -> error $ "" `showFailure` sfx
         IK.AndEffect{} -> error $ "" `showFailure` sfx
         IK.OrEffect{} -> error $ "" `showFailure` sfx
         IK.SeqEffect{} -> error $ "" `showFailure` sfx

@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
-  , boostItemKindList, forApplyEffect
+  , boostItemKindList, forApplyEffect, forDamageEffect
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
   , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, damageUsefulness
@@ -221,6 +221,7 @@ data Effect =
       --   item or a tile, e.g., craft items from other items in a worshop;
       --   in particular, don't trigger the effects when entering a tile;
       --   trigger exclusively the effects when activating walkable terrain
+  | OnUser Effect  -- ^ apply the effect to the user, not the victim
   | AndEffect Effect Effect  -- ^ only fire second effect if first activated
   | OrEffect Effect Effect   -- ^ only fire second effect if first not activated
   | SeqEffect [Effect]       -- ^ fire all effects in order; always suceed
@@ -304,6 +305,7 @@ forApplyEffect :: Effect -> Bool
 forApplyEffect eff = case eff of
   OnSmash{} -> False
   OnCombine{} -> False
+  OnUser eff1 -> forApplyEffect eff1
   AndEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   OrEffect eff1 eff2 -> forApplyEffect eff1 || forApplyEffect eff2
   SeqEffect effs -> or $ map forApplyEffect effs
@@ -313,9 +315,18 @@ forApplyEffect eff = case eff of
   ParalyzeInWater{} -> False  -- barely noticeable, spams when resisted
   _ -> True
 
+-- | Whether a non-nested effect always applies raw damage.
+forDamageEffect :: Effect -> Bool
+forDamageEffect eff = case eff of
+  Burn{} -> True
+  RefillHP n | n < 0 -> True
+  _ -> False
+
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
 isEffEscape (OneOf l) = any isEffEscape l
+isEffEscape (OnCombine eff) = isEffEscape eff
+isEffEscape (OnUser eff) = isEffEscape eff
 isEffEscape (AndEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
 isEffEscape (OrEffect eff1 eff2) = isEffEscape eff1 ||  isEffEscape eff2
 isEffEscape (SeqEffect effs) = or $ map isEffEscape effs
@@ -325,6 +336,8 @@ isEffEscapeOrAscend :: Effect -> Bool
 isEffEscapeOrAscend Ascend{} = True
 isEffEscapeOrAscend Escape{} = True
 isEffEscapeOrAscend (OneOf l) = any isEffEscapeOrAscend l
+isEffEscapeOrAscend (OnCombine eff) = isEffEscapeOrAscend eff
+isEffEscapeOrAscend (OnUser eff) = isEffEscapeOrAscend eff
 isEffEscapeOrAscend (AndEffect eff1 eff2) =
   isEffEscapeOrAscend eff1 || isEffEscapeOrAscend eff2
 isEffEscapeOrAscend (OrEffect eff1 eff2) =
@@ -372,6 +385,7 @@ getDropOrgans =
       f (DropItem _ _ COrgan grp) = [grp]
       f Impress = [S_IMPRESSED]
       f (OneOf l) = concatMap f l  -- even remote possibility accepted
+      f (OnUser eff) = f eff  -- no OnCombine, because checked for potions, etc.
       f (AndEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (OrEffect eff1 eff2) = f eff1 ++ f eff2  -- not certain, but accepted
       f (SeqEffect effs) = concatMap f effs
@@ -552,6 +566,7 @@ validateNotNested effs t f =
   let g (OneOf l) = any h l
       g (OnSmash effect) = h effect
       g (OnCombine effect) = h effect
+      g (OnUser effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs2) = or $ map h effs2
@@ -566,6 +581,7 @@ checkSubEffectProp f eff =
   let g (OneOf l) = any h l
       g (OnSmash effect) = h effect
       g (OnCombine effect) = h effect
+      g (OnUser effect) = h effect
       g (AndEffect eff1 eff2) = h eff1 || h eff2
       g (OrEffect eff1 eff2) = h eff1 || h eff2
       g (SeqEffect effs) = or $ map h effs

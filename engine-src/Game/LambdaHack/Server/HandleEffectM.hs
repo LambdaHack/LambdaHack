@@ -457,6 +457,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
     IK.OnCombine _ -> return UseDud  -- ignored under normal circumstances
+    IK.OnUser eff -> effectSem effApplyFlags0 source source iid c eff
     IK.AndEffect eff1 eff2 -> effectAndEffect recursiveCall eff1 eff2
     IK.OrEffect eff1 eff2 -> effectOrEffect recursiveCall eff1 eff2
     IK.SeqEffect effs -> effectSeqEffect recursiveCall effs
@@ -1826,6 +1827,7 @@ effectDetect execSfx d radius target pos = do
       effectHasLoot IK.DupItem = True
       effectHasLoot (IK.OneOf l) = any effectHasLoot l
       effectHasLoot (IK.OnSmash eff) = effectHasLoot eff
+      effectHasLoot (IK.OnUser eff) = effectHasLoot eff
       effectHasLoot (IK.AndEffect eff1 eff2) =
         effectHasLoot eff1 || effectHasLoot eff2
       effectHasLoot (IK.OrEffect eff1 eff2) =

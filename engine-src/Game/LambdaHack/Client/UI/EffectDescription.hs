@@ -133,6 +133,8 @@ effectToSuffix detailLevel effect =
         _ -> header <+> "[" <> T.intercalate ", " ts <> "]" <+> sometimes
     OnSmash _ -> ""  -- printed inside a separate section
     OnCombine _ -> ""  -- printed inside a separate section
+    OnUser eff -> let t = effectToSuffix detailLevel eff
+                  in if T.null t then "" else "(on user:" <+> t <> ")"
     AndEffect (ConsumeItems tools raw) eff -> case detailLevel of
       DetailAll ->
        let (tcraft, traw, ttools) = describeCrafting tools raw eff

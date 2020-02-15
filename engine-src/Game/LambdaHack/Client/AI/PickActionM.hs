@@ -757,6 +757,7 @@ applyItem aid applyGroup = do
       disqualify durable IK.Summon{} =
         durable && (bcalm b < xM 30 || condNotCalmEnough)
       disqualify durable (IK.OneOf l) = any (disqualify durable) l
+      disqualify durable (IK.OnUser eff) = disqualify durable eff
       disqualify durable (IK.AndEffect eff1 eff2) =
         disqualify durable eff1 || disqualify durable eff2
       disqualify durable (IK.OrEffect eff1 eff2) =
@@ -799,6 +800,7 @@ applyItem aid applyGroup = do
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
             -- Don't include @OneOf@ because other effects may kill you.
             getHP (IK.RefillHP p) | p > 0 = True
+            getHP (IK.OnUser eff) = getHP eff
             getHP (IK.AndEffect eff1 eff2) = getHP eff1 || getHP eff2
             getHP (IK.OrEffect eff1 eff2) = getHP eff1 || getHP eff2
             getHP (IK.SeqEffect effs) = or $ map getHP effs
