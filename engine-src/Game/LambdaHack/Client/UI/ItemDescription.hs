@@ -14,6 +14,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import           Data.Char (isAlpha)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -71,8 +72,13 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
                     then "us"
                     else gname (factionD EM.! fid)]
         _ -> []
+      powerTsBeginsWithAplha = case map T.unpack powerTs of
+        (c : _) : _ -> isAlpha c
+        _ -> False
       ts = lsource
-           ++ take maxWordsToShow powerTs
+           ++ (if maxWordsToShow > 1 || powerTsBeginsWithAplha
+               then take maxWordsToShow powerTs
+               else [])
            ++ [ "(...)" | length powerTs > maxWordsToShow
                           && detailLevel > DetailLow
                           && maxWordsToShow > 0 ]
