@@ -703,11 +703,8 @@ createActorUI born aid body = do
                n = fromMaybe (error $ show mhs) $ elemIndex False mhs
            return (n, if 0 < n && n < 10 then Char.intToDigit n else '@')
     let (object1, object2) =
-          if bproj body
-          then partItemShortest rwidth (bfid body) factionD localTime
-                                itemFull (1, [])
-          else partItemTrunk rwidth (bfid body) factionD localTime
-                             itemFull (1, [])
+          partItemShortest rwidth (bfid body) factionD localTime
+                           itemFull (1, [])
         (bname, bpronoun) =
           if | bproj body ->
                let adj = case btrajectory body of
@@ -1166,17 +1163,24 @@ discover c iid = do
       -- the special reveal at game over, using fake @CTrunk@; don't spam
     _ -> return (False, [])
   let kit = EM.findWithDefault (1, []) iid bag  -- may be used up by that time
-      knownName = partItemMediumAW rwidth side factionD localTime itemFull kit
-      -- Make sure the two names in the message differ. We may end up with
-      -- "the pair turns out to be a pair of trousers of destruction",
-      -- but that's almost sensible. The fun of English.
-      name = IK.iname $ okind coitem $ case jkind $ itemBase itemFull of
+      knownName = makePhrase
+        [partItemMediumAW rwidth side factionD localTime itemFull kit]
+      flav = flavourToName $ jflavour $ itemBase itemFull
+      (object1, object2) =
+        partItemShortest rwidth side factionD localTime itemFull kit
+      name1 = makePhrase [object1, object2]
+      -- Make sure the two names in the message differ.
+      name2 = IK.iname $ okind coitem $ case jkind $ itemBase itemFull of
         IdentityObvious ik -> ik
         IdentityCovered _ix ik -> ik  -- fake kind; we talk about appearances
-      flav = flavourToName $ jflavour $ itemBase itemFull
+      name = if T.unwords (tail (T.words knownName)) /= name1
+             then name1
+             else name2
       unknownName = MU.Phrase $ [MU.Text flav, MU.Text name] ++ nameWhere
       msg = makeSentence
-        ["the", MU.SubjectVerbSg unknownName "turn out to be", knownName]
+        [ "the"
+        , MU.SubjectVerbSg unknownName "turn out to be"
+        , MU.Text knownName ]
   unless (noMsg || globalTime == timeZero) $  -- no spam about initial equipment
     msgAdd MsgItemDisco msg
 

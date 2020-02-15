@@ -1,6 +1,6 @@
 -- | Descriptions of items.
 module Game.LambdaHack.Client.UI.ItemDescription
-  ( partItem, partItemShort, partItemShortest, partItemTrunk, partItemHigh
+  ( partItem, partItemShort, partItemShortest, partItemHigh
   , partItemWs, partItemWsShort, partItemWsLong, partItemWsRanged
   , partItemShortAW, partItemMediumAW, partItemShortWownW
   , viewItem, itemDesc
@@ -80,8 +80,7 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
                then take maxWordsToShow powerTs
                else [])
            ++ [ "(...)" | length powerTs > maxWordsToShow
-                          && detailLevel > DetailLow
-                          && maxWordsToShow > 0 ]
+                          && detailLevel > DetailLow ]
            ++ [charges | maxWordsToShow > 1]
       name | temporary =
              let adj = if timeout == 0 then "temporarily" else "impermanent"
@@ -271,11 +270,6 @@ partItemShortest :: Int -> FactionId -> FactionDict -> Time -> ItemFull
                  -> (MU.Part, MU.Part)
 partItemShortest width side factionD =
   partItemN width side factionD False DetailLow 1
-
-partItemTrunk :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
-              -> (MU.Part, MU.Part)
-partItemTrunk width side factionD =
-  partItemN width side factionD False DetailLow 0
 
 partItemHigh :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
              -> ([Text], MU.Part, MU.Part)
