@@ -214,7 +214,7 @@ condCanProjectM skill aid =
 
 condProjectListM :: MonadClient m
                  => Int -> ActorId
-                 -> m [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+                 -> m [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
@@ -223,7 +223,7 @@ condProjectListM skill aid = do
                           condShineWouldBetray condAimEnemyPresent
 
 projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
-            -> [(Benefit, CStore, ItemId, ItemFull, ItemQuant)]
+            -> [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 projectList discoBenefit skill aid
             condShineWouldBetray condAimEnemyPresent s =
   let b = getActorBody aid s
@@ -232,19 +232,28 @@ projectList discoBenefit skill aid
       condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
+      coeff CGround = 2  -- pickup turn saved
+      coeff COrgan = error $ "" `showFailure` benList
+      coeff CEqp = 1000  -- must hinder currently (or be very potent);
+                         -- note: not larger, to avoid Int32 overflow
+      coeff CStash = 1
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyPresent
                      heavilyDistressed condNotCalmEnough actorMaxSk
-      q (Benefit{benInEqp, benFling}, _, _, itemFull, _) =
+      goodMissile (Benefit{benInEqp, benFling}, cstore, iid, itemFull, kit) =
         let arItem = aspectRecordFull itemFull
-        in benFling < 0
-           && (not benInEqp  -- can't wear, so OK to risk losing or breaking
-               || not (IA.checkFlag Ability.Meleeable arItem)
-                    -- anything else expendable
-                  && hind itemFull)  -- hinders now, so possibly often, so away!
-           && permittedProjectAI skill calmE itemFull
+            benR = coeff cstore * benFling
+        in if benR < -1  -- ignore very weak projectiles
+              && (not benInEqp  -- can't wear, so OK to risk losing or breaking
+                  || not (IA.checkFlag Ability.Meleeable arItem)
+                       -- anything else expendable
+                     && hind itemFull)  -- hinders now, so possibly often
+              && permittedProjectAI skill calmE itemFull
+           then Just (benR, cstore, iid, itemFull, kit)
+           else Nothing
       stores = [CStash, CGround] ++ [CEqp | calmE]
-  in filter q $ benAvailableItems discoBenefit aid stores s
+      benList = benAvailableItems discoBenefit aid stores s
+  in mapMaybe goodMissile benList
 
 -- | Produce the list of items from the given stores available to the actor
 -- and the items' values.

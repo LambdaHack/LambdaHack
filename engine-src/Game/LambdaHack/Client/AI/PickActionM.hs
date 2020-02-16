@@ -694,12 +694,7 @@ projectItem aid = do
             -- and no actors or obstacles along the path.
             benList <- condProjectListM skill aid
             localTime <- getsState $ getLocalTime (blid b)
-            let coeff CGround = 2  -- pickup turn saved
-                coeff COrgan = error $ "" `showFailure` benList
-                coeff CEqp = 1000  -- must hinder currently (or be very potent);
-                                   -- note: not larger, to avoid Int32 overflow
-                coeff CStash = 1
-                fRanged (Benefit{benFling}, cstore, iid, itemFull, kit) =
+            let fRanged (benR, cstore, iid, itemFull, kit) =
                   -- If the item is discharged, neither the kinetic hit nor
                   -- any effects activate, so no point projecting.
                   -- This changes in time, so recharging is not included
@@ -711,7 +706,6 @@ projectItem aid = do
                         chessDist (bpos b) fpos + 2  -- margin for fleeing
                       rangeMult =  -- penalize wasted or unsafely low range
                         10 + max 0 (10 - abs (trange - bestRange))
-                      benR = coeff cstore * benFling
                   in if trange >= chessDist (bpos b) fpos && recharged
                      then Just ( - ceiling (benR * fromIntegral rangeMult / 10)
                                , ReqProject fpos newEps iid cstore )
