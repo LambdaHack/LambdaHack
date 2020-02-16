@@ -135,7 +135,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdDestroyItem verbose iid _ kit c -> do
     if verbose then do
       ownW <- ppContainerWownW partActorLeader False c
-      let verb = MU.Text $ makePhrase $ "disappear from" : ownW
+      let verb = MU.Text $ makePhrase $ "break in" : ownW
       itemVerbMUShort MsgItemDestruction iid kit verb c
     else do
       lid <- getsState $ lidFromC c

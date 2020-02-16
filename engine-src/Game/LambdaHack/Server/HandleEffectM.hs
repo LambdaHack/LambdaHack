@@ -1437,7 +1437,8 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
                  k2 = min (kMax - destroyedSoFar) k1
                  kit2 = (k2, take k2 it)
              when (k2 > 0) $
-               execUpdAtomic $ UpdLoseItem False iid kit2 c)
+               execUpdAtomic $ UpdDestroyItem verbose iid (itemBase itemFull)
+                                              kit2 c)
           (EM.lookup iid bag)
     return UseUp
   else do
@@ -1511,10 +1512,8 @@ consumeItems target bagsToLose iidsToApply = do
       -- Not @UpdLoseItemBag@, to be verbose.
       -- The bag is small, anyway.
       let c = CActor target store
-      itemD <- getsState sitemD
-      mapWithKeyM_ (\iid kit ->
-        let itemBase = itemD EM.! iid
-        in execUpdAtomic $ UpdDestroyItem True iid itemBase kit c) bagToLose
+      mapWithKeyM_ (\iid kit -> execUpdAtomic $ UpdLoseItem True iid kit c)
+                   bagToLose
   -- But afterwards we do apply normal effects of durable items,
   -- even if the actor or other items displaced in the process,
   -- as long as a number of the items is still there.
