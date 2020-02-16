@@ -679,8 +679,8 @@ drawLeaderDamage width leader = do
       haNonDamagesEffect itemFull =
         any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
             (IK.ieffects $ itemKind itemFull)
-      ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
-      ppDice (nch, (itemFull, (k, _))) =
+      ppDice :: (Int, Bool, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
+      ppDice (nch, _, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             -- We ignore nested effects because they are, in general, avoidable.
             tBurn = maybe "" (('+' :) . show)  $ listToMaybe $ mapMaybe unBurn
@@ -723,10 +723,13 @@ drawLeaderDamage width leader = do
         filter (IA.checkFlag Ability.Meleeable
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
-  strongest <- map (second snd . snd) <$>
-    pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
-  let (lT, lRatherNoT) = span (hasTimeout . fst . snd) strongest
-      strongestToDisplay = lT ++ take 1 lRatherNoT
+  strongest <-
+    map (\(_, ncha, isIDed, _, itemFullKit) -> (ncha, isIDed, itemFullKit))
+    <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
+  let possiblyHasTimeout (_, isIDed, (itemFull, _)) =
+        hasTimeout itemFull || not isIDed
+      (lT, lSurelyNoTimeout) = span possiblyHasTimeout strongest
+      strongestToDisplay = lT ++ take 1 lSurelyNoTimeout
       lToDisplay = concatMap ppDice strongestToDisplay
       (ldischarged, lrest) = span (not . fst) lToDisplay
       lWithBonus = case map snd lrest of

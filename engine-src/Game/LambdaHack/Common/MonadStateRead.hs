@@ -62,7 +62,7 @@ getEntryArena fact = do
 pickWeaponM :: MonadStateRead m
             => Bool -> Maybe DiscoveryBenefit
             -> [(ItemId, ItemFullKit)] -> Ability.Skills -> ActorId
-            -> m [(Double, (Int, (ItemId, ItemFullKit)))]
+            -> m [(Double, Int, Bool, ItemId, ItemFullKit)]
 pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
   sb <- getsState $ getActorBody source
   localTime <- getsState $ getLocalTime (blid sb)
@@ -74,7 +74,8 @@ pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
       permAssocs = filter (preferredPrecious . fst . snd) kitAss
       strongest = strongestMelee ignoreCharges mdiscoBenefit
                                  localTime permAssocs
-  return $! if | forced -> map (\ii -> (1, (1, ii))) kitAss
+  return $! if | forced -> map (\(iid, itemFullKit) ->
+                                  (1, 1, True, iid, itemFullKit)) kitAss
                | Ability.getSk Ability.SkMelee actorSk <= 0 -> []
                | otherwise -> strongest
 
