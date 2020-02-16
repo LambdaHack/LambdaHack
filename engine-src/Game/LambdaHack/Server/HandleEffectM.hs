@@ -437,7 +437,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
       effectCreateItem (Just $ bfid sb) mcount source target (Just iid)
                        store grp tim
     IK.DestroyItem n k store grp ->
-      effectDestroyItem execSfx iid n k store target grp
+      effectDestroyItem execSfx n k store target grp
     IK.ConsumeItems tools raw -> effectConsumeItems execSfx iid target tools raw
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
     IK.Discharge nDm -> effectDischarge execSfx iid nDm target
@@ -1371,16 +1371,18 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
 -- ** DestroyItem
 
 -- | Make the target actor destroy items in a store from the given group.
--- The item that caused the effect itself is immune (any copies).
--- Durable items are not immune, unlike in @ConsumeItems@.
+-- The item that caused the effect itself is *not* immune, because often
+-- the item needs to destroy itself, e.g., to model wear and tear.
+-- In such a case, the item may need to be identified, in a container,
+-- when it no longer exists, at least in the container. This is OK.
+-- Durable items are not immune, unlike the tools in @ConsumeItems@.
 effectDestroyItem :: MonadServerAtomic m
-                  => m () -> ItemId -> Int -> Int -> CStore -> ActorId
+                  => m () -> Int -> Int -> CStore -> ActorId
                   -> GroupName ItemKind
                   -> m UseResult
-effectDestroyItem execSfx iidOriginal ngroup kcopy store target grp = do
+effectDestroyItem execSfx ngroup kcopy store target grp = do
   tb <- getsState $ getActorBody target
-  isRaw <- allGroupItems store grp target
-  let is = filter ((/= iidOriginal) . fst) isRaw
+  is <- allGroupItems store grp target
   if | null is -> return UseDud
      | otherwise -> do
        execSfx
@@ -1789,6 +1791,7 @@ effectIdentify execSfx iidOriginal target = do
           if go then return UseUp else tryStore rest
   tryStore [CGround, CStash, CEqp]
 
+-- The item need not be in the container. It's used for a message only.
 identifyIid :: MonadServerAtomic m
             => ItemId -> Container -> ContentId ItemKind -> ItemKind -> m ()
 identifyIid iid c itemKindId itemKind =

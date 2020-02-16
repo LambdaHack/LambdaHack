@@ -1139,6 +1139,8 @@ displayGameOverLore slore exposeCount generationAn = do
   viewLoreItems ("GameOverLore" ++ show slore)
                 slots generationBag prompt examItem displayRanged
 
+-- The item may be used up already and so not present in the container,
+-- e.g., if the item destroyed itself. This is OK. Message is still needed.
 discover :: MonadClientUI m => Container -> ItemId -> m ()
 discover c iid = do
   COps{coitem} <- getsState scops
