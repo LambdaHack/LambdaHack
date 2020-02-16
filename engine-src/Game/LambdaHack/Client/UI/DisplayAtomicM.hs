@@ -1172,12 +1172,14 @@ discover c iid = do
         partItemShortest rwidth side factionD localTime itemFull kit
       name1 = makePhrase [object1, object2]
       -- Make sure the two names in the message differ.
-      name2 = IK.iname $ okind coitem $ case jkind $ itemBase itemFull of
-        IdentityObvious ik -> ik
-        IdentityCovered _ix ik -> ik  -- fake kind; we talk about appearances
-      name = if T.unwords (tail (T.words knownName)) /= name1
-             then name1
-             else name2
+      (ikObvious, itemKind) = case jkind $ itemBase itemFull of
+        IdentityObvious ik -> (True, ik)
+        IdentityCovered _ix ik -> (False, ik)
+          -- fake kind (template); OK, we talk about appearances
+      name2 = IK.iname $ okind coitem itemKind
+      name = if ikObvious && T.unwords (tail (T.words knownName)) /= name1
+             then name1  -- avoid "a pair turns out to be"
+             else name2  -- avoid "chip of scientific explanation"
       unknownName = MU.Phrase $ [MU.Text flav, MU.Text name] ++ nameWhere
       msg = makeSentence
         [ "the"
