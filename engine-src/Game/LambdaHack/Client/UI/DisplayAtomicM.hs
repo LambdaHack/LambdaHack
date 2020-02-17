@@ -1821,6 +1821,9 @@ strike catch source target iid = assert (source /= target) $ do
         anyBurn = any isBurn $ IK.ieffects $ itemKind itemFullWeapon
         anyKillHP = any (< 0) $ mapMaybe unRefillHP
                               $ IK.ieffects $ itemKind itemFullWeapon
+        isIDed = case itemDisco itemFullWeapon of
+          ItemDiscoMean IA.KindMean{kmConst} -> kmConst
+          ItemDiscoFull{} -> True
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1861,7 +1864,9 @@ strike catch source target iid = assert (source /= target) $ do
        | IK.idamage (itemKind itemFullWeapon) == 0
          -- We ignore nested effects, because they are, in general, avoidable.
          && not anyBurn && not anyKillHP -> do
-         let adverb = if bproj sb then "lightly" else "delicately"
+         let adverb | not isIDed = "tentatively"
+                    | bproj sb = "lightly"
+                    | otherwise = "delicately"
              msg = makeSentence $
                [MU.SubjectVerbSg spart verb, tpart, adverb]
                ++ if bproj sb then [] else weaponNameWith
