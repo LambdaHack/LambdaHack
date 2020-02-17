@@ -476,7 +476,7 @@ hTrajectories aid = do
   -- The carried item is not destroyed, unless it's fragile,
   -- but drops to the ground.
 
--- | Manage trajectory of a projectile.
+-- | Manage trajectory of a projectile or a pushed other actor.
 --
 -- Colliding with a wall or actor doesn't take time, because
 -- the projectile does not move (the move is blocked).

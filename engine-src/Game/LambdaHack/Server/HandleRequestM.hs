@@ -511,13 +511,13 @@ reqMeleeChecked voluntary source target iid cstore = do
               , effPeriodic         = False
               , effMayDestroy       = mayDestroy
               }
-        void $ kineticEffectAndDestroy effApplyFlags
-                                       killer source target iid c
+        void $ kineticEffectAndDestroy effApplyFlags killer source target iid c
       sb2 <- getsState $ getActorBody source
       case btrajectory sb2 of
-        Just{} -> do
+        Just{} | not voluntary -> do
           -- Deduct a hitpoint for a pierce of a projectile
-          -- or due to a hurled actor colliding with another.
+          -- or due to a hurled actor colliding with another (seen from
+          -- @voluntary@, as opposed to hurled actor actively meleeing another).
           -- Don't deduct if no pierce, to prevent spam.
           -- Never kill in this way.
           when (bhp sb2 > oneM) $ do
