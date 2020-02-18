@@ -361,8 +361,8 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRecordKill{} -> return ()
   -- Alter map.
   UpdAlterTile lid p fromTile toTile -> do
-    markDisplayNeeded lid
     COps{cotile} <- getsState scops
+    markDisplayNeeded lid
     let feats = TK.tfeature $ okind cotile fromTile
         toAlter feat =
           case feat of
@@ -1268,36 +1268,13 @@ displayRespSfxAtomicUI sfx = case sfx of
     itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1)
   SfxCheck aid iid ->
     itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
-  SfxTrigger aid lid p -> do
-    CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
-    b <- getsState $ getActorBody aid
-    embeds <- getsState $ getEmbedBag lid p
-    localTime <- getsState $ getLocalTime lid
-    factionD <- getsState sfactionD
-    case EM.keys embeds of
-      [] -> return ()  -- strange; not visible to the client?
-      embed : rest -> do
-        itemFull <- getsState $ itemToFull embed
-        let (object1, object2) =
-              partItemShortest rwidth (bfid b) factionD localTime
-                               itemFull (1, [])
-            objectRest = if null rest then [] else ["and others"]
-            (msgClass, verb) = if p == bpos b && lid == blid b
-                               then (MsgActionMinor, "walk over")
-                               else (MsgAction, "exploit")
-          -- TODO: "struggle" when harmful, "wade through" when deep, etc.
-          -- possibly use the verb from the first embedded item,
-          -- but it's meant to go with the item as subject, no the actor
-          -- TODO: "harass" when somebody else suffers the effect
-          -- TODO: try something less weird than "exploit", but not as tame,
-          -- vague and unnatural as "interact with staircase down"
-          -- or "use obscene pictogram"; probably per-item verb is needed,
-          -- but there has to be a consistent rule what the verbs represent
-          -- for what class of items, particularly if we just use @iverbHit@;
-          -- also, "disarm the trap", not "exploit"
-        aidVerbMU msgClass aid $
-          MU.Phrase $ [verb, "the", object1, object2] ++ objectRest
-  SfxShun aid _ _ ->
+  SfxTrigger _ _ _ fromTile -> do
+    COps{cotile} <- getsState scops
+    let subject = MU.Text $ TK.tname $ okind cotile fromTile
+        verb = "shake"
+        msg = makeSentence ["the", MU.SubjectVerbSg subject verb]
+    msgAdd MsgTileDisco msg
+  SfxShun aid _ _ _ ->
     aidVerbMU MsgAction aid "shun it"
   SfxEffect fidSource aid effect hpDelta -> do
     b <- getsState $ getActorBody aid

@@ -722,7 +722,16 @@ reqAlterFail effToUse voluntary source tpos = do
        && alterSkill < tileMinSkill
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
-      let changeTo tgroup = do
+      let announceTileChange =
+            -- If no embeds and the only thing that happens is the change
+            -- of the tile, don't display a message, because the change
+            -- is visible on the map (unless it changes into itself)
+            -- and there's nothing more to speak about.
+            -- However, even with embeds, don't spam if wading through
+            -- terrain and changing it each step.
+            unless (underFeet || EM.null embeds) $
+              execSfxAtomic $ SfxTrigger source lid tpos serverTile
+          changeTo tgroup = do
             lvl2 <- getLevel lid
             -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
             let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
@@ -775,8 +784,9 @@ reqAlterFail effToUse voluntary source tpos = do
             let (bagsToLose, iidsToApply, grps) =
                   foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
             if null grps then do
-              consumeItems source bagsToLose iidsToApply
-              changeTo tgroup
+              announceTileChange  -- first the result is foretold
+              consumeItems source bagsToLose iidsToApply  -- then the cost
+              changeTo tgroup  -- then result is seen
               return True
             else return False
           feats = TK.tfeature $ okind cotile serverTile
@@ -816,6 +826,7 @@ reqAlterFail effToUse voluntary source tpos = do
               if maybe True (== UseUp) museResult
                  && not (bproj sb && tileMinSkill > 0)  -- local skill check
               then do
+                announceTileChange
                 changeTo tgroup
                 return True
               else processTileActions museResult rest

@@ -180,11 +180,11 @@ posSfxAtomic cmd = case cmd of
   SfxReceive aid _ -> singleAid aid
   SfxApply aid _ -> singleAid aid
   SfxCheck aid _ -> singleAid aid
-  SfxTrigger aid lid p -> do
+  SfxTrigger aid lid p _ -> do
     body <- getsState $ getActorBody aid
     return $! PosSightLevels [(lid, p), (blid body, bpos body)]
       -- @PosFidAndSightLevels@ would be better, but no big deal
-  SfxShun aid lid p -> do
+  SfxShun aid lid p _ -> do
     body <- getsState $ getActorBody aid
     return $! PosSightLevels [(lid, p), (blid body, bpos body)]
   SfxEffect _ aid _ _ -> singleAid aid  -- sometimes we don't see source, OK
