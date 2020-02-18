@@ -97,8 +97,11 @@ displayRespUpdAtomicUI cmd = case cmd of
     recordItemLid iid c
     updateItemSlot c iid
     if verbose then case c of
-      CActor aid store ->
+      CActor aid store -> do
+        b <- getsState $ getActorBody aid
         case store of
+          _ | bproj b ->
+            itemVerbMU MsgItemCreation iid kit "appear" c
           COrgan -> do
             arItem <- getsState $ aspectRecordFromIid iid
             if | IA.checkFlag Ability.Blast arItem -> return ()
@@ -118,7 +121,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                | otherwise -> do
                  wown <- ppContainerWownW partActorLeader True c
                  itemVerbMU MsgItemCreation iid kit
-                           (MU.Text $ makePhrase $ "grow" : wown) c
+                            (MU.Text $ makePhrase $ "grow" : wown) c
           _ -> do
             wown <- ppContainerWownW partActorLeader True c
             itemVerbMU MsgItemCreation iid kit
@@ -133,10 +136,21 @@ displayRespUpdAtomicUI cmd = case cmd of
       lid <- getsState $ lidFromC c
       markDisplayNeeded lid
   UpdDestroyItem verbose iid _ kit c -> do
-    if verbose then do
-      ownW <- ppContainerWownW partActorLeader False c
-      let verb = MU.Text $ makePhrase $ "break in" : ownW
-      itemVerbMUShort MsgItemDestruction iid kit verb c
+    if verbose then case c of
+      CActor aid _  -> do
+        b <- getsState $ getActorBody aid
+        if bproj b then
+          itemVerbMUShort MsgItemDestruction iid kit "break" c
+        else do
+          ownW <- ppContainerWownW partActorLeader False c
+          let verb = MU.Text $ makePhrase $ "break in" : ownW
+          itemVerbMUShort MsgItemDestruction iid kit verb c
+      CEmbed lid _ -> markDisplayNeeded lid
+      CFloor lid _ -> do
+        itemVerbMUShort MsgItemDestruction iid kit
+                   (MU.Text $ "break" <+> ppContainer c) c
+        markDisplayNeeded lid
+      CTrunk{} -> return ()
     else do
       lid <- getsState $ lidFromC c
       markDisplayNeeded lid
