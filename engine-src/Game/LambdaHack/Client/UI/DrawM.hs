@@ -683,6 +683,7 @@ drawLeaderDamage width leader = do
       ppDice (nch, _, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             -- We ignore nested effects because they are, in general, avoidable.
+            -- We also ignore repeated effect kinds for HUD simplicity.
             tBurn = maybe "" (('+' :) . show)  $ listToMaybe $ mapMaybe unBurn
                                                $ IK.ieffects $ itemKind itemFull
             nRefillHP = maybe 0 (min 0) $ listToMaybe $ mapMaybe unRefillHP

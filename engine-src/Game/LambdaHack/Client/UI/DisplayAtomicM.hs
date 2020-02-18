@@ -1719,6 +1719,14 @@ strike catch source target iid = assert (source /= target) $ do
                     && bhp tb > 0
                  then "the sleepy"
                  else ""
+        unBurn (IK.Burn d) = Just d
+        unBurn _ = Nothing
+        unRefillHP (IK.RefillHP n) | n < 0 = Just (-n)
+        unRefillHP _ = Nothing
+        burnDmg = sum $ map Dice.supDice
+                  $ mapMaybe unBurn $ IK.ieffects $ itemKind itemFullWeapon
+        hpDmg = sum
+                $ mapMaybe unRefillHP $ IK.ieffects $ itemKind itemFullWeapon
         -- For variety, attack adverb is based on attacker's and weapon's
         -- damage potential as compared to victim's current HP.
         -- We are not taking into account victim's armor yet.
@@ -1730,7 +1738,7 @@ strike catch source target iid = assert (source /= target) $ do
                 Just (_, speed) | bproj sb ->
                   - modifyDamageBySpeed rawDeltaHP speed
                 _ -> - rawDeltaHP
-          in min 0 speedDeltaHP
+          in min 0 $ speedDeltaHP - xM (burnDmg + hpDmg)
         deadliness = 1000 * (- sDamage) `div` max 1 (bhp tb)
         strongly
           | deadliness >= 10000 = "artfully"
@@ -1814,13 +1822,6 @@ strike catch source target iid = assert (source /= target) $ do
                            -- warning if anybody hits our friends
         msgClassMelee = if targetIsFriend then MsgMeleeUs else MsgMelee
         msgClassRanged = if targetIsFriend then MsgRangedUs else MsgRanged
-        isBurn IK.Burn{} = True
-        isBurn _ = False
-        unRefillHP (IK.RefillHP n) = Just n
-        unRefillHP _ = Nothing
-        anyBurn = any isBurn $ IK.ieffects $ itemKind itemFullWeapon
-        anyKillHP = any (< 0) $ mapMaybe unRefillHP
-                              $ IK.ieffects $ itemKind itemFullWeapon
         isIDed = case itemDisco itemFullWeapon of
           ItemDiscoMean IA.KindMean{kmConst} -> kmConst
           ItemDiscoFull{} -> True
@@ -1863,7 +1864,7 @@ strike catch source target iid = assert (source /= target) $ do
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
        | IK.idamage (itemKind itemFullWeapon) == 0
          -- We ignore nested effects, because they are, in general, avoidable.
-         && not anyBurn && not anyKillHP -> do
+         && burnDmg <= 0 && hpDmg <= 0 -> do
          let adverb | not isIDed = "tentatively"
                     | bproj sb = "lightly"
                     | otherwise = "delicately"
