@@ -1515,7 +1515,10 @@ consumeItems target bagsToLose iidsToApply = do
       -- Not @UpdLoseItemBag@, to be verbose.
       -- The bag is small, anyway.
       let c = CActor target store
-      mapWithKeyM_ (\iid kit -> execUpdAtomic $ UpdLoseItem True iid kit c)
+      itemD <- getsState sitemD
+      mapWithKeyM_ (\iid kit ->
+                      let item = itemD EM.! iid
+                      in execUpdAtomic $ UpdDestroyItem True iid item kit c)
                    bagToLose
   -- But afterwards we do apply normal effects of durable items,
   -- even if the actor or other items displaced in the process,

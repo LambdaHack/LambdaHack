@@ -143,12 +143,12 @@ displayRespUpdAtomicUI cmd = case cmd of
           itemVerbMUShort MsgItemDestruction iid kit "break" c
         else do
           ownW <- ppContainerWownW partActorLeader False c
-          let verb = MU.Text $ makePhrase $ "break in" : ownW
+          let verb = MU.Text $ makePhrase $ "vanish from" : ownW
           itemVerbMUShort MsgItemDestruction iid kit verb c
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
         itemVerbMUShort MsgItemDestruction iid kit
-                   (MU.Text $ "break" <+> ppContainer c) c
+                        (MU.Text $ "break" <+> ppContainer c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
     else do
