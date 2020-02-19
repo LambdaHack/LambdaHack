@@ -1161,9 +1161,10 @@ pickPoint verb = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
-  let keys = K.escKM
+  let dirKeys = K.dirAllKey uVi uLeftHand
+      keys = K.escKM
            : K.leftButtonReleaseKM
-           : map (K.KM K.NoModifier) (K.dirAllKey uVi uLeftHand)
+           : map (K.KM K.NoModifier) dirKeys
   promptAdd0 $ "Where to" <+> verb <> "? [movement key] [pointer]"
   slides <- reportToSlideshow [K.escKM]
   km <- getConfirms ColorFull keys slides
@@ -1171,7 +1172,7 @@ pickPoint verb = do
     K.LeftButtonRelease -> do
       K.PointUI x y <- getsSession spointer
       return $ Just $ Point (x `div` 2) (y - K.mapStartY)
-    _ -> return $ shift (bpos b) <$> K.handleDir uVi uLeftHand km
+    _ -> return $ shift (bpos b) <$> K.handleDir dirKeys km
 
 -- * Help
 

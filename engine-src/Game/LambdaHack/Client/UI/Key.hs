@@ -262,11 +262,11 @@ dirAllKey uVi uLeftHand =
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: Bool -> Bool -> KM -> Maybe Vector
-handleDir uVi uLeftHand KM{modifier=NoModifier, key} =
-  let assocs = zip (dirAllKey uVi uLeftHand) $ cycle moves
+handleDir :: [Key] -> KM -> Maybe Vector
+handleDir dirKeys KM{modifier=NoModifier, key} =
+  let assocs = zip dirKeys $ cycle moves
   in lookup key assocs
-handleDir _ _ _ = Nothing
+handleDir _ _ = Nothing
 
 -- | Binding of both sets of movement keys, vi and laptop.
 moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
