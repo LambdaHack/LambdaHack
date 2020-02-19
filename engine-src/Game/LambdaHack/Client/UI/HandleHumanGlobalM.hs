@@ -1149,7 +1149,9 @@ msgAddDone p verb = do
             [] -> "thing"
             ("open" : xs) -> T.unwords xs
             _ -> tname
-      dir = compassText $ p `vectorToFrom` bpos b
+      v = p `vectorToFrom` bpos b
+      dir | v == Vector 0 0 = "underneath"
+          | otherwise = compassText v
   msgAdd MsgDone $ "You" <+> verb <+> "the" <+> s <+> dir <> "."
 
 -- | Prompts user to pick a point.
@@ -1168,9 +1170,7 @@ pickPoint verb = do
   case K.key km of
     K.LeftButtonRelease -> do
       K.PointUI x y <- getsSession spointer
-      let p = Point (x `div` 2) (y - K.mapStartY)
-      if p == bpos b then return Nothing
-      else return $ Just p
+      return $ Just $ Point (x `div` 2) (y - K.mapStartY)
     _ -> return $ shift (bpos b) <$> K.handleDir uVi uLeftHand km
 
 -- * Help
