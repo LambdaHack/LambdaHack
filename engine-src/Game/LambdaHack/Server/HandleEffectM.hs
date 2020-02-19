@@ -1475,8 +1475,7 @@ effectConsumeItems :: MonadServerAtomic m
                    -> m UseResult
 effectConsumeItems execSfx iidOriginal target tools0 raw0 = do
   kitAssG <- getsState $ kitAssocs target [CGround]
-  kitAssE <- getsState $ kitAssocs target [CEqp]
-  let kitAss = listToolsToConsume kitAssG kitAssE
+  let kitAss = listToolsToConsume kitAssG []  -- equipment too dangerous to use
       is = filter ((/= iidOriginal) . fst . snd) kitAss
       grps0 = map (\(x, y) -> (False, x, y)) tools0  -- apply if durable
               ++ map (\(x, y) -> (True, x, y)) raw0  -- destroy always

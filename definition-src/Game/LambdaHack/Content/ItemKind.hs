@@ -174,8 +174,8 @@ data Effect =
       --   the same behaviour as when transforming terrain using items)
       --   and destroys items matching @toDestroy@, invoking no effects,
       --   regardless of durability;
-      --   the items are taken from @CGround@ and @CEqp@, preferring
-      --   @CGround@ and non-durable (since durable can harm when used
+      --   the items are taken from @CGround@ (but not from @CEqp@),
+      --   preferring non-durable (since durable can harm when used
       --   and may be more vauable when destroyed); if not all required items
       --   are present, no item are destroyed; if an item belongs to many groups
       --   in the sum of @toUse@ and @toDestroy@, it counts for all

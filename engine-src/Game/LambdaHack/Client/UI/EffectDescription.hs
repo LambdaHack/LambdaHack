@@ -93,7 +93,8 @@ effectToSuffix detailLevel effect =
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
     CreateItem{} -> "of gain"  -- too much noise from crafting; see @SeqEffect@
     DestroyItem{} -> "of loss"
-    ConsumeItems{} -> "of consumption"  -- too much noise from crafting
+    ConsumeItems{} -> "of consumption from the ground"
+      -- too much noise from crafting
     DropItem n k store grp ->
       let (preT, postT) =
             if | n == 1 && k == maxBound -> ("one", "kind")
