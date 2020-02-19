@@ -678,7 +678,7 @@ dieSer aid b = do
   -- of the embedded items, if they are activated.
   -- If the actor was a projectile and no effect was triggered by hitting
   -- an enemy, the item still exists and @OnSmash@ effects will be triggered.
-  dropAllItems aid b3
+  dropAllEquippedItems aid b3
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
   unless isBlast $

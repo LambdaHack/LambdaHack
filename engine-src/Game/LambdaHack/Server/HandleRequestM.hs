@@ -997,18 +997,6 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
             Nothing -> []  -- no such items before move
             Just (_, it2) -> it2
       randomResetTimeout k iid itemFull beforeIt toC
-    when (toCStore == CGround) $
-      -- Voluntary, because item dropping is never so essential
-      -- that it can't be done elsewhere, without modifying terrain.
-      -- Only crafting effects triggered, because the others, potentially
-      -- harmful, were activated when the tile was entered; usually.
-      void $ reqAlterFail EffOnCombine True aid (bpos b)
-        -- dropping an item engages the item embedded in the ground;
-        -- e.g., ignites grass, if the item is torch;
-        -- note that grass is not ignited by torch spawned on the ground,
-        -- but the next time any item is dropped there, it is ignited,
-        -- which is fine --- the torch must have been harmlessly set up
-        -- the first time around
 
 -- * ReqProject
 

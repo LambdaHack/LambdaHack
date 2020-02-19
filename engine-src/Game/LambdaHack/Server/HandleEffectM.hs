@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.HandleEffectM
   ( UseResult(..), EffToUse(..), EffApplyFlags(..)
   , applyItem, kineticEffectAndDestroy, effectAndDestroyAndAddKill
   , itemEffectEmbedded, highestImpression, dominateFidSfx
-  , dropAllItems, pickDroppable, consumeItems
+  , dropAllEquippedItems, pickDroppable, consumeItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , applyKineticDamage, refillHP, cutCalm, effectAndDestroy, imperishableKit
@@ -705,7 +705,7 @@ dominateFid fid source target = do
   -- or starts hitting with the most potent artifact weapon in the game.
   -- Drop items while still of the original faction
   -- to mark them on the map for other party members to collect.
-  dropAllItems target tb0
+  dropAllEquippedItems target tb0
   tb <- getsState $ getActorBody target
   actorMaxSk <- getsState $ getActorMaxSkills target
   getKind <- getsState $ flip getIidKindServer
@@ -751,9 +751,9 @@ dominateFid fid source target = do
               : filter ((/= btrunk tb) . fst) (getCarriedIidCStore tb)
     mapM_ discoverIf aic
 
--- | Drop all actor's items.
-dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
-dropAllItems aid b =
+-- | Drop all actor's equipped items.
+dropAllEquippedItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
+dropAllEquippedItems aid b =
   mapActorCStore_ CEqp (dropCStoreItem False False CEqp aid b maxBound) b
 
 -- ** Impress
