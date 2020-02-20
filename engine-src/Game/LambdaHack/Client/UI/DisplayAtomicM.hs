@@ -377,8 +377,9 @@ displayRespUpdAtomicUI cmd = case cmd of
         freq = map fst $ filter (\(_, q) -> q > 0)
                $ TK.tfreq $ okind cotile toTile
         unexpected = null $ intersect freq groupsToAlterTo
-    obscuredByActor <- getsState $ isJust . posToBig p lid
-    when (unexpected || obscuredByActor) $ do
+    mactorAtPos <- getsState $ posToBig p lid
+    mleader <- getsClient sleader
+    when (unexpected || isJust mactorAtPos && mactorAtPos /= mleader) $ do
       -- Player notices @fromTile can't be altered into @toTIle@,
       -- which is uncanny, so we produce a message.
       -- This happens when the player missed an earlier search of the tile
