@@ -2021,7 +2021,7 @@ effectDropBestWeapon execSfx iidOriginal target = do
                           && iid /= iidOriginal) kitAssRaw
         ignoreCharges = True
     case strongestMelee ignoreCharges Nothing localTime kitAss of
-      (_, _, _, iid, _) : _ -> do
+      (_, _, iid, _) : _ -> do
         execSfx
         let kit = beqp tb EM.! iid
         dropCStoreItem True False CEqp target tb 1 iid kit

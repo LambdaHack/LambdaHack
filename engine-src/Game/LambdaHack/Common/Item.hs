@@ -253,7 +253,7 @@ hasCharge localTime itemFull (itemK, itemTimer) =
 
 strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
-               -> [(Double, Int, Bool, ItemId, ItemFullKit)]
+               -> [(Double, Int, ItemId, ItemFullKit)]
 strongestMelee _ _ _ [] = []
 strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- For fighting, as opposed to equipping, we value weapon only for
@@ -261,11 +261,7 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- not in the future. Hehce, we exclude discharged weapons.
   let f (iid, (itemFull, kit)) =
         let rawDmg = IK.damageUsefulness $ itemKind itemFull
-            knownOrConstantAspects = case itemDisco itemFull of
-              ItemDiscoMean IA.KindMean{kmConst} -> kmConst
-              ItemDiscoFull{} -> True
-            isIDed = knownOrConstantAspects || isNothing mdiscoBenefit
-            unIDedBonus = if isIDed then 0 else 1000
+            unIDedBonus = if itemSuspect itemFull then 1000 else 0
             totalValue = case mdiscoBenefit of
               Just discoBenefit ->
                 let Benefit{benMelee} = discoBenefit EM.! iid
@@ -275,12 +271,12 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
         in ( if ignoreCharges || ncha > 0
              then totalValue
              else -100000
-           , ncha, isIDed, iid, (itemFull, kit) )
+           , ncha, iid, (itemFull, kit) )
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortBy (flip $ Ord.comparing (\(value, _, _, _, _) -> value))
-     $ filter (\(value, _, _, _, _) -> value > -100000) $ map f kitAss
+  in sortBy (flip $ Ord.comparing (\(value, _, _, _) -> value))
+     $ filter (\(value, _, _, _) -> value > -100000) $ map f kitAss
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =

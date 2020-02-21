@@ -1814,9 +1814,6 @@ strike catch source target iid = assert (source /= target) $ do
                            -- warning if anybody hits our friends
         msgClassMelee = if targetIsFriend then MsgMeleeUs else MsgMelee
         msgClassRanged = if targetIsFriend then MsgRangedUs else MsgRanged
-        isIDed = case itemDisco itemFullWeapon of
-          ItemDiscoMean IA.KindMean{kmConst} -> kmConst
-          ItemDiscoFull{} -> True
     -- The messages about parrying and immediately afterwards dying
     -- sound goofy, but there is no easy way to prevent that.
     -- And it's consistent.
@@ -1857,7 +1854,7 @@ strike catch source target iid = assert (source /= target) $ do
        | IK.idamage (itemKind itemFullWeapon) == 0
          -- We ignore nested effects, because they are, in general, avoidable.
          && burnDmg <= 0 && hpDmg <= 0 -> do
-         let adverb | not isIDed = "tentatively"
+         let adverb | itemSuspect itemFullWeapon = "tentatively"
                     | bproj sb = "lightly"
                     | otherwise = "delicately"
              msg = makeSentence $

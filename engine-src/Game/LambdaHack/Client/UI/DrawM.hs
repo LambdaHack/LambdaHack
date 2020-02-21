@@ -679,8 +679,8 @@ drawLeaderDamage width leader = do
       haNonDamagesEffect itemFull =
         any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
             (IK.ieffects $ itemKind itemFull)
-      ppDice :: (Int, Bool, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
-      ppDice (nch, _, (itemFull, (k, _))) =
+      ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
+      ppDice (nch, (itemFull, (k, _))) =
         let tdice = show $ IK.idamage $ itemKind itemFull
             -- We ignore nested effects because they are, in general, avoidable.
             -- We also ignore repeated effect kinds for HUD simplicity.
@@ -725,10 +725,10 @@ drawLeaderDamage width leader = do
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <-
-    map (\(_, ncha, isIDed, _, itemFullKit) -> (ncha, isIDed, itemFullKit))
+    map (\(_, ncha, _, itemFullKit) -> (ncha, itemFullKit))
     <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
-  let possiblyHasTimeout (_, isIDed, (itemFull, _)) =
-        hasTimeout itemFull || not isIDed
+  let possiblyHasTimeout (_, (itemFull, _)) =
+        hasTimeout itemFull || itemSuspect itemFull
       (lT, lSurelyNoTimeout) = span possiblyHasTimeout strongest
       strongestToDisplay = lT ++ take 1 lSurelyNoTimeout
       lToDisplay = concatMap ppDice strongestToDisplay
