@@ -201,7 +201,13 @@ strongestSlot discoBenefit eqpSlot is =
                        -- The backup is ready in the slot above, after all.
                        ceiling (- benMelee)
                    _ -> valueAtEqpSlot eqpSlot $ aspectRecordFull itemFull
-             in (ben, (iid, (itemFull, kit)))
+                 idBonus = if itemSuspect itemFull then 1000 else 0
+                 arItem = aspectRecordFull itemFull
+                 -- Equip good uniques for flavour and fun from unique effects.
+                 uniqueBonus = if IA.checkFlag Ability.Unique arItem && ben > 20
+                               then 1000
+                               else 0
+             in (ben + idBonus + uniqueBonus, (iid, (itemFull, kit)))
   in sortBy (flip $ Ord.comparing fst) $ mapMaybe f is
 
 valueAtEqpSlot :: EqpSlot -> IA.AspectRecord -> Int
