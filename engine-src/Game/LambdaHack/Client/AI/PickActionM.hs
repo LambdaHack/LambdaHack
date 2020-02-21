@@ -428,19 +428,35 @@ equipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
+  -- In general, AI always equips the best item in stash if it's better
+  -- than the best in equipment. Additionally, if there is space left
+  -- in equipment for a future good item, an item from stash may be
+  -- equipped if it's not much worse than in equipment.
+  -- If the item in question is the best item in stash.
+  -- at least one copy must remain in stash.
   let improve :: (Int, [(ItemId, Int, CStore, CStore)])
               -> ( [(Int, (ItemId, ItemFullKit))]
                  , [(Int, (ItemId, ItemFullKit))] )
               -> (Int, [(ItemId, Int, CStore, CStore)])
       improve (oldN, l4) (bestStash, bestEqp) =
         let n = 1 + oldN
-        in case (bestStash, bestEqp) of
-          ((_, (iidStash, _)) : _, []) | not (eqpOverfull body n) ->
-            (n, (iidStash, 1, CStash, CEqp) : l4)
-          ((vStash, (iidStash, _)) : _, (vEqp, _) : _)
-            | vStash > vEqp && not (eqpOverfull body n) ->
-                (n, (iidStash, 1, CStash, CEqp) : l4)
-          _ -> (oldN, l4)
+        in if eqpOverfull body n then (oldN, l4)
+           else case (bestStash, bestEqp) of
+             ((_, (iidStash, _)) : _, []) ->
+               (n, (iidStash, 1, CStash, CEqp) : l4)
+             ((vStash, (iidStash, _)) : _, (vEqp, _) : _) | vStash > vEqp ->
+               (n, (iidStash, 1, CStash, CEqp) : l4)
+             _ -> case (pluralCopiesOfBest bestStash, bestEqp) of
+               ((vStash, (iidStash, _)) : _, (vEqp, _) : _)
+                 | not (eqpOverfull body (n + 1))  -- 9 items in equipment
+                   && vStash >= vEqp - 20 && vStash > 20 ->
+                     -- within 2 damage of the best and not too bad absolutely
+                     (n, (iidStash, 1, CStash, CEqp) : l4)
+               _ -> (oldN, l4)
+      getK (_, (itemK, _)) = itemK
+      pluralCopiesOfBest bestStash@((_, (_, itemFullKit)) : rest) =
+        if getK itemFullKit > 1 then bestStash else rest
+      pluralCopiesOfBest [] = []
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
       -- We filter out unneeded items. In particular, we ignore them in eqp
@@ -491,10 +507,8 @@ yieldUnneeded aid = do
             then reject
             else returN "yieldUnneeded" $ ReqMoveItems yieldAllUnneeded
 
--- This only concerns items that can be equipped, that is with a slot
--- and with @benInEqp@ (which implies @goesIntoEqp@).
--- Such items are moved between any stores, as needed. In this case,
--- from eqp to stash.
+-- This only concerns items that @equipItems@ handles, that is
+-- with a slot and with @benInEqp@ (which implies @goesIntoEqp@).
 unEquipItems :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 unEquipItems aid = do
   body <- getsState $ getActorBody aid
@@ -505,36 +519,60 @@ unEquipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyPresent <- condAimEnemyPresentM aid
   discoBenefit <- getsClient sdiscoBenefit
+  -- In general, AI unequips only if equipment is full and better stash item
+  -- for another slot is likely to come or if the best (or second best)
+  -- item in stash is worse than in equipment and at least one better
+  -- item remains in equipment.
   let improve :: ( [(Int, (ItemId, ItemFullKit))]
                  , [(Int, (ItemId, ItemFullKit))] )
               -> [(ItemId, Int, CStore, CStore)]
       improve (bestStash, bestEqp) =
         case bestEqp of
-          ((vEqp, (iidEqp, bei)) : _) | getK bei > 1
-                                          && betterThanStash vEqp bestStash ->
-            -- To share the best items with others, if they care.
-            [(iidEqp, getK bei - 1, CEqp, CStash)]
-          (_ : (vEqp, (iidEqp, bei)) : _) | betterThanStash vEqp bestStash ->
-            -- To share the second best items with others, if they care.
-            [(iidEqp, getK bei, CEqp, CStash)]
-          ((vEqp, (_, _)) : _) | eqpOverfull body 1
-                                  && worseThanStash vEqp bestStash ->
-            -- To make place in eqp for an item better than any ours.
-            -- Even a minor boost is removed only if stash has a better one.
-            [(fst $ snd $ last bestEqp, 1, CEqp, CStash)]
-          _ -> []
+          ((_, (iidEqp, itemEqp)) : _) | getK itemEqp > 1
+                                         && bestStash `worseThanEqp` bestEqp ->
+            -- To share the best items with others, if they care
+            -- and if a better or equal item is not already in stash.
+            -- The effect is that after each party member has a copy,
+            -- a single copy is permanently kept in stash, to quickly
+            -- equip a new-joiner.
+            [(iidEqp, 1, CEqp, CStash)]
+          _ : bestEqp2@((_, (iidEqp, itemEqp)) : _)
+            | getK itemEqp > 1
+              && bestStash `worseThanEqp` bestEqp2 ->
+            -- To share the second best items with others, if they care
+            -- and if a better or equal item is not already in stash.
+            -- The effect is the same as with the rule above, but only as long
+            -- as the best item is scarce. Then this rule doesn't fire and
+            -- every second best item copy is eventually equipped by someone.
+            [(iidEqp, getK itemEqp, CEqp, CStash)]
+          _ -> case reverse bestEqp of
+            bestEqpR@((vEqp, (iidEqp, itemEqp)) : _)
+              | eqpOverfull body 1  -- 10 items in equipment
+                && (bestStash `betterThanEqp` bestEqpR
+                    || getK itemEqp > 1 && vEqp < 20) ->
+              -- To make place in eqp for an item better than any ours.
+              -- Even a minor boost is removed only if stash has a better one.
+              -- Also remove extra copies if the item weak, ih hopes
+              -- of a prompt better pickup.
+              [(iidEqp, 1, CEqp, CStash)]
+            _ -> []
       getK (_, (itemK, _)) = itemK
-      betterThanStash _ [] = True
-      betterThanStash vEqp ((vStash, _) : _) = vEqp > vStash
-      worseThanStash _ [] = False
-      worseThanStash vEqp ((vStash, _) : _) = vEqp < vStash
+      worseThanEqp ((vStash, _) : _) ((vEqp, _) : _) = vStash < vEqp
+      worseThanEqp [] _ = True
+      worseThanEqp _ [] = error "unEquipItems: worseThanEqp: []"
+      -- Not @>=@ or we could remove a useful item, without replacing it
+      -- with a better or even equal one. We only remove it so if the item
+      -- is weak and duplicated in equipment.
+      betterThanEqp ((vStash, _) : _) ((vEqp, _) : _) = vStash > vEqp
+      betterThanEqp [] _ = False
+      betterThanEqp _ [] = error "unEquipItems: betterThanEqp: []"
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
       -- Here we don't need to filter out items that hinder (except in stash)
       -- because they are moved to stash and will be equipped by another actor
       -- at another time, where hindering will be completely different.
       -- If they hinder and we unequip them, all the better.
-      -- We filter stash to consider only eligible items in @worseThanStash@.
+      -- We filter stash to consider only eligible items in @betterThanEqp@.
       filterNeeded (_, (itemFull, _)) =
         not $ hinders condShineWouldBetray condAimEnemyPresent
                       heavilyDistressed (not calmE) actorMaxSk itemFull
