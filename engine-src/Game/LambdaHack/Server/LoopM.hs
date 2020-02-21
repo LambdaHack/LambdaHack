@@ -529,13 +529,14 @@ advanceTrajectory aid b1 = do
            mfail <- reqAlterFail EffBare False aid tpos
            embedsPost <- getsState $ getEmbedBag (blid b1) tpos
            b2 <- getsState $ getActorBody aid
+           let tpos2 = bpos b2 `shift` d  -- possibly another level and/or bpos
            lvl2 <- getLevel $ blid b2
            case mfail of
-             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos -> do
+             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos2 -> do
                -- Too late to announce anything, but given that the way
                -- is opened, continue flight. Don't even normally lose any HP,
                -- because it's not a hard collision, but altering.
-               -- However, if embed was possibly destroyed, lose HP.
+               -- However, if embed was possibly triggered/removed, lose HP.
                if embedsPre /= embedsPost && not (EM.null embedsPre) then do
                  if bhp b2 > oneM then do
                    execUpdAtomic $ UpdRefillHP aid minusM
