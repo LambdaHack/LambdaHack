@@ -77,7 +77,8 @@ effectToBenefit cops fid factionD eff =
     IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100;
                               -- divided by 3, because impression needed first
-    IK.Impress -> (0, -20)
+    IK.Impress -> (0, -20)  -- this causes heroes to waste a crucial resource
+                            -- but makes aliens more aggresive than defensive
     IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
     IK.Yell -> (-5, -10)  -- usually uncontrollably wakes up enemies, so bad
     IK.Summon grp d ->  -- contrived by not checking if enemies also control

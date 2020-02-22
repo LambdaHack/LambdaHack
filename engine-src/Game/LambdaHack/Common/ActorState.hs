@@ -352,12 +352,13 @@ dispEnemy source target actorMaxSk s =
         in any friend adjAssocs
       sb = getActorBody source s
       tb = getActorBody target s
-      dozes = bwatch tb `elem` [WSleep, WWake]
   in bproj tb
      || not (actorDying tb
              || actorWaits tb
              || Ability.getSk Ability.SkMove actorMaxSk <= 0
-                && not dozes  -- roots weak if the tree sleeps
+                  -- sometimes this comes from sleep, but it's transient
+                  -- and if we made exception for sleep, we would displace
+                  -- immobile sleeping actors
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull
