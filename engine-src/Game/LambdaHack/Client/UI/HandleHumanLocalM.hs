@@ -111,6 +111,7 @@ chooseItemDialogMode c = do
   COps{coitem} <- getsState scops
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   let prompt :: Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
              -> Text
       prompt body bodyUI actorMaxSk c2 s =
@@ -139,16 +140,21 @@ chooseItemDialogMode c = do
         MStore cstore ->
           let n = countItems cstore
               nItems = MU.CarAWs n "item"
-              verb = case cstore of
-                COrgan -> "feel"
-                CStash -> "notice"
-                _ -> "see"
+              (verb, onLevel) = case cstore of
+                COrgan -> ("feel", [])
+                CStash ->
+                  ( "notice"
+                  , case gstash fact of
+                      Just (lid, _) ->
+                        map MU.Text ["on level", tshow $ fromEnum lid]
+                      Nothing -> [] )
+                _ -> ("see", [])
               ownObject = case cstore of
                 CStash -> ["our", MU.Text t]
                 _ -> [MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t]
           in makePhrase $
                [ MU.Capitalize $ MU.SubjectVerbSg subject verb
-               , nItems, MU.Text tIn ] ++ ownObject
+               , nItems, MU.Text tIn ] ++ ownObject ++ onLevel
         MOrgans ->
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "feel"
@@ -213,7 +219,6 @@ chooseItemDialogMode c = do
             sess {sitemSel = Just (iid, bestStore, False)}
           arena <- getArenaUI
           b2 <- getsState $ getActorBody newAid
-          fact <- getsState $ (EM.! side) . sfactionD
           let (autoDun, _) = autoDungeonLevel fact
           if | newAid == leader -> return $ Right c2
              | blid b2 /= arena && autoDun ->
