@@ -1669,7 +1669,7 @@ effectPolyItem execSfx iidOriginal target = do
                kit = (maxCount, take maxCount itemTimer)
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdDestroyItem False iid itemBase kit c
+           execUpdAtomic $ UpdDestroyItem True iid itemBase kit c
            effectCreateItem (Just $ bfid tb) Nothing
                             target target Nothing cstore
                             IK.COMMON_ITEM IK.timerNone
@@ -1747,7 +1747,7 @@ effectDupItem execSfx iidOriginal target = do
            let c = CActor target cstore
            execSfx
            identifyIid iid c itemKindId itemKind
-           execUpdAtomic $ UpdSpotItem True iid (1, []) c
+           execUpdAtomic $ UpdCreateItem True iid (itemBase itemFull) (1, []) c
            return UseUp
 
 -- ** Identify
