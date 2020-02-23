@@ -807,21 +807,15 @@ reqAlterFail effToUse voluntary source tpos = do
               -- If any embedded item was present and processed,
               -- but none was triggered, both free and item-consuming terrain
               -- alteration is disabled.
-              embeds2 <- getsState $ getEmbedBag lid tpos
-                -- might have changed due to embedded items invocations
-              if iid `EM.notMember` embeds2 then
-                -- Not present any more, so irrelevant.
-                processTileActions museResult rest
+              let useResult = fromMaybe UseDud museResult
+              -- Skill check for non-projectiles performed much earlier.
+              -- All projectiles have 0 skill regardless of their trunk.
+              if sourceIsMist
+                 || bproj sb && tileMinSkill > 0  -- local skill check
+              then processTileActions (Just useResult) rest
               else do
-                let useResult = fromMaybe UseDud museResult
-                -- Skill check for non-projectiles performed much earlier.
-                -- All projectiles have 0 skill regardless of their trunk.
-                if sourceIsMist
-                   || bproj sb && tileMinSkill > 0  -- local skill check
-                then processTileActions (Just useResult) rest
-                else do
-                  triggered <- tryApplyEmbed (iid, kit)
-                  processTileActions (Just $ max useResult triggered) rest
+                triggered <- tryApplyEmbed (iid, kit)
+                processTileActions (Just $ max useResult triggered) rest
             Tile.ToAction tgroup ->
               if maybe True (== UseUp) museResult
                  && not (bproj sb && tileMinSkill > 0)  -- local skill check
