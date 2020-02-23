@@ -2065,9 +2065,10 @@ effectAndEffect :: forall m. MonadServerAtomic m
                 -> m UseResult
 effectAndEffect recursiveCall eff1 eff2 = do
   ur1 <- recursiveCall eff1
-  when (ur1 == UseUp) $ void $ recursiveCall eff2
-  return ur1
-  -- no @execSfx@, because individual effects sent them
+  if ur1 == UseUp
+  then recursiveCall eff2
+  else return ur1
+  -- No @execSfx@, because individual effects sent them.
 
 -- ** OrEffect
 
