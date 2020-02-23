@@ -857,9 +857,9 @@ projectItem (fromCStore, (iid, itemFull)) = do
           Left reqFail -> failSer reqFail
           Right (pos, _) -> do
             Benefit{benFling} <- getsClient $ (EM.! iid) . sdiscoBenefit
-            go <- if benFling > 0
+            go <- if benFling >= 0
                   then displayYesNo ColorFull
-                         "The item appears beneficial. Do you really want to fling it?"
+                         "The item may be beneficial. Do you really want to fling it?"
                   else return True
             if go then do
               -- Set personal target to enemy, so that AI, if it takes over

@@ -253,7 +253,7 @@ furthestKnown aid = do
 -- all dungeon styles would be complex and would slow down the engine.
 --
 -- If the level has inaccessible open areas (at least from the stairs AI used)
--- the level will be nevertheless here finally marked explored,
+-- the level will be nevertheless here finally labeled as explored,
 -- to enable transition to other levels.
 -- We should generally avoid such levels, because digging and/or trying
 -- to find other stairs leading to disconnected areas is not KISS
