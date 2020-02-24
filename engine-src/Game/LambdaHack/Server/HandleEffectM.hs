@@ -1493,7 +1493,10 @@ consumeItems :: MonadServerAtomic m
              -> m ()
 consumeItems target bagsToLose iidsToApply = do
   COps{coitem} <- getsState scops
-  let identifyStoreBag store bag =
+  tb <- getsState $ getActorBody target
+  arTrunk <- getsState $ (EM.! btrunk tb) . sdiscoAspect
+  let isBlast = IA.checkFlag Ability.Blast arTrunk
+      identifyStoreBag store bag =
         mapM_ (identifyStoreIid store) $ EM.keys bag
       identifyStoreIid store iid = do
         discoAspect2 <- getsState sdiscoAspect
@@ -1515,9 +1518,10 @@ consumeItems target bagsToLose iidsToApply = do
       -- The bag is small, anyway.
       let c = CActor target store
       itemD <- getsState sitemD
-      mapWithKeyM_ (\iid kit ->
-                      let item = itemD EM.! iid
-                      in execUpdAtomic $ UpdDestroyItem True iid item kit c)
+      mapWithKeyM_ (\iid kit -> do
+                      let verbose = not isBlast  -- no spam
+                          item = itemD EM.! iid
+                      execUpdAtomic $ UpdDestroyItem verbose iid item kit c)
                    bagToLose
   -- But afterwards we do apply normal effects of durable items,
   -- even if the actor or other items displaced in the process,
