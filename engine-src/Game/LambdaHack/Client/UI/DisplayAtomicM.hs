@@ -291,7 +291,7 @@ displayRespUpdAtomicUI cmd = case cmd of
             aidVerbMU0 MsgDeathThreat aid
                        "have grown agitated and impressed enough to be in danger of defecting"
   UpdTrajectory _ _ mt ->  -- if projectile dies just after, force one frame
-    when (maybe True (null . fst) mt) pushFrame
+    when (isNothing mt) pushFrame
   -- Change faction attributes.
   UpdQuitFaction fid _ toSt manalytics -> quitFactionUI fid toSt manalytics
   UpdSpotStashFaction verbose fid lid pos -> do
@@ -421,8 +421,8 @@ displayRespUpdAtomicUI cmd = case cmd of
     time <- getsState stime
     let clipN = time `timeFit` timeClip
         clipMod = clipN `mod` clipsInTurn
-        ping = clipMod == 0
-    when (sdisplayNeeded || ping) pushFrame
+        turnPing = clipMod == 0  -- e.g., to see resting counter
+    when (sdisplayNeeded || turnPing) pushFrame
   UpdUnAgeGame{} -> return ()
   UpdDiscover c iid _ _ -> discover c iid
   UpdCover{} -> return ()  -- don't spam when doing undo

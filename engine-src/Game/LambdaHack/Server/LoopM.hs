@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.LoopM
   , factionArena, arenasForLoop, handleFidUpd, loopUpd, endClip
   , manageCalmAndDomination, applyPeriodicLevel
   , handleTrajectories, hTrajectories, advanceTrajectory
-  , handleActors, hActors, restartGame
+  , handleActors, hActors, dieSer, restartGame
 #endif
   ) where
 
@@ -659,15 +659,21 @@ hActors as@(aid : rest) = do
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dieSer aid b = do
-  b2 <- if bproj b then return b else do
-    kindId <- getsState $ getIidKindIdServer $ btrunk b
-    execUpdAtomic $ UpdRecordKill aid kindId 1
-    -- At this point the actor's body exists and his items are not dropped.
-    deduceKilled aid
-    -- Most probabaly already done, but just in case (e.g., when actor
-    -- created with 0 HP):
-    electLeader (bfid b) (blid b) aid
-    getsState $ getActorBody aid
+  b2 <-
+    if bproj b then do
+      when (isJust $ btrajectory b) $
+        execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
+          -- needed only to ensure display of the last position of projectile
+      return b
+    else do
+      kindId <- getsState $ getIidKindIdServer $ btrunk b
+      execUpdAtomic $ UpdRecordKill aid kindId 1
+      -- At this point the actor's body exists and his items are not dropped.
+      deduceKilled aid
+      -- Most probabaly already done, but just in case (e.g., when actor
+      -- created with 0 HP):
+      electLeader (bfid b) (blid b) aid
+      getsState $ getActorBody aid
   -- If an explosion blast, before the particle is destroyed, it tries
   -- to modify terrain with it.
   arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
