@@ -658,22 +658,19 @@ hActors as@(aid : rest) = do
         if breakASAP2 then return True else hActors as
 
 dieSer :: MonadServerAtomic m => ActorId -> Actor -> m ()
-dieSer aid b = do
-  b2 <-
-    if bproj b then do
-      when (isJust $ btrajectory b) $
-        execUpdAtomic $ UpdTrajectory aid (btrajectory b) Nothing
-          -- needed only to ensure display of the last position of projectile
-      return b
-    else do
-      kindId <- getsState $ getIidKindIdServer $ btrunk b
-      execUpdAtomic $ UpdRecordKill aid kindId 1
-      -- At this point the actor's body exists and his items are not dropped.
-      deduceKilled aid
-      -- Most probabaly already done, but just in case (e.g., when actor
-      -- created with 0 HP):
-      electLeader (bfid b) (blid b) aid
-      getsState $ getActorBody aid
+dieSer aid b2 = do
+  if bproj b2 then
+    when (isJust $ btrajectory b2) $
+      execUpdAtomic $ UpdTrajectory aid (btrajectory b2) Nothing
+        -- needed only to ensure display of the last position of projectile
+  else do
+    kindId <- getsState $ getIidKindIdServer $ btrunk b2
+    execUpdAtomic $ UpdRecordKill aid kindId 1
+    -- At this point the actor's body exists and his items are not dropped.
+    deduceKilled aid
+    -- Most probabaly already done, but just in case (e.g., when actor
+    -- created with 0 HP):
+    electLeader (bfid b2) (blid b2) aid
   -- If an explosion blast, before the particle is destroyed, it tries
   -- to modify terrain with it.
   arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
