@@ -672,11 +672,12 @@ dieSer aid b2 = do
     -- created with 0 HP):
     electLeader (bfid b2) (blid b2) aid
   -- If an explosion blast, before the particle is destroyed, it tries
-  -- to modify terrain with it.
+  -- to modify terrain with it as well as do some easy crafting,
+  -- e.g., cooking on fire.
   arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
   let isBlast = IA.checkFlag Ability.Blast arTrunk
   when isBlast $
-    void $ reqAlterFail EffBare False aid (bpos b2)
+    void $ reqAlterFail EffBareAndOnCombine False aid (bpos b2)
   b3 <- getsState $ getActorBody aid
   -- Items need to do dropped now, so that they can be transformed by effects
   -- of the embedded items, if they are activated.
@@ -686,7 +687,8 @@ dieSer aid b2 = do
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
   unless isBlast $
-    void $ reqAlterFail EffBare False aid (bpos b2)  -- old bpos; OK, safer
+    void $ reqAlterFail EffBareAndOnCombine False aid (bpos b2)
+      -- old bpos; OK, safer
   b4 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b4 []
 
