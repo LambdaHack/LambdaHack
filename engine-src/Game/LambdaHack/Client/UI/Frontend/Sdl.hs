@@ -222,8 +222,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 -- Don't present an unchanged backbuffer.
                 -- This doesn't improve FPS; probably equal frames happen
                 -- very rarely, if at all, which is actually very good.
-                (prevFrame, prevArea) <- readIORef spreviousFrame
-                unless (prevFrame == fr && U.all (== 0) prevArea) $ do
+                (prevFrame, _) <- readIORef spreviousFrame
+                unless (prevFrame == fr) $ do
                   -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                   -- so we need to ensure we draw on the same (bound) OS thread
                   -- that initialized SDL, hence we have to poll frames.
