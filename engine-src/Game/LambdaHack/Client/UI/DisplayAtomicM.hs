@@ -418,11 +418,14 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdTimeItem{} -> return ()
   UpdAgeGame{} -> do
     sdisplayNeeded <- getsSession sdisplayNeeded
+    sturnDisplayed <- getsSession sturnDisplayed
     time <- getsState stime
     let clipN = time `timeFit` timeClip
         clipMod = clipN `mod` clipsInTurn
         turnPing = clipMod == 0  -- e.g., to see resting counter
-    when (sdisplayNeeded || turnPing) pushFrame
+    when (sdisplayNeeded || turnPing && not sturnDisplayed) pushFrame
+    when turnPing $
+      modifySession $ \sess -> sess {sturnDisplayed = False}
   UpdUnAgeGame{} -> return ()
   UpdDiscover c iid _ _ -> discover c iid
   UpdCover{} -> return ()  -- don't spam when doing undo

@@ -132,7 +132,8 @@ displayFrames lid frs = do
   -- on a remote level.
   lidV <- viewedLevelUI
   when (lidV == lid) $
-    modifySession $ \sess -> sess {sdisplayNeeded = False}
+    modifySession $ \sess -> sess { sdisplayNeeded = False
+                                  , sturnDisplayed = True }
 
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.

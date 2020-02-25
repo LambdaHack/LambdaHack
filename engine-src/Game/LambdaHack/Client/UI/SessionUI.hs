@@ -68,6 +68,7 @@ data SessionUI = SessionUI
   , smenuIxMap     :: M.Map String Int
                                     -- ^ indices of last used menu items
   , sdisplayNeeded :: Bool          -- ^ current level needs displaying
+  , sturnDisplayed :: Bool          -- ^ a frame was already displayed this turn
   , shintMode      :: HintMode      -- ^ how to show keys hints when no messages
   , sreportNull    :: Bool          -- ^ whether no report created last UI turn
                                     --   or the report wiped out from screen
@@ -142,6 +143,7 @@ emptySessionUI sUIOptions =
     , smarkSmell = True
     , smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
     , sdisplayNeeded = False
+    , sturnDisplayed = False
     , sreportNull = True
     , shintMode = HintAbsent
     , sstart = 0
@@ -177,7 +179,6 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
-    put sdisplayNeeded
   get = do
     sxhair <- get
     sactorUI <- get
@@ -191,7 +192,6 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
-    sdisplayNeeded <- get
     let slastItemMove = Nothing
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
@@ -205,6 +205,8 @@ instance Binary SessionUI where
         swaitTimes = 0
         swasAutomated = False
         smenuIxMap = M.singleton "main" (2 - 9)  -- subtracting @initIx@
+        sdisplayNeeded = False  -- displayed regardless
+        sturnDisplayed = False
         sreportNull = True
         shintMode = HintAbsent
         sstart = 0

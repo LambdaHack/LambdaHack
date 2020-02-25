@@ -172,6 +172,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
         Just [] -> error $ "" `showFailure` brevMap
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
+         , sturnDisplayed = True
          , smacroBuffer = -- Exclude from in-game macros keystrokes that
                           -- start/stop recording a macro.
                           if Just km == mKeyRecord
