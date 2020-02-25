@@ -1612,9 +1612,14 @@ ppSfxMsg sfxMsg = case sfxMsg of
       localTime <- getsState $ getLocalTime (blid b)
       itemFull <- getsState $ itemToFull iid
       side <- getsClient sside
+      bag <- getsState $ getBodyStoreBag b cstore
       let kit = (1, [])
           (name, powers) =
             partItem rwidth (bfid b) factionD localTime itemFull kit
+          total = case bag EM.! iid of
+            (_, []) -> error $ "" `showFailure` (bag, iid, aid, cstore, delta)
+            (_, t:_) -> timeDeltaToFrom t localTime
+              -- only exceptionally the list not singleton
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]
@@ -1624,8 +1629,9 @@ ppSfxMsg sfxMsg = case sfxMsg of
           (msgClass, parts) | bfid b == side =
             ( MsgLongerUs
             , ["the", name, powers] ++ cond ++ storeOwn ++ ["will now last"]
-              ++ [MU.Text $ timeDeltaInSecondsText delta] ++ ["longer"] )
-                | otherwise =  -- avoid TMI for not our actors
+              ++ [MU.Text $ timeDeltaInSecondsText delta <+> "longer"]
+              ++ [MU.Text $ "(total:" <+> timeDeltaInSecondsText total <> ")"] )
+                            | otherwise =  -- avoid TMI for not our actors
             -- Ideally we'd use a pronoun here, but the action (e.g., hit)
             -- that caused this extension can be invisible to some onlookers.
             -- So their narrative context needs to be taken into account.
