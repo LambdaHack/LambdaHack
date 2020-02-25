@@ -93,7 +93,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdRegisterItems{} -> return ()
   UpdCreateActor aid body _ -> createActorUI True aid body
   UpdDestroyActor aid body _ -> destroyActorUI True aid body
-  UpdCreateItem verbose iid _ kit c -> do
+  UpdCreateItem verbose iid _ kit@(kAdd, _) c -> do
     recordItemLid iid c
     updateItemSlot c iid
     if verbose then case c of
@@ -108,13 +108,18 @@ displayRespUpdAtomicUI cmd = case cmd of
                | IA.checkFlag Ability.Condition arItem -> do
                  bag <- getsState $ getContainerBag c
                  let more = case EM.lookup iid bag of
-                       Nothing -> False
-                       Just kit2 -> fst kit2 /= fst kit
+                       Just (kTotal, _) | kTotal /= kAdd -> Just kTotal
+                       _ -> Nothing
                      verb = MU.Text $
-                       "become" <+> case fst kit of
-                                      1 -> if more then "more" else ""
-                                      k -> (if more then "additionally" else "")
-                                           <+> tshow k <> "-fold"
+                       "become"
+                       <+> case kAdd of
+                         1 -> if isJust more then "more" else ""
+                         k -> (if isJust more then "additionally" else "")
+                              <+> tshow k <> "-fold"
+                              <+> case more of
+                                    Nothing -> ""
+                                    Just kTotal ->
+                                      "(total:" <+> tshow kTotal <> "-fold)"
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
