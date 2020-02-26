@@ -677,8 +677,10 @@ dieSer aid b2 = do
   arTrunk <- getsState $ (EM.! btrunk b2) . sdiscoAspect
   let spentProj = bproj b2 && EM.null (beqp b2)
       isBlast = IA.checkFlag Ability.Blast arTrunk
+      -- Let thrown food cook in fire (crafting).
+      effScope = if bproj b2 then EffBareAndOnCombine else EffBare
   when (not spentProj && isBlast) $
-    void $ reqAlterFail EffBareAndOnCombine False aid (bpos b2)
+    void $ reqAlterFail effScope False aid (bpos b2)
   b3 <- getsState $ getActorBody aid
   -- Items need to do dropped now, so that they can be transformed by effects
   -- of the embedded items, if they are activated.
@@ -688,7 +690,7 @@ dieSer aid b2 = do
   -- As the last act of heroism, the actor (even if projectile)
   -- changes the terrain with its embedded items, if possible.
   when (not spentProj && not isBlast) $
-    void $ reqAlterFail EffBareAndOnCombine False aid (bpos b2)
+    void $ reqAlterFail effScope False aid (bpos b2)
       -- old bpos; OK, safer
   b4 <- getsState $ getActorBody aid
   execUpdAtomic $ UpdDestroyActor aid b4 []
