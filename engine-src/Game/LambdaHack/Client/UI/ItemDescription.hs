@@ -58,7 +58,12 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
       lenCh = itemK - ncharges localTime itemFull (itemK, itemTimer)
-      charges | lenCh == 0 || temporary = ""
+      charges | lenCh == 0 = ""
+              | temporary = case itemTimer of
+                  [] -> error $ "partItemN3: charges with null timer"
+                                `showFailure` (side, itemFull, itemK, itemTimer)
+                  t : _ -> let total = timeDeltaToFrom t localTime
+                           in "for" <+> timeDeltaInSecondsText total
               | itemK == 1 && lenCh == 1 = "(charging)"
               | itemK == lenCh = "(all charging)"
               | otherwise = "(" <> tshow lenCh <+> "charging)"
@@ -258,9 +263,11 @@ textAllPowers width detailLevel skipRecharging
 -- | The part of speech describing the item.
 partItem :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
          -> (MU.Part, MU.Part)
-partItem width side factionD = partItemN width side factionD False DetailMedium 4
+partItem width side factionD =
+  partItemN width side factionD False DetailMedium 4
 
-partItemShort :: Int -> FactionId -> FactionDict -> Time -> ItemFull -> ItemQuant
+partItemShort :: Int -> FactionId -> FactionDict -> Time -> ItemFull
+              -> ItemQuant
               -> (MU.Part, MU.Part)
 partItemShort width side factionD =
   partItemN width side factionD False DetailLow 4
@@ -278,10 +285,11 @@ partItemHigh width side factionD =
 
 -- The @count@ can be different than @itemK@ in @ItemFull@, e.g., when picking
 -- a subset of items to drop.
-partItemWsRanged :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel -> Int
-                 -> Time -> ItemFull -> ItemQuant
+partItemWsRanged :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel
+                 -> Int -> Time -> ItemFull -> ItemQuant
                  -> MU.Part
-partItemWsRanged width side factionD ranged detail count localTime itemFull kit =
+partItemWsRanged width side factionD ranged detail count localTime
+                 itemFull kit =
   let (name, powers) =
         partItemN width side factionD ranged detail 4 localTime itemFull kit
       arItem = aspectRecordFull itemFull
