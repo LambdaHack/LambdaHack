@@ -103,6 +103,7 @@ displayRespUpdAtomicUI cmd = case cmd of
           _ | bproj b ->
             itemVerbMU MsgItemCreation iid kit "appear" c
           COrgan -> do
+            localTime <- getsState $ getLocalTime (blid b)
             arItem <- getsState $ aspectRecordFromIid iid
             if | IA.checkFlag Ability.Blast arItem -> return ()
                | IA.checkFlag Ability.Condition arItem -> do
@@ -112,14 +113,19 @@ displayRespUpdAtomicUI cmd = case cmd of
                        _ -> Nothing
                      verb = MU.Text $
                        "become"
-                       <+> case kAdd of
-                         1 -> if isJust more then "more" else ""
-                         k -> (if isJust more then "additionally" else "")
-                              <+> tshow k <> "-fold"
-                              <+> case more of
-                                    Nothing -> ""
-                                    Just kTotal ->
-                                      "(total:" <+> tshow kTotal <> "-fold)"
+                       <+> case kit of
+                         (1, t:_) ->  -- only exceptionally not singleton list
+                                      -- or even more than one copy total
+                           let total = timeDeltaToFrom t localTime
+                           in timeDeltaInSecondsText total
+                         (1, []) | isNothing more -> ""
+                         (k, _) ->  -- usuallly the list empty; ignore anyway
+                           (if isJust more then "additionally" else "")
+                           <+> tshow k <> "-fold"
+                           <+> case more of
+                                 Nothing -> ""
+                                 Just kTotal ->
+                                   "(total:" <+> tshow kTotal <> "-fold)"
                  -- This describes all such items already among organs,
                  -- which is useful, because it shows "charging".
                  itemAidVerbMU MsgBecome aid verb iid (Left Nothing)
@@ -1619,7 +1625,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           total = case bag EM.! iid of
             (_, []) -> error $ "" `showFailure` (bag, iid, aid, cstore, delta)
             (_, t:_) -> timeDeltaToFrom t localTime
-              -- only exceptionally the list not singleton
+              -- only exceptionally not singleton list
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
                  | IA.checkFlag Ability.Condition $ aspectRecordFull itemFull ]

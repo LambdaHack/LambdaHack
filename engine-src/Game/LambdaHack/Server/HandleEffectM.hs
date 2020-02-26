@@ -1290,7 +1290,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   m2 <- rollItemAspect freq (blid tb)
   case m2 of
     Nothing -> return UseDud  -- e.g., unique already generated
-    Just (itemKnownRaw, (itemFullRaw, kitRaw)) -> do
+    Just (itemKnownRaw, (itemFullRaw, (kRaw, _))) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1309,9 +1309,6 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
             let ItemKnown kindIx ar _ = itemKnownRaw
             in ( ItemKnown kindIx ar jfid
                , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
-          kitNew = case mcount of
-            Just itemK -> (itemK, [])
-            Nothing -> kitRaw
       itemRev <- getsServer sitemRev
       let mquant = case HM.lookup itemKnown itemRev of
             Nothing -> Nothing
@@ -1341,6 +1338,14 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
               execSfxAtomic $ SfxMsgFid (bfid tb)
                             $ SfxItemYield iidOriginal (blid tb)
             _ -> return ()
+          localTime <- getsState $ getLocalTime (blid tb)
+          let newTimer = localTime `timeShift` delta
+              extraIt k = if IK.isTimerNone tim
+                          then []
+                          else replicate k newTimer
+              kitNew = case mcount of
+                Just itemK -> (itemK, extraIt itemK)
+                Nothing -> (kRaw, extraIt kRaw)
           -- No such items or some items, but void delta, so create items.
           -- If it's, e.g., a periodic poison, the new items will stack with any
           -- already existing items.
@@ -1356,19 +1361,6 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
           then execUpdAtomic $ UpdDiscover c iid (itemKindId itemFull) arItem
           else when (store /= CGround) $
             discoverIfMinorEffects c iid (itemKindId itemFull)
-          -- Now, if timer change requested, change the timer,
-          -- but in the new items, possibly increased in number wrt old items.
-          when (not $ IK.isTimerNone tim) $ do
-            tb2 <- getsState $ getActorBody target
-            bagAfter <- getsState $ getBodyStoreBag tb2 store
-            localTime <- getsState $ getLocalTime (blid tb)
-            let newTimer = localTime `timeShift` delta
-                (afterK, afterIt) =
-                  fromMaybe (error $ "" `showFailure` (iid, bagAfter, c))
-                            (iid `EM.lookup` bagAfter)
-                newIt = replicate afterK newTimer
-            when (afterIt /= newIt) $
-              execUpdAtomic $ UpdTimeItem iid c afterIt newIt
           return UseUp
 
 -- ** DestroyItem
