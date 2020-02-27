@@ -187,10 +187,7 @@ deduceQuits fid0 status = do
         let (withUI, withoutUI) =
               partition (factHasUI . snd . snd)
                         ((stOutcome status, (fid0, fact0)) : outfids)
-        mapM_ quitFaction withoutUI
-        unless (null withUI) $ do
-          writeSaveAll False  -- in case player closes window at defeat
-          mapM_ quitFaction withUI
+        mapM_ quitFaction (withoutUI ++ withUI)
       inGameOutcome (fid, fact) = do
         let mout | fid == fid0 = Just $ stOutcome status
                  | otherwise = stOutcome <$> gquit fact
