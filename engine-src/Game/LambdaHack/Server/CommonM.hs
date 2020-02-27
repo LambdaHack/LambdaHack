@@ -255,27 +255,28 @@ verifyCaches = do
   actorMaxSkills <- getsState maxSkillsInDungeon
   ( fovLitLid, fovClearLid, fovLucidLid
    ,perValidFid, perCacheFid, perFid ) <- getsState perFidInDungeon
+  rngs <- getsServer srngs  -- initial display may scroll off terminal memory
   let !_A7 = assert (sfovLitLid == fovLitLid
                      `blame` "wrong accumulated sfovLitLid"
-                     `swith` (sfovLitLid, fovLitLid)) ()
+                     `swith` (sfovLitLid, fovLitLid, rngs)) ()
       !_A6 = assert (sfovClearLid == fovClearLid
                      `blame` "wrong accumulated sfovClearLid"
-                     `swith` (sfovClearLid, fovClearLid)) ()
+                     `swith` (sfovClearLid, fovClearLid, rngs)) ()
       !_A5 = assert (sactorMaxSkills2 == actorMaxSkills
                      `blame` "wrong accumulated sactorMaxSkills"
-                     `swith` (sactorMaxSkills2, actorMaxSkills)) ()
+                     `swith` (sactorMaxSkills2, actorMaxSkills, rngs)) ()
       !_A4 = assert (sfovLucidLid == fovLucidLid
                      `blame` "wrong accumulated sfovLucidLid"
-                     `swith` (sfovLucidLid, fovLucidLid)) ()
+                     `swith` (sfovLucidLid, fovLucidLid, rngs)) ()
       !_A3 = assert (sperValidFid == perValidFid
                      `blame` "wrong accumulated sperValidFid"
-                     `swith` (sperValidFid, perValidFid)) ()
+                     `swith` (sperValidFid, perValidFid, rngs)) ()
       !_A2 = assert (sperCacheFid == perCacheFid
                      `blame` "wrong accumulated sperCacheFid"
-                     `swith` (sperCacheFid, perCacheFid)) ()
+                     `swith` (sperCacheFid, perCacheFid, rngs)) ()
       !_A1 = assert (sperFid == perFid
                      `blame` "wrong accumulated perception"
-                     `swith` (sperFid, perFid)) ()
+                     `swith` (sperFid, perFid, rngs)) ()
   return ()
 
 -- | Tell whether a faction that we know is still in game, keeps arena.
