@@ -274,6 +274,7 @@ updateCalm target deltaCalm = do
 leadLevelSwitch :: MonadServerAtomic m => m ()
 leadLevelSwitch = do
   COps{cocave} <- getsState scops
+  factionD <- getsState sfactionD
   let canSwitch fact = fst (autoDungeonLevel fact)
                        -- a hack to help AI, until AI client can switch levels
                        || case fleaderMode (gplayer fact) of
@@ -335,12 +336,18 @@ leadLevelSwitch = do
                            | ((lid, lvl), (_, (aid, _) : _)) <- ours
                            , let len = min 20 (EM.size $ lbig lvl)
                                  k = 1000000 `div` (1 + len) ]
-            unless (null freqList) $ do
+                closeToFactStash (fid2, fact2) = case gstash fact2 of
+                  Just (lid, pos) ->
+                    fid2 /= bfid body
+                    && lid == blid body
+                    && chessDist pos (bpos body) <= 1  -- visible
+                  Nothing -> False
+                closeToEnemyStash = any closeToFactStash $ EM.assocs factionD
+            unless (closeToEnemyStash || null freqList) $ do
               (lid, a) <- rndToAction $ frequency
                                       $ toFreq "leadLevel" freqList
               unless (lid == blid body) $  -- flip levels rather than actors
                 setFreshLeader fid a
-  factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.assocs factionD
 
 -- | Continue or exit or restart the game.
