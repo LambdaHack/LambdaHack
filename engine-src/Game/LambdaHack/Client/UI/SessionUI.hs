@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), RunParams(..)
-  , HintMode(..), KeyMacro(..)
+  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), MacroStack
+  , RunParams(..), HintMode(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
@@ -55,8 +55,7 @@ data SessionUI = SessionUI
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
   , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroStack    :: [Either [K.KM] KeyMacro]
-                                    -- ^ non-empty stack of macro buffers that
+  , smacroStack    :: MacroStack    -- ^ non-empty stack of macro buffers that
                                     --   contains at least in-game macro buffer;
                                     --   record keystrokes in the first Left
                                     --   buffer
@@ -97,6 +96,8 @@ newtype AimMode = AimMode { aimLevelId :: LevelId }
 -- i.e. the first element of the list is replayed also as the first one.
 newtype KeyMacro = KeyMacro { unKeyMacro :: [K.KM] }
   deriving (Eq, Binary, Semigroup, Monoid)
+
+type MacroStack = [Either [K.KM] KeyMacro]
 
 -- | Parameters of the current run.
 data RunParams = RunParams

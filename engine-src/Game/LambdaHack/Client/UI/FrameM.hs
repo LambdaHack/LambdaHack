@@ -1,6 +1,6 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( pushFrame, promptGetKey, stopPlayBack, animate, fadeOutOrIn
+  ( pushFrame, promptGetKey, addToMacro, stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack
@@ -165,26 +165,30 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- Notice that keys coming from macros (in-game, content, config)
   -- are recorded as well and this is well defined and essential.
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
+  modifySession $ \sess ->
+    sess { sdisplayNeeded = False
+         , sturnDisplayed = True
+         , smacroStack = addToMacro brevMap km $ smacroStack sess }
+  return km
+
+addToMacro :: M.Map HumanCmd.HumanCmd [K.KM] -> K.KM -> MacroStack -> MacroStack
+addToMacro brevMap km macros =
   let mKeyRecord = case M.lookup HumanCmd.Record brevMap of
         Nothing -> Nothing
         Just (k : _) -> Just k
         Just [] -> error $ "" `showFailure` brevMap
-  modifySession $ \sess ->
-    sess { sdisplayNeeded = False
-         , sturnDisplayed = True
-         , smacroStack =
-             if Just km == mKeyRecord then smacroStack sess
-             -- Exclude from in-game macros keystrokes that
-             -- start/stop recording a macro.
-             else case smacroStack sess of
-               -- This is noop when not recording a macro,
-               -- which is exactly the required semantics.
-               Left xs : ys -> Left (km : xs) : ys
-               Right xs : (Left ys : zs) -> Right xs : (Left (km : ys) : zs)
-               -- Record keystrokes in the first Left buffer on the stack;
-               -- there's at most one Right temporary macro buffer.
-               _ -> smacroStack sess }
-  return km
+  in if Just km == mKeyRecord
+     then macros
+       -- Exclude from in-game macros keystrokes that
+       -- start/stop recording a macro.
+     else case macros of
+       -- This is noop when not recording a macro,
+       -- which is exactly the required semantics.
+       Left xs : ys -> Left (km : xs) : ys
+       -- Record keystrokes in the first Left buffer on the stack;
+       -- there's at most one Right temporary macro buffer.
+       Right xs : (Left ys : zs) -> Right xs : (Left (km : ys) : zs)
+       _ -> macros
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = msgAdd0 MsgStopPlayback "!"

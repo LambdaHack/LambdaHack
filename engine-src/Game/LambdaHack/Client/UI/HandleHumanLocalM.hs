@@ -11,7 +11,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
-  , repeatHuman, repeatLastHuman, recordHuman, allHistoryHuman, lastHistoryHuman
+  , repeatHuman, repeatLastHuman, recordHuman, recordHumanTransition
+  , allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , printScreenHuman
     -- * Commands specific to aiming
@@ -729,7 +730,7 @@ repeatLastHuman n = do
 -- * Record
 
 -- | Starts and stops recording of macros. All the macros are placed in a stack
--- of Either macro buffers, since macros can be nested. Bottom of stack 
+-- of Either macro buffers, since macros can be nested. Bottom of stack
 -- is reserved for the user's in-game macro buffer, so the stack is never empty.
 -- We record keystrokes in the topmost Left macro buffer. At any time there's
 -- at most one Right macro buffer, i.e. a buffer that's not available to record
@@ -737,31 +738,34 @@ repeatLastHuman n = do
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
   macros <- getsSession smacroStack
+  let (macrosNew, t) = recordHumanTransition macros
+  modifySession $ \sess -> sess { smacroStack = macrosNew }
+  unless (T.null t) $ promptAdd0 t
+
+recordHumanTransition :: MacroStack -> (MacroStack, Text)
+recordHumanTransition macros =
   case macros of
-    [Right _] -> do
+    [Right _] ->
       -- Start recording in-game macro.
-      modifySession $ \sess -> sess { smacroStack = [Left []] }
-      promptAdd0 "Recording a macro. Stop recording with the same key."
-    [Left xs] -> do
+      ([Left []], "Recording a macro. Stop recording with the same key.")
+    [Left xs] ->
       -- Stop recording in-game macro.
-      modifySession $ \sess ->
-        sess { smacroStack = [Right . KeyMacro . reverse $ xs] }
-      promptAdd0 "Macro recording stopped."
-    Right (KeyMacro []) : xs -> modifySession $ \sess ->
-      sess { smacroStack = Left [] : xs }
+      ([Right . KeyMacro . reverse $ xs], "Macro recording stopped.")
+    Right (KeyMacro []) : xs ->
       -- Start recording a macro in new temporary buffer.
-    Right _ : ((Left xs) : ys) -> modifySession $ \sess ->
-      sess { smacroStack = (Right . KeyMacro . reverse $ xs) : ys }
+      (Left [] : xs, "")
+    Right _ : ((Left xs) : ys) ->
       -- If there's already macro on top of the stack, end recording previous
       -- macro.
-    Right _ : xs -> modifySession $ \sess ->
-      sess { smacroStack = Left [] : xs }
+      ((Right . KeyMacro . reverse $ xs) : ys, "")
+    Right _ : xs ->
       -- If theres non-empty Right buffer on top of the stack and theres no Left
       -- macro next to it, clear it and start recording keystrokes there.
-    Left xs : ys -> modifySession $ \sess ->
-      sess { smacroStack = (Right . KeyMacro . reverse $ xs) : ys }
+      (Left [] : xs, "")
+    Left xs : ys ->
       -- Stop recording a macro in temporary buffer.
-    _ -> error "no in-game macro buffer"
+      ((Right . KeyMacro . reverse $ xs) : ys, "")
+    _ -> error "recordHumanTransition: no in-game macro buffer"
 
 -- * AllHistory
 
