@@ -444,10 +444,13 @@ executable LambdaHack
 test-suite test
   import: options, exe-options
   type:               exitcode-stdio-1.0
-  main-is:            test/test.hs
+  hs-source-dirs:     test
+  main-is:            test.hs
   build-depends:      ,LambdaHack
                       ,this-game-src
                       ,async
                       ,base
                       ,filepath
                       ,optparse-applicative
+                      ,tasty >= 1.0
+                      ,tasty-hunit
