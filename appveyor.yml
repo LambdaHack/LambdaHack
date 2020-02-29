@@ -72,7 +72,7 @@ install:
 
   - IF "%goal%"=="artifact32and64" (
       cabal v1-install --force-reinstalls tasty-hunit
-      cabal v1-test
+      && cabal v1-test
       && mv LambdaHackTheGame LambdaHackTheGame64
       && rm -rf LambdaHackTheGameInstall
     )
