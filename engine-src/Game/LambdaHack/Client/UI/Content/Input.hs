@@ -41,33 +41,36 @@ data InputContent = InputContent
 
 -- | Create binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-makeData :: UIOptions        -- ^ UI client options
+makeData :: Maybe UIOptions   -- ^ UI client options
          -> InputContentRaw  -- ^ default key bindings from the content
          -> InputContent     -- ^ concrete binding
-makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
-  let waitTriple = ([CmdMove], "", Wait)
+makeData muiOptions (InputContentRaw copsClient) =
+  let (uCommands0, uVi0, uLeftHand0) = case muiOptions of
+        Just UIOptions{uCommands, uVi, uLeftHand} -> (uCommands, uVi, uLeftHand)
+        Nothing -> ([], True, True)
+      waitTriple = ([CmdMove], "", Wait)
       wait10Triple = ([CmdMove], "", Wait10)
       moveXhairOr n cmd v = ByAimMode $ AimModeCmd { exploration = cmd v
                                                    , aiming = MoveXhair v n }
       isMainMenu (_, ([CmdMainMenu], _, _)) = True
       isMainMenu _ = False
-      rawConent = copsClient ++ uCommands
+      rawConent = copsClient ++ uCommands0
       (rawConentMainMenu, rawConentNoMainMenu) = partition isMainMenu rawConent
       filteredContent =
         rawConentMainMenu
-        ++ ((if uVi
+        ++ ((if uVi0
              then filter (\(k, _) ->
                     k `notElem` [K.mkKM "period", K.mkKM "C-period"])
              else id)
-             $ (if uLeftHand
+             $ (if uLeftHand0
                 then filter (\(k, _) ->
                        k `notElem` [K.mkKM "s", K.mkKM "S"])
                 else id)
              $ filter (\(k, _) ->
                  k `notElem` map (K.KM K.NoModifier)
-                                 (K.dirMoveNoModifier uVi uLeftHand)
+                                 (K.dirMoveNoModifier uVi0 uLeftHand0)
                              ++ map (K.KM K.NoModifier)
-                                    (K.dirRunNoModifier uVi uLeftHand)
+                                    (K.dirRunNoModifier uVi0 uLeftHand0)
                              ++ map (K.KM K.Control) K.dirRunControl
                              ++ map (K.KM K.Shift) K.dirRunShift
                              ++ map K.mkKM [ "KP_Begin", "C-KP_Begin"
@@ -83,11 +86,11 @@ makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
                         \\ filteredContent) $
 #endif
           filteredContent
-          ++ (if uVi
+          ++ (if uVi0
               then [ (K.mkKM "period", waitTriple)
                    , (K.mkKM "C-period", wait10Triple) ]
               else [])
-          ++ (if uLeftHand
+          ++ (if uLeftHand0
               then [ (K.mkKM "s", waitTriple)
                    , (K.mkKM "S", wait10Triple) ]
               else [])
@@ -95,7 +98,7 @@ makeData UIOptions{uCommands, uVi, uLeftHand} (InputContentRaw copsClient) =
              , (K.mkKM "C-KP_Begin", wait10Triple)
              , (K.mkKM "KP_5", wait10Triple)
              , (K.mkKM "C-KP_5", wait10Triple) ]
-          ++ K.moveBinding uVi uLeftHand
+          ++ K.moveBinding uVi0 uLeftHand0
                (\v -> ([CmdMove], "", moveXhairOr 1 MoveDir v))
                (\v -> ([CmdMove], "", moveXhairOr 10 RunDir v))
       -- This catches repetitions inside input content definitions.

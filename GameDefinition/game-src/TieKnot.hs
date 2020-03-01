@@ -116,7 +116,8 @@ tieKnotForAsync options@ServerOptions{ sallClear
   -- Client content operations containing default keypresses
   -- and command descriptions.
   let !ccui = CCUI
-        { coinput = IC.makeData sUIOptions Content.Input.standardKeysAndMouse
+        { coinput = IC.makeData (Just sUIOptions)
+                                Content.Input.standardKeysAndMouse
         , coscreen = SC.makeData Content.Screen.standardLayoutAndFeatures
         }
   -- Wire together game content, the main loops of game clients
