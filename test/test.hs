@@ -29,6 +29,7 @@ macroTests :: TestTree
 macroTests = testGroup "macroTests" $
   let coinput = IC.makeData Nothing Content.Input.standardKeysAndMouse
       stringToKeyMacro = KeyMacro . map (K.mkKM . (: []))
+      listToKeyMacro = KeyMacro . map K.mkKM
       bindInput l input =
         let ltriple = M.fromList $ map (\(k, ks) ->
              (K.mkKM k, ([], "", HumanCmd.Macro $ map (: []) ks))) l
@@ -60,6 +61,49 @@ macroTests = testGroup "macroTests" $
      , testCase "Macro 5 from Issue#189 description" $ do
          snd (last (unwindMacros coinput (stringToKeyMacro "x'x'v")))
          @?= "xxx"
+     , testCase "Macro test 10" $ do
+         snd (last (unwindMacros coinput (stringToKeyMacro "x'y'v")))
+         @?= "xyy"
+     , testCase "Macro test 11" $ do
+         snd (last (unwindMacros coinput (stringToKeyMacro "'x''y'v")))
+         @?= "xyy"
+     , testCase "Macro test 12" $ do
+         snd (last (unwindMacros coinput
+                                 (listToKeyMacro ["x", "C-V"])))
+         @?= "x"
+     , testCase "Macro test 13" $ do
+         snd (last (unwindMacros coinput
+                                 (listToKeyMacro ["'", "x", "'", "C-V"])))
+         @?= "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+     , testCase "Macro test 14" $ do
+         snd (last (unwindMacros coinput
+                                 (listToKeyMacro ["'", "x", "'", "y", "C-V"])))
+         @?= "xyxxxxxxxxxxxxxxxxxxxxxxxxx"
+     -- , testCase "Macro test 15" $ do
+     --     snd (last (unwindMacros (bindInput [("a", "x")] coinput)
+     --                             (stringToKeyMacro "'a'v")))
+     --     @?= "xx"
+     , testCase "Macro test 16" $ do
+         snd (last (unwindMacros (bindInput [("a", "'x'")] coinput)
+                                 (stringToKeyMacro "'a'v")))
+         @?= "xx"
+     , testCase "Macro test 17" $ do
+         snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
+                                 (stringToKeyMacro "a")))
+         @?= "xx"
+     , testCase "Macro test 18" $ do
+         snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
+                                 (stringToKeyMacro "'a'")))
+         @?= "xx"
+     -- , testCase "Macro test 19" $ do
+     --     snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
+     --                             (stringToKeyMacro "'a'v")))
+     --     @?= "xxxx"
+     -- , testCase "Macro test 20" $ do
+     --     snd (last (unwindMacros (bindInput [ ("a", "'bz'v")
+     --                                        , ("c", "'aaa'v") ] coinput)
+     --                             (stringToKeyMacro "c")))
+     --     @?= "bzbzbzbzbzbzbzbzbzbzbzbz"
      ]
 
 -- The mock for macro testing.
