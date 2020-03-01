@@ -29,8 +29,12 @@ macroTests :: TestTree
 macroTests = testGroup "macroTests" $
   let coinput = IC.makeData Nothing Content.Input.standardKeysAndMouse
       stringToKeyMacro = KeyMacro . map (K.mkKM . (: []))
-  in [ testCase "Macro 1 from PR description" $ do
-         unwindMacros coinput (stringToKeyMacro "'j''j'")
+      bindInput l input =
+        let ltriple = M.fromList $ map (\(k, ks) ->
+             (K.mkKM k, ([], "", HumanCmd.Macro $ map (: []) ks))) l
+        in input {IC.bcmdMap = M.union ltriple $ IC.bcmdMap input}
+  in [ testCase "Macro 1 from PR#192 description" $ do
+         map fst (unwindMacros coinput (stringToKeyMacro "'j''j'"))
          @?= [ ([Right []],       "'j''j'")
              , ([Left []],        "j''j'")
              , ([Left ["j"]],     "''j'")
@@ -38,34 +42,57 @@ macroTests = testGroup "macroTests" $
              , ([Left []],        "j'")
              , ([Left ["j"]],     "'")
              , ([Right ["j"]],    "") ]
+     , testCase "Macro 1 from Issue#189 description" $ do
+         snd (last (unwindMacros (bindInput [ ("a", "'bc'v")
+                                            , ("c", "'aaa'v") ] coinput)
+                                 (stringToKeyMacro "a")))
+         @?= "macro looped"
+     , testCase "Macro 2 from Issue#189 description" $ do
+         snd (last (unwindMacros (bindInput [("a", "'x'")] coinput)
+                                 (stringToKeyMacro "'a'")))
+         @?= "x"
+     , testCase "Macro 3 from Issue#189 description" $ do
+         snd (last (unwindMacros coinput (stringToKeyMacro "'x''x'")))
+         @?= "xx"
+     , testCase "Macro 4 from Issue#189 description" $ do
+         snd (last (unwindMacros coinput (stringToKeyMacro "'x''x'v")))
+         @?= "xxx"
+     , testCase "Macro 5 from Issue#189 description" $ do
+         snd (last (unwindMacros coinput (stringToKeyMacro "x'x'v")))
+         @?= "xxx"
      ]
 
 -- The mock for macro testing.
 unwindMacros :: IC.InputContent -> KeyMacro
-             -> [([Either [String] [String]], String)]
+             -> [(([Either [String] [String]], String), String)]
 unwindMacros IC.InputContent{bcmdMap, brevMap} lastPlay0 =
-  let transitionMacros macros lastPlay =
-        storeTrace macros lastPlay
+  let transitionMacros (0 :: Int) _ _ _ =
+        [(([], "macro looped"), "macro looped")]  -- probably
+      transitionMacros k macros lastPlay cmds =
+        storeTrace macros lastPlay cmds
         : case lastPlay of
           KeyMacro [] -> []
           KeyMacro (km : rest) ->
-            let (macros1, lastPlay1) = case M.lookup km bcmdMap of
+            let ((macros1, lastPlay1), cmds1) = case M.lookup km bcmdMap of
                   Just (_, _, HumanCmd.Record) ->
-                    (fst $ recordHumanTransition macros, KeyMacro rest)
+                    ((fst $ recordHumanTransition macros, KeyMacro rest), cmds)
                   Just (_, _, HumanCmd.Macro ys) ->
-                    macroHumanTransition ys brevMap macros (KeyMacro rest)
+                    ( macroHumanTransition ys brevMap macros (KeyMacro rest)
+                    , cmds )
                   Just (_, _, HumanCmd.Repeat n) ->
-                    (macros, repeatHumanTransition n macros (KeyMacro rest))
-                  _ -> (macros, KeyMacro rest)
+                    ( (macros, repeatHumanTransition n macros (KeyMacro rest))
+                    , cmds )
+                  _ -> ((macros, KeyMacro rest), cmds ++ [km])
                 macros2 = addToMacro brevMap km macros1
-            in transitionMacros macros2 lastPlay1
-      storeTrace macros lastPlay =
+            in transitionMacros (k - 1) macros2 lastPlay1 cmds1
+      storeTrace macros lastPlay cmds =
         let tmacros = map (either (Left . map K.showKM)
                                   (Right . map K.showKM . unKeyMacro))
                           macros
             tlastPlay = concatMap K.showKM $ unKeyMacro lastPlay
-        in (tmacros, tlastPlay)
-  in transitionMacros [Right (KeyMacro [])] lastPlay0
+            tcmds = concatMap K.showKM cmds
+        in ((tmacros, tlastPlay), tcmds)
+  in transitionMacros 1000 [Right (KeyMacro [])] lastPlay0 []
 
 {-
 
