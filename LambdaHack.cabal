@@ -413,8 +413,8 @@ library this-game-src
   import: options
   hs-source-dirs:     GameDefinition/game-src
   exposed-modules:    TieKnot
-  other-modules:      Client.UI.Content.Input
-                      Client.UI.Content.Screen
+                      Client.UI.Content.Input
+  other-modules:      Client.UI.Content.Screen
                       Implementation.MonadClientImplementation
                       Implementation.MonadServerImplementation
   build-depends:      ,LambdaHack
@@ -447,9 +447,11 @@ test-suite test
   hs-source-dirs:     test
   main-is:            test.hs
   build-depends:      ,LambdaHack
+                      ,this-game-content
                       ,this-game-src
                       ,async
                       ,base
+                      ,containers
                       ,filepath
                       ,optparse-applicative
                       ,tasty >= 1.0
