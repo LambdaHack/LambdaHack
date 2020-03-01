@@ -4,14 +4,15 @@
 -- None of such commands takes game time.
 module Game.LambdaHack.Client.UI.HandleHumanLocalM
   ( -- * Meta commands
-    macroHuman
+    macroHuman, macroHumanTransition
     -- * Local commands
   , chooseItemHuman, chooseItemDialogMode
   , chooseItemProjectHuman, chooseItemApplyHuman
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
-  , repeatHuman, repeatLastHuman, recordHuman, recordHumanTransition
+  , repeatHuman, repeatHumanTransition, repeatLastHuman
+  , recordHuman, recordHumanTransition
   , allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
   , printScreenHuman
@@ -57,7 +58,7 @@ import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
-import           Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.InventoryM
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -97,25 +98,34 @@ import           Game.LambdaHack.Definition.Defs
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman ys = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
+  macros <- getsSession smacroStack
+  lastPlay <- getsSession slastPlay
+  let (smacroStack, slastPlay) = macroHumanTransition ys brevMap macros lastPlay
+  modifySession $ \sess -> sess {slastPlay, smacroStack}
+  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
+
+macroHumanTransition :: [String] -> M.Map HumanCmd.HumanCmd [K.KM]
+                     -> MacroStack -> KeyMacro
+                     -> (MacroStack, KeyMacro)
+macroHumanTransition ys brevMap macros lastPlay =
   let kms = K.mkKM <$> ys
-      mKeyRecord = case M.lookup Record brevMap of
+      mKeyRecord = case M.lookup HumanCmd.Record brevMap of
         Nothing -> Nothing
         Just (k : _) -> Just k
         Just [] -> error $ "" `showFailure` brevMap
       hasRecord = any (\km -> Just km == mKeyRecord) kms
-  modifySession $ \sess ->
-    sess { slastPlay = KeyMacro kms <> slastPlay sess
-         , smacroStack = if hasRecord
-                         -- Push new temporary macro buffer, if macro
-                         -- records a macro by itself.
-                         then case smacroStack sess of
-                           Right _ : (Left _ : _) ->
-                             Right mempty : tail (smacroStack sess)
-                           -- Recycle a previous buffer; this way we don't
-                           -- stack multiple Right buffers.
-                           _ -> Right mempty : smacroStack sess
-                         else smacroStack sess }
-  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
+      slastPlay = KeyMacro kms <> lastPlay
+      smacroStack = if hasRecord
+                    -- Push new temporary macro buffer, if macro
+                    -- records a macro by itself.
+                    then case macros of
+                      Right _ : (Left _ : _) ->
+                        Right mempty : tail macros
+                      -- Recycle a previous buffer; this way we don't
+                      -- stack multiple Right buffers.
+                      _ -> Right mempty : macros
+                    else macros
+  in (smacroStack, slastPlay)
 
 -- * ChooseItem
 
@@ -355,7 +365,7 @@ chooseItemDialogMode c = do
 -- * ChooseItemProject
 
 chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m)
-                       => [TriggerItem] -> m MError
+                       => [HumanCmd.TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -367,7 +377,7 @@ chooseItemProjectHuman ts = do
       cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
-        tr : _ -> (tiverb tr, tiobject tr)
+        tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
       triggerSyms = triggerSymbols ts
   mpsuitReq <- psuitReq
   case mpsuitReq of
@@ -530,13 +540,15 @@ psuitReq = do
             in Right (pos, 1 + IA.totalRange arItem (itemKind itemFull)
                            >= chessDist (bpos b) pos)
 
-triggerSymbols :: [TriggerItem] -> [Char]
+triggerSymbols :: [HumanCmd.TriggerItem] -> [Char]
 triggerSymbols [] = []
-triggerSymbols (TriggerItem{tisymbols} : ts) = tisymbols ++ triggerSymbols ts
+triggerSymbols (HumanCmd.TriggerItem{tisymbols} : ts) =
+  tisymbols ++ triggerSymbols ts
 
 -- * ChooseItemApply
 
-chooseItemApplyHuman :: forall m. MonadClientUI m => [TriggerItem] -> m MError
+chooseItemApplyHuman :: forall m. MonadClientUI m
+                     => [HumanCmd.TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -548,7 +560,7 @@ chooseItemApplyHuman ts = do
       cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
-        tr : _ -> (tiverb tr, tiobject tr)
+        tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
       triggerSyms = triggerSymbols ts
       prompt = makePhrase ["What", object1, "to", verb1]
       promptGeneric = "What to apply"
@@ -710,13 +722,17 @@ selectWithPointerHuman = do
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n = do
-  macros <- getsSession smacroStack
+repeatHuman n =
+  modifySession $ \sess ->
+    sess {slastPlay =
+            repeatHumanTransition n (smacroStack sess) (slastPlay sess)}
+
+repeatHumanTransition :: Int -> MacroStack -> KeyMacro -> KeyMacro
+repeatHumanTransition n macros lastPlay =
   let nmacro k | k == 1 = unKeyMacro . fromRight mempty . head $ macros
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
-  modifySession $ \sess ->
-    sess {slastPlay = KeyMacro (nmacro n) <> slastPlay sess}
+  in KeyMacro (nmacro n) <> lastPlay
 
 -- * RepeatLast
 
