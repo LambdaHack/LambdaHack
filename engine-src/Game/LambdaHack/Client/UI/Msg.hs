@@ -30,7 +30,6 @@ import           Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import           Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
-import           Data.Word (Word32)
 import           GHC.Generics (Generic)
 
 import           Game.LambdaHack.Client.UI.Overlay

@@ -16,7 +16,6 @@ import           Control.Concurrent
 import           Control.Concurrent.Async
 import qualified Control.Exception as Ex
 import           Data.Binary
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Version

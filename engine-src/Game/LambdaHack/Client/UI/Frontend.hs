@@ -25,6 +25,7 @@ import           Data.IORef
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import           Data.Word
+import Data.Kind (Type)
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -39,7 +40,7 @@ import qualified Game.LambdaHack.Definition.Color as Color
 
 -- | The instructions sent by clients to the raw frontend, indexed
 -- by the returned value.
-data FrontReq :: * -> * where
+data FrontReq :: Type -> Type where
   -- | Show a frame.
   FrontFrame :: Frame -> FrontReq ()
   -- | Perform an explicit delay of the given length.

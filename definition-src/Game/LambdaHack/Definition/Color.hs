@@ -25,7 +25,6 @@ import           Data.Binary
 import           Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Char as Char
 import           Data.Hashable (Hashable)
-import           Data.Word (Word32)
 import           GHC.Exts (Int (I#))
 import           GHC.Generics (Generic)
 import           GHC.Prim (int2Word#)

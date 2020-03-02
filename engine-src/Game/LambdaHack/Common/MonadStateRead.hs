@@ -10,7 +10,6 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import qualified Data.EnumMap.Strict as EM
-import           Data.Text (Text)
 
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
