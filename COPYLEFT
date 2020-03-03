@@ -5,14 +5,14 @@ Source: https://hackage.haskell.org/package/LambdaHack
 
 Files: *
 Copyright: 2008-2011 Andres Loeh
-           2010-2019 Mikolaj Konarski and others (see git history)
+           2010-2020 Mikolaj Konarski and others (see git history)
 License: BSD-3-Clause
 
 Files: GameDefinition/fonts/{*.fnt,*.bdf,16x16xw.woff}
 Copyright: 1997-2016 Leon Marrick
            1997-2016 Sheldon Simms III
            1997-2016 Nick McConnell
-           2016-2019 Mikolaj Konarski
+           2016-2020 Mikolaj Konarski
 License: GPL-2.0-or-later
 
 Files: GameDefinition/fonts/source-*.woff
