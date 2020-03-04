@@ -155,7 +155,7 @@ data Attr = Attr
   { fg :: Color      -- ^ foreground colour
   , bg :: Highlight  -- ^ highlight
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
@@ -166,7 +166,7 @@ data AttrChar = AttrChar
   { acAttr :: Attr
   , acChar :: Char
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
 -- This implementation is faster than @Int@, because some vector updates
 -- can be done without going to and from @Int@.

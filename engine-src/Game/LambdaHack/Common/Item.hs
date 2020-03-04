@@ -92,7 +92,7 @@ newtype ItemKindIx = ItemKindIx Word16
 data ItemDisco =
     ItemDiscoFull IA.AspectRecord
   | ItemDiscoMean IA.KindMean
- deriving (Show, Eq, Ord)
+ deriving (Show, Ord, Eq)
 
 -- No speedup from making fields non-strict.
 -- | Full information about an item.

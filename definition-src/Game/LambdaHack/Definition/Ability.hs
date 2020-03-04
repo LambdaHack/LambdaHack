@@ -51,7 +51,7 @@ data Skill =
   | SkHearing
   | SkAggression
   | SkOdor
-  deriving (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving (Show, Eq, Enum, Bounded, Generic)
 
 -- | Strength of particular skills. This is cumulative from actor
 -- organs and equipment and so pertain to an actor as well as to items.
@@ -63,7 +63,7 @@ data Skill =
 --
 -- The tree is by construction sparse, so the derived equality is semantical.
 newtype Skills = Skills {skills :: EM.EnumMap Skill Int}
-  deriving (Show, Eq, Ord, Generic, Hashable, Binary)
+  deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | Item flag aspects.
 data Flag =
@@ -96,10 +96,10 @@ data Flag =
   | MinorEffects  -- ^ override: the effects on this item are considered
                   --   minor and so not causing identification on use,
                   --   and so this item will identify on pick-up
-  deriving (Show, Eq, Ord, Generic, Enum, Bounded)
+  deriving (Show, Eq, Enum, Bounded, Generic)
 
 newtype Flags = Flags {flags :: ES.EnumSet Flag}
-  deriving (Show, Eq, Ord, Generic, Hashable, Binary)
+  deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | Doctrine of non-leader actors. Apart of determining AI operation,
 -- each doctrine implies a skill modifier, that is added to the non-leader
@@ -116,7 +116,7 @@ data Doctrine =
               --   to sight radius and fallback temporarily to @TRoam@
               --   when enemy is seen by the faction and is within
               --   the actor's sight radius
-  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+  deriving (Show, Eq, Enum, Bounded, Generic)
 
 instance Binary Doctrine
 

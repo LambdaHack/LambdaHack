@@ -95,7 +95,7 @@ data Feature =
                          --   is rolled per place and then, once for each
                          --   position, one of the two is semi-randomly chosen
                          --   (according to their individual frequencies only)
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary Feature
 

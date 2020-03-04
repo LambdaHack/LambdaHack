@@ -97,7 +97,7 @@ data Target =
   | TNonEnemy ActorId           -- ^ target a friend or neutral
   | TPoint TGoal LevelId Point  -- ^ target a concrete spot
   | TVector Vector              -- ^ target position relative to actor
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary Target
 
@@ -114,7 +114,7 @@ data TGoal =
             --   to be walkable or altered or searched)
   | TUnknown  -- ^ an unknown tile to be explored
   | TKnown  -- ^ a known tile to be patrolled
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary TGoal
 

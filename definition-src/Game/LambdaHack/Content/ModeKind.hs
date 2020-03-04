@@ -84,7 +84,7 @@ data HiIndeterminant =
   | HiSurvival
   | HiKill
   | HiLoss
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary HiIndeterminant
 
@@ -119,7 +119,7 @@ data LeaderMode =
     LeaderNull  -- ^ faction can have no leader, is whole under AI control
   | LeaderAI AutoLeader -- ^ leader under AI control
   | LeaderUI AutoLeader -- ^ leader under UI control, assumes @fhasUI@
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary LeaderMode
 
@@ -142,7 +142,7 @@ data AutoLeader = AutoLeader
       --   of the automatic switching, but the client is expected to do more,
       --   because it's advantageous for that kind of a faction
   }
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Generic)
 
 instance Binary AutoLeader
 

@@ -28,9 +28,7 @@ type Y = Int
 -- is never serialized. But we'd need to cover the few cases
 -- (e.g., @litemFreq@) where @GroupName@ goes into savegame.
 newtype GroupName a = GroupName {fromGroupName :: Text}
-  deriving (Show, Eq, Ord, Hashable, Binary, Generic)
-
-instance NFData (GroupName a)
+  deriving (Show, Eq, Ord, Hashable, Binary, NFData)
 
 -- | For each group that the kind belongs to, denoted by a @GroupName@
 -- in the first component of a pair, the second component of a pair shows
@@ -58,9 +56,7 @@ linearInterpolation !levelDepth !totalDepth !dataset =
 
 -- | Content identifiers for the content type @c@.
 newtype ContentId c = ContentId Word16
-  deriving (Show, Eq, Ord, Enum, Binary, Generic)
-
-instance Hashable (ContentId c)
+  deriving (Show, Eq, Ord, Enum, Hashable, Binary)
 
 toContentId :: Word16 -> ContentId c
 {-# INLINE toContentId #-}
