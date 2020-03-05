@@ -47,14 +47,14 @@ pattern AMBUSH = GroupName "ambush"
 pattern SAFARI = GroupName "safari"
 pattern DIG = GroupName "dig"
 pattern SEE = GroupName "see"
-pattern CRAWL_EMPTY = GroupName "crawl empty"
-pattern CRAWL_SURVIVAL = GroupName "crawl survival"
-pattern SAFARI_SURVIVAL = GroupName "safari survival"
+pattern CRAWL_EMPTY = GroupName "crawlEmpty"  -- only the first word matters
+pattern CRAWL_SURVIVAL = GroupName "crawlSurvival"
+pattern SAFARI_SURVIVAL = GroupName "safariSurvival"
 pattern BATTLE = GroupName "battle"
-pattern BATTLE_DEFENSE = GroupName "battle defense"
-pattern BATTLE_SURVIVAL = GroupName "battle survival"
+pattern BATTLE_DEFENSE = GroupName "battleDefense"
+pattern BATTLE_SURVIVAL = GroupName "battleSurvival"
 pattern DEFENSE = GroupName "defense"
-pattern DEFENSE_EMPTY = GroupName "defense empty"
+pattern DEFENSE_EMPTY = GroupName "defenseEmpty"
 
 -- * Content
 
