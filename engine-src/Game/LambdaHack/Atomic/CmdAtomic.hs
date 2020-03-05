@@ -109,7 +109,7 @@ data UpdAtomic =
   | UpdSpotSmell LevelId [(Point, Time)]
   | UpdLoseSmell LevelId [(Point, Time)]
   -- Assorted.
-  | UpdTimeItem ItemId Container ItemTimer ItemTimer
+  | UpdTimeItem ItemId Container ItemTimers ItemTimers
   | UpdAgeGame [LevelId]
   | UpdUnAgeGame [LevelId]
   | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord

@@ -737,7 +737,7 @@ projectItem aid = do
                   -- any effects activate, so no point projecting.
                   -- This changes in time, so recharging is not included
                   -- in @condProjectListM@, but checked here, just before fling.
-                  let recharged = hasCharge localTime itemFull kit
+                  let recharged = hasCharge localTime kit
                       arItem = aspectRecordFull itemFull
                       trange = IA.totalRange arItem $ itemKind itemFull
                       bestRange =

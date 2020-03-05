@@ -116,7 +116,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                        <+> case kit of
                          (1, t:_) ->  -- only exceptionally not singleton list
                                       -- or even more than one copy total
-                           let total = timeDeltaToFrom t localTime
+                           let total = deltaOfItemTimer localTime t
                            in timeDeltaInSecondsText total
                          (1, []) | isNothing more -> ""
                          (k, _) ->  -- usuallly the list empty; ignore anyway
@@ -1623,7 +1623,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
             partItem rwidth (bfid b) factionD localTime itemFull kit
           total = case bag EM.! iid of
             (_, []) -> error $ "" `showFailure` (bag, iid, aid, cstore, delta)
-            (_, t:_) -> timeDeltaToFrom t localTime
+            (_, t:_) -> deltaOfItemTimer localTime t
               -- only exceptionally not singleton list
       storeOwn <- ppContainerWownW partPronounLeader True (CActor aid cstore)
       let cond = [ "condition"
@@ -1844,7 +1844,7 @@ strike catch source target iid = assert (source /= target) $ do
                      [MU.SubjectVerbSg spart "catch", tpart, "skillfully"]
          msgAdd MsgVeryRare msg
          animate (blid tb) $ blockHit ps Color.BrGreen Color.Green
-       | not (hasCharge localTime itemFullWeapon kitWeapon) -> do
+       | not (hasCharge localTime kitWeapon) -> do
          -- Can easily happen with a thrown discharged item.
          -- Much less plausible with a wielded weapon.
          -- Theoretically possible if the weapon not identified

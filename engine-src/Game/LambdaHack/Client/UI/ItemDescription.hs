@@ -51,18 +51,19 @@ partItemN3 :: Int -> FactionId -> FactionDict -> Bool -> DetailLevel -> Int
            -> ([Text], MU.Part, MU.Part)
 partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
            itemFull@ItemFull{itemBase, itemKind, itemSuspect}
-           (itemK, itemTimer) =
+           (itemK, itemTimers) =
   let flav = flavourToName $ jflavour itemBase
       arItem = aspectRecordFull itemFull
       timeout = IA.aTimeout arItem
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
-      lenCh = itemK - ncharges localTime itemFull (itemK, itemTimer)
+      lenCh = itemK - ncharges localTime (itemK, itemTimers)
       charges | lenCh == 0 = ""
-              | temporary = case itemTimer of
+              | temporary = case itemTimers of
                   [] -> error $ "partItemN3: charges with null timer"
-                                `showFailure` (side, itemFull, itemK, itemTimer)
-                  t : _ -> let total = timeDeltaToFrom t localTime
+                                `showFailure`
+                                (side, itemFull, itemK, itemTimers)
+                  t : _ -> let total = deltaOfItemTimer localTime t
                            in "for" <+> timeDeltaInSecondsText total
               | itemK == 1 && lenCh == 1 = "(charging)"
               | itemK == lenCh = "(all charging)"

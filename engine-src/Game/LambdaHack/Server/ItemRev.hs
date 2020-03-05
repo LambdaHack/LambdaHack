@@ -25,7 +25,6 @@ import           GHC.Generics (Generic)
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Kind
-import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ItemKind (ItemKind)
 import qualified Game.LambdaHack.Content.ItemKind as IK
@@ -117,7 +116,7 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
     let itemBase = buildItem cops arItem flavourMap discoRev itemKindId
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
-        itemTimer = [timeZero | IA.checkFlag Ability.Periodic arItem]
+        itemTimer = [itemTimerZero | IA.checkFlag Ability.Periodic arItem]
           -- delay first discharge of single organs
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.

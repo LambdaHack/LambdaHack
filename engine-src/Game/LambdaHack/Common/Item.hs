@@ -4,8 +4,10 @@ module Game.LambdaHack.Common.Item
   ( Item(..), ItemIdentity(..)
   , ItemKindIx, ItemDisco(..), ItemFull(..), ItemFullKit
   , DiscoveryKind, DiscoveryAspect, ItemIxMap, Benefit(..), DiscoveryBenefit
-  , ItemTimer, ItemQuant, ItemBag, ItemDict
-  , itemToFull6, aspectRecordFull, strongestSlot, ncharges, hasCharge
+  , ItemTimer, ItemTimers, ItemQuant, ItemBag, ItemDict
+  , itemToFull6, aspectRecordFull, strongestSlot
+  , itemTimerZero, createItemTimer, shiftItemTimer
+  , deltaOfItemTimer, charging, ncharges, hasCharge
   , strongestMelee, unknownMeleeBonus, unknownSpeedBonus
   , conditionMeleeBonus, conditionSpeedBonus, armorHurtCalculation
   , mergeItemQuant, listToolsToConsume, subtractIidfromGrps
@@ -138,13 +140,20 @@ instance Binary Benefit
 
 type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 
-type ItemTimer = [Time]
+-- | The absolute level's local time at which an item's copy becomes
+-- operational again. Even if item is not identified and so its timeout
+-- unknown, it's enough to compare this to the local level time
+-- to learn whether an item is recharged.
+newtype ItemTimer = ItemTimer {itemTimer :: Time}
+  deriving (Show, Eq, Binary)
+
+type ItemTimers = [ItemTimer]
 
 -- | Number of items in a bag, together with recharging timer, in case of
 -- items that need recharging, exists only temporarily or auto-activate
 -- at regular intervals. Data invariant: the length of the timer
 -- should be less or equal to the number of items.
-type ItemQuant = (Int, ItemTimer)
+type ItemQuant = (Int, ItemTimers)
 
 -- | A bag of items, e.g., one of the stores of an actor or the items
 -- on a particular floor position or embedded in a particular map tile.
@@ -239,17 +248,27 @@ valueAtEqpSlot eqpSlot arItem@IA.AspectRecord{..} =
     EqpSlotWeaponFast -> error $ "" `showFailure` arItem  -- sum of all benefits
     EqpSlotWeaponBig -> error $ "" `showFailure` arItem  -- sum of all benefits
 
-ncharges :: Time -> ItemFull -> ItemQuant -> Int
-ncharges localTime itemFull (itemK, itemTimer) =
-  let timeout = IA.aTimeout $ aspectRecordFull itemFull
-      timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-      charging startT = timeShift startT timeoutTurns > localTime
-      it1 = filter charging itemTimer
-  in itemK - length it1
+itemTimerZero :: ItemTimer
+itemTimerZero = ItemTimer timeZero
 
-hasCharge :: Time -> ItemFull -> ItemQuant -> Bool
-hasCharge localTime itemFull (itemK, itemTimer) =
-  ncharges localTime itemFull (itemK, itemTimer) > 0
+createItemTimer :: Time -> Delta Time -> ItemTimer
+createItemTimer localTime delta = ItemTimer $ localTime `timeShift` delta
+
+shiftItemTimer :: Delta Time -> ItemTimer -> ItemTimer
+shiftItemTimer delta t = ItemTimer $ itemTimer t `timeShift` delta
+
+deltaOfItemTimer :: Time -> ItemTimer -> Delta Time
+deltaOfItemTimer localTime t = timeDeltaToFrom (itemTimer t) localTime
+
+charging :: Time -> ItemTimer -> Bool
+charging localTime = (> localTime) . itemTimer
+
+ncharges :: Time -> ItemQuant -> Int
+ncharges localTime (itemK, itemTimers) =
+  itemK - length (filter (charging localTime) itemTimers)
+
+hasCharge :: Time -> ItemQuant -> Bool
+hasCharge localTime kit = ncharges localTime kit > 0
 
 strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
@@ -267,7 +286,7 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
                 let Benefit{benMelee} = discoBenefit EM.! iid
                 in - benMelee + unIDedBonus
               Nothing -> rawDmg  -- special case: not interested about ID
-            ncha = ncharges localTime itemFull kit
+            ncha = ncharges localTime kit
         in ( if ignoreCharges || ncha > 0
              then totalValue
              else -100000

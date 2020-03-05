@@ -112,7 +112,7 @@ moveStashIfNeeded c = case c of
   _ -> return []
 
 randomResetTimeout :: MonadServerAtomic m
-                   => Int -> ItemId -> ItemFull -> [Time] -> Container
+                   => Int -> ItemId -> ItemFull -> [ItemTimer] -> Container
                    -> m ()
 randomResetTimeout k iid itemFull beforeIt toC = do
   lid <- getsState $ lidFromC toC
@@ -133,13 +133,13 @@ randomResetTimeout k iid itemFull beforeIt toC = do
         execUpdAtomic $ UpdTimeItem iid toC afterIt resetIt
     Nothing -> return ()  -- no @Timeout@ aspect; don't touch
 
-computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe Time)
+computeRndTimeout :: Time -> ItemFull -> Rnd (Maybe ItemTimer)
 computeRndTimeout localTime ItemFull{itemDisco=ItemDiscoFull itemAspect} = do
   let t = IA.aTimeout itemAspect
   if t /= 0 then do
     rndT <- randomR0 t
     let rndTurns = timeDeltaScale (Delta timeTurn) (t + rndT)
-    return $ Just $ timeShift localTime rndTurns
+    return $ Just $ createItemTimer localTime rndTurns
   else return Nothing
 computeRndTimeout _ _ = error "computeRndTimeout: server ignorant about an item"
 

@@ -699,10 +699,12 @@ drawLeaderDamage width leader = do
                   chp = if charged then Color.BrMagenta else Color.Magenta
               in map (Color.attrChar2ToW32 cburn) tBurn
                  ++ map (Color.attrChar2ToW32 chp) tRefillHP
-        in if hasTimeout itemFull
-           then replicate (k - nch) (False, (ldice Color.Cyan, lBurnHP False))
-                ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
-           else [(True, (ldice Color.BrBlue, lBurnHP True))]
+            possiblyHasTimeout = hasTimeout itemFull || itemSuspect itemFull
+           in if possiblyHasTimeout
+              then replicate (k - nch)
+                             (False, (ldice Color.Cyan, lBurnHP False))
+                   ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
+              else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk

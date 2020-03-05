@@ -237,7 +237,7 @@ permittedApply localTime skill calmE
      -- if the item is, in fact, recharged and is not durable
      -- (likely in case of jewellery). So it's OK (the message may be
      -- somewhat alarming though).
-     | not $ hasCharge localTime itemFull kit -> Left ApplyCharging
+     | not $ hasCharge localTime kit -> Left ApplyCharging
      | otherwise ->
        if null (IK.ieffects itemKind) && not itemSuspect
        then Left ApplyNoEffects

@@ -192,7 +192,7 @@ kineticEffectAndDestroy effApplyFlags0@EffApplyFlags{..}
       itemFull <- getsState $ itemToFull iid
       tbOld <- getsState $ getActorBody target
       localTime <- getsState $ getLocalTime (blid tbOld)
-      let recharged = hasCharge localTime itemFull kit
+      let recharged = hasCharge localTime kit
       -- If neither kinetic hit nor any effect is activated, there's no chance
       -- the items can be destroyed or even timeout changes, so we abort early.
       if not recharged then return UseDud else do
@@ -248,7 +248,7 @@ effectAndDestroy :: MonadServerAtomic m
 effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
                  itemFull@ItemFull{itemDisco, itemKindId, itemKind} = do
   bag <- getsState $ getContainerBag container
-  let (itemK, itemTimer) = bag EM.! iid
+  let (itemK, itemTimers) = bag EM.! iid
       effs = case effToUse of
         EffBare -> IK.ieffects itemKind
         EffBareAndOnCombine ->
@@ -261,9 +261,7 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
       timeout = IA.aTimeout arItem
   lid <- getsState $ lidFromC container
   localTime <- getsState $ getLocalTime lid
-  let it1 = let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-                charging startT = timeShift startT timeoutTurns > localTime
-            in filter charging itemTimer
+  let it1 = filter (charging localTime) itemTimers
       len = length it1
       recharged = len < itemK || effToUse == EffOnSmash || effIgnoreCharging
   -- If the item has no charges and the special cases don't apply
@@ -272,20 +270,22 @@ effectAndDestroy effApplyFlags0@EffApplyFlags{..} source target iid container
   -- and in case of @OnSmash@ and @effIgnoreCharging@,
   -- only effects are triggered).
   if not recharged then return UseDud else do
-    let it2 = if timeout /= 0 && recharged
+    let timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
+        newItemTimer = createItemTimer localTime timeoutTurns
+        it2 = if timeout /= 0 && recharged
               then if effPeriodic && IA.checkFlag Ability.Fragile arItem
-                   then replicate (itemK - length it1) localTime ++ it1
+                   then replicate (itemK - length it1) newItemTimer ++ it1
                            -- copies are spares only; one fires, all discharge
-                   else take (itemK - length it1) [localTime] ++ it1
+                   else take (itemK - length it1) [newItemTimer] ++ it1
                            -- copies all fire, turn by turn; <= 1 discharges
-              else itemTimer
+              else itemTimers
         kit2 = (1, take 1 it2)
         !_A = assert (len <= itemK `blame` (source, target, iid, container)) ()
     -- We use up the charge even if eventualy every effect fizzles. Tough luck.
     -- At least we don't destroy the item in such case.
     -- Also, we ID it regardless.
-    unless (itemTimer == it2) $
-      execUpdAtomic $ UpdTimeItem iid container itemTimer it2
+    unless (itemTimers == it2) $
+      execUpdAtomic $ UpdTimeItem iid container itemTimers it2
     -- We have to destroy the item before the effect affects the item
     -- or affects the actor holding it or standing on it (later on we could
     -- lose track of the item and wouldn't be able to destroy it) .
@@ -1053,9 +1053,8 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   timeOld <- getsState $ getLocalTime lidOld
   timeLastActive <- getsState $ getLocalTime lidNew
   let delta = timeLastActive `timeDeltaToFrom` timeOld
-      shiftByDelta = (`timeShift` delta)
       computeNewTimeout :: ItemQuant -> ItemQuant
-      computeNewTimeout (k, it) = (k, map shiftByDelta it)
+      computeNewTimeout (k, it) = (k, map (shiftItemTimer delta) it)
       rebaseTimeout :: ItemBag -> ItemBag
       rebaseTimeout = EM.map computeNewTimeout
       bNew = bOld { blid = lidNew
@@ -1063,6 +1062,7 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
                   , boldpos = Just posNew  -- new level, new direction
                   , borgan = rebaseTimeout $ borgan bOld
                   , beqp = rebaseTimeout $ beqp bOld }
+      shiftByDelta = (`timeShift` delta)
   -- Sync the actor time with the level time.
   -- This time shift may cause a double move of a foe of the same speed,
   -- but this is OK --- the foe didn't have a chance to move
@@ -1317,7 +1317,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
         Just (iid, (_, afterIt@(timer : rest))) | not $ IK.isTimerNone tim -> do
           -- Already has such items and timer change requested, so only increase
           -- the timer of the first item by the delta, but don't create items.
-          let newIt = timer `timeShift` delta : rest
+          let newIt = shiftItemTimer delta timer : rest
           if afterIt /= newIt then do
             execUpdAtomic $ UpdTimeItem iid c afterIt newIt
             -- It's hard for the client to tell this timer change from charge
@@ -1339,7 +1339,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
                             $ SfxItemYield iidOriginal (blid tb)
             _ -> return ()
           localTime <- getsState $ getLocalTime (blid tb)
-          let newTimer = localTime `timeShift` delta
+          let newTimer = createItemTimer localTime delta
               extraIt k = if IK.isTimerNone tim
                           then []
                           else replicate k newTimer
@@ -1600,26 +1600,20 @@ specific than the two general abilities described as desirable above
 effectDischarge :: MonadServerAtomic m
                 => m () -> ItemId -> Dice.Dice -> ActorId -> m UseResult
 effectDischarge execSfx iidOriginal nDm target = do
-  discoAspect <- getsState sdiscoAspect
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
   let power = max 0 power0
-      t = timeShift localTime $ timeDeltaScale (Delta timeClip) power
+      t = createItemTimer localTime $ timeDeltaScale (Delta timeClip) power
       c = CActor target CEqp
       eqpAss = EM.assocs $ beqp tb
-      resetTimeout (iid, (k, itemTimer)) = do
-        let arItem = discoAspect EM.! iid
-            timeout = IA.aTimeout arItem
-            timeoutTurns = timeDeltaScale (Delta timeTurn) timeout
-            charging startT = timeShift startT timeoutTurns > localTime
-            it1 = filter charging itemTimer
-            it2 = filter charging
-                  $ replicate k $ timeShift t (timeDeltaReverse timeoutTurns)
+      resetTimeout (iid, (k, itemTimers)) = do
+        let it1 = filter (charging localTime) itemTimers
+            it2 = filter (charging localTime) $ replicate k t
         if iid == iidOriginal || it1 == it2 then return UseDud else do
-          execUpdAtomic $ UpdTimeItem iid c itemTimer it2
+          execUpdAtomic $ UpdTimeItem iid c itemTimers it2
           return UseUp
   urs <- mapM resetTimeout eqpAss
   let ur = case urs of
