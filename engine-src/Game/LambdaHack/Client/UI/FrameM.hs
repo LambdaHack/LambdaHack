@@ -11,6 +11,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Bifunctor as B
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Vector.Unboxed as U
@@ -125,14 +126,18 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   report <- getsSession $ newReport . shistory
   let msgDisturbs = anyInReport disturbsResting report
-  lastPlayOld <- getsSession slastPlay
-  km <- case lastPlayOld of
+  apending <- getsSession sactionPending
+  let abuff = head apending
+  km <- case slastPlay abuff of
     KeyMacro (km : kms) | not keyPressed
                           && (null frontKeyKeys || km `elem` frontKeyKeys)
                           && not msgDisturbs -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
-      modifySession $ \sess -> sess {slastPlay = KeyMacro kms}
+      modifySession $ \sess ->
+        sess { sactionPending =
+          let newHead = abuff { slastPlay = KeyMacro kms }
+           in newHead : tail apending }
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
       return km
     KeyMacro (_ : _) -> do
@@ -168,43 +173,37 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
          , sturnDisplayed = True
-         , smacroStack = addToMacro brevMap km $ smacroStack sess }
+         , sactionPending = addToMacro brevMap km $ sactionPending sess }
   return km
 
-addToMacro :: M.Map HumanCmd.HumanCmd [K.KM] -> K.KM -> MacroStack -> MacroStack
-addToMacro brevMap km macros =
+addToMacro :: M.Map HumanCmd.HumanCmd [K.KM] -> K.KM -> [ActionBuffer]
+           -> [ActionBuffer]
+addToMacro _ _ [] = error "cannot add macro to empty action stack"
+addToMacro brevMap km (abuff : abuffs) =
   let mKeyRecord = case M.lookup HumanCmd.Record brevMap of
         Nothing -> Nothing
         Just (k : _) -> Just k
         Just [] -> error $ "" `showFailure` brevMap
-  in if Just km == mKeyRecord
-     then macros
-       -- Exclude from in-game macros keystrokes that
-       -- start/stop recording a macro.
-     else case macros of
-       -- This is noop when not recording a macro,
-       -- which is exactly the required semantics.
-       Left xs : ys -> Left (km : xs) : ys
-       -- Record keystrokes in the first Left buffer on the stack;
-       -- there's at most one Right temporary macro buffer.
-       Right xs : (Left ys : zs) -> Right xs : (Left (km : ys) : zs)
-       _ -> macros
+      newBuffer = abuff
+        { smacroBuffer = if Just km == mKeyRecord
+                         then smacroBuffer abuff
+                           -- Exclude from in-game macros keystrokes that
+                           -- start/stop recording a macro.
+                         else (km :) `B.first` smacroBuffer abuff
+                           -- This is noop when not recording a macro,
+                           -- which is exactly the required semantics.
+        }
+   in (newBuffer : abuffs)
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = msgAdd0 MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()
 resetPlayBack = do
-  lastPlayOld <- getsSession slastPlay
-  unless (lastPlayOld == mempty)
-    $ modifySession $ \sess ->
-       sess { slastPlay = mempty
-            , smacroStack = case smacroStack sess of
-                -- If interrupted, leave on stack user's macro buffer
-                -- (it's always on the bottom) and pop all the rest
-                -- of temporary macro buffers.
-                [_] -> smacroStack sess
-                _ -> [last $ smacroStack sess] }
+  abuffs <- getsSession sactionPending
+  let abuff = last abuffs
+  modifySession $ \sess ->
+    sess { sactionPending = [ abuff{ slastPlay = mempty } ] }
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()

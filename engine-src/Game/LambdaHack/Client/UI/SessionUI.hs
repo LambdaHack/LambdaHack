@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), MacroStack
+  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), ActionBuffer(..)
   , RunParams(..), HintMode(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
@@ -54,12 +54,7 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
-  , slastAction    :: Maybe K.KM    -- ^ last pressed key
-  , smacroStack    :: MacroStack    -- ^ non-empty stack of macro buffers that
-                                    --   contains at least in-game macro buffer;
-                                    --   record keystrokes in the first Left
-                                    --   buffer
-  , slastPlay      :: KeyMacro      -- ^ state of key sequence playback
+  , sactionPending :: [ActionBuffer] -- ^ local action buffer
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
@@ -83,6 +78,18 @@ data SessionUI = SessionUI
   , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
+-- | Local action buffer. Predefined macros have their own in-game macro
+-- buffer, allowing them to record in-game macro, queue actions and repeat
+-- the last macro's action.
+-- Running predefined macro pushes new @ActionBuffer@ onto the stack. We pop
+-- a buffer from the stack if locally there's no actions pending to be handled.
+data ActionBuffer = ActionBuffer
+  { smacroBuffer :: Either [K.KM] KeyMacro -- ^ record keystrokes in Left;
+                                           --   repeat from Right
+  , slastPlay    :: KeyMacro               -- ^ actions pending to be handled
+  , slastAction  :: Maybe K.KM             -- ^ last pressed key
+  } deriving (Show)
+
 type ItemDictUI = EM.EnumMap ItemId LevelId
 
 -- | Current aiming mode of a client.
@@ -95,9 +102,7 @@ newtype AimMode = AimMode { aimLevelId :: LevelId }
 -- Keys are kept in the same order in which they're meant to be replayed,
 -- i.e. the first element of the list is replayed also as the first one.
 newtype KeyMacro = KeyMacro { unKeyMacro :: [K.KM] }
-  deriving (Eq, Binary, Semigroup, Monoid)
-
-type MacroStack = [Either [K.KM] KeyMacro]
+  deriving (Show, Eq, Binary, Semigroup, Monoid)
 
 -- | Parameters of the current run.
 data RunParams = RunParams
@@ -136,9 +141,7 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
-    , slastAction = Nothing
-    , smacroStack = [Right mempty]
-    , slastPlay = mempty
+    , sactionPending = [ActionBuffer (Right mempty) mempty Nothing]
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
@@ -201,9 +204,7 @@ instance Binary SessionUI where
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = K.PointUI 0 0
-        slastAction = Nothing
-        smacroStack = [Right mempty]
-        slastPlay = mempty
+        sactionPending = [ActionBuffer (Right mempty) mempty Nothing]
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False

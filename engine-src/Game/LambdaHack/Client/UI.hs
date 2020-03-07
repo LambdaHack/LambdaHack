@@ -166,22 +166,27 @@ humanCommand = do
                          if swaitTimes sess > 0
                          then - swaitTimes sess
                          else 0
-                     , slastAction = case cmd of
-                         (HumanCmd.RepeatLast _) -> slastAction sess
+                     , sactionPending = case cmd of
+                         (HumanCmd.RepeatLast _) -> sactionPending sess
                          -- We can repeat every last action except 'repeat last
                          -- action' action, so here we ommit that one.
-                         _ -> Just km
+                         _ ->
+                           let oldBuffer = head (sactionPending sess)
+                               newBuffer = oldBuffer { slastAction = Just km }
+                            in newBuffer : tail (sactionPending sess)
                      }
               cmdHumanSem cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
-        KeyMacro kms <- getsSession slastPlay
-        when (null kms) $ modifySession $ \sess ->
-          sess { smacroStack = [last $ smacroStack sess] }
-          -- GC all macro buffers, except in-game macro buffer, if there's
-          -- nothing left to do.
+        modifySession $ \sess ->
+          sess { sactionPending = case sactionPending sess of
+                   ActionBuffer _ (KeyMacro kms) _ : as
+                     | not (null as) && null kms -> as
+                   _ -> sactionPending sess }
+            -- GC action buffer if there's no actions left to handle;
+            -- leave the last one as a buffer for user's in-game macros.
         case abortOrCmd of
           Right cmdS ->
             -- Exit the loop and let other actors act. No next key needed
