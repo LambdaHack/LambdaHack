@@ -11,7 +11,8 @@ module Game.LambdaHack.Client.UI.HandleHumanLocalM
   , psuitReq, triggerSymbols, pickLeaderHuman, pickLeaderWithPointerHuman
   , memberCycleHuman, memberBackHuman
   , selectActorHuman, selectNoneHuman, selectWithPointerHuman
-  , repeatHuman, repeatHumanTransition, repeatLastHuman
+  , repeatHuman, repeatHumanTransition
+  , repeatLastHuman, repeatLastHumanTransition
   , recordHuman, recordHumanTransition
   , allHistoryHuman, lastHistoryHuman
   , markVisionHuman, markSmellHuman, markSuspectHuman, markAnimHuman
@@ -38,7 +39,6 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Either (fromRight)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Map.Strict as M
 import           Data.Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -50,7 +50,6 @@ import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Animation
-import           Game.LambdaHack.Client.UI.Content.Input
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.DrawM
@@ -97,35 +96,18 @@ import           Game.LambdaHack.Definition.Defs
 
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman ys = do
-  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
-  macros <- getsSession smacroStack
-  lastPlay <- getsSession slastPlay
-  let (smacroStack, slastPlay) = macroHumanTransition ys brevMap macros lastPlay
-  modifySession $ \sess -> sess {slastPlay, smacroStack}
+  modifySession $ \sess ->
+    sess { sactionPending = macroHumanTransition ys (sactionPending sess) }
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
 
-macroHumanTransition :: [String] -> M.Map HumanCmd.HumanCmd [K.KM]
-                     -> MacroStack -> KeyMacro
-                     -> (MacroStack, KeyMacro)
-macroHumanTransition ys brevMap macros lastPlay =
+macroHumanTransition :: [String] -> [ActionBuffer] -> [ActionBuffer]
+macroHumanTransition ys abuffs =
   let kms = K.mkKM <$> ys
-      mKeyRecord = case M.lookup HumanCmd.Record brevMap of
-        Nothing -> Nothing
-        Just (k : _) -> Just k
-        Just [] -> error $ "" `showFailure` brevMap
-      hasRecord = any (\km -> Just km == mKeyRecord) kms
-      slastPlay = KeyMacro kms <> lastPlay
-      smacroStack = if hasRecord
-                    -- Push new temporary macro buffer, if macro
-                    -- records a macro by itself.
-                    then case macros of
-                      Right _ : (Left _ : _) ->
-                        Right mempty : tail macros
-                      -- Recycle a previous buffer; this way we don't
-                      -- stack multiple Right buffers.
-                      _ -> Right mempty : macros
-                    else macros
-  in (smacroStack, slastPlay)
+      newBuffer = ActionBuffer { slastPlay = KeyMacro kms
+                               , smacroBuffer = Right mempty
+                               , slastAction = Nothing }
+      -- Push empty buffer whenever repeating a macro.
+  in newBuffer : abuffs
 
 -- * ChooseItem
 
@@ -722,66 +704,53 @@ selectWithPointerHuman = do
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n =
-  modifySession $ \sess ->
-    sess {slastPlay =
-            repeatHumanTransition n (smacroStack sess) (slastPlay sess)}
+repeatHuman n = modifySession $ \sess ->
+  sess { sactionPending = repeatHumanTransition n (sactionPending sess) }
 
-repeatHumanTransition :: Int -> MacroStack -> KeyMacro -> KeyMacro
-repeatHumanTransition n macros lastPlay =
-  let nmacro k | k == 1 = unKeyMacro . fromRight mempty . head $ macros
+repeatHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
+repeatHumanTransition _ [] = error "no macro buffer to repeat from"
+repeatHumanTransition n (abuff : abuffs) =
+  let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ smacroBuffer abuff
                -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
-  in KeyMacro (nmacro n) <> lastPlay
+  in abuff { slastPlay = KeyMacro (nmacro n) <> slastPlay abuff } : abuffs
 
 -- * RepeatLast
 
 -- | Repeats last user's action.
 repeatLastHuman :: MonadClientUI m => Int -> m ()
-repeatLastHuman n = do
-  lastAct <- getsSession slastAction
-  let cmd = KeyMacro . concat . replicate n . maybeToList $ lastAct
-  modifySession $ \sess -> sess {slastPlay = cmd <> slastPlay sess}
+repeatLastHuman n = modifySession $ \sess ->
+  sess { sactionPending = repeatLastHumanTransition n (sactionPending sess) }
+
+repeatLastHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
+repeatLastHumanTransition _ [] =
+  error "repeat last action failed from empty buffer"
+repeatLastHumanTransition n (abuff : abuffs) =
+  let cmd = KeyMacro . concat . replicate n . maybeToList $ slastAction abuff
+   in abuff { slastPlay = cmd <> slastPlay abuff } : abuffs
 
 -- * Record
 
--- | Starts and stops recording of macros. All the macros are placed in a stack
--- of Either macro buffers, since macros can be nested. Bottom of stack
--- is reserved for the user's in-game macro buffer, so the stack is never empty.
--- We record keystrokes in the topmost Left macro buffer. At any time there's
--- at most one Right macro buffer, i.e. a buffer that's not available to record
--- to, but ready to be repeated from the macro bellow it.
+-- | Starts and stops recording of macros.
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  macros <- getsSession smacroStack
-  let (macrosNew, t) = recordHumanTransition macros
-  modifySession $ \sess -> sess { smacroStack = macrosNew }
+  abuffs <- getsSession sactionPending
+  let (macrosNew, t) = recordHumanTransition abuffs
+  modifySession $ \sess -> sess { sactionPending = macrosNew }
   unless (T.null t) $ promptAdd0 t
 
-recordHumanTransition :: MacroStack -> (MacroStack, Text)
-recordHumanTransition macros =
-  case macros of
-    [Right _] ->
-      -- Start recording in-game macro.
-      ([Left []], "Recording a macro. Stop recording with the same key.")
-    [Left xs] ->
-      -- Stop recording in-game macro.
-      ([Right . KeyMacro . reverse $ xs], "Macro recording stopped.")
-    Right (KeyMacro []) : xs ->
-      -- Start recording a macro in new temporary buffer.
-      (Left [] : xs, "")
-    Right _ : ((Left xs) : ys) ->
-      -- If there's already macro on top of the stack, end recording previous
-      -- macro.
-      ((Right . KeyMacro . reverse $ xs) : ys, "")
-    Right _ : xs ->
-      -- If theres non-empty Right buffer on top of the stack and theres no Left
-      -- macro next to it, clear it and start recording keystrokes there.
-      (Left [] : xs, "")
-    Left xs : ys ->
-      -- Stop recording a macro in temporary buffer.
-      ((Right . KeyMacro . reverse $ xs) : ys, "")
-    _ -> error "recordHumanTransition: no in-game macro buffer"
+recordHumanTransition :: [ActionBuffer] -> ([ActionBuffer], Text)
+recordHumanTransition [] = error "no macro buffer to record to"
+recordHumanTransition (abuff : abuffs) =
+  let (buffer, msg)= case smacroBuffer abuff of
+        Right _ ->
+          -- Start recording in-game macro.
+          (Left [], "Recording a macro. Stop recording with the same key.")
+        Left xs ->
+          -- Stop recording in-game macro.
+          (Right . KeyMacro . reverse $ xs, "Macro recording stopped.")
+      newBuffer = abuff { smacroBuffer = buffer }
+   in (newBuffer : abuffs, msg)
 
 -- * AllHistory
 
