@@ -149,33 +149,39 @@ createCaveItem pos lid = do
   Level{lkind} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
-  void $ rollAndRegisterItem True lid litemFreq container Nothing
+  mIidEtc <-  rollAndRegisterItem True lid litemFreq container Nothing
+  createKitItems lid pos mIidEtc
 
 createEmbedItem :: MonadServerAtomic m
                 => LevelId -> Point -> GroupName ItemKind -> m ()
 createEmbedItem lid pos grp = do
-  cops <- getsState scops
-  lvl <- getLevel lid
-  let container0 = CEmbed lid pos
-  mIidEtc0 <- rollAndRegisterItem True lid [(grp, 1)] container0 Nothing
-  case mIidEtc0 of
-    Nothing -> error $ "" `showFailure` (lid, pos, grp)
-    Just (_, (itemFull0, _)) -> do
-      -- Create, register and insert all initial companion items.
-      forM_ (IK.ikit $ itemKind itemFull0) $ \(ikGrp, cstore) -> do
-        let nearbyPassable = take 50 $ nearbyPassablePoints cops lvl pos
-            walkable p = Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
-            good p = walkable p && p `EM.notMember` lfloor lvl
-            posFree = case filter good nearbyPassable of
-              [] -> case filter walkable nearbyPassable of
-                [] -> pos
-                p : _ -> p
-              p : _ -> p
-            container = if cstore == CGround
-                        then CFloor lid posFree
-                        else CEmbed lid pos
-            itemFreq = [(ikGrp, 1)]
-        void $ rollAndRegisterItem False lid itemFreq container Nothing
+  let container = CEmbed lid pos
+  mIidEtc <- rollAndRegisterItem True lid [(grp, 1)] container Nothing
+  createKitItems lid pos mIidEtc
+
+-- Create, register and insert all initial kit items.
+createKitItems :: MonadServerAtomic m
+               => LevelId -> Point -> Maybe (ItemId, ItemFullKit) -> m ()
+createKitItems lid pos mIidEtc = case mIidEtc of
+  Nothing -> error $ "" `showFailure` (lid, pos, mIidEtc)
+  Just (_, (itemFull, _)) -> do
+    cops <- getsState scops
+    lvl <- getLevel lid
+    let ikit = IK.ikit $ itemKind itemFull
+        nearbyPassable = take (20 + length ikit)
+                         $ nearbyPassablePoints cops lvl pos
+        walkable p = Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
+        good p = walkable p && p `EM.notMember` lfloor lvl
+        kitPos = zip ikit $ filter good nearbyPassable
+                            ++ filter walkable nearbyPassable
+                            ++ repeat pos
+    forM_ kitPos $ \((ikGrp, cstore), p) -> do
+      let container = if cstore == CGround
+                      then CFloor lid p
+                      else CEmbed lid pos
+          itemFreq = [(ikGrp, 1)]
+      mresult <- rollAndRegisterItem False lid itemFreq container Nothing
+      assert (isJust mresult) $ return ()
 
 -- Tiles already placed, so it's possible to scatter companion items
 -- over walkable tiles.
