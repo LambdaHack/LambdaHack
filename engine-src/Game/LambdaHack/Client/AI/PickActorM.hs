@@ -178,7 +178,14 @@ pickActorToMove maidToAvoid = do
           actorMeleeing ((aid, _), _) = getsState $ anyFoeAdj aid
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       let (oursFled, oursNotFled) = partition actorFled oursSafe
-      (oursMeleeing, oursNotMeleeing) <- partitionM actorMeleeing oursNotFled
+      (oursMeleeing, oursNotMeleeingRaw) <- partitionM actorMeleeing oursNotFled
+      let adjEnemyStash
+            ( (_, b)
+            , TgtAndPath{tapTgt=TPoint (TStash _) lid pos} ) =
+                lid == blid b && adjacent pos (bpos b)
+          adjEnemyStash _ = False
+          (oursAdjStash, oursNotMeleeing) =
+            partition adjEnemyStash oursNotMeleeingRaw
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorMaxSkills aid body
@@ -187,6 +194,10 @@ pickActorToMove maidToAvoid = do
             ( (_, b)
             , TgtAndPath{tapTgt=TPoint (TEnemyPos _) lid _} ) =
               lid == blid b
+          targetTEnemy
+            ( (_, b)
+            , TgtAndPath{tapTgt=TPoint (TStash _) lid _} ) =
+              lid == blid b  -- stashes as crucial as enemies
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
             threatDistL <- getsState $ meleeThreatDistList aid
@@ -270,7 +281,8 @@ pickActorToMove maidToAvoid = do
           positiveOverhead sk =
             let ov = 200 - overheadOurs sk
             in if ov <= 0 then 1 else ov
-          candidates = [ oursVulnerable
+          candidates = [ oursAdjStash
+                       , oursVulnerable
                        , oursSupport
                        , oursNoSupport
                        , oursPos
