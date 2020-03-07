@@ -1,11 +1,11 @@
 -- | Server operations for items.
 module Game.LambdaHack.Server.ItemM
-  ( registerItem, moveStashIfNeeded, randomResetTimeout, embedItem
+  ( registerItem, moveStashIfNeeded, randomResetTimeout, embedItemOnPos
   , prepareItemKind, rollItemAspect, rollAndRegisterItem
   , placeItemsInDungeon, embedItemsInDungeon, mapActorCStore_
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , onlyRegisterItem, computeRndTimeout, createLevelItem
+  , onlyRegisterItem, computeRndTimeout, createCaveItem, createEmbedItem
 #endif
   ) where
 
@@ -143,22 +143,48 @@ computeRndTimeout localTime ItemFull{itemDisco=ItemDiscoFull itemAspect} = do
   else return Nothing
 computeRndTimeout _ _ = error "computeRndTimeout: server ignorant about an item"
 
-createLevelItem :: MonadServerAtomic m => Point -> LevelId -> m ()
-createLevelItem pos lid = do
+createCaveItem :: MonadServerAtomic m => Point -> LevelId -> m ()
+createCaveItem pos lid = do
   COps{cocave} <- getsState scops
   Level{lkind} <- getLevel lid
   let container = CFloor lid pos
       litemFreq = citemFreq $ okind cocave lkind
   void $ rollAndRegisterItem True lid litemFreq container Nothing
 
-embedItem :: MonadServerAtomic m
-          => LevelId -> Point -> ContentId TileKind -> m ()
-embedItem lid pos tk = do
+createEmbedItem :: MonadServerAtomic m
+                => LevelId -> Point -> GroupName ItemKind -> m ()
+createEmbedItem lid pos grp = do
+  cops <- getsState scops
+  lvl <- getLevel lid
+  let container0 = CEmbed lid pos
+  mIidEtc0 <- rollAndRegisterItem True lid [(grp, 1)] container0 Nothing
+  case mIidEtc0 of
+    Nothing -> error $ "" `showFailure` (lid, pos, grp)
+    Just (_, (itemFull0, _)) -> do
+      -- Create, register and insert all initial companion items.
+      forM_ (IK.ikit $ itemKind itemFull0) $ \(ikGrp, cstore) -> do
+        let nearbyPassable = take 50 $ nearbyPassablePoints cops lvl pos
+            walkable p = Tile.isWalkable (coTileSpeedup cops) (lvl `at` p)
+            good p = walkable p && p `EM.notMember` lfloor lvl
+            posFree = case filter good nearbyPassable of
+              [] -> case filter walkable nearbyPassable of
+                [] -> pos
+                p : _ -> p
+              p : _ -> p
+            container = if cstore == CGround
+                        then CFloor lid posFree
+                        else CEmbed lid pos
+            itemFreq = [(ikGrp, 1)]
+        void $ rollAndRegisterItem False lid itemFreq container Nothing
+
+-- Tiles already placed, so it's possible to scatter companion items
+-- over walkable tiles.
+embedItemOnPos :: MonadServerAtomic m
+               => LevelId -> Point -> ContentId TileKind -> m ()
+embedItemOnPos lid pos tk = do
   COps{cotile} <- getsState scops
-  let embeds = Tile.embeddedItems cotile tk
-      container = CEmbed lid pos
-      f grp = rollAndRegisterItem True lid [(grp, 1)] container Nothing
-  mapM_ f embeds
+  let embedGroups = Tile.embeddedItems cotile tk
+  mapM_ (createEmbedItem lid pos) embedGroups
 
 prepareItemKind :: MonadServerAtomic m
                 => Int -> LevelId -> Freqs ItemKind
@@ -204,6 +230,7 @@ rollAndRegisterItem verbose lid itemFreq container mk = do
       iid <- registerItem verbose (itemFull, kit2) itemKnown container
       return $ Just (iid, (itemFull, kit2))
 
+-- Tiles already placed, so it's possible to scatter over walkable tiles.
 placeItemsInDungeon :: forall m. MonadServerAtomic m
                     => EM.EnumMap LevelId [Point] -> m ()
 placeItemsInDungeon alliancePositions = do
@@ -231,7 +258,7 @@ placeItemsInDungeon alliancePositions = do
                 , distAllianceAndNotFloor ]
               case mpos of
                 Just pos -> do
-                  createLevelItem pos lid
+                  createCaveItem pos lid
                   placeItems (n + 1)
                 Nothing -> debugPossiblyPrint
                   "Server: placeItemsInDungeon: failed to find positions"
@@ -243,15 +270,18 @@ placeItemsInDungeon alliancePositions = do
       fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
   mapM_ initialItems fromEasyToHard
 
+-- Tiles already placed, so it's possible to scatter companion items
+-- over walkable tiles.
 embedItemsInDungeon :: MonadServerAtomic m => m ()
 embedItemsInDungeon = do
-  let embedItems (lid, Level{ltile}) = PointArray.imapMA_ (embedItem lid) ltile
+  let embedItemsOnLevel (lid, Level{ltile}) =
+        PointArray.imapMA_ (embedItemOnPos lid) ltile
   dungeon <- getsState sdungeon
   -- Make sure items on easy levels are generated first, to avoid all
   -- artifacts on deep levels.
   let absLid = abs . fromEnum
       fromEasyToHard = sortBy (comparing absLid `on` fst) $ EM.assocs dungeon
-  mapM_ embedItems fromEasyToHard
+  mapM_ embedItemsOnLevel fromEasyToHard
 
 -- | Mapping over actor's items from a give store.
 mapActorCStore_ :: MonadServer m

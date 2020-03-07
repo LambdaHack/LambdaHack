@@ -12,13 +12,13 @@ module Game.LambdaHack.Common.Level
     -- * Level query
   , at
   , posToBigLvl, occupiedBigLvl, posToProjsLvl, occupiedProjLvl, posToAidsLvl
-  , findPosTry, findPosTry2, nearbyFreePoints
+  , findPosTry, findPosTry2, nearbyPassablePoints, nearbyFreePoints
     -- * Misc
   , sortEmbeds
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , EntryMap
-  , nearbyPassablePoints, assertSparseItems, assertSparseProjectiles
+  , assertSparseItems, assertSparseProjectiles
 #endif
   ) where
 

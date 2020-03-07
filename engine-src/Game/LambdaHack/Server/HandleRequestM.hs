@@ -773,7 +773,7 @@ reqAlterFail effToUse voluntary source tpos = do
                 Nothing -> return ()
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
-              embedItem lid tpos toTile
+              embedItemOnPos lid tpos toTile
           tryChangeWith :: ( [(Int, GroupName IK.ItemKind)]
                            , (GroupName TK.TileKind) )
                         -> [((CStore, Bool), (ItemId, ItemFullKit))]

@@ -574,9 +574,9 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   -- Create, register and insert all initial actor items, including
   -- the bonus health organs from difficulty setting.
   forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
-        $ \(mk, (ikText, cstore)) -> do
+        $ \(mk, (ikGrp, cstore)) -> do
     let container = CActor aid cstore
-        itemFreq = [(ikText, 1)]
+        itemFreq = [(ikGrp, 1)]
     mIidEtc <- rollAndRegisterItem False lid itemFreq container mk
     case mIidEtc of
       Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
