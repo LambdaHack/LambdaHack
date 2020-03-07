@@ -253,7 +253,7 @@ computeTarget aid = do
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
-        cstashes <- closestStashes factionD aid
+        cstashes <- closestStashes aid
         case cstashes of
           (_, (fid2, pos2)) : _ -> setPath $ TPoint (TStash fid2) (blid b) pos2
           [] -> do
@@ -394,6 +394,7 @@ computeTarget aid = do
         TPoint tgoal lid pos -> case tgoal of
           TStash fid2 -> assert (fid2 /= bfid b) $
             if gstash (factionD EM.! fid2) == Just (lid, pos)
+                 -- even if made peace with the faction, loot the stash once
             then return $ Just tap
             else pickNewTarget
           -- In this case, need to retarget, to focus on foes that melee ours

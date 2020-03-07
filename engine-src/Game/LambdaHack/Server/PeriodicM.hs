@@ -338,7 +338,7 @@ leadLevelSwitch = do
                                  k = 1000000 `div` (1 + len) ]
                 closeToFactStash (fid2, fact2) = case gstash fact2 of
                   Just (lid, pos) ->
-                    fid2 /= bfid body
+                    isFoe fid (factionD EM.! fid) fid2
                     && lid == blid body
                     && chessDist pos (bpos body) <= 1  -- visible
                   Nothing -> False

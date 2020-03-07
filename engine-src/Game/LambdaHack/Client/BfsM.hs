@@ -508,14 +508,16 @@ closestFoes foes aid =
       return $! sortBy (comparing fst) ds
 
 -- | Closest (wrt paths) enemy stash locations.
-closestStashes :: MonadClient m
-               => FactionDict -> ActorId -> m [(Int, (FactionId, Point))]
-closestStashes factionD aid = do
+closestStashes :: MonadClient m => ActorId -> m [(Int, (FactionId, Point))]
+closestStashes aid = do
+  factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
   let qualifyStash (fid, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
-          if fid == bfid b || lid /= blid b then Nothing else Just (fid, pos)
+          if lid == blid b && isFoe (bfid b) (factionD EM.! bfid b) fid
+          then Just (fid, pos)
+          else Nothing
   case mapMaybe qualifyStash $ EM.assocs factionD of
     [] -> return []
     stashes -> do
