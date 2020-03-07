@@ -444,10 +444,9 @@ moveSearchAlter run dir = do
   let moveSkill = Ability.getSk Ability.SkMove actorSk
       spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
-  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  alterable <- getsState $ tileAlterable (blid sb) tpos
   lvl <- getLevel $ blid sb
   let t = lvl `at` tpos
-      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
   runStopOrCmd <-
     if -- Movement requires full access.
        | Tile.isWalkable coTileSpeedup t ->
@@ -476,15 +475,16 @@ alterCommon bumping tpos = do
   sb <- getsState $ getActorBody leader
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       spos = bpos sb
-  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  alterable <- getsState $ tileAlterable (blid sb) tpos
   lvl <- getLevel $ blid sb
   let t = lvl `at` tpos
-      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
       underFeet = tpos == spos  -- if enter and alter, be more permissive
   if | not alterable -> do
          let name = MU.Text $ TK.tname $ okind cotile t
          failWith $ makePhrase ["there is no point kicking", MU.AW name]
-           -- misclick? related to AlterNothing but no searching possible
+           -- misclick? related to AlterNothing but no searching possible;
+           -- this also rules out activating embeds that only cause
+           -- raw damage, with no chance of altering the tile
      | Tile.isSuspect coTileSpeedup t
        && not underFeet
        && alterSkill <= 1 -> failSer AlterUnskilled
@@ -1105,17 +1105,16 @@ closeDirHuman = do
 closeTileAtPos :: MonadClientUI m
                => Point -> m (FailOrCmd RequestTimed)
 closeTileAtPos tpos = do
-  COps{cotile, coTileSpeedup} <- getsState scops
+  COps{cotile} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
-  embeds <- getsState $ getEmbedBag (blid b) tpos
+  alterable <- getsState $ tileAlterable (blid b) tpos
   lvl <- getLevel $ blid b
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       t = lvl `at` tpos
       isOpen = Tile.isClosable cotile t
       isClosed = Tile.isOpenable cotile t
-      alterable = Tile.isModifiable coTileSpeedup t || not (EM.null embeds)
   case (alterable, isClosed, isOpen) of
     (False, _, _) -> failSer CloseNothing
     (True, False, False) -> failSer CloseNonClosable

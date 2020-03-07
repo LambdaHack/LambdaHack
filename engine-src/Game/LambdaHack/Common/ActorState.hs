@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.ActorState
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
-  , lidFromC, posFromC, anyFoeAdj, anyHarmfulFoeAdj
+  , tileAlterable, lidFromC, posFromC, anyFoeAdj, anyHarmfulFoeAdj
   , adjacentBigAssocs, adjacentProjAssocs, armorHurtBonus, inMelee
   ) where
 
@@ -408,6 +408,16 @@ getItemKindServer item s = okind (coitem $ scops s) $ getItemKindIdServer item s
 
 getIidKindServer :: ItemId -> State -> IK.ItemKind
 getIidKindServer iid s = getItemKindServer (getItemBody iid s) s
+
+tileAlterable :: LevelId -> Point -> State -> Bool
+tileAlterable lid pos s =
+  let COps{coTileSpeedup} = scops s
+      embeds = getEmbedBag lid pos s
+      lvl = sdungeon s EM.! lid
+      t = lvl `at` pos
+      triggerable = any (\iid -> not $ null $ IK.ieffects $ getIidKind iid s)
+                        (EM.keys embeds)
+  in Tile.isModifiable coTileSpeedup t || triggerable
 
 -- | Determine the dungeon level of the container. If the item is in a shared
 -- stash, the level depends on which actor asks.

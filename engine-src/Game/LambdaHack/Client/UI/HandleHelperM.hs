@@ -618,7 +618,10 @@ lookAtPosition lidV p = do
                              feats
       isEmbedAction Tile.EmbedAction{} = True
       isEmbedAction _ = False
-      embedVerb = ["exploited" | any isEmbedAction tileActions]
+      embedVerb = [ "exploited"
+                  | any isEmbedAction tileActions
+                    && any (\(itemKind, _) -> not $ null $ IK.ieffects itemKind)
+                           embedKindList ]
       isToAction Tile.ToAction{} = True
       isToAction _ = False
       isEmptyWithAction (Tile.WithAction [] _) = True
