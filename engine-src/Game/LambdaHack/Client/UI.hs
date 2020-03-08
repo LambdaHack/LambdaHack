@@ -168,8 +168,8 @@ humanCommand = do
                          else 0
                      , sactionPending = case cmd of
                          (HumanCmd.RepeatLast _) -> sactionPending sess
-                         -- We can repeat every last action except 'repeat last
-                         -- action' action, so here we ommit that one.
+                         -- Don't save repeating last action key as the last
+                         -- key handled.
                          _ ->
                            let oldBuffer = head (sactionPending sess)
                                newBuffer = oldBuffer { slastAction = Just km }
