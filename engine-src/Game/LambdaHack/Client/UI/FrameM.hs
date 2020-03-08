@@ -180,19 +180,15 @@ addToMacro :: M.Map HumanCmd.HumanCmd [K.KM] -> K.KM -> [ActionBuffer]
            -> [ActionBuffer]
 addToMacro _ _ [] = error "cannot add macro to empty action stack"
 addToMacro brevMap km (abuff : abuffs) =
-  let mKeyRecord = case M.lookup HumanCmd.Record brevMap of
-        Nothing -> Nothing
-        Just (k : _) -> Just k
-        Just [] -> error $ "" `showFailure` brevMap
-      newBuffer = abuff
-        { smacroBuffer = if Just km == mKeyRecord
-                         then smacroBuffer abuff
-                           -- Exclude from in-game macros keystrokes that
-                           -- start/stop recording a macro.
-                         else (km :) `B.first` smacroBuffer abuff
-                           -- This is noop when not recording a macro,
-                           -- which is exactly the required semantics.
-        }
+  let newBuffer = case M.lookup HumanCmd.Record brevMap of
+        Just [] -> error $ "record key not bound" `showFailure` brevMap
+        Just kms | not (km `elem` kms) ->
+          -- Exclude from in-game macros keystrokes that
+          -- start/stop recording a macro.
+          abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
+          -- This is noop when not recording a macro,
+          -- which is exactly the required semantics.
+        _ -> abuff
    in (newBuffer : abuffs)
 
 stopPlayBack :: MonadClientUI m => m ()
@@ -203,7 +199,7 @@ resetPlayBack = do
   abuffs <- getsSession sactionPending
   let abuff = last abuffs
   modifySession $ \sess ->
-    sess { sactionPending = [ abuff{ slastPlay = mempty } ] }
+    sess { sactionPending = [ abuff {slastPlay = mempty} ] }
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
