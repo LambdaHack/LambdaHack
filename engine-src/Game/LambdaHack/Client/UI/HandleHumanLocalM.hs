@@ -742,7 +742,7 @@ recordHuman = do
 recordHumanTransition :: [ActionBuffer] -> ([ActionBuffer], Text)
 recordHumanTransition [] = error "no macro buffer to record to"
 recordHumanTransition (abuff : abuffs) =
-  let (buffer, msg)= case smacroBuffer abuff of
+  let (buffer, msg) = case smacroBuffer abuff of
         Right _ ->
           -- Start recording in-game macro.
           (Left [], "Recording a macro. Stop recording with the same key.")
