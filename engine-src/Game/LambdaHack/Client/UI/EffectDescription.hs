@@ -91,7 +91,8 @@ effectToSuffix detailLevel effect =
     CreateItem _ COrgan grp tim ->
       let stime = if isTimerNone tim then "" else "for" <+> tshow tim <> ":"
       in "(keep" <+> stime <+> fromGroupName grp <> ")"
-    CreateItem{} -> "of gain"  -- too much noise from crafting; see @SeqEffect@
+    CreateItem _ _ grp _ ->
+      makePhrase ["of gain", MU.AW $ MU.Text $ fromGroupName grp]
     DestroyItem{} -> "of loss"
     ConsumeItems{} -> "of consumption from the ground"
       -- too much noise from crafting
