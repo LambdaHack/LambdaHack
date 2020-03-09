@@ -76,11 +76,11 @@ pattern S_FRAGRANCE = GroupName "fragrance"
 
 pattern CURIOUS_ITEM = GroupName "curious item"
 pattern TREASURE = GroupName "treasure"
-pattern ANY_SCROLL = GroupName "any scroll"
-pattern ANY_GLASS = GroupName "any glass"
-pattern ANY_POTION = GroupName "any potion"
+pattern ANY_SCROLL = GroupName "scroll"
+pattern ANY_GLASS = GroupName "glass"
+pattern ANY_POTION = GroupName "potion"
 pattern EXPLOSIVE = GroupName "explosive"
-pattern ANY_JEWELRY = GroupName "any jewelry"
+pattern ANY_JEWELRY = GroupName "jewelry"
 
 -- * Used elsewhere
 

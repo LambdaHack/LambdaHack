@@ -92,7 +92,7 @@ blastNoStatOf grp = GroupName $ fromGroupName grp <+> "mist"
 blastBonusStatOf :: GroupName ItemKind -> GroupName ItemKind
 blastBonusStatOf grp = GroupName $ fromGroupName grp <+> "dew"
 
-pattern ARMOR_MISC = GroupName "armor misc"
+pattern ARMOR_MISC = GroupName "miscellaneous armor"
 
 -- * Content
 

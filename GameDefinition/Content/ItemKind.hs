@@ -58,7 +58,7 @@ pattern EDIBLE_PLANT = GroupName "edible plant"
 pattern RING_OF_OPPORTUNITY_GRENADIER =
   GroupName "ring of opportunity grenadier"
 pattern TORSO_ARMOR = GroupName "torso armor"
-pattern CLOTHING_MISC = GroupName "clothing misc"
+pattern CLOTHING_MISC = GroupName "miscellaneous clothing"
 pattern CHIC_GEAR = GroupName "chic gear"
 
 -- * Content
