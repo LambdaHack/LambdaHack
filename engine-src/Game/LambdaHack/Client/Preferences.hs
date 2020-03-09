@@ -69,11 +69,21 @@ effectToBenefit cops fid factionD eff =
         -- because if the actor survives, he may deal damage many times;
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach
-    IK.RefillCalm p -> delta $ if p > 0
-                               then min 100 (fromIntegral p)
-                               else max (-500) (5 * fromIntegral p)
-                         -- this may cause ice to be attractive to AI,
-                         -- but it doesn't trigger it due to no @ConsideredByAI@
+    IK.RefillCalm p ->
+      ( if p > 0
+        then min 100 (fromIntegral p)
+          -- this may cause ice to be attractive to AI,
+          -- but it doesn't trigger it due to no @ConsideredByAI@
+        else if p >= -5
+             then max (-100) (fromIntegral p)
+             else max (-1500) (15 * fromIntegral p)
+          -- big Calm drains are incredibly dangerous, so don't be stupid
+          -- and don't self-inflict them, particularly if you are an intelligent
+          -- high-HP actor, which is likely if you collect and apply items
+      , if p > 0
+        then min 100 (fromIntegral p)
+        else max (-500) (5 * fromIntegral p) )
+          -- quite a powerful weapon, especially against high-HP foes
     IK.Dominate -> (0, -100)  -- I obtained an actor with, say 10HP,
                               -- worth 200, and enemy lost him, another 100;
                               -- divided by 3, because impression needed first
