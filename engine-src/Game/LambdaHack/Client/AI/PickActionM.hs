@@ -817,11 +817,11 @@ applyItem aid applyGroup = do
   getKind <- getsState $ flip getIidKind
   let (myBadGrps, myGoodGrps) = partitionEithers $ mapMaybe (\iid ->
         let itemKind = getKind iid
-        in if isJust $ lookup IK.CONDITION $ IK.ifreq itemKind
+        in if maybe False (> 0) $ lookup IK.CONDITION $ IK.ifreq itemKind
            then Just $ if benInEqp (discoBenefit EM.! iid)
-                       then Left $ GroupName $ IK.iname itemKind
+                       then Right $ GroupName $ IK.iname itemKind
                          -- conveniently, @iname@ matches @ifreq@
-                       else Right $ GroupName $ IK.iname itemKind
+                       else Left $ GroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
