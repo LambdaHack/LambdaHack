@@ -1734,6 +1734,13 @@ strike catch source target iid = assert (source /= target) $ do
         unBurn _ = Nothing
         unRefillHP (IK.RefillHP n) | n < 0 = Just (-n)
         unRefillHP _ = Nothing
+        kineticDmg =
+          let dmg = Dice.supDice $ IK.idamage $ itemKind itemFullWeapon
+              rawDeltaHP = fromIntegral sHurt * xM dmg `divUp` 100
+          in case btrajectory sb of
+            Just (_, speed) | bproj sb ->
+              - modifyDamageBySpeed rawDeltaHP speed
+            _ -> - rawDeltaHP
         burnDmg = sum $ map Dice.supDice
                   $ mapMaybe unBurn $ IK.ieffects $ itemKind itemFullWeapon
         hpDmg = sum
@@ -1742,14 +1749,7 @@ strike catch source target iid = assert (source /= target) $ do
         -- damage potential as compared to victim's current HP.
         -- We are not taking into account victim's armor yet.
         sHurt = armorHurtCalculation (bproj sb) sMaxSk Ability.zeroSkills
-        sDamage =
-          let dmg = Dice.supDice $ IK.idamage $ itemKind itemFullWeapon
-              rawDeltaHP = fromIntegral sHurt * xM dmg `divUp` 100
-              speedDeltaHP = case btrajectory sb of
-                Just (_, speed) | bproj sb ->
-                  - modifyDamageBySpeed rawDeltaHP speed
-                _ -> - rawDeltaHP
-          in min 0 $ speedDeltaHP - xM (burnDmg + hpDmg)
+        sDamage = min 0 $ kineticDmg - xM (burnDmg + hpDmg)
         deadliness = 1000 * (- sDamage) `div` max 1 (bhp tb)
         strongly
           | deadliness >= 10000 = "artfully"
@@ -1814,11 +1814,11 @@ strike catch source target iid = assert (source /= target) $ do
                         -- ensures if attack msg terse, armor message
                         -- mentions object, so we know who is hit
                       && hurtMult > 90
+                        -- at most minor armor relatively to skill of the hit
                       && (null condArmor || deadliness < 100)
                       || null blockWithWhat
-                   then ""  -- at most minor armor, relatively to skill
-                            -- of the hit, so we don't talk about blocking,
-                            -- unless a condition is at play, too
+                      || kineticDmg >= -1000  -- -1/1000 HP
+                   then ""
                    else yetButAnd
                         <+> makePhrase ([blockPhrase, blockHowWell]
                                         ++ blockWithWhat)
@@ -1870,9 +1870,9 @@ strike catch source target iid = assert (source /= target) $ do
            makeSentence [MU.SubjectVerbSg spart "intercept", tpart]
          -- Basic non-bloody animation regardless of stats.
          animate (blid tb) $ blockHit ps Color.BrBlue Color.Blue
-       | IK.idamage (itemKind itemFullWeapon) == 0
+       | kineticDmg >= -1000  -- -1/1000 HP
          -- We ignore nested effects, because they are, in general, avoidable.
-         && burnDmg <= 0 && hpDmg <= 0 -> do
+         && burnDmg >= 0 && hpDmg >= 0 -> do
          let adverb | itemSuspect itemFullWeapon = "tentatively"
                     | bproj sb = "lightly"
                     | otherwise = "delicately"
