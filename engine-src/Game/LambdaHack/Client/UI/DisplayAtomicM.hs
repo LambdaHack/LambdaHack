@@ -1036,11 +1036,11 @@ quitFactionUI fid toSt manalytics = do
           Just (factionAn, generationAn) ->
             cycleLore []
               [ displayGameOverLoot (itemBag, total) generationAn
-              , displayGameOverAnalytics factionAn generationAn
-              , displayGameOverLore SEmbed True generationAn
               , displayGameOverLore SOrgan True generationAn
+              , displayGameOverAnalytics factionAn generationAn
               , displayGameOverLore SCondition sexposeItems generationAn
-              , displayGameOverLore SBlast True generationAn ]
+              , displayGameOverLore SBlast True generationAn
+              , displayGameOverLore SEmbed True generationAn ]
       unless isNoConfirms $ do
         -- Show score for any UI client after any kind of game exit,
         -- even though it's saved only for human UI clients at game over
