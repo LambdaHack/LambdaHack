@@ -124,40 +124,43 @@ unwindMacros IC.InputContent{bcmdMap, brevMap} startMacro =
       transitionMacros k out abuffs@(abuff : _) =
         storeTrace abuffs out : case slastPlay abuff of
         KeyMacro [] -> []
-        KeyMacro (km : kms) ->
-          let abuffs0 = addToMacro brevMap km abuffs
+        KeyMacro (km : kms) -> case km `M.lookup` bcmdMap of
+          Nothing -> error "unwindMacros: not a command"
+          Just (_, _, cmd) ->
+            let abuffs0 = addToMacro brevMap km abuffs
 
-              abuffs1 = case M.lookup km bcmdMap of
-                Just (_, _, HumanCmd.RepeatLast _) -> abuffs0
-                _ -> let oldBuffer = head abuffs0
-                         newBuffer = oldBuffer { slastAction = Just km }
-                      in newBuffer : tail abuffs0
+                abuffs1 = case cmd of
+                  HumanCmd.RepeatLast{} -> abuffs0
+                  _ -> let oldBuffer = head abuffs0
+                           newBuffer = oldBuffer { slastAction = Just km }
+                       in newBuffer : tail abuffs0
 
-              abuffs2 =
-                let abuff1 = head abuffs1
-                in abuff1 { slastPlay = KeyMacro kms } : tail abuffs1
+                abuffs2 =
+                  let abuff1 = head abuffs1
+                  in abuff1 { slastPlay = KeyMacro kms } : tail abuffs1
 
-              (abuffs3, out') = case M.lookup km bcmdMap of
-                Just (_, _, HumanCmd.Record) ->
-                  (fst $ recordHumanTransition abuffs2, out)
-                Just (_, _, HumanCmd.Macro ys) ->
-                  (macroHumanTransition ys abuffs2, out)
-                Just (_, _, HumanCmd.Repeat n) ->
-                  (repeatHumanTransition n abuffs2, out)
-                Just (_, _, HumanCmd.RepeatLast n) ->
-                  (repeatLastHumanTransition n abuffs2, out)
-                _ -> (abuffs2, out ++ [km])
+                (abuffs3, out') = case cmd of
+                  HumanCmd.Record ->
+                    (fst $ recordHumanTransition abuffs2, out)
+                  HumanCmd.Macro ys ->
+                    (macroHumanTransition ys abuffs2, out)
+                  HumanCmd.Repeat n ->
+                    (repeatHumanTransition n abuffs2, out)
+                  HumanCmd.RepeatLast n ->
+                    (repeatLastHumanTransition n abuffs2, out)
+                  _ -> (abuffs2, out ++ [km])
 
-              abuffs4 = case abuffs3 of
-                ActionBuffer _ (KeyMacro acts) _ : as
-                  | not (null as) && null acts -> as
-                _ -> abuffs3
+                abuffs4 = case abuffs3 of
+                  ActionBuffer _ (KeyMacro acts) _ : as
+                    | not (null as) && null acts -> as
+                  _ -> abuffs3
 
-          in transitionMacros (k - 1) out' abuffs4
+            in transitionMacros (k - 1) out' abuffs4
 
       storeTrace :: [ActionBuffer] -> [K.KM] -> (BufferTrace, ActionLog)
       storeTrace abuffs out =
-        let tmacros = bimap (concatMap K.showKM) (concatMap K.showKM . unKeyMacro)
+        let tmacros = bimap (concatMap K.showKM)
+                            (concatMap K.showKM . unKeyMacro)
                     . smacroBuffer <$> abuffs
             tlastPlay = concatMap K.showKM . unKeyMacro . slastPlay <$> abuffs
             tlastAction = maybe "" K.showKM . slastAction <$> abuffs
