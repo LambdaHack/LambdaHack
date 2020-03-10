@@ -261,7 +261,10 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
 nearbyPassablePoints :: COps -> Level -> Point -> [Point]
 nearbyPassablePoints cops@COps{corule=RuleContent{rXmax, rYmax}} lvl start =
   let passable p = Tile.isEasyOpen (coTileSpeedup cops) (lvl `at` p)
-      passableVic p = filter passable $ vicinityBounded rXmax rYmax p
+      semiRandomWrap l = let offset = fromEnum start `mod` length l
+                         in drop offset l ++ take offset l
+      passableVic p = semiRandomWrap $ filter passable
+                      $ vicinityBounded rXmax rYmax p
       siftSingle :: Point
                  -> (ES.EnumSet Point, [Point])
                  -> (ES.EnumSet Point, [Point])
