@@ -142,12 +142,16 @@ moveItemTriple stores1 store2 object auto =
 
 repeatTriple :: Int -> CmdTriple
 repeatTriple n = ( [CmdMeta]
-                 , "voice recorded commands" <+> tshow n <+> "times"
+                 , if n == 1
+                   then "voice recorded macro again"
+                   else "voice recorded macro" <+> tshow n <+> "times"
                  , Repeat n )
 
 repeatLastTriple :: Int -> CmdTriple
 repeatLastTriple n = ( [CmdMeta]
-                     , "repeat last action" <+> tshow n <+> "times in a row"
+                     , if n == 1
+                       then "voice last action again"
+                       else "voice last action" <+> tshow n <+> "times in a row"
                      , RepeatLast n )
 
 -- @AimFloor@ is not there, but @AimEnemy@ and @AimItem@ almost make up for it.

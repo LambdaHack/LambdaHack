@@ -708,7 +708,7 @@ repeatHuman n = modifySession $ \sess ->
   sess { sactionPending = repeatHumanTransition n (sactionPending sess) }
 
 repeatHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
-repeatHumanTransition _ [] = error "no macro buffer to repeat from"
+repeatHumanTransition _ [] = error "repeatHumanTransition: empty stack"
 repeatHumanTransition n (abuff : abuffs) =
   let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ smacroBuffer abuff
                -- Don't repeat macro while recording one.
@@ -723,8 +723,7 @@ repeatLastHuman n = modifySession $ \sess ->
   sess { sactionPending = repeatLastHumanTransition n (sactionPending sess) }
 
 repeatLastHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
-repeatLastHumanTransition _ [] =
-  error "repeat last action failed from empty buffer"
+repeatLastHumanTransition _ [] = error "repeatLastHumanTransition: empty stack"
 repeatLastHumanTransition n (abuff : abuffs) =
   let cmd = KeyMacro . concat . replicate n . maybeToList $ slastAction abuff
    in abuff { slastPlay = cmd <> slastPlay abuff } : abuffs
@@ -740,7 +739,7 @@ recordHuman = do
   unless (T.null t) $ promptAdd0 t
 
 recordHumanTransition :: [ActionBuffer] -> ([ActionBuffer], Text)
-recordHumanTransition [] = error "no macro buffer to record to"
+recordHumanTransition [] = error "recordHumanTransition: empty stack"
 recordHumanTransition (abuff : abuffs) =
   let (buffer, msg) = case smacroBuffer abuff of
         Right _ ->
