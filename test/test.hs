@@ -1,7 +1,7 @@
 import Prelude ()
 
+import           Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
-import           Data.Bifunctor                 ( bimap )
 import           Options.Applicative
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -46,8 +46,8 @@ macroTests = testGroup "macroTests" $
              , [ (Right "j",    "",        "'") ]
              ]
      , testCase "Macro 1 from Issue#189 description" $
-         last (unwindMacros (bindInput [ ("a", "'bc'v")
-                                       , ("c", "'aaa'v") ] coinput)
+         last (unwindMacros (bindInput [ ("a", "'bc'V")
+                                       , ("c", "'aaa'V") ] coinput)
                  (stringToKeyMacro "a"))
          @?= macroLooped
      , testCase "Macro 2 from Issue#189 description" $
@@ -58,16 +58,16 @@ macroTests = testGroup "macroTests" $
          snd (last (unwindMacros coinput (stringToKeyMacro "'x''x'")))
          @?= "xx"
      , testCase "Macro 4 from Issue#189 description" $
-         snd (last (unwindMacros coinput (stringToKeyMacro "'x''x'v")))
+         snd (last (unwindMacros coinput (stringToKeyMacro "'x''x'V")))
          @?= "xxx"
      , testCase "Macro 5 from Issue#189 description" $
-         snd (last (unwindMacros coinput (stringToKeyMacro "x'x'v")))
+         snd (last (unwindMacros coinput (stringToKeyMacro "x'x'V")))
          @?= "xxx"
      , testCase "Macro test 10" $
-         snd (last (unwindMacros coinput (stringToKeyMacro "x'y'v")))
+         snd (last (unwindMacros coinput (stringToKeyMacro "x'y'V")))
          @?= "xyy"
      , testCase "Macro test 11" $
-         snd (last (unwindMacros coinput (stringToKeyMacro "'x''y'v")))
+         snd (last (unwindMacros coinput (stringToKeyMacro "'x''y'V")))
          @?= "xyy"
      , testCase "Macro test 12" $
          snd (last (unwindMacros coinput
@@ -83,27 +83,27 @@ macroTests = testGroup "macroTests" $
          @?= "xyxxxxxxxxxxxxxxxxxxxxxxxxx"
      , testCase "Macro test 15" $
          snd (last (unwindMacros (bindInput [("a", "x")] coinput)
-                                 (stringToKeyMacro "'a'v")))
+                                 (stringToKeyMacro "'a'V")))
          @?= "xx"
      , testCase "Macro test 16" $
          snd (last (unwindMacros (bindInput [("a", "'x'")] coinput)
-                                 (stringToKeyMacro "'a'v")))
+                                 (stringToKeyMacro "'a'V")))
          @?= "xx"
      , testCase "Macro test 17" $
-         snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
+         snd (last (unwindMacros (bindInput [("a", "'x'V")] coinput)
                                  (stringToKeyMacro "a")))
          @?= "xx"
      , testCase "Macro test 18" $
-         snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
+         snd (last (unwindMacros (bindInput [("a", "'x'V")] coinput)
                                  (stringToKeyMacro "'a'")))
          @?= "xx"
      , testCase "Macro test 19" $
-         snd (last (unwindMacros (bindInput [("a", "'x'v")] coinput)
-                                 (stringToKeyMacro "'a'v")))
+         snd (last (unwindMacros (bindInput [("a", "'x'V")] coinput)
+                                 (stringToKeyMacro "'a'V")))
          @?= "xxxx"
      , testCase "Macro test 20" $
-         snd (last (unwindMacros (bindInput [ ("a", "'bz'v")
-                                            , ("c", "'aaa'v") ] coinput)
+         snd (last (unwindMacros (bindInput [ ("a", "'bz'V")
+                                            , ("c", "'aaa'V") ] coinput)
                                  (stringToKeyMacro "c")))
          @?= "bzbzbzbzbzbzbzbzbzbzbzbz"
      ]

@@ -175,9 +175,9 @@ mouseLMB goToOrRunTo desc =
     , (CaLevelNumber, AimAscend 1)
     , (CaXhairDesc, AimEnemy)  -- inits aiming and then cycles enemies
     , (CaSelected, PickLeaderWithPointer)
---    , (CaCalmGauge, Macro ["KP_Begin", "A-V"])
+--    , (CaCalmGauge, Macro ["KP_Begin", "C-v"])
     , (CaCalmValue, Yell)
-    , (CaHPGauge, Macro ["KP_Begin", "A-V"])
+    , (CaHPGauge, Macro ["KP_Begin", "C-v"])
     , (CaHPValue, Wait)
     , (CaLeaderDesc, projectICmd flingTs) ]
 
@@ -207,24 +207,24 @@ mouseRMB = ( [CmdMouse]
     , (CaLevelNumber, AimAscend (-1))
     , (CaXhairDesc, AimItem)
     , (CaSelected, SelectWithPointer)
---    , (CaCalmGauge, Macro ["C-KP_Begin", "V"])
+--    , (CaCalmGauge, Macro ["C-KP_Begin", "A-v"])
     , (CaCalmValue, Yell)
-    , (CaHPGauge, Macro ["C-KP_Begin", "V"])
+    , (CaHPGauge, Macro ["C-KP_Begin", "A-v"])
     , (CaHPValue, Wait10)
     , (CaLeaderDesc, ComposeUnlessError ClearTargetIfItemClear ItemClear) ]
 
 -- This is duplicated wrt content, instead of included via @semicolon@,
 -- because the C- commands are less likely to be modified by the player.
 goToCmd :: HumanCmd
-goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "A-V"]
+goToCmd = Macro ["MiddleButtonRelease", "C-semicolon", "C-quotedbl", "C-v"]
 
 -- This is duplicated wrt content, instead of included via @colon@,
 -- because the C- commands are less likely to be modified by the player.
 runToAllCmd :: HumanCmd
-runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "A-V"]
+runToAllCmd = Macro ["MiddleButtonRelease", "C-colon", "C-quotedbl", "C-v"]
 
 autoexploreCmd :: HumanCmd
-autoexploreCmd = Macro ["C-?", "C-quotedbl", "A-V"]
+autoexploreCmd = Macro ["C-?", "C-quotedbl", "C-v"]
 
 autoexplore25Cmd :: HumanCmd
 autoexplore25Cmd = Macro ["'", "C-?", "C-quotedbl", "'", "C-V"]

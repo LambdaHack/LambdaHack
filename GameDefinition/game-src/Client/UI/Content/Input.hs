@@ -99,19 +99,19 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]
                   , "go to crosshair for 25 steps"
-                  , Macro ["C-semicolon", "C-quotedbl", "A-V"] ))
+                  , Macro ["C-semicolon", "C-quotedbl", "C-v"] ))
   , ("colon", ( [CmdMove]
               , "run to crosshair collectively for 25 steps"
-              , Macro ["C-colon", "C-quotedbl", "A-V"] ))
+              , Macro ["C-colon", "C-quotedbl", "C-v"] ))
   , ("[", ( [CmdMove]
           , "explore nearest unknown spot"
           , autoexploreCmd ))
   , ("]", ( [CmdMove]
           , "autoexplore 25 times"
           , autoexplore25Cmd ))
-  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "A-V"]))
+  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-v"]))
   , ("C-R", ( [CmdMove], "heed (lurk 0.1 turns 100 times)"
-            , Macro ["C-KP_Begin", "V"] ))
+            , Macro ["C-KP_Begin", "A-v"] ))
 
   -- Remaining @ChooseItemMenu@ instances
   , ("G", ( [CmdItem, CmdDashboard]
@@ -180,12 +180,12 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("?", ([CmdMeta], "display help", Hint))
   , ("F1", ([CmdMeta, CmdDashboard], "display help immediately", Help))
   , ("F12", ([CmdMeta], "open dashboard", Dashboard))
-  , ("v", repeatTriple 1)
-  , ("A-v", repeatLastTriple 1)
-  , ("A-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
-  , ("V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 100)
-  , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 1000)
+  , ("v", repeatLastTriple 1)
+  , ("C-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 25)
+  , ("A-v", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatLastTriple 100)
+  , ("V", repeatTriple 1)
   , ("C-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 25)
+  , ("A-V", addCmdCategory CmdNoHelp $ replaceDesc "" $ repeatTriple 100)
   , ("'", ([CmdMeta], "start recording commands", Record))
   , ("C-S", ([CmdMeta], "save game backup", GameSave))
   , ("C-P", ([CmdMeta], "print screen", PrintScreen))
