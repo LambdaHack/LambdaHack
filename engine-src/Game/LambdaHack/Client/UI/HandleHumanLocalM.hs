@@ -719,13 +719,14 @@ repeatHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
 repeatHumanTransition _ [] = error "repeatHumanTransition: empty stack"
 repeatHumanTransition n (abuff : abuffs) =
   let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ smacroBuffer abuff
-               -- Don't repeat macro while recording one.
                | otherwise = concat . replicate k $ nmacro 1
   in abuff { slastPlay = KeyMacro (nmacro n) <> slastPlay abuff } : abuffs
 
 -- * RepeatLast
 
--- | Repeats last user's action.
+-- Note that walk followed by repeat should not be equivalent to run,
+-- because the player can really use a command that does not stop
+-- at terrain change or when walking over items.
 repeatLastHuman :: MonadClientUI m => Int -> m ()
 repeatLastHuman n = modifySession $ \sess ->
   sess { sactionPending = repeatLastHumanTransition n (sactionPending sess) }

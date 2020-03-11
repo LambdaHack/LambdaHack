@@ -40,7 +40,6 @@ import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend
 import           Game.LambdaHack.Client.UI.HandleHelperM
 import           Game.LambdaHack.Client.UI.HandleHumanM
-import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.Msg
@@ -159,23 +158,10 @@ humanCommand = do
           CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
           case km `M.lookup` bcmdMap of
             Just (_, _, cmd) -> do
-              -- Repeating last action key does not cover menu navigation
-              -- keypresses, so here's the right place to record it.
-              modifySession $ \sess ->
-                sess { swaitTimes =
-                         if swaitTimes sess > 0
-                         then - swaitTimes sess
-                         else 0
-                     , sactionPending = case cmd of
-                         (HumanCmd.RepeatLast _) -> sactionPending sess
-                         -- Don't save repeating last action key as the last
-                         -- key handled.
-                         _ ->
-                           let oldBuffer = head (sactionPending sess)
-                               newBuffer = oldBuffer { slastAction = Just km }
-                            in newBuffer : tail (sactionPending sess)
-                     }
-              cmdHumanSem cmd
+              modifySession $ \sess -> sess {swaitTimes = if swaitTimes sess > 0
+                                                          then - swaitTimes sess
+                                                          else 0}
+              cmdHumanSem km cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
         -- The command was failed or successful and if the latter,

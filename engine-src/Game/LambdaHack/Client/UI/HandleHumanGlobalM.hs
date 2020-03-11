@@ -102,10 +102,11 @@ import           Game.LambdaHack.Definition.Defs
 -- | Pick command depending on area the mouse pointer is in.
 -- The first matching area is chosen. If none match, only interrupt.
 byAreaHuman :: MonadClientUI m
-            => (HumanCmd -> m (Either MError ReqUI))
+            => (K.KM -> HumanCmd -> m (Either MError ReqUI))
             -> [(CmdArea, HumanCmd)]
             -> m (Either MError ReqUI)
 byAreaHuman cmdAction l = do
+  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y)
       pointerInArea a = do
@@ -116,8 +117,11 @@ byAreaHuman cmdAction l = do
     [] -> do
       stopPlayBack
       return $ Left Nothing
-    (_, cmd) : _ ->
-      cmdAction cmd
+    (_, cmd) : _ -> do
+      let kmFound = case M.lookup cmd brevMap of
+            Just (km : _) -> km
+            _ -> K.escKM
+      cmdAction kmFound cmd
 
 -- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
 areaToRectangles :: MonadClientUI m => CmdArea -> m [Maybe Area]
@@ -1214,7 +1218,7 @@ pickPoint verb = do
 
 -- | Display command help.
 helpHuman :: MonadClientUI m
-          => (HumanCmd -> m (Either MError ReqUI))
+          => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 helpHuman cmdAction = do
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
@@ -1231,7 +1235,7 @@ helpHuman cmdAction = do
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
-      Just (_desc, _cats, cmd) -> cmdAction cmd
+      Just (_desc, _cats, cmd) -> cmdAction km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
@@ -1239,7 +1243,7 @@ helpHuman cmdAction = do
 
 -- | Display hint or, if already displayed, display help.
 hintHuman :: MonadClientUI m
-          => (HumanCmd -> m (Either MError ReqUI))
+          => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
 hintHuman cmdAction = do
   hintMode <- getsSession shintMode
@@ -1254,7 +1258,7 @@ hintHuman cmdAction = do
 
 -- | Display the dashboard.
 dashboardHuman :: MonadClientUI m
-               => (HumanCmd -> m (Either MError ReqUI))
+               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
 dashboardHuman cmdAction = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
@@ -1271,14 +1275,14 @@ dashboardHuman cmdAction = do
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-      Just (_desc, _cats, cmd) -> cmdAction cmd
+      Just (_desc, _cats, cmd) -> cmdAction km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
 -- * ItemMenu
 
 itemMenuHuman :: MonadClientUI m
-              => (HumanCmd -> m (Either MError ReqUI))
+              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 itemMenuHuman cmdAction = do
   itemSel <- getsSession sitemSel
@@ -1407,7 +1411,7 @@ itemMenuHuman cmdAction = do
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
                   sess {sitemSel = Just (iid, fromCStore, True)}
-                res <- cmdAction cmd
+                res <- cmdAction km cmd
                 modifySession $ \sess ->
                   sess {sitemSel = Just (iid, fromCStore, False)}
                 return res
@@ -1418,7 +1422,7 @@ itemMenuHuman cmdAction = do
 -- * ChooseItemMenu
 
 chooseItemMenuHuman :: MonadClientUI m
-                    => (HumanCmd -> m (Either MError ReqUI))
+                    => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
 chooseItemMenuHuman cmdAction c = do
@@ -1434,7 +1438,7 @@ chooseItemMenuHuman cmdAction c = do
 -- * MainMenu
 
 generateMenu :: MonadClientUI m
-             => (HumanCmd -> m (Either MError ReqUI))
+             => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> [AttrLine] -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
 generateMenu cmdAction blurb kds gameInfo menuName = do
@@ -1475,13 +1479,13 @@ generateMenu cmdAction blurb kds gameInfo menuName = do
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction cmd
+      Just (_desc, cmd) -> cmdAction km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
 -- | Display the main menu.
 mainMenuHuman :: MonadClientUI m
-              => (HumanCmd -> m (Either MError ReqUI))
+              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
 mainMenuHuman cmdAction = do
   CCUI{ coinput=InputContent{bcmdList}
@@ -1516,7 +1520,7 @@ mainMenuHuman cmdAction = do
 
 -- | Display the main menu and set @swasAutomated@.
 mainMenuAutoOnHuman :: MonadClientUI m
-                    => (HumanCmd -> m (Either MError ReqUI))
+                    => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 mainMenuAutoOnHuman cmdAction = do
   modifySession $ \sess -> sess {swasAutomated = True}
@@ -1526,7 +1530,7 @@ mainMenuAutoOnHuman cmdAction = do
 
 -- | Display the main menu and unset @swasAutomated@.
 mainMenuAutoOffHuman :: MonadClientUI m
-                     => (HumanCmd -> m (Either MError ReqUI))
+                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                      -> m (Either MError ReqUI)
 mainMenuAutoOffHuman cmdAction = do
   modifySession $ \sess -> sess {swasAutomated = False}
@@ -1536,7 +1540,7 @@ mainMenuAutoOffHuman cmdAction = do
 
 -- | Display the settings menu.
 settingsMenuHuman :: MonadClientUI m
-                  => (HumanCmd -> m (Either MError ReqUI))
+                  => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
 settingsMenuHuman cmdAction = do
   markSuspect <- getsClient smarkSuspect
@@ -1572,7 +1576,7 @@ settingsMenuHuman cmdAction = do
 
 -- | Display the challenges menu.
 challengesMenuHuman :: MonadClientUI m
-                    => (HumanCmd -> m (Either MError ReqUI))
+                    => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
 challengesMenuHuman cmdAction = do
   cops <- getsState scops
