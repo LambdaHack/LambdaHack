@@ -162,6 +162,79 @@ macroTests = testGroup "macroTests" $
          snd (last (unwindMacros (bindInput [("a", "'xy'v")] coinput)
                                  (stringToKeyMacro "'aa'V")))
          @?= "xyyxyyxyyxyy"
+     , testCase "RepeatLast test 24" $
+         snd (last (unwindMacros (bindInput [("a", "'xy'vv")] coinput)
+                                 (stringToKeyMacro "'aa'vv")))
+         @?= "xyyyxyyyxyyyxyyy"
+     , testCase "RepeatLast test 25" $
+         snd (last (unwindMacros (bindInput [("a", "'xyv'v")] coinput)
+                                 (stringToKeyMacro "'a'a'vv'")))
+         @?= "xyyyxyyyxyyyxyyy"
+     -- , testCase "RepeatLast test 26" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'v")
+     --                                        , ("c", "'ab'v") ] coinput)
+     --                             (stringToKeyMacro "'c'v")))
+     --     @?= "xyyzxyyxyyzxyyxyyxyyzxyyxyyzxyyxyy"
+     -- , testCase "RepeatLast test 27" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'V")
+     --                                        , ("b", "'za'v")
+     --                                        , ("c", "'ab'v") ] coinput)
+     --                             (stringToKeyMacro "'c'v")))
+     --     @?= "xyxyzxyxyxyxyzxyxyxyxyxyxyzxyxyxyxyzxyxyxyxy"
+     -- , testCase "RepeatLast test 28" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'V")
+     --                                        , ("c", "'ab'v") ] coinput)
+     --                             (stringToKeyMacro "'c'v")))
+     --     @?= "xyyzxyyzxyyzxyyzxyyxyyzxyyzxyyzxyyzxyy"
+     -- , testCase "RepeatLast test 29" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'V")
+     --                                        , ("c", "'ab'V") ] coinput)
+     --                             (stringToKeyMacro "'c'v")))
+     --     @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     -- , testCase "RepeatLast test 30" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'V")
+     --                                        , ("c", "'ab'V") ] coinput)
+     --                             (stringToKeyMacro "'c'V")))
+     --     @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     -- , testCase "RepeatLast test 31" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'v")
+     --                                        , ("c", "'ab'V") ] coinput)
+     --                             (stringToKeyMacro "'c'V")))
+     --     @?= "xyyzxyyxyyzxyyxyyzxyyxyyzxyy"
+     -- , testCase "RepeatLast test 32" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'v") ] coinput)
+     --                             (stringToKeyMacro "'ab'vv")))
+     --     @?= "xyyzxyyxyyzxyyxyyxyyzxyyxyyzxyyxyy"
+     -- , testCase "RepeatLast test 33" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'V") ] coinput)
+     --                             (stringToKeyMacro "a'za'vvv")))
+     --     @?= "xyxyzxyxyxyxyzxyxyxyxyxyxyzxyxyxyxyzxyxyxyxy"
+     -- , testCase "RepeatLast test 34" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("c", "a'za'Vv") ] coinput)
+     --                             (stringToKeyMacro "'c'v")))
+     --     @?= "xyyzxyyzxyyzxyyzxyyxyyzxyyzxyyzxyyzxyy"
+     -- , testCase "RepeatLast test 35" $
+     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+     --                                        , ("b", "'za'V") ] coinput)
+     --                             (stringToKeyMacro "'ab'Vv")))
+     --     @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     , testCase "RepeatLast test 36" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+                                            , ("b", "za'za'") ] coinput)
+                                 (stringToKeyMacro "'ab'V'ab'V")))
+         @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     -- , testCase "RepeatLast test 37" $
+     --     snd (last (unwindMacros (bindInput [ ("b", "z'xy'vv")
+     --                                        , ("c", "'xyvb'V") ] coinput)
+     --                             (stringToKeyMacro "'c'V")))
+     --     @?= "xyyzxyyxyyzxyyxyyzxyyxyyzxyy"
      ]
 
 type BufferTrace = [(Either String String, String, String)]
