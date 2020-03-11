@@ -61,6 +61,7 @@ noRemoteHumanCmd cmd = case cmd of
 updateLastAction :: K.KM -> HumanCmd -> [ActionBuffer] -> [ActionBuffer]
 updateLastAction km cmd abuffs = case cmd of
   RepeatLast{} -> abuffs
+  Record{} -> abuffs
   _ -> let oldBuffer = head abuffs
            newBuffer = oldBuffer { slastAction = Just km }
        in newBuffer : tail abuffs
