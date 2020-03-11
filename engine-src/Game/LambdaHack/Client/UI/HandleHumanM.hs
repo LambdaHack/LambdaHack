@@ -11,13 +11,15 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Request
-import Game.LambdaHack.Client.UI.HandleHelperM
-import Game.LambdaHack.Client.UI.HandleHumanGlobalM
-import Game.LambdaHack.Client.UI.HandleHumanLocalM
-import Game.LambdaHack.Client.UI.HumanCmd
-import Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.Request
+import           Game.LambdaHack.Client.UI.HandleHelperM
+import           Game.LambdaHack.Client.UI.HandleHumanGlobalM
+import           Game.LambdaHack.Client.UI.HandleHumanLocalM
+import           Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Client.UI.MonadClientUI
+import           Game.LambdaHack.Client.UI.SessionUI
 
 -- | The semantics of human player commands in terms of the client monad.
 --
@@ -25,8 +27,8 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 -- invoked in aiming mode on a remote level (level different than
 -- the level of the leader), which is caught here.
 cmdHumanSem :: (MonadClient m, MonadClientUI m)
-            => HumanCmd -> m (Either MError ReqUI)
-cmdHumanSem cmd =
+            => K.KM -> HumanCmd -> m (Either MError ReqUI)
+cmdHumanSem km cmd =
   if noRemoteHumanCmd cmd then do
     -- If in aiming mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
@@ -35,8 +37,8 @@ cmdHumanSem cmd =
     if arena /= lidV then
       weaveJust <$> failWith
         "command disabled on a remote level, press ESC to switch back"
-    else cmdAction cmd
-  else cmdAction cmd
+    else cmdAction km cmd
+  else cmdAction km cmd
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one, but not necessarily do
@@ -56,21 +58,35 @@ noRemoteHumanCmd cmd = case cmd of
   ContinueToXhair -> True
   _ -> False
 
+updateLastAction :: K.KM -> HumanCmd -> [ActionBuffer] -> [ActionBuffer]
+updateLastAction km cmd abuffs = case cmd of
+  RepeatLast{} -> abuffs
+  _ -> let oldBuffer = head abuffs
+           newBuffer = oldBuffer { slastAction = Just km }
+       in newBuffer : tail abuffs
+
 cmdAction :: (MonadClient m, MonadClientUI m)
-          => HumanCmd -> m (Either MError ReqUI)
-cmdAction cmd = case cmd of
+          => K.KM -> HumanCmd -> m (Either MError ReqUI)
+cmdAction km cmd = do
+  modifySession $ \sess ->
+    sess {sactionPending = updateLastAction km cmd $ sactionPending sess}
+  cmdActionCases cmd
+
+cmdActionCases :: (MonadClient m, MonadClientUI m)
+               => HumanCmd -> m (Either MError ReqUI)
+cmdActionCases cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
   ByArea l -> byAreaHuman cmdAction l
   ByAimMode AimModeCmd{..} ->
-    byAimModeHuman (cmdAction exploration) (cmdAction aiming)
+    byAimModeHuman (cmdActionCases exploration) (cmdActionCases aiming)
   ComposeIfLocal cmd1 cmd2 ->
-    composeIfLocalHuman (cmdAction cmd1) (cmdAction cmd2)
+    composeIfLocalHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
   ComposeUnlessError cmd1 cmd2 ->
-    composeUnlessErrorHuman (cmdAction cmd1) (cmdAction cmd2)
+    composeUnlessErrorHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
   Compose2ndLocal cmd1 cmd2 ->
-    compose2ndLocalHuman (cmdAction cmd1) (cmdAction cmd2)
-  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdAction cmd1)
-  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdAction cmd1)
+    compose2ndLocalHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
+  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdActionCases cmd1)
+  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdActionCases cmd1)
 
   Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman)
   Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10)
