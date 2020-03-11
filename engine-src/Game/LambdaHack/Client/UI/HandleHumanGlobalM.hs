@@ -105,7 +105,7 @@ byAreaHuman :: MonadClientUI m
             => (K.KM -> HumanCmd -> m (Either MError ReqUI))
             -> [(CmdArea, HumanCmd)]
             -> m (Either MError ReqUI)
-byAreaHuman cmdAction l = do
+byAreaHuman cmdSemInCxtOfKM l = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
   K.PointUI x y <- getsSession spointer
   let (px, py) = (x `div` 2, y)
@@ -121,7 +121,7 @@ byAreaHuman cmdAction l = do
       let kmFound = case M.lookup cmd brevMap of
             Just (km : _) -> km
             _ -> K.escKM
-      cmdAction kmFound cmd
+      cmdSemInCxtOfKM kmFound cmd
 
 -- Many values here are shared with "Game.LambdaHack.Client.UI.DrawM".
 areaToRectangles :: MonadClientUI m => CmdArea -> m [Maybe Area]
@@ -1186,7 +1186,7 @@ pickPoint verb = do
 helpHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
-helpHuman cmdAction = do
+helpHuman cmdSemInCxtOfKM = do
   ccui@CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}}
     <- getsSession sccui
   fontSetup <- getFontSetup
@@ -1201,7 +1201,7 @@ helpHuman cmdAction = do
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km `elem` [K.escKM, K.spaceKM] -> return $ Left Nothing
-      Just (_desc, _cats, cmd) -> cmdAction km cmd
+      Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
@@ -1211,10 +1211,10 @@ helpHuman cmdAction = do
 hintHuman :: MonadClientUI m
           => (K.KM -> HumanCmd -> m (Either MError ReqUI))
           -> m (Either MError ReqUI)
-hintHuman cmdAction = do
+hintHuman cmdSemInCxtOfKM = do
   hintMode <- getsSession shintMode
   if hintMode == HintWiped then
-    helpHuman cmdAction
+    helpHuman cmdSemInCxtOfKM
   else do
     modifySession $ \sess -> sess {shintMode = HintShown}
     promptMainKeys
@@ -1226,7 +1226,7 @@ hintHuman cmdAction = do
 dashboardHuman :: MonadClientUI m
                => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                -> m (Either MError ReqUI)
-dashboardHuman cmdAction = do
+dashboardHuman cmdSemInCxtOfKM = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
   let keyL = 2
@@ -1241,7 +1241,7 @@ dashboardHuman cmdAction = do
   case ekm of
     Left km -> case km `M.lookup` bcmdMap coinput of
       _ | km == K.escKM -> weaveJust <$> failWith "never mind"
-      Just (_desc, _cats, cmd) -> cmdAction km cmd
+      Just (_desc, _cats, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
@@ -1250,7 +1250,7 @@ dashboardHuman cmdAction = do
 itemMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
-itemMenuHuman cmdAction = do
+itemMenuHuman cmdSemInCxtOfKM = do
   itemSel <- getsSession sitemSel
   fontSetup@FontSetup{..} <- getFontSetup
   case itemSel of
@@ -1367,12 +1367,12 @@ itemMenuHuman cmdAction = do
                        void $ pickLeader True newAid
                        modifySession $ \sess ->
                          sess {sitemSel = Just (iid, newCStore, False)}
-                       itemMenuHuman cmdAction
+                       itemMenuHuman cmdSemInCxtOfKM
                 _ -> error $ "" `showFailure` km
               Just (_desc, _cats, cmd) -> do
                 modifySession $ \sess ->
                   sess {sitemSel = Just (iid, fromCStore, True)}
-                res <- cmdAction km cmd
+                res <- cmdSemInCxtOfKM km cmd
                 modifySession $ \sess ->
                   sess {sitemSel = Just (iid, fromCStore, False)}
                 return res
@@ -1386,13 +1386,13 @@ chooseItemMenuHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> ItemDialogMode
                     -> m (Either MError ReqUI)
-chooseItemMenuHuman cmdAction c = do
+chooseItemMenuHuman cmdSemInCxtOfKM c = do
   res <- chooseItemDialogMode c
   case res of
     Right c2 -> do
-      res2 <- itemMenuHuman cmdAction
+      res2 <- itemMenuHuman cmdSemInCxtOfKM
       case res2 of
-        Left Nothing -> chooseItemMenuHuman cmdAction c2
+        Left Nothing -> chooseItemMenuHuman cmdSemInCxtOfKM c2
         _ -> return res2
     Left err -> return $ Left $ Just err
 
@@ -1402,7 +1402,7 @@ generateMenu :: MonadClientUI m
              => (K.KM -> HumanCmd -> m (Either MError ReqUI))
              -> [AttrLine] -> [(K.KM, (Text, HumanCmd))] -> [String] -> String
              -> m (Either MError ReqUI)
-generateMenu cmdAction blurb kds gameInfo menuName = do
+generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
   COps{corule} <- getsState scops
   CCUI{coscreen=ScreenContent{rwidth, rheight, rmainMenuLine}} <-
     getsSession sccui
@@ -1440,7 +1440,7 @@ generateMenu cmdAction blurb kds gameInfo menuName = do
                              (menuToSlideshow (ov, kyxs)) [K.escKM]
   case ekm of
     Left km -> case km `lookup` kds of
-      Just (_desc, cmd) -> cmdAction km cmd
+      Just (_desc, cmd) -> cmdSemInCxtOfKM km cmd
       Nothing -> weaveJust <$> failWith "never mind"
     Right _slot -> error $ "" `showFailure` ekm
 
@@ -1448,7 +1448,7 @@ generateMenu cmdAction blurb kds gameInfo menuName = do
 mainMenuHuman :: MonadClientUI m
               => (K.KM -> HumanCmd -> m (Either MError ReqUI))
               -> m (Either MError ReqUI)
-mainMenuHuman cmdAction = do
+mainMenuHuman cmdSemInCxtOfKM = do
   CCUI{ coinput=InputContent{bcmdList}
       , coscreen=ScreenContent{rintroScreen} } <- getsSession sccui
   FontSetup{propFont} <- getFontSetup
@@ -1475,7 +1475,7 @@ mainMenuHuman cmdAction = do
       glueLines ll = ll
       backstory | isSquareFont propFont = rintroScreen
                 | otherwise = glueLines rintroScreen
-  generateMenu cmdAction (map stringToAL backstory) kds gameInfo "main"
+  generateMenu cmdSemInCxtOfKM (map stringToAL backstory) kds gameInfo "main"
 
 -- * MainMenuAutoOn
 
@@ -1483,9 +1483,9 @@ mainMenuHuman cmdAction = do
 mainMenuAutoOnHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
-mainMenuAutoOnHuman cmdAction = do
+mainMenuAutoOnHuman cmdSemInCxtOfKM = do
   modifySession $ \sess -> sess {swasAutomated = True}
-  mainMenuHuman cmdAction
+  mainMenuHuman cmdSemInCxtOfKM
 
 -- * MainMenuAutoOff
 
@@ -1493,9 +1493,9 @@ mainMenuAutoOnHuman cmdAction = do
 mainMenuAutoOffHuman :: MonadClientUI m
                      => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                      -> m (Either MError ReqUI)
-mainMenuAutoOffHuman cmdAction = do
+mainMenuAutoOffHuman cmdSemInCxtOfKM = do
   modifySession $ \sess -> sess {swasAutomated = False}
-  mainMenuHuman cmdAction
+  mainMenuHuman cmdSemInCxtOfKM
 
 -- * SettingsMenu
 
@@ -1503,7 +1503,7 @@ mainMenuAutoOffHuman cmdAction = do
 settingsMenuHuman :: MonadClientUI m
                   => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                   -> m (Either MError ReqUI)
-settingsMenuHuman cmdAction = do
+settingsMenuHuman cmdSemInCxtOfKM = do
   markSuspect <- getsClient smarkSuspect
   markVision <- getsSession smarkVision
   markSmell <- getsSession smarkSmell
@@ -1531,7 +1531,7 @@ settingsMenuHuman cmdAction = do
       gameInfo = map T.unpack
                    [ "Tweak convenience settings:"
                    , "" ]
-  generateMenu cmdAction [] kds gameInfo "settings"
+  generateMenu cmdSemInCxtOfKM [] kds gameInfo "settings"
 
 -- * ChallengesMenu
 
@@ -1539,7 +1539,7 @@ settingsMenuHuman cmdAction = do
 challengesMenuHuman :: MonadClientUI m
                     => (K.KM -> HumanCmd -> m (Either MError ReqUI))
                     -> m (Either MError ReqUI)
-challengesMenuHuman cmdAction = do
+challengesMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
   FontSetup{propFont} <- getFontSetup
   snxtScenario <- getsClient snxtScenario
@@ -1570,7 +1570,7 @@ challengesMenuHuman cmdAction = do
                 <> if T.null (mnote gameMode)
                    then "\n"  -- whitespace compensates for the lack of note
                    else "\n[Note: " <> mnote gameMode <> "]"
-  generateMenu cmdAction blurb kds gameInfo "challenge"
+  generateMenu cmdSemInCxtOfKM blurb kds gameInfo "challenge"
 
 -- * GameScenarioIncr
 
