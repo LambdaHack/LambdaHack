@@ -193,10 +193,14 @@ hpTooLow b actorMaxSk =
   5 * bhp b < xM (Ability.getSk Ability.SkMaxHP actorMaxSk) && bhp b <= xM 40
   || bhp b <= oneM
 
+-- | Check if actor calm enough to perform some actions.
+--
+-- If max Calm is zero, always holds, to permit removing disastrous
+-- equipped items, which would otherwise be stuck forever.
 calmEnough :: Actor -> Ability.Skills -> Bool
 calmEnough b actorMaxSk =
   let calmMax = max 1 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
-  in 2 * xM calmMax <= 3 * bcalm b && bcalm b > xM 10
+  in 2 * xM calmMax <= 3 * bcalm b
 
 hpEnough :: Actor -> Ability.Skills -> Bool
 hpEnough b actorMaxSk =
