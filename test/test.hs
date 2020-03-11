@@ -10,6 +10,7 @@ import qualified Game.LambdaHack.Client.UI.Content.Input as IC
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.Frontend.Chosen
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
+import           Game.LambdaHack.Client.UI.HandleHumanM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
@@ -129,11 +130,7 @@ unwindMacros IC.InputContent{bcmdMap, brevMap} startMacro =
           Just (_, _, cmd) ->
             let abuffs0 = addToMacro brevMap km abuffs
 
-                abuffs1 = case cmd of
-                  HumanCmd.RepeatLast{} -> abuffs0
-                  _ -> let oldBuffer = head abuffs0
-                           newBuffer = oldBuffer { slastAction = Just km }
-                       in newBuffer : tail abuffs0
+                abuffs1 = updateLastAction km cmd abuffs0
 
                 abuffs2 =
                   let abuff1 = head abuffs1

@@ -1,6 +1,6 @@
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.UI.HandleHumanM
-  ( cmdHumanSem
+  ( cmdHumanSem, updateLastAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , noRemoteHumanCmd, cmdAction, addNoError
