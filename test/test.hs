@@ -39,12 +39,12 @@ macroTests = testGroup "macroTests" $
   in [ testCase "Macro 1 from PR#192 description" $
          fst <$> unwindMacros coinput (stringToKeyMacro "'j''j'")
          @?= [ [ (Right "",     "'j''j'",  "")  ]
-             , [ (Left  "",     "j''j'",   "'") ]
+             , [ (Left  "",     "j''j'",   "") ]
              , [ (Left  "j",    "''j'",    "j") ]
-             , [ (Right "j",    "'j'",     "'") ]
-             , [ (Left  "",     "j'",      "'") ]
+             , [ (Right "j",    "'j'",     "j") ]
+             , [ (Left  "",     "j'",      "j") ]
              , [ (Left  "j",    "'",       "j") ]
-             , [ (Right "j",    "",        "'") ]
+             , [ (Right "j",    "",        "j") ]
              ]
      , testCase "Macro 1 from Issue#189 description" $
          last (unwindMacros (bindInput [ ("a", "'bc'V")
