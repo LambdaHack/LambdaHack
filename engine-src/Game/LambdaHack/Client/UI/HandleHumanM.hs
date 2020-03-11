@@ -1,9 +1,9 @@
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.UI.HandleHumanM
-  ( cmdHumanSem, updateLastAction
+  ( restrictedCmdSemInCxtOfKM, updateLastAction
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , noRemoteHumanCmd, cmdAction, addNoError
+  , noRemoteHumanCmd, cmdSemInCxtOfKM, cmdSemantics, addNoError
 #endif
   ) where
 
@@ -21,14 +21,15 @@ import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.MonadClientUI
 import           Game.LambdaHack.Client.UI.SessionUI
 
--- | The semantics of human player commands in terms of the client monad.
+-- | The semantics of human player commands in terms of the client monad,
+-- in context of the given @km@ as the last action.
 --
 -- Some time cosuming commands are enabled even in aiming mode, but cannot be
 -- invoked in aiming mode on a remote level (level different than
 -- the level of the leader), which is caught here.
-cmdHumanSem :: (MonadClient m, MonadClientUI m)
-            => K.KM -> HumanCmd -> m (Either MError ReqUI)
-cmdHumanSem km cmd =
+restrictedCmdSemInCxtOfKM :: (MonadClient m, MonadClientUI m)
+                          => K.KM -> HumanCmd -> m (Either MError ReqUI)
+restrictedCmdSemInCxtOfKM km cmd =
   if noRemoteHumanCmd cmd then do
     -- If in aiming mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
@@ -37,8 +38,8 @@ cmdHumanSem km cmd =
     if arena /= lidV then
       weaveJust <$> failWith
         "command disabled on a remote level, press ESC to switch back"
-    else cmdAction km cmd
-  else cmdAction km cmd
+    else cmdSemInCxtOfKM km cmd
+  else cmdSemInCxtOfKM km cmd
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one, but not necessarily do
@@ -66,28 +67,29 @@ updateLastAction km cmd abuffs = case cmd of
            newBuffer = oldBuffer { slastAction = Just km }
        in newBuffer : tail abuffs
 
-cmdAction :: (MonadClient m, MonadClientUI m)
-          => K.KM -> HumanCmd -> m (Either MError ReqUI)
-cmdAction km cmd = do
+-- Semantics of the command in context of the given @km@ as the last action.
+cmdSemInCxtOfKM :: (MonadClient m, MonadClientUI m)
+                => K.KM -> HumanCmd -> m (Either MError ReqUI)
+cmdSemInCxtOfKM km cmd = do
   modifySession $ \sess ->
     sess {sactionPending = updateLastAction km cmd $ sactionPending sess}
-  cmdActionCases cmd
+  cmdSemantics cmd
 
-cmdActionCases :: (MonadClient m, MonadClientUI m)
-               => HumanCmd -> m (Either MError ReqUI)
-cmdActionCases cmd = case cmd of
+cmdSemantics :: (MonadClient m, MonadClientUI m)
+             => HumanCmd -> m (Either MError ReqUI)
+cmdSemantics cmd = case cmd of
   Macro kms -> addNoError $ macroHuman kms
-  ByArea l -> byAreaHuman cmdAction l
+  ByArea l -> byAreaHuman cmdSemInCxtOfKM l
   ByAimMode AimModeCmd{..} ->
-    byAimModeHuman (cmdActionCases exploration) (cmdActionCases aiming)
+    byAimModeHuman (cmdSemantics exploration) (cmdSemantics aiming)
   ComposeIfLocal cmd1 cmd2 ->
-    composeIfLocalHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
+    composeIfLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
   ComposeUnlessError cmd1 cmd2 ->
-    composeUnlessErrorHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
+    composeUnlessErrorHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
   Compose2ndLocal cmd1 cmd2 ->
-    compose2ndLocalHuman (cmdActionCases cmd1) (cmdActionCases cmd2)
-  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdActionCases cmd1)
-  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdActionCases cmd1)
+    compose2ndLocalHuman (cmdSemantics cmd1) (cmdSemantics cmd2)
+  LoopOnNothing cmd1 -> loopOnNothingHuman (cmdSemantics cmd1)
+  ExecuteIfClear cmd1 -> executeIfClearHuman (cmdSemantics cmd1)
 
   Wait -> weaveJust <$> (ReqUITimed <$$> waitHuman)
   Wait10 -> weaveJust <$> (ReqUITimed <$$> waitHuman10)
@@ -107,18 +109,18 @@ cmdActionCases cmd = case cmd of
   AlterDir -> weaveJust <$> (ReqUITimed <$$> alterDirHuman)
   AlterWithPointer -> weaveJust <$> (ReqUITimed <$$> alterWithPointerHuman)
   CloseDir -> weaveJust <$> (ReqUITimed <$$> closeDirHuman)
-  Help -> helpHuman cmdAction
-  Hint -> hintHuman cmdAction
-  ItemMenu -> itemMenuHuman cmdAction
-  ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdAction dialogMode
-  MainMenu -> mainMenuHuman cmdAction
-  MainMenuAutoOn -> mainMenuAutoOnHuman cmdAction
-  MainMenuAutoOff -> mainMenuAutoOffHuman cmdAction
-  Dashboard -> dashboardHuman cmdAction
-  GameDifficultyIncr -> gameDifficultyIncr >> challengesMenuHuman cmdAction
-  GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdAction
-  GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdAction
-  GameScenarioIncr -> gameScenarioIncr >> challengesMenuHuman cmdAction
+  Help -> helpHuman cmdSemInCxtOfKM
+  Hint -> hintHuman cmdSemInCxtOfKM
+  ItemMenu -> itemMenuHuman cmdSemInCxtOfKM
+  ChooseItemMenu dialogMode -> chooseItemMenuHuman cmdSemInCxtOfKM dialogMode
+  MainMenu -> mainMenuHuman cmdSemInCxtOfKM
+  MainMenuAutoOn -> mainMenuAutoOnHuman cmdSemInCxtOfKM
+  MainMenuAutoOff -> mainMenuAutoOffHuman cmdSemInCxtOfKM
+  Dashboard -> dashboardHuman cmdSemInCxtOfKM
+  GameDifficultyIncr -> gameDifficultyIncr >> challengesMenuHuman cmdSemInCxtOfKM
+  GameWolfToggle -> gameWolfToggle >> challengesMenuHuman cmdSemInCxtOfKM
+  GameFishToggle -> gameFishToggle >> challengesMenuHuman cmdSemInCxtOfKM
+  GameScenarioIncr -> gameScenarioIncr >> challengesMenuHuman cmdSemInCxtOfKM
 
   GameRestart -> weaveJust <$> gameRestartHuman
   GameQuit -> weaveJust <$> gameQuitHuman
@@ -145,12 +147,12 @@ cmdActionCases cmd = case cmd of
   Record -> addNoError recordHuman
   AllHistory -> addNoError allHistoryHuman
   LastHistory -> addNoError lastHistoryHuman
-  MarkVision -> markVisionHuman >> settingsMenuHuman cmdAction
-  MarkSmell -> markSmellHuman >> settingsMenuHuman cmdAction
-  MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdAction
-  MarkAnim -> markAnimHuman >> settingsMenuHuman cmdAction
-  SettingsMenu -> settingsMenuHuman cmdAction
-  ChallengesMenu -> challengesMenuHuman cmdAction
+  MarkVision -> markVisionHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSmell -> markSmellHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkSuspect -> markSuspectHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  MarkAnim -> markAnimHuman >> settingsMenuHuman cmdSemInCxtOfKM
+  SettingsMenu -> settingsMenuHuman cmdSemInCxtOfKM
+  ChallengesMenu -> challengesMenuHuman cmdSemInCxtOfKM
   PrintScreen -> addNoError printScreenHuman
 
   Cancel -> addNoError cancelHuman
