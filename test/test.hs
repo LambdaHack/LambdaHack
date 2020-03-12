@@ -170,36 +170,36 @@ macroTests = testGroup "macroTests" $
          snd (last (unwindMacros (bindInput [("a", "'xyv'v")] coinput)
                                  (stringToKeyMacro "'a'a'vv'")))
          @?= "xyyyxyyyxyyyxyyy"
-     -- , testCase "RepeatLast test 26" $
-     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
-     --                                        , ("b", "'za'v")
-     --                                        , ("c", "'ab'v") ] coinput)
-     --                             (stringToKeyMacro "'c'v")))
-     --     @?= "xyyzxyyxyyzxyyxyyxyyzxyyxyyzxyyxyy"
-     -- , testCase "RepeatLast test 27" $
-     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'V")
-     --                                        , ("b", "'za'v")
-     --                                        , ("c", "'ab'v") ] coinput)
-     --                             (stringToKeyMacro "'c'v")))
-     --     @?= "xyxyzxyxyxyxyzxyxyxyxyxyxyzxyxyxyxyzxyxyxyxy"
-     -- , testCase "RepeatLast test 28" $
-     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
-     --                                        , ("b", "'za'V")
-     --                                        , ("c", "'ab'v") ] coinput)
-     --                             (stringToKeyMacro "'c'v")))
-     --     @?= "xyyzxyyzxyyzxyyzxyyxyyzxyyzxyyzxyyzxyy"
-     -- , testCase "RepeatLast test 29" $
-     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
-     --                                        , ("b", "'za'V")
-     --                                        , ("c", "'ab'V") ] coinput)
-     --                             (stringToKeyMacro "'c'v")))
-     --     @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
-     -- , testCase "RepeatLast test 30" $
-     --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
-     --                                        , ("b", "'za'V")
-     --                                        , ("c", "'ab'V") ] coinput)
-     --                             (stringToKeyMacro "'c'V")))
-     --     @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     , testCase "RepeatLast test 26" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+                                            , ("b", "'za'v")
+                                            , ("c", "'ab'v") ] coinput)
+                                 (stringToKeyMacro "'c'v")))
+         @?= "xyyzxyyxyyzxyyxyyxyyzxyyxyyzxyyxyy"
+     , testCase "RepeatLast test 27" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'V")
+                                            , ("b", "'za'v")
+                                            , ("c", "'ab'v") ] coinput)
+                                 (stringToKeyMacro "'c'v")))
+         @?= "xyxyzxyxyxyxyzxyxyxyxyxyxyzxyxyxyxyzxyxyxyxy"
+     , testCase "RepeatLast test 28" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+                                            , ("b", "'za'V")
+                                            , ("c", "'ab'v") ] coinput)
+                                 (stringToKeyMacro "'c'v")))
+         @?= "xyyzxyyzxyyzxyyzxyyxyyzxyyzxyyzxyyzxyy"
+     , testCase "RepeatLast test 29" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+                                            , ("b", "'za'V")
+                                            , ("c", "'ab'V") ] coinput)
+                                 (stringToKeyMacro "'c'v")))
+         @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
+     , testCase "RepeatLast test 30" $
+         snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
+                                            , ("b", "'za'V")
+                                            , ("c", "'ab'V") ] coinput)
+                                 (stringToKeyMacro "'c'V")))
+         @?= "xyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyyxyyzxyyzxyy"
      -- , testCase "RepeatLast test 31" $
      --     snd (last (unwindMacros (bindInput [ ("a", "'xy'v")
      --                                        , ("b", "'za'v")
@@ -250,9 +250,11 @@ unwindMacros IC.InputContent{bcmdMap, brevMap} startMacro =
                        -> [(BufferTrace, ActionLog)]
       transitionMacros (0 :: Int) _ _ = [macroLooped]  -- probably
       transitionMacros _ _ [] = error "bad initial conditions"
-      transitionMacros k out abuffs@(abuff : _) =
+      transitionMacros k out abuffs@(abuff : abuffRest) =
         storeTrace abuffs out : case slastPlay abuff of
-        KeyMacro [] -> []
+        KeyMacro [] -> if null abuffRest
+                       then []
+                       else transitionMacros (k - 1) out abuffRest
         KeyMacro (km : kms) -> case km `M.lookup` bcmdMap of
           Nothing -> error "unwindMacros: not a command"
           Just (_, _, cmd) ->
@@ -276,8 +278,7 @@ unwindMacros IC.InputContent{bcmdMap, brevMap} startMacro =
                   _ -> (abuffs2, out ++ [km])
 
                 abuffs4 = case abuffs3 of
-                  ActionBuffer _ (KeyMacro acts) _ : as
-                    | not (null as) && null acts -> as
+                  ActionBuffer _ (KeyMacro []) _ : as | not (null as) -> as
                   _ -> abuffs3
 
             in transitionMacros (k - 1) out' abuffs4
