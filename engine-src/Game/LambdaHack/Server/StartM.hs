@@ -310,7 +310,8 @@ populateDungeon = do
                              (ln, _, grp) : _ -> [(ln, 1, grp)]
                            else ginitial fact1
       (minD, maxD) = dungeonBounds dungeon
-      -- Players that escape go first to be started over stairs, if possible.
+      -- Players that escape go first to be started over stairs, if possible,
+      -- and far from escapes.
       valuePlayer pl = (not $ fcanEscape pl, fname pl)
       -- Sorting, to keep games from similar game modes mutually reproducible.
       needInitialCrew = sortOn (valuePlayer . gplayer . snd)
@@ -380,8 +381,8 @@ populateDungeon = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
--- over stairs, starting from the end of the list, including placing the last
--- factions over escapes (we assume they are guardians of the escapes).
+-- over stairs. Place the last factions over escapes
+-- (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
 findEntryPoss COps{coTileSpeedup}
@@ -414,11 +415,12 @@ findEntryPoss COps{coTileSpeedup}
       -- unless the staircase has both sets of stairs.
       deeperStairs = (if fromEnum lid > 0 then fst else snd) lstair
   let !_A = assert (k > 0 && factionDist > 0) ()
-      onStairs = reverse $ take k $ lescape ++ deeperStairs
-      nk = k - length onStairs
+      onStairs = reverse $ take k deeperStairs
+      onEscapes = reverse $ take (k - length onStairs) lescape
+      nk = k - length onStairs - length onEscapes
   -- Starting in the middle is too easy.
   found <- tryFind (middlePoint larea : onStairs) nk
-  return $! found ++ onStairs
+  return $! onStairs ++ found ++ onEscapes
 
 -- | Apply options that don't need a new game.
 applyDebug :: MonadServer m => m ()
