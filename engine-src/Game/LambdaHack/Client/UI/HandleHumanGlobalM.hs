@@ -405,7 +405,6 @@ displaceAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
-  let dozes = bwatch tb `elem` [WSleep, WWake]
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   actorMaxSk <- getsState $ getActorMaxSkills target
   dEnemy <- getsState $ dispEnemy leader target actorMaxSk
@@ -421,7 +420,7 @@ displaceAid target = do
        && actorWaits tb ->
        failSer DisplaceBraced
      | not (bproj tb) && atWar
-       && immobile && not dozes ->  -- roots weak if the tree sleeps
+       && immobile ->
        failSer DisplaceImmobile
      | not dEnemy && atWar ->
        failSer DisplaceSupported
