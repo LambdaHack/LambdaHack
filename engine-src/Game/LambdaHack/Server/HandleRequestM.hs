@@ -423,6 +423,7 @@ reqMeleeChecked voluntary source target iid cstore = do
                                . strajPushedBy
                  | otherwise -> return source
     discoAspect <- getsState sdiscoAspect
+    actorSk <- currentSkillsServer source
     let arTrunk = discoAspect EM.! btrunk tb
         arWeapon = discoAspect EM.! iid
         sfid = bfid sb
@@ -443,6 +444,7 @@ reqMeleeChecked voluntary source target iid cstore = do
        && EM.size (beqp tb) == 1
        && not (IA.checkFlag Ability.Blast arTrunk)
        && actorWaits sb  -- still valid while request being processed
+       && Ability.getSk Ability.SkMoveItem actorSk > 0  -- animals can't
     then do
       -- Catching the projectile, that is, stealing the item from its eqp.
       -- No effect from our weapon (organ) is applied to the projectile
