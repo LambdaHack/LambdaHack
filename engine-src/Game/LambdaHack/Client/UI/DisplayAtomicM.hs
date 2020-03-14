@@ -1741,15 +1741,15 @@ strike catch source target iid = assert (source /= target) $ do
             Just (_, speed) | bproj sb ->
               - modifyDamageBySpeed rawDeltaHP speed
             _ -> - rawDeltaHP
-        burnDmg = sum $ map Dice.supDice
-                  $ mapMaybe unBurn $ IK.ieffects $ itemKind itemFullWeapon
-        hpDmg = sum
-                $ mapMaybe unRefillHP $ IK.ieffects $ itemKind itemFullWeapon
+        burnDmg = - (sum $ map Dice.supDice
+                     $ mapMaybe unBurn $ IK.ieffects $ itemKind itemFullWeapon)
+        hpDmg =
+          - (sum $ mapMaybe unRefillHP $ IK.ieffects $ itemKind itemFullWeapon)
         -- For variety, attack adverb is based on attacker's and weapon's
         -- damage potential as compared to victim's current HP.
         -- We are not taking into account victim's armor yet.
         sHurt = armorHurtCalculation (bproj sb) sMaxSk Ability.zeroSkills
-        sDamage = min 0 $ kineticDmg - xM (burnDmg + hpDmg)
+        sDamage = min 0 $ kineticDmg + xM (burnDmg + hpDmg)
         deadliness = 1000 * (- sDamage) `div` max 1 (bhp tb)
         strongly
           | deadliness >= 10000 = "artfully"
