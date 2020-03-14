@@ -471,7 +471,10 @@ moveSearchAlter run dir = do
 
 alterCommon :: MonadClientUI m => Bool -> Point -> m (FailOrCmd RequestTimed)
 alterCommon bumping tpos = do
-  COps{cotile, coTileSpeedup} <- getsState scops
+  CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
+  cops@COps{cotile, coTileSpeedup} <- getsState scops
+  side <- getsClient sside
+  factionD <- getsState sfactionD
   actorSk <- leaderSkillsClientUI
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -479,11 +482,25 @@ alterCommon bumping tpos = do
       spos = bpos sb
   alterable <- getsState $ tileAlterable (blid sb) tpos
   lvl <- getLevel $ blid sb
+  localTime <- getsState $ getLocalTime (blid sb)
+  embeds <- getsState $ getEmbedBag (blid sb) tpos
+  itemToF <- getsState $ flip itemToFull
+  getKind <- getsState $ flip getIidKind
   let t = lvl `at` tpos
       underFeet = tpos == spos  -- if enter and alter, be more permissive
   if | not alterable -> do
          let name = MU.Text $ TK.tname $ okind cotile t
-         failWith $ makePhrase ["there is no point kicking", MU.AW name]
+             itemLook (iid, kit@(k, _)) =
+               let itemFull = itemToF iid
+               in partItemWsShort rwidth side factionD k localTime itemFull kit
+             embedKindList =
+               map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
+             ilooks = map itemLook $ sortEmbeds cops t embedKindList
+         failWith $ makePhrase $
+           ["there is no point kicking", MU.AW name]
+           ++ if EM.null embeds
+              then []
+              else ["with", MU.WWandW ilooks]
            -- misclick? related to AlterNothing but no searching possible;
            -- this also rules out activating embeds that only cause
            -- raw damage, with no chance of altering the tile
