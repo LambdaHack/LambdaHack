@@ -118,7 +118,7 @@ displayFrame mf = do
 -- the @lid@ level.
 displayFrames :: MonadClientUI m => LevelId -> PreFrames3 -> m ()
 displayFrames lid frs = do
-  let frames = case frs of
+  let framesRaw = case frs of
         [] -> []
         [Just ((bfr, ffr), (ovProp, ovMono))] ->
           [Just ((FrameBase $ U.unsafeThaw bfr, ffr), (ovProp, ovMono))]
@@ -127,13 +127,17 @@ displayFrames lid frs = do
           -- we have to copy it to avoid picture corruption.
           map (fmap $ \((bfr, ffr), (ovProp, ovMono)) ->
                 ((FrameBase $ U.thaw bfr, ffr), (ovProp, ovMono))) frs
-  mapM_ displayFrame frames
-  -- Can be different than @blid b@, e.g., when our actor is attacked
-  -- on a remote level.
+  -- If display level different than the man viewed level,
+  -- e.g., when our actor is attacked on a remote level,
+  -- then pad with tripple delay to give more time to see the remote frames(s).
   lidV <- viewedLevelUI
-  when (lidV == lid) $
-    modifySession $ \sess -> sess { sdisplayNeeded = False
-                                  , sturnDisplayed = True }
+  frames <- if (lidV == lid)
+            then do
+              modifySession $ \sess -> sess { sdisplayNeeded = False
+                                            , sturnDisplayed = True }
+              return framesRaw
+            else return $ framesRaw ++ [Nothing, Nothing, Nothing]
+  mapM_ displayFrame frames
 
 -- | Write 'FrontKey' UI request to the frontend, read the reply,
 -- set pointer, return key.
