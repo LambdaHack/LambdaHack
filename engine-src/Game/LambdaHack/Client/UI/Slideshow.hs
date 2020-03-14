@@ -245,8 +245,8 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
                      , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )
       ((lsInit, kxsInit), (headerProp, headerMono, rkxs)) =
-        -- Check whether most space taken by report and keys.
-        if | (lenOfRep + length lX) * 4 < 3 * height ->  -- display normally
+        -- Check whether all space taken by report and keys.
+        if | (lenOfRep + length lX) < height ->  -- display normally
              ((EM.empty, []), (repPrep0, lX ++ repMono0, keysX))
            | length reportAS <= 2 * width ->  -- very crude check, but OK
              ( (EM.empty, [])  -- already shown in full in shortened header
