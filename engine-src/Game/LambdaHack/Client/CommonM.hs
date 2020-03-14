@@ -65,6 +65,7 @@ aidTgtToPos aid lidV (Just tgt) s = case tgt of
 -- actor or obstacle. Starts searching with the given eps and returns
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
+-- Treats unknown tiles as walkable, but prefers known.
 makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
 makeLine onlyFirst body fpos epsOld = do
   COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops

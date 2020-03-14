@@ -1054,14 +1054,21 @@ aimEnemyHuman = do
 
 aimItemHuman :: MonadClientUI m => m ()
 aimItemHuman = do
+  side <- getsClient sside
   lidV <- viewedLevelUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   mxhairPos <- xhairToPos
   xhair <- getsSession sxhair
   saimMode <- getsSession saimMode
-  bsAll <- getsState $ EM.keys . lfloor . (EM.! lidV) . sdungeon
-  let ordPos p = (chessDist lpos p, p)
+  Level{lfloor} <- getLevel lidV
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
+  -- Don't consider own stash an ordinary pile of items.
+  let lfloorBarStash = case mstash of
+        Just (lid, pos) | lid == lidV -> EM.delete pos lfloor
+        _ -> lfloor
+      bsAll = EM.keys lfloorBarStash
+      ordPos p = (chessDist lpos p, p)
       dbs = sortOn ordPos bsAll
       pickUnderXhair =  -- switch to the item under xhair, if any
         let i = fromMaybe (-1)
