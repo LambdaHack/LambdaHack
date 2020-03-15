@@ -784,7 +784,8 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifySession $ \sess -> sess {sxhair = Just $ TEnemy aid}
+      modifySession $ \sess -> sess { sxhair = Just $ TEnemy aid
+                                    , sitemSel = Nothing }  -- reset flinging
       foes <- getsState $ foeRegularList side (blid body)
       unless (ES.member aid lastLost || length foes > 1) $
         msgAdd0 MsgFirstEnemySpot "You are not alone!"
@@ -853,7 +854,8 @@ spotItem verbose iid kit@(k, _) c = do
               when (lid == lidV) $ do
                 bag <- getsState $ getFloorBag lid p
                 modifySession $ \sess ->
-                  sess {sxhair = Just $ TPoint (TItem bag) lidV p}
+                  sess { sxhair = Just $ TPoint (TItem bag) lidV p
+                       , sitemSel = Nothing }  -- reset flinging
           itemVerbMU MsgItemMove iid kit "be located" c
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
