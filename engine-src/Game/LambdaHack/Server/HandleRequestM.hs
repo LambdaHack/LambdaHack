@@ -132,11 +132,14 @@ processWatchfulness mwait aid = do
       then execUpdAtomic $ UpdWaitActor aid WSleep WWake
       else execUpdAtomic $ UpdRefillHP aid 10000
              -- no @xM@, so slow, but each turn HP gauge green;
-             -- this is 1HP per 100 turns, so it's 10 slower than a necklace
-             -- that gives 1HP per 10 turns;
+             -- this is 1HP per 100 turns, so it's 10 times slower
+             -- than a necklace that gives 1HP per 10 turns;
              -- so if an actor sleeps for the duration of a 1000 turns,
              -- which may be the time it takes to fully explore a level,
-             -- 10HP would be gained, so weak actors would wake up
+             -- 10HP would be gained, so weak actors would wake up twice over,
+             -- which is fine: sleeping long enough to sidestep them at will,
+             -- but attacking, e.g., a group with explosives, is good choice
+             -- as well; so both stealth and mayhem fun correct tactically
     WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
       removeSleepSingle aid
     WWait 0 -> case mwait of  -- actor couldn't brace last time
