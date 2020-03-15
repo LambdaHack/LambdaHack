@@ -173,9 +173,9 @@ pickActorToMove maidToAvoid = do
                 actorHears = deltasHears (bcalmDelta b)
             return $! actorHears  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
-          -- AI has to be prudent and not lightly waste leader for meleeing,
-          -- even if his target is distant
-          actorMeleeing ((aid, _), _) = getsState $ anyFoeAdj aid
+          -- AI has to be prudent and not lightly waste leader for meleeing.
+          actorMeleeing ((aid, _), _) =
+            getsState $ anyHarmfulFoeAdj actorMaxSkills aid
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       let (oursFled, oursNotFled) = partition actorFled oursSafe
       (oursMeleeing, oursNotMeleeingRaw) <- partitionM actorMeleeing oursNotFled
