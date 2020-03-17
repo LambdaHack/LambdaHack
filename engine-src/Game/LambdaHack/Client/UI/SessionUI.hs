@@ -185,6 +185,7 @@ instance Binary SessionUI where
     put shistory
     put smarkVision
     put smarkSmell
+    put (show srandomUI)
   get = do
     sxhair <- get
     sactorUI <- get
@@ -198,6 +199,7 @@ instance Binary SessionUI where
     shistory <- get
     smarkVision <- get
     smarkSmell <- get
+    g <- get
     let slastItemMove = Nothing
         schanF = ChanFrontend $ const $
           error $ "Binary: ChanFrontend" `showFailure` ()
@@ -218,7 +220,7 @@ instance Binary SessionUI where
         sallTime = timeZero
         snframes = 0
         sallNframes = 0
-        srandomUI = SM.mkSMGen 0
+        srandomUI = read g
     return $! SessionUI{..}
 
 instance Binary RunParams where
