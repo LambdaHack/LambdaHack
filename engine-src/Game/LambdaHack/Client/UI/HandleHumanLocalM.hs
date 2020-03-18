@@ -144,7 +144,7 @@ chooseItemDialogMode c = do
               (verbEqp, nItems) =
                 if | n == 0 -> ("find nothing", "")
                    | calmEnough body actorMaxSk -> ("find", MU.CarAWs n "item")
-                   | otherwise -> ("paw distractedly", "")
+                   | otherwise -> ("paw distractedly at", MU.CarAWs n "item")
           in makePhrase
                [ MU.Capitalize $ MU.SubjectVerbSg subject verbEqp
                , nItems, MU.Text tIn
