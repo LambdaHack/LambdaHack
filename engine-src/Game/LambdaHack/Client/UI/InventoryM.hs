@@ -294,41 +294,13 @@ transition psuit prompt promptGeneric permitMulitple
         EM.filterWithKey hasPrefixOpen suitableItemSlotsAll
       bagSuit = EM.fromList $ map (\iid -> (iid, bagAllSuit EM.! iid))
                                   (EM.elems suitableItemSlotsOpen)
-      nextContainers forward = do
-        mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
-        let overStash = mstash == Just (blid body, bpos body)
-            calmE = calmEnough body actorMaxSk
-            (cCurAfterCalm, cRestAfterCalm) =
-              if forward
-              then case cRest ++ [cCur] of
-                c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
-                  | not calmE && overStash ->
-                    (c3, c1 : c2 : rest)
-                c1@(MStore CGround) : c2@(MStore CEqp) : c3 : rest
-                  | not calmE && overStash ->
-                    (c3, c1 : c2 : rest)
-                c1@(MStore CEqp) : c2 : rest | not calmE ->
-                  (c2, c1 : rest)
-                c1@(MStore CGround) : c2 : rest | overStash ->
-                  (c2, c1 : rest)
-                c1 : rest -> (c1, rest)
-                [] -> error $ "" `showFailure` cRest
-              else case reverse $ cCur : cRest of
-                c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
-                  | not calmE && overStash ->
-                    (c3, reverse $ c1 : c2 : rest)
-                c1@(MStore CGround) : c2@(MStore CEqp) : c3 : rest
-                  | not calmE && overStash ->
-                    (c3, reverse $ c1 : c2 : rest)
-                c1@(MStore CEqp) : c2 : rest | not calmE ->
-                  (c2, reverse $ c1 : rest)
-                c1@(MStore CGround) : c2 : rest | overStash ->
-                  (c2, reverse $ c1 : rest)
-                c1 : rest -> (c1, reverse rest)
-                [] -> error $ "" `showFailure` cRest
-        return (cCurAfterCalm, cRestAfterCalm)
-  nextContainersForward <- nextContainers True
-  nextContainersBackward <- nextContainers False
+      nextContainers forward = if forward
+                               then case cRest ++ [cCur] of
+                                 c1 : rest -> (c1, rest)
+                                 [] -> error $ "" `showFailure` cRest
+                               else case reverse $ cCur : cRest of
+                                 c1 : rest -> (c1, reverse rest)
+                                 [] -> error $ "" `showFailure` cRest
   (bagFiltered, promptChosen) <- getsState $ \s ->
     case itemDialogState of
       ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur s <> ":")
@@ -400,8 +372,7 @@ transition psuit prompt promptGeneric permitMulitple
         ]
         ++ numberPrefixes
       changeContainerDef forward defLabel =
-        let (cCurAfterCalm, cRestAfterCalm) =
-              if forward then nextContainersForward else nextContainersBackward
+        let (cCurAfterCalm, cRestAfterCalm) = nextContainers forward
         in DefItemKey
           { defLabel
           , defCond = cCurAfterCalm /= cCur
