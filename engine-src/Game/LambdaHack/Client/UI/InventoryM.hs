@@ -338,8 +338,7 @@ transition psuit prompt promptGeneric permitMulitple
            , defAction = \_ -> do
                err <- memberCycle False
                let !_A = assert (isNothing err `blame` err) ()
-               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               recCall numPrefix cCurUpd cRestUpd itemDialogState
+               recCall numPrefix cCur cRest itemDialogState
            })
         , let km = revCmd (K.KM K.NoModifier K.BackTab) MemberBack
           in (km, DefItemKey
@@ -348,8 +347,7 @@ transition psuit prompt promptGeneric permitMulitple
            , defAction = \_ -> do
                err <- memberBack False
                let !_A = assert (isNothing err `blame` err) ()
-               (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-               recCall numPrefix cCurUpd cRestUpd itemDialogState
+               recCall numPrefix cCur cRest itemDialogState
            })
         , (K.KM K.NoModifier K.LeftButtonRelease, DefItemKey
            { defLabel = Left ""
@@ -357,9 +355,7 @@ transition psuit prompt promptGeneric permitMulitple
            , defAction = \ekm -> do
                merror <- pickLeaderWithPointer
                case merror of
-                 Nothing -> do
-                   (cCurUpd, cRestUpd) <- legalWithUpdatedLeader cCur cRest
-                   recCall numPrefix cCurUpd cRestUpd itemDialogState
+                 Nothing -> recCall numPrefix cCur cRest itemDialogState
                  Just{} -> return ( Left "not a menu item nor teammate position"
                                   , (cCur, ekm) )
                              -- don't inspect the error, it's expected
@@ -459,25 +455,6 @@ keyOfEKM _ (Left kms) = error $ "" `showFailure` kms
 keyOfEKM numPrefix (Right SlotChar{..}) | slotPrefix == numPrefix =
   Just $ K.mkChar slotChar
 keyOfEKM _ _ = Nothing
-
-legalWithUpdatedLeader :: MonadClientUI m
-                       => ItemDialogMode
-                       -> [ItemDialogMode]
-                       -> m (ItemDialogMode, [ItemDialogMode])
-legalWithUpdatedLeader cCur cRest = do
-  leader <- getLeaderUI
-  let newLegal = cCur : cRest  -- not updated in any way yet
-  b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
-  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
-  let overStash = mstash == Just (blid b, bpos b)
-      calmE = calmEnough b actorMaxSk
-      legalAfterCalm = case newLegal of
-        c1@(MStore CEqp) : c2 : rest | not calmE -> (c2, c1 : rest)
-        c1@(MStore CGround) : c2 : rest | overStash -> (c2, c1 : rest)
-        c1 : rest -> (c1, rest)
-        [] -> error $ "" `showFailure` (cCur, cRest)
-  return legalAfterCalm
 
 -- We don't create keys from slots in @okx@, so they have to be
 -- exolicitly given in @slotKeys@.
