@@ -99,8 +99,7 @@ getStoreItem prompt cInitial = do
       post = dropWhile (== cInitial) rest
       remCs = post ++ pre
   soc <- getItem (return SuitsEverything)
-                 prompt prompt cInitial remCs
-                 True False (cInitial : remCs)
+                 prompt prompt cInitial remCs True False
   case soc of
     (Left err, cekm) -> return (Left err, cekm)
     (Right ([iid], itemBag, lSlots), cekm) ->
@@ -170,7 +169,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
             in (MStore cInit, map MStore $ post ++ pre)
       let (modeFirst, modeRest) = breakStores firstStore
       res <- getItem psuit prompt promptGeneric modeFirst modeRest
-                     askWhenLone permitMulitple (map MStore cLegal)
+                     askWhenLone permitMulitple
       case res of
         (Left t, _) -> return $ Left t
         (Right (iids, itemBag, _lSlots), cekm) -> do
@@ -190,11 +189,9 @@ getItem :: MonadClientUI m
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting mode is suitable
         -> Bool             -- ^ whether to permit multiple items as a result
-        -> [ItemDialogMode] -- ^ all legal modes
         -> m ( Either Text ([ItemId], ItemBag, SingleItemSlots)
              , (ItemDialogMode, Either K.KM SlotChar) )
-getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
-        cLegal = do
+getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple = do
   leader <- getLeaderUI
   accessCBag <- getsState $ accessModeBag leader
   let storeAssocs = EM.assocs . accessCBag
@@ -208,7 +205,7 @@ getItem psuit prompt promptGeneric cCur cRest askWhenLone permitMulitple
       return ( Right ([iid], EM.singleton iid k, EM.singleton slotChar iid)
              , (cCur, Right slotChar) )
     _ ->
-      transition psuit prompt promptGeneric permitMulitple cLegal
+      transition psuit prompt promptGeneric permitMulitple
                  0 cCur cRest ISuitable
 
 data DefItemKey m = DefItemKey
@@ -230,16 +227,15 @@ transition :: forall m. MonadClientUI m
            -> (Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
                -> Text)
            -> Bool
-           -> [ItemDialogMode]
            -> Int
            -> ItemDialogMode
            -> [ItemDialogMode]
            -> ItemDialogState
            -> m ( Either Text ([ItemId], ItemBag, SingleItemSlots)
                 , (ItemDialogMode, Either K.KM SlotChar) )
-transition psuit prompt promptGeneric permitMulitple cLegal
+transition psuit prompt promptGeneric permitMulitple
            numPrefix cCur cRest itemDialogState = do
-  let recCall = transition psuit prompt promptGeneric permitMulitple cLegal
+  let recCall = transition psuit prompt promptGeneric permitMulitple
   ItemSlots itemSlotsPre <- getsSession sslots
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -302,10 +298,9 @@ transition psuit prompt promptGeneric permitMulitple cLegal
         mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
         let overStash = mstash == Just (blid body, bpos body)
             calmE = calmEnough body actorMaxSk
-            mcCur = filter (`elem` cLegal) [cCur]
             (cCurAfterCalm, cRestAfterCalm) =
               if forward
-              then case cRest ++ mcCur of
+              then case cRest ++ [cCur] of
                 c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
                   | not calmE && overStash ->
                     (c3, c1 : c2 : rest)
@@ -318,7 +313,7 @@ transition psuit prompt promptGeneric permitMulitple cLegal
                   (c2, c1 : rest)
                 c1 : rest -> (c1, rest)
                 [] -> error $ "" `showFailure` cRest
-              else case reverse $ mcCur ++ cRest of
+              else case reverse $ cCur : cRest of
                 c1@(MStore CEqp) : c2@(MStore CGround) : c3 : rest
                   | not calmE && overStash ->
                     (c3, reverse $ c1 : c2 : rest)
