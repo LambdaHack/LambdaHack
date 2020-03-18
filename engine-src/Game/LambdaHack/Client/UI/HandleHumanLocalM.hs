@@ -158,7 +158,7 @@ chooseItemDialogMode c = do
                   ( "notice"
                   , case gstash fact of
                       Just (lid, _) ->
-                        map MU.Text ["on level", tshow $ fromEnum lid]
+                        map MU.Text ["on level", tshow $ abs $ fromEnum lid]
                       Nothing -> [] )
                 _ -> ("see", [])
               ownObject = case cstore of
