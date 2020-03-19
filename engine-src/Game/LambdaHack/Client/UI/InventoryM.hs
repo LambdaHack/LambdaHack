@@ -15,6 +15,8 @@ import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
+import           Game.LambdaHack.Client.MonadClient
+import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
@@ -63,14 +65,26 @@ getGroupItem :: MonadClientUI m
                           -- ^ which items to consider suitable
              -> Text      -- ^ specific prompt for only suitable items
              -> Text      -- ^ generic prompt
+             -> Text      -- ^ the verb to use
+             -> Text      -- ^ the generic verb to use
              -> [CStore]  -- ^ initial legal modes
              -> [CStore]  -- ^ legal modes after Calm taken into account
              -> m (Either Text (ItemId, (ItemDialogMode, Either K.KM SlotChar)))
-getGroupItem psuit prompt promptGeneric
-             cLegalRaw cLegal = do
+getGroupItem psuit prompt promptGeneric verb verbGeneric cLegalRaw cLegal = do
+  side <- getsClient sside
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
+  let ppItemDialogBody v body actorSk cCur = case cCur of
+        MStore CEqp | not $ calmEnough body actorSk ->
+          "distractedly attempt to" <+> v <+> ppItemDialogModeIn cCur
+        MStore CGround | mstash == Just (blid body, bpos body) ->
+          "greedily attempt to" <+> v <+> ppItemDialogModeIn cCur
+        _ -> v <+> ppItemDialogModeFrom cCur
   soc <- getFull psuit
-                 (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
-                 (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
+                 (\body _ actorSk cCur _ ->
+                    prompt <+> ppItemDialogBody verb body actorSk cCur)
+                 (\body _ actorSk cCur _ ->
+                    promptGeneric
+                    <+> ppItemDialogBody verbGeneric body actorSk cCur)
                  cLegalRaw cLegal True False
   case soc of
     Left err -> return $ Left err

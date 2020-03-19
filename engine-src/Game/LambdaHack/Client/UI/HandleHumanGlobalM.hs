@@ -366,9 +366,9 @@ meleeAid :: (MonadClient m, MonadClientUI m)
          => ActorId -> m (FailOrCmd RequestTimed)
 meleeAid target = do
   leader <- getLeaderUI
-  sb <- getsState $ getActorBody leader
+  side <- getsClient sside
   tb <- getsState $ getActorBody target
-  sfact <- getsState $ (EM.! bfid sb) . sfactionD
+  sfact <- getsState $ (EM.! side) . sfactionD
   mel <- pickWeaponClient leader target
   case mel of
     Nothing -> failWith "nothing to melee with"
@@ -382,9 +382,9 @@ meleeAid target = do
             -- and also it's not useful as permanent ranged target anyway.
             modifySession $ \sess -> sess {sxhair = Just $ TEnemy target}
             return $ Right wp
-          res | bproj tb || isFoe (bfid sb) sfact (bfid tb) = returnCmd
-              | isFriend (bfid sb) sfact (bfid tb) = do
-                let !_A = assert (bfid sb /= bfid tb) ()
+          res | bproj tb || isFoe side sfact (bfid tb) = returnCmd
+              | isFriend side sfact (bfid tb) = do
+                let !_A = assert (side /= bfid tb) ()
                 go1 <- displayYesNo ColorBW
                          "You are bound by an alliance. Really attack?"
                 if not go1 then failWith "attack canceled" else returnCmd

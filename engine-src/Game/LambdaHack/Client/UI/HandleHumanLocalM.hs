@@ -364,6 +364,7 @@ chooseItemProjectHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
+      verb = makePhrase [verb1]
       triggerSyms = triggerSymbols ts
   mpsuitReq <- psuitReq
   case mpsuitReq of
@@ -390,9 +391,10 @@ chooseItemProjectHuman ts = do
                   either (const False) snd (psuitReqFun itemFull)
                   && (null triggerSyms
                       || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-              prompt = makePhrase ["What", object1, "to", verb1]
-              promptGeneric = "What to fling"
-          ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+              prompt = makePhrase ["What", object1, "to"]
+              promptGeneric = "What to"
+          ggi <- getGroupItem psuit prompt promptGeneric verb "fling"
+                              cLegalRaw cLegal
           case ggi of
             Right (iid, (MStore fromCStore, _)) -> do
               modifySession $ \sess ->
@@ -547,9 +549,10 @@ chooseItemApplyHuman ts = do
       (verb1, object1) = case ts of
         [] -> ("apply", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
+      verb = makePhrase [verb1]
       triggerSyms = triggerSymbols ts
-      prompt = makePhrase ["What", object1, "to", verb1]
-      promptGeneric = "What to apply"
+      prompt = makePhrase ["What", object1, "to"]
+      promptGeneric = "What to"
   itemSel <- getsSession sitemSel
   case itemSel of
     Just (_, _, True) -> return Nothing
@@ -573,7 +576,8 @@ chooseItemApplyHuman ts = do
               either (const False) id (mp itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-      ggi <- getGroupItem psuit prompt promptGeneric cLegalRaw cLegal
+      ggi <- getGroupItem psuit prompt promptGeneric verb "apply"
+                          cLegalRaw cLegal
       case ggi of
         Right (iid, (MStore fromCStore, _)) -> do
           modifySession $ \sess ->
