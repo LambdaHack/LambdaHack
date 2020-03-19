@@ -1337,9 +1337,13 @@ itemMenuHuman cmdAction = do
               ovFound = alPrefix ++ ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
+          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! (bfid b)
           actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b actorMaxSk
-              greyedOut cmd = not calmE && fromCStore == CEqp || case cmd of
+              greyedOut cmd = not calmE && fromCStore == CEqp
+                              || mstash == Just (blid b, bpos b)
+                                 && fromCStore == CGround
+                              || case cmd of
                 ByAimMode AimModeCmd{..} ->
                   greyedOut exploration || greyedOut aiming
                 ComposeIfLocal cmd1 cmd2 -> greyedOut cmd1 || greyedOut cmd2
@@ -1348,6 +1352,7 @@ itemMenuHuman cmdAction = do
                 MoveItem stores destCStore _ _ ->
                   fromCStore `notElem` stores
                   || destCStore == CEqp && (not calmE || eqpOverfull b 1)
+                  || destCStore == CGround && mstash == Just (blid b, bpos b)
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorSk
                   in not $ either (const False) id
