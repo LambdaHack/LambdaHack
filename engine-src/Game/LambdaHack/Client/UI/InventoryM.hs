@@ -15,8 +15,6 @@ import qualified Data.Text as T
 import           Data.Tuple (swap)
 import qualified NLP.Miniutter.English as MU
 
-import           Game.LambdaHack.Client.MonadClient
-import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Client.UI.ActorUI
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.ContentClientUI
@@ -69,11 +67,11 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ legal modes after Calm taken into account
              -> m (Either Text (ItemId, (ItemDialogMode, Either K.KM SlotChar)))
 getGroupItem psuit prompt promptGeneric
-             cLegalRaw cLegalAfterCalm = do
+             cLegalRaw cLegal = do
   soc <- getFull psuit
                  (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
                  (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                 cLegalRaw cLegalAfterCalm True False
+                 cLegalRaw cLegal True False
   case soc of
     Left err -> return $ Left err
     Right ([(iid, _)], cekm) -> return $ Right (iid, cekm)
@@ -122,18 +120,9 @@ getFull :: MonadClientUI m
         -> Bool             -- ^ whether to permit multiple items as a result
         -> m (Either Text ( [(ItemId, ItemQuant)]
                           , (ItemDialogMode, Either K.KM SlotChar) ))
-getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
+getFull psuit prompt promptGeneric cLegalRaw cLegal
         askWhenLone permitMulitple = do
-  side <- getsClient sside
   leader <- getLeaderUI
-  let aidNotEmpty store aid = do
-        body <- getsState $ getActorBody aid
-        bag <- getsState $ getBodyStoreBag body store
-        return $! not $ EM.null bag
-      partyNotEmpty store = do
-        as <- getsState $ fidActorNotProjGlobalAssocs side
-        bs <- mapM (aidNotEmpty store . fst) as
-        return $! or bs
   mpsuit <- psuit
   let psuitFun = case mpsuit of
         SuitsEverything -> \_ _ -> True
@@ -143,7 +132,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
   b <- getsState $ getActorBody leader
   getCStoreBag <- getsState $ \s cstore -> getBodyStoreBag b cstore s
   let hasThisActor = not . EM.null . getCStoreBag
-  case filter hasThisActor cLegalAfterCalm of
+  case filter hasThisActor cLegal of
     [] -> case filter hasThisActor cLegalRaw of
             [] -> do
               let contLegalRaw = map MStore cLegalRaw
@@ -161,13 +150,12 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
             let bag = getCStoreBag store
             in any (\(iid, kit) -> psuitFun (itemToF iid) kit) $ EM.assocs bag
           firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
-      -- Don't display stores totally empty for all actors.
-      cLegal <- filterM partyNotEmpty cLegalRaw
-      let breakStores cInit =
-            let (pre, rest) = break (== cInit) cLegal
+          -- Don't display stores totally empty for all actors.
+          breakStores cInit =
+            let (pre, rest) = break (== cInit) cLegalRaw
                 post = dropWhile (== cInit) rest
             in (MStore cInit, map MStore $ post ++ pre)
-      let (modeFirst, modeRest) = breakStores firstStore
+          (modeFirst, modeRest) = breakStores firstStore
       res <- getItem psuit prompt promptGeneric modeFirst modeRest
                      askWhenLone permitMulitple
       case res of
