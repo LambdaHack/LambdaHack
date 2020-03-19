@@ -124,6 +124,7 @@ chooseItemDialogMode c = do
   FontSetup{..} <- getFontSetup
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
   let prompt :: Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
              -> Text
       prompt body bodyUI actorMaxSk c2 s =
@@ -135,8 +136,11 @@ chooseItemDialogMode c = do
         MStore CGround ->
           let n = countItems CGround
               nItems = MU.CarAWs n "item"
+              verbGround = if mstash == Just (blid body, bpos body)
+                           then "fondle greedily"
+                           else "notice"
           in makePhrase
-               [ MU.Capitalize $ MU.SubjectVerbSg subject "notice"
+               [ MU.Capitalize $ MU.SubjectVerbSg subject verbGround
                , nItems, "at"
                , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text "feet" ]
         MStore CEqp ->

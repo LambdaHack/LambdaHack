@@ -681,7 +681,7 @@ continueToXhairHuman = goToXhair False False{-irrelevant-}
 -- * MoveItem
 
 moveItemHuman :: forall m. MonadClientUI m
-              => [CStore] -> CStore -> Maybe MU.Part -> Bool
+              => [CStore] -> CStore -> Maybe Text -> Bool
               -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
   actorSk <- leaderSkillsClientUI
@@ -700,7 +700,7 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 -- more than one item is chosen, which doesn't fit @sitemSel@. Separating
 -- grabbing of multiple items as a distinct command is too high a price.
 moveOrSelectItem :: forall m. MonadClientUI m
-                 => [CStore] -> [CStore] -> CStore -> Maybe MU.Part -> Bool
+                 => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
                  -> m (FailOrCmd RequestTimed)
 moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
@@ -739,11 +739,11 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
         Right is -> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
-                  => [CStore] -> [CStore] -> CStore -> Maybe MU.Part -> Bool
+                  => [CStore] -> [CStore] -> CStore -> Maybe Text -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
 selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
-  let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
+  let verb = fromMaybe (verbCStore destCStore) mverb
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   -- This calmE is outdated when one of the items increases max Calm
@@ -766,8 +766,19 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
                                       && lastFrom `elem` cLegal ->
             lastFrom : delete lastFrom cLegal
           _ -> cLegal
-        prompt = makePhrase ["What to", verb]
-        promptEqp = makePhrase ["What consumable to", verb]
+        prompt = "What to"
+        promptEqp = "What consumable to"
+        ppItemDialogBody body actorSk cCur = case cCur of
+          MStore CEqp | not $ calmEnough body actorSk ->
+            "distractedly paw at" <+> ppItemDialogModeIn cCur
+          MStore CGround | mstash == Just (blid body, bpos body) ->
+            "greedily fondle" <+> ppItemDialogModeIn cCur
+          _ -> case destCStore of
+            CEqp | not $ calmEnough body actorSk ->
+              "distractedly attempt to" <+> verb <+> ppItemDialogModeFrom cCur
+            CGround | mstash == Just (blid body, bpos body) ->
+              "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
+            _ -> verb <+> ppItemDialogModeFrom cCur
         (promptGeneric, psuit) =
           -- We prune item list only for eqp, because other stores don't have
           -- so clear cut heuristics. So when picking up a stash, either grab
@@ -779,8 +790,10 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
           else (prompt, return SuitsEverything)
     ggi <-
       getFull psuit
-              (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
-              (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
+              (\body _ actorSk cCur _ ->
+                 prompt <+> ppItemDialogBody body actorSk cCur)
+              (\body _ actorSk cCur _ ->
+                 promptGeneric <+> ppItemDialogBody body actorSk cCur)
               cLegalRaw cLegalLast (not auto) True
     case ggi of
       Right (l, (MStore fromCStore, _)) -> do

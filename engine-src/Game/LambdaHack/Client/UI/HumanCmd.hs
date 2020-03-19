@@ -120,7 +120,7 @@ data HumanCmd =
   | MoveOnceToXhair
   | RunOnceToXhair
   | ContinueToXhair
-  | MoveItem [CStore] CStore (Maybe MU.Part) Bool
+  | MoveItem [CStore] CStore (Maybe Text) Bool
   | Project
   | Apply
   | AlterDir
