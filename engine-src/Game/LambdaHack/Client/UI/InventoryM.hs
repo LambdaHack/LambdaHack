@@ -162,7 +162,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegalAfterCalm
             in any (\(iid, kit) -> psuitFun (itemToF iid) kit) $ EM.assocs bag
           firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
       -- Don't display stores totally empty for all actors.
-      cLegal <- filterM partyNotEmpty cLegalRaw
+      cLegal <- filterM partyNotEmpty cLegalAfterCalm
       let breakStores cInit =
             let (pre, rest) = break (== cInit) cLegal
                 post = dropWhile (== cInit) rest

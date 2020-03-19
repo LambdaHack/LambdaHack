@@ -685,8 +685,14 @@ moveItemHuman :: forall m. MonadClientUI m
               -> m (FailOrCmd RequestTimed)
 moveItemHuman cLegalRaw destCStore mverb auto = do
   actorSk <- leaderSkillsClientUI
-  if Ability.getSk Ability.SkMoveItem actorSk > 0 then
-    moveOrSelectItem cLegalRaw destCStore mverb auto
+  if Ability.getSk Ability.SkMoveItem actorSk > 0 then do
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+    let overStash = mstash == Just (blid b, bpos b)
+        calmE = calmEnough b actorSk
+        cLegal = cLegalRaw \\ ([CGround | overStash] ++ [CEqp | not calmE])
+    moveOrSelectItem cLegal cLegalRaw destCStore mverb auto
   else failSer MoveItemUnskilled
 
 -- This cannot be structured as projecting or applying, with @ByItemMode@
@@ -694,14 +700,14 @@ moveItemHuman cLegalRaw destCStore mverb auto = do
 -- more than one item is chosen, which doesn't fit @sitemSel@. Separating
 -- grabbing of multiple items as a distinct command is too high a price.
 moveOrSelectItem :: forall m. MonadClientUI m
-                 => [CStore] -> CStore -> Maybe MU.Part -> Bool
+                 => [CStore] -> [CStore] -> CStore -> Maybe MU.Part -> Bool
                  -> m (FailOrCmd RequestTimed)
-moveOrSelectItem cLegalRaw destCStore mverb auto = do
+moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
   itemSel <- getsSession sitemSel
   modifySession $ \sess -> sess {sitemSel = Nothing}  -- prevent surprise
   case itemSel of
     Just (iid, fromCStore, _) | fromCStore /= destCStore
-                                && fromCStore `elem` cLegalRaw -> do
+                                && fromCStore `elem` cLegal -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       bag <- getsState $ getBodyStoreBag b fromCStore
@@ -723,7 +729,7 @@ moveOrSelectItem cLegalRaw destCStore mverb auto = do
                 let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
                 in moveItems cLegalRaw is destCStore
     _ -> do
-      mis <- selectItemsToMove cLegalRaw destCStore mverb auto
+      mis <- selectItemsToMove cLegal cLegalRaw destCStore mverb auto
       case mis of
         Left err -> return $ Left err
         Right (fromCStore, [(iid, _)]) | cLegalRaw /= [CGround] -> do
@@ -733,9 +739,9 @@ moveOrSelectItem cLegalRaw destCStore mverb auto = do
         Right is -> moveItems cLegalRaw is destCStore
 
 selectItemsToMove :: forall m. MonadClientUI m
-                  => [CStore] -> CStore -> Maybe MU.Part -> Bool
+                  => [CStore] -> [CStore] -> CStore -> Maybe MU.Part -> Bool
                   -> m (FailOrCmd (CStore, [(ItemId, ItemQuant)]))
-selectItemsToMove cLegalRaw destCStore mverb auto = do
+selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
   let !_A = assert (destCStore `notElem` cLegalRaw) ()
   let verb = fromMaybe (MU.Text $ verbCStore destCStore) mverb
   leader <- getLeaderUI
@@ -755,12 +761,11 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
   if destCStore == CEqp && not calmE then failSer ItemNotCalm
   else if destCStore == CGround && overStash then failSer ItemOverStash
   else do
-    let cLegalE = cLegalRaw \\ [CGround | overStash]
-        cLegal = case lastItemMove of
+    let cLegalLast = case lastItemMove of
           Just (lastFrom, lastDest) | lastDest == destCStore
-                                      && lastFrom `elem` cLegalE ->
-            lastFrom : delete lastFrom cLegalE
-          _ -> cLegalE
+                                      && lastFrom `elem` cLegal ->
+            lastFrom : delete lastFrom cLegal
+          _ -> cLegal
         prompt = makePhrase ["What to", verb]
         promptEqp = makePhrase ["What consumable to", verb]
         (promptGeneric, psuit) =
@@ -776,7 +781,7 @@ selectItemsToMove cLegalRaw destCStore mverb auto = do
       getFull psuit
               (\_ _ _ cCur _ -> prompt <+> ppItemDialogModeFrom cCur)
               (\_ _ _ cCur _ -> promptGeneric <+> ppItemDialogModeFrom cCur)
-                   cLegalRaw cLegal (not auto) True
+              cLegalRaw cLegalLast (not auto) True
     case ggi of
       Right (l, (MStore fromCStore, _)) -> do
         modifySession $ \sess ->

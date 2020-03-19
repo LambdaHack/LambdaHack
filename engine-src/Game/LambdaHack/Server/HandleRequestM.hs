@@ -962,6 +962,8 @@ reqMoveItem absentPermitted aid calmE (iid, kOld, fromCStore, toCStore) = do
   if
    | absentPermitted && k == 0 -> return ()
    | k < 1 || fromCStore == toCStore -> execFailure aid req ItemNothing
+   | fromCStore == CEqp && not calmE ->
+     execFailure aid req ItemNotCalm
    | toCStore == CEqp && not calmE ->
      execFailure aid req ItemNotCalm
    | toCStore == CEqp && eqpOverfull b k ->
