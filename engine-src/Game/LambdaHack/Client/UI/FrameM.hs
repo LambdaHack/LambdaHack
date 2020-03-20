@@ -170,28 +170,24 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- to also capture choice of items from menus, etc.
   -- Notice that keys coming from macros (in-game, content, config)
   -- are recorded as well and this is well defined and essential.
-  CCUI{coinput} <- getsSession sccui
+  CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
          , sturnDisplayed = True
-         , sactionPending = addToMacro coinput km $ sactionPending sess }
+         , sactionPending = addToMacro bcmdMap km $ sactionPending sess }
   return km
 
-addToMacro :: InputContent -> K.KM -> [ActionBuffer] -> [ActionBuffer]
-addToMacro _ _ [] = error "cannot add macro to empty action stack"
-addToMacro InputContent{bcmdMap, brevMap} km (abuff : abuffs) =
-  let mRecordLast = case (\(_, _, cmd) -> cmd) <$> M.lookup km bcmdMap of
-        Just (HumanCmd.RepeatLast _) -> Nothing
-        _ -> return []
-      newBuffer = case mRecordLast >> M.lookup HumanCmd.Record brevMap of
-        Just [] -> error $ "record key not bound" `showFailure` brevMap
-        Just kms | not (km `elem` kms) ->
-          -- Exclude from in-game macros keystrokes that
-          -- start/stop recording a macro.
-          abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
-          -- This is noop when not recording a macro,
-          -- which is exactly the required semantics.
-        _ -> abuff
+addToMacro :: M.Map K.KM HumanCmd.CmdTriple -> K.KM -> [ActionBuffer]
+           -> [ActionBuffer]
+addToMacro _ _ [] = error "addToMacro: empty action stack"
+addToMacro bcmdMap km (abuff : abuffs) =
+  let newBuffer = case (\(_, _, cmd) -> cmd) <$> M.lookup km bcmdMap of
+        Nothing -> abuff
+        Just HumanCmd.Record -> abuff
+        Just (HumanCmd.RepeatLast _) -> abuff
+        _ -> abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
+             -- This is noop when not recording a macro,
+             -- which is exactly the required semantics.
    in (newBuffer : abuffs)
 
 dropEmptyBuffers :: [ActionBuffer] -> [ActionBuffer]

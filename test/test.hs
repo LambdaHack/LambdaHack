@@ -1,6 +1,5 @@
 import Prelude ()
 
-import           Data.List (inits)
 import           Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 import           Options.Applicative
@@ -277,6 +276,21 @@ macroTests = testGroup "macroTests" $
                                          , ("c", "'xyvb'V") ] coinput)
                                  (stringToKeyMacro "'c'V"))))
          @?= "xyyzxyyyxyyzxyyyxyyzxyyyxyyzxyyy"
+     , testCase "RepeatLast test 38" $
+         snd (last (accumulateActions (unwindMacros coinput
+                                        (stringToKeyMacro "'xv'V"))))
+         @?= "xxxx"
+     , testCase "RepeatLast test 39" $
+         fst <$> unwindMacros coinput (stringToKeyMacro "'xv'V")
+         @?= [[(Right   "", "'xv'V",  "")],
+              [(Left    "",  "xv'V",  "")],
+              [(Left   "x",   "v'V", "x")],
+              [(Left   "x",   "x'V", "x")],
+              [(Left  "xx",    "'V", "x")],
+              [(Right "xx",     "V", "x")],
+              [(Right "xx",    "xx", "V")],
+              [(Right "xx",     "x", "x")],
+              [(Right "xx",      "", "x")]]
      ]
 
 data SessionUIMock = SessionUIMock
@@ -367,7 +381,7 @@ cmdSemanticsM km = \case
 
 promptGetKeyM :: [K.KM] -> State SessionUIMock (Maybe K.KM)
 promptGetKeyM frontKeyKeys = do
-  SessionUIMock abuffs CCUI{coinput} _ <- get
+  SessionUIMock abuffs CCUI{coinput=IC.InputContent{bcmdMap}} _ <- get
   let abuff = head abuffs
   case slastPlay abuff of
     KeyMacro (km : kms)
@@ -377,7 +391,7 @@ promptGetKeyM frontKeyKeys = do
             let newHead = abuff { slastPlay = KeyMacro kms }
             in newHead : tail abuffs }
         modify $ \sess ->
-          sess { sactionPendingM = addToMacro coinput km $ sactionPendingM sess }
+          sess { sactionPendingM = addToMacro bcmdMap km $ sactionPendingM sess }
         return (Just km)
     KeyMacro (_ : _) -> do
       resetPlayBackM
