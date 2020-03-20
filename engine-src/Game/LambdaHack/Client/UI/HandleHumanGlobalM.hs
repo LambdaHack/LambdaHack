@@ -763,6 +763,7 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
   let overStash = mstash == Just (blid b, bpos b)
       calmE = calmEnough b actorMaxSk
   if destCStore == CEqp && not calmE then failSer ItemNotCalm
+  else if destCStore == CEqp && eqpOverfull b 1 then failSer EqpOverfull
   else if destCStore == CGround && overStash then failSer ItemOverStash
   else do
     let cLegalLast = case lastItemMove of
@@ -780,6 +781,8 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
           _ -> case destCStore of
             CEqp | not $ calmEnough body actorSk ->
               "distractedly attempt to" <+> verb <+> ppItemDialogModeFrom cCur
+            CEqp | eqpOverfull body 1 ->
+              "attempt to fit into equipment" <+> ppItemDialogModeFrom cCur
             CGround | mstash == Just (blid body, bpos body) ->
               "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
             _ -> verb <+> ppItemDialogModeFrom cCur
