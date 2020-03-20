@@ -257,6 +257,9 @@ macroTests = testGroup "macroTests" $
               [(Right "xx",    "xx", "V")],
               [(Right "xx",     "x", "x")],
               [(Right "xx",      "", "x")]]
+     , testCase "RepeatLast test 39" $
+         snd (last (unwindMacrosAcc coinput (stringToKeyMacro "'xy'Vv")))
+         @?= "xyxyy"
      ]
 
 integrationTests :: TestTree
