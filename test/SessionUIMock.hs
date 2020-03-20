@@ -1,5 +1,5 @@
 module SessionUIMock
-  ( unwindMacros , accumulateActions
+  ( unwindMacros, unwindMacrosAcc
   ) where
 
 import Prelude ()
@@ -148,6 +148,9 @@ accumulateActions ba =
   let (buffers, actions) = unzip ba
       actionlog = concat <$> inits actions
   in zip buffers actionlog
+
+unwindMacrosAcc :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
+unwindMacrosAcc  ic initMacro = accumulateActions $ unwindMacros ic initMacro
 
 storeTrace :: [ActionBuffer] -> [K.KM] -> (BufferTrace, ActionLog)
 storeTrace abuffs out =
