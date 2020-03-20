@@ -831,39 +831,46 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
               let n = oldN + if toCStore == CEqp then k else 0
               l4 <- ret4 rest n
               return $ (iid, k, fromCStore, toCStore) : l4
-            issueWarning = do
-              let fullWarn = if eqpOverfull b (oldN + 1)
-                             then EqpOverfull
-                             else EqpStackFull
-              msgAdd MsgWarning $ "Warning:" <+> showReqFailure fullWarn <> "."
         if cLegalRaw == [CGround] && destCStore == CStash  -- normal pickup
         then -- @CStash@ is the implicit default; refine:
-             if | not (benInEqp (discoBenefit EM.! iid) && calmE) ->
-                  -- If @CEqp@ is impossible, give up:
+             if | not $ benInEqp $ discoBenefit EM.! iid -> retRec CStash
+                | eqpOverfull b (oldN + 1) -> do
+                  msgAdd MsgWarning $
+                    "Warning:" <+> showReqFailure EqpOverfull <> "."
                   retRec CStash
                 | eqpOverfull b (oldN + k) -> do
                   -- If this stack doesn't fit, we don't equip any part of it,
                   -- but we may equip a smaller stack later of other items
                   -- in the same pickup.
-                  issueWarning
+                  msgAdd MsgWarning $
+                    "Warning:" <+> showReqFailure EqpStackFull <> "."
+                  retRec CStash
+                | not calmE -> do
+                  msgAdd MsgWarning $
+                    "Warning:" <+> showReqFailure ItemNotCalm <> "."
                   retRec CStash
                 | otherwise ->
                   -- Prefer @CEqp@ if all conditions hold:
                   retRec CEqp
         else case destCStore of  -- player forces store, so @benInEqp@ ignored
+          CEqp | eqpOverfull b (oldN + 1) -> do
+            msgAdd MsgWarning $
+              "Failure:" <+> showReqFailure EqpOverfull <> "."
+            -- No recursive call here, we exit item manipulation:
+            return []
           CEqp | eqpOverfull b (oldN + k) -> do
-            -- If the chosen number from the stack doesn't fit,
-            -- we don't equip any part of it and we exit item manipulation.
-            issueWarning
-            -- No recursive call here:
+            msgAdd MsgWarning $
+              "Failure:" <+> showReqFailure EqpStackFull <> "."
+            return []
+          CEqp | not calmE -> do
+            msgAdd MsgWarning $
+              "Failure:" <+> showReqFailure ItemNotCalm <> "."
             return []
           _ -> retRec destCStore
-  if destCStore == CEqp && not calmE then failSer ItemNotCalm
-  else do
-    l4 <- ret4 l 0
-    return $! if null l4
-              then error $ "" `showFailure` l
-              else Right $ ReqMoveItems l4
+  l4 <- ret4 l 0
+  return $! if null l4
+            then error $ "" `showFailure` l
+            else Right $ ReqMoveItems l4
 
 -- * Project
 
