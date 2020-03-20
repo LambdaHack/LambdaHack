@@ -17,8 +17,9 @@ import           Game.LambdaHack.Client.UI.SessionUI
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input
-import           SessionUIMock
 import           TieKnot
+
+import SessionUIMock
 
 main :: IO ()
 main = defaultMain tests
