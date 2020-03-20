@@ -445,7 +445,8 @@ test-suite test
   import: options, exe-options
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
-  main-is:            test.hs
+  main-is:            Spec.hs
+  other-modules:      SessionUIMock
   build-depends:      ,LambdaHack
                       ,this-game-content
                       ,this-game-src
