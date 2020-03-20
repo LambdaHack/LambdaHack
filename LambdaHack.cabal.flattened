@@ -385,9 +385,17 @@ executable LambdaHack
 test-suite test
   import: options, exe-options
   type:               exitcode-stdio-1.0
-  main-is:            test/test.hs
+  hs-source-dirs:     test
+  main-is:            Spec.hs
+  other-modules:      SessionUIMock
   build-depends:      ,LambdaHack
+                      ,this-game-content
+                      ,this-game-src
                       ,async
                       ,base
+                      ,containers
                       ,filepath
                       ,optparse-applicative
+                      ,tasty >= 1.0
+                      ,tasty-hunit
+                      ,transformers
