@@ -188,7 +188,7 @@ addToMacro bcmdMap km (abuff : abuffs) =
         _ -> abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
              -- This is noop when not recording a macro,
              -- which is exactly the required semantics.
-   in (newBuffer : abuffs)
+  in (newBuffer : abuffs)
 
 dropEmptyBuffers :: [ActionBuffer] -> [ActionBuffer]
 dropEmptyBuffers [playersBuffer]= [playersBuffer]

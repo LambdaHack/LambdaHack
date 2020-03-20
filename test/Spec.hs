@@ -1,6 +1,9 @@
 module Main (main) where
 
-import           Prelude ()
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
+
 import qualified Data.Map.Strict as M
 import           Options.Applicative
 import           Test.Tasty
@@ -11,7 +14,6 @@ import           Game.LambdaHack.Client.UI.Frontend.Chosen
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Core.Prelude
 import           Game.LambdaHack.Server
 
 import qualified Client.UI.Content.Input as Content.Input
@@ -45,8 +47,8 @@ macroTests = testGroup "macroTests" $
              ]
      , testCase "Macro 1 from Issue#189 description" $
          snd (last (unwindMacros (bindInput [ ("a", "'bc'V")
-                                       , ("c", "'aaa'V") ] coinput)
-                 (stringToKeyMacro "a")))
+                                            , ("c", "'aaa'V") ] coinput)
+                                 (stringToKeyMacro "a")))
          @?= "Macro looped"
      , testCase "Macro 2 from Issue#189 description" $
          snd (last (accumulateActions (unwindMacros

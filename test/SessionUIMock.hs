@@ -2,22 +2,24 @@ module SessionUIMock
   ( unwindMacros , accumulateActions
   ) where
 
-import           Prelude ()
-import           Control.Monad.Trans.Writer.Lazy
-import           Control.Monad.Trans.State.Lazy
+import Prelude ()
+
+import Game.LambdaHack.Core.Prelude
+
 import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.State.Lazy
+import           Control.Monad.Trans.Writer.Lazy
 import           Data.Bifunctor (bimap)
 import qualified Data.Map.Strict as M
 
 import qualified Game.LambdaHack.Client.UI.Content.Input as IC
+import           Game.LambdaHack.Client.UI.ContentClientUI
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHumanLocalM
 import           Game.LambdaHack.Client.UI.HandleHumanM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
-import           Game.LambdaHack.Client.UI.ContentClientUI
-import           Game.LambdaHack.Core.Prelude
 
 data SessionUIMock = SessionUIMock
   { sactionPendingM :: [ActionBuffer]
@@ -117,7 +119,7 @@ promptGetKeyM frontKeyKeys = do
             let newHead = abuff { slastPlay = KeyMacro kms }
             in newHead : tail abuffs }
         modify $ \sess ->
-          sess { sactionPendingM = addToMacro bcmdMap km $ sactionPendingM sess }
+          sess {sactionPendingM = addToMacro bcmdMap km $ sactionPendingM sess}
         return (Just km)
     KeyMacro (_ : _) -> do
       resetPlayBackM
@@ -139,19 +141,19 @@ unwindMacros ic initMacro =
           { sactionPendingM = [emptyBuffer { slastPlay = initMacro }]
           , sccuiM = emptyCCUI { coinput = ic }
           , counter = 0 }
-   in evalState (execWriterT humanCommandM) initSession
+  in evalState (execWriterT humanCommandM) initSession
 
 accumulateActions :: [(BufferTrace, ActionLog)] -> [(BufferTrace, ActionLog)]
 accumulateActions ba =
   let (buffers, actions) = unzip ba
       actionlog = concat <$> inits actions
-   in zip buffers actionlog
+  in zip buffers actionlog
 
 storeTrace :: [ActionBuffer] -> [K.KM] -> (BufferTrace, ActionLog)
 storeTrace abuffs out =
   let tmacros = bimap (concatMap K.showKM)
                       (concatMap K.showKM . unKeyMacro)
-              . smacroBuffer <$> abuffs
+                . smacroBuffer <$> abuffs
       tlastPlay = concatMap K.showKM . unKeyMacro . slastPlay <$> abuffs
       tlastAction = maybe "" K.showKM . slastAction <$> abuffs
       toutput = concatMap K.showKM out
