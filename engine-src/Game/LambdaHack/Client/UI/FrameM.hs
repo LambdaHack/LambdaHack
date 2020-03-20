@@ -168,7 +168,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       connFrontendFrontKey frontKeyKeys frontKeyFrame
   -- In-game macros need to be recorded here, not in @UI.humanCommand@,
   -- to also capture choice of items from menus, etc.
-  -- Notice that keys coming from macros (in-game, content, config)
+  -- Notice that keys coming from macros (from content, in-game, config)
   -- are recorded as well and this is well defined and essential.
   CCUI{coinput=InputContent{bcmdMap}} <- getsSession sccui
   modifySession $ \sess ->

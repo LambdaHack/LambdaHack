@@ -42,9 +42,11 @@ humanCommandM = do
     tmp <- get
     return . fst $ storeTrace (sactionPendingM tmp) [] -- log session
   abortOrCmd <- lift iterationM -- do stuff
+  -- GC action buffer if there's no actions left to handle,
+  -- removing all unnecessary buffers at once,
+  -- but leaving the last one for user's in-game macros.
   lift $ modify $ \sess ->
     sess { sactionPendingM = dropEmptyBuffers $ sactionPendingM sess }
-    -- remove all unnecessary buffers at once
   case abortOrCmd of
     Right Looped -> tell [(abuffs, "Macro looped")] >> pure ()
     Right _ -> tell [(abuffs, "")] >> pure () -- exit loop

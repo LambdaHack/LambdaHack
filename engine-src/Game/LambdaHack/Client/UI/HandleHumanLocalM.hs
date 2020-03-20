@@ -735,7 +735,7 @@ repeatLastHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
 repeatLastHumanTransition _ [] = error "repeatLastHumanTransition: empty stack"
 repeatLastHumanTransition n (abuff : abuffs) =
   let cmd = KeyMacro . concat . replicate n . maybeToList $ slastAction abuff
-   in abuff { slastPlay = cmd <> slastPlay abuff } : abuffs
+  in abuff { slastPlay = cmd <> slastPlay abuff } : abuffs
 
 -- * Record
 
@@ -758,7 +758,7 @@ recordHumanTransition (abuff : abuffs) =
           -- Stop recording in-game macro.
           (Right . KeyMacro . reverse $ xs, "Macro recording stopped.")
       newBuffer = abuff { smacroBuffer = buffer }
-   in (newBuffer : abuffs, msg)
+  in (newBuffer : abuffs, msg)
 
 -- * AllHistory
 

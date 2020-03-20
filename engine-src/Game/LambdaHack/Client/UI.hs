@@ -164,8 +164,9 @@ humanCommand = do
               restrictedCmdSemInCxtOfKM km cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
-        -- GC action buffer if there's no actions left to handle.
-        -- Leave the last one as a buffer for user's in-game macros.
+        -- GC action buffer if there's no actions left to handle,
+        -- removing all unnecessary buffers at once,
+        -- but leaving the last one for user's in-game macros.
         modifySession $ \sess ->
           sess { sactionPending = dropEmptyBuffers $ sactionPending sess }
         -- The command was failed or successful and if the latter,
