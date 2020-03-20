@@ -1,6 +1,7 @@
 -- | A set of Frame monad operations.
 module Game.LambdaHack.Client.UI.FrameM
-  ( pushFrame, promptGetKey, addToMacro, stopPlayBack, animate, fadeOutOrIn
+  ( pushFrame, promptGetKey, addToMacro, dropEmptyBuffers
+  , stopPlayBack, animate, fadeOutOrIn
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , drawOverlay, renderFrames, resetPlayBack
@@ -169,18 +170,20 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   -- to also capture choice of items from menus, etc.
   -- Notice that keys coming from macros (in-game, content, config)
   -- are recorded as well and this is well defined and essential.
-  CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
+  CCUI{coinput} <- getsSession sccui
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
          , sturnDisplayed = True
-         , sactionPending = addToMacro brevMap km $ sactionPending sess }
+         , sactionPending = addToMacro coinput km $ sactionPending sess }
   return km
 
-addToMacro :: M.Map HumanCmd.HumanCmd [K.KM] -> K.KM -> [ActionBuffer]
-           -> [ActionBuffer]
+addToMacro :: InputContent -> K.KM -> [ActionBuffer] -> [ActionBuffer]
 addToMacro _ _ [] = error "cannot add macro to empty action stack"
-addToMacro brevMap km (abuff : abuffs) =
-  let newBuffer = case M.lookup HumanCmd.Record brevMap of
+addToMacro InputContent{bcmdMap, brevMap} km (abuff : abuffs) =
+  let mRecordLast = case (\(_, _, cmd) -> cmd) <$> M.lookup km bcmdMap of
+        Just (HumanCmd.RepeatLast _) -> Nothing
+        _ -> return []
+      newBuffer = case mRecordLast >> M.lookup HumanCmd.Record brevMap of
         Just [] -> error $ "record key not bound" `showFailure` brevMap
         Just kms | not (km `elem` kms) ->
           -- Exclude from in-game macros keystrokes that
@@ -190,6 +193,11 @@ addToMacro brevMap km (abuff : abuffs) =
           -- which is exactly the required semantics.
         _ -> abuff
    in (newBuffer : abuffs)
+
+dropEmptyBuffers :: [ActionBuffer] -> [ActionBuffer]
+dropEmptyBuffers [playersBuffer]= [playersBuffer]
+dropEmptyBuffers (ActionBuffer _ (KeyMacro []) _ : as) = dropEmptyBuffers as
+dropEmptyBuffers abuffs = abuffs
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = msgAdd0 MsgStopPlayback "!"

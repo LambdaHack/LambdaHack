@@ -167,9 +167,7 @@ humanCommand = do
         -- GC action buffer if there's no actions left to handle.
         -- Leave the last one as a buffer for user's in-game macros.
         modifySession $ \sess ->
-          sess { sactionPending = case sactionPending sess of
-                   ActionBuffer _ (KeyMacro []) _ : as | not (null as) -> as
-                   _ -> sactionPending sess }
+          sess { sactionPending = dropEmptyBuffers $ sactionPending sess }
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
