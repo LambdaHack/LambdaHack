@@ -785,6 +785,10 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
               "attempt to fit into equipment" <+> ppItemDialogModeFrom cCur
             CGround | mstash == Just (blid body, bpos body) ->
               "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
+            CEqp -> let n = sum $ map fst $ EM.elems $ beqp body
+                    in verb
+                       <+> "(" <> makePhrase [MU.CarWs n "item"] <+> "so far)"
+                       <+> ppItemDialogModeFrom cCur
             _ -> verb <+> ppItemDialogModeFrom cCur
         (promptGeneric, psuit) =
           -- We prune item list only for eqp, because other stores don't have
