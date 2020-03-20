@@ -745,7 +745,7 @@ recordHuman = do
   abuffs <- getsSession sactionPending
   let (macrosNew, t) = recordHumanTransition abuffs
   modifySession $ \sess -> sess { sactionPending = macrosNew }
-  unless (T.null t) $ promptAdd0 t
+  unless (T.null t || length abuffs > 1) $ promptAdd0 t
 
 recordHumanTransition :: [ActionBuffer] -> ([ActionBuffer], Text)
 recordHumanTransition [] = error "recordHumanTransition: empty stack"
