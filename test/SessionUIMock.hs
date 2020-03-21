@@ -99,16 +99,20 @@ cmdSemanticsMock km = \case
     modify $ \sess ->
       sess {smacroFrame = fst $ recordHumanTransition (smacroFrame sess) }
     return $ Left Nothing
-  HumanCmd.Macro ys -> do
+  HumanCmd.Macro s -> do
     modify $ \sess ->
-      let (smacroFrameNew, smacroStackMew) =
-             macroHumanTransition ys (smacroFrame sess) (smacroStack sess)
+      let kms = K.mkKM <$> s
+          (smacroFrameNew, smacroStackMew) =
+             macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
       in sess { smacroFrame = smacroFrameNew
               , smacroStack = smacroStackMew }
     return $ Left Nothing
   HumanCmd.Repeat n -> do
     modify $ \sess ->
-      sess {smacroFrame = repeatHumanTransition n (smacroFrame sess) }
+      let (smacroFrameNew, smacroStackMew) =
+             repeatHumanTransition n (smacroFrame sess) (smacroStack sess)
+      in sess { smacroFrame = smacroFrameNew
+              , smacroStack = smacroStackMew }
     return $ Left Nothing
   HumanCmd.RepeatLast n -> do
     modify $ \sess ->

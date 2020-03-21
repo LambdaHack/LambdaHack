@@ -95,19 +95,20 @@ import           Game.LambdaHack.Definition.Defs
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()
-macroHuman ys = do
+macroHuman s = do
   modifySession $ \sess ->
-    let (smacroFrameNew, smacroStackMew) =
-           macroHumanTransition ys (smacroFrame sess) (smacroStack sess)
+    let kms = K.mkKM <$> s
+        (smacroFrameNew, smacroStackMew) =
+           macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = smacroFrameNew
             , smacroStack = smacroStackMew }
-  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
+  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " s)
 
 -- | Push a new macro frame to the stack whenever repeating a macro.
-macroHumanTransition :: [String] -> KeyMacroFrame -> [KeyMacroFrame]
+macroHumanTransition :: [K.KM] -> KeyMacroFrame -> [KeyMacroFrame]
                      -> (KeyMacroFrame, [KeyMacroFrame])
-macroHumanTransition ys macroFrame macroFrames =
-  let smacroFrameNew = emptyMacroFrame {keyPending = KeyMacro $ K.mkKM <$> ys}
+macroHumanTransition kms macroFrame macroFrames =
+  let smacroFrameNew = emptyMacroFrame {keyPending = KeyMacro kms}
   in (smacroFrameNew, macroFrame : macroFrames)
 
 -- * ChooseItem
@@ -713,14 +714,19 @@ selectWithPointerHuman = do
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n = modifySession $ \sess ->
-  sess {smacroFrame = repeatHumanTransition n (smacroFrame sess)}
+repeatHuman n =
+  modifySession $ \sess ->
+    let (smacroFrameNew, smacroStackMew) =
+           repeatHumanTransition n (smacroFrame sess) (smacroStack sess)
+    in sess { smacroFrame = smacroFrameNew
+            , smacroStack = smacroStackMew }
 
-repeatHumanTransition :: Int -> KeyMacroFrame -> KeyMacroFrame
-repeatHumanTransition n macroFrame =
-  let macro = KeyMacro . concat . replicate n . unKeyMacro . fromRight mempty
-              $ keyMacroBuffer macroFrame
-  in macroFrame {keyPending = macro <> keyPending macroFrame}
+repeatHumanTransition :: Int -> KeyMacroFrame -> [KeyMacroFrame]
+                      -> (KeyMacroFrame, [KeyMacroFrame])
+repeatHumanTransition n macroFrame macroFrames =
+  let kms = concat . replicate n . unKeyMacro . fromRight mempty
+            $ keyMacroBuffer macroFrame
+  in macroHumanTransition kms macroFrame macroFrames
 
 -- * RepeatLast
 
@@ -733,8 +739,7 @@ repeatLastHuman n = modifySession $ \sess ->
 
 repeatLastHumanTransition :: Int -> KeyMacroFrame -> KeyMacroFrame
 repeatLastHumanTransition n macroFrame =
-  let macro = KeyMacro . concat . replicate n . maybeToList
-              $ keyLast macroFrame
+  let macro = KeyMacro . concat . replicate n . maybeToList $ keyLast macroFrame
   in macroFrame { keyPending = macro <> keyPending macroFrame }
 
 -- * Record
