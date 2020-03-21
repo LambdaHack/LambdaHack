@@ -3,7 +3,8 @@
 module Game.LambdaHack.Client.UI.SessionUI
   ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
   , RunParams(..), HintMode(..)
-  , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
+  , emptySessionUI, emptyMacroFrame
+  , toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
 
 import Prelude ()
@@ -54,8 +55,9 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
+  , smacroFrame    :: KeyMacroFrame -- ^ the head of the key macro stack
   , smacroStack    :: [KeyMacroFrame]
-                                    -- ^ key macro stack
+                                    -- ^ the tail of the key macro stack
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
@@ -79,11 +81,11 @@ data SessionUI = SessionUI
   , srandomUI      :: SM.SMGen      -- ^ current random generator for UI
   }
 
--- | Local action buffer. Predefined macros have their own in-game macro
+-- | Local macro buffer frame. Predefined macros have their own in-game macro
 -- buffer, allowing them to record in-game macro, queue actions and repeat
 -- the last macro's action.
 -- Running predefined macro pushes new @KeyMacroFrame@ onto the stack. We pop
--- a buffer from the stack if locally there's no actions pending to be handled.
+-- buffers from the stack if locally there are no actions pending to be handled.
 data KeyMacroFrame = KeyMacroFrame
   { keyMacroBuffer :: Either [K.KM] KeyMacro -- ^ record keystrokes in Left;
                                              --   repeat from Right
@@ -142,7 +144,8 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
-    , smacroStack = [KeyMacroFrame (Right mempty) mempty Nothing]
+    , smacroFrame = emptyMacroFrame
+    , smacroStack = []
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
@@ -160,6 +163,9 @@ emptySessionUI sUIOptions =
     , sallNframes = 0
     , srandomUI = SM.mkSMGen 0
     }
+
+emptyMacroFrame :: KeyMacroFrame
+emptyMacroFrame = KeyMacroFrame (Right mempty) mempty Nothing
 
 toggleMarkVision :: SessionUI -> SessionUI
 toggleMarkVision s@SessionUI{smarkVision} = s {smarkVision = not smarkVision}
@@ -207,7 +213,8 @@ instance Binary SessionUI where
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = K.PointUI 0 0
-        smacroStack = [KeyMacroFrame (Right mempty) mempty Nothing]
+        smacroFrame = emptyMacroFrame
+        smacroStack = []
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False

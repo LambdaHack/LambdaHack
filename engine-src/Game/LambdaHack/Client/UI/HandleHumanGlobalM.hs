@@ -308,14 +308,14 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
                             , runWaiting = 0 }
       macroRun25 = ["C-comma", "C-v"]
   when (initialStep && run) $ do
-    modifySession $ \cli ->
-      cli {srunning = Just runParams}
+    modifySession $ \sess ->
+      sess {srunning = Just runParams}
     when runAhead $
-      modifySession $ \cli ->
-        let oldBuffer = head $ smacroStack cli
-            newBuffer = oldBuffer {keyPending =
-              (KeyMacro . map K.mkKM $ macroRun25) <> keyPending oldBuffer}
-         in cli {smacroStack = newBuffer : tail (smacroStack cli) }
+      modifySession $ \sess ->
+        let smacroFrameOld = smacroFrame sess
+            smacroFrameNew = smacroFrameOld {keyPending =
+              (KeyMacro . map K.mkKM $ macroRun25) <> keyPending smacroFrameOld}
+        in sess {smacroFrame = smacroFrameNew}
   -- When running, the invisible actor is hit (not displaced!),
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors

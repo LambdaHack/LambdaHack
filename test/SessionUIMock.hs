@@ -20,51 +20,57 @@ import           Game.LambdaHack.Client.UI.HandleHumanM
 import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.SessionUI
+  (KeyMacro (..), KeyMacroFrame (..), emptyMacroFrame)
 
 data SessionUIMock = SessionUIMock
-  { smacroStackMock :: [KeyMacroFrame]
-  , sccuiMock       :: CCUI
-  , counter         :: Int
+  { smacroFrame :: KeyMacroFrame
+  , smacroStack :: [KeyMacroFrame]
+  , sccui       :: CCUI
+  , counter     :: Int
   }
 
-type MacroBufferM = Either String String
-type LastPlayM = String
-type LastActionM = String
+type MacroBufferMock = Either String String
+type LastPlayMock = String
+type LastActionMock = String
 
-type BufferTrace = [(MacroBufferM, LastPlayM, LastActionM)]
+type BufferTrace = [(MacroBufferMock, LastPlayMock, LastActionMock)]
 type ActionLog = String
 
 data Op = Quit | Looped | HeadEmpty
 
-humanCommandM :: WriterT [(BufferTrace, ActionLog)] (State SessionUIMock) ()
-humanCommandM = do
+humanCommandMock :: WriterT [(BufferTrace, ActionLog)] (State SessionUIMock) ()
+humanCommandMock = do
   abuffs <- lift $ do
     tmp <- get
-    return . fst $ storeTrace (smacroStackMock tmp) [] -- log session
-  abortOrCmd <- lift iterationM -- do stuff
-  -- GC action buffer if there's no actions left to handle,
-  -- removing all unnecessary buffers at once,
+    return . fst $ storeTrace (smacroFrame tmp : smacroStack tmp) []
+      -- log session
+  abortOrCmd <- lift iterationMock -- do stuff
+  -- GC macro stack if there are no actions left to handle,
+  -- removing all unnecessary macro frames at once,
   -- but leaving the last one for user's in-game macros.
   lift $ modify $ \sess ->
-    sess { smacroStackMock = dropEmptyBuffers $ smacroStackMock sess }
+          let (smacroFrameNew, smacroStackMew) =
+                dropEmptyMacroFrames (smacroFrame sess) (smacroStack sess)
+          in sess { smacroFrame = smacroFrameNew
+                  , smacroStack = smacroStackMew }
   case abortOrCmd of
     Right Looped -> tell [(abuffs, "Macro looped")] >> pure ()
     Right _ -> tell [(abuffs, "")] >> pure () -- exit loop
-    Left Nothing -> tell [(abuffs, "")] >> humanCommandM
-    Left (Just out) -> tell [(abuffs, show out)] >> humanCommandM
+    Left Nothing -> tell [(abuffs, "")] >> humanCommandMock
+    Left (Just out) -> tell [(abuffs, show out)] >> humanCommandMock
 
-iterationM :: State SessionUIMock (Either (Maybe K.KM) Op)
-iterationM = do
-  SessionUIMock _ CCUI{coinput=IC.InputContent{bcmdMap}} n <- get
+iterationMock :: State SessionUIMock (Either (Maybe K.KM) Op)
+iterationMock = do
+  SessionUIMock _ _ CCUI{coinput=IC.InputContent{bcmdMap}} n <- get
   if n <= 1000
   then do
     modify $ \sess -> sess {counter = 1 + counter sess} -- increment counter
-    mkm <- promptGetKeyM []
+    mkm <- promptGetKeyMock []
     case mkm of
       Nothing -> return $ Right HeadEmpty
       Just km -> do
         abortOrCmd <- case km `M.lookup` bcmdMap of
-          Just (_, _, cmd) -> restrictedCmdSemInCxtOfKMM km cmd
+          Just (_, _, cmd) -> restrictedCmdSemInCxtOfKMMock km cmd
           _ -> error "uknown command"
         case abortOrCmd of
           -- exit loop
@@ -75,75 +81,72 @@ iterationM = do
           Left (Just out) -> return (Left $ Just out)
   else return $ Right Looped
 
-restrictedCmdSemInCxtOfKMM :: K.KM -> HumanCmd.HumanCmd
-                           -> State SessionUIMock (Either (Maybe K.KM) ())
-restrictedCmdSemInCxtOfKMM = cmdSemInCxtOfKMM
+restrictedCmdSemInCxtOfKMMock :: K.KM -> HumanCmd.HumanCmd
+                              -> State SessionUIMock (Either (Maybe K.KM) ())
+restrictedCmdSemInCxtOfKMMock = cmdSemInCxtOfKMMock
 
-cmdSemInCxtOfKMM :: K.KM -> HumanCmd.HumanCmd
-                 -> State SessionUIMock (Either (Maybe K.KM) ())
-cmdSemInCxtOfKMM km cmd = do
+cmdSemInCxtOfKMMock :: K.KM -> HumanCmd.HumanCmd
+                    -> State SessionUIMock (Either (Maybe K.KM) ())
+cmdSemInCxtOfKMMock km cmd = do
   modify $ \sess ->
-    sess {smacroStackMock = updateLastAction km cmd $ smacroStackMock sess}
-  cmdSemanticsM km cmd
+    sess {smacroFrame = updateKeyLast km cmd $ smacroFrame sess}
+  cmdSemanticsMock km cmd
 
-cmdSemanticsM :: K.KM -> HumanCmd.HumanCmd
-              -> State SessionUIMock (Either (Maybe K.KM) ())
-cmdSemanticsM km = \case
+cmdSemanticsMock :: K.KM -> HumanCmd.HumanCmd
+                 -> State SessionUIMock (Either (Maybe K.KM) ())
+cmdSemanticsMock km = \case
   HumanCmd.Record -> do
     modify $ \sess ->
-      sess { smacroStackMock =
-               fst $ recordHumanTransition (smacroStackMock sess) }
+      sess {smacroFrame = fst $ recordHumanTransition (smacroFrame sess) }
     return $ Left Nothing
   HumanCmd.Macro ys -> do
     modify $ \sess ->
-      sess { smacroStackMock = macroHumanTransition ys (smacroStackMock sess) }
+      let (smacroFrameNew, smacroStackMew) =
+             macroHumanTransition ys (smacroFrame sess) (smacroStack sess)
+      in sess { smacroFrame = smacroFrameNew
+              , smacroStack = smacroStackMew }
     return $ Left Nothing
   HumanCmd.Repeat n -> do
     modify $ \sess ->
-      sess { smacroStackMock = repeatHumanTransition n (smacroStackMock sess) }
+      sess {smacroFrame = repeatHumanTransition n (smacroFrame sess) }
     return $ Left Nothing
   HumanCmd.RepeatLast n -> do
     modify $ \sess ->
-      sess { smacroStackMock =
-        repeatLastHumanTransition n (smacroStackMock sess) }
+      sess {smacroFrame = repeatLastHumanTransition n (smacroFrame sess) }
     return $ Left Nothing
   _ -> return $ Left (Just km)
 
-promptGetKeyM :: [K.KM] -> State SessionUIMock (Maybe K.KM)
-promptGetKeyM frontKeyKeys = do
-  SessionUIMock abuffs CCUI{coinput=IC.InputContent{bcmdMap}} _ <- get
-  let abuff = head abuffs
-  case keyPending abuff of
+promptGetKeyMock :: [K.KM] -> State SessionUIMock (Maybe K.KM)
+promptGetKeyMock frontKeyKeys = do
+  SessionUIMock macroFrame _ CCUI{coinput=IC.InputContent{bcmdMap}} _ <- get
+  case keyPending macroFrame of
     KeyMacro (km : kms)
       | null frontKeyKeys || km `elem` frontKeyKeys -> do
         modify $ \sess ->
-          sess { smacroStackMock =
-            let newHead = abuff { keyPending = KeyMacro kms }
-            in newHead : tail abuffs }
+          sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
         modify $ \sess ->
-          sess {smacroStackMock = addToMacro bcmdMap km $ smacroStackMock sess}
+          sess {smacroFrame = addToMacro bcmdMap km $ smacroFrame sess}
         return (Just km)
     KeyMacro (_ : _) -> do
-      resetPlayBackM
+      resetPlayBackMock
       return Nothing
     KeyMacro [] -> return Nothing
 
-resetPlayBackM :: State SessionUIMock ()
-resetPlayBackM = modify $ \sess ->
-  sess { smacroStackMock = let abuff = last (smacroStackMock sess)
-                           in [ abuff {keyPending = mempty} ] }
+resetPlayBackMock :: State SessionUIMock ()
+resetPlayBackMock = modify $ \sess ->
+  let lastFrame = lastMacroFrame (smacroFrame sess) (smacroStack sess)
+  in sess { smacroFrame = lastFrame {keyPending = mempty}
+          , smacroStack = [] }
 
 -- The mock for macro testing.
 unwindMacros :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
 unwindMacros ic initMacro =
-  let emptyBuffer = KeyMacroFrame { keyMacroBuffer = Right mempty
-                                  , keyPending = mempty
-                                  , keyLast = Nothing }
-      initSession = SessionUIMock
-          { smacroStackMock = [emptyBuffer { keyPending = initMacro }]
-          , sccuiMock = emptyCCUI { coinput = ic }
-          , counter = 0 }
-  in evalState (execWriterT humanCommandM) initSession
+  let initSession = SessionUIMock
+        { smacroFrame = emptyMacroFrame { keyPending = initMacro }
+        , smacroStack = []
+        , sccui = emptyCCUI { coinput = ic }
+        , counter = 0 }
+  in evalState (execWriterT humanCommandMock) initSession
 
 accumulateActions :: [(BufferTrace, ActionLog)] -> [(BufferTrace, ActionLog)]
 accumulateActions ba =

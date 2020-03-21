@@ -97,17 +97,18 @@ import           Game.LambdaHack.Definition.Defs
 macroHuman :: MonadClientUI m => [String] -> m ()
 macroHuman ys = do
   modifySession $ \sess ->
-    sess { smacroStack = macroHumanTransition ys (smacroStack sess) }
+    let (smacroFrameNew, smacroStackMew) =
+           macroHumanTransition ys (smacroFrame sess) (smacroStack sess)
+    in sess { smacroFrame = smacroFrameNew
+            , smacroStack = smacroStackMew }
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
 
--- | Push empty buffer whenever repeating a macro.
-macroHumanTransition :: [String] -> [KeyMacroFrame] -> [KeyMacroFrame]
-macroHumanTransition ys abuffs =
-  let kms = K.mkKM <$> ys
-      newBuffer = KeyMacroFrame { keyMacroBuffer = Right mempty
-                                , keyPending = KeyMacro kms
-                                , keyLast = Nothing }
-  in newBuffer : abuffs
+-- | Push a new macro frame to the stack whenever repeating a macro.
+macroHumanTransition :: [String] -> KeyMacroFrame -> [KeyMacroFrame]
+                     -> (KeyMacroFrame, [KeyMacroFrame])
+macroHumanTransition ys macroFrame macroFrames =
+  let smacroFrameNew = emptyMacroFrame {keyPending = KeyMacro $ K.mkKM <$> ys}
+  in (smacroFrameNew, macroFrame : macroFrames)
 
 -- * ChooseItem
 
@@ -713,14 +714,13 @@ selectWithPointerHuman = do
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = modifySession $ \sess ->
-  sess { smacroStack = repeatHumanTransition n (smacroStack sess) }
+  sess {smacroFrame = repeatHumanTransition n (smacroFrame sess)}
 
-repeatHumanTransition :: Int -> [KeyMacroFrame] -> [KeyMacroFrame]
-repeatHumanTransition _ [] = error "repeatHumanTransition: empty stack"
-repeatHumanTransition n (abuff : abuffs) =
+repeatHumanTransition :: Int -> KeyMacroFrame -> KeyMacroFrame
+repeatHumanTransition n macroFrame =
   let macro = KeyMacro . concat . replicate n . unKeyMacro . fromRight mempty
-              $ keyMacroBuffer abuff
-  in abuff { keyPending = macro <> keyPending abuff } : abuffs
+              $ keyMacroBuffer macroFrame
+  in macroFrame {keyPending = macro <> keyPending macroFrame}
 
 -- * RepeatLast
 
@@ -729,37 +729,36 @@ repeatHumanTransition n (abuff : abuffs) =
 -- at terrain change or when walking over items.
 repeatLastHuman :: MonadClientUI m => Int -> m ()
 repeatLastHuman n = modifySession $ \sess ->
-  sess { smacroStack = repeatLastHumanTransition n (smacroStack sess) }
+  sess {smacroFrame = repeatLastHumanTransition n (smacroFrame sess) }
 
-repeatLastHumanTransition :: Int -> [KeyMacroFrame] -> [KeyMacroFrame]
-repeatLastHumanTransition _ [] = error "repeatLastHumanTransition: empty stack"
-repeatLastHumanTransition n (abuff : abuffs) =
+repeatLastHumanTransition :: Int -> KeyMacroFrame -> KeyMacroFrame
+repeatLastHumanTransition n macroFrame =
   let macro = KeyMacro . concat . replicate n . maybeToList
-              $ keyLast abuff
-  in abuff { keyPending = macro <> keyPending abuff } : abuffs
+              $ keyLast macroFrame
+  in macroFrame { keyPending = macro <> keyPending macroFrame }
 
 -- * Record
 
 -- | Starts and stops recording of macros.
 recordHuman :: MonadClientUI m => m ()
 recordHuman = do
-  abuffs <- getsSession smacroStack
-  let (macrosNew, t) = recordHumanTransition abuffs
-  modifySession $ \sess -> sess { smacroStack = macrosNew }
-  unless (T.null t || length abuffs > 1) $ promptAdd0 t
+  smacroFrameOld <- getsSession smacroFrame
+  let (smacroFrameNew, msg) = recordHumanTransition smacroFrameOld
+  modifySession $ \sess -> sess {smacroFrame = smacroFrameNew}
+  macroStack <- getsSession smacroStack
+  unless (T.null msg || not (null macroStack)) $ promptAdd0 msg
 
-recordHumanTransition :: [KeyMacroFrame] -> ([KeyMacroFrame], Text)
-recordHumanTransition [] = error "recordHumanTransition: empty stack"
-recordHumanTransition (abuff : abuffs) =
-  let (buffer, msg) = case keyMacroBuffer abuff of
+recordHumanTransition :: KeyMacroFrame -> (KeyMacroFrame, Text)
+recordHumanTransition macroFrame =
+  let (buffer, msg) = case keyMacroBuffer macroFrame of
         Right _ ->
           -- Start recording in-game macro.
           (Left [], "Recording a macro. Stop recording with the same key.")
         Left xs ->
           -- Stop recording in-game macro.
           (Right . KeyMacro . reverse $ xs, "Macro recording stopped.")
-      newBuffer = abuff { keyMacroBuffer = buffer }
-  in (newBuffer : abuffs, msg)
+      smacroFrameNew = macroFrame {keyMacroBuffer = buffer}
+  in (smacroFrameNew, msg)
 
 -- * AllHistory
 

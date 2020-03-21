@@ -1,6 +1,6 @@
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.UI.HandleHumanM
-  ( restrictedCmdSemInCxtOfKM, updateLastAction
+  ( restrictedCmdSemInCxtOfKM, updateKeyLast
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , noRemoteHumanCmd, cmdSemInCxtOfKM, cmdSemantics, addNoError
@@ -59,20 +59,18 @@ noRemoteHumanCmd cmd = case cmd of
   ContinueToXhair -> True
   _ -> False
 
-updateLastAction :: K.KM -> HumanCmd -> [KeyMacroFrame] -> [KeyMacroFrame]
-updateLastAction km cmd abuffs = case cmd of
-  RepeatLast{} -> abuffs
-  Record{} -> abuffs
-  _ -> let oldBuffer = head abuffs
-           newBuffer = oldBuffer { keyLast = Just km }
-       in newBuffer : tail abuffs
+updateKeyLast :: K.KM -> HumanCmd -> KeyMacroFrame -> KeyMacroFrame
+updateKeyLast km cmd macroFrame = case cmd of
+  RepeatLast{} -> macroFrame
+  Record{} -> macroFrame
+  _ -> macroFrame {keyLast = Just km}
 
 -- Semantics of the command in context of the given @km@ as the last action.
 cmdSemInCxtOfKM :: (MonadClient m, MonadClientUI m)
                 => K.KM -> HumanCmd -> m (Either MError ReqUI)
 cmdSemInCxtOfKM km cmd = do
   modifySession $ \sess ->
-    sess {smacroStack = updateLastAction km cmd $ smacroStack sess}
+    sess {smacroFrame = updateKeyLast km cmd $ smacroFrame sess}
   cmdSemantics cmd
 
 cmdSemantics :: (MonadClient m, MonadClientUI m)

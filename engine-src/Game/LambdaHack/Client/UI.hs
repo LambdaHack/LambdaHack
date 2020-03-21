@@ -164,11 +164,14 @@ humanCommand = do
               restrictedCmdSemInCxtOfKM km cmd
             _ -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                  in weaveJust <$> failWith (T.pack msgKey)
-        -- GC action buffer if there's no actions left to handle,
-        -- removing all unnecessary buffers at once,
+        -- GC macro stack if there are no actions left to handle,
+        -- removing all unnecessary macro frames at once,
         -- but leaving the last one for user's in-game macros.
         modifySession $ \sess ->
-          sess { smacroStack = dropEmptyBuffers $ smacroStack sess }
+          let (smacroFrameNew, smacroStackMew) =
+                dropEmptyMacroFrames (smacroFrame sess) (smacroStack sess)
+          in sess { smacroFrame = smacroFrameNew
+                  , smacroStack = smacroStackMew }
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of
