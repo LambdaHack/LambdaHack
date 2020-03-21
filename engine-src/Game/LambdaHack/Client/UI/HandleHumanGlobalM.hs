@@ -312,10 +312,10 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       cli {srunning = Just runParams}
     when runAhead $
       modifySession $ \cli ->
-        let oldBuffer = head $ sactionPending cli
-            newBuffer = oldBuffer {slastPlay =
-              (KeyMacro . map K.mkKM $ macroRun25) <> slastPlay oldBuffer}
-         in cli {sactionPending = newBuffer : tail (sactionPending cli) }
+        let oldBuffer = head $ smacroStack cli
+            newBuffer = oldBuffer {keyPending =
+              (KeyMacro . map K.mkKM $ macroRun25) <> keyPending oldBuffer}
+         in cli {smacroStack = newBuffer : tail (smacroStack cli) }
   -- When running, the invisible actor is hit (not displaced!),
   -- so that running in the presence of roving invisible
   -- actors is equivalent to moving (with visible actors

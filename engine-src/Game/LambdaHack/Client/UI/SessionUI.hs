@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The client UI session state.
 module Game.LambdaHack.Client.UI.SessionUI
-  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), ActionBuffer(..)
+  ( SessionUI(..), ItemDictUI, AimMode(..), KeyMacro(..), KeyMacroFrame(..)
   , RunParams(..), HintMode(..)
   , emptySessionUI, toggleMarkVision, toggleMarkSmell, getActorUI
   ) where
@@ -54,7 +54,8 @@ data SessionUI = SessionUI
                                     -- ^ parameters of the current run, if any
   , shistory       :: History       -- ^ history of messages
   , spointer       :: K.PointUI     -- ^ mouse pointer position
-  , sactionPending :: [ActionBuffer] -- ^ local action buffer
+  , smacroStack    :: [KeyMacroFrame]
+                                    -- ^ key macro stack
   , slastLost      :: ES.EnumSet ActorId
                                     -- ^ actors that just got out of sight
   , swaitTimes     :: Int           -- ^ player just waited this many times
@@ -81,13 +82,13 @@ data SessionUI = SessionUI
 -- | Local action buffer. Predefined macros have their own in-game macro
 -- buffer, allowing them to record in-game macro, queue actions and repeat
 -- the last macro's action.
--- Running predefined macro pushes new @ActionBuffer@ onto the stack. We pop
+-- Running predefined macro pushes new @KeyMacroFrame@ onto the stack. We pop
 -- a buffer from the stack if locally there's no actions pending to be handled.
-data ActionBuffer = ActionBuffer
-  { smacroBuffer :: Either [K.KM] KeyMacro -- ^ record keystrokes in Left;
-                                           --   repeat from Right
-  , slastPlay    :: KeyMacro               -- ^ actions pending to be handled
-  , slastAction  :: Maybe K.KM             -- ^ last pressed key
+data KeyMacroFrame = KeyMacroFrame
+  { keyMacroBuffer :: Either [K.KM] KeyMacro -- ^ record keystrokes in Left;
+                                             --   repeat from Right
+  , keyPending     :: KeyMacro               -- ^ actions pending to be handled
+  , keyLast        :: Maybe K.KM             -- ^ last pressed key
   } deriving (Show)
 
 type ItemDictUI = EM.EnumMap ItemId LevelId
@@ -141,7 +142,7 @@ emptySessionUI sUIOptions =
     , srunning = Nothing
     , shistory = emptyHistory 0
     , spointer = K.PointUI 0 0
-    , sactionPending = [ActionBuffer (Right mempty) mempty Nothing]
+    , smacroStack = [KeyMacroFrame (Right mempty) mempty Nothing]
     , slastLost = ES.empty
     , swaitTimes = 0
     , swasAutomated = False
@@ -206,7 +207,7 @@ instance Binary SessionUI where
         sccui = emptyCCUI
         sxhairMoused = True
         spointer = K.PointUI 0 0
-        sactionPending = [ActionBuffer (Right mempty) mempty Nothing]
+        smacroStack = [KeyMacroFrame (Right mempty) mempty Nothing]
         slastLost = ES.empty
         swaitTimes = 0
         swasAutomated = False

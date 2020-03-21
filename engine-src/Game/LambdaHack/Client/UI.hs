@@ -168,7 +168,7 @@ humanCommand = do
         -- removing all unnecessary buffers at once,
         -- but leaving the last one for user's in-game macros.
         modifySession $ \sess ->
-          sess { sactionPending = dropEmptyBuffers $ sactionPending sess }
+          sess { smacroStack = dropEmptyBuffers $ smacroStack sess }
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of

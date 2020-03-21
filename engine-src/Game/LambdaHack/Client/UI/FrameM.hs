@@ -127,22 +127,22 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   keyPressed <- anyKeyPressed
   report <- getsSession $ newReport . shistory
   let msgDisturbs = anyInReport disturbsResting report
-  apending <- getsSession sactionPending
+  apending <- getsSession smacroStack
   let abuff = head apending
-  km <- case slastPlay abuff of
+  km <- case keyPending abuff of
     KeyMacro (km : kms) | not keyPressed
                           && (null frontKeyKeys || km `elem` frontKeyKeys)
                           && not msgDisturbs -> do
       frontKeyFrame <- drawOverlay dm onBlank ovs lidV
       displayFrames lidV [Just frontKeyFrame]
       modifySession $ \sess ->
-        sess { sactionPending =
-          let newHead = abuff { slastPlay = KeyMacro kms }
+        sess { smacroStack =
+          let newHead = abuff { keyPending = KeyMacro kms }
            in newHead : tail apending }
       msgAdd MsgMacro $ "Voicing '" <> tshow km <> "'."
       return km
     KeyMacro (_ : _) -> do
-      -- We can't continue playback, so wipe out old slastPlay, srunning, etc.
+      -- We can't continue playback, so wipe out old keyPending, srunning, etc.
       resetPlayBack
       resetPressedKeys
       FontSetup{propFont} <- getFontSetup
@@ -174,25 +174,25 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
   modifySession $ \sess ->
     sess { sdisplayNeeded = False
          , sturnDisplayed = True
-         , sactionPending = addToMacro bcmdMap km $ sactionPending sess }
+         , smacroStack = addToMacro bcmdMap km $ smacroStack sess }
   return km
 
-addToMacro :: M.Map K.KM HumanCmd.CmdTriple -> K.KM -> [ActionBuffer]
-           -> [ActionBuffer]
+addToMacro :: M.Map K.KM HumanCmd.CmdTriple -> K.KM -> [KeyMacroFrame]
+           -> [KeyMacroFrame]
 addToMacro _ _ [] = error "addToMacro: empty action stack"
 addToMacro bcmdMap km (abuff : abuffs) =
   let newBuffer = case (\(_, _, cmd) -> cmd) <$> M.lookup km bcmdMap of
         Nothing -> abuff
         Just HumanCmd.Record -> abuff
         Just HumanCmd.RepeatLast{} -> abuff
-        _ -> abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
+        _ -> abuff { keyMacroBuffer = (km :) `B.first` keyMacroBuffer abuff }
                -- This is noop when not recording a macro,
                -- which is exactly the required semantics.
   in (newBuffer : abuffs)
 
-dropEmptyBuffers :: [ActionBuffer] -> [ActionBuffer]
+dropEmptyBuffers :: [KeyMacroFrame] -> [KeyMacroFrame]
 dropEmptyBuffers [playersBuffer]= [playersBuffer]
-dropEmptyBuffers (ActionBuffer _ (KeyMacro []) _ : as) = dropEmptyBuffers as
+dropEmptyBuffers (KeyMacroFrame _ (KeyMacro []) _ : as) = dropEmptyBuffers as
 dropEmptyBuffers abuffs = abuffs
 
 stopPlayBack :: MonadClientUI m => m ()
@@ -203,7 +203,7 @@ resetPlayBack = do
   -- We wipe any actions in progress, but keep the data needed to repeat
   -- the last global macros and the last command.
   modifySession $ \sess ->
-    sess {sactionPending = [(last $ sactionPending sess) {slastPlay = mempty}]}
+    sess {smacroStack = [(last $ smacroStack sess) {keyPending = mempty}]}
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()
