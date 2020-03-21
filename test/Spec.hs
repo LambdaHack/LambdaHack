@@ -276,6 +276,14 @@ macroTests = testGroup "macroTests" $
      , testCase "RepeatLast test 43" $
          snd (last (unwindMacros coinput (stringToKeyMacro "'xyV'v")))
          @?= "Macro looped"
+     , testCase "RepeatLast test 44" $
+         snd (last (unwindMacrosAcc (bindInput [("a", "xyV")] coinput)
+                                    (stringToKeyMacro "'a'V")))
+         @?= "xyxy"
+     , testCase "RepeatLast test 45" $
+         snd (last (unwindMacrosAcc (bindInput [("a", "xyV")] coinput)
+                                    (stringToKeyMacro "'a'v")))
+         @?= "xyxy"
      ]
 
 integrationTests :: TestTree
