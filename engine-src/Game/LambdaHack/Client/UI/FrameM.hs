@@ -184,10 +184,10 @@ addToMacro bcmdMap km (abuff : abuffs) =
   let newBuffer = case (\(_, _, cmd) -> cmd) <$> M.lookup km bcmdMap of
         Nothing -> abuff
         Just HumanCmd.Record -> abuff
-        Just (HumanCmd.RepeatLast _) -> abuff
+        Just HumanCmd.RepeatLast{} -> abuff
         _ -> abuff { smacroBuffer = (km :) `B.first` smacroBuffer abuff }
-             -- This is noop when not recording a macro,
-             -- which is exactly the required semantics.
+               -- This is noop when not recording a macro,
+               -- which is exactly the required semantics.
   in (newBuffer : abuffs)
 
 dropEmptyBuffers :: [ActionBuffer] -> [ActionBuffer]
@@ -200,10 +200,10 @@ stopPlayBack = msgAdd0 MsgStopPlayback "!"
 
 resetPlayBack :: MonadClientUI m => m ()
 resetPlayBack = do
-  abuffs <- getsSession sactionPending
-  let abuff = last abuffs
+  -- We wipe any actions in progress, but keep the data needed to repeat
+  -- the last global macros and the last command.
   modifySession $ \sess ->
-    sess { sactionPending = [ abuff {slastPlay = mempty} ] }
+    sess {sactionPending = [(last $ sactionPending sess) {slastPlay = mempty}]}
   srunning <- getsSession srunning
   case srunning of
     Nothing -> return ()

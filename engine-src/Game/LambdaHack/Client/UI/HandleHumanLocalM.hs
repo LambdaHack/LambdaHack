@@ -100,13 +100,13 @@ macroHuman ys = do
     sess { sactionPending = macroHumanTransition ys (sactionPending sess) }
   msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ys)
 
+-- | Push empty buffer whenever repeating a macro.
 macroHumanTransition :: [String] -> [ActionBuffer] -> [ActionBuffer]
 macroHumanTransition ys abuffs =
   let kms = K.mkKM <$> ys
       newBuffer = ActionBuffer { slastPlay = KeyMacro kms
                                , smacroBuffer = Right mempty
                                , slastAction = Nothing }
-      -- Push empty buffer whenever repeating a macro.
   in newBuffer : abuffs
 
 -- * ChooseItem
@@ -718,9 +718,9 @@ repeatHuman n = modifySession $ \sess ->
 repeatHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
 repeatHumanTransition _ [] = error "repeatHumanTransition: empty stack"
 repeatHumanTransition n (abuff : abuffs) =
-  let nmacro k | k == 1 = unKeyMacro . fromRight mempty $ smacroBuffer abuff
-               | otherwise = concat . replicate k $ nmacro 1
-  in abuff { slastPlay = KeyMacro (nmacro n) <> slastPlay abuff } : abuffs
+  let macro = KeyMacro . concat . replicate n . unKeyMacro . fromRight mempty
+              $ smacroBuffer abuff
+  in abuff { slastPlay = macro <> slastPlay abuff } : abuffs
 
 -- * RepeatLast
 
@@ -734,8 +734,9 @@ repeatLastHuman n = modifySession $ \sess ->
 repeatLastHumanTransition :: Int -> [ActionBuffer] -> [ActionBuffer]
 repeatLastHumanTransition _ [] = error "repeatLastHumanTransition: empty stack"
 repeatLastHumanTransition n (abuff : abuffs) =
-  let cmd = KeyMacro . concat . replicate n . maybeToList $ slastAction abuff
-  in abuff { slastPlay = cmd <> slastPlay abuff } : abuffs
+  let macro = KeyMacro . concat . replicate n . maybeToList
+              $ slastAction abuff
+  in abuff { slastPlay = macro <> slastPlay abuff } : abuffs
 
 -- * Record
 
