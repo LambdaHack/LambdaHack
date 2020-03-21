@@ -261,6 +261,15 @@ macroTests = testGroup "macroTests" $
      , testCase "RepeatLast test 39" $
          snd (last (unwindMacrosAcc coinput (stringToKeyMacro "'xy'Vv")))
          @?= "xyxyy"
+     , testCase
+         "RepeatLast test 40; named macros not referentially transparent" $
+         snd (last (unwindMacrosAcc (bindInput [("a", "'xy'V")] coinput)
+                                    (stringToKeyMacro "av")))
+         @?= "xyxyxyxy"  -- because @a@ repeated; good!
+     , testCase "RepeatLast test 41" $
+         snd (last (unwindMacrosAcc (bindInput [("a", "xy")] coinput)
+                                    (stringToKeyMacro "'a'Vv")))
+         @?= "xyxyxy"  -- because @V@ repeated; good!
      ]
 
 integrationTests :: TestTree
