@@ -258,29 +258,29 @@ macroTests = testGroup "macroTests" $
               [(Right "xx",    "xx", "V")],
               [(Right "xx",     "x", "x")],
               [(Right "xx",      "", "x")]]
-     , testCase "RepeatLast test 39" $
+     , testCase "RepeatLast test 40" $
          snd (last (unwindMacrosAcc coinput (stringToKeyMacro "'xy'Vv")))
          @?= "xyxyy"
      , testCase
-         "RepeatLast test 40; named macros not referentially transparent" $
+         "RepeatLast test 41; named macros not referentially transparent" $
          snd (last (unwindMacrosAcc (bindInput [("a", "'xy'V")] coinput)
                                     (stringToKeyMacro "av")))
          @?= "xyxyxyxy"  -- because @a@ repeated; good!
-     , testCase "RepeatLast test 41" $
+     , testCase "RepeatLast test 42" $
          snd (last (unwindMacrosAcc (bindInput [("a", "xy")] coinput)
                                     (stringToKeyMacro "'a'Vv")))
          @?= "xyxyxy"  -- because @V@ repeated; good!
-     , testCase "RepeatLast test 42" $
+     , testCase "RepeatLast test 43" $
          snd (last (unwindMacros coinput (stringToKeyMacro "'xyV'V")))
          @?= "Macro looped"
-     , testCase "RepeatLast test 43" $
+     , testCase "RepeatLast test 44" $
          snd (last (unwindMacros coinput (stringToKeyMacro "'xyV'v")))
          @?= "Macro looped"
-     , testCase "RepeatLast test 44" $
+     , testCase "RepeatLast test 45" $
          snd (last (unwindMacrosAcc (bindInput [("a", "xyV")] coinput)
                                     (stringToKeyMacro "'a'V")))
          @?= "xyxy"
-     , testCase "RepeatLast test 45" $
+     , testCase "RepeatLast test 46" $
          snd (last (unwindMacrosAcc (bindInput [("a", "xyV")] coinput)
                                     (stringToKeyMacro "'a'v")))
          @?= "xyxy"
