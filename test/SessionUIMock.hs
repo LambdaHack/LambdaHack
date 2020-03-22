@@ -53,12 +53,12 @@ humanCommandMock = do
           in sess { smacroFrame = smacroFrameNew
                   , smacroStack = smacroStackMew }
   case abortOrCmd of
-    Right Looped -> tell [(abuffs, "Macro looped")] >> pure ()
-    Right _ -> tell [(abuffs, "")] >> pure ()  -- exit loop
-    Left Nothing -> tell [(abuffs, "")] >> humanCommandMock
-    Left (Just out) -> tell [(abuffs, show out)] >> humanCommandMock
+    Left Looped -> tell [(abuffs, "Macro looped")] >> pure ()
+    Left HeadEmpty -> tell [(abuffs, "")] >> pure ()  -- exit loop
+    Right Nothing -> tell [(abuffs, "")] >> humanCommandMock
+    Right (Just out) -> tell [(abuffs, show out)] >> humanCommandMock
 
-iterationMock :: State SessionUIMock (Either (Maybe K.KM) Op)
+iterationMock :: State SessionUIMock (Either Op (Maybe K.KM))
 iterationMock = do
   SessionUIMock _ _ CCUI{coinput=IC.InputContent{bcmdMap}} ticks <- get
   if ticks <= 1000
@@ -66,11 +66,11 @@ iterationMock = do
     modify $ \sess -> sess {unwindTicks = ticks + 1}
     mkm <- promptGetKeyMock
     case mkm of
-      Nothing -> return $ Right HeadEmpty
+      Nothing -> return $ Left HeadEmpty  -- macro finished
       Just km -> case km `M.lookup` bcmdMap of
-        Just (_, _, cmd) -> Left <$> cmdSemInCxtOfKMMock km cmd
-        _ -> error "uknown command"
-  else return $ Right Looped
+        Just (_, _, cmd) -> Right <$> cmdSemInCxtOfKMMock km cmd
+        _ -> return $ Right $ Just km  -- unknown command; fine for tests
+  else return $ Left Looped
 
 cmdSemInCxtOfKMMock :: K.KM -> HumanCmd.HumanCmd
                     -> State SessionUIMock (Maybe K.KM)
