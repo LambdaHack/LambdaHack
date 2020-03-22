@@ -26,14 +26,14 @@ data SessionUIMock = SessionUIMock
   { smacroFrame :: KeyMacroFrame
   , smacroStack :: [KeyMacroFrame]
   , sccui       :: CCUI
-  , counter     :: Int
+  , unwindTicks :: Int
   }
 
-type MacroBufferMock = Either String String
-type LastPlayMock = String
-type LastActionMock = String
+type KeyMacroBufferMock = Either String String
+type KeyPendingMock = String
+type KeyLastMock = String
 
-type BufferTrace = [(MacroBufferMock, LastPlayMock, LastActionMock)]
+type BufferTrace = [(KeyMacroBufferMock, KeyPendingMock, KeyLastMock)]
 type ActionLog = String
 
 data Op = Quit | Looped | HeadEmpty
@@ -41,9 +41,8 @@ data Op = Quit | Looped | HeadEmpty
 humanCommandMock :: WriterT [(BufferTrace, ActionLog)] (State SessionUIMock) ()
 humanCommandMock = do
   abuffs <- lift $ do
-    tmp <- get
-    return . fst $ storeTrace (smacroFrame tmp : smacroStack tmp) []
-      -- log session
+    sess <- get
+    return $ storeTrace (smacroFrame sess : smacroStack sess)  -- log session
   abortOrCmd <- lift iterationMock -- do stuff
   -- GC macro stack if there are no actions left to handle,
   -- removing all unnecessary macro frames at once,
@@ -55,17 +54,17 @@ humanCommandMock = do
                   , smacroStack = smacroStackMew }
   case abortOrCmd of
     Right Looped -> tell [(abuffs, "Macro looped")] >> pure ()
-    Right _ -> tell [(abuffs, "")] >> pure () -- exit loop
+    Right _ -> tell [(abuffs, "")] >> pure ()  -- exit loop
     Left Nothing -> tell [(abuffs, "")] >> humanCommandMock
     Left (Just out) -> tell [(abuffs, show out)] >> humanCommandMock
 
 iterationMock :: State SessionUIMock (Either (Maybe K.KM) Op)
 iterationMock = do
-  SessionUIMock _ _ CCUI{coinput=IC.InputContent{bcmdMap}} n <- get
-  if n <= 1000
+  SessionUIMock _ _ CCUI{coinput=IC.InputContent{bcmdMap}} ticks <- get
+  if ticks <= 1000
   then do
-    modify $ \sess -> sess {counter = 1 + counter sess} -- increment counter
-    mkm <- promptGetKeyMock []
+    modify $ \sess -> sess {unwindTicks = ticks + 1}
+    mkm <- promptGetKeyMock
     case mkm of
       Nothing -> return $ Right HeadEmpty
       Just km -> do
@@ -120,27 +119,17 @@ cmdSemanticsMock km = \case
     return $ Left Nothing
   _ -> return $ Left (Just km)
 
-promptGetKeyMock :: [K.KM] -> State SessionUIMock (Maybe K.KM)
-promptGetKeyMock frontKeyKeys = do
+promptGetKeyMock :: State SessionUIMock (Maybe K.KM)
+promptGetKeyMock = do
   SessionUIMock macroFrame _ CCUI{coinput=IC.InputContent{bcmdMap}} _ <- get
   case keyPending macroFrame of
-    KeyMacro (km : kms)
-      | null frontKeyKeys || km `elem` frontKeyKeys -> do
+    KeyMacro (km : kms) -> do
         modify $ \sess ->
           sess {smacroFrame = (smacroFrame sess) {keyPending = KeyMacro kms}}
         modify $ \sess ->
           sess {smacroFrame = addToMacro bcmdMap km $ smacroFrame sess}
         return (Just km)
-    KeyMacro (_ : _) -> do
-      resetPlayBackMock
-      return Nothing
     KeyMacro [] -> return Nothing
-
-resetPlayBackMock :: State SessionUIMock ()
-resetPlayBackMock = modify $ \sess ->
-  let lastFrame = lastMacroFrame (smacroFrame sess) (smacroStack sess)
-  in sess { smacroFrame = lastFrame {keyPending = mempty}
-          , smacroStack = [] }
 
 -- The mock for macro testing.
 unwindMacros :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
@@ -149,7 +138,7 @@ unwindMacros ic initMacro =
         { smacroFrame = emptyMacroFrame { keyPending = initMacro }
         , smacroStack = []
         , sccui = emptyCCUI { coinput = ic }
-        , counter = 0 }
+        , unwindTicks = 0 }
   in evalState (execWriterT humanCommandMock) initSession
 
 accumulateActions :: [(BufferTrace, ActionLog)] -> [(BufferTrace, ActionLog)]
@@ -161,12 +150,11 @@ accumulateActions ba =
 unwindMacrosAcc :: IC.InputContent -> KeyMacro -> [(BufferTrace, ActionLog)]
 unwindMacrosAcc  ic initMacro = accumulateActions $ unwindMacros ic initMacro
 
-storeTrace :: [KeyMacroFrame] -> [K.KM] -> (BufferTrace, ActionLog)
-storeTrace abuffs out =
+storeTrace :: [KeyMacroFrame] -> BufferTrace
+storeTrace abuffs =
   let tmacros = bimap (concatMap K.showKM)
                       (concatMap K.showKM . unKeyMacro)
                 . keyMacroBuffer <$> abuffs
       tlastPlay = concatMap K.showKM . unKeyMacro . keyPending <$> abuffs
       tlastAction = maybe "" K.showKM . keyLast <$> abuffs
-      toutput = concatMap K.showKM out
-  in (zip3 tmacros tlastPlay tlastAction, toutput)
+  in zip3 tmacros tlastPlay tlastAction
