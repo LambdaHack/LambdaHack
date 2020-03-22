@@ -95,14 +95,14 @@ import           Game.LambdaHack.Definition.Defs
 -- * Macro
 
 macroHuman :: MonadClientUI m => [String] -> m ()
-macroHuman s = do
+macroHuman ks = do
   modifySession $ \sess ->
-    let kms = K.mkKM <$> s
+    let kms = K.mkKM <$> ks
         (smacroFrameNew, smacroStackMew) =
            macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
     in sess { smacroFrame = smacroFrameNew
             , smacroStack = smacroStackMew }
-  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " s)
+  msgAdd MsgMacro $ "Macro activated:" <+> T.pack (intercalate " " ks)
 
 -- | Push a new macro frame to the stack whenever repeating a macro.
 macroHumanTransition :: [K.KM] -> KeyMacroFrame -> [KeyMacroFrame]

@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.UI.Content.Input
   , mouseLMB, mouseMMB, mouseRMB
   , goToCmd, runToAllCmd, autoexploreCmd, autoexplore25Cmd
   , aimFlingCmd, projectI, projectA, flingTs, applyIK, applyI
-  , grabItems, dropItems, descIs, defaultHeroSelect
+  , grabItems, dropItems, descIs, defaultHeroSelect, macroRun25
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , replaceCmd, projectICmd, grabCmd, dropCmd
@@ -279,3 +279,6 @@ descIs (t : _) = makePhrase [tiverb t, tiobject t]
 
 defaultHeroSelect :: Int -> (String, CmdTriple)
 defaultHeroSelect k = ([Char.intToDigit k], ([CmdMeta], "", PickLeader k))
+
+macroRun25 :: [String]
+macroRun25 = ["C-comma", "C-v"]
