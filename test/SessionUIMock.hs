@@ -36,7 +36,7 @@ type KeyLastMock = String
 type BufferTrace = [(KeyMacroBufferMock, KeyPendingMock, KeyLastMock)]
 type ActionLog = String
 
-data Op = Quit | Looped | HeadEmpty
+data Op = Looped | HeadEmpty
 
 humanCommandMock :: WriterT [(BufferTrace, ActionLog)] (State SessionUIMock) ()
 humanCommandMock = do
@@ -67,37 +67,25 @@ iterationMock = do
     mkm <- promptGetKeyMock
     case mkm of
       Nothing -> return $ Right HeadEmpty
-      Just km -> do
-        abortOrCmd <- case km `M.lookup` bcmdMap of
-          Just (_, _, cmd) -> restrictedCmdSemInCxtOfKMMock km cmd
-          _ -> error "uknown command"
-        case abortOrCmd of
-          -- exit loop
-          Right _ -> return $ Right Quit
-          -- loop without appending
-          Left Nothing -> return (Left Nothing)
-          -- recursive call
-          Left (Just out) -> return (Left $ Just out)
+      Just km -> case km `M.lookup` bcmdMap of
+        Just (_, _, cmd) -> Left <$> cmdSemInCxtOfKMMock km cmd
+        _ -> error "uknown command"
   else return $ Right Looped
 
-restrictedCmdSemInCxtOfKMMock :: K.KM -> HumanCmd.HumanCmd
-                              -> State SessionUIMock (Either (Maybe K.KM) ())
-restrictedCmdSemInCxtOfKMMock = cmdSemInCxtOfKMMock
-
 cmdSemInCxtOfKMMock :: K.KM -> HumanCmd.HumanCmd
-                    -> State SessionUIMock (Either (Maybe K.KM) ())
+                    -> State SessionUIMock (Maybe K.KM)
 cmdSemInCxtOfKMMock km cmd = do
   modify $ \sess ->
     sess {smacroFrame = updateKeyLast km cmd $ smacroFrame sess}
   cmdSemanticsMock km cmd
 
 cmdSemanticsMock :: K.KM -> HumanCmd.HumanCmd
-                 -> State SessionUIMock (Either (Maybe K.KM) ())
+                 -> State SessionUIMock (Maybe K.KM)
 cmdSemanticsMock km = \case
   HumanCmd.Record -> do
     modify $ \sess ->
       sess {smacroFrame = fst $ recordHumanTransition (smacroFrame sess) }
-    return $ Left Nothing
+    return Nothing
   HumanCmd.Macro s -> do
     modify $ \sess ->
       let kms = K.mkKM <$> s
@@ -105,19 +93,19 @@ cmdSemanticsMock km = \case
              macroHumanTransition kms (smacroFrame sess) (smacroStack sess)
       in sess { smacroFrame = smacroFrameNew
               , smacroStack = smacroStackMew }
-    return $ Left Nothing
+    return Nothing
   HumanCmd.Repeat n -> do
     modify $ \sess ->
       let (smacroFrameNew, smacroStackMew) =
              repeatHumanTransition n (smacroFrame sess) (smacroStack sess)
       in sess { smacroFrame = smacroFrameNew
               , smacroStack = smacroStackMew }
-    return $ Left Nothing
+    return Nothing
   HumanCmd.RepeatLast n -> do
     modify $ \sess ->
       sess {smacroFrame = repeatLastHumanTransition n (smacroFrame sess) }
-    return $ Left Nothing
-  _ -> return $ Left (Just km)
+    return Nothing
+  _ -> return $ Just km
 
 promptGetKeyMock :: State SessionUIMock (Maybe K.KM)
 promptGetKeyMock = do
