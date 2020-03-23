@@ -121,6 +121,7 @@ data MsgClass =
   | MsgRunStop
   | MsgPrompt
   | MsgPromptFocus
+  | MsgPromptMention
   | MsgPromptWarning
   | MsgPromptThreat
   | MsgPromptItem
@@ -139,6 +140,7 @@ isSavedToHistory MsgMacro = False
 isSavedToHistory MsgRunStop = False
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgPromptFocus = False
+isSavedToHistory MsgPromptMention = False
 isSavedToHistory MsgPromptWarning = False
 isSavedToHistory MsgPromptThreat = False
 isSavedToHistory MsgPromptItem = False
@@ -168,6 +170,7 @@ interruptsRunning MsgMacro = False
 interruptsRunning MsgRunStop = False
 interruptsRunning MsgPrompt = False
 interruptsRunning MsgPromptFocus = False
+interruptsRunning MsgPromptMention = False
 interruptsRunning MsgPromptWarning = False
 interruptsRunning MsgPromptThreat = False
 interruptsRunning MsgPromptItem = False
@@ -189,6 +192,7 @@ disturbsResting MsgMacro = False
 disturbsResting MsgRunStop = False
 disturbsResting MsgPrompt = False
 disturbsResting MsgPromptFocus = False
+disturbsResting MsgPromptMention = False
 disturbsResting MsgPromptWarning = False
 disturbsResting MsgPromptThreat = False
 disturbsResting MsgPromptItem = False
@@ -263,6 +267,7 @@ msgColor MsgMacro = Color.White
 msgColor MsgRunStop = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgPromptFocus = Color.Green
+msgColor MsgPromptMention = Color.Cyan
 msgColor MsgPromptWarning = Color.BrYellow
 msgColor MsgPromptThreat = Color.BrRed
 msgColor MsgPromptItem = Color.BrBlue

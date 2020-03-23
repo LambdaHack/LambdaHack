@@ -385,7 +385,7 @@ lookAtTile :: MonadClientUI m
            -> Point      -- ^ position to describe
            -> ActorId    -- ^ the actor that looks
            -> LevelId    -- ^ level the position is at
-           -> m (Text, Text)
+           -> m (Text, Text, [(Text, Text)])
 lookAtTile canSee p aid lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
@@ -409,7 +409,7 @@ lookAtTile canSee p aid lidV = do
       tilePart = MU.AW $ MU.Text $ TK.tname tile
       entrySentence pk blurb =
         makeSentence [blurb, MU.Text $ PK.pname $ okind coplace pk]
-      elooks = case EM.lookup p $ lentry lvl of
+      placeBlurb = case EM.lookup p $ lentry lvl of
         Nothing -> ""
         Just (PK.PEntry pk) -> entrySentence pk "it is an entrance to"
         Just (PK.PAround pk) -> entrySentence pk "it surrounds"
@@ -423,12 +423,11 @@ lookAtTile canSee p aid lidV = do
                    else "are"
             ik = itemKind itemFull
             desc = IK.idesc ik
-        in makeSentence ["There", verb, nWs] <+> desc
+        in (makeSentence ["There", verb, nWs], desc)
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
-      ilooks = T.intercalate " " $ map itemLook
-                                 $ sortEmbeds cops tkid embedKindList
-  return (makeSentence [vis, tilePart], elooks <+> ilooks)
+      embedList = map itemLook $ sortEmbeds cops tkid embedKindList
+  return (makeSentence [vis, tilePart], placeBlurb, embedList)
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
@@ -592,7 +591,7 @@ lookAtPosition lidV p = do
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   -- Show general info about current position.
-  (tileBlurb, embedsBlurb) <- lookAtTile canSee p leader lidV
+  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
   (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   itemsBlurb <- lookAtItems canSee p leader
   lvl@Level{lsmell, ltime} <- getLevel lidV
@@ -644,13 +643,17 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment trigger special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
-  return [ (MsgPromptFocus, tileBlurb)
-         , (MsgPrompt, embedsBlurb <+> alterBlurb <+> transformBlurb)
-         , (MsgPromptWarning, stashBlurb)
-         , (MsgPromptThreat, actorsBlurb)
-         , (MsgPrompt, actorsDesc)
-         , (MsgPromptItem, itemsBlurb)
-         , (MsgPrompt, smellBlurb) ]
+  return $ [ (MsgPromptFocus, tileBlurb)
+           , (MsgPrompt, placeBlurb) ]
+           ++ concatMap (\(embedName, embedDesc) ->
+                [ (MsgPromptMention, embedName)
+                , (MsgPrompt, embedDesc) ]) embedsList
+           ++ [ (MsgPrompt, alterBlurb <+> transformBlurb)
+              , (MsgPromptWarning, stashBlurb)
+              , (MsgPromptThreat, actorsBlurb)
+              , (MsgPrompt, actorsDesc)
+              , (MsgPromptItem, itemsBlurb)
+              , (MsgPrompt, smellBlurb) ]
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
