@@ -460,7 +460,7 @@ moveSearchAlter run dir = do
        | run -> do
            -- Explicit request to examine the terrain.
            blurb <- lookAtPosition (blid sb) tpos
-           promptAdd0 blurb
+           mapM_ (uncurry msgAdd0) blurb
            failWith $ if alterable
                       then "potentially modifiable"
                       else "not modifiable"
@@ -510,7 +510,7 @@ alterCommon bumping tpos = do
        && alterSkill < Tile.alterMinSkill coTileSpeedup t -> do
          -- Rather rare (requires high skill), so describe the tile.
          blurb <- lookAtPosition (blid sb) tpos
-         promptAdd0 blurb
+         mapM_ (uncurry msgAdd0) blurb
          failSer AlterUnwalked
      | chessDist tpos (bpos sb) > 1 ->
          -- Checked late to give useful info about distant tiles.
@@ -1037,7 +1037,7 @@ processTileActions source tpos tas = do
         then return $ Right ()
         else do
           blurb <- lookAtPosition (blid sb) tpos
-          promptAdd0 blurb
+          mapM_ (uncurry msgAdd0) blurb
           failWith "unable to modify at this time"
             -- related to, among others, @SfxNoItemsForTile@ on the server
       processTA (ta : rest) = case ta of

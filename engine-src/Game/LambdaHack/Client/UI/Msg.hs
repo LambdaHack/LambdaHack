@@ -121,6 +121,9 @@ data MsgClass =
   | MsgRunStop
   | MsgPrompt
   | MsgPromptFocus
+  | MsgPromptWarning
+  | MsgPromptThreat
+  | MsgPromptItem
   | MsgAlert
   | MsgStopPlayback
  deriving (Show, Read, Eq, Enum, Generic)
@@ -136,6 +139,9 @@ isSavedToHistory MsgMacro = False
 isSavedToHistory MsgRunStop = False
 isSavedToHistory MsgPrompt = False
 isSavedToHistory MsgPromptFocus = False
+isSavedToHistory MsgPromptWarning = False
+isSavedToHistory MsgPromptThreat = False
+isSavedToHistory MsgPromptItem = False
 isSavedToHistory MsgAlert = False
 isSavedToHistory MsgStopPlayback = False
 isSavedToHistory _ = True
@@ -162,6 +168,9 @@ interruptsRunning MsgMacro = False
 interruptsRunning MsgRunStop = False
 interruptsRunning MsgPrompt = False
 interruptsRunning MsgPromptFocus = False
+interruptsRunning MsgPromptWarning = False
+interruptsRunning MsgPromptThreat = False
+interruptsRunning MsgPromptItem = False
   -- MsgAlert means something went wrong, so alarm
 interruptsRunning _ = True
 
@@ -180,6 +189,9 @@ disturbsResting MsgMacro = False
 disturbsResting MsgRunStop = False
 disturbsResting MsgPrompt = False
 disturbsResting MsgPromptFocus = False
+disturbsResting MsgPromptWarning = False
+disturbsResting MsgPromptThreat = False
+disturbsResting MsgPromptItem = False
   -- MsgAlert means something went wrong, so alarm
 disturbsResting _ = True
 
@@ -251,6 +263,9 @@ msgColor MsgMacro = Color.White
 msgColor MsgRunStop = Color.White
 msgColor MsgPrompt = Color.White
 msgColor MsgPromptFocus = Color.Green
+msgColor MsgPromptWarning = Color.BrYellow
+msgColor MsgPromptThreat = Color.BrRed
+msgColor MsgPromptItem = Color.BrBlue
 msgColor MsgAlert = Color.BrYellow
 msgColor MsgStopPlayback = Color.BrYellow
 

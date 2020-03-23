@@ -385,7 +385,7 @@ lookAtTile :: MonadClientUI m
            -> Point      -- ^ position to describe
            -> ActorId    -- ^ the actor that looks
            -> LevelId    -- ^ level the position is at
-           -> m Text
+           -> m (Text, Text)
 lookAtTile canSee p aid lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   cops@COps{cotile, coplace} <- getsState scops
@@ -428,13 +428,13 @@ lookAtTile canSee p aid lidV = do
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       ilooks = T.intercalate " " $ map itemLook
                                  $ sortEmbeds cops tkid embedKindList
-  return $! makeSentence [vis, tilePart] <+> elooks <+> ilooks
+  return (makeSentence [vis, tilePart], elooks <+> ilooks)
 
 -- | Produces a textual description of actors at a position.
 lookAtActors :: MonadClientUI m
              => Point      -- ^ position to describe
              -> LevelId    -- ^ level the position is at
-             -> m Text
+             -> m (Text, Text)
 lookAtActors p lidV = do
   CCUI{coscreen=ScreenContent{rwidth}} <- getsSession sccui
   side <- getsClient sside
@@ -446,7 +446,7 @@ lookAtActors p lidV = do
   localTime <- getsState $ getLocalTime lidV
   s <- getState
   let actorsBlurb = case inhabitants of
-        [] -> ""
+        [] -> ("", "")
         (_, body) : rest ->
           let itemFull = itemToFull (btrunk body) s
               bfact = factionD EM.! bfid body
@@ -492,31 +492,34 @@ lookAtActors p lidV = do
               pdesc = if desc == "" then "" else "(" <> desc <> ")"
               onlyIs = bwatch body == WWatch && null guardVerbs
           in if | bhp body <= 0 && not (bproj body) ->
-                  makeSentence
-                    (MU.SubjectVerbSg (head subjects) "lie here"
-                     : if null guardVerbs
-                       then []
-                       else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
-                                             "and" guardVerbs
-                            , "any more" ])
-                  <+> case subjects of
-                        _ : projs@(_ : _) ->
-                          let (subjectProjs, personProjs) = squashedWWandW projs
-                          in makeSentence
-                               [MU.SubjectVerb personProjs MU.Yes
-                                               subjectProjs "can be seen"]
-                        _ -> ""
+                  ( makeSentence
+                      (MU.SubjectVerbSg (head subjects) "lie here"
+                       : if null guardVerbs
+                         then []
+                         else [ MU.SubjectVVxV "and" MU.Sg3rd MU.No
+                                               "and" guardVerbs
+                              , "any more" ])
+                    <+> case subjects of
+                          _ : projs@(_ : _) ->
+                            let (subjectProjs, personProjs) =
+                                  squashedWWandW projs
+                            in makeSentence
+                                 [MU.SubjectVerb personProjs MU.Yes
+                                                 subjectProjs "can be seen"]
+                          _ -> ""
+                  , "" )
                 | null rest || onlyIs ->
-                  makeSentence
-                    [MU.SubjectVVxV "and" person MU.Yes subject verbs]
-                  <+> pdesc
+                  ( makeSentence
+                      [MU.SubjectVVxV "and" person MU.Yes subject verbs]
+                  , pdesc )
                 | otherwise ->
-                  makeSentence [subject, "can be seen"]
-                  <+> if onlyIs
-                      then ""
-                      else makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
-                                                        (head subjects) verbs]
-  return $! actorsBlurb
+                  ( makeSentence [subject, "can be seen"]
+                    <+> if onlyIs
+                        then ""
+                        else makeSentence [MU.SubjectVVxV "and" MU.Sg3rd MU.Yes
+                                                          (head subjects) verbs]
+                  , "" )
+  return actorsBlurb
 
 guardItemVerbs :: Actor -> Faction -> State -> [MU.Part]
 guardItemVerbs body _fact s =
@@ -581,7 +584,7 @@ lookAtItems canSee p aid = do
 
 -- | Produces a textual description of everything at the requested
 -- level's position.
-lookAtPosition :: MonadClientUI m => LevelId -> Point -> m Text
+lookAtPosition :: MonadClientUI m => LevelId -> Point -> m [(MsgClass, Text)]
 lookAtPosition lidV p = do
   COps{cotile} <- getsState scops
   side <- getsClient sside
@@ -589,8 +592,8 @@ lookAtPosition lidV p = do
   per <- getPerFid lidV
   let canSee = ES.member p (totalVisible per)
   -- Show general info about current position.
-  tileBlurb <- lookAtTile canSee p leader lidV
-  actorsBlurb <- lookAtActors p lidV
+  (tileBlurb, embedsBlurb) <- lookAtTile canSee p leader lidV
+  (actorsBlurb, actorsDesc) <- lookAtActors p lidV
   itemsBlurb <- lookAtItems canSee p leader
   lvl@Level{lsmell, ltime} <- getLevel lidV
   let smellBlurb = case EM.lookup p lsmell of
@@ -641,8 +644,13 @@ lookAtPosition lidV p = do
                        then ""
                        else "The following items on the ground or in equipment trigger special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
-  return $! tileBlurb <+> alterBlurb <+> transformBlurb
-            <+> stashBlurb <+> actorsBlurb <+> itemsBlurb <+> smellBlurb
+  return [ (MsgPromptFocus, tileBlurb)
+         , (MsgPrompt, embedsBlurb <+> alterBlurb <+> transformBlurb)
+         , (MsgPromptWarning, stashBlurb)
+         , (MsgPromptThreat, actorsBlurb)
+         , (MsgPrompt, actorsDesc)
+         , (MsgPromptItem, itemsBlurb)
+         , (MsgPrompt, smellBlurb) ]
 
 displayItemLore :: MonadClientUI m
                 => ItemBag -> Int -> (ItemId -> ItemFull -> Int -> Text) -> Int
