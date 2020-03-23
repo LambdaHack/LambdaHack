@@ -22,10 +22,10 @@ import           Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import           Control.Monad.ST.Strict
 import           Data.IORef
+import           Data.Kind (Type)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import           Data.Word
-import Data.Kind (Type)
 
 import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
@@ -84,7 +84,7 @@ chanFrontendIO coscreen soptions = do
 #endif
               | otherwise = Chosen.startup coscreen soptions
       maxFps = fromMaybe defaultMaxFps $ smaxFps soptions
-      delta = max 1 $ microInSec `div` maxFps
+      delta = max 1 $ round $ fromIntegral microInSec / max 0.000001 maxFps
   rf <- startup
   fautoYesRef <- newIORef $ not $ sdisableAutoYes soptions
   fdelay <- newMVar 0
@@ -144,7 +144,7 @@ display rf@RawFrontend{fshowNow, fcoscreen=ScreenContent{rwidth, rheight}}
   putMVar fshowNow () -- 1. wait for permission to display; 3. ack
   fdisplay rf $ SingleFrame singleArray ovProp ovMono
 
-defaultMaxFps :: Int
+defaultMaxFps :: Double
 defaultMaxFps = 24
 
 microInSec :: Int

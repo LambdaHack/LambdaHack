@@ -35,7 +35,7 @@ data ClientOptions = ClientOptions
       -- ^ Font size to use for the main game window.
   , slogPriority       :: Maybe Int
       -- ^ How much to log (e.g., from SDL). 1 is all, 5 is errors, the default.
-  , smaxFps            :: Maybe Int
+  , smaxFps            :: Maybe Double
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.

@@ -304,8 +304,8 @@ fontDirP = optional $
             <> metavar "FILEPATH"
             <> help "Take font files for the SDL2 frontend from FILEPATH" )
 
-maxFpsP :: Parser (Maybe Int)
-maxFpsP = optional $ max 1 <$>
+maxFpsP :: Parser (Maybe Double)
+maxFpsP = optional $ max 0 <$>
   option auto (  long "maxFps"
               <> metavar "N"
               <> help "Display at most N frames per second" )

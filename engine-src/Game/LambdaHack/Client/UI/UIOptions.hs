@@ -36,7 +36,7 @@ data UIOptions = UIOptions
   , uSdlBitmapSizeAdd   :: Int
   , uScalableFontSize   :: Int
   , uHistoryMax         :: Int
-  , uMaxFps             :: Int
+  , uMaxFps             :: Double
   , uNoAnim             :: Bool
   , uhpWarningPercent   :: Int
       -- ^ HP percent at which warning is emitted.
