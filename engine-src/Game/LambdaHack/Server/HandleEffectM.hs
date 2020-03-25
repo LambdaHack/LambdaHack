@@ -1431,8 +1431,11 @@ dropCStoreItem verbose destroy store aid b kMax iid (k, _) = do
              let destroyedSoFar = k - k1
                  k2 = min (kMax - destroyedSoFar) k1
                  kit2 = (k2, take k2 it)
+                 -- Don't spam if the effect already probably made noise
+                 -- and also the number could be surprising to the player.
+                 verbose2 = verbose && k1 == k
              when (k2 > 0) $
-               execUpdAtomic $ UpdDestroyItem verbose iid (itemBase itemFull)
+               execUpdAtomic $ UpdDestroyItem verbose2 iid (itemBase itemFull)
                                               kit2 c)
           (EM.lookup iid bag)
     return UseUp
