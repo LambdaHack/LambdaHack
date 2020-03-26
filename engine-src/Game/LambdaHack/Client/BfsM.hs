@@ -114,18 +114,24 @@ updatePathFromBfs canMove bfsAndPathOld aid !target = do
   if not canMove
   then return (bfsArr, Nothing)
   else do
-    b <- getsState $ getActorBody aid
-    let lid = blid b
+    getActorB <- getsState $ flip getActorBody
+    let b = getActorB aid
+    fact <- getsState $ (EM.! bfid b) . sfactionD
     seps <- getsClient seps
     salter <- getsClient salter
-    lvl <- getLevel lid
-    let !lalter = salter EM.! lid
+    lvl <- getLevel (blid b)
+    let !lalter = salter EM.! blid b
         fovLit p = Tile.isLit coTileSpeedup $ PointArray.fromUnboxRep
                                             $ ltile lvl `PointArray.accessI` p
+        addFoeVicinity (p, aid2) =
+          let b2 = getActorB aid2
+          in if isFoe (bfid b) fact (bfid b2)
+             then p : vicinityUnsafe p
+             else [p]
+        bigAdj = ES.fromList $ concatMap addFoeVicinity $ EM.assocs
+                 $ EM.delete source $ lbig lvl  -- don't sidestep oneself
         !source = bpos b
-        !mpath =
-          findPathBfs (EM.delete source $ lbig lvl)  -- don't sidestep oneself
-                      lalter fovLit source target seps bfsArr
+        !mpath = findPathBfs bigAdj lalter fovLit source target seps bfsArr
         !bfsPath =
           maybe oldBfsPath (\path -> EM.insert target path oldBfsPath) mpath
         bap = BfsAndPath bfsArr bfsPath

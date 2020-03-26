@@ -19,15 +19,14 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Monad.ST.Strict (ST, runST)
 import           Data.Binary
 import           Data.Bits (Bits, complement, (.&.), (.|.))
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
+import qualified Data.EnumSet as ES
+import qualified Data.IntSet as IS
 import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
 import           GHC.Exts (inline)
 import           GHC.Generics (Generic)
 
-import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.Vector
@@ -217,7 +216,7 @@ actorsAvoidedDist = 5
 -- in total (only if they had opposed direction of their goals; unlikely).
 -- But in corridors they will still displace and elsewhere this scenario
 -- was quite rare already.
-findPathBfs :: BigActorMap -> PointArray.Array Word8 -> (PointI -> Bool)
+findPathBfs :: ES.EnumSet Point -> PointArray.Array Word8 -> (PointI -> Bool)
             -> Point -> Point -> Int
             -> PointArray.Array BfsDistance
             -> Maybe AndPath
@@ -249,7 +248,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
                  else let free = fromEnum (bfsDistance dist) > actorsAvoidedDist
-                                 || p `IM.notMember` EM.enumMapToIntMap lbig
+                                 || p `IS.notMember` ES.enumSetToIntSet lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster
                           dark = not $ fovLit p
