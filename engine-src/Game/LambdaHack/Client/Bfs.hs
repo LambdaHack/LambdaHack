@@ -4,8 +4,7 @@
 module Game.LambdaHack.Client.Bfs
   ( BfsDistance, MoveLegal(..)
   , subtractBfsDistance, minKnownBfs, apartBfs, maxBfsDistance, fillBfs
-  , AndPath(..), actorsAvoidedDist, findPathBfs
-  , accessBfs
+  , AndPath(..), findPathBfs, accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , succBfsDistance, predBfsDistance, abortedUnknownBfs
@@ -198,9 +197,6 @@ data AndPath = AndPath
 
 instance Binary AndPath
 
-actorsAvoidedDist :: Int
-actorsAvoidedDist = 5
-
 -- | Find a path, without the source position, with the smallest length.
 -- The @eps@ coefficient determines which direction (of the closest
 -- directions available) that path should prefer, where 0 means north-west
@@ -247,8 +243,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
                     BfsDistance (arr `PointArray.accessI` p) /= dist
               in if backtrackingMove
                  then minChild minP maxDark minAlter mvs
-                 else let free = fromEnum (bfsDistance dist) > actorsAvoidedDist
-                                 || p `IS.notMember` ES.enumSetToIntSet lbig
+                 else let free = p `IS.notMember` ES.enumSetToIntSet lbig
                           alter | free = lalter `PointArray.accessI` p
                                 | otherwise = maxBound-1  -- occupied; disaster
                           dark = not $ fovLit p

@@ -72,8 +72,7 @@ invalidateBfsPathLid :: MonadClient m => LevelId -> Point -> m ()
 invalidateBfsPathLid lid pos = do
   side <- getsClient sside
   let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
-                 && chessDist pos (bpos b) < actorsAvoidedDist
-                      -- rough approximation, but kicks in well before blockage
+                 && chessDist pos (bpos b) < 10  -- heuristic
   as <- getsState $ filter f . EM.assocs . sactorD
   mapM_ (invalidateBfsPathAid . fst) as
 
