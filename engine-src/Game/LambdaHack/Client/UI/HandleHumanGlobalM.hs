@@ -25,10 +25,10 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
   , doctrineHuman, automateHuman, automateToggleHuman, automateBackHuman
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, goToXhair
-  , multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems, projectItem
-  , applyItem, alterTileAtPos, verifyAlters, verifyEscape, closeTileAtPos
-  , msgAddDone, pickPoint, generateMenu, nxtGameMode
+  , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, alterCommon
+  , goToXhair, multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems
+  , projectItem, applyItem, alterTileAtPos, verifyAlters, verifyEscape
+  , closeTileAtPos, msgAddDone, pickPoint, generateMenu, nxtGameMode
 #endif
   ) where
 
@@ -522,12 +522,14 @@ alterCommon bumping tpos = do
          -- Don't mislead describing terrain, if other actor is to blame.
          failSer AlterBlockActor
      | otherwise -> do  -- promising
-         verAlters <- verifyAlters leader tpos
+         verAlters <- verifyAlters bumping leader tpos
          case verAlters of
-           Right () -> do
-             unless bumping $
+           Right () ->
+             if bumping then
+               return $ Right $ ReqMove $ vectorToFrom tpos spos
+             else do
                msgAddDone tpos "modify"
-             return $ Right (ReqAlter tpos)
+               return $ Right $ ReqAlter tpos
            Left err -> return $ Left err
          -- Even when bumping, we don't use ReqMove, because we don't want
          -- to hit invisible actors, e.g., hidden in a wall.
@@ -999,11 +1001,11 @@ alterTileAtPos :: MonadClientUI m
 alterTileAtPos = alterCommon False
 
 -- | Verify that the tile can be transformed or any embedded item effect
--- triggered and the player is fine, if the effect is dangerous or grave,
+-- triggered and the player is aware if the effect is dangerous or grave,
 -- such as ending the game.
-verifyAlters :: forall m. MonadClientUI m => ActorId -> Point
-             -> m (FailOrCmd ())
-verifyAlters source tpos = do
+verifyAlters :: forall m. MonadClientUI m
+             => Bool -> ActorId -> Point -> m (FailOrCmd ())
+verifyAlters bumping source tpos = do
   COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   arItem <- getsState $ aspectRecordFromIid $ btrunk sb
@@ -1019,11 +1021,12 @@ verifyAlters source tpos = do
       tileActions =
         mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
                  feats
-  processTileActions source tpos tileActions
+  processTileActions bumping source tpos tileActions
 
 processTileActions :: MonadClientUI m
-                   => ActorId -> Point -> [Tile.TileAction] -> m (FailOrCmd ())
-processTileActions source tpos tas = do
+                   => Bool -> ActorId -> Point -> [Tile.TileAction]
+                   -> m (FailOrCmd ())
+processTileActions bumping source tpos tas = do
   COps{coTileSpeedup} <- getsState scops
   getKind <- getsState $ flip getIidKind
   sb <- getsState $ getActorBody source
@@ -1061,7 +1064,7 @@ processTileActions source tpos tas = do
           let grps0 = map (\(x, y) -> (False, x, y)) tools0  -- apply if durable
               (_, iidsToApply, grps) =
                 foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
-          if null grps then do
+          if not bumping && null grps then do
             let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
                   IK.idamage itemKind /= 0
                   || any IK.forApplyEffect (IK.ieffects itemKind)

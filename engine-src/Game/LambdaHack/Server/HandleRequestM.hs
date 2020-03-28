@@ -30,8 +30,8 @@ import qualified Data.Text as T
 import qualified Text.Show.Pretty as Show.Pretty
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client (ReqAI (..), ReqUI (..),
-                                         RequestTimed (..))
+import           Game.LambdaHack.Client
+  (ReqAI (..), ReqUI (..), RequestTimed (..))
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Analytics
@@ -296,7 +296,7 @@ affectSmell aid = do
       when (oldS /= newS) $
         execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS newS
 
--- | Actor moves or attacks.
+-- | Actor moves or attacks or alters by bumping.
 -- Note that client may not be able to see an invisible monster
 -- so it's the server that determines if melee took place, etc.
 -- Also, only the server is authorized to check if a move is legal
@@ -384,15 +384,19 @@ reqMoveGeneric voluntary mayAttack source dir = do
           -- slowness every time a projectile flies over water.
           unless (bproj sb) $ do
             -- Not voluntary, because possibly the goal was to move
-            -- and modifying terrain is an unwelcome side effect.
+            -- and then modifying terrain is an unwelcome side effect.
             -- Barged into a tile, so normal effects need to activate,
             -- while crafting requires explicit altering.
-            void $ reqAlterFail EffBare False source tpos
+            -- Counts as bumping, because terrain transformation not intended.
+            void $ reqAlterFail True EffBare False source tpos
               -- possibly alter or activate
        else execFailure source (ReqMove dir) MoveUnskilled
-      else
-        -- Client foolishly tries to move into unwalkable tile.
-        execFailure source (ReqMove dir) MoveNothing
+      else do
+        -- If not walkable, this must be altering by bumping.
+        -- Possibly intentional so report any errors.
+        mfail <- reqAlterFail True EffBare False source tpos
+        let req = ReqMove dir
+        maybe (return ()) (execFailure source req) mfail
 
 -- * ReqMelee
 
@@ -599,9 +603,10 @@ reqDisplaceGeneric voluntary source target = do
              -- so sometimes smellers will backtrack once to wipe smell. OK.
              affectSmell source
              affectSmell target
-             void $ reqAlterFail EffBare False source tpos
+             -- Counts as bumping, because terrain transformation not intended.
+             void $ reqAlterFail True EffBare False source tpos
                -- possibly alter or activate
-             void $ reqAlterFail EffBare False target spos
+             void $ reqAlterFail True EffBare False target spos
            _ -> execFailure source req DisplaceMultiple
        else
          -- Client foolishly tries to displace an actor without access.
@@ -623,13 +628,14 @@ reqAlter source tpos = do
   let effToUse = if Tile.isWalkable coTileSpeedup (lvl `at` tpos)
                  then EffOnCombine
                  else EffBareAndOnCombine
-  mfail <- reqAlterFail effToUse True source tpos
+  mfail <- reqAlterFail False effToUse True source tpos
   let req = ReqAlter tpos
   maybe (return ()) (execFailure source req) mfail
 
 reqAlterFail :: forall m. MonadServerAtomic m
-             => EffToUse -> Bool -> ActorId -> Point -> m (Maybe ReqFailure)
-reqAlterFail effToUse voluntary source tpos = do
+             => Bool -> EffToUse -> Bool -> ActorId -> Point
+             -> m (Maybe ReqFailure)
+reqAlterFail bumping effToUse voluntary source tpos = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
@@ -799,7 +805,7 @@ reqAlterFail effToUse voluntary source tpos = do
             mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
                      feats
           groupWithFromAction action = case action of
-            Tile.WithAction grps tgroup -> Just (grps, tgroup)
+            Tile.WithAction grps tgroup | not bumping -> Just (grps, tgroup)
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
           processTileActions :: Maybe UseResult -> [Tile.TileAction] -> m Bool
@@ -833,7 +839,8 @@ reqAlterFail effToUse voluntary source tpos = do
               -- Even mist can transform a tile (e.g., fire mist),
               -- but only if it managed to activate all previous embeds,
               -- (with mist, that means all such embeds were consumed earlier).
-              if maybe True (== UseUp) museResult
+              if not bumping
+                 && maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
               then do
                 -- Waste item only if voluntary or released as projectile.
