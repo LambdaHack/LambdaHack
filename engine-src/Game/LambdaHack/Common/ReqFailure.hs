@@ -70,7 +70,6 @@ data ReqFailure =
   | ProjectBlockActor
   | ProjectLobable
   | ProjectOutOfReach
-  | TriggerNothing
   | NoChangeDunLeader
   deriving (Show, Eq, Generic)
 
@@ -124,7 +123,6 @@ impossibleReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> True  -- adjacent actor always visible
   ProjectLobable -> False  -- unidentified skill items
   ProjectOutOfReach -> True
-  TriggerNothing -> True  -- terrain underneath always visible
   NoChangeDunLeader -> True
 
 showReqFailure :: ReqFailure -> Text
@@ -143,8 +141,8 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceBraced -> "trying to displace a braced foe"
   DisplaceImmobile -> "trying to displace an immobile foe"
   DisplaceSupported -> "trying to displace a foe supported by teammates"
-  AlterUnskilled -> "modify stat is needed to search or exploit terrain"
-  AlterUnwalked -> "too low modify stat to enter or exploit terrain; find and equip gear that improves the stat or try with a teammate whose skills menu shows a higher stat"
+  AlterUnskilled -> "modify stat is needed to search or activate or transform terrain"
+  AlterUnwalked -> "too low modify stat to enter or activate or transform terrain; find and equip gear that improves the stat or try with a teammate whose skills menu shows a higher stat"
   AlterDistant -> "trying to modify distant terrain"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
@@ -158,13 +156,13 @@ showReqFailure reqFailure = case reqFailure of
   MoveItemUnskilled -> "too low item moving stat"
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
-  ApplyUnskilled -> "too low item applying stat"
-  ApplyFood -> "eating food requires apply stat 2"
-  ApplyRead -> "activating cultural artifacts requires apply stat 3"
-  ApplyPeriodic -> "manually activating periodic items requires apply stat 4"
-  ApplyOutOfReach -> "cannot apply an item out of reach"
-  ApplyCharging -> "cannot apply an item that is still charging"
-  ApplyNoEffects -> "cannot apply an item that produces no effect"
+  ApplyUnskilled -> "too low item triggering stat"
+  ApplyFood -> "eating food requires trigger stat 2"
+  ApplyRead -> "activating cultural artifacts requires trigger stat 3"
+  ApplyPeriodic -> "manually activating periodic items requires trigger stat 4"
+  ApplyOutOfReach -> "cannot trigger an item out of reach"
+  ApplyCharging -> "cannot trigger an item that is still charging"
+  ApplyNoEffects -> "cannot trigger an item that produces no effect"
   ItemNothing -> "wasting time on void item manipulation"
   ItemNotCalm -> "you try to organize equipment but your calm fails you"
   ItemOverStash -> "you roll in your hoard a little"
@@ -175,7 +173,6 @@ showReqFailure reqFailure = case reqFailure of
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectLobable -> "flinging a lobable item that stops at target position requires fling stat 3"
   ProjectOutOfReach -> "cannot aim an item out of reach"
-  TriggerNothing -> "wasting time on triggering nothing"
   NoChangeDunLeader -> "no manual level change for your team"
 
 -- The item should not be applied nor thrown because it's too delicate
@@ -231,7 +228,7 @@ permittedApply localTime skill calmE
        && let arItem = aspectRecordFull itemFull
           in IA.checkFlag Ability.Periodic arItem -> Left ApplyPeriodic
      -- If the item is discharged, neither the kinetic hit nor
-     -- any effects activate, so there's no point applying.
+     -- any effects activate, so there's no point triggering.
      -- Note that if client doesn't know the timeout, here we may leak the fact
      -- that the item is still charging, but the client risks destruction
      -- if the item is, in fact, recharged and is not durable

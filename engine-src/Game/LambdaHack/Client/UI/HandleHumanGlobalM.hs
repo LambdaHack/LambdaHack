@@ -464,8 +464,8 @@ moveSearchAlter run dir = do
            blurb <- lookAtPosition (blid sb) tpos
            mapM_ (uncurry msgAdd0) blurb
            failWith $ if alterable
-                      then "potentially modifiable"
-                      else "not modifiable"
+                      then "potentially exploitable"
+                      else "not exploitable"
        | otherwise -> alterCommon True tpos
   return $! runStopOrCmd
 
@@ -942,11 +942,11 @@ applyHuman = do
         b <- getsState $ getActorBody leader
         bag <- getsState $ getBodyStoreBag b fromCStore
         case iid `EM.lookup` bag of
-          Nothing -> failWith "no item to apply"
+          Nothing -> failWith "no item to trigger"
           Just kit -> do
             itemFull <- getsState $ itemToFull iid
             applyItem (fromCStore, (iid, (itemFull, kit)))
-      Nothing -> failWith "no item to apply"
+      Nothing -> failWith "no item to trigger"
 
 applyItem :: MonadClientUI m
           => (CStore, (ItemId, ItemFullKit))
@@ -971,10 +971,10 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
              -- No warning if item durable, because activation weak,
              -- but price low, due to no destruction.
              displayYesNo ColorFull
-                          "Applying this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
+                          "Using this periodic item will produce only the first of its effects and moreover, because it's not durable, will destroy it. Are you sure?"
            | benApply < 0 ->
              displayYesNo ColorFull
-                          "The item appears harmful. Do you really want to apply it?"
+                          "The item appears harmful. Do you really want to trigger it?"
            | otherwise -> return True
       if go
       then return $ Right $ ReqApply iid fromCStore

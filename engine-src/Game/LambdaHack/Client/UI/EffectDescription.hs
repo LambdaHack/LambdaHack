@@ -207,11 +207,11 @@ skillName :: Skill -> Text
 skillName SkMove = "move stat"
 skillName SkMelee = "melee stat"
 skillName SkDisplace = "displace stat"
-skillName SkAlter = "modify tile stat"
+skillName SkAlter = "modify terrain stat"
 skillName SkWait = "wait stat"
 skillName SkMoveItem = "manage items stat"
 skillName SkProject = "fling stat"
-skillName SkApply = "apply stat"
+skillName SkApply = "trigger stat"
 skillName SkSwimming = "swimming"
 skillName SkFlying = "flying"
 skillName SkHurtMelee = "to melee damage"
@@ -241,7 +241,7 @@ skillDesc skill =
     SkDisplace -> capStatName <+>
       "determines whether the character can displace adjacent actors. In some cases displacing is not possible regardless of skill: when the target is braced, dying, has no move skill or when both actors are supported by adjacent friendly units. Missiles can be displaced always, unless more than one occupies the map location."
     SkAlter -> capStatName <+>
-      "determines which kinds of terrain can be modified or triggered by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
+      "determines which kinds of terrain can be activated and modified by the character. Opening doors and searching suspect tiles require skill 2, some stairs require 3, closing doors requires 4, others require 4 or 5. Actors not smart enough to be capable of using stairs can't be dominated."
     SkWait -> capStatName <+>
       "determines whether the character can wait, brace for combat (potentially blocking the effects of some attacks), sleep and lurk."
     SkMoveItem -> capStatName <+>
@@ -249,7 +249,7 @@ skillDesc skill =
     SkProject -> capStatName <+>
       "determines which kinds of items the character can propel. Items that can be lobbed to explode at a precise location, such as flasks, require skill 3. Other items travel until they meet an obstacle and skill 1 is enough to fling them. In some cases, e.g., of too intricate or two awkward items at low Calm, throwing is not possible regardless of the skill value."
     SkApply -> capStatName <+>
-      "determines which kinds of items the character can activate. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for the character Calm level, applying may not be possible."
+      "determines which kinds of items the character can use. Items that assume literacy require skill 2, others can be used already at skill 1. In some cases, e.g., when the item needs recharging, has no possible effects or is too intricate for distracted use, triggering may not be possible."
     SkSwimming -> capSkillName <+>
       "is the degree of avoidance of bad effects of terrain containing water, whether shallow or deep."
     SkFlying -> capSkillName <+>
@@ -345,7 +345,7 @@ kindAspectToSuffix aspect =
     AddSkill SkWait t -> wrapInParens $ affixDice t <+> "wait"
     AddSkill SkMoveItem t -> wrapInParens $ affixDice t <+> "manage items"
     AddSkill SkProject t -> wrapInParens $ affixDice t <+> "fling"
-    AddSkill SkApply t -> wrapInParens $ affixDice t <+> "apply"
+    AddSkill SkApply t -> wrapInParens $ affixDice t <+> "trigger"
     AddSkill SkSwimming t -> wrapInParens $ affixDice t <+> "swimming"
     AddSkill SkFlying t -> wrapInParens $ affixDice t <+> "flying"
     AddSkill SkHurtMelee _ ->

@@ -620,16 +620,19 @@ lookAtPosition lidV p = do
                              feats
       isEmbedAction Tile.EmbedAction{} = True
       isEmbedAction _ = False
-      embedVerb = [ "exploited"
+      embedVerb = [ "activated"
                   | any isEmbedAction tileActions
                     && any (\(itemKind, _) -> not $ null $ IK.ieffects itemKind)
                            embedKindList ]
       isToAction Tile.ToAction{} = True
       isToAction _ = False
+      isWithAction Tile.WithAction{} = True
+      isWithAction _ = False
       isEmptyWithAction (Tile.WithAction [] _) = True
       isEmptyWithAction _ = False
-      alterVerb | any isEmptyWithAction tileActions = ["very easily altered"]
-                | any isToAction tileActions = ["easily altered"]
+      alterVerb | any isEmptyWithAction tileActions = ["very easily modified"]
+                | any isToAction tileActions = ["easily modified"]
+                | any isWithAction tileActions = ["potentially modified"]
                 | otherwise = []
       verbs = embedVerb ++ alterVerb
       alterBlurb = if null verbs
@@ -641,7 +644,7 @@ lookAtPosition lidV p = do
       tItems = describeToolsAlternative toolsToAlterWith
       transformBlurb = if T.null tItems
                        then ""
-                       else "The following items on the ground or in equipment trigger special transformations:"
+                       else "The following items on the ground or in equipment enable special transformations:"
                             <+> tItems <> "."  -- not telling to what terrain
   return $ [ (MsgPromptFocus, tileBlurb)
            , (MsgPrompt, placeBlurb) ]

@@ -112,7 +112,7 @@ validateSingle t@TileKind{..} =
                                  && isOpenableKind t ]
   ++ [ "closable tile is closed" | Walkable `notElem` tfeature
                                    && isClosableKind t ]
-  ++ [ "walkable tile is considered for triggering by AI"
+  ++ [ "walkable tile is considered for activating by AI"
      | Walkable `elem` tfeature
        && ConsideredByAI `elem` tfeature ]
   ++ [ "trail tile not walkable" | Walkable `notElem` tfeature

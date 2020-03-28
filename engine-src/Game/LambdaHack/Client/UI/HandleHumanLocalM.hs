@@ -549,7 +549,7 @@ chooseItemApplyHuman ts = do
       cLegalRaw = [CGround, CStash, CEqp]
       cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
-        [] -> ("apply", "item")
+        [] -> ("trigger", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)
       verb = makePhrase [verb1]
       triggerSyms = triggerSymbols ts
@@ -578,7 +578,7 @@ chooseItemApplyHuman ts = do
               either (const False) id (mp itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
-      ggi <- getGroupItem psuit prompt promptGeneric verb "apply"
+      ggi <- getGroupItem psuit prompt promptGeneric verb "trigger"
                           cLegalRaw cLegal
       case ggi of
         Right (iid, (MStore fromCStore, _)) -> do

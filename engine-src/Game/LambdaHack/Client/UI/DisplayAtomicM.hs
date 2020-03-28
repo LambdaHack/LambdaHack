@@ -1282,10 +1282,10 @@ displayRespSfxAtomicUI sfx = case sfx of
     ItemFull{itemKind} <- getsState $ itemToFull iid
     let actionPart = case EM.lookup (IK.isymbol itemKind) rapplyVerbMap of
           Just verb -> MU.Text verb
-          Nothing -> "use"
+          Nothing -> "trigger"
     itemAidVerbMU MsgAction aid actionPart iid (Left $ Just 1)
   SfxCheck aid iid ->
-    itemAidVerbMU MsgAction aid "deapply" iid (Left $ Just 1)
+    itemAidVerbMU MsgAction aid "recover" iid (Left $ Just 1)
   SfxTrigger _ _ _ fromTile -> do
     COps{cotile} <- getsState scops
     let subject = MU.Text $ TK.tname $ okind cotile fromTile
@@ -1503,7 +1503,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
           name = makePhrase [object1, object2]
       return $
         Just ( MsgWarning
-             , "The" <+> "embedded" <+> name <+> "is not triggered:"
+             , "The" <+> "embedded" <+> name <+> "is not activated:"
                <+> showReqFailure reqFailure <> "." )
     else return Nothing
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
