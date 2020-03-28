@@ -1037,16 +1037,14 @@ processTileActions bumping source tpos tas = do
   let sourceIsMist = IA.checkFlag Ability.Blast sar
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
-      processTA :: Bool -> [Tile.TileAction] -> m (FailOrCmd ())
-      processTA triggered [] =
-        if triggered || Tile.isSuspect coTileSpeedup (lvl `at` tpos)
-        then return $ Right ()
-        else do
-          blurb <- lookAtPosition (blid sb) tpos
-          mapM_ (uncurry msgAdd0) blurb
-          failWith "unable to modify at this time"
-            -- related to, among others, @SfxNoItemsForTile@ on the server
-      processTA triggered (ta : rest) = case ta of
+      processTA :: Bool -> [Tile.TileAction] -> Bool
+                -> m (FailOrCmd (Maybe Bool))
+      processTA triggered [] bumped =
+        return $ Right $ if Tile.isSuspect coTileSpeedup (lvl `at` tpos)
+                            || triggered && not bumped
+                         then Nothing
+                         else Just triggered
+      processTA triggered (ta : rest) bumped = case ta of
         Tile.EmbedAction (iid, _) ->
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
@@ -1055,19 +1053,25 @@ processTileActions bumping source tpos tas = do
           -- If the item recharges, the wasted turns let the player wait.
           if | sourceIsMist
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
-               processTA triggered rest  -- embed won't fire; try others
+               processTA triggered rest bumped  -- embed won't fire; try others
              | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
-               processTA True rest  -- no escape needs checking, effect found
+               processTA True rest False
+                 -- no escape checking needed, effect found;
+                 -- also bumped reset, because must have been
+                 -- marginal if an embed was following it;
+                 -- similarly tool-less modification resets it
              | otherwise -> do
                mfail <- verifyEscape
                case mfail of
-                 Left _ -> return mfail
-                 Right () -> processTA True rest  -- effect found
+                 Left err -> return $ Left err
+                 Right () -> processTA True rest False
+                   -- effect found, bumped reset
         Tile.ToAction{} ->
           if triggered
              && not (bproj sb && tileMinSkill > 0)  -- local skill check
-          then return $ Right ()  -- tile changed, no more activations
-          else processTA triggered rest
+          then return $ Right Nothing  -- tile changed, no more activations
+          else processTA triggered rest bumped
+                 -- failed, but not due to bumping
         Tile.WithAction tools0 _ ->
           if not bumping && triggered then do
             -- UI requested, so this is voluntary, so item loss is fine.
@@ -1087,11 +1091,29 @@ processTileActions bumping source tpos tas = do
                 (store, (_, itemFull)) : _ ->
                   verifyToolEffect (blid sb) store itemFull
               case mfail of
-                Left _ -> return mfail
-                Right () -> return $ Right ()  -- tile changed, nothing to do
-            else processTA triggered rest  -- not enough tools
-          else processTA triggered rest
-  processTA False tas
+                Left err -> return $ Left err
+                Right () -> return $ Right Nothing  -- tile changed, done
+            else processTA triggered rest bumped  -- not enough tools
+          else processTA triggered rest True  -- failed due to bumping
+  mfail <- processTA False tas False
+  case mfail of
+    Left err -> return $ Left err
+    Right Nothing -> return $ Right ()
+    Right (Just triggered) -> do
+      blurb <- lookAtPosition (blid sb) tpos
+      mapM_ (uncurry msgAdd0) blurb
+      if triggered
+      then do
+        revCmd <- revCmdMap
+        let km = revCmd K.undefinedKM AlterDir
+        merr <- failMsg $
+          "bumping is not enough to transform this terrain; modify with the <"
+          <> T.pack (K.showKM km)
+          <> "> command instead"
+        msgAdd MsgAlert $ showFailError $ fromJust merr
+        return $ Right ()  -- effect the embed activation, though
+      else failWith "unable to activate nor modify at this time"
+        -- related to, among others, @SfxNoItemsForTile@ on the server
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do

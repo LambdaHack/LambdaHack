@@ -41,6 +41,7 @@ import           Game.LambdaHack.Client.UI.EffectDescription
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.FrameM
 import           Game.LambdaHack.Client.UI.HandleHelperM
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
 import           Game.LambdaHack.Client.UI.ItemDescription
 import           Game.LambdaHack.Client.UI.ItemSlot
 import qualified Game.LambdaHack.Client.UI.Key as K
@@ -1508,10 +1509,15 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxFizzles -> return $ Just (MsgWarning, "It didn't work.")
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do
-    let tItems = describeToolsAlternative toolsToAlterWith
+    revCmd <- revCmdMap
+    let km = revCmd K.undefinedKM HumanCmd.AlterDir
+        tItems = describeToolsAlternative toolsToAlterWith
     return $ Just ( MsgWarning
-                  , "To transform the terrain, prepare the following items on the ground or in equipment and try again:"
-                    <+> tItems <> ". If you don't have any, go get them."
+                  , "To transform the terrain, prepare the following items on the ground or in equipment:"
+                    <+> tItems
+                    <+> "and use the <"
+                    <> T.pack (K.showKM km)
+                    <> "> terrain modification command."
                   )
   SfxVoidDetection d -> return $
     Just ( MsgMisc
