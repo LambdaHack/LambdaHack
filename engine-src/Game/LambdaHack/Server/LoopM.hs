@@ -524,9 +524,11 @@ advanceTrajectory aid b1 = do
            unless (bproj b1) $
              execSfxAtomic $ SfxCollideTile aid tpos
            embedsPre <- getsState $ getEmbedBag (blid b1) tpos
-           -- No crafting by projectiles that bump tiles. The only way is
-           -- if they land in a tile (are engulfed by it) and have enough skill.
-           mfail <- reqAlterFail True EffBare False aid tpos
+           -- No crafting by projectiles that bump tiles nor by pushed actors.
+           -- The only way is if they land in a tile (are engulfed by it)
+           -- and have enough skill. But projectiles transform when hitting,
+           -- if terrain permits, not just bump off the obstacle.
+           mfail <- reqAlterFail (not $ bproj b1) EffBare False aid tpos
            embedsPost <- getsState $ getEmbedBag (blid b1) tpos
            b2 <- getsState $ getActorBody aid
            let tpos2 = bpos b2 `shift` d  -- possibly another level and/or bpos

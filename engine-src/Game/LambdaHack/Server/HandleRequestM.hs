@@ -844,6 +844,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                  && (voluntary || bproj sb)  -- no local skill check
               then do
                 -- Waste item only if voluntary or released as projectile.
+                -- Use even unidentified items --- one more way to id by use.
                 kitAssG <- getsState $ kitAssocs source [CGround]
                 kitAssE <- getsState $ kitAssocs source [CEqp]
                 let kitAss = listToolsToConsume kitAssG kitAssE
