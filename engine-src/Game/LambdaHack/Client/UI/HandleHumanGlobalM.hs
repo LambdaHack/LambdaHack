@@ -27,8 +27,9 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalM
     -- * Internal operations
   , areaToRectangles, meleeAid, displaceAid, moveSearchAlter, alterCommon
   , goToXhair, multiActorGoTo, moveOrSelectItem, selectItemsToMove, moveItems
-  , projectItem, applyItem, alterTileAtPos, verifyAlters, verifyEscape
-  , closeTileAtPos, msgAddDone, pickPoint, generateMenu, nxtGameMode
+  , projectItem, applyItem, alterTileAtPos, verifyAlters, processTileActions
+  , verifyEscape, verifyToolEffect, closeTileAtPos, msgAddDone, pickPoint
+  , generateMenu, nxtGameMode
 #endif
   ) where
 
@@ -92,6 +93,7 @@ import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Content.TileKind as TK
+import qualified Game.LambdaHack.Core.Dice as Dice
 import           Game.LambdaHack.Core.Random
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -1023,57 +1025,73 @@ verifyAlters bumping source tpos = do
                  feats
   processTileActions bumping source tpos tileActions
 
-processTileActions :: MonadClientUI m
+processTileActions :: forall m. MonadClientUI m
                    => Bool -> ActorId -> Point -> [Tile.TileAction]
                    -> m (FailOrCmd ())
 processTileActions bumping source tpos tas = do
   COps{coTileSpeedup} <- getsState scops
   getKind <- getsState $ flip getIidKind
   sb <- getsState $ getActorBody source
-  embeds <- getsState $ getEmbedBag (blid sb) tpos
   lvl <- getLevel $ blid sb
-  kitAssG <- getsState $ kitAssocs source [CGround]
-  kitAssE <- getsState $ kitAssocs source [CEqp]
-  let kitAss = listToolsToConsume kitAssG kitAssE
-      processTA [] =
-        if Tile.isSuspect coTileSpeedup $ lvl `at` tpos
+  sar <- getsState $ aspectRecordFromIid $ btrunk sb
+  let sourceIsMist = IA.checkFlag Ability.Blast sar
+                     && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
+      tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
+      processTA :: Bool -> [Tile.TileAction] -> m (FailOrCmd ())
+      processTA triggered [] =
+        if triggered || Tile.isSuspect coTileSpeedup (lvl `at` tpos)
         then return $ Right ()
         else do
           blurb <- lookAtPosition (blid sb) tpos
           mapM_ (uncurry msgAdd0) blurb
           failWith "unable to modify at this time"
             -- related to, among others, @SfxNoItemsForTile@ on the server
-      processTA (ta : rest) = case ta of
+      processTA triggered (ta : rest) = case ta of
         Tile.EmbedAction (iid, _) ->
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
           -- We assume the item would trigger and we let the player
           -- take the risk of wasted turn to verify the assumption.
-          -- If the item recharges, the passing turns let the player wait.
-          if iid `EM.member` embeds
-          then if any IK.isEffEscape . IK.ieffects $ getKind iid
-               then verifyEscape
-               else return $ Right ()  -- no need to check further; effect found
-          else processTA rest
-            -- embed used up; try further
-        Tile.ToAction{} -> if EM.null embeds
-                           then return $ Right ()
-                           else processTA rest
-        Tile.WithAction tools0 _ -> do
-          -- UI requested, so this is voluntary, so item loss is fine.
-          let grps0 = map (\(x, y) -> (False, x, y)) tools0  -- apply if durable
-              (_, iidsToApply, grps) =
-                foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
-          if not bumping && null grps then do
-            let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
-                  IK.idamage itemKind /= 0
-                  || any IK.forApplyEffect (IK.ieffects itemKind)
-            case filter hasEffectOrDmg iidsToApply of
-              [] -> return $ Right ()
-              (store, (_, itemFull)) : _ ->
-                verifyToolEffect (blid sb) store itemFull
-          else processTA rest  -- not enough tools
-  processTA tas
+          -- If the item recharges, the wasted turns let the player wait.
+          if | sourceIsMist
+               || bproj sb && tileMinSkill > 0 ->  -- local skill check
+               processTA triggered rest  -- embed won't fire; try others
+             | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
+               processTA True rest  -- no escape needs checking, effect found
+             | otherwise -> do
+               mfail <- verifyEscape
+               case mfail of
+                 Left _ -> return mfail
+                 Right () -> processTA True rest  -- effect found
+        Tile.ToAction{} ->
+          if triggered
+             && not (bproj sb && tileMinSkill > 0)  -- local skill check
+          then return $ Right ()  -- tile changed, no more activations
+          else processTA triggered rest
+        Tile.WithAction tools0 _ ->
+          if not bumping && triggered then do
+            -- UI requested, so this is voluntary, so item loss is fine.
+            kitAssG <- getsState $ kitAssocs source [CGround]
+            kitAssE <- getsState $ kitAssocs source [CEqp]
+            let kitAss = listToolsToConsume kitAssG kitAssE
+                grps0 = map (\(x, y) -> (False, x, y)) tools0
+                  -- apply if durable
+                (_, iidsToApply, grps) =
+                  foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
+            if null grps then do
+              let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
+                    IK.idamage itemKind /= 0
+                    || any IK.forApplyEffect (IK.ieffects itemKind)
+              mfail <- case filter hasEffectOrDmg iidsToApply of
+                [] -> return $ Right ()
+                (store, (_, itemFull)) : _ ->
+                  verifyToolEffect (blid sb) store itemFull
+              case mfail of
+                Left _ -> return mfail
+                Right () -> return $ Right ()  -- tile changed, nothing to do
+            else processTA triggered rest  -- not enough tools
+          else processTA triggered rest
+  processTA False tas
 
 verifyEscape :: MonadClientUI m => m (FailOrCmd ())
 verifyEscape = do
@@ -1111,12 +1129,12 @@ verifyToolEffect lid store itemFull = do
   let object = makePhrase
                  [partItemWsShort rwidth side factionD 1 localTime
                                   itemFull (1, [])]
-      prompt = "Do you really want to transform the terrain using the"
+      prompt = "Do you really want to transform the terrain using"
                <+> object
                <+> "that may cause substantial side-effects?"
   go <- displayYesNo ColorBW prompt
   if not go
-  then failWith $ "Replace the" <+> object <+> ppCStoreIn store
+  then failWith $ "Replace" <+> object <+> ppCStoreIn store
                   <+> "and try again."
   else return $ Right ()
 

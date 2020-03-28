@@ -792,7 +792,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
           tryChangeWith (tools0, tgroup) kitAss = do
             let grps0 = map (\(x, y) -> (False, x, y)) tools0
                   -- apply if durable
-            let (bagsToLose, iidsToApply, grps) =
+                (bagsToLose, iidsToApply, grps) =
                   foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
             if null grps then do
               announceTileChange  -- first the result is foretold
