@@ -1105,7 +1105,7 @@ processTileActions bumping source tpos tas = do
       if triggered
       then do
         revCmd <- revCmdMap
-        let km = revCmd K.undefinedKM AlterDir
+        let km = revCmd AlterDir
         merr <- failMsg $
           "bumping is not enough to transform this terrain; modify with the <"
           <> T.pack (K.showKM km)

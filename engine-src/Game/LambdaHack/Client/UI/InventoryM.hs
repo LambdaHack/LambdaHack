@@ -332,7 +332,7 @@ transition psuit prompt promptGeneric permitMulitple
            })
         , let km = K.mkChar '*'
           in (km, useMultipleDef $ Right km)
-        , let km = revCmd (K.KM K.NoModifier K.Tab) MemberCycle
+        , let km = revCmd MemberCycle
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = maySwitchLeader cCur
@@ -342,7 +342,7 @@ transition psuit prompt promptGeneric permitMulitple
                let !_A = assert (isNothing err `blame` err) ()
                recCall numPrefix cCur cRest itemDialogState
            })
-        , let km = revCmd (K.KM K.NoModifier K.BackTab) MemberBack
+        , let km = revCmd MemberBack
           in (km, DefItemKey
            { defLabel = Right km
            , defCond = maySwitchLeader cCur && not (autoDun || null hs)

@@ -74,13 +74,11 @@ promptMainKeys = do
   side <- getsClient sside
   ours <- getsState $ fidActorNotProjGlobalAssocs side
   revCmd <- revCmdMap
-  let kmHelp = revCmd K.undefinedKM HumanCmd.Hint
-      kmViewStash = revCmd K.undefinedKM
-                           (HumanCmd.ChooseItemMenu (MStore CStash))
-      kmItemStash = revCmd K.undefinedKM
-                           (HumanCmd.MoveItem [CGround, CEqp] CStash
+  let kmHelp = revCmd HumanCmd.Hint
+      kmViewStash = revCmd (HumanCmd.ChooseItemMenu (MStore CStash))
+      kmItemStash = revCmd (HumanCmd.MoveItem [CGround, CEqp] CStash
                                               Nothing False)
-      kmXhairPointerFloor = revCmd K.undefinedKM HumanCmd.XhairPointerFloor
+      kmXhairPointerFloor = revCmd HumanCmd.XhairPointerFloor
   saimMode <- getsSession saimMode
   UIOptions{uVi, uLeftHand} <- getsSession sUIOptions
   xhair <- getsSession sxhair

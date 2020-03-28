@@ -179,11 +179,11 @@ addPressedControlEsc :: MonadClientUI m => m ()
 addPressedControlEsc = addPressedKey K.KMP { K.kmpKeyMod = K.controlEscKM
                                            , K.kmpPointer = K.PointUI 0 0 }
 
-revCmdMap :: MonadClientUI m => m (K.KM -> HumanCmd.HumanCmd -> K.KM)
+revCmdMap :: MonadClientUI m => m (HumanCmd.HumanCmd -> K.KM)
 revCmdMap = do
   CCUI{coinput=InputContent{brevMap}} <- getsSession sccui
-  let revCmd dflt cmd = case M.lookup cmd brevMap of
-        Nothing -> dflt
+  let revCmd cmd = case M.lookup cmd brevMap of
+        Nothing -> K.undefinedKM
         Just (k : _) -> k
         Just [] -> error $ "" `showFailure` brevMap
   return revCmd

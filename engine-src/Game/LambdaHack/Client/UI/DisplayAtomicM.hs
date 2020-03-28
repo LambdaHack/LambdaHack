@@ -1510,7 +1510,7 @@ ppSfxMsg sfxMsg = case sfxMsg of
   SfxNothingHappens -> return $ Just (MsgMisc, "Nothing happens.")
   SfxNoItemsForTile toolsToAlterWith -> do
     revCmd <- revCmdMap
-    let km = revCmd K.undefinedKM HumanCmd.AlterDir
+    let km = revCmd HumanCmd.AlterDir
         tItems = describeToolsAlternative toolsToAlterWith
     return $ Just ( MsgWarning
                   , "To transform the terrain, prepare the following items on the ground or in equipment:"
