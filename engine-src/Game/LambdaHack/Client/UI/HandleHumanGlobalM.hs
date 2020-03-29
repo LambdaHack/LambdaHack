@@ -1037,25 +1037,28 @@ processTileActions bumping source tpos tas = do
   let sourceIsMist = IA.checkFlag Ability.Blast sar
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
-      processTA :: Bool -> [Tile.TileAction] -> Bool
+      processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
                 -> m (FailOrCmd (Maybe Bool))
-      processTA triggered [] bumped =
+      processTA museResult [] bumped = do
+        let useResult = fromMaybe False museResult
         return $ Right $ if Tile.isSuspect coTileSpeedup (lvl `at` tpos)
-                            || triggered && not bumped
-                         then Nothing
-                         else Just triggered
-      processTA triggered (ta : rest) bumped = case ta of
-        Tile.EmbedAction (iid, _) ->
+                            || useResult && not bumped
+                         then Nothing  -- success
+                         else Just bumped  -- warning or failure
+      processTA museResult (ta : rest) bumped = case ta of
+        Tile.EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
           -- We assume the item would trigger and we let the player
           -- take the risk of wasted turn to verify the assumption.
           -- If the item recharges, the wasted turns let the player wait.
+          let useResult = fromMaybe False museResult
           if | sourceIsMist
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
-               processTA triggered rest bumped  -- embed won't fire; try others
+               processTA (Just useResult) rest bumped
+                 -- embed won't fire; try others
              | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
-               processTA True rest False
+               processTA (Just True) rest False
                  -- no escape checking needed, effect found;
                  -- also bumped reset, because must have been
                  -- marginal if an embed was following it;
@@ -1064,16 +1067,16 @@ processTileActions bumping source tpos tas = do
                mfail <- verifyEscape
                case mfail of
                  Left err -> return $ Left err
-                 Right () -> processTA True rest False
+                 Right () -> processTA (Just True) rest False
                    -- effect found, bumped reset
         Tile.ToAction{} ->
-          if triggered
+          if fromMaybe True museResult
              && not (bproj sb && tileMinSkill > 0)  -- local skill check
           then return $ Right Nothing  -- tile changed, no more activations
-          else processTA triggered rest bumped
+          else processTA museResult rest bumped
                  -- failed, but not due to bumping
         Tile.WithAction tools0 _ ->
-          if not bumping && triggered then do
+          if not bumping && fromMaybe True museResult then do
             -- UI requested, so this is voluntary, so item loss is fine.
             kitAssG <- getsState $ kitAssocs source [CGround]
             kitAssE <- getsState $ kitAssocs source [CEqp]
@@ -1093,16 +1096,16 @@ processTileActions bumping source tpos tas = do
               case mfail of
                 Left err -> return $ Left err
                 Right () -> return $ Right Nothing  -- tile changed, done
-            else processTA triggered rest bumped  -- not enough tools
-          else processTA triggered rest True  -- failed due to bumping
-  mfail <- processTA False tas False
+            else processTA museResult rest bumped  -- not enough tools
+          else processTA museResult rest True  -- failed due to bumping
+  mfail <- processTA Nothing tas False
   case mfail of
     Left err -> return $ Left err
     Right Nothing -> return $ Right ()
-    Right (Just triggered) -> do
+    Right (Just bumped) -> do
       blurb <- lookAtPosition (blid sb) tpos
       mapM_ (uncurry msgAdd0) blurb
-      if triggered
+      if bumped
       then do
         revCmd <- revCmdMap
         let km = revCmd AlterDir

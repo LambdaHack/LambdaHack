@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , ppContainerWownW
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , lookAtTile, lookAtActors
+  , lookAtTile, lookAtActors, guardItemVerbs
 #endif
   ) where
 
