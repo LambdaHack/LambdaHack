@@ -284,18 +284,16 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
             totalValue = case mdiscoBenefit of
               Just discoBenefit ->
                 let Benefit{benMelee} = discoBenefit EM.! iid
-                in - benMelee + unIDedBonus
-              Nothing -> rawDmg  -- special case: not interested about ID
+                in benMelee - unIDedBonus
+              Nothing -> - rawDmg  -- special case: not interested about ID
             ncha = ncharges localTime kit
-        in ( if ignoreCharges || ncha > 0
-             then totalValue
-             else -100000
-           , ncha, iid, (itemFull, kit) )
+        in if ignoreCharges || ncha > 0
+           then Just (totalValue, ncha, iid, (itemFull, kit))
+           else Nothing
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortBy (flip $ Ord.comparing (\(value, _, _, _) -> value))
-     $ filter (\(value, _, _, _) -> value > -100000) $ map f kitAss
+  in sortOn (\(value, _, _, _) -> value) $ mapMaybe f kitAss
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =

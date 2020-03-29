@@ -74,7 +74,7 @@ pickWeaponM ignoreCharges mdiscoBenefit kitAss actorSk source = do
       strongest = strongestMelee ignoreCharges mdiscoBenefit
                                  localTime permAssocs
   return $! if | forced -> map (\(iid, itemFullKit) ->
-                                  (1, 1, iid, itemFullKit)) kitAss
+                                  (-1, 1, iid, itemFullKit)) kitAss
                | Ability.getSk Ability.SkMelee actorSk <= 0 -> []
                | otherwise -> strongest
 

@@ -65,7 +65,7 @@ effectToBenefit cops fid factionD eff =
       delta $ if p > 0
               then min 2000 (20 * fromIntegral p)
               else max (-1000) (10 * fromIntegral p)
-        -- one HP healed is worth a bit more than one HP dealed to enemy,
+        -- one HP healed is worth a bit more than one HP dealt to enemy,
         -- because if the actor survives, he may deal damage many times;
         -- however, AI is mostly for non-heroes that fight in suicidal crowds,
         -- so the two values are kept close enough to maintain berserk approach

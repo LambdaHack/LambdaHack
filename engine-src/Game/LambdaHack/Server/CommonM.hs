@@ -613,14 +613,16 @@ pickWeaponServer source = do
                  filter (IA.checkFlag Ability.Meleeable
                          . aspectRecordFull . fst . snd) kitAssRaw
   -- Server ignores item effects or it would leak item discovery info.
-  -- In particular, it even uses weapons that would heal opponent,
-  -- and not only in case of projectiles.
+  -- Hence, weapons with powerful burning or wouding are undervalued.
+  -- In particular, it even uses weapons that would heal an opponent.
+  -- But server decides only in exceptiona cases, e.g. projectile collision
+  -- or melee in place of an impossible displace. Otherwise, client decides.
   strongest <- pickWeaponM False Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
-    iis@((maxS, _, _, _) : _) -> do
-      let maxIis = takeWhile (\(value, _, _, _) -> value == maxS) iis
-      (_, _, iid, _) <- rndToAction $ oneOf maxIis
+    iis@((minS, _, _, _) : _) -> do
+      let minIis = takeWhile (\(value, _, _, _) -> value == minS) iis
+      (_, _, iid, _) <- rndToAction $ oneOf minIis
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 

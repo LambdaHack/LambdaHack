@@ -147,9 +147,9 @@ pickWeaponClient source target = do
   strongest <- pickWeaponM False (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
-    iis@((maxS, _, _, _) : _) -> do
-      let maxIis = takeWhile (\(value, _, _, _) -> value == maxS) iis
-      (_, _, iid, _) <- rndToAction $ oneOf maxIis
+    iis@((minS, _, _, _) : _) -> do
+      let minIis = takeWhile (\(value, _, _, _) -> value == minS) iis
+      (_, _, iid, _) <- rndToAction $ oneOf minIis
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just $ ReqMelee target iid cstore

@@ -2013,6 +2013,9 @@ effectDropBestWeapon execSfx iidOriginal target = do
                           IA.checkFlag Ability.Meleeable (aspectRecordFull i)
                           && iid /= iidOriginal) kitAssRaw
         ignoreCharges = True
+    -- Weapons with burning or wounding are undervalued to avoid
+    -- leaving info about unidentified effects (in the unlikely case
+    -- that an equipped weapon is not identified). Also, KISS.
     case strongestMelee ignoreCharges Nothing localTime kitAss of
       (_, _, iid, _) : _ -> do
         execSfx
