@@ -332,6 +332,8 @@ transition psuit prompt promptGeneric permitMulitple
            })
         , let km = K.mkChar '*'
           in (km, useMultipleDef $ Right km)
+        , let km = K.mkChar '!'
+          in (km, useMultipleDef $ Left "")  -- alias close to 'g'
         , let km = revCmd MemberCycle
           in (km, DefItemKey
            { defLabel = Right km
