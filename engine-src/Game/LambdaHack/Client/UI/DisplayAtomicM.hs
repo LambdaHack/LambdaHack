@@ -1304,31 +1304,34 @@ displayRespSfxAtomicUI sfx = case sfx of
         isOurAlive = isOurCharacter && bhp b > 0
         isOurLeader = Just aid == mleader
         feelLookHP = feelLook MsgEffect
-        feelLookCalm adjective =
-          when (bhp b > 0) $ feelLook MsgEffectMinor adjective
-        feelLook msgClass adjective =
-          let verb = if isOurCharacter then "feel" else "look"
+        feelLookCalm bigAdj projAdj =
+          when (bhp b > 0) $ feelLook MsgEffectMinor bigAdj projAdj
+        feelLook msgClass bigAdj projAdj =
+          let (verb, adjective) =
+                if bproj b
+                then ("get", projAdj)
+                else (if isOurCharacter then "feel" else "look", bigAdj)
           in aidVerbMU msgClass aid $ MU.Text $ verb <+> adjective
     case effect of
         IK.Burn{} -> do
-          feelLookHP "burned"
+          feelLookHP "burned" "scorched"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Brown
         IK.Explode{} -> return ()  -- lots of visual feedback
         IK.RefillHP p | p == 1 -> return ()  -- no spam from regeneration
         IK.RefillHP p | p == -1 -> return ()  -- no spam from poison
         IK.RefillHP{} | hpDelta > 0 -> do
-          feelLookHP "healthier"
+          feelLookHP "healthier" "mended"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrGreen Color.Green
         IK.RefillHP{} -> do
-          feelLookHP "wounded"
+          feelLookHP "wounded" "broken"
           let ps = (bpos b, bpos b)
           animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
         IK.RefillCalm{} | bproj b -> return ()
         IK.RefillCalm p | p == 1 -> return ()  -- no spam from regen items
-        IK.RefillCalm p | p > 0 -> feelLookCalm "calmer"
-        IK.RefillCalm _ -> feelLookCalm "agitated"
+        IK.RefillCalm p | p > 0 -> feelLookCalm "calmer" "stabilized"
+        IK.RefillCalm _ -> feelLookCalm "agitated" "wobbly"
         IK.Dominate -> do
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor bUI
