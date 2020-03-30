@@ -528,7 +528,9 @@ drawFrameStatus drawnLevelId = do
                 let (name, powers) =
                       partItem rwidth (bfid b) factionD localTime itemFull kit
                     t = makePhrase [MU.Car1Ws k name, powers]
-                return (textToAS $ "Item:" <+> trimTgtDesc (widthTgt - 6) t, "")
+                    xhairHP = maybe "" (" " <>) mxhairHP
+                    trimTD = trimTgtDesc (widthTgt - T.length xhairHP - 6) t
+                return (textToAS $ "Item:" <+> trimTD, xhairHP)
         | otherwise =
             return (xhairBlurb, pathCsr)
   (xhairLine, pathXhairOrNull) <- tgtOrItem
