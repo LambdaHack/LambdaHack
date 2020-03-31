@@ -1333,11 +1333,6 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
             return UseUp
           else return UseDud  -- probably incorrect content, but let it be
         _ -> do
-          case miidOriginal of
-            Just iidOriginal | store /= COrgan ->
-              execSfxAtomic $ SfxMsgFid (bfid tb)
-                            $ SfxItemYield iidOriginal (blid tb)
-            _ -> return ()
           localTime <- getsState $ getLocalTime (blid tb)
           let newTimer = createItemTimer localTime delta
               extraIt k = if IK.isTimerNone tim
@@ -1346,6 +1341,11 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
               kitNew = case mcount of
                 Just itemK -> (itemK, extraIt itemK)
                 Nothing -> (kRaw, extraIt kRaw)
+          case miidOriginal of
+            Just iidOriginal | store /= COrgan ->
+              execSfxAtomic $ SfxMsgFid (bfid tb)
+                            $ SfxItemYield iidOriginal (fst kitNew) (blid tb)
+            _ -> return ()
           -- No such items or some items, but void delta, so create items.
           -- If it's, e.g., a periodic poison, the new items will stack with any
           -- already existing items.

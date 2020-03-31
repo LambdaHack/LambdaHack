@@ -198,7 +198,7 @@ data SfxMsg =
   | SfxTimerExtended ActorId ItemId CStore (Delta Time)
       -- This @CStore@ is only printed, so even @CStash@ is safe.
   | SfxCollideActor ActorId ActorId
-  | SfxItemYield ItemId LevelId
+  | SfxItemYield ItemId Int LevelId
   deriving Show
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
