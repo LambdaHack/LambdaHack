@@ -382,10 +382,11 @@ of the blow. To determine the damage dealt, the outcome of the weapon's
 damage dice roll (but not rolls for any additional direct damage effect,
 such as wounding or burning) is multiplied by a percentage bonus. The bonus
 is calculated by taking the damage bonus (summed from the equipped items
-of the attacker, capped at 200%) minus the melee armor modifier
-of the defender (capped at 200%, as well), with the outcome bounded
-between -99% and 99%, which means that at least 1% of damage always
-gets through and the damage is always lower than twice the dice roll.
+and organs and conditions of the attacker, capped at 200%) minus the melee
+armor modifier of the defender (capped at 200%, as well). However,
+at least 5% of damage always gets through, even if the bonus is below -95%,
+so excessively strong armor acts only as a buffer against high melee
+skill of opponents.
 
 The current pointman's melee bonus, armor modifier and other detailed
 stats can be viewed in the skills menu, accessible via the `#` command,

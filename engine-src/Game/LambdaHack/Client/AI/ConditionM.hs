@@ -309,7 +309,7 @@ benGroundItems aid = do
       isDesirable (ben, _, _, itemFull, _) =
         desirableItem cops canEsc (benPickup ben)
                       (aspectRecordFull itemFull) (itemKind itemFull)
-                      99  -- fake, becuase no time is wasted walking to item
+                      99  -- fake, because no time is wasted walking to item
   filter isDesirable
     <$> getsState (benAvailableItems discoBenefit aid [CGround])
 

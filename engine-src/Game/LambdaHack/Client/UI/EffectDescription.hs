@@ -255,11 +255,11 @@ skillDesc skill =
     SkFlying -> capSkillName <+>
       "is the degree of avoidance of bad effects of any hazards spread on the ground."
     SkHurtMelee -> capSkillName <+>
-      "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200%, then the armor percentage of the defender is subtracted from it and the resulting total is capped at 99%."
+      "is a percentage of additional damage dealt by the actor (either a character or a missile) with any weapon. The value is capped at 200% and then the armor percentage of the defender is subtracted from it."
     SkArmorMelee -> capSkillName <+>
-      "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
+      "is a percentage of melee damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 95% (always at least 5% of damage gets through). It includes 50% bonus from being braced for combat, if applicable."
     SkArmorRanged -> capSkillName <+>
-      "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 99% (always at least 1% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
+      "is a percentage of ranged damage avoided by the actor. The value is capped at 200%, then the extra melee damage percentage of the attacker is subtracted from it and the resulting total is capped at 95% (always at least 5% of damage gets through). It includes 25% bonus from being braced for combat, if applicable."
     SkMaxHP -> capSkillName <+>
       "is a cap on HP of the actor, except for some rare effects able to overfill HP. At any direct enemy damage (but not, e.g., incremental poisoning damage or wounds inflicted by mishandling a device) HP is cut back to the cap."
     SkMaxCalm -> capSkillName <+>

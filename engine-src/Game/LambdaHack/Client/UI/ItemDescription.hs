@@ -401,12 +401,13 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                             + if store `elem` [CEqp, COrgan]
                               then 0
                               else aHurtMeleeOfItem
-                  mult = 100 + min 99 (max (-99) multRaw)
-                  minDeltaHP = xM meanDmg `divUp` 100
-                  rawDeltaHP = fromIntegral mult * minDeltaHP
-                  pmult = 100 + min 99 (max (-99) aHurtMeleeOfItem)
-                  prawDeltaHP = fromIntegral pmult * minDeltaHP
+                  mult = 100 + min 100 (max (-95) multRaw)
+                  percentDeltaHP = xM meanDmg `divUp` 100
+                  rawDeltaHP = fromIntegral mult * percentDeltaHP
+                  pmult = 100 + min 100 (max (-95) aHurtMeleeOfItem)
+                  prawDeltaHP = fromIntegral pmult * percentDeltaHP
                   pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
+                  minDeltaHP = 5 * percentDeltaHP
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed
               in "Against defenceless foes you'd inflict around"
                    -- rounding and non-id items

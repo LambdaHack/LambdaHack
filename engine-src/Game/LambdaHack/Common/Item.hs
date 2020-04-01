@@ -348,7 +348,7 @@ armorHurtCalculation proj sMaxSk tMaxSk =
         - if proj
           then trim200 (Ability.getSk Ability.SkArmorRanged tMaxSk)
           else trim200 (Ability.getSk Ability.SkArmorMelee tMaxSk)
-  in 100 + min 99 (max (-99) itemBonus)  -- at least 1% of damage gets through
+  in 100 + max (-95) itemBonus  -- at least 5% of damage gets through
 
 mergeItemQuant :: ItemQuant -> ItemQuant -> ItemQuant
 mergeItemQuant (k2, it2) (k1, it1) = (k1 + k2, it1 ++ it2)

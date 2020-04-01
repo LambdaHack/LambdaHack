@@ -1798,7 +1798,7 @@ strike catch source target iid = assert (source /= target) $ do
                               | hurtMult > 10 -> "nonchalantly"
                               | otherwise -> "bemusedly"
           | otherwise = "almost completely"
-              -- 1% always gets through, but if fast missile, can be deadly
+              -- a fraction gets through, but if fast missile, can be deadly
         blockPhrase =
           let (subjectBlock, verbBlock) =
                 if | not $ bproj sb ->
