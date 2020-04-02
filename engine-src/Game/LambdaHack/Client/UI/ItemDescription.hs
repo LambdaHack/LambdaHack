@@ -78,11 +78,11 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
                     then "us"
                     else gname (factionD EM.! fid)]
         _ -> []
-      powerTsBeginsWithAplha = case map T.unpack powerTs of
+      powerTsBeginsWithAlpha = case map T.unpack powerTs of
         (c : _) : _ -> isAlpha c
         _ -> False
       ts = lsource
-           ++ (if maxWordsToShow > 1 || powerTsBeginsWithAplha
+           ++ (if maxWordsToShow > 1 || powerTsBeginsWithAlpha
                then take maxWordsToShow powerTs
                else [])
            ++ [ "(...)" | length powerTs > maxWordsToShow

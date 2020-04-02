@@ -340,6 +340,13 @@ conditionSpeedBonus kitAss =
            else k
   in foldr f 0 kitAss
 
+-- | Damage calculation. The armor and hurt skills are additive.
+-- They can't be multiplicative, because then 100% armor would minimize
+-- damage regardless of even 200% hurt skill.
+-- However, additive skills make the relative effectiveness of weapons
+-- dependent on the enemy, so even with -100% hurt skill a kinetic weapon
+-- can't be removed from the list, because an enemy may have
+-- negative armor skill. This is bad, but also KISS.
 armorHurtCalculation :: Bool -> Ability.Skills -> Ability.Skills -> Int
 armorHurtCalculation proj sMaxSk tMaxSk =
   let trim200 n = min 200 $ max (-200) n

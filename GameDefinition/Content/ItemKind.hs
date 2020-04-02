@@ -1467,9 +1467,8 @@ buckler = ItemKind
                    -- not enough to compensate; won't be in eqp
                , AddSkill SkHurtMelee (-30)
                    -- too harmful; won't be wielded as weapon
-               , SetFlag MinorEffects, SetFlag Durable, SetFlag Meleeable
-               , EqpSlot EqpSlotArmorMelee
-               , toVelocity 50 ]  -- unwieldy to throw
+               , SetFlag Durable, SetFlag Meleeable
+               , EqpSlot EqpSlotArmorMelee ]
   , ieffects = [PushActor (ThrowMod 200 50 1)]  -- 1 step, fast
   , idesc    = "Heavy and unwieldy. Absorbs a percentage of melee damage, both dealt and sustained. Too small to intercept projectiles with. May serve as a counterweight to suddenly push forth."
   , ikit     = []
@@ -1485,7 +1484,7 @@ shield = buckler
                    -- not enough to compensate; won't be in eqp
                , AddSkill SkHurtMelee (-70)
                    -- too harmful; won't be wielded as weapon
-               , SetFlag MinorEffects, SetFlag Durable, SetFlag Meleeable
+               , SetFlag Durable, SetFlag Meleeable
                , EqpSlot EqpSlotArmorMelee
                , toVelocity 50 ]  -- unwieldy to throw
   , ieffects = [PushActor (ThrowMod 400 50 1)]  -- 2 steps, fast
