@@ -379,12 +379,12 @@ parseTileAction bproj underFeet embedKindList feat = case feat of
   TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
   TK.ChangeTo tgroup -> Just $ ToAction tgroup
   TK.OpenWith proj grps tgroup | not underFeet ->
-    -- Not when standing on tile, not to autoclose doors under actor
-    -- or close via dropping an item inside.
     if proj || not bproj
     then Just $ WithAction grps tgroup
     else Nothing
   TK.CloseWith proj grps tgroup | not underFeet ->
+    -- Not when standing on tile, not to autoclose doors under actor
+    -- or close via dropping an item inside.
     if proj || not bproj
     then Just $ WithAction grps tgroup
     else Nothing

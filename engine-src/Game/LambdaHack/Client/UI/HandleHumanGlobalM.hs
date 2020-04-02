@@ -1076,7 +1076,8 @@ processTileActions bumping source tpos tas = do
           else processTA museResult rest bumped
                  -- failed, but not due to bumping
         Tile.WithAction tools0 _ ->
-          if not bumping && fromMaybe True museResult then do
+          if (not bumping || null tools0)
+             && fromMaybe True museResult then do
             -- UI requested, so this is voluntary, so item loss is fine.
             kitAssG <- getsState $ kitAssocs source [CGround]
             kitAssE <- getsState $ kitAssocs source [CEqp]

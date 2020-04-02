@@ -383,20 +383,20 @@ reqMoveGeneric voluntary mayAttack source dir = do
           -- but retain the old raw name and which would spam water
           -- slowness every time a projectile flies over water.
           unless (bproj sb) $ do
-            -- Not voluntary, because possibly the goal was to move
-            -- and then modifying terrain is an unwelcome side effect.
+            -- Counts as bumping, because terrain transformation probably
+            -- not intended, because the goal was probably just to move
+            -- and then modifying the terrain is an unwelcome side effect.
             -- Barged into a tile, so normal effects need to activate,
             -- while crafting requires explicit altering.
-            -- Counts as bumping, because terrain transformation not intended.
-            void $ reqAlterFail True EffBare False source tpos
-              -- possibly alter or activate
+            void $ reqAlterFail True EffBare voluntary source tpos
        else execFailure source (ReqMove dir) MoveUnskilled
       else do
         -- If not walkable, this must be altering by bumping.
-        -- Possibly intentional so report any errors.
-        mfail <- reqAlterFail True EffBare False source tpos
-        let req = ReqMove dir
-        maybe (return ()) (execFailure source req) mfail
+        -- If voluntary then probably intentional so report any errors.
+        mfail <- reqAlterFail True EffBare voluntary source tpos
+        when voluntary $ do
+          let req = ReqMove dir
+          maybe (return ()) (execFailure source req) mfail
 
 -- * ReqMelee
 
@@ -805,7 +805,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
                      feats
           groupWithFromAction action = case action of
-            Tile.WithAction grps tgroup | not bumping -> Just (grps, tgroup)
+            Tile.WithAction grps _ | not bumping -> Just grps
             _ -> Nothing
           groupsToAlterWith = mapMaybe groupWithFromAction tileActions
           processTileActions :: Maybe UseResult -> [Tile.TileAction] -> m Bool
@@ -839,7 +839,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- Even mist can transform a tile (e.g., fire mist),
               -- but only if it managed to activate all previous embeds,
               -- (with mist, that means all such embeds were consumed earlier).
-              if not bumping
+              if (not bumping || null grps)
                  && maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
               then do
@@ -866,8 +866,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             -- (unless it's altered later on, in which case the new one is).
             revealEmbeds
             tileTriggered <- processTileActions Nothing tileActions
-            let potentiallyMissing =
-                  filter (not . null) $ map fst groupsToAlterWith
+            let potentiallyMissing = filter (not . null) groupsToAlterWith
             when (not tileTriggered && not underFeet && voluntary
                   && not (null potentiallyMissing)) $
               execSfxAtomic $ SfxMsgFid (bfid sb)
