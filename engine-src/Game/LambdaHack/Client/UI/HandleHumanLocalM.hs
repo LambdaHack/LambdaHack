@@ -195,9 +195,12 @@ chooseItemDialogMode c = do
           makePhrase
             [ MU.Capitalize $ MU.SubjectVerbSg subject "estimate"
             , MU.WownW (MU.Text $ bpronoun bodyUI) $ MU.Text t ]
-        MLore{} ->
+        MLore slore ->
           makePhrase
-            [ MU.Capitalize $ MU.Text t ]
+            [ MU.Capitalize $ MU.Text $
+                if slore == SEmbed
+                then "terrain (including crafting recipes)"
+                else t ]
         MPlaces ->
           makePhrase
             [ MU.Capitalize $ MU.Text t ]
