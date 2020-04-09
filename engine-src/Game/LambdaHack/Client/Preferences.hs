@@ -473,6 +473,14 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
         else scaleTimeout (effSelf + effDice)
                -- hits self with kintetic dice too, when applying
              / if durable then 1 else durabilityMult
+      -- This assumes attacker hurt skill and enemy armor skill balance
+      -- and so this value doesn't need to be recomputed at each equipment
+      -- change and distributing weapons among AI actors doesn't need
+      -- to match each weapon to each actor's equipment. However,
+      -- a bad side-effect is that if an actor has terrible hurt skill,
+      -- a weapon with high dice is still used by him before a burning weapon.
+      -- Unless the opponent has even more terrible armor, unlikely,
+      -- the chosen weapon is definitely not the best.
       effDice = - IK.damageUsefulness itemKind
       -- For melee, we add the foe part only.
       benMelee = if periodic
