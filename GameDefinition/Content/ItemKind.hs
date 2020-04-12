@@ -71,9 +71,9 @@ otherItemContent = embeds ++ actors ++ organs ++ blasts ++ temporaries
 
 items :: [ItemKind]
 items =
-  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, meleeEnhancement, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, knife, daggerDropBestWeapon, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket]
+  [sandstoneRock, dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, light1, light2, light3, blanket, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, motionScanner, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, meleeEnhancement, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, smokingJacket, buckler, shield, shield2, shield3, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, knife, daggerDropBestWeapon, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, jumpingPole, seeingItem]
 
-sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, light1, light2, light3, blanket, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, jumpingPole, meleeEnhancement, seeingItem, motionScanner, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, buckler, shield, shield2, shield3, knife, daggerDropBestWeapon, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, smokingJacket :: ItemKind
+sandstoneRock,    dart, spike, spike2, slingStone, slingBullet, paralizingProj, harpoon, harpoon2, net, fragmentationBomb, concussionBomb, flashBomb, firecrackerBomb, flaskTemplate, flask1, flask2, flask3, flask4, flask5, flask6, flask7, flask8, flask9, flask10, flask11, flask12, flask13, flask14, flask15, flask16, flask17, potionTemplate, potion1, potion2, potion3, potion4, potion5, potion6, potion7, potion8, potion9, potion10, potion11, potion12, scrollTemplate, scroll1, scroll2, scroll3, scroll4, scroll5, scroll6, scroll7, scroll8, scroll9, scroll10, scroll11, scroll12, scroll13, ediblePlantTemplate, ediblePlant1, ediblePlant2, ediblePlant3, ediblePlant4, ediblePlant5, ediblePlant6, ediblePlant7, light1, light2, light3, blanket, gorget, necklaceTemplate, necklace1, necklace2, necklace3, necklace4, necklace5, necklace6, necklace7, necklace8, necklace9, necklace10, motionScanner, imageItensifier, sightSharpening, ringTemplate, ring1, ring2, ring3, ring4, ring5, ring6, ring7, ring8, armorLeather, armorMail, meleeEnhancement, gloveFencing, gloveGauntlet, gloveJousting, hatUshanka, capReinforced, helmArmored, smokingJacket, buckler, shield, shield2, shield3, hammerTemplate, hammer1, hammer2, hammer3, hammerParalyze, hammerSpark, knife, daggerDropBestWeapon, sword, swordImpress, swordNullify, halberd, halberd2, halberd3, halberdPushActor, gemTemplate, gem1, gem2, gem3, gem4, gem5, currencyTemplate, currency, jumpingPole, seeingItem :: ItemKind
 
 -- Keep the dice rolls and sides in aspects small so that not too many
 -- distinct items are generated (for display in item lore and for narrative
@@ -112,8 +112,6 @@ symbolHafted     = ')'
 symbolWand       = '/'  -- magical rod, transmitter, pistol, rifle, instrument
 _symbolStaff     = '_'  -- scanner
 symbolFood       = ','  -- also body part; distinct from floor: not middle dot
-
--- * Generic items, for any epoch
 
 -- ** Thrown weapons
 
@@ -288,87 +286,71 @@ net = ItemKind
   , ikit     = []
   }
 
--- ** Lights
+-- ** Explosives, with the only effect being @Explode@
 
-light1 = ItemKind
-  { isymbol  = symbolLight
-  , iname    = "wooden torch"
-  , ifreq    = [ (COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)
-               , (WOODEN_TORCH, 1) ]
-  , iflavour = zipPlain [Brown]
-  , icount   = 1 `dL` 4
-  , irarity  = [(1, 40), (4, 1)]
-  , iverbHit = "scorch"
-  , iweight  = 1000
-  , idamage  = 0
-  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-2)
-                   -- not only flashes, but also sparks,
-                   -- so unused by AI due to the mixed blessing
-               , SetFlag Lobable, SetFlag Equipable
-               , EqpSlot EqpSlotShine ]
-                   -- not Fragile; reusable flare
-  , ieffects = [Burn 1]
-  , idesc    = "A heavy smoking wooden torch, improvised using a cloth soaked in tar, burning in an unsteady glow."
-  , ikit     = []
-  }
-light2 = ItemKind
-  { isymbol  = symbolLight
-  , iname    = "oil lamp"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
-  , iflavour = zipPlain [BrYellow]
-  , icount   = 1 `dL` 2
-  , irarity  = [(4, 10)]
-  , iverbHit = "burn"
-  , iweight  = 1500
-  , idamage  = 1 `d` 1
-  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-1)
-               , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
-               , EqpSlot EqpSlotShine ]
-  , ieffects = [ Burn 1
-               , toOrganBad S_PACIFIED (2 + 1 `d` 2)
-               , OnSmash (Explode S_BURNING_OIL_2) ]
-  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
-  , ikit     = []
-  }
-light3 = ItemKind
-  { isymbol  = symbolLight
-  , iname    = "brass lantern"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
+fragmentationBomb = ItemKind
+  { isymbol  = symbolProjectile
+  , iname    = "clay pot"
+      -- clay pot filled with black powder; fragmentation comes from the clay
+      -- shards, so it's not obvious if it's a weapon or just storage method;
+      -- deflagration, not detonation, so large mass and hard container
+      -- required not to burn harmlessly; improvised short fuze
+  , ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 200)]
   , iflavour = zipPlain [Red]
-  , icount   = 1
-  , irarity  = [(10, 6)]
-  , iverbHit = "burn"
-  , iweight  = 3000
-  , idamage  = 2 `d` 1
-  , iaspects = [ AddSkill SkShine 4, AddSkill SkSight (-1)
-               , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
-               , EqpSlot EqpSlotShine ]
-  , ieffects = [ Burn 1
-               , toOrganBad S_PACIFIED (4 + 1 `d` 2)
-               , OnSmash (Explode S_BURNING_OIL_4) ]
-  , idesc    = "Very bright and very heavy brass lantern."
+  , icount   = 1 `dL` 5  -- many, because not very intricate
+  , irarity  = [(5, 8), (10, 5)]
+  , iverbHit = "thud"
+  , iweight  = 3000  -- low velocity due to weight
+  , idamage  = 1 `d` 1  -- heavy and hard
+  , iaspects = [ ELabel "of black powder"
+               , SetFlag Lobable, SetFlag Fragile ]
+  , ieffects = [ Explode S_FOCUSED_FRAGMENTATION
+               , OnSmash (Explode S_VIOLENT_FRAGMENTATION) ]
+  , idesc    = "The practical application of science."
   , ikit     = []
   }
-blanket = ItemKind
-  { isymbol  = symbolLight
-  , iname    = "wool blanket"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100), (BLANKET, 1)]
-  , iflavour = zipPlain [BrBlack]
-  , icount   = 1
-  , irarity  = [(1, 1)]  -- not every playthrough needs one
-  , iverbHit = "swoosh"
+concussionBomb = fragmentationBomb
+  { iname    = "satchel"
+      -- slightly stabilized nitroglycerine in a soft satchel, hence
+      -- no fragmentation, but huge shock wave despite small size and lack of
+      -- strong container to build up pressure (hence only mild hearing loss);
+      -- indoors helps the shock wave; unstable enough that no fuze required
+  , iflavour = zipPlain [Magenta]
+  , iverbHit = "flap"
+  , iweight  = 400
+  , idamage  = 0
+  , iaspects = [ ELabel "of mining charges"
+               , SetFlag Lobable, SetFlag Fragile
+               , toVelocity 70 ]  -- flappy and so slow
+  , ieffects = [ Explode S_FOCUSED_CONCUSSION
+               , OnSmash (Explode S_VIOLENT_CONCUSSION) ]
+  , idesc    = "Avoid sudden movements."
+  }
+-- Not flashbang, because powerful bang without fragmentation is harder
+-- to manufacture (requires an oxidizer and steel canister with holes).
+-- The bang would also paralyze and/or lower the movement skill
+-- (out of balance due to ear trauma).
+flashBomb = fragmentationBomb
+  { iname    = "magnesium ribbon"  -- filled with magnesium flash powder
+  , iflavour = zipPlain [BrYellow]  -- avoid @BrWhite@; looks wrong in dark
+  , iverbHit = "flash"
+  , iweight  = 400
+  , idamage  = 0
+  , iaspects = [ SetFlag Lobable, SetFlag Fragile
+               , toVelocity 70 ]  -- bad shape for throwing
+  , ieffects = [Explode S_FOCUSED_fLASH, OnSmash (Explode S_VIOLENT_FLASH)]
+  , idesc    = "For dramatic entrances and urgent exits."
+  }
+firecrackerBomb = fragmentationBomb
+  { iname = "roll"  -- not fireworks, as they require outdoors
+  , iflavour = zipPlain [BrMagenta]
+  , irarity  = [(1, 5), (5, 6)]  -- a toy, if deadly
+  , iverbHit = "crack"  -- a pun, matches the verb from "ItemKindBlast"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkShine (-10)
-               , AddSkill SkArmorMelee 2, AddSkill SkMaxCalm 5
-               , SetFlag Lobable, SetFlag Equipable
-               , EqpSlot EqpSlotArmorMelee ]
-                  -- not Fragile; reusable douse implement;
-                   -- douses torch, lamp and lantern in one action,
-                   -- both in equipment and when thrown at the floor
-  , ieffects = []
-  , idesc    = "Warm, comforting, and concealing, woven from soft wool."
-  , ikit     = []
+  , iaspects = [SetFlag Lobable, SetFlag Fragile]
+  , ieffects = [Explode S_FIRECRACKER, OnSmash (Explode S_FIRECRACKER)]
+  , idesc    = "String and paper, concealing a deadly surprise."
   }
 
 -- ** Exploding consumables, often intended to be thrown.
@@ -715,136 +697,6 @@ potion12 = potionTemplate
                , OnSmash (Explode $ blastNoStatOf S_IMMOBILE) ]
   }
 
--- ** Explosives, with the only effect being @Explode@
-
-fragmentationBomb = ItemKind
-  { isymbol  = symbolProjectile
-  , iname    = "clay pot"
-      -- clay pot filled with black powder; fragmentation comes from the clay
-      -- shards, so it's not obvious if it's a weapon or just storage method;
-      -- deflagration, not detonation, so large mass and hard container
-      -- required not to burn harmlessly; improvised short fuze
-  , ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 200)]
-  , iflavour = zipPlain [Red]
-  , icount   = 1 `dL` 5  -- many, because not very intricate
-  , irarity  = [(5, 8), (10, 5)]
-  , iverbHit = "thud"
-  , iweight  = 3000  -- low velocity due to weight
-  , idamage  = 1 `d` 1  -- heavy and hard
-  , iaspects = [ ELabel "of black powder"
-               , SetFlag Lobable, SetFlag Fragile ]
-  , ieffects = [ Explode S_FOCUSED_FRAGMENTATION
-               , OnSmash (Explode S_VIOLENT_FRAGMENTATION) ]
-  , idesc    = "The practical application of science."
-  , ikit     = []
-  }
-concussionBomb = fragmentationBomb
-  { iname    = "satchel"
-      -- slightly stabilized nitroglycerine in a soft satchel, hence
-      -- no fragmentation, but huge shock wave despite small size and lack of
-      -- strong container to build up pressure (hence only mild hearing loss);
-      -- indoors helps the shock wave; unstable enough that no fuze required
-  , iflavour = zipPlain [Magenta]
-  , iverbHit = "flap"
-  , iweight  = 400
-  , idamage  = 0
-  , iaspects = [ ELabel "of mining charges"
-               , SetFlag Lobable, SetFlag Fragile
-               , toVelocity 70 ]  -- flappy and so slow
-  , ieffects = [ Explode S_FOCUSED_CONCUSSION
-               , OnSmash (Explode S_VIOLENT_CONCUSSION) ]
-  , idesc    = "Avoid sudden movements."
-  }
--- Not flashbang, because powerful bang without fragmentation is harder
--- to manufacture (requires an oxidizer and steel canister with holes).
--- The bang would also paralyze and/or lower the movement skill
--- (out of balance due to ear trauma).
-flashBomb = fragmentationBomb
-  { iname    = "magnesium ribbon"  -- filled with magnesium flash powder
-  , iflavour = zipPlain [BrYellow]  -- avoid @BrWhite@; looks wrong in dark
-  , iverbHit = "flash"
-  , iweight  = 400
-  , idamage  = 0
-  , iaspects = [ SetFlag Lobable, SetFlag Fragile
-               , toVelocity 70 ]  -- bad shape for throwing
-  , ieffects = [Explode S_FOCUSED_fLASH, OnSmash (Explode S_VIOLENT_FLASH)]
-  , idesc    = "For dramatic entrances and urgent exits."
-  }
-firecrackerBomb = fragmentationBomb
-  { iname = "roll"  -- not fireworks, as they require outdoors
-  , iflavour = zipPlain [BrMagenta]
-  , irarity  = [(1, 5), (5, 6)]  -- a toy, if deadly
-  , iverbHit = "crack"  -- a pun, matches the verb from "ItemKindBlast"
-  , iweight  = 1000
-  , idamage  = 0
-  , iaspects = [SetFlag Lobable, SetFlag Fragile]
-  , ieffects = [Explode S_FIRECRACKER, OnSmash (Explode S_FIRECRACKER)]
-  , idesc    = "String and paper, concealing a deadly surprise."
-  }
-
--- ** Non-exploding consumables, not specifically designed for throwing
-
--- Foods require only minimal apply skill to consume. Many animals can eat them.
-
-ediblePlantTemplate = ItemKind
-  { isymbol  = symbolFood
-  , iname    = "edible plant"
-  , ifreq    = [(EDIBLE_PLANT_UNKNOWN, 1)]
-  , iflavour = zipPlain stdCol
-  , icount   = 1 `dL` 5
-  , irarity  = [(1, 12), (10, 6)]  -- let's feed the animals
-  , iverbHit = "thump"
-  , iweight  = 50
-  , idamage  = 0
-  , iaspects = [ PresentAs EDIBLE_PLANT_UNKNOWN
-               , toVelocity 30 ]  -- low density, often falling apart
-  , ieffects = []
-  , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating may reveal the full effects."
-  , ikit     = []
-  }
-ediblePlant1 = ediblePlantTemplate
-  { iname    = "overripe berry"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [RefillHP 1, toOrganBad S_IMMOBILE (5 + 1 `d` 5)]
-  }
-ediblePlant2 = ediblePlantTemplate
-  { iname    = "frayed fungus"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [toOrganNoTimer S_POISONED]
-  }
-ediblePlant3 = ediblePlantTemplate
-  { iname    = "thick leaf"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [DropItem 1 maxBound COrgan S_POISONED]
-  }
-ediblePlant4 = ediblePlantTemplate
-  { iname    = "shrunk fruit"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [toOrganBad S_BLIND (10 + 1 `d` 10)]
-  }
-ediblePlant5 = ediblePlantTemplate
-  { iname    = "fragrant herb"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , icount   = 1 `dL` 9
-  , irarity  = [(1, 12), (10, 5)]
-  , iaspects = ELabel "of lethargy"
-               : iaspects ediblePlantTemplate
-  , ieffects = [ toOrganBad S_SLOWED (20 + 1 `d` 5)
-               , toOrganNoTimer S_REGENERATING
-               , toOrganNoTimer S_REGENERATING  -- x2
-               , RefillCalm 5 ]
-  }
-ediblePlant6 = ediblePlantTemplate
-  { iname    = "dull flower"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [PutToSleep]
-  }
-ediblePlant7 = ediblePlantTemplate
-  { iname    = "spicy bark"
-  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
-  , ieffects = [InsertMove 20, toOrganBad S_FRENZIED (40 + 1 `d` 10)]
-  }
-
 -- These require high apply skill to consume.
 
 scrollTemplate = ItemKind
@@ -957,82 +809,149 @@ scroll13 = scrollTemplate
   , ieffects = [RerollItem]
   }
 
--- ** Assorted tools
+-- ** Non-exploding consumables, not specifically designed for throwing
 
-jumpingPole = ItemKind
-  { isymbol  = symbolWand
-  , iname    = "jumping pole"
-  , ifreq    = [(COMMON_ITEM, 100)]
-  , iflavour = zipPlain [White]
-  , icount   = 1
-  , irarity  = [(1, 3)]
-  , iverbHit = "prod"
-  , iweight  = 10000
-  , idamage  = 0
-  , iaspects = [ Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 5
-               , SetFlag Durable ]
-  , ieffects = [toOrganGood S_HASTED 1]
-                 -- safe for AI, because it speeds up, so when AI applies it
-                 -- again and again, it gets its time back and is not stuck;
-                 -- in total, the explorations speed is unchanged,
-                 -- but it's useful when fleeing in the dark to make distance
-                 -- and when initiating combat, so it's OK that AI uses it
-  , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
-  , ikit     = []
-  }
-meleeEnhancement = ItemKind
-  { isymbol  = symbolTool
-  , iname    = "whetstone"
-  , ifreq    = [(COMMON_ITEM, 100)]
-  , iflavour = zipPlain [Blue]
-  , icount   = 1
-  , irarity  = [(10, 10)]
-  , iverbHit = "smack"
-  , iweight  = 400
-  , idamage  = 0
-  , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 7) * 5
-               , SetFlag Equipable, EqpSlot EqpSlotHurtMelee ]
-  , ieffects = []
-  , idesc    = "A portable sharpening stone for keeping your weapons keen and true, without the need to set up camp, fish out tools and assemble a proper sharpening workshop."
-  , ikit     = []
-  }
-seeingItem = ItemKind
+-- Foods require only minimal apply skill to consume. Many animals can eat them.
+
+ediblePlantTemplate = ItemKind
   { isymbol  = symbolFood
-  , iname    = "giant pupil"
-  , ifreq    = [(COMMON_ITEM, 100)]
+  , iname    = "edible plant"
+  , ifreq    = [(EDIBLE_PLANT_UNKNOWN, 1)]
+  , iflavour = zipPlain stdCol
+  , icount   = 1 `dL` 5
+  , irarity  = [(1, 12), (10, 6)]  -- let's feed the animals
+  , iverbHit = "thump"
+  , iweight  = 50
+  , idamage  = 0
+  , iaspects = [ PresentAs EDIBLE_PLANT_UNKNOWN
+               , toVelocity 30 ]  -- low density, often falling apart
+  , ieffects = []
+  , idesc    = "Withered but fragrant bits of a colorful plant. Taste tolerably and break down easily, but only eating may reveal the full effects."
+  , ikit     = []
+  }
+ediblePlant1 = ediblePlantTemplate
+  { iname    = "overripe berry"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [RefillHP 1, toOrganBad S_IMMOBILE (5 + 1 `d` 5)]
+  }
+ediblePlant2 = ediblePlantTemplate
+  { iname    = "frayed fungus"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [toOrganNoTimer S_POISONED]
+  }
+ediblePlant3 = ediblePlantTemplate
+  { iname    = "thick leaf"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [DropItem 1 maxBound COrgan S_POISONED]
+  }
+ediblePlant4 = ediblePlantTemplate
+  { iname    = "shrunk fruit"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [toOrganBad S_BLIND (10 + 1 `d` 10)]
+  }
+ediblePlant5 = ediblePlantTemplate
+  { iname    = "fragrant herb"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , icount   = 1 `dL` 9
+  , irarity  = [(1, 12), (10, 5)]
+  , iaspects = ELabel "of lethargy"
+               : iaspects ediblePlantTemplate
+  , ieffects = [ toOrganBad S_SLOWED (20 + 1 `d` 5)
+               , toOrganNoTimer S_REGENERATING
+               , toOrganNoTimer S_REGENERATING  -- x2
+               , RefillCalm 5 ]
+  }
+ediblePlant6 = ediblePlantTemplate
+  { iname    = "dull flower"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [PutToSleep]
+  }
+ediblePlant7 = ediblePlantTemplate
+  { iname    = "spicy bark"
+  , ifreq    = [(COMMON_ITEM, 100), (EDIBLE_PLANT, 100)]
+  , ieffects = [InsertMove 20, toOrganBad S_FRENZIED (40 + 1 `d` 10)]
+  }
+
+-- ** Lights
+
+light1 = ItemKind
+  { isymbol  = symbolLight
+  , iname    = "wooden torch"
+  , ifreq    = [ (COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)
+               , (WOODEN_TORCH, 1) ]
+  , iflavour = zipPlain [Brown]
+  , icount   = 1 `dL` 4
+  , irarity  = [(1, 40), (4, 1)]
+  , iverbHit = "scorch"
+  , iweight  = 1000
+  , idamage  = 0
+  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-2)
+                   -- not only flashes, but also sparks,
+                   -- so unused by AI due to the mixed blessing
+               , SetFlag Lobable, SetFlag Equipable
+               , EqpSlot EqpSlotShine ]
+                   -- not Fragile; reusable flare
+  , ieffects = [Burn 1]
+  , idesc    = "A heavy smoking wooden torch, improvised using a cloth soaked in tar, burning in an unsteady glow."
+  , ikit     = []
+  }
+light2 = ItemKind
+  { isymbol  = symbolLight
+  , iname    = "oil lamp"
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 1 `dL` 2
+  , irarity  = [(4, 10)]
+  , iverbHit = "burn"
+  , iweight  = 1500
+  , idamage  = 1 `d` 1
+  , iaspects = [ AddSkill SkShine 3, AddSkill SkSight (-1)
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
+               , EqpSlot EqpSlotShine ]
+  , ieffects = [ Burn 1
+               , toOrganBad S_PACIFIED (2 + 1 `d` 2)
+               , OnSmash (Explode S_BURNING_OIL_2) ]
+  , idesc    = "A clay lamp filled with plant oil feeding a tiny wick."
+  , ikit     = []
+  }
+light3 = ItemKind
+  { isymbol  = symbolLight
+  , iname    = "brass lantern"
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
-  , irarity  = [(1, 2)]
-  , iverbHit = "gaze at"
-  , iweight  = 100
-  , idamage  = 0
-  , iaspects = [ Timeout 3
-               , AddSkill SkSight 10  -- a spyglass for quick wields
-               , AddSkill SkMaxCalm 30  -- to diminish clipping sight by Calm
-               , AddSkill SkShine 2  -- to lit corridors when flying
-               , SetFlag Periodic ]
-  , ieffects = [ Detect DetectActor 20  -- rare enough
-               , toOrganNoTimer S_POISONED  -- really can't be worn
-               , Summon MOBILE_MONSTER 1 ]
-  , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
+  , irarity  = [(10, 6)]
+  , iverbHit = "burn"
+  , iweight  = 3000
+  , idamage  = 2 `d` 1
+  , iaspects = [ AddSkill SkShine 4, AddSkill SkSight (-1)
+               , SetFlag Lobable, SetFlag Fragile, SetFlag Equipable
+               , EqpSlot EqpSlotShine ]
+  , ieffects = [ Burn 1
+               , toOrganBad S_PACIFIED (4 + 1 `d` 2)
+               , OnSmash (Explode S_BURNING_OIL_4) ]
+  , idesc    = "Very bright and very heavy brass lantern."
   , ikit     = []
   }
-motionScanner = ItemKind
-  { isymbol  = symbolTool
-  , iname    = "draft detector"
-  , ifreq    = [(COMMON_ITEM, 100), (ADD_NOCTO_1, 20)]
-  , iflavour = zipPlain [BrRed]
+blanket = ItemKind
+  { isymbol  = symbolLight
+  , iname    = "wool blanket"
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100), (BLANKET, 1)]
+  , iflavour = zipPlain [BrBlack]
   , icount   = 1
-  , irarity  = [(5, 2)]
-  , iverbHit = "jingle"
-  , iweight  = 300
+  , irarity  = [(1, 1)]  -- not every playthrough needs one
+  , iverbHit = "swoosh"
+  , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkNocto 1
-               , AddSkill SkArmorMelee (-15 + (1 `dL` 3) * 5)
-               , AddSkill SkArmorRanged (-15 + (1 `dL` 3) * 5)
-               , SetFlag Equipable, EqpSlot EqpSlotMiscBonus ]
+  , iaspects = [ AddSkill SkShine (-10)
+               , AddSkill SkArmorMelee 2, AddSkill SkMaxCalm 5
+               , SetFlag Lobable, SetFlag Equipable
+               , EqpSlot EqpSlotArmorMelee ]
+                  -- not Fragile; reusable douse implement;
+                   -- douses torch, lamp and lantern in one action,
+                   -- both in equipment and when thrown at the floor
   , ieffects = []
-  , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
+  , idesc    = "Warm, comforting, and concealing, woven from soft wool."
   , ikit     = []
   }
 
@@ -1173,6 +1092,24 @@ necklace10 = necklaceTemplate
   , ieffects = [ Detect DetectLoot 20
                , Teleport 40  -- risky
                , toOrganBad S_PARSIMONIOUS (5 + 1 `d` 3) ]  -- hard to flee
+  }
+motionScanner = ItemKind
+  { isymbol  = symbolTool
+  , iname    = "draft detector"
+  , ifreq    = [(COMMON_ITEM, 100), (ADD_NOCTO_1, 20)]
+  , iflavour = zipPlain [BrRed]
+  , icount   = 1
+  , irarity  = [(5, 2)]
+  , iverbHit = "jingle"
+  , iweight  = 300
+  , idamage  = 0
+  , iaspects = [ AddSkill SkNocto 1
+               , AddSkill SkArmorMelee (-15 + (1 `dL` 3) * 5)
+               , AddSkill SkArmorRanged (-15 + (1 `dL` 3) * 5)
+               , SetFlag Equipable, EqpSlot EqpSlotMiscBonus ]
+  , ieffects = []
+  , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
+  , ikit     = []
   }
 
 -- ** Non-periodic jewelry
@@ -1334,6 +1271,23 @@ armorMail = armorLeather
   , ieffects = []
   , idesc    = "A long shirt with tiny iron rings sewn into it. Discourages foes from attacking your torso, especially with ranged weapons, which can't pierce the rings nor aim between them. The stiff fabric is hard to wash, though."
   }
+meleeEnhancement = ItemKind
+  { isymbol  = symbolTool
+  , iname    = "whetstone"
+  , ifreq    = [(COMMON_ITEM, 100)]
+  , iflavour = zipPlain [Blue]
+  , icount   = 1
+  , irarity  = [(10, 10)]
+  , iverbHit = "smack"
+  , iweight  = 400
+  , idamage  = 0
+  , iaspects = [ AddSkill SkHurtMelee $ (1 `dL` 7) * 5
+               , AddSkill SkArmorMelee 2
+               , SetFlag Equipable, EqpSlot EqpSlotHurtMelee ]
+  , ieffects = []
+  , idesc    = "A portable sharpening stone for keeping your weapons keen and true, without the need to set up camp, fish out tools and assemble a proper sharpening workshop. Provides an extra polish to amor, as well."
+  , ikit     = []
+  }
 gloveFencing = ItemKind
   { isymbol  = symbolMiscArmor
   , iname    = "leather glove"
@@ -1443,9 +1397,25 @@ helmArmored = ItemKind
   , idesc    = "Blocks out everything, including your senses."
   , ikit     = []
   }
-
--- ** Shields
-
+smokingJacket = ItemKind
+  { isymbol  = symbolClothes
+  , iname    = "smoking jacket"
+  , ifreq    = [(COMMON_ITEM, 100), (CLOTHING_MISC, 1), (CHIC_GEAR, 100)]
+  , iflavour = zipFancy [BrGreen]
+  , icount   = 1
+  , irarity  = [(1, 9), (10, 3)]
+  , iverbHit = "stroke"
+  , iweight  = 5000
+  , idamage  = 0
+  , iaspects = [ Timeout $ (1 `d` 2) * 3
+               , AddSkill SkSpeed 2
+               , AddSkill SkOdor 2
+               , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
+               , EqpSlot EqpSlotSpeed ]
+  , ieffects = [RefillCalm 1]
+  , idesc    = "Wearing this velvet jacket, anyone would look dashing."
+  , ikit     = []
+  }
 -- Shield doesn't protect against ranged attacks to prevent
 -- micromanagement: walking with shield, melee without.
 -- Note that AI will pick them up but never wear and will use them at most
@@ -1765,29 +1735,49 @@ currency = currencyTemplate
   { ifreq    = [(TREASURE, 100), (S_CURRENCY, 100), (VALUABLE, 1)]
   , iaspects = [AddSkill SkShine 1, AddSkill SkSpeed (-1)]
                ++ iaspects currencyTemplate
-
   }
 
--- * LambdaHack-specific items
+-- ** Tools to be actively used, but not worn
 
--- ** Clothing
-
-smokingJacket = ItemKind
-  { isymbol  = symbolClothes
-  , iname    = "smoking jacket"
-  , ifreq    = [(COMMON_ITEM, 100), (CLOTHING_MISC, 1), (CHIC_GEAR, 100)]
-  , iflavour = zipFancy [BrGreen]
+jumpingPole = ItemKind
+  { isymbol  = symbolWand
+  , iname    = "jumping pole"
+  , ifreq    = [(COMMON_ITEM, 100)]
+  , iflavour = zipPlain [White]
   , icount   = 1
-  , irarity  = [(1, 9), (10, 3)]
-  , iverbHit = "stroke"
-  , iweight  = 5000
+  , irarity  = [(1, 3)]
+  , iverbHit = "prod"
+  , iweight  = 10000
   , idamage  = 0
-  , iaspects = [ Timeout $ (1 `d` 2) * 3
-               , AddSkill SkSpeed 2
-               , AddSkill SkOdor 2
-               , SetFlag Periodic, SetFlag Durable, SetFlag Equipable
-               , EqpSlot EqpSlotSpeed ]
-  , ieffects = [RefillCalm 1]
-  , idesc    = "Wearing this velvet jacket, anyone would look dashing."
+  , iaspects = [ Timeout $ (2 + 1 `d` 2 - 1 `dL` 2) * 5
+               , SetFlag Durable ]
+  , ieffects = [toOrganGood S_HASTED 1]
+                 -- safe for AI, because it speeds up, so when AI applies it
+                 -- again and again, it gets its time back and is not stuck;
+                 -- in total, the explorations speed is unchanged,
+                 -- but it's useful when fleeing in the dark to make distance
+                 -- and when initiating combat, so it's OK that AI uses it
+  , idesc    = "Makes you vulnerable at take-off, but then you are free like a bird."
+  , ikit     = []
+  }
+seeingItem = ItemKind
+  { isymbol  = symbolFood
+  , iname    = "giant pupil"
+  , ifreq    = [(COMMON_ITEM, 100)]
+  , iflavour = zipPlain [Red]
+  , icount   = 1
+  , irarity  = [(1, 2)]
+  , iverbHit = "gaze at"
+  , iweight  = 100
+  , idamage  = 0
+  , iaspects = [ Timeout 3
+               , AddSkill SkSight 10  -- a spyglass for quick wields
+               , AddSkill SkMaxCalm 30  -- to diminish clipping sight by Calm
+               , AddSkill SkShine 2  -- to lit corridors when flying
+               , SetFlag Periodic ]
+  , ieffects = [ Detect DetectActor 20  -- rare enough
+               , toOrganNoTimer S_POISONED  -- really can't be worn
+               , Summon MOBILE_MONSTER 1 ]
+  , idesc    = "A slimy, dilated green pupil torn out from some giant eye. Clear and focused, as if still alive."
   , ikit     = []
   }
