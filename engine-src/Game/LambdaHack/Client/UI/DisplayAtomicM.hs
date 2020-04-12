@@ -330,28 +330,33 @@ displayRespUpdAtomicUI cmd = case cmd of
         msgAdd MsgDiplomacy $
           makeSentence [fidName, "no longer control their hoard"]
     animate lid $ vanish pos
-  UpdLeadFaction fid (Just source) (Just target) -> do
-    fact <- getsState $ (EM.! fid) . sfactionD
-    lidV <- viewedLevelUI
-    when (isAIFact fact) $ markDisplayNeeded lidV
-    -- This faction can't run with multiple actors, so this is not
-    -- a leader change while running, but rather server changing
-    -- their leader, which the player should be alerted to.
-    when (noRunWithMulti fact) stopPlayBack
-    actorD <- getsState sactorD
-    case EM.lookup source actorD of
-      Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
-        -- Regardless who the leader is, give proper names here, not 'you'.
-        sbUI <- getsSession $ getActorUI source
-        tbUI <- getsSession $ getActorUI target
-        let subject = partActor tbUI
-            object  = partActor sbUI
-        msgAdd MsgLeader $
-          makeSentence [ MU.SubjectVerbSg subject "take command"
-                       , "from", object ]
-      _ -> return ()
-    lookAtMove target
-  UpdLeadFaction _ Nothing (Just target) -> lookAtMove target
+  UpdLeadFaction fid (Just source) mtgt@(Just target) -> do
+    mleader <- getsClient sleader
+    when (mtgt /= mleader) $ do
+      fact <- getsState $ (EM.! fid) . sfactionD
+      lidV <- viewedLevelUI
+      when (isAIFact fact) $ markDisplayNeeded lidV
+      -- This faction can't run with multiple actors, so this is not
+      -- a leader change while running, but rather server changing
+      -- their leader, which the player should be alerted to.
+      when (noRunWithMulti fact) stopPlayBack
+      actorD <- getsState sactorD
+      case EM.lookup source actorD of
+        Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
+          -- Regardless who the leader is, give proper names here, not 'you'.
+          sbUI <- getsSession $ getActorUI source
+          tbUI <- getsSession $ getActorUI target
+          let subject = partActor tbUI
+              object  = partActor sbUI
+          msgAdd MsgLeader $
+            makeSentence [ MU.SubjectVerbSg subject "take command"
+                         , "from", object ]
+        _ -> return ()
+      lookAtMove target
+  UpdLeadFaction _ Nothing mtgt@(Just target) -> do
+    mleader <- getsClient sleader
+    when (mtgt /= mleader) $ do
+      lookAtMove target
   UpdLeadFaction{} -> return ()
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
