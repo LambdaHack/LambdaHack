@@ -423,6 +423,7 @@ equipItems aid = do
   body <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough body actorMaxSk
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
@@ -459,6 +460,7 @@ equipItems aid = do
       pluralCopiesOfBest [] = []
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      canEsc = fcanEscape (gplayer fact)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip, so that the unneeded
       -- but powerful items don't fool us.
@@ -467,8 +469,10 @@ equipItems aid = do
       -- In other stores we need to filter, for otherwise we'd have
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
-        not $ hinders condShineWouldBetray condAimEnemyPresent
-                      heavilyDistressed (not calmE) actorMaxSk itemFull
+        not (hinders condShineWouldBetray condAimEnemyPresent
+                     heavilyDistressed (not calmE) actorMaxSk itemFull
+             || not canEsc && IA.isHumanTrinket (itemKind itemFull))
+                  -- don't equip items that block progress, e.g., blowtorch
       bestTwo = bestByEqpSlot discoBenefit
                               (filter filterNeeded stashAssocs)
                               (filter filterNeeded eqpAssocs)
