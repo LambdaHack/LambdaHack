@@ -123,7 +123,8 @@ displayTaunt _voluntary rndToAction aid = do
             | canBrace -> braceEasy
             | otherwise -> [(1, ("something", "hum silently"))]
   else return $!
-    if | canApply -> ("somebody", "holler a taunt")
+    if | bproj b -> ("something", "ping")
+       | canApply -> ("somebody", "holler a taunt")
        | canHear -> ("somebody", "growl menacingly")
        | canBrace -> ("something", "stomp repeatedly")
        | otherwise -> ("something", "buzz angrily")

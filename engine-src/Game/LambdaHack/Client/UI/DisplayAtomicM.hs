@@ -1485,9 +1485,12 @@ displayRespSfxAtomicUI sfx = case sfx of
     msgAdd MsgVeryRare $! makeSentence
       [MU.SubjectVerbSg spart "collide", "painfully with", object]
   SfxTaunt voluntary aid -> do
-    spart <- partActorLeader aid
-    (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
-    msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
+    side <- getsClient sside
+    b <- getsState $ getActorBody aid
+    unless (bproj b && bfid b == side) $ do  -- don't spam
+      spart <- partActorLeader aid
+      (_heardSubject, verb) <- displayTaunt voluntary rndToActionUI aid
+      msgAdd MsgMisc $! makeSentence [MU.SubjectVerbSg spart (MU.Text verb)]
 
 ppSfxMsg :: MonadClientUI m => SfxMsg -> m (Maybe (MsgClass, Text))
 ppSfxMsg sfxMsg = case sfxMsg of

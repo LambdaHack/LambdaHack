@@ -810,12 +810,13 @@ effectPutToSleep execSfx target = do
 effectYell :: MonadServerAtomic m => m () -> ActorId -> m UseResult
 effectYell execSfx target = do
   tb <- getsState $ getActorBody target
-  if bproj tb || bhp tb <= 0 then  -- avoid yelling projectiles or corpses
+  if bhp tb <= 0 then  -- avoid yelling corpses
     return UseDud  -- the yell never manifested
   else do
-    execSfx
+    when (not (bproj tb)) $
+      execSfx
     execSfxAtomic $ SfxTaunt False target
-    when (deltaBenign $ bcalmDelta tb) $
+    when (not (bproj tb) && deltaBenign (bcalmDelta tb)) $
       execUpdAtomic $ UpdRefillCalm target minusM
     return UseUp
 

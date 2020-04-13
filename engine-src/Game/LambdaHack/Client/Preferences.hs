@@ -90,7 +90,7 @@ effectToBenefit cops fid factionD eff =
     IK.Impress -> (0, -20)  -- this causes heroes to waste a crucial resource
                             -- but makes aliens more aggresive than defensive
     IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
-    IK.Yell -> (-5, -10)  -- usually uncontrollably wakes up enemies, so bad
+    IK.Yell -> (-1, -2)  -- usually uncontrollably wakes up enemies, so bad
     IK.Summon grp d ->  -- contrived by not checking if enemies also control
                         -- that group; safe for normal dungeon crawl content;
                         -- not correct for symmetric scenarios, but let it be
@@ -385,7 +385,7 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkSight p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkSmell p -> Dice.meanDice p
     IK.AddSkill Ability.SkShine p -> Dice.meanDice p * 2
-    IK.AddSkill Ability.SkNocto p -> Dice.meanDice p * 10
+    IK.AddSkill Ability.SkNocto p -> Dice.meanDice p * 30
                                        -- > sight + light; stealth, slots
     IK.AddSkill Ability.SkHearing p -> Dice.meanDice p
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
