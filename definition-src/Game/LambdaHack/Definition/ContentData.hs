@@ -21,6 +21,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Data.Function
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
@@ -105,6 +106,9 @@ makeContentData contentName getName getFreq validateSingle validateAll
                              (groupNamesSingleton ++ groupNames)
       groupsMoreThanOne = filter (oisMoreThanOneGroup contentData)
                                  (groupNamesAtMostOne ++ groupNamesSingleton)
+      groupsDeclaredSet = S.fromAscList allGroupNamesUnique
+      groupsNotDeclared = filter (`S.notMember` groupsDeclaredSet)
+                          $ M.keys groupFreq
   in assert (null allGroupNamesNonUnique
              `blame` contentName ++ ": some group names duplicated"
              `swith` allGroupNamesNonUnique) $
@@ -114,6 +118,9 @@ makeContentData contentName getName getFreq validateSingle validateAll
      assert (null groupsMoreThanOne
              `blame` contentName ++ ": some group names refer to more than one content, while they shouldn't"
              `swith` groupsMoreThanOne) $
+     assert (null groupsNotDeclared
+             `blame` contentName ++ ": some group names are not included in group name lists, neither singleton nor duplicable"
+             `swith` groupsNotDeclared) $
      assert (null freqsOffenders
              `blame` contentName ++ ": some Freqs values not valid"
              `swith` freqsOffenders) $

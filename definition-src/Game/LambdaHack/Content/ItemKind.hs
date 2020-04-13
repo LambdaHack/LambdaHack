@@ -67,7 +67,7 @@ pattern MOBILE = GroupName "mobile"
 
 -- * Optional item groups
 
-pattern S_SINGLE_SPARK, S_FRAGRANCE, CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, HORROR, VALUABLE, UNREPORTED_INVENTORY, AQUATIC :: GroupName ItemKind
+pattern S_SINGLE_SPARK, S_FRAGRANCE, CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY, AQUATIC, HORROR :: GroupName ItemKind
 
 -- Used in Preferences.hs
 
@@ -84,10 +84,11 @@ pattern ANY_JEWELRY = GroupName "jewelry"
 
 -- * Used elsewhere
 
-pattern HORROR = GroupName "horror"
 pattern VALUABLE = GroupName "valuable"
 pattern UNREPORTED_INVENTORY = GroupName "unreported inventory"
 pattern AQUATIC = GroupName "aquatic"
+
+pattern HORROR = GroupName "horror"
 
 -- | Item properties that are fixed for a given kind of items.
 -- Of these, aspects and effects are jointly called item powers.
