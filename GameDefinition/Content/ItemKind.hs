@@ -1093,23 +1093,19 @@ necklace10 = necklaceTemplate
                , Teleport 40  -- risky
                , toOrganBad S_PARSIMONIOUS (5 + 1 `d` 3) ]  -- hard to flee
   }
-motionScanner = ItemKind
-  { isymbol  = symbolTool
-  , iname    = "draft detector"
+motionScanner = necklaceTemplate
+  { iname    = "draft detector"
   , ifreq    = [(COMMON_ITEM, 100), (ADD_NOCTO_1, 20)]
-  , iflavour = zipPlain [BrRed]
-  , icount   = 1
   , irarity  = [(5, 2)]
   , iverbHit = "jingle"
-  , iweight  = 300
-  , idamage  = 0
-  , iaspects = [ AddSkill SkNocto 1
-               , AddSkill SkArmorMelee (-15 + (1 `dL` 3) * 5)
-               , AddSkill SkArmorRanged (-15 + (1 `dL` 3) * 5)
-               , SetFlag Equipable, EqpSlot EqpSlotMiscBonus ]
-  , ieffects = []
-  , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. Is also very noisy."
-  , ikit     = []
+  , iweight  = 300  -- almost gives it away
+  , iaspects = [ Timeout $ 4 + 1 `dL` 6
+               , AddSkill SkNocto 1
+               , AddSkill SkArmorMelee (-20 + (1 `dL` 3) * 5)
+               , EqpSlot EqpSlotMiscBonus ]
+               ++ iaspects_necklaceTemplate
+  , ieffects = [Explode S_PING_PLASH]
+  , idesc    = "A silk flag with a bell for detecting sudden draft changes. May indicate a nearby corridor crossing or a fast enemy approaching in the dark. The bell is very noisy and casts light reflection flashes."
   }
 
 -- ** Non-periodic jewelry
