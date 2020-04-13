@@ -74,13 +74,12 @@ makeContentData :: Show c
                      -- ^ validate the whole defined content of this type
                      -- and list all offence
                 -> [c]  -- ^ all content of this type
-                -> [GroupName c]  -- ^ non-mandatory group names of <= 1 content
                 -> [GroupName c]  -- ^ singleton group names for this content
                 -> [GroupName c]  -- ^ remaining group names for this content
                 -> ContentData c
 {-# INLINE makeContentData #-}
 makeContentData contentName getName getFreq validateSingle validateAll
-                content groupNamesAtMostOne groupNamesSingleton groupNames =
+                content groupNamesSingleton groupNames =
   -- The @force@ is needed for @GHC.Compact@.
   let contentVector = V.force $ V.fromList content
       groupFreq =
@@ -98,14 +97,13 @@ makeContentData contentName getName getFreq validateSingle validateAll
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content
-      allGroupNamesSorted =
-        sort $ groupNamesAtMostOne ++ groupNamesSingleton ++ groupNames
+      allGroupNamesSorted = sort $ groupNamesSingleton ++ groupNames
       allGroupNamesUnique = nub allGroupNamesSorted
       allGroupNamesNonUnique = allGroupNamesSorted \\ allGroupNamesUnique
       missingGroups = filter (not . omemberGroup contentData)
                              (groupNamesSingleton ++ groupNames)
       groupsMoreThanOne = filter (oisMoreThanOneGroup contentData)
-                                 (groupNamesAtMostOne ++ groupNamesSingleton)
+                                 groupNamesSingleton
       groupsDeclaredSet = S.fromAscList allGroupNamesUnique
       groupsNotDeclared = filter (`S.notMember` groupsDeclaredSet)
                           $ M.keys groupFreq

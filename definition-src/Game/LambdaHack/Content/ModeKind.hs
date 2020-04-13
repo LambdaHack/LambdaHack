@@ -226,6 +226,5 @@ makeData :: [ModeKind] -> [GroupName ModeKind] -> [GroupName ModeKind]
          -> ContentData ModeKind
 makeData content groupNamesSingleton groupNames =
   makeContentData "ModeKind" mname mfreq validateSingle validateAll content
-                  []
                   groupNamesSingleton
                   (mandatoryGroups ++ groupNames)

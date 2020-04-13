@@ -98,4 +98,4 @@ validateAll _ _ = []  -- so far, always valid
 makeData :: [PlaceKind] -> [GroupName PlaceKind] -> [GroupName PlaceKind]
          -> ContentData PlaceKind
 makeData content =
-  makeContentData "PlaceKind" pname pfreq validateSingle validateAll content []
+  makeContentData "PlaceKind" pname pfreq validateSingle validateAll content

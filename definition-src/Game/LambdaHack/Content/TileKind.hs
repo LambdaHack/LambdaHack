@@ -258,6 +258,5 @@ makeData :: [TileKind] -> [GroupName TileKind] -> [GroupName TileKind]
          -> ContentData TileKind
 makeData content groupNamesAtMostOne groupNames =
   makeContentData "TileKind" tname tfreq validateSingle validateAll content
-                  []
                   (mandatoryGroupsSingleton ++ groupNamesAtMostOne)
                   (mandatoryGroups ++ groupNames)

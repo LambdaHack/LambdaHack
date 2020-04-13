@@ -621,6 +621,5 @@ makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
          -> ContentData ItemKind
 makeData content groupNamesSingleton groupNames =
   makeContentData "ItemKind" iname ifreq validateSingle validateAll content
-                  [S_SINGLE_SPARK, S_FRAGRANCE]
                   (mandatoryGroupsSingleton ++ groupNamesSingleton)
                   (mandatoryGroups ++ groupNames)

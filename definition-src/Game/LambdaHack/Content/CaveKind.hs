@@ -124,6 +124,5 @@ makeData :: [CaveKind] -> [GroupName CaveKind] -> [GroupName CaveKind]
          -> ContentData CaveKind
 makeData content groupNamesSingleton groupNames =
   makeContentData "CaveKind" cname cfreq validateSingle validateAll content
-                  []
                   groupNamesSingleton
                   (mandatoryGroups ++ groupNames)
