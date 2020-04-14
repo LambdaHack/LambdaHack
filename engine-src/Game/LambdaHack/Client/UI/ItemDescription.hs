@@ -233,9 +233,10 @@ textAllPowers width detailLevel skipRecharging
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       pdeltaHP = modifyDamageBySpeed rawDeltaHP speed
-      rangedDamageDesc = if pdeltaHP == 0
+      tdelta = show64With2 pdeltaHP
+      rangedDamageDesc = if tdelta == "0"
                          then []
-                         else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
+                         else ["{avg" <+> tdelta <+> "ranged}"]
         -- Note that avg melee damage would be too complex to display here,
         -- because in case of @MOwned@ the owner is different than leader,
         -- so the value would be different than when viewing the item.
@@ -409,7 +410,10 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   pdeltaHP = modifyDamageBySpeed prawDeltaHP speed
                   minDeltaHP = 5 * percentDeltaHP
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed
-              in "Against defenceless foes you'd inflict around"
+                  tdelta = show64With2 pdeltaHP
+              in
+                if tdelta == "0" then "" else
+                 "Against defenceless foes you'd inflict around"
                    -- rounding and non-id items
                  <+> tshow meanDmg
                  <> "*" <> tshow mult <> "%"
@@ -420,7 +424,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                  <> "*" <> tshow pmult <> "%"
                  <> "*" <> "speed^2"
                  <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
-                 <> "=" <> show64With2 pdeltaHP
+                 <> "=" <> tdelta
                  <+> "ranged damage (min" <+> show64With2 mDeltaHP
                  <> ") with it"
                  <> if Dice.infDice (IK.idamage itemKind)
