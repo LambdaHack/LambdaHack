@@ -206,6 +206,7 @@ displaySpeed kRaw =
   in show l
      <> (if x == 0 then "" else "." <> show x)
      <> "m/s"
+
 -- | The minimal speed is half a meter (half a step across a tile)
 -- per second (two standard turns, which the time span during which
 -- projectile moves, unless it has modified linger value).
@@ -252,8 +253,11 @@ speedThrust = Speed $ 10 * sInMs
 modifyDamageBySpeed :: Int64 -> Speed -> Int64
 modifyDamageBySpeed dmg (Speed s) =
   let Speed sThrust = speedThrust
-  in round (fromIntegral dmg * fromIntegral s ^ (2 :: Int)  -- overflows Int64
-            / fromIntegral sThrust ^ (2 :: Int) :: Double)
+  in if s <= minimalSpeed
+     then 0  -- needed mostly not to display useless ranged damage
+     else round (fromIntegral dmg * fromIntegral s ^ (2 :: Int)
+                 / fromIntegral sThrust ^ (2 :: Int) :: Double)
+                    -- Double, because overflows Int64
 
 -- | Scale speed by an @Int@ scalar value.
 speedScale :: Rational -> Speed -> Speed
