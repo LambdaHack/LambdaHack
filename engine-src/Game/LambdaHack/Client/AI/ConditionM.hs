@@ -1,6 +1,7 @@
 -- | Assorted conditions used later on in AI logic.
 module Game.LambdaHack.Client.AI.ConditionM
-  ( condAimEnemyPresentM
+  ( condAimEnemyTargetedM
+  , condAimEnemyOrStashM
   , condAimEnemyRememberedM
   , condAimNonEnemyPresentM
   , condAimEnemyNoMeleeM
@@ -61,15 +62,24 @@ import           Game.LambdaHack.Definition.Defs
 -- All conditions are (partially) lazy, because they are not always
 -- used in the strict monadic computations they are in.
 
--- | Require that the target enemy is visible by the party.
-condAimEnemyPresentM :: MonadClient m => ActorId -> m Bool
-condAimEnemyPresentM aid = do
+-- | Require that a target enemy is visible by the party.
+condAimEnemyTargetedM :: MonadClient m => ActorId -> m Bool
+condAimEnemyTargetedM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
     Just (TEnemy _) -> True
     _ -> False
 
--- | Require that the target enemy is remembered on the actor's level.
+-- | Require that a target enemy or enemy stash is visible by the party.
+condAimEnemyOrStashM :: MonadClient m => ActorId -> m Bool
+condAimEnemyOrStashM aid = do
+  btarget <- getsClient $ getTarget aid
+  return $ case btarget of
+    Just (TEnemy _) -> True
+    Just (TPoint (TStash _) _ _) -> True
+    _ -> False
+
+-- | Require that a target enemy is remembered on the actor's level.
 condAimEnemyRememberedM :: MonadClient m => ActorId -> m Bool
 condAimEnemyRememberedM aid = do
   b <- getsState $ getActorBody aid
@@ -78,7 +88,7 @@ condAimEnemyRememberedM aid = do
     Just (TPoint (TEnemyPos _) lid _) -> lid == blid b
     _ -> False
 
--- | Require that the target non-enemy is visible by the party.
+-- | Require that a target non-enemy is visible by the party.
 condAimNonEnemyPresentM :: MonadClient m => ActorId -> m Bool
 condAimNonEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
@@ -86,7 +96,7 @@ condAimNonEnemyPresentM aid = do
     Just (TNonEnemy _) -> True
     _ -> False
 
--- | Require that the target enemy is visible by the party and doesn't melee.
+-- | Require that a target enemy is visible by the party and doesn't melee.
 condAimEnemyNoMeleeM :: MonadClient m => ActorId -> m Bool
 condAimEnemyNoMeleeM aid = do
   btarget <- getsClient $ getTarget aid
@@ -217,15 +227,15 @@ condProjectListM :: MonadClient m
                  -> m [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   discoBenefit <- getsClient sdiscoBenefit
   getsState $ projectList discoBenefit skill aid
-                          condShineWouldBetray condAimEnemyPresent
+                          condShineWouldBetray condAimEnemyOrStash
 
 projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
             -> [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 projectList discoBenefit skill aid
-            condShineWouldBetray condAimEnemyPresent s =
+            condShineWouldBetray condAimEnemyOrStash s =
   let b = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
       calmE = calmEnough b actorMaxSk
@@ -238,7 +248,7 @@ projectList discoBenefit skill aid
                          -- note: not larger, to avoid Int32 overflow
       coeff CStash = 1
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyPresent
+      hind = hinders condShineWouldBetray condAimEnemyOrStash
                      heavilyDistressed condNotCalmEnough actorMaxSk
       goodMissile (Benefit{benInEqp, benFling}, cstore, iid, itemFull, kit) =
         let arItem = aspectRecordFull itemFull
@@ -271,7 +281,7 @@ benAvailableItems discoBenefit aid cstores s =
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Ability.Skills -> ItemFull
         -> Bool
-hinders condShineWouldBetray condAimEnemyPresent
+hinders condShineWouldBetray condAimEnemyOrStash
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         actorMaxSk itemFull =
@@ -282,7 +292,7 @@ hinders condShineWouldBetray condAimEnemyPresent
       itemShineBad = condShineWouldBetray && itemShine
   in -- In the presence of enemies (seen, or unseen but distressing)
      -- actors want to hide in the dark.
-     (condAimEnemyPresent || condNotCalmEnough || heavilyDistressed)
+     (condAimEnemyOrStash || condNotCalmEnough || heavilyDistressed)
      && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
@@ -334,13 +344,13 @@ condSupport :: MonadClient m => Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
 condSupport param aid = do
   btarget <- getsClient $ getTarget aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   getsState $ strongSupport param aid btarget
-                            condAimEnemyPresent condAimEnemyRemembered
+                            condAimEnemyOrStash condAimEnemyRemembered
 
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
-strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
+strongSupport param aid btarget condAimEnemyOrStash condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
   let actorMaxSkills = sactorMaxSkills s
       actorMaxSk = actorMaxSkills EM.! aid
@@ -348,7 +358,7 @@ strongSupport param aid btarget condAimEnemyPresent condAimEnemyRemembered s =
       b = getActorBody aid s
       mtgtPos = aidTgtToPos aid (blid b) btarget s
       approaching b2 = case mtgtPos of
-        Just tgtPos | condAimEnemyPresent || condAimEnemyRemembered ->
+        Just tgtPos | condAimEnemyOrStash || condAimEnemyRemembered ->
           chessDist (bpos b2) tgtPos <= 1 + param
         _ -> False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)

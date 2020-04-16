@@ -375,7 +375,7 @@ computeTarget aid = do
                case mpath of
                  Nothing -> pickNewTargetIgnore (Just a)
                    -- enemy became unreachable
-                 Just AndPath{pathList=[]} -> pickNewTargetIgnore (Just a)
+                 Just AndPath{pathList=[]} -> pickNewTarget
                    -- he is his own enemy
                  Just AndPath{pathList= q : _} ->
                    -- If in melee and path blocked by actors (even proj.)

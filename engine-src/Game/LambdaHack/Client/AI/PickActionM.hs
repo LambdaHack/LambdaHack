@@ -85,7 +85,8 @@ actionStrategy aid retry = do
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
   condInMelee <- condInMeleeM $ blid body
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyTargeted <- condAimEnemyTargetedM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   condAimEnemyNoMelee <- condAimEnemyNoMeleeM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
@@ -122,7 +123,7 @@ actionStrategy aid retry = do
       mayFallAsleep = not condAimEnemyRemembered
                       && mayContinueSleep
                       && canSleep actorSk
-      mayContinueSleep = not condAimEnemyPresent
+      mayContinueSleep = not condAimEnemyOrStash
                          && not (hpFull body actorSk)
                          && not uneasy
                          && not condAnyFoeAdj
@@ -179,7 +180,7 @@ actionStrategy aid retry = do
           , trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
-          , condAdjTriggerable && not condAimEnemyPresent
+          , condAdjTriggerable && not condAimEnemyTargeted
             && ((condNotCalmEnough || condHpTooLow)  -- flee
                 && condMeleeBad && condAnyHarmfulFoeAdj
                 || (lidExplored || condEnoughGear)  -- explore
@@ -195,7 +196,7 @@ actionStrategy aid retry = do
             && abInMaxSkill SkMelee )
         , ( [SkAlter]
           , trigger aid ViaEscape
-          , condAdjTriggerable && not condAimEnemyPresent
+          , condAdjTriggerable && not condAimEnemyTargeted
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
           , flee aid fleeL
@@ -242,13 +243,13 @@ actionStrategy aid retry = do
           , meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
             || not (abInMaxSkill SkDisplace)  -- displace friends, if possible
-               && condAimEnemyPresent )  -- excited
+               && condAimEnemyOrStash )  -- excited
                     -- So animals block each other until hero comes and then
                     -- the stronger makes a show for him and kills the weaker.
         , ( [SkAlter]
           , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
-            && condAdjTriggerable && not condAimEnemyPresent )
+            && condAdjTriggerable && not condAimEnemyTargeted )
         , ( [SkDisplace]  -- prevents some looping movement
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
@@ -283,15 +284,15 @@ actionStrategy aid retry = do
           , stratToFreq (if condTgtNonmovingEnemy then 20 else 3)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
-          , condAimEnemyPresent && not condInMelee )
+          , condAimEnemyTargeted && not condInMelee )
         , ( [SkApply]
           , stratToFreq 1
             $ applyItem aid ApplyAll  -- use any potion or scroll
-          , condAimEnemyPresent || condThreat 9 )  -- can affect enemies
+          , condAimEnemyTargeted || condThreat 9 )  -- can affect enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
                               400  -- friends pummeled by target, go to help
-                            | not condAimEnemyPresent ->
+                            | not condAimEnemyOrStash ->
                               2  -- if enemy only remembered investigate anyway
                             | otherwise ->
                               20)
@@ -299,8 +300,8 @@ actionStrategy aid retry = do
                          && (condThreat 12 || heavilyDistressed)
                          && aCanDeLight) retry
           , condCanMelee
-            && (if condInMelee then condAimEnemyPresent
-                else (condAimEnemyPresent
+            && (if condInMelee then condAimEnemyOrStash
+                else (condAimEnemyOrStash
                       || condAimEnemyRemembered
                       || condAimNonEnemyPresent)
                      && (not (condThreat 2)
@@ -332,7 +333,7 @@ actionStrategy aid retry = do
                        && aCanDeLight) retry
           , not dozes
             && if condInMelee
-               then condCanMelee && condAimEnemyPresent
+               then condCanMelee && condAimEnemyOrStash
                else not (condThreat 2) || not condMeleeBad )
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
@@ -347,7 +348,7 @@ actionStrategy aid retry = do
           , chase aid (not condInMelee
                        && heavilyDistressed
                        && aCanDeLight) True
-          , not condInMelee || condCanMelee && condAimEnemyPresent )
+          , not condInMelee || condCanMelee && condAimEnemyOrStash )
         , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
           , True )
@@ -427,7 +428,7 @@ equipItems aid = do
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- In general, AI always equips the best item in stash if it's better
   -- than the best in equipment. Additionally, if there is space left
@@ -469,7 +470,7 @@ equipItems aid = do
       -- In other stores we need to filter, for otherwise we'd have
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
-        not (hinders condShineWouldBetray condAimEnemyPresent
+        not (hinders condShineWouldBetray condAimEnemyOrStash
                      heavilyDistressed (not calmE) actorMaxSk itemFull
              || not canEsc && IA.isHumanTrinket (itemKind itemFull))
                   -- don't equip items that block progress, e.g., blowtorch
@@ -489,7 +490,7 @@ yieldUnneeded aid = do
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- Here and in @unEquipItems@ AI may hide from the human player,
   -- in shared stash, the Ring of Speed And Bleeding,
@@ -502,7 +503,7 @@ yieldUnneeded aid = do
         deltasSerious (bcalmDelta body)
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp  -- harmful not shared
-             || hinders condShineWouldBetray condAimEnemyPresent
+             || hinders condShineWouldBetray condAimEnemyOrStash
                         heavilyDistressed (not calmE) actorMaxSk itemEqp ->
              [(iidEqp, itemK, CEqp, CStash)]
            | otherwise -> []
@@ -521,7 +522,7 @@ unEquipItems aid = do
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- In general, AI unequips only if equipment is full and better stash item
   -- for another slot is likely to come or if the best (or second best)
@@ -578,7 +579,7 @@ unEquipItems aid = do
       -- If they hinder and we unequip them, all the better.
       -- We filter stash to consider only eligible items in @betterThanEqp@.
       filterNeeded (_, (itemFull, _)) =
-        not $ hinders condShineWouldBetray condAimEnemyPresent
+        not $ hinders condShineWouldBetray condAimEnemyOrStash
                       heavilyDistressed (not calmE) actorMaxSk itemFull
       bestTwo = bestByEqpSlot discoBenefit
                               (filter filterNeeded stashAssocs)
@@ -767,7 +768,7 @@ applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyPresent <- condAimEnemyPresentM aid
+  condAimEnemyOrStash <- condAimEnemyOrStashM aid
   localTime <- getsState $ getLocalTime (blid b)
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
@@ -776,7 +777,7 @@ applyItem aid applyGroup = do
         deltasSerious (bcalmDelta b)
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyPresent
+      hind = hinders condShineWouldBetray condAimEnemyOrStash
                      heavilyDistressed condNotCalmEnough actorMaxSk
       permittedActor itemFull kit =
         either (const False) id
@@ -967,9 +968,9 @@ displaceTgt source tpos retry = do
       [aid2] | Just aid2 /= mleader -> do
         b2 <- getsState $ getActorBody aid2
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
-        enemyTgt <- condAimEnemyPresentM source
+        enemyTgt <- condAimEnemyOrStashM source
         enemyPos <- condAimEnemyRememberedM source
-        enemyTgt2 <- condAimEnemyPresentM aid2
+        enemyTgt2 <- condAimEnemyOrStashM aid2
         enemyPos2 <- condAimEnemyRememberedM aid2
         case mtgtMPath of
           Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
