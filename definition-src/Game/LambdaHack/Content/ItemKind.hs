@@ -2,7 +2,7 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( pattern CONDITION, pattern COMMON_ITEM, pattern S_BONUS_HP, pattern S_BRACED, pattern S_ASLEEP, pattern S_IMPRESSED, pattern S_CURRENCY, pattern MOBILE
-  , pattern CURIOUS_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_FRAGRANCE
+  , pattern CRAWL_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_FRAGRANCE
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
@@ -67,15 +67,18 @@ pattern MOBILE = GroupName "mobile"
 
 -- * Optional item groups
 
-pattern S_SINGLE_SPARK, S_FRAGRANCE, CURIOUS_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY, AQUATIC, HORROR :: GroupName ItemKind
+pattern S_SINGLE_SPARK, S_FRAGRANCE, CRAWL_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY, AQUATIC, HORROR :: GroupName ItemKind
 
 -- Used in Preferences.hs
 
 pattern S_SINGLE_SPARK = GroupName "single spark"
 pattern S_FRAGRANCE = GroupName "fragrance"
 
-pattern CURIOUS_ITEM = GroupName "curious item"
+pattern CRAWL_ITEM = GroupName "curious item"
+  -- to be used only in long scenarios, such as multi-level dungeon crawl;
+  -- may be a powerful or a mundate item, unlike @TREASURE@ item
 pattern TREASURE = GroupName "treasure"
+  -- particularly powerful items, but may appear in any scenario
 pattern ANY_SCROLL = GroupName "scroll"
 pattern ANY_GLASS = GroupName "glass"
 pattern ANY_POTION = GroupName "potion"
@@ -292,7 +295,7 @@ boostItemKindList initialGen l =
 boostItemKind :: ItemKind -> ItemKind
 boostItemKind i =
   let mainlineLabel (label, _) =
-        label `elem` [COMMON_ITEM, CURIOUS_ITEM, TREASURE]
+        label `elem` [COMMON_ITEM, CRAWL_ITEM, TREASURE]
   in if any mainlineLabel (ifreq i)
      then i { ifreq = (COMMON_ITEM, 10000) : filter (not . mainlineLabel) (ifreq i)
             , iaspects = delete (SetFlag Ability.Unique) $ iaspects i

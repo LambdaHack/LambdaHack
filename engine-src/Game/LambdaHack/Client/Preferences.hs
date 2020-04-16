@@ -134,7 +134,7 @@ effectToBenefit cops fid factionD eff =
            -- average over all matching grps; simplified: rarities ignored
     IK.CreateItem _ _ IK.TREASURE _ -> (100, 0)  -- assumed not temporary
     IK.CreateItem _ _ IK.COMMON_ITEM _ -> (70, 0)
-    IK.CreateItem _ _ IK.CURIOUS_ITEM _ -> (70, 0)
+    IK.CreateItem _ _ IK.CRAWL_ITEM _ -> (70, 0)
     IK.CreateItem _ _ IK.ANY_SCROLL _ -> (50, 0)
     IK.CreateItem _ _ IK.ANY_GLASS _ -> (50, 0)
     IK.CreateItem _ _ IK.ANY_POTION _ -> (50, 0)
