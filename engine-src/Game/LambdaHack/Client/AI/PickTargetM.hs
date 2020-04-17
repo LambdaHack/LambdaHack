@@ -153,31 +153,15 @@ computeTarget aid = do
       meleeNearby | canEscape = rnearby `div` 2
                   | otherwise = rnearby
       rangedNearby = 2 * meleeNearby
-      -- Don't target nonmoving actors, including sleeping, because nonmoving
-      -- can't be lured nor ambushed nor can chase us. However, do target
-      -- if they have loot or can attack at range or already attack ours
-      -- or are heroes or have benign weapons. We assume benign weapons
-      -- run out if they are the sole cause of targeting, to avoid stalemate.
-      --
-      -- This is KISS, but not ideal, because consequently AI doesn't often
-      -- fling at nonmoving actors but only at moving ones and so probably
-      -- doesn't use ranged combat as much as would be optimal.
-      worthTargeting aidE body = do
-        let factE = factionD EM.! bfid body
-            actorMaxSkE = actorMaxSkills EM.! aidE
-            hasLoot = not (EM.null (beqp body))
-              -- even consider "unreported inventory", for speed and KISS
-            moving = Ability.getSk Ability.SkMove actorMaxSkE > 0
-                     || bwatch b == WWake  -- probably will start moving soon
-            isHero = fhasGender (gplayer factE)
-            attacksFriends = any (adjacent (bpos body) . bpos) friends
+      -- We do target foes that already attack ours or have benign weapons.
+      -- We assume benign weapons run out if they are the sole cause
+      -- of targeting, to avoid stalemate.
+      worthTargeting aidE body =
+        let attacksFriends = any (adjacent (bpos body) . bpos) friends
                              && actorCanMeleeToHarm actorMaxSkills aidE body
-        return $! moving
-                  || hasLoot
-                  || Ability.getSk Ability.SkProject actorMaxSkE > 0
-                  || attacksFriends
-                  || isHero
-                  || bweapBenign body > 0
+        in attacksFriends
+           || bweapBenign body > 0
+           || actorWorthChasing actorMaxSkills aidE body
       targetableMelee body =
         let attacksFriends = any (adjacent (bpos body) . bpos) friends
             -- 3 is
@@ -204,14 +188,13 @@ computeTarget aid = do
           -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
-      targetableEnemy (aidE, body) =
-        if adjacent (bpos body) (bpos b)
-        then return $! bweapon body > 0
-               -- target regardless of anything, e.g., to flee
-        else do
-          worth <- worthTargeting aidE body
-          return $! worth && (targetableRanged body || targetableMelee body)
-  nearbyFoes <- filterM targetableEnemy allFoes
+      targetableEnemy (aidE, body) = worthTargeting aidE body
+                                     && (targetableRanged body
+                                         || targetableMelee body
+                                         || adjacent (bpos body) (bpos b))
+                                              -- target regardless of anything,
+                                              -- e.g., to flee if helpless
+      nearbyFoes = filter targetableEnemy allFoes
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
   getKind <- getsState $ flip getIidKind
@@ -325,7 +308,9 @@ computeTarget aid = do
                               ctriggersRaw2 <- closestTriggers ViaExit aid
                               let ctriggers2 = toFreq "ctriggers2" ctriggersRaw2
                               if nullFreq ctriggers2 then do
-                                afoes <- closestFoes allFoes aid
+                                let toKill = actorWorthKilling actorMaxSkills
+                                    worthyFoes = filter (uncurry toKill) allFoes
+                                afoes <- closestFoes worthyFoes aid
                                 case afoes of
                                   (_, (aid2, _)) : _ ->
                                     -- All stones turned, time to win or die.
@@ -357,14 +342,16 @@ computeTarget aid = do
         TEnemy a -> do
           body <- getsState $ getActorBody a
           if | (condInMelee  -- fight close foes or nobody at all
-                || bweapon body <= 0  -- possibly uninteresting
+                || bweapon body <= 0  -- not dangerous
                 || not focused && not (null nearbyFoes))  -- prefers closer foes
                && a `notElem` map fst nearbyFoes  -- old one not close enough
                || blid body /= blid b  -- wrong level
-               || actorDying body ->  -- foe already dying
+               || actorDying body  -- foe already dying
+               || not (worthTargeting a body)
+               || EM.member aid fleeD ->
+                    -- forget enemy positions to prevent attacking them
+                    -- again soon after flight
                pickNewTarget
-             | EM.member aid fleeD -> pickNewTarget
-                 -- forget enemy positions to prevent attacking them again soon
              | otherwise -> do
                -- If there are no unwalkable tiles on the path to enemy,
                -- he gets target @TEnemy@ and then, even if such tiles emerge,

@@ -633,8 +633,9 @@ meleeBlocker aid = do
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=Just AndPath{pathList=q : _, pathGoal} }
-      | q == pathGoal -> return reject  -- not a real blocker, but goal enemy,
-                                        -- so not sure if meleeing needed
+      | q == pathGoal -> return reject
+        -- not a real blocker, but goal enemy, so defer deciding whether
+        -- to melee him to the code that deals with goal enemies
     Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, pathGoal}} -> do
       -- We prefer the goal position, so that we can kill the foe and enter it,
       -- but we accept any @q@ as well.
@@ -727,7 +728,7 @@ projectItem aid = do
     (Just (TEnemy aidE), Just fpos) -> do
       actorMaxSkills <- getsState sactorMaxSkills
       body <- getsState $ getActorBody aidE
-      if actorWorthKilling actorMaxSkills aidE body then do
+      if actorWorthChasing actorMaxSkills aidE body then do
         mnewEps <- makeLine False b fpos seps
         case mnewEps of
           Just newEps -> do

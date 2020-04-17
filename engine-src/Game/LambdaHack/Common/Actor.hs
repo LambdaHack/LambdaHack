@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
     Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
   , deltasSerious, deltasHears, deltaBenign, deltaWasBenign
-  , actorCanMelee, actorCanMeleeToHarm, actorWorthKilling
+  , actorCanMelee, actorCanMeleeToHarm, actorWorthChasing, actorWorthKilling
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
@@ -133,19 +133,31 @@ actorCanMeleeToHarm actorMaxSkills aid b =
       canMelee = Ability.getSk Ability.SkMelee actorMaxSk > 0
   in condUsableWeapon && canMelee
 
-actorWorthKilling :: ActorMaxSkills -> ActorId -> Actor -> Bool
-actorWorthKilling actorMaxSkills aid b =
+-- Don't target/melee nonmoving actors, including sleeping, because nonmoving
+-- can't be lured nor ambushed nor can chase us. However, do target
+-- if they have loot or can attack at range or may become very powerful
+-- through regeneration if left alone.
+actorWorthChasing :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorWorthChasing actorMaxSkills aid b =
   let hasLoot = not (EM.null $ beqp b)
         -- even consider "unreported inventory", for speed and KISS
       actorMaxSk = actorMaxSkills EM.! aid
-      moving = Ability.getSk Ability.SkMove actorMaxSk > 0
-               || bwatch b == WWake  -- probably will start moving very soon
   in bproj b
-     || (moving
+     || (Ability.getSk Ability.SkMove actorMaxSk > 0
+         || bwatch b == WWake  -- probably will start moving very soon
          || hasLoot
          || Ability.getSk Ability.SkProject actorMaxSk > 0
-         || actorCanMeleeToHarm actorMaxSkills aid b)
+         || bwatch b == WSleep
+            && Ability.getSk Ability.SkMaxHP actorMaxSk > 30)
+              -- too dangerous when regenerates through sleep;
+              -- heroes usually fall into this category
         && bhp b > 0
+
+-- Whether worth killing if already chased down.
+actorWorthKilling :: ActorMaxSkills -> ActorId -> Actor -> Bool
+actorWorthKilling actorMaxSkills aid b =
+  actorWorthChasing actorMaxSkills aid b
+  || actorCanMeleeToHarm actorMaxSkills aid b && bhp b > 0
 
 -- | The speed from organs and gear; being pushed is ignored.
 gearSpeed :: Ability.Skills -> Speed
