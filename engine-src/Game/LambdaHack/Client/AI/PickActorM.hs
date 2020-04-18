@@ -19,6 +19,7 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
@@ -41,6 +42,8 @@ pickActorToMove maidToAvoid = do
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
+  lvl <- getLevel arena
+  condInMelee <- condInMeleeM arena
   fact <- getsState $ (EM.! side) . sfactionD
   -- Find our actors on the current level only.
   ours <- getsState $ fidActorRegularAssocs side arena
@@ -105,7 +108,6 @@ pickActorToMove maidToAvoid = do
           oursTgt = mapMaybe goodGeneric oursTgtRaw
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
-            condInMelee <- condInMeleeM $ blid body
             let actorMaxSk = actorMaxSkills EM.! aid
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
@@ -168,7 +170,7 @@ pickActorToMove maidToAvoid = do
             | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
-            allFoes <- getsState $ foeRegularList side (blid b)
+            allFoes <- getsState $ foeRegularList side arena
             let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
                 actorHears = deltasHears (bcalmDelta b)
             return $! actorHears  -- e.g., actor hears an enemy
@@ -178,11 +180,24 @@ pickActorToMove maidToAvoid = do
             getsState $ anyHarmfulFoeAdj actorMaxSkills aid
       (oursVulnerable, oursSafe) <- partitionM actorVulnerable oursTgt
       let (oursFled, oursNotFled) = partition actorFled oursSafe
-      (oursMeleeing, oursNotMeleeingRaw) <- partitionM actorMeleeing oursNotFled
+      (oursMeleeingRaw, oursNotMeleeingRaw) <-
+         partitionM actorMeleeing oursNotFled
+      let actorMeleeingCanDisplace ( (aid, sb)
+                                   , TgtAndPath{tapTgt=TEnemy target} ) = do
+            tb <- getsState $ getActorBody target
+            let actorMaxSk = actorMaxSkills EM.! target
+            dEnemy <- getsState $ dispEnemy aid target actorMaxSk
+            -- Some usual conditions ignored, because transient or rare.
+            return $! checkAdjacent sb tb && dEnemy
+          actorMeleeingCanDisplace _ = return False
+      (oursMeleeingCanDisplace, oursMeleeing) <-
+         partitionM actorMeleeingCanDisplace oursMeleeingRaw
       let adjEnemyStash
             ( (_, b)
             , TgtAndPath{tapTgt=TPoint (TStash _) lid pos} ) =
-                lid == blid b && adjacent pos (bpos b)
+                lid == arena
+                && adjacent pos (bpos b)
+                && isNothing (posToBigLvl pos lvl)
           adjEnemyStash _ = False
           (oursAdjStash, oursNotMeleeing) =
             partition adjEnemyStash oursNotMeleeingRaw
@@ -190,14 +205,10 @@ pickActorToMove maidToAvoid = do
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorMaxSkills aid body
           targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _}) = True
-          targetTEnemy
-            ( (_, b)
-            , TgtAndPath{tapTgt=TPoint (TEnemyPos _) lid _} ) =
-              lid == blid b
-          targetTEnemy
-            ( (_, b)
-            , TgtAndPath{tapTgt=TPoint (TStash _) lid _} ) =
-              lid == blid b  -- stashes as crucial as enemies
+          targetTEnemy (_, TgtAndPath{tapTgt=TPoint (TEnemyPos _) lid _}) =
+            lid == arena
+          targetTEnemy (_, TgtAndPath{tapTgt=TPoint (TStash _) lid _}) =
+            lid == arena  -- stashes as crucial as enemies
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
             threatDistL <- getsState $ meleeThreatDistList aid
@@ -245,8 +256,7 @@ pickActorToMove maidToAvoid = do
             partition targetBlocked $ oursRanged ++ oursOther
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
-          overheadOurs ((aid, _), TgtAndPath{tapPath=Nothing}) =
-            100 + if aid == oldAid then 1 else 0
+          overheadOurs (_, TgtAndPath{tapPath=Nothing}) = 100
           overheadOurs
             abt@( (aid, b)
                 , TgtAndPath{tapPath=Just AndPath{pathLen=d,pathGoal}} ) =
@@ -268,14 +278,16 @@ pickActorToMove maidToAvoid = do
                 formationValue =
                   sign * (abs diffDist `max` maxSpread)
                   * (aidDist `max` maxSpread) ^ (2 :: Int)
-                fightValue | targetTEnemy abt =
-                  - fromEnum (bhp b `div` (10 * oneM))
-                           | otherwise = 0
+                targetsEnemy = targetTEnemy abt
+                fightValue = if targetsEnemy
+                             then - fromEnum (bhp b `div` (10 * oneM))
+                             else 0
             in formationValue `div` 3 + fightValue
-               + (if targetBlocked abt then 5 else 0)
                + (case d of
-                    0 -> -400 -- do your thing ASAP and retarget
-                    1 -> -200 -- prevent others from occupying the tile
+                    0 -> -400  -- do your thing ASAP and retarget
+                    1 | not targetsEnemy -> -200
+                      -- prevent others from trying to occupy the tile;
+                      -- TStash that may obscure a foe correctly handled here
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
           positiveOverhead sk =
@@ -287,9 +299,13 @@ pickActorToMove maidToAvoid = do
                        , oursNoSupport
                        , oursPos
                        , oursFled  -- if just fled, keep him safe, out of action
-                       , oursMeleeing ++ oursTEnemyBlocked
-                           -- make melee a leader to displace or at least melee
-                           -- without overhead if all others blocked
+                       , oursMeleeingCanDisplace
+                           -- prefer melee actors displacing than blocked
+                           -- actors trying to walk around them
+                       , oursTEnemyBlocked
+                           -- prefer blocked actors trying to walk around
+                           -- even if that causes overhead for the meleeing
+                       , oursMeleeing
                        , oursHearing
                        , oursBlocked
                        ]
@@ -302,7 +318,6 @@ pickActorToMove maidToAvoid = do
           modifyClient $ updateLeader aid s
           -- When you become a leader, stop following old leader, but follow
           -- his target, if still valid, to avoid distraction.
-          condInMelee <- condInMeleeM $ blid b
           when (fdoctrine (gplayer fact)
                 `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
@@ -347,7 +362,7 @@ setTargetFromDoctrines oldAid = do
           explore
         Just leader -> do
           onLevel <- getsState $ memActor leader arena
-          condInMelee <- condInMeleeM $ blid oldBody
+          condInMelee <- condInMeleeM arena
           -- If leader not on this level or if we are meleeing,
           -- and so following is not important, fall back to @TExplore@.
           if not onLevel || condInMelee then explore

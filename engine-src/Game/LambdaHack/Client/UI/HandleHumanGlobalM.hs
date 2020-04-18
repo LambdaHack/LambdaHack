@@ -414,13 +414,13 @@ displaceAid target = do
       atWar = isFoe (bfid tb) tfact (bfid sb)
   if | not adj -> failSer DisplaceDistant
      | not (bproj tb) && atWar
-       && actorDying tb ->
+       && actorDying tb ->  -- checked separately for a better message
        failSer DisplaceDying
      | not (bproj tb) && atWar
-       && actorWaits tb ->
+       && actorWaits tb ->  -- checked separately for a better message
        failSer DisplaceBraced
      | not (bproj tb) && atWar
-       && immobile ->
+       && immobile ->  -- checked separately for a better message
        failSer DisplaceImmobile
      | not dEnemy && atWar ->
        failSer DisplaceSupported
