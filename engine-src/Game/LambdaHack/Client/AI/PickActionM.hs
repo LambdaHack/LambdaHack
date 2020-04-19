@@ -87,7 +87,6 @@ actionStrategy aid retry = do
   condInMelee <- condInMeleeM $ blid body
   condAimEnemyTargeted <- condAimEnemyTargetedM aid
   condAimEnemyOrStash <- condAimEnemyOrStashM aid
-  condAimEnemyNoMelee <- condAimEnemyNoMeleeM aid
   condAimEnemyRemembered <- condAimEnemyRememberedM aid
   condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
   condAimCrucial <- condAimCrucialM aid
@@ -218,25 +217,24 @@ actionStrategy aid retry = do
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport3 && not condSolo
+                    || not condSupport3
+                       && not condSolo
                        && not heavilyDistressed
                        -- Extra random aggressiveness if can't project.
                        -- This is hacky; randomness is outside @Strategy@.
                        && (condCanProject
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)
-                  | condThreat 5
-                    || condAimEnemyNoMelee && condCanMelee ->
-                    -- Too far to flee from melee, too close from ranged,
-                    -- not in ambient, so no point fleeing into dark; advance.
-                    -- Or the target enemy doesn't melee and melee enemies
-                    -- far away, so chase him.
+                  | condThreat 5 ->
+                    -- Too far to flee from melee. Too close to flee
+                    -- from ranged, given that not already fleeing
+                    -- and not in ambient or can't reach dark when fleeing.
                     False
                   | otherwise ->
                     -- If I'm hit, they are still in range to fling at me,
-                    -- even if I can't see them. And probably far away.
-                    -- Too far to close in for melee; can't shoot; flee from
-                    -- ranged attack and prepare ambush for later on.
+                    -- and either I can't see them or they are too far to chase.
+                    -- Can't shoot or can relocate to shoot from the dark
+                    -- or prepare melee ambush there.
                     heavilyDistressed
                     && (not condCanProject || canFleeFromLight) )
         , ( [SkMelee]
