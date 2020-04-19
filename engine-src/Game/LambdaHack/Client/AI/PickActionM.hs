@@ -210,22 +210,23 @@ actionStrategy aid retry = do
                     -- endangered actors should flee from very close foes.
                     not condCanMelee
                     || condManyThreatAdj && not condSupport1 && not condSolo
-                  | not condInMelee
-                    && (condThreat 2
-                        || condThreat 5
-                           && (EM.member aid oldFleeD || canFleeFromLight)) ->
+                  | condInMelee -> False  -- no fleeing when others melee
+                  | condThreat 2
+                    || condThreat 5
+                       && (EM.member aid oldFleeD || canFleeFromLight) ->
                     -- Don't keep fleeing if just hit, because too close
                     -- to enemy to get out of his range, most likely,
                     -- and so melee him instead, unless can't melee at all.
                     not condCanMelee
-                    || not condSupport3 && not condSolo && not heavilyDistressed
+                    || not condSupport3 && not condSolo
+                       && not heavilyDistressed
                        -- Extra random aggressiveness if can't project.
                        -- This is hacky; randomness is outside @Strategy@.
                        && (condCanProject
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)
                   | condThreat 5
-                    || not condInMelee && condAimEnemyNoMelee && condCanMelee ->
+                    || condAimEnemyNoMelee && condCanMelee ->
                     -- Too far to flee from melee, too close from ranged,
                     -- not in ambient, so no point fleeing into dark; advance.
                     -- Or the target enemy doesn't melee and melee enemies
@@ -236,8 +237,7 @@ actionStrategy aid retry = do
                     -- even if I can't see them. And probably far away.
                     -- Too far to close in for melee; can't shoot; flee from
                     -- ranged attack and prepare ambush for later on.
-                    not condInMelee
-                    && heavilyDistressed
+                    heavilyDistressed
                     && (not condCanProject || canFleeFromLight) )
         , ( [SkMelee]
           , meleeBlocker aid  -- only melee blocker

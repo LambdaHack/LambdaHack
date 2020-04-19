@@ -109,6 +109,8 @@ pickActorToMove maidToAvoid = do
           -- This should be kept in sync with @actionStrategy@.
           actorVulnerable ((aid, body), _) = do
             let actorMaxSk = actorMaxSkills EM.! aid
+            condAnyHarmfulFoeAdj <-
+              getsState $ anyHarmfulFoeAdj actorMaxSkills aid
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
@@ -137,21 +139,20 @@ pickActorToMove maidToAvoid = do
             return $!
               -- This is a part of the condition for @flee@ in @PickActionM@.
               not condFastThreatAdj
-              && if | condThreat 1 ->
+              && if | condAnyHarmfulFoeAdj ->
                       not condCanMelee
                       || condManyThreatAdj && not condSupport1 && not condSolo
-                    | not condInMelee
-                      && (condThreat 2
-                          || condThreat 5
-                             && (EM.member aid oldFleeD || canFleeFromLight)) ->
+                    | condInMelee -> False  -- no fleeing when others melee
+                    | condThreat 2
+                      || condThreat 5
+                         && (EM.member aid oldFleeD || canFleeFromLight) ->
                       not condCanMelee
                       || not condSupport3 && not condSolo
                          && not heavilyDistressed
                     -- Not used: | condThreat 5 ...
                     -- because actor should be picked anyway, to try to melee.
                     | otherwise ->
-                      not condInMelee
-                      && heavilyDistressed
+                      heavilyDistressed
                       -- Different from @PickActionM@:
                       && not (EM.member aid oldFleeD)
                         -- Make him a leader even if can't delight, etc.
