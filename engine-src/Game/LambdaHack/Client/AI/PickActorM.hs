@@ -120,6 +120,7 @@ pickActorToMove maidToAvoid = do
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
                 condCanMelee = actorCanMelee actorMaxSkills aid body
+                -- These are only melee threats.
                 condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
@@ -142,26 +143,19 @@ pickActorToMove maidToAvoid = do
               && if | condAnyHarmfulFoeAdj ->
                       not condCanMelee
                       || condManyThreatAdj && not condSupport1 && not condSolo
-                    | condInMelee -> False  -- no fleeing when others melee
+                    | condInMelee -> False
+                    | heavilyDistressed -> True
+                        -- Different from @PickActionM@:
+                        -- If under fire, do something quickly, always,
+                        -- because the actor clearly vulnerable.
                     | condThreat 2
                       || condThreat 5
                          && (EM.member aid oldFleeD || canFleeFromLight) ->
                       not condCanMelee
                       || not condSupport3
                          && not condSolo
-                         && not heavilyDistressed
-                    -- Not used: | condThreat 5 ...
-                    -- because actor should be picked anyway, to try to melee.
-                    | otherwise ->
-                      heavilyDistressed
-                      -- Different from @PickActionM@:
-                      -- && (not condCanProject || canFleeFromLight)
-                      && not (EM.member aid oldFleeD)
-                        -- Make him a leader even if can't delight, etc.
-                        -- because he may instead take off light or otherwise
-                        -- cope with being pummeled by projectiles.
-                        -- He is still vulnerable, just not necessarily needs
-                        -- to flee, but may cover himself otherwise.
+                           -- simplified vs @PickActionM@
+                    | otherwise -> False
               && condCanFlee
           actorFled ((aid, _), _) = EM.member aid oldFleeD
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _

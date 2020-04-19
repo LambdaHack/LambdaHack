@@ -144,6 +144,7 @@ actionStrategy aid retry = do
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
+      -- These are only melee threats.
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
       condManyThreatAdj = length threatAdj >= 2
@@ -199,9 +200,11 @@ actionStrategy aid retry = do
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
           , flee aid fleeL
-          , -- Flee either from melee, if our melee is bad and enemy close
-            -- or from missiles, if hit and enemies are only far away,
-            -- can fling at us and we can't well fling at them.
+          , -- Flee either from melee, if our melee is bad and enemy close,
+            -- or from missiles, if we can hide in the dark in one step.
+            -- Note that we don't know how far ranged threats are or if,
+            -- in fact, they hit from all sides or are hidden. Hence we can't
+            -- do much except hide in darkness or take off light (elsewhere).
             not condFastThreatAdj
             && if | condAnyHarmfulFoeAdj ->
                     -- Here we don't check @condInMelee@ because regardless
@@ -209,34 +212,33 @@ actionStrategy aid retry = do
                     -- endangered actors should flee from very close foes.
                     not condCanMelee
                     || condManyThreatAdj && not condSupport1 && not condSolo
-                  | condInMelee -> False  -- no fleeing when others melee
-                  | condThreat 2
-                    || condThreat 5
+                  | condInMelee -> False
+                      -- No fleeing when others melee and melee target close
+                      -- (otherwise no target nor action would be possible).
+                  | heavilyDistressed -> not condCanMelee || canFleeFromLight
+                      -- If hit by projectiles and can melee, no escape
+                      -- except into the dark. Otherwise heroes are pummeled
+                      -- by fast ranged foes and can neiter flee
+                      -- (too stupid to flee into the dark)
+                      -- nor force them to flee nor kill them.
+                      -- Also AI monsters need predictable behaviour to avoid
+                      -- having to chase them forever. Ranged aggravating helps
+                      -- and melee-less ranged always fleeing when hit helps
+                      -- and makes them evading ambushers, perfect for swarms.
+                  | condThreat 2  -- melee enemies near
+                    || condThreat 5  -- not near, but good to reposition
                        && (EM.member aid oldFleeD || canFleeFromLight) ->
-                    -- Don't keep fleeing if just hit, because too close
-                    -- to enemy to get out of his range, most likely,
-                    -- and so melee him instead, unless can't melee at all.
-                    not condCanMelee
-                    || not condSupport3
+                    not condCanMelee  -- can't melee, flee
+                    || -- No support, not alone, either not aggressive
+                       -- or can safely project from afar instead. Flee.
+                       not condSupport3
                        && not condSolo
-                       && not heavilyDistressed
                        -- Extra random aggressiveness if can't project.
                        -- This is hacky; randomness is outside @Strategy@.
                        && (condCanProject
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)
-                  | condThreat 5 ->
-                    -- Too far to flee from melee. Too close to flee
-                    -- from ranged, given that not already fleeing
-                    -- and not in ambient or can't reach dark when fleeing.
-                    False
-                  | otherwise ->
-                    -- If I'm hit, they are still in range to fling at me,
-                    -- and either I can't see them or they are too far to chase.
-                    -- Can't shoot or can relocate to shoot from the dark
-                    -- or prepare melee ambush there.
-                    heavilyDistressed
-                    && (not condCanProject || canFleeFromLight) )
+                  | otherwise -> False )  -- melee threats too far
         , ( [SkMelee]
           , meleeBlocker aid  -- only melee blocker
           , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
