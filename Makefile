@@ -91,7 +91,7 @@ frontendDefenseEmpty:
 	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 9 --dumpInitRngs --automateAll --gameMode defenseEmpty
 
 fastCrawl:
-	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples --noAnim --maxFps 100000
+	$$(cabal-plan list-bin LambdaHack) --dbgMsgSer --logPriority 4 --savePrefix test --newGame 1 --dumpInitRngs --automateAll --gameMode crawl --exposeItems --exposeActors --showItemSamples --noAnim --maxFps 100000 --benchmark
 
 # different benchmarks use different arguments
 RNGOPTS=--setDungeonRng "SMGen 123 123" --setMainRng "SMGen 123 125"
