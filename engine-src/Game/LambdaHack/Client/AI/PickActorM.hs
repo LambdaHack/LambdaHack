@@ -119,7 +119,6 @@ pickActorToMove maidToAvoid = do
             condSupport1 <- condSupport 1 aid
             condSupport3 <- condSupport 3 aid
             condSolo <- condSoloM aid  -- solo fighters aggresive
-            canDeAmbientL <- getsState $ canDeAmbientList body
             let condCanFlee = not (null fleeL)
                 speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
                 condCanMelee = actorCanMelee actorMaxSkills aid body
@@ -135,11 +134,6 @@ pickActorToMove maidToAvoid = do
                 heavilyDistressed =
                   -- Actor hit by a projectile or similarly distressed.
                   deltasSerious (bcalmDelta body)
-                actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
-                aCanDeLightL | actorShines = []
-                             | otherwise = canDeAmbientL
-                canFleeFromLight =
-                  not $ null $ aCanDeLightL `intersect` map snd fleeL
             return $!
               -- This is a part of the condition for @flee@ in @PickActionM@.
               not condFastThreatAdj
@@ -152,8 +146,7 @@ pickActorToMove maidToAvoid = do
                         -- If under fire, do something quickly, always,
                         -- because the actor clearly vulnerable.
                     | condThreat 2
-                      || condThreat 5
-                         && (EM.member aid oldFleeD || canFleeFromLight) ->
+                      || condThreat 5 && EM.member aid oldFleeD ->
                       not condCanMelee
                       || not condSupport3
                          && not condSolo

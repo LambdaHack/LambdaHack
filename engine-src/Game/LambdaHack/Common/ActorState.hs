@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.ActorState
   , getCarriedAssocsAndTrunk, getContainerBag
   , getFloorBag, getEmbedBag, getBodyStoreBag, getFactionStashBag
   , mapActorItems_, getActorAssocs, getActorAssocsK
-  , memActor, getLocalTime, regenCalmDelta, actorInAmbient, canDeAmbientList
+  , memActor, getLocalTime, regenCalmDelta, actorInAmbient
   , dispEnemy, itemToFull, fullAssocs, kitAssocs
   , getItemKindId, getIidKindId, getItemKind, getIidKind
   , getItemKindIdServer, getIidKindIdServer, getItemKindServer, getIidKindServer
@@ -328,18 +328,6 @@ actorInAmbient :: Actor -> State -> Bool
 actorInAmbient b s =
   let lvl = (EM.! blid b) . sdungeon $ s
   in Tile.isLit (coTileSpeedup $ scops s) (lvl `at` bpos b)
-
-canDeAmbientList :: Actor -> State -> [Point]
-canDeAmbientList b s =
-  let COps{coTileSpeedup} = scops s
-      lvl = (EM.! blid b) . sdungeon $ s
-      posDeAmbient p =
-        let t = lvl `at` p
-        in Tile.isWalkable coTileSpeedup t  -- no time to waste altering
-           && not (Tile.isLit coTileSpeedup t)
-  in if Tile.isLit coTileSpeedup (lvl `at` bpos b)
-     then filter posDeAmbient (vicinityUnsafe $ bpos b)
-     else []
 
 -- Check whether an actor can displace another. We assume they are adjacent
 -- and they are foes.

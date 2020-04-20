@@ -82,8 +82,10 @@ actionStrategy :: forall m. MonadClient m
                => ActorId -> Bool -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
 actionStrategy aid retry = do
+  COps{coTileSpeedup} <- getsState scops
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
+  lvl <- getLevel (blid body)
   condInMelee <- condInMeleeM $ blid body
   condAimEnemyTargeted <- condAimEnemyTargetedM aid
   condAimEnemyOrStash <- condAimEnemyOrStashM aid
@@ -100,7 +102,6 @@ actionStrategy aid retry = do
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
   condSolo <- condSoloM aid  -- solo fighters aggresive
-  canDeAmbientL <- getsState $ canDeAmbientList body
   actorSk <- currentSkillsClient aid
   condCanProject <- condCanProjectM (getSk SkProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid
@@ -154,11 +155,10 @@ actionStrategy aid retry = do
               in gearSpeed ar2 > speed1_5)
         threatAdj
       actorShines = Ability.getSk SkShine actorMaxSk > 0
-      aCanDeLightL | actorShines = []
-                   | otherwise = canDeAmbientL
-      canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
-      avoidAmbientChase =
-        not condInMelee && heavilyDistressed && not actorShines
+      isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+        -- solid tiles ignored, because not obvious if dark after removed
+      canFleeIntoDark = not $ actorShines || all (isLit . snd) fleeL
+      avoidAmbient = not condInMelee && heavilyDistressed && not actorShines
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
@@ -216,19 +216,21 @@ actionStrategy aid retry = do
                   | condInMelee -> False
                       -- No fleeing when others melee and melee target close
                       -- (otherwise no target nor action would be possible).
-                  | heavilyDistressed -> not condCanMelee || canFleeFromLight
+                  | heavilyDistressed -> not condCanMelee || canFleeIntoDark
                       -- If hit by projectiles and can melee, no escape
-                      -- except into the dark. Otherwise heroes are pummeled
-                      -- by fast ranged foes and can neiter flee
-                      -- (too stupid to flee into the dark)
-                      -- nor force them to flee nor kill them.
+                      -- except into the dark. Note that when in dark,
+                      -- the hit might have been caused by dynamic light
+                      -- or light from lying items, so fleeing still needed.
+                      -- If heroes stay in the light when under fire,
+                      -- they are pummeled by fast ranged foes and can neither
+                      -- flee (too slow) nor force them to flee nor kill them.
                       -- Also AI monsters need predictable behaviour to avoid
                       -- having to chase them forever. Ranged aggravating helps
                       -- and melee-less ranged always fleeing when hit helps
                       -- and makes them evading ambushers, perfect for swarms.
                   | condThreat 2  -- melee enemies near
-                    || condThreat 5  -- not near, but good to reposition
-                       && (EM.member aid oldFleeD || canFleeFromLight) ->
+                    || condThreat 5 && EM.member aid oldFleeD ->
+                         -- enemies not near but maintain fleeing hysteresis
                     not condCanMelee  -- can't melee, flee
                     || -- No support, not alone, either not aggressive
                        -- or can safely project from afar instead. Flee.
@@ -300,7 +302,7 @@ actionStrategy aid retry = do
                               2  -- if enemy only remembered investigate anyway
                             | otherwise ->
                               20)
-            $ chase aid avoidAmbientChase retry
+            $ chase aid avoidAmbient retry
           , condCanMelee
             && (if condInMelee then condAimEnemyOrStash
                 else (condAimEnemyOrStash
@@ -330,7 +332,7 @@ actionStrategy aid retry = do
             && prefersSleep actorMaxSk
             && not condAimCrucial)
         , ( runSkills
-          , chase aid avoidAmbientChase retry
+          , chase aid avoidAmbient retry
           , not dozes
             && if condInMelee
                then condCanMelee && condAimEnemyOrStash
@@ -345,7 +347,7 @@ actionStrategy aid retry = do
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something
-          , chase aid avoidAmbientChase True
+          , chase aid avoidAmbient True
           , not condInMelee || condCanMelee && condAimEnemyOrStash )
         , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
