@@ -580,6 +580,11 @@ drawHudFrame dm drawnLevelId = do
 
 -- Comfortably accomodates 3-digit level numbers and 25-character
 -- level descriptions (currently enforced max).
+--
+-- Sometimes the level seems fully explored, but the display shows
+-- 99% or even goes from 100% to 99% at some moment.
+-- This is due to monsters, e.g., clearning rubble or burning bush,
+-- and so creating a new explorable terrain.
 drawArenaStatus :: COps -> Level -> Int -> AttrString
 drawArenaStatus COps{cocave}
                 Level{lkind, ldepth=Dice.AbsDepth ld, lseen, lexpl}

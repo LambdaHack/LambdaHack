@@ -720,6 +720,7 @@ doorOpen = TileKind
   , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo S_CLOSED_VERTICAL_DOOR_LIT
+                   -- not explorable due to that
                ]
   }
 doorOpenH = TileKind
@@ -731,6 +732,7 @@ doorOpenH = TileKind
   , talter   = 4
   , tfeature = [ Walkable, Clear, NoItem, NoActor
                , CloseTo S_CLOSED_HORIZONTAL_DOOR_LIT
+                   -- not explorable due to that
                ]
   }
 floorCorridor = TileKind
