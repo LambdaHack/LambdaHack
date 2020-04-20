@@ -156,9 +156,9 @@ actionStrategy aid retry = do
       actorShines = Ability.getSk SkShine actorMaxSk > 0
       aCanDeLightL | actorShines = []
                    | otherwise = canDeAmbientL
-      aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
-      avoidAmbientChase = not condInMelee && heavilyDistressed && aCanDeLight
+      avoidAmbientChase =
+        not condInMelee && heavilyDistressed && not actorShines
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
@@ -200,7 +200,7 @@ actionStrategy aid retry = do
           , condAdjTriggerable && not condAimEnemyTargeted
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
-          , flee aid aCanDeLight fleeL
+          , flee aid (not actorShines) fleeL
           , -- Flee either from melee, if our melee is bad and enemy close,
             -- or from missiles, if we can hide in the dark in one step.
             -- Note that we don't know how far ranged threats are or if,
@@ -260,7 +260,7 @@ actionStrategy aid retry = do
         , ( runSkills
           , flee aid
                  (heavilyDistressed  -- prefer bad but dark spots if under fire
-                  && aCanDeLight)
+                  && not actorShines)
                  panicFleeL  -- ultimate panic mode; open tiles, if needed
           , condAnyHarmfulFoeAdj )
         ]
