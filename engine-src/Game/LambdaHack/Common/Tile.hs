@@ -323,9 +323,7 @@ hideAs cotile t =
   let getTo TK.HideAs{} = True
       getTo _ = False
   in case find getTo $ TK.tfeature $ okind cotile t of
-       Just (TK.HideAs grp) ->
-         let tHidden = ouniqGroup cotile grp
-         in assert (tHidden /= t) $ Just tHidden
+       Just (TK.HideAs grp) -> Just $ ouniqGroup cotile grp
        _ -> Nothing
 
 buildAs :: ContentData TileKind -> ContentId TileKind -> ContentId TileKind

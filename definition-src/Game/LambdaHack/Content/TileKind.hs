@@ -162,26 +162,25 @@ validateAll content cotile =
       f HideAs{} = True
       f BuildAs{} = True
       f _ = False
+      wrongGrooup k grp = not (oisSingletonGroup cotile grp)
+                          || isJust (grp `lookup` tfreq k)
       wrongFooAsGroups =
         [ cgroup
         | k <- content
         , let (cgroup, notSingleton) = case find f (tfeature k) of
-                Just (HideAs grp) | not $ oisSingletonGroup cotile grp ->
-                  (grp, True)
-                Just (BuildAs grp) | not $ oisSingletonGroup cotile grp ->
-                  (grp, True)
+                Just (HideAs grp) | wrongGrooup k grp -> (grp, True)
+                Just (BuildAs grp) | wrongGrooup k grp -> (grp, True)
                 _ -> (undefined, False)
         , notSingleton
         ]
-  in [ "HideAs or BuildAs groups not singletons:" <+> tshow wrongFooAsGroups
+  in [ "HideAs or BuildAs groups not singletons or point to themselves:"
+       <+> tshow wrongFooAsGroups
      | not $ null wrongFooAsGroups ]
      ++ [ "unknown tile (the first) should be the unknown one"
         | talter (head content) /= 1
           || tname (head content) /= "unknown space" ]
      ++ [ "no tile other than the unknown (the first) should require skill 1"
-        | all (\tk -> talter tk == 1) (tail content) ]
-     ++ [ "only unknown tile may have talter 1"
-        | any ((== 1) . talter) $ tail content ]
+        | any (\tk -> talter tk == 1) (tail content) ]
 
 -- * Mandatory item groups
 

@@ -761,7 +761,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- At most one of these two will be accepted on any given client.
               execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
               -- This case happens when a client does not see a searching
-              -- action by another faction, but sees the subsequent altering.
+              -- action by another faction, but sees the subsequent altering
+              -- or if another altering takes place in between.
               case hiddenTile of
                 Just tHidden ->
                   execUpdAtomic $ UpdAlterTile lid tpos tHidden toTile
