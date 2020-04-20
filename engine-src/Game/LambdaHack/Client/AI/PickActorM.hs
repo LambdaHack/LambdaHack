@@ -19,11 +19,13 @@ import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
 import           Game.LambdaHack.Common.Faction
+import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Level
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Point
 import           Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Content.ModeKind
@@ -36,6 +38,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 pickActorToMove :: MonadClient m => Maybe ActorId -> m ActorId
 {-# INLINE pickActorToMove #-}
 pickActorToMove maidToAvoid = do
+  COps{coTileSpeedup} <- getsState scops
   actorMaxSkills <- getsState sactorMaxSkills
   mleader <- getsClient sleader
   let oldAid = fromMaybe (error $ "" `showFailure` maidToAvoid) mleader
@@ -255,7 +258,7 @@ pickActorToMove maidToAvoid = do
           overheadOurs (_, TgtAndPath{tapPath=Nothing}) = 100
           overheadOurs
             abt@( (aid, b)
-                , TgtAndPath{tapPath=Just AndPath{pathLen=d,pathGoal}} ) =
+                , TgtAndPath{tapPath=Just AndPath{pathLen=d, ..}} ) =
             -- Keep proper formation. Too dense and exploration takes
             -- too long; too sparse and actors fight alone.
             -- Note that right now, while we set targets separately for each
@@ -278,6 +281,16 @@ pickActorToMove maidToAvoid = do
                 fightValue = if targetsEnemy
                              then - fromEnum (bhp b `div` (10 * oneM))
                              else 0
+                isAmbient pos =
+                  Tile.isLit coTileSpeedup (lvl `at` pos)
+                  && Tile.isWalkable coTileSpeedup (lvl `at` pos)
+                    -- if solid, will be altered and perhaps darkened
+                actorMaxSk = actorMaxSkills EM.! aid
+                actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
+                stepsIntoLight = not actorShines && case pathList of
+                  [] -> False
+                  q : _ -> isAmbient q  -- shortest path is through light
+                                        -- even though may sidestep through dark
             in formationValue `div` 3 + fightValue
                + (case d of
                     0 -> -400  -- do your thing ASAP and retarget
@@ -286,6 +299,7 @@ pickActorToMove maidToAvoid = do
                       -- TStash that may obscure a foe correctly handled here
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
+               + (if stepsIntoLight then 5 else 0)
           positiveOverhead sk =
             let ov = 200 - overheadOurs sk
             in if ov <= 0 then 1 else ov
