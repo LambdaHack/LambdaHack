@@ -217,15 +217,15 @@ condProjectListM :: MonadClient m
                  -> m [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 condProjectListM skill aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
   getsState $ projectList discoBenefit skill aid
-                          condShineWouldBetray condAimEnemyOrStash
+                          condShineWouldBetray condAimEnemyOrRemembered
 
 projectList :: DiscoveryBenefit -> Int -> ActorId -> Bool -> Bool -> State
             -> [(Double, CStore, ItemId, ItemFull, ItemQuant)]
 projectList discoBenefit skill aid
-            condShineWouldBetray condAimEnemyOrStash s =
+            condShineWouldBetray condAimEnemyOrRemembered s =
   let b = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
       calmE = calmEnough b actorMaxSk
@@ -238,7 +238,7 @@ projectList discoBenefit skill aid
                          -- note: not larger, to avoid Int32 overflow
       coeff CStash = 1
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyOrStash
+      hind = hinders condShineWouldBetray condAimEnemyOrRemembered
                      heavilyDistressed condNotCalmEnough actorMaxSk
       goodMissile (Benefit{benInEqp, benFling}, cstore, iid, itemFull, kit) =
         let arItem = aspectRecordFull itemFull
@@ -271,7 +271,7 @@ benAvailableItems discoBenefit aid cstores s =
 
 hinders :: Bool -> Bool -> Bool -> Bool -> Ability.Skills -> ItemFull
         -> Bool
-hinders condShineWouldBetray condAimEnemyOrStash
+hinders condShineWouldBetray condAimEnemyOrRemembered
         heavilyDistressed condNotCalmEnough
           -- guess that enemies have projectiles and used them now or recently
         actorMaxSk itemFull =
@@ -280,9 +280,9 @@ hinders condShineWouldBetray condAimEnemyOrStash
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
       -- management is unlikely to happen during melee, anyway
       itemShineBad = condShineWouldBetray && itemShine
-  in -- In the presence of enemies (seen, or unseen but distressing)
+  in -- In the presence of enemies (seen, remembered or unseen but distressing)
      -- actors want to hide in the dark.
-     (condAimEnemyOrStash || condNotCalmEnough || heavilyDistressed)
+     (condAimEnemyOrRemembered || condNotCalmEnough || heavilyDistressed)
      && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.

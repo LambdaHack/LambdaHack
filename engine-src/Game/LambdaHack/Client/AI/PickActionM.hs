@@ -98,6 +98,8 @@ actionStrategy aid retry = do
   (fleeL, badVic) <- fleeList aid
   oldFleeD <- getsClient sfleeD
   -- Reset fleeing flag. May then be set in @flee@.
+  -- Because it's reset, the flag is subsumed by @heavilyDistressed@
+  -- and @TEnemyPos@ for the purpose of, e.g., not equipping light.
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
@@ -427,7 +429,7 @@ equipItems aid = do
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- In general, AI always equips the best item in stash if it's better
   -- than the best in equipment. Additionally, if there is space left
@@ -469,7 +471,7 @@ equipItems aid = do
       -- In other stores we need to filter, for otherwise we'd have
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
-        not (hinders condShineWouldBetray condAimEnemyOrStash
+        not (hinders condShineWouldBetray condAimEnemyOrRemembered
                      heavilyDistressed (not calmE) actorMaxSk itemFull
              || not canEsc && IA.isHumanTrinket (itemKind itemFull))
                   -- don't equip items that block progress, e.g., blowtorch
@@ -489,7 +491,7 @@ yieldUnneeded aid = do
   let calmE = calmEnough body actorMaxSk
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- Here and in @unEquipItems@ AI may hide from the human player,
   -- in shared stash, the Ring of Speed And Bleeding,
@@ -502,7 +504,7 @@ yieldUnneeded aid = do
         deltasSerious (bcalmDelta body)
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp  -- harmful not shared
-             || hinders condShineWouldBetray condAimEnemyOrStash
+             || hinders condShineWouldBetray condAimEnemyOrRemembered
                         heavilyDistressed (not calmE) actorMaxSk itemEqp ->
              [(iidEqp, itemK, CEqp, CStash)]
            | otherwise -> []
@@ -521,7 +523,7 @@ unEquipItems aid = do
   eqpAssocs <- getsState $ kitAssocs aid [CEqp]
   stashAssocs <- getsState $ kitAssocs aid [CStash]
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
   -- In general, AI unequips only if equipment is full and better stash item
   -- for another slot is likely to come or if the best (or second best)
@@ -578,7 +580,7 @@ unEquipItems aid = do
       -- If they hinder and we unequip them, all the better.
       -- We filter stash to consider only eligible items in @betterThanEqp@.
       filterNeeded (_, (itemFull, _)) =
-        not $ hinders condShineWouldBetray condAimEnemyOrStash
+        not $ hinders condShineWouldBetray condAimEnemyOrRemembered
                       heavilyDistressed (not calmE) actorMaxSk itemFull
       bestTwo = bestByEqpSlot discoBenefit
                               (filter filterNeeded stashAssocs)
@@ -768,7 +770,7 @@ applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
   condShineWouldBetray <- condShineWouldBetrayM aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   localTime <- getsState $ getLocalTime (blid b)
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
@@ -777,7 +779,7 @@ applyItem aid applyGroup = do
         deltasSerious (bcalmDelta b)
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyOrStash
+      hind = hinders condShineWouldBetray condAimEnemyOrRemembered
                      heavilyDistressed condNotCalmEnough actorMaxSk
       permittedActor itemFull kit =
         either (const False) id
