@@ -67,7 +67,6 @@ pickAction aid retry = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
-  -- Reset fleeing flag. May then be set in @flee@.
   stratAction <- actionStrategy aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
@@ -89,7 +88,7 @@ actionStrategy aid retry = do
   condInMelee <- condInMeleeM $ blid body
   condAimEnemyTargeted <- condAimEnemyTargetedM aid
   condAimEnemyOrStash <- condAimEnemyOrStashM aid
-  condAimEnemyRemembered <- condAimEnemyRememberedM aid
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   condAimNonEnemyPresent <- condAimNonEnemyPresentM aid
   condAimCrucial <- condAimCrucialM aid
   actorMaxSkills <- getsState sactorMaxSkills
@@ -98,6 +97,7 @@ actionStrategy aid retry = do
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   oldFleeD <- getsClient sfleeD
+  -- Reset fleeing flag. May then be set in @flee@.
   modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
@@ -120,7 +120,7 @@ actionStrategy aid retry = do
       prefersSleepWhenAwake = case bwatch body of
         WSleep -> Ability.getSk Ability.SkMoveItem actorMaxSk <= -10
         _ -> prefersSleep actorMaxSk  -- nm @WWake@
-      mayFallAsleep = not condAimEnemyRemembered
+      mayFallAsleep = not condAimEnemyOrRemembered
                       && mayContinueSleep
                       && canSleep actorSk
       mayContinueSleep = not condAimEnemyOrStash
@@ -181,7 +181,7 @@ actionStrategy aid retry = do
           , trigger aid ViaStairs
               -- explore next or flee via stairs, even if to wrong level;
               -- in the latter case, may return via different stairs later on
-          , condAdjTriggerable && not condAimEnemyTargeted
+          , condAdjTriggerable && not condAimEnemyOrStash
             && ((condNotCalmEnough || condHpTooLow)  -- flee
                 && condMeleeBad && condAnyHarmfulFoeAdj
                 || (lidExplored || condEnoughGear)  -- explore
@@ -197,7 +197,7 @@ actionStrategy aid retry = do
             && abInMaxSkill SkMelee )
         , ( [SkAlter]
           , trigger aid ViaEscape
-          , condAdjTriggerable && not condAimEnemyTargeted
+          , condAdjTriggerable && not condAimEnemyOrStash
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
           , flee aid (not actorShines) fleeL
@@ -252,7 +252,7 @@ actionStrategy aid retry = do
         , ( [SkAlter]
           , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
-            && condAdjTriggerable && not condAimEnemyTargeted )
+            && condAdjTriggerable && not condAimEnemyOrStash )
         , ( [SkDisplace]  -- prevents some looping movement
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
@@ -305,8 +305,7 @@ actionStrategy aid retry = do
             $ chase aid avoidAmbient retry
           , condCanMelee
             && (if condInMelee then condAimEnemyOrStash
-                else (condAimEnemyOrStash
-                      || condAimEnemyRemembered
+                else (condAimEnemyOrRemembered
                       || condAimNonEnemyPresent)
                      && (not (condThreat 2)
                          || heavilyDistressed  -- if under fire, do something!
@@ -979,10 +978,8 @@ displaceTgt source tpos retry = do
       [aid2] | Just aid2 /= mleader -> do
         b2 <- getsState $ getActorBody aid2
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
-        enemyTgt <- condAimEnemyOrStashM source
-        enemyPos <- condAimEnemyRememberedM source
-        enemyTgt2 <- condAimEnemyOrStashM aid2
-        enemyPos2 <- condAimEnemyRememberedM aid2
+        enemyTgt <- condAimEnemyOrRememberedM source
+        enemyTgt2 <- condAimEnemyOrRememberedM aid2
         case mtgtMPath of
           Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
             | q == bpos b  -- friend wants to swap
@@ -990,7 +987,7 @@ displaceTgt source tpos retry = do
               || retry  -- desperate
                  && not (boldpos b == Just tpos  -- and no displace loop
                          && not (actorWaits b))
-              || (enemyTgt || enemyPos) && not (enemyTgt2 || enemyPos2) ->
+              || enemyTgt && not enemyTgt2 ->
                  -- he doesn't have Enemy target and I have, so push him aside,
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself

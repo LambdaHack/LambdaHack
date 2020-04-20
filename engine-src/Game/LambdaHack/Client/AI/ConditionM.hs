@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.AI.ConditionM
   ( condAimEnemyTargetedM
   , condAimEnemyOrStashM
-  , condAimEnemyRememberedM
+  , condAimEnemyOrRememberedM
   , condAimNonEnemyPresentM
   , condInMeleeM
   , condAimCrucialM
@@ -75,16 +75,18 @@ condAimEnemyOrStashM aid = do
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
     Just (TEnemy _) -> True
-    Just (TPoint (TStash _) _ _) -> True
+    Just (TPoint (TStash _) _ _) -> True  -- speedup from: lid == blid b
     _ -> False
 
 -- | Require that a target enemy is remembered on the actor's level.
-condAimEnemyRememberedM :: MonadClient m => ActorId -> m Bool
-condAimEnemyRememberedM aid = do
+condAimEnemyOrRememberedM :: MonadClient m => ActorId -> m Bool
+condAimEnemyOrRememberedM aid = do
   b <- getsState $ getActorBody aid
   btarget <- getsClient $ getTarget aid
   return $ case btarget of
+    Just (TEnemy _) -> True
     Just (TPoint (TEnemyPos _) lid _) -> lid == blid b
+    Just (TPoint (TStash _) lid _) -> lid == blid b
     _ -> False
 
 -- | Require that a target non-enemy is visible by the party.
@@ -332,13 +334,11 @@ condSupport :: MonadClient m => Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
 condSupport param aid = do
   btarget <- getsClient $ getTarget aid
-  condAimEnemyOrStash <- condAimEnemyOrStashM aid
-  condAimEnemyRemembered <- condAimEnemyRememberedM aid
-  getsState $ strongSupport param aid btarget
-                            condAimEnemyOrStash condAimEnemyRemembered
+  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
+  getsState $ strongSupport param aid btarget condAimEnemyOrRemembered
 
-strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> Bool -> State -> Bool
-strongSupport param aid btarget condAimEnemyOrStash condAimEnemyRemembered s =
+strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> State -> Bool
+strongSupport param aid btarget condAimEnemyRemembered s =
   -- The smaller the area scanned for friends, the lower number required.
   let actorMaxSkills = sactorMaxSkills s
       actorMaxSk = actorMaxSkills EM.! aid
@@ -346,7 +346,7 @@ strongSupport param aid btarget condAimEnemyOrStash condAimEnemyRemembered s =
       b = getActorBody aid s
       mtgtPos = aidTgtToPos aid (blid b) btarget s
       approaching b2 = case mtgtPos of
-        Just tgtPos | condAimEnemyOrStash || condAimEnemyRemembered ->
+        Just tgtPos | condAimEnemyRemembered ->
           chessDist (bpos b2) tgtPos <= 1 + param
         _ -> False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
