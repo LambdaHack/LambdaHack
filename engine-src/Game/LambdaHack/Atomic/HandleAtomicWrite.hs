@@ -530,8 +530,8 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
     updateLevel lid $ updateTile adj
     case ( Tile.isExplorable coTileSpeedup fromTile
          , Tile.isExplorable coTileSpeedup toTile ) of
-      (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
-      (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
+      (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl2 + 1}
+      (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl2 - 1}
       _ -> return ()
 
 updAlterExplorable :: MonadStateWrite m => LevelId -> Int -> m ()
