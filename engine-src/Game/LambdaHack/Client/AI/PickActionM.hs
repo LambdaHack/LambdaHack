@@ -158,6 +158,7 @@ actionStrategy aid retry = do
                    | otherwise = canDeAmbientL
       aCanDeLight = not $ null aCanDeLightL
       canFleeFromLight = not $ null $ aCanDeLightL `intersect` map snd fleeL
+      avoidAmbientChase = not condInMelee && heavilyDistressed && aCanDeLight
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
@@ -299,9 +300,7 @@ actionStrategy aid retry = do
                               2  -- if enemy only remembered investigate anyway
                             | otherwise ->
                               20)
-            $ chase aid (not condInMelee
-                         && (condThreat 12 || heavilyDistressed)
-                         && aCanDeLight) retry
+            $ chase aid avoidAmbientChase retry
           , condCanMelee
             && (if condInMelee then condAimEnemyOrStash
                 else (condAimEnemyOrStash
@@ -331,9 +330,7 @@ actionStrategy aid retry = do
             && prefersSleep actorMaxSk
             && not condAimCrucial)
         , ( runSkills
-          , chase aid (not condInMelee
-                       && heavilyDistressed
-                       && aCanDeLight) retry
+          , chase aid avoidAmbientChase retry
           , not dozes
             && if condInMelee
                then condCanMelee && condAimEnemyOrStash
@@ -348,9 +345,7 @@ actionStrategy aid retry = do
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something
-          , chase aid (not condInMelee
-                       && heavilyDistressed
-                       && aCanDeLight) True
+          , chase aid avoidAmbientChase True
           , not condInMelee || condCanMelee && condAimEnemyOrStash )
         , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
