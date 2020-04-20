@@ -274,16 +274,19 @@ pickActorToMove maidToAvoid = do
                 fightValue = if targetsEnemy
                              then - fromEnum (bhp b `div` (10 * oneM))
                              else 0
-                isAmbient pos =
-                  Tile.isLit coTileSpeedup (lvl `at` pos)
-                  && Tile.isWalkable coTileSpeedup (lvl `at` pos)
-                    -- if solid, will be altered and perhaps darkened
+                isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+                  -- solid tiles ignored, because not obvious if dark
+                  -- after removed
                 actorMaxSk = actorMaxSkills EM.! aid
                 actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
-                stepsIntoLight = not actorShines && case pathList of
-                  [] -> False
-                  q : _ -> isAmbient q  -- shortest path is through light
-                                        -- even though may sidestep through dark
+                stepsIntoLight =
+                  not actorShines
+                  && not (isLit $ bpos b)
+                  && case pathList of
+                    [] -> False
+                    q : _ -> isLit q
+                      -- shortest path is through light even though may
+                      -- sidestep through dark in @chase@ or @flee@
             in formationValue `div` 3 + fightValue
                + (case d of
                     0 -> -400  -- do your thing ASAP and retarget
@@ -292,7 +295,7 @@ pickActorToMove maidToAvoid = do
                       -- TStash that may obscure a foe correctly handled here
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 1 else 0)
-               + (if stepsIntoLight then 5 else 0)
+               + (if stepsIntoLight then 10 else 0)
           positiveOverhead sk =
             let ov = 200 - overheadOurs sk
             in if ov <= 0 then 1 else ov
