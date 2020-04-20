@@ -199,7 +199,7 @@ actionStrategy aid retry = do
           , condAdjTriggerable && not condAimEnemyTargeted
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
-          , flee aid fleeL
+          , flee aid aCanDeLight fleeL
           , -- Flee either from melee, if our melee is bad and enemy close,
             -- or from missiles, if we can hide in the dark in one step.
             -- Note that we don't know how far ranged threats are or if,
@@ -257,7 +257,10 @@ actionStrategy aid retry = do
           , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
-          , flee aid panicFleeL  -- ultimate panic mode; open tiles, if needed
+          , flee aid
+                 (heavilyDistressed  -- prefer bad but dark spots if under fire
+                  && aCanDeLight)
+                 panicFleeL  -- ultimate panic mode; open tiles, if needed
           , condAnyHarmfulFoeAdj )
         ]
       -- Order doesn't matter, scaling does.
@@ -888,14 +891,24 @@ applyItem aid applyGroup = do
 -- and as far from the attackers, as possible. Usually fleeing from
 -- foes will lead towards friends, but we don't insist on that.
 flee :: MonadClient m
-     => ActorId -> [(Int, Point)] -> m (Strategy RequestTimed)
-flee aid fleeL = do
+     => ActorId -> Bool -> [(Int, Point)] -> m (Strategy RequestTimed)
+flee aid avoidAmbient fleeL = do
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   -- Regardless if fleeing accomplished, mark the need.
   modifyClient $ \cli -> cli {sfleeD = EM.insert aid (bpos b) (sfleeD cli)}
-  let vVic = map (second (`vectorToFrom` bpos b)) fleeL
-      str = liftFrequency $ toFreq "flee" vVic
-  mapStrategyM (moveOrRunAid aid) str
+  lvl <- getLevel $ blid b
+  let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+                      && Tile.isWalkable coTileSpeedup (lvl `at` pos)
+                        -- if solid, will be altered and perhaps darkened
+      fleeAmbient | avoidAmbient = filter (not . isAmbient . snd) fleeL
+                  | otherwise = fleeL
+  if avoidAmbient && null fleeAmbient
+  then flee aid False fleeL
+  else do
+    let vVic = map (second (`vectorToFrom` bpos b)) fleeAmbient
+        str = liftFrequency $ toFreq "flee" vVic
+    mapStrategyM (moveOrRunAid aid) str
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
