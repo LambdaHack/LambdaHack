@@ -1013,30 +1013,27 @@ displaceTgt source tpos retry = do
 
 chase :: MonadClient m => ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
 chase aid avoidAmbient retry = do
-  COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  lvl <- getLevel $ blid body
-  let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
-                      && Tile.isWalkable coTileSpeedup (lvl `at` pos)
-                        -- if solid, will be altered and perhaps darkened
+  let -- With no leader, the goal is vague, so permit arbitrary detours.
+      relaxed = fleaderMode (gplayer fact) == LeaderNull
   str <- case mtgtMPath of
-    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}}
-      | pathGoal == bpos body -> return reject  -- done; picking up items, etc.
-      | not $ avoidAmbient && isAmbient q ->
-      -- With no leader, the goal is vague, so permit arbitrary detours.
-      moveTowards aid q pathGoal (fleaderMode (gplayer fact) == LeaderNull
-                                  || retry)
+    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
+      if pathGoal == bpos body
+      then return reject  -- done; picking up items, etc.
+      else moveTowards aid avoidAmbient q pathGoal (relaxed || retry)
     _ -> return reject  -- goal reached or banned ambient lit tile
   if avoidAmbient && nullStrategy str
   then chase aid False retry
   else mapStrategyM (moveOrRunAid aid) str
 
 moveTowards :: MonadClient m
-            => ActorId -> Point -> Point -> Bool -> m (Strategy Vector)
-moveTowards aid target goal relaxed = do
+            => ActorId -> Bool -> Point -> Point -> Bool -> m (Strategy Vector)
+moveTowards aid avoidAmbient target goal relaxed = do
+  COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
   actorSk <- currentSkillsClient aid
   let source = bpos b
       alterSkill = getSk SkAlter actorSk
@@ -1048,9 +1045,17 @@ moveTowards aid target goal relaxed = do
     all (isFoe (bfid b) fact . bfid . snd)
         (posToAidAssocs p (blid b) s)  -- don't kill own projectiles
   let lalter = salter EM.! blid b
+      isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+                      && Tile.isWalkable coTileSpeedup (lvl `at` pos)
+                        -- if solid, will be altered and perhaps darkened
       -- Only actors with SkAlter can search for hidden doors, etc.
       enterableHere p = alterSkill >= fromEnum (lalter PointArray.! p)
-  if noFriends target && enterableHere target then
+      permittedHere p | avoidAmbient = enterableHere p && not (isAmbient p)
+                      | otherwise = enterableHere p
+  -- If target is the final goal, is not occupied and is lit, permit
+  -- movement into lit position, regardless.
+  if noFriends target && (target == goal && enterableHere target
+                          || permittedHere target) then
     return $! returN "moveTowards target" $ target `vectorToFrom` source
   else do
     -- This lets animals mill around, even when blocked,
@@ -1060,13 +1065,15 @@ moveTowards aid target goal relaxed = do
     let goesBack p = Just p == boldpos b
         nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible | relaxed = \p -> noFriends p
-                                     && enterableHere p
+                                     && permittedHere p
                    | otherwise = \p -> nonincreasing p
                                        && not (goesBack p)
                                        && noFriends p
-                                       && enterableHere p
+                                       && permittedHere p
         sensible = [ ((goesBack p, chessDist p goal), v)
-                   | v <- moves, let p = source `shift` v, isSensible p ]
+                   | v <- moves
+                   , let p = source `shift` v
+                   , isSensible p ]
         sorted = sortOn fst sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
