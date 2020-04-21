@@ -458,9 +458,7 @@ rubble = TileKind
   , tcolor2  = Brown
   , talter   = 4  -- boss can dig through
   , tfeature = [Embed RUBBLE, OpenTo S_FLOOR_ASHES_LIT]
-      -- It's not explorable, due to not being walkable nor clear and due
-      -- to being a door (@OpenTo@), which is kind of OK, because getting
-      -- the item is risky and, e.g., AI doesn't attempt it.
+      -- Getting the item is risky and, e.g., AI doesn't attempt it.
       -- Also, AI doesn't go out of its way to clear the way for heroes.
   }
 rubbleSpice = rubble
@@ -625,9 +623,6 @@ pillarIce = TileKind
   , tcolor2  = Blue
   , talter   = 4  -- boss can dig through
   , tfeature = [Clear, Embed FROST, OpenTo S_SHALLOW_WATER_LIT]
-      -- Is door, due to @OpenTo@, so is not explorable, but it's OK, because
-      -- it doesn't generate items nor clues. This saves on the need to
-      -- get each ice pillar into sight range when exploring level.
   }
 pulpit = TileKind
   { tsymbol  = '%'
