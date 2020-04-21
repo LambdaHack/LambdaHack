@@ -261,8 +261,12 @@ findPosTry2 numTries Level{ltile, larea} m0 l g r =
 nearbyPassablePoints :: COps -> Level -> Point -> [Point]
 nearbyPassablePoints cops@COps{corule=RuleContent{rXmax, rYmax}} lvl start =
   let passable p = Tile.isEasyOpen (coTileSpeedup cops) (lvl `at` p)
-      semiRandomWrap l = let offset = fromEnum start `mod` length l
-                         in drop offset l ++ take offset l
+      -- The error is mostly probably caused by place content creating
+      -- enclosed spaces in conjunction with map edges. To verify,
+      -- change the error to @l@ and run with the same seed.
+      semiRandomWrap l = if null l then error "nearbyPassablePoints: blocked"
+                         else let offset = fromEnum start `mod` length l
+                              in drop offset l ++ take offset l
       passableVic p = semiRandomWrap $ filter passable
                       $ vicinityBounded rXmax rYmax p
       siftSingle :: Point
