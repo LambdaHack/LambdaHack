@@ -104,10 +104,9 @@ effectToBenefit cops fid factionD eff =
          if any friendlyHasGrp $ EM.keys factionD
          then (ben, -1)
          else (-ben * 3, 1)  -- the foe may spawn during battle and gang up
-    IK.Ascend{} -> (-99, 99)
-      -- note the reversed values: only change levels sensibly, in teams,
-      -- and don't remove enemy too far, he may be easy to kill
-      -- and may have loot
+    IK.Ascend{} -> (0, 0)
+      -- only change levels sensibly, in teams, and don't remove enemy too far,
+      -- he may be easy to kill and may have essential loot
     IK.Escape{} -> (-9999, 9999)  -- even if can escape, loots first and then
                                   -- handles escape as a special case
     -- The following two are expensive, because they ofen activate
