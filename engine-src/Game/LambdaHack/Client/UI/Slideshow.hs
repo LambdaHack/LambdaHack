@@ -183,8 +183,12 @@ keysOKX displayFont ystart xstart width keys =
 splitOverlay :: FontSetup -> Int -> Int -> Report -> [K.KM] -> OKX
              -> Slideshow
 splitOverlay fontSetup width height report keys (ls0, kxs0) =
-  toSlideshow fontSetup $ splitOKX fontSetup False width height
-                                   (renderReport report) keys (ls0, kxs0)
+  let renderedReport = renderReport report
+      msgLong = null keys && EM.null ls0 && null kxs0
+                && length renderedReport <= 2 * width
+                     -- if fits in one long line, don't wrap into short lines
+  in toSlideshow fontSetup $ splitOKX fontSetup msgLong width height
+                                      renderedReport keys (ls0, kxs0)
 
 -- Note that we only split wrt @White@ space, nothing else.
 splitOKX :: FontSetup -> Bool -> Int -> Int -> AttrString -> [K.KM] -> OKX
