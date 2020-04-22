@@ -1651,7 +1651,7 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "d", (tnextDiff, GameDifficultyIncr))
             , (K.mkKM "w", (tnextWolf, GameWolfToggle))
             , (K.mkKM "f", (tnextFish, GameFishToggle))
-            , (K.mkKM "n", ("start new game", GameRestart))
+            , (K.mkKM "g", ("start new game", GameRestart))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
       gameInfo = map T.unpack
                    [ "Setup and start new game:"
