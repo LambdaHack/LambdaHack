@@ -1038,13 +1038,20 @@ processTileActions bumping source tpos tas = do
                      && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
       processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
-                -> m (FailOrCmd (Maybe Bool))
+                -> m (FailOrCmd (Maybe (Bool, Bool)))
       processTA museResult [] bumpFailed = do
         let useResult = fromMaybe False museResult
+        -- No warning will be generated if during explicit modification
+        -- an embed is activated but there is not enough tools
+        -- for a subsequent transformation. This is fine. Bumping would
+        -- produce the warning and S-dir also displays the tool info.
+        -- We can't rule out the embed is the main feature and the tool
+        -- transformation is not important despite following it.
+        -- We don't want spam in such a case.
         return $ Right $ if Tile.isSuspect coTileSpeedup (lvl `at` tpos)
                             || useResult && not bumpFailed
-                         then Nothing  -- success
-                         else Just bumpFailed  -- warning or failure
+                         then Nothing  -- success of some kind
+                         else Just (useResult, bumpFailed)  -- not quite
       processTA museResult (ta : rest) bumpFailed = case ta of
         Tile.EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
@@ -1103,19 +1110,21 @@ processTileActions bumping source tpos tas = do
   case mfail of
     Left err -> return $ Left err
     Right Nothing -> return $ Right ()
-    Right (Just bumpFailed) -> do
+    Right (Just (useResult, bumpFailed)) -> do
+      let !_A = assert (not useResult || bumpFailed) ()
       blurb <- lookAtPosition (blid sb) tpos
       mapM_ (uncurry msgAdd0) blurb
-      if bumpFailed
-      then do
+      if bumpFailed then do
         revCmd <- revCmdMap
         let km = revCmd AlterDir
-        merr <- failMsg $
-          "bumping is not enough to transform this terrain; modify with the <"
-          <> T.pack (K.showKM km)
-          <> "> command instead"
-        msgAdd MsgAlert $ showFailError $ fromJust merr
-        return $ Right ()  -- effect the embed activation, though
+            msg = "bumping is not enough to transform this terrain; modify with the <"
+                  <> T.pack (K.showKM km)
+                  <> "> command instead"
+        if useResult then do
+          merr <- failMsg msg
+          msgAdd MsgAlert $ showFailError $ fromJust merr
+          return $ Right ()  -- effect the embed activation, though
+        else failWith msg
       else failWith "unable to activate nor modify at this time"
         -- related to, among others, @SfxNoItemsForTile@ on the server
 
