@@ -1039,13 +1039,13 @@ processTileActions bumping source tpos tas = do
       tileMinSkill = Tile.alterMinSkill coTileSpeedup $ lvl `at` tpos
       processTA :: Maybe Bool -> [Tile.TileAction] -> Bool
                 -> m (FailOrCmd (Maybe Bool))
-      processTA museResult [] bumped = do
+      processTA museResult [] bumpFailed = do
         let useResult = fromMaybe False museResult
         return $ Right $ if Tile.isSuspect coTileSpeedup (lvl `at` tpos)
-                            || useResult && not bumped
+                            || useResult && not bumpFailed
                          then Nothing  -- success
-                         else Just bumped  -- warning or failure
-      processTA museResult (ta : rest) bumped = case ta of
+                         else Just bumpFailed  -- warning or failure
+      processTA museResult (ta : rest) bumpFailed = case ta of
         Tile.EmbedAction (iid, _) -> do
           -- Embeds are activated in the order in tile definition
           -- and never after the tile is changed.
@@ -1055,58 +1055,58 @@ processTileActions bumping source tpos tas = do
           let useResult = fromMaybe False museResult
           if | sourceIsMist
                || bproj sb && tileMinSkill > 0 ->  -- local skill check
-               processTA (Just useResult) rest bumped
+               processTA (Just useResult) rest bumpFailed
                  -- embed won't fire; try others
              | all (not . IK.isEffEscape) (IK.ieffects $ getKind iid) ->
                processTA (Just True) rest False
                  -- no escape checking needed, effect found;
-                 -- also bumped reset, because must have been
-                 -- marginal if an embed was following it;
-                 -- similarly tool-less modification resets it
+                 -- also bumpFailed reset, because must have been
+                 -- marginal if an embed was following it
              | otherwise -> do
                mfail <- verifyEscape
                case mfail of
                  Left err -> return $ Left err
                  Right () -> processTA (Just True) rest False
-                   -- effect found, bumped reset
+                   -- effect found, bumpFailed reset
         Tile.ToAction{} ->
           if fromMaybe True museResult
              && not (bproj sb && tileMinSkill > 0)  -- local skill check
           then return $ Right Nothing  -- tile changed, no more activations
-          else processTA museResult rest bumped
+          else processTA museResult rest bumpFailed
                  -- failed, but not due to bumping
         Tile.WithAction tools0 _ ->
-          if (not bumping || null tools0)
-             && fromMaybe True museResult then do
-            -- UI requested, so this is voluntary, so item loss is fine.
-            kitAssG <- getsState $ kitAssocs source [CGround]
-            kitAssE <- getsState $ kitAssocs source [CEqp]
-            let kitAss = listToolsToConsume kitAssG kitAssE
-                grps0 = map (\(x, y) -> (False, x, y)) tools0
-                  -- apply if durable
-                (_, iidsToApply, grps) =
-                  foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
-            if null grps then do
-              let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
-                    IK.idamage itemKind /= 0
-                    || any IK.forApplyEffect (IK.ieffects itemKind)
-              mfail <- case filter hasEffectOrDmg iidsToApply of
-                [] -> return $ Right ()
-                (store, (_, itemFull)) : _ ->
-                  verifyToolEffect (blid sb) store itemFull
-              case mfail of
-                Left err -> return $ Left err
-                Right () -> return $ Right Nothing  -- tile changed, done
-            else processTA museResult rest bumped  -- not enough tools
+          if not bumping || null tools0 then
+            if fromMaybe True museResult then do
+              -- UI requested, so this is voluntary, so item loss is fine.
+              kitAssG <- getsState $ kitAssocs source [CGround]
+              kitAssE <- getsState $ kitAssocs source [CEqp]
+              let kitAss = listToolsToConsume kitAssG kitAssE
+                  grps0 = map (\(x, y) -> (False, x, y)) tools0
+                    -- apply if durable
+                  (_, iidsToApply, grps) =
+                    foldl' subtractIidfromGrps (EM.empty, [], grps0) kitAss
+              if null grps then do
+                let hasEffectOrDmg (_, (_, ItemFull{itemKind})) =
+                      IK.idamage itemKind /= 0
+                      || any IK.forApplyEffect (IK.ieffects itemKind)
+                mfail <- case filter hasEffectOrDmg iidsToApply of
+                  [] -> return $ Right ()
+                  (store, (_, itemFull)) : _ ->
+                    verifyToolEffect (blid sb) store itemFull
+                case mfail of
+                  Left err -> return $ Left err
+                  Right () -> return $ Right Nothing  -- tile changed, done
+              else processTA museResult rest bumpFailed  -- not enough tools
+            else processTA museResult rest bumpFailed  -- embeds failed
           else processTA museResult rest True  -- failed due to bumping
   mfail <- processTA Nothing tas False
   case mfail of
     Left err -> return $ Left err
     Right Nothing -> return $ Right ()
-    Right (Just bumped) -> do
+    Right (Just bumpFailed) -> do
       blurb <- lookAtPosition (blid sb) tpos
       mapM_ (uncurry msgAdd0) blurb
-      if bumped
+      if bumpFailed
       then do
         revCmd <- revCmdMap
         let km = revCmd AlterDir
