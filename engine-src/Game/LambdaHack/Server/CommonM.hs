@@ -676,12 +676,14 @@ allGroupItems :: MonadServerAtomic m
               => CStore -> GroupName ItemKind -> ActorId
               -> m [(ItemId, ItemQuant)]
 allGroupItems store grp target = do
+  COps{coitem} <- getsState scops
   b <- getsState $ getActorBody target
-  getKind <- getsState $ flip getIidKindServer
-  let hasGroup (iid, _) =
-        maybe False (> 0) $ lookup grp $ IK.ifreq $ getKind iid
   assocsCStore <- getsState $ EM.assocs . getBodyStoreBag b store
-  return $! filter hasGroup assocsCStore
+  getKindId <- getsState $ flip getIidKindIdServer
+  let assocsKindId = map (\as@(iid, _) -> (getKindId iid, as)) assocsCStore
+      hasGroup (itemKindId, _) =
+        maybe False (> 0) $ lookup grp $ IK.ifreq $ okind coitem itemKindId
+  return $! map snd $ sortOn fst $ filter hasGroup assocsKindId
 
 addCondition :: MonadServerAtomic m => Bool -> GroupName ItemKind -> ActorId -> m ()
 addCondition verbose name aid = do
