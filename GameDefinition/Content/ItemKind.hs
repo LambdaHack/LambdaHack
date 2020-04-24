@@ -30,14 +30,14 @@ import Game.LambdaHack.Definition.Flavour
 groupNamesSingleton :: [GroupName ItemKind]
 groupNamesSingleton =
        [S_FRAGRANCE, S_SINGLE_SPARK]
-    ++ [FLASK_UNKNOWN, ANY_POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN]
+    ++ [FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN]
     ++ organsGNSingleton ++ blastsGNSingleton ++ temporariesGNSingleton
 
-pattern FLASK_UNKNOWN, ANY_POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN :: GroupName ItemKind
+pattern FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN :: GroupName ItemKind
 
 groupNames :: [GroupName ItemKind]
 groupNames =
-       [TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY]
+       [TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, ANY_FLASK, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY]
     ++ [HARPOON, EDIBLE_PLANT, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, CLOTHING_MISC, CHIC_GEAR]
     ++ embedsGN ++ actorsGN ++ organsGN ++ blastsGN
 
@@ -46,7 +46,7 @@ pattern HARPOON, EDIBLE_PLANT, RING_OF_OPPORTUNITY_GRENADIER, TORSO_ARMOR, CLOTH
 -- The @UNKNOWN@ patterns don't need to be exported. Used internally.
 -- They also represent singleton groups.
 pattern FLASK_UNKNOWN = GroupName "flask unknown"
-pattern ANY_POTION_UNKNOWN = GroupName "potion unknown"
+pattern POTION_UNKNOWN = GroupName "potion unknown"
 pattern EDIBLE_PLANT_UNKNOWN = GroupName "edible plant unknown"
 pattern SCROLL_UNKNOWN = GroupName "scroll unknown"
 pattern NECKLACE_UNKNOWN = GroupName "necklace unknown"
@@ -388,7 +388,8 @@ flaskTemplate = ItemKind
   , ikit     = []
   }
 flask1 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , icount   = 1 `dL` 5
   , irarity  = [(10, 10)]
   , iaspects = ELabel "of strength renewal brew"
@@ -398,28 +399,32 @@ flask1 = flaskTemplate
                , OnSmash (Explode S_DENSE_SHOWER) ]
   }
 flask2 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of weakness brew"
                : iaspects flaskTemplate
   , ieffects = [ toOrganBad S_WEAKENED (20 + 1 `d` 5)
                , OnSmash (Explode S_SPARSE_SHOWER) ]
   }
 flask3 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of melee protective balm"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood S_PROTECTED_FROM_MELEE (20 + 1 `d` 5)
                , OnSmash (Explode S_MELEE_PROTECTIVE_BALM) ]
   }
 flask4 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of ranged protective balm"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood S_PROTECTED_FROM_RANGED (20 + 1 `d` 5)
                , OnSmash (Explode S_RANGE_PROTECTIVE_BALM) ]
   }
 flask5 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of PhD defense questions"
                : iaspects flaskTemplate
   , ieffects = [ toOrganBad S_DEFENSELESS (20 + 1 `d` 5)
@@ -428,7 +433,8 @@ flask5 = flaskTemplate
                , OnSmash (Explode S_DEFENSELESSNESS_RUNOUT) ]
   }
 flask6 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(1, 1)]  -- not every playthrough needs one
   , iaspects = ELabel "of resolution"
                : iaspects flaskTemplate
@@ -437,7 +443,8 @@ flask6 = flaskTemplate
                , OnSmash (Explode S_RESOLUTION_DUST) ]
   }
 flask7 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , icount   = 1  -- too powerful en masse
   , iaspects = ELabel "of haste brew"
                : iaspects flaskTemplate
@@ -445,14 +452,16 @@ flask7 = flaskTemplate
                , OnSmash (Explode S_HASTE_SPRAY) ]
   }
 flask8 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of eye drops"
                : iaspects flaskTemplate
   , ieffects = [ toOrganGood S_FAR_SIGHTED (40 + 1 `d` 10)
                , OnSmash (Explode S_EYE_DROP) ]
   }
 flask9 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(10, 2)]  -- not very useful right now
   , iaspects = ELabel "of smelly concoction"
                : iaspects flaskTemplate
@@ -461,7 +470,8 @@ flask9 = flaskTemplate
                , OnSmash (Explode S_SMELLY_DROPLET) ]
   }
 flask10 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(10, 2)]  -- not very useful right now
   , iaspects = ELabel "of cat tears"
                : iaspects flaskTemplate
@@ -470,7 +480,8 @@ flask10 = flaskTemplate
   }
 flask11 = flaskTemplate
   { iname    = "bottle"
-  , ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  , ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , icount   = 1 `d` 3  -- the only one sometimes giving away its identity
   , iaspects = ELabel "of whiskey"
                : iaspects flaskTemplate
@@ -479,7 +490,8 @@ flask11 = flaskTemplate
                , OnSmash (Explode S_WHISKEY_SPRAY) ]
   }
 flask12 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , icount   = 1
   , iaspects = ELabel "of bait cocktail"
                : iaspects flaskTemplate
@@ -495,7 +507,8 @@ flask12 = flaskTemplate
 -- healing effect is enough. OTOH, throwing a harmful flask at many enemies
 -- at once is not easy to arrange, so these explosions can stay powerful.
 flask13 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(1, 2), (10, 12)]
   , iaspects = ELabel "of regeneration brew"
                : iaspects flaskTemplate
@@ -505,14 +518,16 @@ flask13 = flaskTemplate
                , OnSmash (Explode S_YOUTH_SPRINKLE) ]
   }
 flask14 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of poison"
                : iaspects flaskTemplate
   , ieffects = [ toOrganNoTimer S_POISONED, toOrganNoTimer S_POISONED  -- x2
                , OnSmash (Explode S_POISON_CLOUD) ]
   }
 flask15 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(10, 4)]
   , iaspects = ELabel "of slow resistance"
                : iaspects flaskTemplate
@@ -520,7 +535,8 @@ flask15 = flaskTemplate
                , OnSmash (Explode S_ANTI_SLOW_MIST) ]
   }
 flask16 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , irarity  = [(10, 4)]
   , iaspects = ELabel "of poison resistance"
                : iaspects flaskTemplate
@@ -528,7 +544,8 @@ flask16 = flaskTemplate
                , OnSmash (Explode S_ANTIDOTE_MIST) ]
   }
 flask17 = flaskTemplate
-  { ifreq    = [(COMMON_ITEM, 100), (EXPLOSIVE, 100), (ANY_GLASS, 100)]
+  { ifreq    = [ (COMMON_ITEM, 100), (ANY_FLASK, 100), (EXPLOSIVE, 100)
+               , (ANY_GLASS, 100) ]
   , iaspects = ELabel "of calamity"
                : iaspects flaskTemplate
   , ieffects = [ toOrganNoTimer S_POISONED
@@ -545,14 +562,14 @@ flask17 = flaskTemplate
 potionTemplate = ItemKind
   { isymbol  = symbolPotion
   , iname    = "potion"
-  , ifreq    = [(ANY_POTION_UNKNOWN, 1)]
+  , ifreq    = [(POTION_UNKNOWN, 1)]
   , iflavour = zipLiquid brightCol ++ zipPlain brightCol ++ zipFancy brightCol
   , icount   = 1 `dL` 3
   , irarity  = [(1, 10), (10, 6)]
   , iverbHit = "splash"
   , iweight  = 200
   , idamage  = 0
-  , iaspects = [ PresentAs ANY_POTION_UNKNOWN, SetFlag Lobable, SetFlag Fragile
+  , iaspects = [ PresentAs POTION_UNKNOWN, SetFlag Lobable, SetFlag Fragile
                , toVelocity 50 ]  -- oily, bad grip
   , ieffects = []
   , idesc    = "A vial of bright, frothing concoction. The best that nature has to offer."
