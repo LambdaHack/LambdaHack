@@ -1609,14 +1609,19 @@ effectDischarge execSfx iidOriginal nDm target = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
+  getKind <- getsState $ flip getIidKindServer
   let power = max 0 power0
       t = createItemTimer localTime $ timeDeltaScale (Delta timeClip) power
       c = CActor target CEqp
       eqpAss = EM.assocs $ beqp tb
       resetTimeout (iid, (k, itemTimers)) = do
-        let it1 = filter (charging localTime) itemTimers
+        let itemKind = getKind iid
             it2 = filter (charging localTime) $ replicate k t
-        if iid == iidOriginal || it1 == it2 then return UseDud else do
+        if iid == iidOriginal
+           || null (IK.ieffects itemKind) && IK.idamage itemKind == 0
+           || itemTimers == it2
+        then return UseDud
+        else do
           execUpdAtomic $ UpdTimeItem iid c itemTimers it2
           return UseUp
   urs <- mapM resetTimeout eqpAss
