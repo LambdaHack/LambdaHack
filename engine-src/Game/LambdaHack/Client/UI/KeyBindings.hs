@@ -33,7 +33,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
   let
     movBlurb1 =
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
-      , "or the Vi editor keys (middle) or the left hand movement keys (left). Run until "
+      , "or the Vi editor keys (middle) or the left-hand movement keys (left). Run until "
       , "disturbed with Shift or Control. Go-to a position with LMB (left mouse button)."
       ]
     movSchema =
@@ -72,7 +72,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       ]
     mouseBasicsBlurb =
       [ "Screen area and UI mode (exploration/aiming) determine mouse click"
-      , "effects. First, we give an overview of effects of each button over"
+      , "effects. Here we give an overview of effects of each button over"
       , "the game map area. The list includes not only left and right buttons,"
       , "but also the optional middle mouse button (MMB) and the mouse wheel,"
       , "which is also used over menus, to page-scroll them. For mice without RMB,"
@@ -82,7 +82,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     mouseAreasBlurb =
       [ "Next we show mouse button effects per screen area, in exploration mode"
       , "and (if different) in aiming mode. Note that this is all optional. Keyboard"
-      , "suffices, at worst employing the more obscure commands listed later on."
+      , "suffices, at worst requiring the more obscure commands listed later on."
       ]
     mouseAreasMini =
       [ "Mouse button effects per screen area, in exploration and in aiming modes"

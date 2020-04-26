@@ -71,7 +71,7 @@ instance Binary CmdArea
 areaDescription :: CmdArea -> Text
 areaDescription ca = case ca of
   CaMessage ->      "message line"
-  CaMapLeader ->    "pointman spot"
+  CaMapLeader ->    "pointman tile"
   CaMapParty ->     "party on map"
   CaMap ->          "the map area"
   CaLevelNumber ->  "level number"
@@ -82,7 +82,7 @@ areaDescription ca = case ca of
   CaCalmGauge ->    "Calm gauge"
   CaCalmValue ->    "Calm value"
   CaHPGauge ->      "HP gauge"
-  CaHPValue ->      "HP Value"
+  CaHPValue ->      "HP value"
   CaLeaderDesc ->   "pointman info"
   --                 1234567890123
 
