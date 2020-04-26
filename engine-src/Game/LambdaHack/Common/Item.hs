@@ -76,7 +76,7 @@ instance Hashable ItemIdentity
 
 instance Binary ItemIdentity
 
--- | The map of item ids to item aspect reocrd. The full map is known
+-- | The map of item ids to item aspect record. The full map is known
 -- by the server.
 type DiscoveryAspect = EM.EnumMap ItemId IA.AspectRecord
 

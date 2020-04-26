@@ -38,7 +38,7 @@ import           Game.LambdaHack.Definition.Flavour
 
 -- | The essential item properties, used for the @ItemRev@ hash table
 -- from items to their ids, needed to assign ids to newly generated items.
--- All the other meaningul properties can be derived from them.
+-- All the other meaningful properties can be derived from them.
 -- Note: item seed instead of @AspectRecord@ is not enough,
 -- becaused different seeds may result in the same @AspectRecord@
 -- and we don't want such items to be distinct in UI and elsewhere.

@@ -93,6 +93,8 @@ data KeyMacroFrame = KeyMacroFrame
   , keyLast        :: Maybe K.KM             -- ^ last pressed key
   } deriving (Show)
 
+-- This can stay a map forever, not a vector, because it's added to often,
+-- but never read from, except when the user requests item details.
 type ItemDictUI = EM.EnumMap ItemId LevelId
 
 -- | Current aiming mode of a client.
