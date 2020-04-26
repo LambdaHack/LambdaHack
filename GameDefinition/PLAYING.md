@@ -1,7 +1,6 @@
 Playing LambdaHack
 ==================
 
-This file is temporarily out of date.
 The following backstory blurb is a copy of the sample game intro screen.
 
  LambdaHack is a small dungeon crawler
@@ -49,11 +48,11 @@ The game differs from classic roguelikes in a few ways:
   (turn-based just the same)
 * time passes and factions pursue their goals on a few levels simultaneously,
   while other levels are frozen (but all are persistent)
-* the same laws of simulated nature apply to all factions and all actors,
+* the same laws of simulated world apply to all factions and all actors,
   whether player-controlled or AI-controlled; e.g., the same field of view
   and pathfinding algorithms, skill checks, equipment and item use rules
-* combat mechanics is deterministic; randomness comes from enemies
-  and procedurally generated terrain only
+* combat mechanics is deterministic; randomness comes only from AI decisions
+  and procedurally generated terrain
 * there's (almost) no HP regeneration; attrition ensures all past (silly)
   decisions matter; HP starts at around half max
 * each character has 10 uniform equipment slots, which fill quickly given
@@ -95,8 +94,8 @@ that offer rudimentary preparation for the main game, the long crawl.
 They gradually introduce exploration, stealth and melee combat,
 helping the player develop his repertoire of squad formations
 and move patterns, suitable for different tactical contexts.
-When the player loses, it helps to scan the defeat message of the scenario
-for hints of strategies known to work in the given tactical context.
+When the player loses, a defeat message for the scenario appears
+with hints about strategies known to work in the given tactical context.
 Alternatively, the player may postpone reading these messages and instead
 try to puzzle out the tactics himself --- this is not so hard, as there are
 not so many moving parts to figure, at least in the short scenarios.
@@ -106,19 +105,20 @@ and starts employing ranged combat, light sources and other means
 of gaining or denying battlefield intel, and dies a lot, it makes sense
 to return to the remaining short scenarios. They bring forth many extra
 game features and tactics and prevent the player from missing half the fun
-by trying to play the crawl just like a normal roguelike with spare
-heroes (and often fail horribly). The extra scenarios continue
-the plotline from the initial tutorial scenarios in the form of flashbacks
-and eventually lead up to the events that start the main crawl adventure.
-The training they provide is more synthetic in nature, drilling
+by trying to play the crawl just like a normal roguelike with spare heroes.
+The extra scenarios continue the plotline from the initial tutorial scenarios
+in the form of flashbacks and eventually lead up to the events that start
+the main crawl adventure. The training they provide is focused, drilling
 a particular skill set, even as exotic as opportunity fire management,
-a frantic race to the exit and big asymmetric battles. The challenge may be,
-accordingly, quite tough.
+a frantic race to the exit and big asymmetric melee battle. The challenge
+in the scenarios may be, accordingly, quite tough, particularly at the higher
+difficulty levels.
 
 The main scenario, the long crawl, is the only one that takes
 place in a multi-floor setting, requiring lots of time to beat,
-with focus on resource management, survival, gathering environment
-clues and guessing and countering opponents' strategies.
+with focus on resource management and survival, including food gathering
+and cooking, crafting, terrain transformation using tools, spotting
+environment clues and guessing and countering opponents' strategies.
 The player has a choice of exploring a single level at a time or portions
 of many levels along a single staircase. On some levels he may explore
 and loot with a single scout eluding most opponents. On others he may be
@@ -148,32 +148,43 @@ is usually inert, red is burning or trapped, blue activable or trapped,
 magenta searchable or activable.
 
 Items lying on the ground are represented with non-letter and non-digit
-characters, as well, though rarely with blocky symbols. In case of doubt,
-one of the aiming commands (`/` and keypad `/`, with default keybinding)
-cycles through all visible and remembered items on the level and another
-(`*` and keypad `*`, with default keybinding) through all foes.
-Also, pointing at a map position with `MMB` (middle mouse button) displays
-a short description of its contents. The basic terrain kinds are as follows.
+characters, just as terrain, though rarely with blocky symbols.
+In case of doubt, one of the aiming commands (`/` and keypad `/`,
+with default keybinding) cycles through all visible and remembered
+items on the level and another (`*` and keypad `*`, with default keybinding)
+through all foes. Also, pointing at a map position with `MMB`
+(middle mouse button) displays a short description of its contents.
+The basic terrain kinds are as follows.
 
-    terrain type                           on-screen symbol
-    wall (horizontal and vertical)         - and |
-    tree or rock or man-made column        0
-    rubble                                 &
-    bush, transparent obstacle             %
-    trap, ice obstacle                     ^
-    closed door                            +
-    open door (horizontal and vertical)    | and -
-    corridor                               #
-    smoke or fog                           ;
-    ground                                 .
-    water                                  ~
-    stairs or exit up                      <
-    stairs or exit down                    >
-    bedrock                                blank
+    terrain type                          on-screen symbol
+
+    bush, transparent obstacle            %
+    trap, ice obstacle                    ^
+
+    wall (horizontal and vertical)        - and |
+    bedrock                               blank
+    tree, rock, man-made column           0
+    rubble                                &
+    stairs, exit up                       <
+    stairs, exit down                     >
+    closed door                           +
+
+    open door (horizontal and vertical)   | and -
+    corridor                              #
+    ground                                .
+    water, other fluid                    ~
+
+    smoke, fog, open fire                 ;
+    workshop, curtain, foliage            :
+
+The four groups above, in turn, block movement but not view,
+block both, block neither, block view but not movement.
+Additionally, each tile, regardless if open and if translucent,
+may be permanently lit with ambient light or not.
 
 Actors are marked with lower and upper case letters and with
 characters `@` and `1` through `9` (but never `0`). Player-controlled
-heroes are always bright white and by default they are selected
+heroes are always bright white and at game start they are selected
 (e.g., to run together) so they have a blue highlight around their symbol.
 If player manages to take control of animals or other actors, they retain
 their letter and color, but gain a highlight as well.
@@ -203,20 +214,6 @@ this resembles the leap frog infantry tactics, in which the immobile
 team members cover the movement of the others. For best effects,
 try to end each sprint behind a cover or concealment.
 
-It may be disconcerting that when a single hero gets ambushed and is fighting
-at close quarters, his distant teammates don't jointly come to his rescue.
-Instead they wait for him to come back into the formation so that
-they may assume a frontline and then melee their foes together.
-In fact, the immobile heroes are assumed to be pinned to their positions
-by fear and shock, but also by their imperative to hold formation,
-so as to defend an important position or avoid running piecemeal
-into a trap or into friendly fire or avoid breaking concealment
-and revealing their position or leaving a vantage point from which
-they can observe and relay enemy movement. For untrained teams,
-excluding an unrealistic premise of an off-site leader inspecting
-views from all soldier cameras at once and micromanaging them all,
-simultaneous synchronized squad movement is not feasible.
-
 Pointman hero's attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
 
@@ -229,7 +226,7 @@ If more heroes are selected (highlighted in blue), they run together
 whenever `:` or `S-LMB` (while holding Shift) over map area is pressed,
 though that's usually not a precise enough method of controlling a team.
 Any sleeping hero is highlighted in green and can be woken up
-by yelling with `%`, which also taunts or stresses nearby enemies.
+by yelling with `%`, which also taunts or stresses up nearby enemies.
 
 Next on the bottom-most status line is the pointman's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
@@ -255,7 +252,7 @@ A variant written `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
 always one, then it grows up to full rolled value at the last level).
 Section [Monsters](#monsters) below describes combat resolution in detail,
-including the role of the percentage damage bonus.
+including the role of the percentage bonuses.
 
 The second, the upper status line describes the current level in relation
 to the party.
@@ -267,7 +264,7 @@ Then the percentage of its explorable tiles already seen by the heroes.
 The `X-hair` (aiming crosshair) is the common focus of the whole party,
 marked on the map with a red box and manipulated with mouse
 or movement keys in aiming mode. In this example, the crosshair points
-at a dire basilisk monster, with its hit points drawn as a bar.
+at a dire basilisk monster with its hit points drawn as a bar.
 
 Instead of a monster, the `X-hair` area may describe a position on the map,
 a recently spotted item on the floor or an item in inventory selected
@@ -277,7 +274,7 @@ For example, this form
     5  Lofty hall    [33% seen] X-hair: exact spot (71,12)    p15 l10
 
 indicates that the party is aiming at an exact spot on the map.
-At the end of the status line comes the length of the shortest
+At the end of this example status line comes the length of the shortest
 path from the pointman's position to the spot and the straight-line
 distance between the two points, one that a flung projectile would travel
 if there were no obstacles.
@@ -286,70 +283,72 @@ if there were no obstacles.
 Moving and acting
 -----------------
 
-This section is a copy of the few initial bits of in-game help. The help
-pages are automatically generated based on a game's keybinding content and
-on overrides in the player's config file. The remaining in-game help screens,
-not shown here, list all game commands grouped by categories in detail.
-A text snapshot of the complete in-game help is in
+This section is a copy of the few initial bits of in-game help. The in-game
+help pages are automatically generated based on a game's keybinding content
+definitions and on overrides in the player's config file. The remaining
+in-game help screens, not shown here, list all game commands grouped
+by categories in detail. A text snapshot of the complete in-game help is in
 [InGameHelp.txt](InGameHelp.txt).
 
-Walk throughout a level with mouse or numeric keypad (left diagram below)
-or the Vi editor keys (right) or with a compact laptop setup (middle) that
-requires enabling in config.ui.ini. Run until disturbed with Shift or Control.
-Go-to with LMB (left mouse button). Run collectively via S-LMB (holding Shift).
+Walk throughout a level with mouse or numeric keypad (right diagram below)
+or the Vi editor keys (middle) or the left-hand movement keys (left). Run until
+disturbed with Shift or Control. Go-to a position with LMB (left mouse button).
 
-               7 8 9          7 8 9          y k u
-                \|/            \|/            \|/
-               4-5-6          u-i-o          h-.-l
-                /|\            /|\            /|\
-               1 2 3          j k l          b j n
+          q w e          y k u          7 8 9
+           \|/            \|/            \|/
+          a-s-d          h-.-l          4-5-6
+           /|\            /|\            /|\
+          z x c          b j n          1 2 3
 
-In aiming mode, the same keys (and mouse) move the x-hair (aiming crosshair).
+In aiming mode, the same keys (and mouse) move the aiming crosshair.
 Press `KP_5` (`5` on keypad) to wait, bracing for impact, which reduces any
 damage taken and prevents displacement by foes. Press `S-KP_5` or `C-KP_5`
 (the same key with Shift or Control) to lurk 0.1 of a turn, without bracing.
+
 Displace enemies by running into them with Shift/Control or S-LMB. Search,
 open, descend and attack by bumping into walls, doors, stairs and enemies.
-The best, on average, melee weapon is automatically chosen from your
+The best, not on cooldown, melee weapon is automatically chosen from your
 equipment and from among your body parts.
 
-The following commands, joined with the basic set above,
-let you accomplish anything in the game, though
-not necessarily with the fewest keystrokes. You can also
-play the game exclusively with a mouse, or both mouse
-and keyboard. (See the ending help screens for mouse commands.)
-Lastly, you can select a command with arrows or mouse directly
-from the help screen or the dashboard and execute it on the spot.
+The following few commands, joined with the movement and running keys,
+let you accomplish anything in the game, though not necessarily
+with the fewest keystrokes. You can also play the game exclusively
+with a mouse, or both mouse and keyboard (e.g., mouse for go-to
+and terrain inspection and keyboard for everything else). Lastly,
+you can select a command with arrows or mouse directly from the help
+screen or the dashboard and execute it on the spot.
 
     keys         command
-    E            manage equipment of the pointman
+    I            manage the shared inventory stash
     g or ,       grab item(s)
     ESC          open main menu/finish aiming
     RET or INS   open dashboard/accept target
     SPACE        clear messages and show history
     S-TAB        cycle among all party members
-    KP_* or !    cycle x-hair among enemies
-    KP_/ or /    cycle x-hair among items
-    c            close door
-    %            yell/yawn
+    *            cycle crosshair among enemies
+    /            cycle crosshair among items
+    m            modify door by closing it
+    %            yell/yawn and stop sleeping
 
-Screen area and UI mode (exploration/aiming) determine
-mouse click effects. First, we give an overview
-of effects of each button over the game map area.
-The list includes not only left and right buttons, but also
-the optional middle mouse button (MMB) and the mouse wheel,
-which is also used over menus, to page-scroll them.
-(For mice without RMB, one can use Control key with LMB and for mice
-without MMB, one can use C-RMB or C-S-LMB.)
+Screen area and UI mode (exploration/aiming) determine mouse click
+effects. Here we give an overview of effects of each button over
+the game map area. The list includes not only left and right buttons,
+but also the optional middle mouse button (MMB) and the mouse wheel,
+which is also used over menus, to page-scroll them. For mice without RMB,
+one can use Control key with LMB and for mice without MMB, one can use
+C-RMB or C-S-LMB.
 
     keys         command
     LMB          go to pointer for 25 steps/fling at enemy
     S-LMB        run to pointer collectively for 25 steps/fling at enemy
     RMB or C-LMB start aiming at enemy under pointer
-    S-RMB        open or close or alter at pointer
-    MMB or C-RMB snap x-hair to floor under pointer
+    S-RMB        modify terrain at pointer
+    MMB or C-RMB snap crosshair to floor under pointer
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
+
+Note that mouse is totally optional. Keyboard suffices, at worst requiring
+the more obscure commands listed in the help screens.
 
 
 Battling monsters
@@ -362,7 +361,7 @@ and take care to move one at a time, monsters don't care about each other
 and all move at once, sometimes brutally colliding by accident.
 
 Monsters are depicted on the map with letters. Upper case letters
-are unique monsters, often guardians of dungeon levels, and lower case
+are unique monsters, often guardians of special floors, and lower case
 letters are the rabble. If there are humans not from our team,
 they are marked with `@` and `1` through `9` in other colours than white.
 
@@ -375,22 +374,22 @@ a free blow, but can improve the tactical situation or aid escape.
 In some circumstances actors are immune to the displacing,
 e.g., when both parties form a continuous front-line.
 
-In melee combat, the best, in general, recharged equipped weapon
-(or the best fighting organ that is not on cooldown) of each opponent
-is taken into account for determining the damage and any extra effects
-of the blow. To determine the damage dealt, the outcome of the weapon's
-damage dice roll (but not rolls for any additional direct damage effect,
+In melee combat, the best recharged equipped weapon (including fighting
+organs that are not on cooldown) of each opponent is taken into account
+for determining the damage and any extra effects of the blow.
+To determine the damage dealt, the outcome of the weapon's damage
+dice roll (but not rolls for any additional direct damage effects,
 such as wounding or burning) is multiplied by a percentage bonus. The bonus
 is calculated by taking the damage bonus (summed from the equipped items
 and organs and conditions of the attacker, capped at 200%) minus the melee
 armor modifier of the defender (capped at 200%, as well). However,
-at least 5% of damage always gets through, even if the bonus is below -95%,
-so excessively strong armor acts only as a buffer against high melee
-skill of opponents.
+at least 5% of damage always gets through, even if the bonus is nominally
+below -95%, so excessively strong armor acts only as a buffer against
+high melee skill of opponents.
 
 The current pointman's melee bonus, armor modifier and other detailed
 stats can be viewed in the skills menu, accessible via the `#` command,
-which summarized all the stats conferred by organs and conditions listed
+which summarizes all the stats conferred by organs and conditions listed
 in the organ menu, invoked by `@`.
 
 In ranged combat, the projectile is assumed to be attacking the defender
@@ -398,29 +397,29 @@ in melee, using itself as the weapon, with the usual dice and damage bonus.
 This time, the ranged armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
-(by default you are offered only the appropriate items; press `+` to cycle
-item menu modes). Only items of a few kinds inflict any damage, but some
+(by default you are offered only the appropriate items; press `+` open
+all choices). Only items of a few kinds inflict any damage, but some
 have other effects, beneficial, detrimental or mixed.
 
 In-game detailed item descriptions contain melee and ranged damage estimates.
 They do not take into account damage from effects and, if bonuses are not
 known, guesses are based on averages for the item kind in question.
 The displayed figures are rounded, but the game internally keeps track
-of minute fractions of HP in all calculcations.
+of minute fractions of HP for all actors and in all calculcations.
 
-The stress of combat drains Calm, gradually limiting viewing radius and,
+The combat stress drains Calm, gradually limiting viewing radius and,
 if Calm reaches zero and the actor is sufficiently impressed by his foes,
-making him defect and surrender unto their domination.
-Whenever the monster's or hero's hit points reach zero,
-the combatant is incapacitated and promptly dies.
-When the last hero dies or is dominated, the scenario ends in defeat.
+making him defect and surrender unto their domination. Whenever the monster's
+or hero's hit points reach zero, the combatant falls down and quickly
+gets permanently incapacitated. When the last hero is disabled or dominated,
+the scenario ends in defeat.
 
 
 Attacking from a distance
 -------------------------
 
 For ranged attacks, setting the aiming crosshair beforehand is not mandatory,
-because x-hair is set automatically as soon as a monster comes into view
+because crosshair is set automatically as soon as a monster comes into view
 and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
 or assign persistent personal targets to party members.
@@ -431,9 +430,9 @@ to more than one enemy, setting his target makes him melee a particular foe.
 
 You can enter the aiming mode with the `*` and keypad `*` keys that
 select enemies or the `/` and keypad `/` keys that cycle among items
-on the floor and mark a tile underneath an item. You can move x-hair
+on the floor and mark a tile underneath an item. You can move crosshair
 with direction keys and assign a personal target to the pointman
-with a `RET` key (Return, Enter). The details of the shared x-hair mark
+with a `RET` key (Return, Enter). The details of the shared crosshair mark
 are displayed in a status line close to the bottom of the screen,
 as explained in section [Heroes](#heroes) above.
 
@@ -454,7 +453,41 @@ modified by the chosen game difficulty, but not by any other challenges
 (which are, however, proudly displayed in the high score listing).
 
 When all your heroes fall, you are going to invariably see a new foolhardy
-party of adventurers clamoring to be led into the unknown perils. They start
-their conquest from a new entrance, with no experience and no equipment,
-and new undaunted enemies bar their way. Lead the new hopeful explorers
-with wisdom and fortitude!
+party of adventurers clamoring to be led into the unknown perils.
+They start their conquest afresh, with no experience, no supplies
+for survival and no equipment, and new undaunted enemies bar their way.
+Lead the new hopeful explorers with wisdom and fortitude!
+
+
+FAQ
+---
+
+Q: Why does the percentage of explored tiles turns from 100% to 99%?
+A: Apparently enemies transformed a tile from unexplorable terrain kind
+to explorable. The new tile has never been seen by the player,
+so the percentage is no longer at 100%.
+
+Q: Why when a single hero gets ambushed and is fighting at close quarters,
+his distant teammates don't jointly come to his rescue.
+A; The teammates wait for him to come back into the formation instead
+so that they may assume a frontline and then melee their foes together.
+The immobile heroes are assumed to be pinned to their positions
+by fear and shock, but also by their imperative to hold formation,
+so as to defend an important position or avoid running piecemeal
+into a trap or into friendly fire or avoid breaking concealment
+and revealing their position or leaving a vantage point from which
+they can observe and relay enemy movement. For untrained teams,
+optimal simultaneous synchronized squad movement is not feasible.
+It would be, if all squaddies had cameras, with a few drones overhead
+for best effect, and a team of off-site coordinators would analyze
+the situation and micromanage them all. This is not the case here.
+
+Q: Why are there two 'weakened' conditions in the organ menu of my hero?
+A: Each teams has a differen recipe for their weakness brew, so multiple
+affliction by the concoction from a single team prolongs the malady,
+but from many teams, compounds the concurrently occuring harm.
+The benefit is that it's possible to tell the perpetrator team of the ailment.
+The exceptions are the conditions that activate each turn, e.g., healing
+(regeneration, various resistances that effectively cure each turn)
+or wounding (poison). These are similar regardless of the team and so
+the condition is always only prolonged.
