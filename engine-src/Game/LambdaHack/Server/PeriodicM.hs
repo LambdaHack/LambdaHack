@@ -59,7 +59,7 @@ spawnMonster = do
   arenas <- getsServer sarenas
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
-  arena <- rndToAction $ oneOf arenas
+  arena <- rndToAction $ oneOf $ ES.toList arenas
   Level{lkind, ldepth, lbig} <- getLevel arena
   let ck = okind cocave lkind
   if | CK.cactorCoeff ck == 0 || null (CK.cactorFreq ck) -> return ()

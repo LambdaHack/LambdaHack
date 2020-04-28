@@ -646,15 +646,15 @@ updTimeItem iid c fromIt toIt = assert (fromIt /= toIt) $ do
       insertItemContainer iid (k, toIt) c
     Nothing -> error $ "" `showFailure` (bag, iid, c, fromIt, toIt)
 
-updAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+updAgeGame :: MonadStateWrite m => ES.EnumSet LevelId -> m ()
 updAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (Delta timeClip)
-  mapM_ (ageLevel (Delta timeClip)) lids
+  mapM_ (ageLevel (Delta timeClip)) $ ES.toList lids
 
-updUnAgeGame :: MonadStateWrite m => [LevelId] -> m ()
+updUnAgeGame :: MonadStateWrite m => ES.EnumSet LevelId -> m ()
 updUnAgeGame lids = do
   modifyState $ updateTime $ flip timeShift (timeDeltaReverse $ Delta timeClip)
-  mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) lids
+  mapM_ (ageLevel (timeDeltaReverse $ Delta timeClip)) $ ES.toList lids
 
 ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =

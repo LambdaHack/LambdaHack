@@ -20,6 +20,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.EnumSet as ES
 import           Data.Int (Int64)
 import qualified System.Random.SplitMix32 as SM
 
@@ -110,8 +111,8 @@ data UpdAtomic =
   | UpdLoseSmell LevelId [(Point, Time)]
   -- Assorted.
   | UpdTimeItem ItemId Container ItemTimers ItemTimers
-  | UpdAgeGame [LevelId]
-  | UpdUnAgeGame [LevelId]
+  | UpdAgeGame (ES.EnumSet LevelId)
+  | UpdUnAgeGame (ES.EnumSet LevelId)
   | UpdDiscover Container ItemId (ContentId ItemKind) IA.AspectRecord
       -- Here and below @Container@ is only used for presentation
       -- and when @CStash@ is not visible, but the item is, it won't

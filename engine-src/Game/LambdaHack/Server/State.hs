@@ -54,7 +54,8 @@ data StateServer = StateServer
   , sfovLucidLid  :: FovLucidLid    -- ^ ambient or shining light positions
   , sfovClearLid  :: FovClearLid    -- ^ clear tiles positions
   , sfovLitLid    :: FovLitLid      -- ^ ambient light positions
-  , sarenas       :: [LevelId]      -- ^ active arenas
+  , sarenas       :: ES.EnumSet LevelId
+                                    -- ^ the set of active arenas
   , svalidArenas  :: Bool           -- ^ whether active arenas valid
   , srandom       :: SM.SMGen       -- ^ current random generator
   , srngs         :: RNGs           -- ^ initial random generators
@@ -101,7 +102,7 @@ emptyStateServer =
     , sfovLucidLid = EM.empty
     , sfovClearLid = EM.empty
     , sfovLitLid = EM.empty
-    , sarenas = []
+    , sarenas = ES.empty
     , svalidArenas = False
     , srandom = SM.mkSMGen 42
     , srngs = RNGs { dungeonRandomGenerator = Nothing
@@ -177,7 +178,7 @@ instance Binary StateServer where
         sfovLucidLid = EM.empty
         sfovClearLid = EM.empty
         sfovLitLid = EM.empty
-        sarenas = []
+        sarenas = ES.empty
         svalidArenas = False
         sbreakLoop = False
         sbreakASAP = False

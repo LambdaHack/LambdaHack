@@ -123,13 +123,13 @@ factionArena fact = case gleader fact of
     -- However, animals still spawn, if slowly, and aliens resume
     -- spawning when heroes move on again.
 
-arenasForLoop :: MonadStateRead m => m [LevelId]
+arenasForLoop :: MonadStateRead m => m (ES.EnumSet LevelId)
 {-# INLINE arenasForLoop #-}
 arenasForLoop = do
   factionD <- getsState sfactionD
   marenas <- mapM factionArena $ EM.elems factionD
-  let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-      !_A = assert (not (null arenas)
+  let arenas = ES.fromList $ catMaybes marenas
+      !_A = assert (not (ES.null arenas)
                     `blame` "game over not caught earlier"
                     `swith` factionD) ()
   return $! arenas
@@ -185,8 +185,8 @@ handleFidUpd updatePerFid fid fact = do
   fa <- factionArena fact
   arenas <- getsServer sarenas
   let myArenas = case fa of
-        Just myArena -> myArena : delete myArena arenas
-        Nothing -> arenas
+        Just myArena -> myArena : delete myArena (ES.toList arenas)
+        Nothing -> ES.toList arenas
   nonWaitMove <- handle myArenas
   breakASAP <- getsServer sbreakASAP
   unless breakASAP $ killDying myArenas
@@ -247,7 +247,7 @@ loopUpd updConn = do
           -- ensures state is not changed and so the clip doesn't need
           -- to be carried through before save.
           arenas <- getsServer sarenas
-          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) arenas)
+          mapM_ (\fid -> mapM_ (`handleTrajectories` fid) $ ES.toList arenas)
                 (EM.keys factionD)
           endClip updatePerFid  -- must be last, in case performs a bkp save
           -- The condition can be changed in @handleTrajectories@ by pushing
@@ -301,7 +301,7 @@ endClip updatePerFid = do
         applyPeriodicLevel
       4 ->
         -- Add monsters each turn, not each clip.
-        unless (null arenas) spawnMonster
+        unless (ES.null arenas) spawnMonster
       _ -> return ()
   -- @applyPeriodicLevel@ might have, e.g., dominated actors, ending the game.
   -- It could not have unended the game, though.
@@ -358,8 +358,7 @@ manageCalmAndDomination aid b = do
 applyPeriodicLevel :: MonadServerAtomic m => m ()
 applyPeriodicLevel = do
   arenas <- getsServer sarenas
-  let arenasSet = ES.fromDistinctAscList arenas
-      applyPeriodicItem _ _ (_, (_, [])) = return ()
+  let applyPeriodicItem _ _ (_, (_, [])) = return ()
         -- periodic items always have at least one timer
       applyPeriodicItem aid cstore (iid, _) = do
         itemFull <- getsState $ itemToFull iid
@@ -391,7 +390,7 @@ applyPeriodicLevel = do
         -- of projectiles exist due to ongoing explosions.
         -- Nothing activates when actor dying to prevent a regenerating
         -- actor from resurrecting each turn, resulting in silly end-game stats.
-        when (not (bproj b) && bhp b > 0 && blid b `ES.member` arenasSet) $ do
+        when (not (bproj b) && bhp b > 0 && blid b `ES.member` arenas) $ do
           -- Equipment goes first, to refresh organs before they expire,
           -- to avoid the message that organ expired.
           mapM_ (applyPeriodicItem aid CEqp) $ EM.assocs $ beqp b
