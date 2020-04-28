@@ -1291,7 +1291,7 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   m2 <- rollItemAspect freq (blid tb)
   case m2 of
     Nothing -> return UseDud  -- e.g., unique already generated
-    Just (itemKnownRaw, (itemFullRaw, (kRaw, _))) -> do
+    Just (itemKnownRaw, (itemFullRaw, (kRaw, itRaw))) -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1306,10 +1306,10 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
                     || grp == IK.S_IMPRESSED
                  then jfidRaw
                  else Nothing
+          ItemKnown kindIx arItem _ = itemKnownRaw
           (itemKnown, itemFull) =
-            let ItemKnown kindIx ar _ = itemKnownRaw
-            in ( ItemKnown kindIx ar jfid
-               , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
+            ( ItemKnown kindIx arItem jfid
+            , itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}} )
       itemRev <- getsServer sitemRev
       let mquant = case HM.lookup itemKnown itemRev of
             Nothing -> Nothing
@@ -1337,8 +1337,10 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
           localTime <- getsState $ getLocalTime (blid tb)
           let newTimer = createItemTimer localTime delta
               extraIt k = if IK.isTimerNone tim
-                          then []
+                          then itRaw  -- don't break @applyPeriodicLevel@
                           else replicate k newTimer
+                                 -- randomized and overwritten in @registerItem@
+                                 -- if an organ or created in equipment
               kitNew = case mcount of
                 Just itemK -> (itemK, extraIt itemK)
                 Nothing -> (kRaw, extraIt kRaw)
@@ -1355,8 +1357,6 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
           -- If ground and stash coincide, unindentified item enters stash,
           -- so will be identified when equipped, used or dropped
           -- and picked again.
-          discoAspect <- getsState sdiscoAspect
-          let arItem = discoAspect EM.! iid
           if isJust mcount  -- not a random effect, so probably crafting
              && not (IA.isHumanTrinket (itemKind itemFull))
           then execUpdAtomic $ UpdDiscover c iid (itemKindId itemFull) arItem

@@ -117,7 +117,7 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
         itemTimer = [itemTimerZero | IA.checkFlag Ability.Periodic arItem]
-          -- delay first discharge of single organs
+          -- enable optimization in @applyPeriodicLevel@
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
     let itemDisco = ItemDiscoFull arItem

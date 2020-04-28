@@ -120,7 +120,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                            let total = deltaOfItemTimer localTime t
                            in timeDeltaInSecondsText total
                          (1, []) | isNothing more -> ""
-                         (k, _) ->  -- usuallly the list empty; ignore anyway
+                         (k, _) ->  -- usually the list empty; ignore anyway
                            (if isJust more then "additionally" else "")
                            <+> tshow k <> "-fold"
                            <+> case more of
