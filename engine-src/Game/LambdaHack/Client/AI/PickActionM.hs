@@ -244,13 +244,15 @@ actionStrategy aid retry = do
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)
                   | otherwise -> False )  -- melee threats too far
-        , ( [SkMelee]
+        , ( runSkills  -- no blockers if can't move right now
           , meleeBlocker aid  -- only melee blocker
-          , condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
-            || not (abInMaxSkill SkDisplace)  -- displace friends, if possible
-               && condAimEnemyOrStash )  -- excited
-                    -- So animals block each other until hero comes and then
-                    -- the stronger makes a show for him and kills the weaker.
+          , getSk SkMelee actorSk > 0
+            && (condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
+                || not (abInMaxSkill SkDisplace)  -- displace friends, if can
+                   && condAimEnemyOrStash) )  -- excited
+                        -- So that animals block each other until hero comes
+                        -- and then the stronger makes a show for him
+                        -- and kills the weaker.
         , ( [SkAlter]
           , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
@@ -674,6 +676,9 @@ meleeBlocker aid = do
 -- even though some prefer ranged attacks. However only potentially harmful
 -- enemies or those having loot or moving (can follow and spy) are meleed
 -- (or those that are in the way, see elsewhere).
+-- Projectiles are rather displaced or sidestepped, because it's cheaper
+-- and also the projectile may be explosive and so harm anyway
+-- and also if ignored it may hit enemies --- AI can't tell.
 meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeAny aid = do
   b <- getsState $ getActorBody aid
