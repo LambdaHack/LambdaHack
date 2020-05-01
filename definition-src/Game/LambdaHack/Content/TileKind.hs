@@ -2,7 +2,7 @@
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
   ( pattern S_UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern S_UNKNOWN_OUTER_FENCE, pattern S_BASIC_OUTER_FENCE, pattern AQUATIC
-  , TileKind(..), Feature(..)
+  , TileKind(..), ProjectileTriggers(..), Feature(..)
   , makeData
   , isUknownSpace, unknownId
   , isSuspectKind, isOpenableKind, isClosableKind
@@ -61,13 +61,15 @@ data Feature =
       -- ^ goes from an open to open or closed tile when altered
   | ChangeTo (GroupName TileKind)
       -- ^ alters tile, but does not change walkability
-  | OpenWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
+  | OpenWith ProjectileTriggers
+             [(Int, GroupName ItemKind)] (GroupName TileKind)
       -- ^ alters tile, as before, using up all listed items from the ground
       --   and equipment; the list never empty; for simplicity, such tiles
-      --   are never taken into account when pathfinding; the boolean
-      --   determines if projectiles may trigger the action
-  | CloseWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
-  | ChangeWith Bool [(Int, GroupName ItemKind)] (GroupName TileKind)
+      --   are never taken into account when pathfinding
+  | CloseWith ProjectileTriggers
+              [(Int, GroupName ItemKind)] (GroupName TileKind)
+  | ChangeWith ProjectileTriggers
+               [(Int, GroupName ItemKind)] (GroupName TileKind)
   | HideAs (GroupName TileKind)
       -- ^ when hidden, looks as the unique tile of the group
   | BuildAs (GroupName TileKind)
@@ -102,6 +104,17 @@ instance Binary Feature
 instance Hashable Feature
 
 instance NFData Feature
+
+-- | Marks whether projectiles are permitted to trigger the tile transformation
+-- action.
+data ProjectileTriggers = ProjYes | ProjNo
+  deriving (Show, Eq, Generic)
+
+instance Binary ProjectileTriggers
+
+instance Hashable ProjectileTriggers
+
+instance NFData ProjectileTriggers
 
 -- | Validate a single tile kind.
 validateSingle :: TileKind -> [Text]
