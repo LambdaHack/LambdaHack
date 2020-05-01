@@ -843,7 +843,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- but only if it managed to activate all previous embeds,
               -- (with mist, that means all such embeds were consumed earlier).
               if (not bumping || null grps)
-                 && maybe True (== UseUp) museResult
+                 && (maybe True (== UseUp) museResult
+                     || effToUse == EffOnCombine)  -- when crafting, lax check
                  && (voluntary || bproj sb)  -- no local skill check
                  && groundBag2 == groundBag  -- no crafting and so mix-up
               then do
