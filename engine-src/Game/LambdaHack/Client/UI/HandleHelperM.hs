@@ -403,7 +403,7 @@ lookAtTile canSee p aid lidV = do
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"
           | not canSee = "you remember"
-          | not aims = "you are aware of"
+          | not aims = "you are aware of"  -- walkable path a proxy for in LOS
           | otherwise = "you see"
       tilePart = MU.AW $ MU.Text $ TK.tname tile
       entrySentence pk blurb =

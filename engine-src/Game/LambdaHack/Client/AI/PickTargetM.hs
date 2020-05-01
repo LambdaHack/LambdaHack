@@ -135,12 +135,14 @@ computeTarget aid = do
     Nothing -> return Nothing  -- no target assigned yet
   allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
   factionD <- getsState sfactionD
+  seps <- getsClient seps
   let fact = factionD EM.! bfid b
       canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
-                || Ability.getSk Ability.SkDisplace actorMaxSk > 0
-                -- Needed for now, because AI targets and shoots enemies
-                -- based on the path to them, not LOS to them:
-                || Ability.getSk Ability.SkProject actorMaxSk > 0
+      canReach = canMove
+                 || Ability.getSk Ability.SkDisplace actorMaxSk > 0
+                 -- Needed for now, because AI targets and shoots enemies
+                 -- based on the path to them, not LOS to them:
+                 || Ability.getSk Ability.SkProject actorMaxSk > 0
       canAlter = Ability.getSk Ability.SkAlter actorMaxSk >= 4
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
@@ -179,7 +181,9 @@ computeTarget aid = do
                   -- would attack our friend in a couple of turns anyway,
                   -- but we may be too far from him at that time
               | otherwise = meleeNearby
-        in condCanMelee && chessDist (bpos body) (bpos b) <= n
+        in canMove
+           && condCanMelee
+           && chessDist (bpos body) (bpos b) <= n
       -- Even when missiles run out, the non-moving foe will still be
       -- targeted, which is fine, since he is weakened by ranged, so should be
       -- meleed ASAP, even if without friends.
@@ -188,12 +192,16 @@ computeTarget aid = do
           -- boss fires at will
         && chessDist (bpos body) (bpos b) < rangedNearby
         && condCanProject
+        && (canMove || targetableLine body)
+              -- prevent the exploit of using cover against non-moving shooters
+              -- causing them to ignore any other distant foes
+      targetableLine body = isJust $ makeLine False b (bpos body) seps cops lvl
       targetableEnemy (aidE, body) = worthTargeting aidE body
-                                     && (targetableRanged body
+                                     && (adjacent (bpos body) (bpos b)
+                                            -- target regardless of anything,
+                                            -- e.g., to flee if helpless
                                          || targetableMelee body
-                                         || adjacent (bpos body) (bpos b))
-                                              -- target regardless of anything,
-                                              -- e.g., to flee if helpless
+                                         || targetableRanged body)
       nearbyFoes = filter targetableEnemy allFoes
   discoBenefit <- getsClient sdiscoBenefit
   fleeD <- getsClient sfleeD
@@ -302,7 +310,7 @@ computeTarget aid = do
                               -- If can't move (and so no BFS data),
                               -- no info gained. Or if can't alter
                               -- and possibly stuck among rubble.
-                              when (canMove && canAlter) $
+                              when (canReach && canAlter) $
                                 modifyClient $ \cli -> cli {sexplored =
                                   ES.insert (blid b) (sexplored cli)}
                               ctriggersRaw2 <- closestTriggers ViaExit aid
@@ -481,7 +489,7 @@ computeTarget aid = do
         TVector{} -> if pathLen > 1
                      then return $ Just tap
                      else pickNewTarget
-  if canMove
+  if canReach
   then case oldTgtUpdatedPath of
     Nothing -> pickNewTarget
     Just tap -> updateTgt tap
