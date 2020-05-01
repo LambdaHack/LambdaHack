@@ -396,10 +396,9 @@ lookAtTile canSee p aid lidV = do
   embeds <- getsState $ getEmbedBag lidV p
   itemToF <- getsState $ flip itemToFull
   seps <- getsClient seps
-  mnewEps <- makeLine False b p seps
   localTime <- getsState $ getLocalTime lidV
   getKind <- getsState $ flip getIidKind
-  let aims = isJust mnewEps
+  let aims = isJust $ makeLine False b p seps cops lvl
       tkid = lvl `at` p
       tile = okind cotile tkid
       vis | TK.tname tile == "unknown space" = "that is"

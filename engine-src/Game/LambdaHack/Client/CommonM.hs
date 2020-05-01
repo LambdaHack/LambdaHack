@@ -66,11 +66,11 @@ aidTgtToPos aid lidV (Just tgt) s = case tgt of
 -- the first found eps for which the number reaches the distance between
 -- actor and target position, or Nothing if none can be found.
 -- Treats unknown tiles as walkable, but prefers known.
-makeLine :: MonadStateRead m => Bool -> Actor -> Point -> Int -> m (Maybe Int)
-makeLine onlyFirst body fpos epsOld = do
-  COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} <- getsState scops
-  lvl <- getLevel (blid body)
-  let dist = chessDist (bpos body) fpos
+makeLine :: Bool -> Actor -> Point -> Int -> COps -> Level -> Maybe Int
+makeLine onlyFirst body fpos epsOld cops lvl =
+  let COps{corule=RuleContent{rXmax, rYmax}, coTileSpeedup} = cops
+      dist = chessDist (bpos body) fpos
+      calcScore :: Int -> Int
       calcScore eps = case bla rXmax rYmax eps (bpos body) fpos of
         Just bl ->
           let blDist = take (dist - 1) bl  -- goal not checked; actor well aware
@@ -89,6 +89,7 @@ makeLine onlyFirst body fpos epsOld = do
                 | accessFirst -> -10000
                 | otherwise -> minBound
         Nothing -> error $ "" `showFailure` (body, fpos, epsOld)
+      tryLines :: Int -> (Maybe Int, Int) -> Maybe Int
       tryLines curEps (acc, _) | curEps == epsOld + dist = acc
       tryLines curEps (acc, bestScore) =
         let curScore = calcScore curEps
@@ -96,10 +97,9 @@ makeLine onlyFirst body fpos epsOld = do
                      then (Just curEps, curScore)
                      else (acc, bestScore)
         in tryLines (curEps + 1) newAcc
-  return $! if | dist <= 0 -> Nothing  -- ProjectAimOnself
-               | calcScore epsOld > minBound -> Just epsOld  -- keep old
-               | otherwise ->
-                 tryLines (epsOld + 1) (Nothing, minBound)  -- generate best
+  in if | dist <= 0 -> Nothing  -- ProjectAimOnself
+        | calcScore epsOld > minBound -> Just epsOld  -- keep old
+        | otherwise -> tryLines (epsOld + 1) (Nothing, minBound)  -- find best
 
 -- @MonadStateRead@ would be enough, but the logic is sound only on client.
 currentSkillsClient :: MonadClientRead m => ActorId -> m Ability.Skills

@@ -728,15 +728,16 @@ projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
   mfpos <- getsState $ aidTgtToPos aid (blid b) btarget
-  seps <- getsClient seps
   case (btarget, mfpos) of
     (_, Just fpos) | adjacent (bpos b) fpos -> return reject
     (Just (TEnemy aidE), Just fpos) -> do
       actorMaxSkills <- getsState sactorMaxSkills
       body <- getsState $ getActorBody aidE
       if actorWorthChasing actorMaxSkills aidE body then do
-        mnewEps <- makeLine False b fpos seps
-        case mnewEps of
+        cops <- getsState scops
+        lvl <- getLevel (blid b)
+        seps <- getsClient seps
+        case makeLine False b fpos seps cops lvl of
           Just newEps -> do
             actorSk <- currentSkillsClient aid
             let skill = getSk SkProject actorSk

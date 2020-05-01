@@ -451,14 +451,15 @@ projectCheck tpos = do
 -- e.g., because the target actor can be obscured by a glass wall.
 xhairLegalEps :: MonadClientUI m => m (Either Text Int)
 xhairLegalEps = do
+  cops@COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lidV <- viewedLevelUI
   let !_A = assert (lidV == blid b) ()
       findNewEps onlyFirst pos = do
+        lvl <- getLevel (blid b)
         oldEps <- getsClient seps
-        mnewEps <- makeLine onlyFirst b pos oldEps
-        return $! case mnewEps of
+        return $! case makeLine onlyFirst b pos oldEps cops lvl of
           Just newEps -> Right newEps
           Nothing -> Left $ if onlyFirst
                             then "aiming blocked at the first step"
@@ -486,7 +487,6 @@ xhairLegalEps = do
       else return $ Left "can't fling at a target on remote level"
     Just (TVector v) -> do
       -- Not @ScreenContent@, because not drawing here.
-      COps{corule=RuleContent{rXmax, rYmax}} <- getsState scops
       let shifted = shiftBounded rXmax rYmax (bpos b) v
       if shifted == bpos b && v /= Vector 0 0
       then return $ Left "selected translation is void"
