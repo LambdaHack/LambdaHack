@@ -648,6 +648,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
   embeds <- getsState $ getEmbedBag lid tpos
+  groundBag <- getsState $ getBodyStoreBag sb CGround
   lvl <- getLevel lid
   getKind <- getsState $ flip getIidKindServer
   let serverTile = lvl `at` tpos
@@ -836,13 +837,15 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                 changeTo tgroup
                 return True
               else processTileActions museResult rest
-            Tile.WithAction grps tgroup ->
+            Tile.WithAction grps tgroup -> do
+              groundBag2 <- getsState $ getBodyStoreBag sb CGround
               -- Even mist can transform a tile (e.g., fire mist),
               -- but only if it managed to activate all previous embeds,
               -- (with mist, that means all such embeds were consumed earlier).
               if (not bumping || null grps)
                  && maybe True (== UseUp) museResult
                  && (voluntary || bproj sb)  -- no local skill check
+                 && groundBag2 == groundBag  -- no crafting and so mix-up
               then do
                 -- Waste item only if voluntary or released as projectile.
                 -- Use even unidentified items --- one more way to id by use.
