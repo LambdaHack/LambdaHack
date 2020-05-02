@@ -129,15 +129,15 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
 
 -- Create a level from a cave.
 buildLevel :: COps -> ServerOptions
-           -> Int -> ContentId CaveKind -> CaveKind -> Int -> Int
+           -> LevelId -> ContentId CaveKind -> CaveKind -> Int -> Int
            -> Dice.AbsDepth -> [(Point, Text)]
            -> Rnd (Level, [(Point, Text)])
 buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
-           ln dkind kc abandonedStairs singleDownStairs
+           lid dkind kc abandonedStairs singleDownStairs
            totalDepth stairsFromUp = do
   let d = if cfenceApart kc then 1 else 0
-      -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
-      ldepth = Dice.AbsDepth $ abs ln
+      -- Simple rule for now: level @lid@ has depth (difficulty) @abs lid@.
+      ldepth = Dice.AbsDepth $ abs $ fromEnum lid
       darea =
         let (lxPrev, lyPrev) = unzip $ map (px . fst &&& py . fst) stairsFromUp
             -- Stairs take some space, hence the additions.
@@ -173,7 +173,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
       -- Allowing corners and generating before stars, because they are more
       -- important that stairs (except the first stairs, but they are guaranteed
       -- unless the level has no incoming stairs, but if so, plenty of space).
-      mepos <- placeDownStairs "escape" True serverOptions ln
+      mepos <- placeDownStairs "escape" True serverOptions lid
                                kc darea pallUpStairs boot
       case mepos of
         Just epos -> return [(epos, escapeFreq)]
@@ -183,7 +183,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
       addSingleDown :: [Point] -> Int -> Rnd [Point]
       addSingleDown acc 0 = return acc
       addSingleDown acc k = do
-        mpos <- placeDownStairs "stairs" False serverOptions ln
+        mpos <- placeDownStairs "stairs" False serverOptions lid
                                 kc darea (pallUpAndEscape ++ acc) boot
         case mpos of
           Just pos -> addSingleDown (pos : acc) (k - 1)
@@ -207,7 +207,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
   -- Avoid completely uniform levels (e.g., uniformly merged places).
   bootExtra <- if EM.null fixedCenters then do
                  mpointExtra <-
-                   placeDownStairs "extra boot" False serverOptions ln
+                   placeDownStairs "extra boot" False serverOptions lid
                                    kc darea pallExits boot
                  -- With sane content, @Nothing@ should never appear.
                  return $! maybeToList mpointExtra
@@ -250,10 +250,10 @@ snapToStairList a (pos : rest) p =
 
 -- Places yet another staircase (or escape), taking into account only
 -- the already existing stairs.
-placeDownStairs :: Text -> Bool -> ServerOptions -> Int
+placeDownStairs :: Text -> Bool -> ServerOptions -> LevelId
                 -> CaveKind -> Area -> [Point] -> [Point]
                 -> Rnd (Maybe Point)
-placeDownStairs object cornerPermitted serverOptions ln
+placeDownStairs object cornerPermitted serverOptions lid
                 CaveKind{cminStairDist, cfenceApart} darea ps boot = do
   let dist cmin p = all (\pos -> chessDist p pos > cmin) ps
       (x0, y0, x1, y1) = fromArea darea
@@ -284,7 +284,7 @@ placeDownStairs object cornerPermitted serverOptions ln
            then unsafePerformIO $ do
              T.hPutStrLn stdout $
                 "Failed to place" <+> object <+> "on level"
-                <+> tshow ln <> ", in" <+> tshow darea
+                <+> tshow lid <> ", in" <+> tshow darea
              hFlush stdout
 -- Not really expensive, but shouldn't disrupt normal testing nor play.
 #ifdef WITH_EXPENSIVE_ASSERTIONS
@@ -343,14 +343,14 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
       getCaveKindNum :: (Int, GroupName CaveKind)
-                     -> Rnd ((Int, ContentId CaveKind, CaveKind), Int)
+                     -> Rnd ((LevelId, ContentId CaveKind, CaveKind), Int)
       getCaveKindNum (ln, genName) = do
         dkind <- fromMaybe (error $ "" `showFailure` genName)
                  <$> opick cocave genName (const True)
         let kc = okind cocave dkind
             ldepth = Dice.AbsDepth $ abs ln
         maxStairsNum <- castDice ldepth freshTotalDepth $ cmaxStairsNum kc
-        return ((ln, dkind, kc), maxStairsNum)
+        return ((toEnum ln, dkind, kc), maxStairsNum)
   caveKindNums <- mapM getCaveKindNum cavesFlat
   let (caveKinds, caveNums) = unzip caveKindNums
       caveNumNexts = zip caveNums $ drop 1 caveNums ++ [0]
@@ -377,21 +377,23 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
             !_A3 = assert (singleDownStairs >= 0) ()
         in ( (nstairsFromUp, abandonedStairs, singleDownStairs) : acc
            , doubleDownStairs + singleDownStairs )
-      (caveStairs, _) = foldl' placeStairs ([], 0) caveNumNexts
-      caveZipped = zip caveKinds caveStairs
+      (caveStairs, nstairsFromUpLast) = foldl' placeStairs ([], 0) caveNumNexts
+      caveZipped = assert (nstairsFromUpLast == 0) $ zip caveKinds caveStairs
       placeCaveKind :: ([(LevelId, Level)], [(Point, Text)])
-                     -> ((Int, ContentId CaveKind, CaveKind), (Int, Int, Int))
+                     -> ( (LevelId, ContentId CaveKind, CaveKind)
+                        , (Int, Int, Int) )
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
       placeCaveKind (lvls, stairsFromUp)
-                    ( (ln, dkind, kc)
+                    ( (lid, dkind, kc)
                     , (nstairsFromUp, abandonedStairs, singleDownStairs) ) = do
         let !_A = assert (length stairsFromUp == nstairsFromUp) ()
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions
-                     ln dkind kc abandonedStairs singleDownStairs
+                     lid dkind kc abandonedStairs singleDownStairs
                      freshTotalDepth stairsFromUp
-        return ((toEnum ln, newLevel) : lvls, ldown2)
-  (levels, _) <- foldlM' placeCaveKind ([], []) $ reverse caveZipped
-  let freshDungeon = EM.fromList levels
+        return ((lid, newLevel) : lvls, ldown2)
+  (levels, stairsFromUpLast) <- foldlM' placeCaveKind ([], [])
+                                        (reverse caveZipped)
+  let freshDungeon = assert (null stairsFromUpLast) $ EM.fromList levels
   return $! FreshDungeon{..}
