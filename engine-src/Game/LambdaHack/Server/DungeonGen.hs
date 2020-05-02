@@ -128,15 +128,12 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
                 -- symmetry kept for @cfenceApart@ caves, to save real estate
 
 -- Create a level from a cave.
-buildLevel :: COps -> ServerOptions -> Int -> GroupName CaveKind
+buildLevel :: COps -> ServerOptions -> Int -> ContentId CaveKind -> CaveKind
            -> Int -> Dice.AbsDepth -> [(Point, Text)]
            -> Rnd (Level, [(Point, Text)])
-buildLevel cops@COps{cocave, coplace, corule=RuleContent{..}} serverOptions
-           ln genName minD totalDepth lstairPrev = do
-  dkind <- fromMaybe (error $ "" `showFailure` genName)
-           <$> opick cocave genName (const True)
-  let kc = okind cocave dkind
-      d = if cfenceApart kc then 1 else 0
+buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
+           ln dkind kc minD totalDepth lstairPrev = do
+  let d = if cfenceApart kc then 1 else 0
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
       darea =
@@ -339,7 +336,7 @@ data FreshDungeon = FreshDungeon
 
 -- | Generate the dungeon for a new game.
 dungeonGen :: COps -> ServerOptions -> Caves -> Rnd FreshDungeon
-dungeonGen cops serverOptions caves = do
+dungeonGen cops@COps{cocave} serverOptions caves = do
   let shuffleSegment :: ([Int], [GroupName CaveKind])
                      -> Rnd [(Int, GroupName CaveKind)]
       shuffleSegment (ns, l) = assert (length ns == length l) $ do
@@ -353,14 +350,21 @@ dungeonGen cops serverOptions caves = do
       freshTotalDepth = assert (signum minD == signum maxD)
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
-      placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
-                     -> (Int, GroupName CaveKind)
+      getCaveKind :: (Int, GroupName CaveKind)
+                  -> Rnd (Int, ContentId CaveKind, CaveKind)
+      getCaveKind (ln, genName) = do
+        dkind <- fromMaybe (error $ "" `showFailure` genName)
+                 <$> opick cocave genName (const True)
+        return (ln, dkind, okind cocave dkind)
+  caveKinds <- mapM getCaveKind cavesFlat
+  let placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
+                     -> (Int, ContentId CaveKind, CaveKind)
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      placeCaveGroup (lvls, ldown) (n, genName) = do
+      placeCaveGroup (lvls, ldown) (n, dkind, kc) = do
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
-          buildLevel cops serverOptions n genName minD freshTotalDepth ldown
+          buildLevel cops serverOptions n dkind kc minD freshTotalDepth ldown
         return ((toEnum n, newLevel) : lvls, ldown2)
-  (levels, _) <- foldlM' placeCaveGroup ([], []) cavesFlat
+  (levels, _) <- foldlM' placeCaveGroup ([], []) caveKinds
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
