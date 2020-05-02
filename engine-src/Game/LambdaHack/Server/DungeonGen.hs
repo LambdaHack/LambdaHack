@@ -352,25 +352,36 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
         extraStairs <- castDice ldepth freshTotalDepth $ cextraStairs kc
         return (ln, dkind, kc, extraStairs)
   caveKinds <- mapM getCaveKind cavesFlat
-  let placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
-                     -> (Int, ContentId CaveKind, CaveKind, Int)
-                     -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      placeCaveGroup (lvls, stairsFromUp) (ln, dkind, kc, extraStairs) = do
+  let placeStairs :: ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
+                  -> (Int, ContentId CaveKind, CaveKind, Int)
+                  -> ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
+      placeStairs (acc, nstairsFromUp) (ln, dkind, kc, extraStairs) =
         -- Any stairs coming from above are mandatory
         -- and if they don't exceed @extraStairs@,
         -- the amount is filled up with single downstairs.
         -- If they do exceed @extraStairs@, the remainder ends here.
         let (abandonedStairs, singleDownStairs) =
-              if ln == minD then (length stairsFromUp, 0)
-              else let double = min (length stairsFromUp) extraStairs
+              if ln == minD then (nstairsFromUp, 0)
+              else let double = min (nstairsFromUp) extraStairs
                        single = max 0 $ extraStairs - double
-                   in (length stairsFromUp - double, single)
+                   in (nstairsFromUp - double, single)
+        in ( ( ln, dkind, kc
+             , nstairsFromUp, abandonedStairs, singleDownStairs ) : acc
+           , nstairsFromUp - abandonedStairs + singleDownStairs )
+      (caveStairs, _) = foldl' placeStairs ([], 0) caveKinds
+      placeCaveKind :: ([(LevelId, Level)], [(Point, Text)])
+                     -> (Int, ContentId CaveKind, CaveKind, Int, Int, Int)
+                     -> Rnd ([(LevelId, Level)], [(Point, Text)])
+      placeCaveKind (lvls, stairsFromUp)
+                    ( ln, dkind, kc
+                    , nstairsFromUp, abandonedStairs, singleDownStairs ) = do
+        let !_A = assert (length stairsFromUp == nstairsFromUp) ()
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions
                      ln dkind kc abandonedStairs singleDownStairs
                      freshTotalDepth stairsFromUp
         return ((toEnum ln, newLevel) : lvls, ldown2)
-  (levels, _) <- foldlM' placeCaveGroup ([], []) caveKinds
+  (levels, _) <- foldlM' placeCaveKind ([], []) $ reverse caveStairs
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
