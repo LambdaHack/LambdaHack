@@ -133,7 +133,7 @@ buildLevel :: COps -> ServerOptions
            -> Dice.AbsDepth -> [(Point, Text)]
            -> Rnd (Level, [(Point, Text)])
 buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
-           lid dkind kc abandonedStairs singleDownStairs
+           lid dkind kc doubleDownStairs singleDownStairs
            totalDepth stairsFromUp = do
   let d = if cfenceApart kc then 1 else 0
       -- Simple rule for now: level @lid@ has depth (difficulty) @abs lid@.
@@ -156,7 +156,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
             y0 = min lyMin $ max (lyMax - yspan + 1) $ (rYmax - yspan) `div` 2
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
-      (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs stairsFromUp
+      (lstairsDouble, lstairsSingleUp) = splitAt doubleDownStairs stairsFromUp
       pstairsSingleUp = map fst lstairsSingleUp
       pstairsDouble = map fst lstairsDouble
       pallUpStairs = pstairsDouble ++ pstairsSingleUp
@@ -214,7 +214,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
                else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
-      lstair = ( map posUp $ pstairsSingleUp ++ pstairsDouble
+      lstair = ( map posUp $ pstairsDouble ++ pstairsSingleUp
                , map posDn $ pstairsDouble ++ pstairsSingleDown )
   cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
   let subArea = fromMaybe (error $ "" `showFailure` kc) $ shrink darea
@@ -370,12 +370,9 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
               min maxStairsNumNext $ maxStairsNum - nstairsFromUp
             remainingNext = maxStairsNumNext - singleDownStairs
             doubleDownStairs = min nstairsFromUp remainingNext
-            abandonedStairs = nstairsFromUp - doubleDownStairs
-            !_A2 = assert (abandonedStairs ==
-                           (max 0 $ min nstairsFromUp $
-                              maxStairsNum - maxStairsNumNext)) ()
-            !_A3 = assert (singleDownStairs >= 0) ()
-        in ( (nstairsFromUp, abandonedStairs, singleDownStairs) : acc
+            !_A2 = assert (singleDownStairs >= 0) ()
+            !_A3 = assert (doubleDownStairs >= 0) ()
+        in ( (nstairsFromUp, doubleDownStairs, singleDownStairs) : acc
            , doubleDownStairs + singleDownStairs )
       (caveStairs, nstairsFromUpLast) = foldl' placeStairs ([], 0) caveNumNexts
       caveZipped = assert (nstairsFromUpLast == 0)
@@ -386,12 +383,12 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
       placeCaveKind (lvls, stairsFromUp)
                     ( (lid, dkind, kc)
-                    , (nstairsFromUp, abandonedStairs, singleDownStairs) ) = do
+                    , (nstairsFromUp, doubleDownStairs, singleDownStairs) ) = do
         let !_A = assert (length stairsFromUp == nstairsFromUp) ()
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions
-                     lid dkind kc abandonedStairs singleDownStairs
+                     lid dkind kc doubleDownStairs singleDownStairs
                      freshTotalDepth stairsFromUp
         return ((lid, newLevel) : lvls, ldown2)
   (levels, stairsFromUpLast) <- foldlM' placeCaveKind ([], []) caveZipped
