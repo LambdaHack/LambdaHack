@@ -378,7 +378,8 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
         in ( (nstairsFromUp, abandonedStairs, singleDownStairs) : acc
            , doubleDownStairs + singleDownStairs )
       (caveStairs, nstairsFromUpLast) = foldl' placeStairs ([], 0) caveNumNexts
-      caveZipped = assert (nstairsFromUpLast == 0) $ zip caveKinds caveStairs
+      caveZipped = assert (nstairsFromUpLast == 0)
+                   $ zip caveKinds (reverse caveStairs)
       placeCaveKind :: ([(LevelId, Level)], [(Point, Text)])
                      -> ( (LevelId, ContentId CaveKind, CaveKind)
                         , (Int, Int, Int) )
@@ -393,7 +394,6 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                      lid dkind kc abandonedStairs singleDownStairs
                      freshTotalDepth stairsFromUp
         return ((lid, newLevel) : lvls, ldown2)
-  (levels, stairsFromUpLast) <- foldlM' placeCaveKind ([], [])
-                                        (reverse caveZipped)
+  (levels, stairsFromUpLast) <- foldlM' placeCaveKind ([], []) caveZipped
   let freshDungeon = assert (null stairsFromUpLast) $ EM.fromList levels
   return $! FreshDungeon{..}
