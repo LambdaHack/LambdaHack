@@ -129,16 +129,17 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
 
 -- Create a level from a cave.
 buildLevel :: COps -> ServerOptions
-           -> Int -> ContentId CaveKind -> CaveKind -> Int
-           -> Int -> Dice.AbsDepth -> [(Point, Text)]
+           -> Int -> ContentId CaveKind -> CaveKind -> Int -> Int
+           -> Dice.AbsDepth -> [(Point, Text)]
            -> Rnd (Level, [(Point, Text)])
 buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
-           ln dkind kc extraStairs minD totalDepth lstairPrev = do
+           ln dkind kc abandonedStairs singleDownStairs
+           totalDepth stairsFromUp = do
   let d = if cfenceApart kc then 1 else 0
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
       darea =
-        let (lxPrev, lyPrev) = unzip $ map (px . fst &&& py . fst) lstairPrev
+        let (lxPrev, lyPrev) = unzip $ map (px . fst &&& py . fst) stairsFromUp
             -- Stairs take some space, hence the additions.
             lxMin = max 0
                     $ -4 - d + minimum (rXmax - 1 : lxPrev)
@@ -155,16 +156,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
             y0 = min lyMin $ max (lyMax - yspan + 1) $ (rYmax - yspan) `div` 2
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
-  -- Any stairs coming from above are mandatory
-  -- and if they don't exceed @extraStairs@,
-  -- the amount is filled up with single downstairs.
-  -- If they do exceed @extraStairs@, the remainder ends here.
-  let (abandonedStairs, singleDownStairs) =
-        if ln == minD then (length lstairPrev, 0)
-        else let double = min (length lstairPrev) extraStairs
-                 single = max 0 $ extraStairs - double
-             in (length lstairPrev - double, single)
-      (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs lstairPrev
+      (lstairsSingleUp, lstairsDouble) = splitAt abandonedStairs stairsFromUp
       pstairsSingleUp = map fst lstairsSingleUp
       pstairsDouble = map fst lstairsDouble
       pallUpStairs = pstairsDouble ++ pstairsSingleUp
@@ -363,12 +355,22 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
   let placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
                      -> (Int, ContentId CaveKind, CaveKind, Int)
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      placeCaveGroup (lvls, ldown) (n, dkind, kc, extraStairs) = do
+      placeCaveGroup (lvls, stairsFromUp) (ln, dkind, kc, extraStairs) = do
+        -- Any stairs coming from above are mandatory
+        -- and if they don't exceed @extraStairs@,
+        -- the amount is filled up with single downstairs.
+        -- If they do exceed @extraStairs@, the remainder ends here.
+        let (abandonedStairs, singleDownStairs) =
+              if ln == minD then (length stairsFromUp, 0)
+              else let double = min (length stairsFromUp) extraStairs
+                       single = max 0 $ extraStairs - double
+                   in (length stairsFromUp - double, single)
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
-          buildLevel cops serverOptions n dkind kc extraStairs
-                     minD freshTotalDepth ldown
-        return ((toEnum n, newLevel) : lvls, ldown2)
+          buildLevel cops serverOptions
+                     ln dkind kc abandonedStairs singleDownStairs
+                     freshTotalDepth stairsFromUp
+        return ((toEnum ln, newLevel) : lvls, ldown2)
   (levels, _) <- foldlM' placeCaveGroup ([], []) caveKinds
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
