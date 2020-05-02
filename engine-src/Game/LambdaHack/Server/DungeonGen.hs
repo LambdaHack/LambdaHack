@@ -340,7 +340,14 @@ data FreshDungeon = FreshDungeon
 -- | Generate the dungeon for a new game.
 dungeonGen :: COps -> ServerOptions -> Caves -> Rnd FreshDungeon
 dungeonGen cops serverOptions caves = do
-  let keys = concatMap fst caves
+  let shuffleSegment :: ([Int], [GroupName CaveKind])
+                     -> Rnd [(Int, GroupName CaveKind)]
+      shuffleSegment (ns, l) = assert (length ns == length l) $ do
+        lShuffled <- shuffle l
+        return $! zip ns lShuffled
+  cavesShuffled <- mapM shuffleSegment caves
+  let cavesFlat = concat cavesShuffled
+      keys = map fst cavesFlat
       minD = minimum keys
       maxD = maximum keys
       freshTotalDepth = assert (signum minD == signum maxD)
@@ -354,13 +361,6 @@ dungeonGen cops serverOptions caves = do
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions n genName minD freshTotalDepth ldown
         return ((toEnum n, newLevel) : lvls, ldown2)
-      buildLvls :: ([(LevelId, Level)], [(Point, Text)])
-                -> ([Int], [GroupName CaveKind])
-                -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      buildLvls (lvls, ldown) (ns, l) = assert (length ns == length l) $ do
-        lShuffled <- shuffle l
-        let nsl = zip ns lShuffled
-        foldlM' placeCaveGroup (lvls, ldown) nsl
-  (levels, _) <- foldlM' buildLvls ([], []) caves
+  (levels, _) <- foldlM' placeCaveGroup ([], []) cavesFlat
   let freshDungeon = EM.fromList levels
   return $! FreshDungeon{..}
