@@ -343,39 +343,47 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
       getCaveKind :: (Int, GroupName CaveKind)
-                  -> Rnd (Int, ContentId CaveKind, CaveKind, Int)
+                  -> Rnd ((Int, ContentId CaveKind, CaveKind), Int)
       getCaveKind (ln, genName) = do
         dkind <- fromMaybe (error $ "" `showFailure` genName)
                  <$> opick cocave genName (const True)
         let kc = okind cocave dkind
             ldepth = Dice.AbsDepth $ abs ln
         extraStairs <- castDice ldepth freshTotalDepth $ cextraStairs kc
-        return (ln, dkind, kc, extraStairs)
+        return ((ln, dkind, kc), extraStairs)
   caveKinds <- mapM getCaveKind cavesFlat
-  let placeStairs :: ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
-                  -> (Int, ContentId CaveKind, CaveKind, Int)
+  let addNextStairs ((ln, dkind, kc), extraStairs) extraStairsNext =
+        ((ln, dkind, kc), (extraStairs, extraStairsNext))
+      caveZipped = zipWith addNextStairs
+                           caveKinds
+                           (drop 1 (map snd caveKinds) ++ [0])
+      placeStairs :: ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
+                  -> ((Int, ContentId CaveKind, CaveKind), (Int, Int))
                   -> ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
-      placeStairs (acc, nstairsFromUp) (ln, dkind, kc, extraStairs) =
-        -- Any stairs coming from above are mandatory
-        -- and if they don't exceed @extraStairs@,
-        -- the amount is filled up with single downstairs.
-        -- If they do exceed @extraStairs@, the remainder ends here.
-        let (abandonedStairs, singleDownStairs) =
-              if ln == minD then (nstairsFromUp, 0)
-              else let double = min (nstairsFromUp) extraStairs
-                       single = max 0 $ extraStairs - double
-                   in (nstairsFromUp - double, single)
+      placeStairs (acc, nstairsFromUp)
+                  ((ln, dkind, kc), (extraStairs, extraStairsNext)) =
+        let !_A1 = assert (nstairsFromUp <= extraStairs) ()
+            -- Any stairs coming from above are kept and if they exceed
+            -- @extraStairsNext@, the remainder ends here.
+            -- If they don't exceed the minimum of @extraStairs@
+            -- and @extraStairsNext@, the difference is filled up
+            -- with single downstairs.
+            abandonedStairs = max 0 $ nstairsFromUp - extraStairsNext
+            singleDownStairs = max 0 $ min extraStairs extraStairsNext
+                                       - nstairsFromUp
         in ( ( ln, dkind, kc
              , nstairsFromUp, abandonedStairs, singleDownStairs ) : acc
            , nstairsFromUp - abandonedStairs + singleDownStairs )
-      (caveStairs, _) = foldl' placeStairs ([], 0) caveKinds
+      (caveStairs, _) = foldl' placeStairs ([], 0) caveZipped
       placeCaveKind :: ([(LevelId, Level)], [(Point, Text)])
                      -> (Int, ContentId CaveKind, CaveKind, Int, Int, Int)
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
       placeCaveKind (lvls, stairsFromUp)
                     ( ln, dkind, kc
                     , nstairsFromUp, abandonedStairs, singleDownStairs ) = do
-        let !_A = assert (length stairsFromUp == nstairsFromUp) ()
+        let !_A1 = assert (length stairsFromUp == nstairsFromUp) ()
+            !_A2 = assert (abandonedStairs >= 0) ()
+            !_A3 = assert (singleDownStairs >= 0) ()
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
           buildLevel cops serverOptions

@@ -41,9 +41,7 @@ data CaveKind = CaveKind
   , cmaxVoid        :: Rational
       -- ^ at most this proportion of rooms may be void
   , cminStairDist   :: Int              -- ^ minimal distance between stairs
-  , cextraStairs    :: Dice.Dice
-      -- ^ maximum of this number and the number of staircases coming from
-      --   above is built on the level
+  , cextraStairs    :: Dice.Dice        -- ^ maximum permitted number of stairs
   , cdoorChance     :: Chance           -- ^ the chance of a door in an opening
   , copenChance     :: Chance           -- ^ if there's a door, is it open?
   , chidden         :: Int              -- ^ if not open, hidden one in n times
