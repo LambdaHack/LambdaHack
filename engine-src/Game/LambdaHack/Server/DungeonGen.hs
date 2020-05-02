@@ -155,10 +155,10 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
             y0 = min lyMin $ max (lyMax - yspan + 1) $ (rYmax - yspan) `div` 2
         in fromMaybe (error $ "" `showFailure` kc)
            $ toArea (x0, y0, x0 + xspan - 1, y0 + yspan - 1)
-  -- Any stairs coming from above are considered extra stairs
+  -- Any stairs coming from above are mandatory
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
-  -- If they do exceed @extraStairs@, some of them end here.
+  -- If they do exceed @extraStairs@, the remainder ends here.
   let (abandonedStairs, singleDownStairs) =
         if ln == minD then (length lstairPrev, 0)
         else let double = min (length lstairPrev) extraStairs
