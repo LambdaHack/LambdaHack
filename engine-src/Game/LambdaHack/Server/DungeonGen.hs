@@ -128,11 +128,12 @@ anchorDown = 5  -- not 4, asymmetric vs up, for staircase variety;
                 -- symmetry kept for @cfenceApart@ caves, to save real estate
 
 -- Create a level from a cave.
-buildLevel :: COps -> ServerOptions -> Int -> ContentId CaveKind -> CaveKind
+buildLevel :: COps -> ServerOptions
+           -> Int -> ContentId CaveKind -> CaveKind -> Int
            -> Int -> Dice.AbsDepth -> [(Point, Text)]
            -> Rnd (Level, [(Point, Text)])
 buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
-           ln dkind kc minD totalDepth lstairPrev = do
+           ln dkind kc extraStairs minD totalDepth lstairPrev = do
   let d = if cfenceApart kc then 1 else 0
       -- Simple rule for now: level @ln@ has depth (difficulty) @abs ln@.
       ldepth = Dice.AbsDepth $ abs ln
@@ -158,8 +159,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
   -- and if they don't exceed @extraStairs@,
   -- the amount is filled up with single downstairs.
   -- If they do exceed @extraStairs@, some of them end here.
-  extraStairs <- castDice ldepth totalDepth $ cextraStairs kc
-  let (abandonedStairs, remainingStairsDown) =
+  let (abandonedStairs, singleDownStairs) =
         if ln == minD then (length lstairPrev, 0)
         else let double = min (length lstairPrev) extraStairs
                  single = max 0 $ extraStairs - double
@@ -196,7 +196,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
         case mpos of
           Just pos -> addSingleDown (pos : acc) (k - 1)
           Nothing -> return acc  -- calling again won't change anything
-  pstairsSingleDown <- addSingleDown [] remainingStairsDown
+  pstairsSingleDown <- addSingleDown [] singleDownStairs
   let freqDouble carried =
         filter (\(gn, _) -> carried `elem` T.words (fromGroupName gn))
         $ cstairFreq kc ++ cstairAllowed kc
@@ -351,19 +351,23 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                         $ Dice.AbsDepth
                         $ max 10 $ max (abs minD) (abs maxD)
       getCaveKind :: (Int, GroupName CaveKind)
-                  -> Rnd (Int, ContentId CaveKind, CaveKind)
+                  -> Rnd (Int, ContentId CaveKind, CaveKind, Int)
       getCaveKind (ln, genName) = do
         dkind <- fromMaybe (error $ "" `showFailure` genName)
                  <$> opick cocave genName (const True)
-        return (ln, dkind, okind cocave dkind)
+        let kc = okind cocave dkind
+            ldepth = Dice.AbsDepth $ abs ln
+        extraStairs <- castDice ldepth freshTotalDepth $ cextraStairs kc
+        return (ln, dkind, kc, extraStairs)
   caveKinds <- mapM getCaveKind cavesFlat
   let placeCaveGroup :: ([(LevelId, Level)], [(Point, Text)])
-                     -> (Int, ContentId CaveKind, CaveKind)
+                     -> (Int, ContentId CaveKind, CaveKind, Int)
                      -> Rnd ([(LevelId, Level)], [(Point, Text)])
-      placeCaveGroup (lvls, ldown) (n, dkind, kc) = do
+      placeCaveGroup (lvls, ldown) (n, dkind, kc, extraStairs) = do
         (newLevel, ldown2) <-
           -- lstairUp for the next level is lstairDown for the current level
-          buildLevel cops serverOptions n dkind kc minD freshTotalDepth ldown
+          buildLevel cops serverOptions n dkind kc extraStairs
+                     minD freshTotalDepth ldown
         return ((toEnum n, newLevel) : lvls, ldown2)
   (levels, _) <- foldlM' placeCaveGroup ([], []) caveKinds
   let freshDungeon = EM.fromList levels
