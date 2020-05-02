@@ -40,8 +40,6 @@ data CaveKind = CaveKind
   , cauxConnects    :: Rational         -- ^ a proportion of extra connections
   , cmaxVoid        :: Rational
       -- ^ at most this proportion of rooms may be void
-  , cminStairDist   :: Int              -- ^ minimal distance between stairs
-  , cextraStairs    :: Dice.Dice        -- ^ maximum permitted number of stairs
   , cdoorChance     :: Chance           -- ^ the chance of a door in an opening
   , copenChance     :: Chance           -- ^ if there's a door, is it open?
   , chidden         :: Int              -- ^ if not open, hidden one in n times
@@ -65,6 +63,8 @@ data CaveKind = CaveKind
   , cfenceApart     :: Bool                -- ^ are places touching fence banned
   , clegendDarkTile :: GroupName TileKind  -- ^ the dark place plan legend
   , clegendLitTile  :: GroupName TileKind  -- ^ the lit place plan legend
+  , cminStairDist   :: Int                 -- ^ minimal distance between stairs
+  , cmaxStairsNum   :: Dice.Dice           -- ^ maximum number of stairs
   , cescapeFreq     :: Freqs PlaceKind     -- ^ escape groups, if any
   , cstairFreq      :: Freqs PlaceKind     -- ^ place groups for created stairs
   , cstairAllowed   :: Freqs PlaceKind     -- ^ extra groups for inherited
@@ -97,12 +97,12 @@ validateSingle CaveKind{..} =
      ++ [ "minMinSizeY < 1" | minMinSizeY < 1 ]
      ++ [ "minMaxSizeX < maxMinSizeX" | minMaxSizeX < maxMinSizeX ]
      ++ [ "minMaxSizeY < maxMinSizeY" | minMaxSizeY < maxMinSizeY ]
-     ++ [ "cextraStairs < 0" | Dice.infDice cextraStairs < 0 ]
      ++ [ "chidden < 0" | chidden < 0 ]
      ++ [ "cactorCoeff < 0" | cactorCoeff < 0 ]
      ++ [ "citemNum < 0" | Dice.infDice citemNum < 0 ]
+     ++ [ "cmaxStairsNum < 0" | Dice.infDice cmaxStairsNum < 0 ]
      ++ [ "stairs suggested, but not defined"
-        | Dice.supDice cextraStairs > 0 && null cstairFreq ]
+        | Dice.supDice cmaxStairsNum > 0 && null cstairFreq ]
 
 -- | Validate all cave kinds.
 -- Note that names don't have to be unique: we can have several variants

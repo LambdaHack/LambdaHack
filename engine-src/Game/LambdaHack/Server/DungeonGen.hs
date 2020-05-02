@@ -349,11 +349,11 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                  <$> opick cocave genName (const True)
         let kc = okind cocave dkind
             ldepth = Dice.AbsDepth $ abs ln
-        extraStairs <- castDice ldepth freshTotalDepth $ cextraStairs kc
-        return ((ln, dkind, kc), extraStairs)
+        maxStairsNum <- castDice ldepth freshTotalDepth $ cmaxStairsNum kc
+        return ((ln, dkind, kc), maxStairsNum)
   caveKinds <- mapM getCaveKind cavesFlat
-  let addNextStairs ((ln, dkind, kc), extraStairs) extraStairsNext =
-        ((ln, dkind, kc), (extraStairs, extraStairsNext))
+  let addNextStairs ((ln, dkind, kc), maxStairsNum) maxStairsNumNext =
+        ((ln, dkind, kc), (maxStairsNum, maxStairsNumNext))
       caveZipped = zipWith addNextStairs
                            caveKinds
                            (drop 1 (map snd caveKinds) ++ [0])
@@ -361,19 +361,26 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
                   -> ((Int, ContentId CaveKind, CaveKind), (Int, Int))
                   -> ([(Int, ContentId CaveKind, CaveKind, Int, Int, Int)], Int)
       placeStairs (acc, nstairsFromUp)
-                  ((ln, dkind, kc), (extraStairs, extraStairsNext)) =
-        let !_A1 = assert (nstairsFromUp <= extraStairs) ()
+                  ((ln, dkind, kc), (maxStairsNum, maxStairsNumNext)) =
+        let !_A1 = assert (nstairsFromUp <= maxStairsNum) ()
             -- Any stairs coming from above are kept and if they exceed
-            -- @extraStairsNext@, the remainder ends here.
-            -- If they don't exceed the minimum of @extraStairs@
-            -- and @extraStairsNext@, the difference is filled up
-            -- with single downstairs.
-            abandonedStairs = max 0 $ nstairsFromUp - extraStairsNext
-            singleDownStairs = max 0 $ min extraStairs extraStairsNext
-                                       - nstairsFromUp
+            -- @maxStairsNumNext@, the remainder ends here.
+            -- If they don't exceed the minimum of @maxStairsNum@
+            -- and @maxStairsNumNext@, the difference is filled up
+            -- with single downstairs. The computation below maximizes
+            -- the number of stairs at the cost of breaking some long
+            -- staircases. Even so, sometimes @maxStairsNum@ is not reached.
+            singleDownStairs =
+              min maxStairsNumNext $ maxStairsNum - nstairsFromUp
+            remainingNext = maxStairsNumNext - singleDownStairs
+            doubleDownStairs = min nstairsFromUp remainingNext
+            abandonedStairs = nstairsFromUp - doubleDownStairs
+            !_A = assert (abandonedStairs ==
+                          (max 0 $ min nstairsFromUp $
+                             maxStairsNum - maxStairsNumNext)) ()
         in ( ( ln, dkind, kc
              , nstairsFromUp, abandonedStairs, singleDownStairs ) : acc
-           , nstairsFromUp - abandonedStairs + singleDownStairs )
+           , doubleDownStairs + singleDownStairs )
       (caveStairs, _) = foldl' placeStairs ([], 0) caveZipped
       placeCaveKind :: ([(LevelId, Level)], [(Point, Text)])
                      -> (Int, ContentId CaveKind, CaveKind, Int, Int, Int)

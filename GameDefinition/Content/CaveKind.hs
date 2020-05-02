@@ -13,14 +13,14 @@ import Game.LambdaHack.Core.Prelude
 
 import Data.Ratio
 
-import           Content.ItemKind hiding (content, groupNames,
-                                   groupNamesSingleton)
+import           Content.ItemKind hiding
+  (content, groupNames, groupNamesSingleton)
 import           Content.ItemKindActor
 import           Content.ItemKindBlast
-import           Content.PlaceKind hiding (content, groupNames,
-                                    groupNamesSingleton)
-import           Content.TileKind hiding (content, groupNames,
-                                   groupNamesSingleton)
+import           Content.PlaceKind hiding
+  (content, groupNames, groupNamesSingleton)
+import           Content.TileKind hiding
+  (content, groupNames, groupNamesSingleton)
 import           Game.LambdaHack.Content.CaveKind
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.TileKind
@@ -83,8 +83,6 @@ rogue = CaveKind
   , cnightOdds    = 51  -- always night
   , cauxConnects  = 1%2
   , cmaxVoid      = 1%6
-  , cminStairDist = 20
-  , cextraStairs  = 1 + 1 `d` 2
   , cdoorChance   = 3%4
   , copenChance   = 1%5
   , chidden       = 7
@@ -107,6 +105,8 @@ rogue = CaveKind
   , cfenceApart   = False
   , clegendDarkTile = LEGEND_DARK
   , clegendLitTile  = LEGEND_LIT
+  , cminStairDist = 20
+  , cmaxStairsNum = 1 + 1 `d` 2
   , cescapeFreq   = []
   , cstairFreq    = [ (WALLED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
                     , (TINY_STAIRCASE, 1) ]
@@ -129,8 +129,6 @@ arena = rogue
   , cnightOdds    = 0  -- always day
   , cauxConnects  = 1
   , cmaxVoid      = 1%8
-  , cminStairDist = 15
-  , cextraStairs  = 1 `d` 2
   , chidden       = 0
   , cactorCoeff   = 75  -- small open level, don't rush the player
   , cactorFreq    = [(MONSTER, 30), (ANIMAL, 70)]
@@ -142,6 +140,8 @@ arena = rogue
   , cdefTile      = ARENA_SET_LIT
   , cdarkCorTile  = TRAIL_LIT  -- let trails give off light
   , clitCorTile   = TRAIL_LIT  -- may be rolled different than the above
+  , cminStairDist = 15
+  , cmaxStairsNum = 1 `d` 2
   , cstairFreq    = [ (WALLED_STAIRCASE, 20), (CLOSED_STAIRCASE, 80)
                     , (TINY_STAIRCASE, 1) ]
   , cdesc         = "The shelves groan with dusty books and tattered scrolls."
@@ -169,7 +169,6 @@ laboratory = rogue
   , cnightOdds    = 0  -- always day so that the corridor smoke is lit
   , cauxConnects  = 1%5
   , cmaxVoid      = 1%10
-  , cextraStairs  = 2
   , cdoorChance   = 1
   , copenChance   = 1%2
   , cactorFreq    = [(MONSTER, 30), (ANIMAL, 70)]
@@ -179,6 +178,7 @@ laboratory = rogue
   , cplaceFreq    = [(LABORATORY, 1)]
   , cdarkCorTile  = LAB_TRAIL_LIT  -- let lab smoke give off light always
   , clitCorTile   = LAB_TRAIL_LIT
+  , cmaxStairsNum = 2
   , cstairFreq    = [ (WALLED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
                     , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Shattered glassware and the sharp scent of spilt chemicals show that something terrible happened here."
@@ -198,7 +198,6 @@ noise = rogue
   , cnightOdds    = 0  -- harder variant, but looks cheerful
   , cauxConnects  = 1%10
   , cmaxVoid      = 1%100
-  , cminStairDist = 15
   , cdoorChance   = 1  -- to avoid lit quasi-door tiles
   , chidden       = 0
   , cactorCoeff   = 80  -- the maze requires time to explore; also, small
@@ -211,6 +210,7 @@ noise = rogue
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
   , cdarkCorTile  = DAMP_FLOOR_DARK
   , clitCorTile   = DAMP_FLOOR_LIT
+  , cminStairDist = 15
   , cstairFreq    = [ (CLOSED_STAIRCASE, 50), (OPEN_STAIRCASE, 50)
                     , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Soon, these passages will be swallowed up by the mud."
@@ -240,8 +240,6 @@ empty = rogue
   , cnightOdds    = 0  -- always day
   , cauxConnects  = 3%2
   , cmaxVoid      = 0  -- too few rooms to have void and fog common anyway
-  , cminStairDist = 30
-  , cextraStairs  = 1
   , cdoorChance   = 0
   , copenChance   = 0
   , chidden       = 0
@@ -259,6 +257,8 @@ empty = rogue
   , cdefTile      = EMPTY_SET_LIT
   , cdarkCorTile  = FLOOR_ARENA_DARK
   , clitCorTile   = FLOOR_ARENA_LIT
+  , cminStairDist = 30
+  , cmaxStairsNum = 1
   , cstairFreq    = [ (WALLED_STAIRCASE, 20), (CLOSED_STAIRCASE, 80)
                     , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
@@ -267,7 +267,7 @@ shallowRogue = rogue
   { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
   , cXminSize     = 60
   , cYminSize     = 21
-  , cextraStairs  = 1  -- ensure heroes meet initial monsters and their loot
+  , cmaxStairsNum = 1  -- ensure heroes meet initial monsters and their loot
   , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
 outermost = shallowRogue
@@ -277,12 +277,12 @@ outermost = shallowRogue
   , cXminSize     = 40
   , cYminSize     = 21
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
-  , cminStairDist = 10
-  , cextraStairs  = 1
   , cactorCoeff   = 80  -- already animals start there; also, pity on the noob
   , cactorFreq    = filter ((/= MONSTER) . fst) $ cactorFreq rogue
   , citemNum      = 6 `d` 5  -- lure them in with loot
   , citemFreq     = filter ((/= IK.TREASURE) . fst) $ citemFreq rogue
+  , cminStairDist = 10
+  , cmaxStairsNum = 1
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
   }
@@ -300,12 +300,12 @@ raid = rogue
   , cmaxPlaceSize = DiceXY 16 20
   , cdarkOdds     = 0  -- all rooms lit, for a gentle start
   , cmaxVoid      = 1%10
-  , cextraStairs  = 0
   , cactorCoeff   = 250  -- deep level with no kit, so slow spawning
   , cactorFreq    = [(ANIMAL, 100)]
   , citemNum      = 6 `d` 6  -- just one level, hard enemies, treasure
   , citemFreq     = [ (IK.COMMON_ITEM, 100), (IK.S_CURRENCY, 500)
                     , (STARTING_WEAPON, 100) ]
+  , cmaxStairsNum = 0
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cstairFreq    = []
   , cdesc         = ""
@@ -325,7 +325,6 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cnightOdds    = 0
   , cdoorChance   = 1
   , copenChance   = 0
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 4 `d` 6
@@ -341,6 +340,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cdesc         = "Sunlight falls through the trees and dapples on the ground."
   }
 shootout = rogue  -- a scenario with strong missiles;
@@ -359,7 +359,6 @@ shootout = rogue  -- a scenario with strong missiles;
   , cauxConnects  = 1%10
   , cdoorChance   = 1
   , copenChance   = 0
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 16
@@ -380,6 +379,7 @@ shootout = rogue  -- a scenario with strong missiles;
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cdesc         = ""
   }
 hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
@@ -394,7 +394,6 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , cauxConnects  = 1%10
   , cdoorChance   = 1
   , copenChance   = 0
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 10
@@ -410,6 +409,7 @@ hunt = rogue  -- a scenario with strong missiles for ranged and shade for melee
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cdesc         = ""
   }
 escape = rogue  -- a scenario with weak missiles, because heroes don't depend
@@ -426,7 +426,6 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cnightOdds    = 51  -- always night
   , cauxConnects  = 2  -- many lit trails, so easy to aim
   , cmaxVoid      = 1%100
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 6 `d` 8
@@ -442,6 +441,7 @@ escape = rogue  -- a scenario with weak missiles, because heroes don't depend
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
   , cstairFreq    = []
   , cdesc         = ""
@@ -459,7 +459,6 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , cmaxVoid      = 1%20
   , cdoorChance   = 7%10
   , copenChance   = 9%10
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 7 `d` 8
@@ -475,6 +474,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cdesc         = ""
   }
 ambush = rogue  -- a scenario with strong missiles;
@@ -495,7 +495,6 @@ ambush = rogue  -- a scenario with strong missiles;
   , cdarkOdds     = 51  -- rooms always dark so that fence not visible from afar
   , cnightOdds    = 51  -- always night
   , cauxConnects  = 1%10  -- few lit trails, so hard to aim
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
@@ -511,6 +510,7 @@ ambush = rogue  -- a scenario with strong missiles;
   , cfenceTileE   = OUTDOOR_OUTER_FENCE
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
+  , cmaxStairsNum = 0
   , cdesc         = ""
   }
 
@@ -529,7 +529,6 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cmaxVoid      = 1%20
   , cdoorChance   = 2%10
   , copenChance   = 9%10
-  , cextraStairs  = 0
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
@@ -544,6 +543,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , cfenceTileS   = OUTDOOR_OUTER_FENCE
   , cfenceTileW   = OUTDOOR_OUTER_FENCE
   , cfenceApart   = True  -- ensures no cut-off parts from collapsed
+  , cmaxStairsNum = 0
   , cstairFreq    = []
   , cdesc         = ""
   }
@@ -551,7 +551,7 @@ safari1 = brawl
   { cname         = "Hunam habitat"
   , cfreq         = [(CAVE_SAFARI_1, 1)]
   , cminPlaceSize = DiceXY 5 3
-  , cextraStairs  = 1
+  , cmaxStairsNum = 1
   , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
                     , (OUTDOOR_CLOSED_STAIRCASE, 80)
                     , (OUTDOOR_TINY_STAIRCASE, 1) ]
@@ -560,7 +560,7 @@ safari1 = brawl
 safari2 = escape  -- lamps instead of trees, but ok, it's only a simulation
   { cname         = "Deep into the jungle"
   , cfreq         = [(CAVE_SAFARI_2, 1)]
-  , cextraStairs  = 1
+  , cmaxStairsNum = 1
   , cescapeFreq   = []
   , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
                     , (OUTDOOR_CLOSED_STAIRCASE, 80)
@@ -572,7 +572,7 @@ safari3 = zoo  -- glass rooms, but ok, it's only a simulation
   , cfreq         = [(CAVE_SAFARI_3, 1)]
   , cminPlaceSize = DiceXY 5 4
   , cescapeFreq   = [(OUTDOOR_ESCAPE_DOWN, 1)]
-  , cextraStairs  = 1
+  , cmaxStairsNum = 1
   , cstairFreq    = [ (OUTDOOR_WALLED_STAIRCASE, 20)
                     , (OUTDOOR_CLOSED_STAIRCASE, 80)
                     , (OUTDOOR_TINY_STAIRCASE, 1) ]
