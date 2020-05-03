@@ -116,6 +116,7 @@ actionStrategy aid retry = do
   randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
   friends <- getsState $ friendRegularList (bfid body) (blid body)
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   let anyFriendOnLevelAwake = any (\b ->
         bwatch b /= WSleep && bpos b /= bpos body) friends
       actorMaxSk = actorMaxSkills EM.! aid
@@ -208,7 +209,9 @@ actionStrategy aid retry = do
             -- Note that we don't know how far ranged threats are or if,
             -- in fact, they hit from all sides or are hidden. Hence we can't
             -- do much except hide in darkness or take off light (elsewhere).
+            -- Note: a part of this condition appears in @actorVulnerable@.
             not condFastThreatAdj
+            && Just (blid body, bpos body) /= gstash fact
             && if | condAnyHarmfulFoeAdj ->
                     -- Here we don't check @condInMelee@ because regardless
                     -- of whether our team melees (including the fleeing ones),
@@ -308,6 +311,7 @@ actionStrategy aid retry = do
                               20)
             $ chase aid avoidAmbient retry
           , condCanMelee
+            && Just (blid body, bpos body) /= gstash fact
             && (if condInMelee then condAimEnemyOrStash
                 else (condAimEnemyOrRemembered
                       || condAimNonEnemyPresent)
