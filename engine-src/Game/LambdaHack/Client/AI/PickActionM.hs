@@ -211,13 +211,17 @@ actionStrategy aid retry = do
             -- do much except hide in darkness or take off light (elsewhere).
             -- Note: a part of this condition appears in @actorVulnerable@.
             not condFastThreatAdj
-            && Just (blid body, bpos body) /= gstash fact
             && if | condAnyHarmfulFoeAdj ->
                     -- Here we don't check @condInMelee@ because regardless
                     -- of whether our team melees (including the fleeing ones),
                     -- endangered actors should flee from very close foes.
                     not condCanMelee
                     || condManyThreatAdj && not condSupport1 && not condSolo
+                  | case gstash fact of
+                      Nothing -> False
+                      Just (lid, pos) ->
+                        lid == blid body
+                        && chessDist pos (bpos body) <= 2 -> False
                   | condInMelee -> False
                       -- No fleeing when others melee and melee target close
                       -- (otherwise no target nor action would be possible).
