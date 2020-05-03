@@ -103,7 +103,7 @@ instance Binary Target
 
 -- | The goal of an actor.
 data TGoal =
-    TStash FactionId  -- ^ shared inventory stash of the enemy faction
+    TStash FactionId  -- ^ shared inventory stash of our or an enemy faction
   | TEnemyPos ActorId  -- ^ last seen position of the targeted actor
   | TEmbed ItemBag Point  -- ^ embedded item that can be triggered;
                           -- in @TPoint (TEmbed bag p) _ q@ usually @bag@ is

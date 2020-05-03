@@ -512,16 +512,36 @@ closestFoes foes aid =
       let ds = mapMaybe (\x@(_, b) -> fmap (,x) (accessBfs bfs (bpos b))) foes
       return $! sortBy (comparing fst) ds
 
--- | Closest (wrt paths) enemy stash locations.
+-- | Closest (wrt paths) enemy or our unguarded stash locations. If it's ours,
+-- we want to guard it, it enemy, loot it. Neutral and friendly stashes
+-- not chased to avoid loops of bloodless takeovers.
 closestStashes :: MonadClient m => ActorId -> m [(Int, (FactionId, Point))]
 closestStashes aid = do
   factionD <- getsState sfactionD
+  actorMaxSkills <- getsState sactorMaxSkills
   b <- getsState $ getActorBody aid
-  let qualifyStash (fid, Faction{gstash}) = case gstash of
+  let f (!aid2, !b2) =
+        bfid b2 == bfid b
+        && not (bproj b2)
+        && let actorMaxSk2 = actorMaxSkills EM.! aid2
+           in Ability.getSk Ability.SkMove actorMaxSk2 > 0
+  oursExploring <- getsState $ filter f . EM.assocs . sactorD
+  lvl <- getLevel (blid b)
+  -- The foes may be untargettable, but if so, will return to guarding
+  -- after one step off the stash and stay there until targetable foes appear.
+  allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
+  let fact = factionD EM.! bfid b
+      qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
-          if lid == blid b && isFoe (bfid b) (factionD EM.! bfid b) fid
-          then Just (fid, pos)
+          if lid == blid b
+             && (fid2 == bfid b
+                 && (pos == bpos b  -- guarded by me, so keep guarding
+                     && null allFoes  -- if no foes nearby
+                     || isNothing (posToBigLvl pos lvl))  -- or unguarded
+                 && length oursExploring > 1  -- other actors able to explore
+                 || isFoe (bfid b) fact fid2)
+          then Just (fid2, pos)
           else Nothing
   case mapMaybe qualifyStash $ EM.assocs factionD of
     [] -> return []

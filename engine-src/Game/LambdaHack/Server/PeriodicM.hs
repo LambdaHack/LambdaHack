@@ -332,15 +332,22 @@ leadLevelSwitch = do
             -- so they give back leadership rather quickly to let others follow.
             -- We count non-mobile and sleeping actors, because they may
             -- be dangerous, especially if adjacent to stairs.
-            let freqList = [ (k, (lid, aid))
-                           | ((lid, lvl), (_, (aid, _) : _)) <- ours
+            let overOwnStash b = Just (blid b, bpos b) == gstash fact
+                freqList = [ (k, (lid, aid))
+                           | ((lid, lvl), (_, (aid, b) : rest)) <- ours
                            , let len = min 20 (EM.size $ lbig lvl)
-                                 k = 1000000 `div` (1 + len) ]
+                                 n = 1000000 `div` (1 + len)
+                                 -- Visit the stash guard rarely, but not too
+                                 -- rarely, to regen Calm and fling at foes.
+                                 k = max 1 $ if null rest && overOwnStash b
+                                             then n `div` 30
+                                             else n
+                           ]
                 closeToFactStash (fid2, fact2) = case gstash fact2 of
                   Just (lid, pos) ->
-                    isFoe fid (factionD EM.! fid) fid2
+                    (fid == fid2 || isFoe fid (factionD EM.! fid) fid2)
                     && lid == blid body
-                    && chessDist pos (bpos body) <= 1  -- visible
+                    && chessDist pos (bpos body) == 1  -- visible
                   Nothing -> False
                 closeToEnemyStash = any closeToFactStash $ EM.assocs factionD
             unless (closeToEnemyStash || null freqList) $ do

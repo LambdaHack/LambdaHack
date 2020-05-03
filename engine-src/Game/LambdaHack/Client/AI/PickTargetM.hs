@@ -207,6 +207,7 @@ computeTarget aid = do
   fleeD <- getsClient sfleeD
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
+  cstashes <- closestStashes aid
   let desirableIid (iid, (k, _)) =
         let Benefit{benPickup} = discoBenefit EM.! iid
         in desirableItem cops canEscape benPickup
@@ -244,7 +245,6 @@ computeTarget aid = do
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
-        cstashes <- closestStashes aid
         case cstashes of
           (_, (fid2, pos2)) : _ -> setPath $ TPoint (TStash fid2) (blid b) pos2
           [] -> do
@@ -338,9 +338,9 @@ computeTarget aid = do
                 else do
                   (p, bag) <- rndToAction $ frequency citems
                   setPath $ TPoint (TItem bag) (blid b) p
-      tellOthersNothingHere pos = do
+      tellOthersNothingHere = do
         let f TgtAndPath{tapTgt} = case tapTgt of
-              TPoint _ lid p -> p /= pos || lid /= blid b
+              TPoint _ lid p -> p /= bpos b || lid /= blid b
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
@@ -387,16 +387,28 @@ computeTarget aid = do
                    else pickNewTargetIgnore (Just a)
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint tgoal lid pos -> case tgoal of
-          TStash fid2 -> assert (fid2 /= bfid b) $
+          TStash fid2 -> do
+            let f (!aid2, !b2) =
+                  bfid b2 == bfid b
+                  && not (bproj b2)
+                  && let actorMaxSk2 = actorMaxSkills EM.! aid2
+                     in Ability.getSk Ability.SkMove actorMaxSk2 > 0
+            oursExploring <- getsState $ filter f . EM.assocs . sactorD
+            -- Even if made peace with the faction, loot stash one last time.
             if gstash (factionD EM.! fid2) == Just (lid, pos)
-                 -- even if made peace with the faction, loot the stash once
+               && (fid2 == bfid b
+                   && (pos == bpos b  -- guarded by me, so keep guarding
+                       && null nearbyFoes  -- if no foes nearby
+                       || isNothing (posToBigLvl pos lvl))  -- or unguarded
+                   && length oursExploring > 1  -- other actors able to explore
+                   || isFoe (bfid b) fact fid2)
             then return $ Just tap
             else pickNewTarget
           -- In this case, need to retarget, to focus on foes that melee ours
           -- and not, e.g., on remembered foes or items.
-          _ | condInMelee -> pickNewTarget
+          _ | condInMelee || not (null cstashes) -> pickNewTarget
           TEnemyPos _  -- chase last position even if foe hides
-            | bpos b == pos -> tellOthersNothingHere pos
+            | bpos b == pos -> tellOthersNothingHere
             | EM.member aid fleeD -> pickNewTarget
                 -- forget enemy positions to prevent attacking them again soon
             | otherwise -> do
@@ -409,7 +421,7 @@ computeTarget aid = do
               then pickNewTarget
               else return $ Just tap
           -- Prefer close foes to anything else below.
-          _ | not $ null nearbyFoes -> pickNewTarget
+          _ | not (null nearbyFoes) -> pickNewTarget
           -- Below we check the target could not be picked again in
           -- pickNewTarget (e.g., an item got picked up by our teammate)
           -- and only in this case it is invalidated.
@@ -472,7 +484,8 @@ computeTarget aid = do
                     -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
             else return $ Just tap
-        _ | condInMelee || (not $ null nearbyFoes) -> pickNewTarget
+        _ | condInMelee || not (null nearbyFoes && null cstashes) ->
+            pickNewTarget
         TNonEnemy _ | mleader == Just aid ->  -- a leader, never follow
           pickNewTarget
         TNonEnemy a -> do

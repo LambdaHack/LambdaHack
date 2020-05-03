@@ -103,7 +103,7 @@ cmdAtomicSemCli oldState cmd = case cmd of
     invalidateInMelee (blid b)
   UpdWaitActor aid _fromW toW ->
     -- So that we can later ignore such actors when updating targets
-    -- and not risk they beling pushed/displaces and targets getting wrong.
+    -- and not risk they being pushed/displaced and targets getting illegal.
     when (toW == WSleep) $
       modifyClient $ updateTarget aid (const Nothing)
   UpdDisplaceActor source target -> do
