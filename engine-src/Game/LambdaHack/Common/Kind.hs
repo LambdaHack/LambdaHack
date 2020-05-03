@@ -84,6 +84,8 @@ data TileSpeedup = TileSpeedup
   , isLitTab            :: Tab Bool
   , isWalkableTab       :: Tab Bool
   , isDoorTab           :: Tab Bool
+  , isOpenableTab       :: Tab Bool
+  , isClosableTab       :: Tab Bool
   , isChangableTab      :: Tab Bool
   , isModifiableWithTab :: Tab Bool
   , isSuspectTab        :: Tab Bool
@@ -113,7 +115,8 @@ emptyTileSpeedup :: TileSpeedup
 emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab emptyTab emptyTab emptyTab
+                               emptyTab emptyTab emptyTab emptyTab emptyTab
+                               emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty

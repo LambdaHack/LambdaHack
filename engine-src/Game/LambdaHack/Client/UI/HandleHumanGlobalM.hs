@@ -1193,12 +1193,12 @@ alterWithPointerHuman = do
 closeDirHuman :: MonadClientUI m
               => m (FailOrCmd RequestTimed)
 closeDirHuman = do
-  COps{cotile} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let vPts = vicinityUnsafe $ bpos b
-      openPts = filter (Tile.isClosable cotile . at lvl) vPts
+      openPts = filter (Tile.isClosable coTileSpeedup . at lvl) vPts
   case openPts of
     []  -> failSer CloseNothing
     [o] -> closeTileAtPos o
@@ -1210,7 +1210,7 @@ closeDirHuman = do
 closeTileAtPos :: MonadClientUI m
                => Point -> m (FailOrCmd RequestTimed)
 closeTileAtPos tpos = do
-  COps{cotile} <- getsState scops
+  COps{coTileSpeedup} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   actorSk <- leaderSkillsClientUI
@@ -1218,8 +1218,8 @@ closeTileAtPos tpos = do
   lvl <- getLevel $ blid b
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       t = lvl `at` tpos
-      isOpen = Tile.isClosable cotile t
-      isClosed = Tile.isOpenable cotile t
+      isOpen = Tile.isClosable coTileSpeedup t
+      isClosed = Tile.isOpenable coTileSpeedup t
   case (alterable, isClosed, isOpen) of
     (False, _, _) -> failSer CloseNothing
     (True, False, False) -> failSer CloseNonClosable

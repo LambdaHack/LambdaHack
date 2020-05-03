@@ -79,6 +79,14 @@ speedupTile allClear cotile =
             getTo TK.CloseTo{} = True
             getTo _ = False
         in any getTo $ TK.tfeature tk
+      isOpenableTab = createTab cotile $ \tk ->
+        let getTo TK.OpenTo{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
+      isClosableTab = createTab cotile $ \tk ->
+        let getTo TK.CloseTo{} = True
+            getTo _ = False
+        in any getTo $ TK.tfeature tk
       isChangableTab = createTab cotile $ \tk ->
         let getTo TK.ChangeTo{} = True
             getTo _ = False
@@ -179,6 +187,16 @@ isDoor :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isDoor #-}
 isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 
+-- | Whether a tile kind (specified by its id) has an OpenTo feature.
+isOpenable :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isOpenable #-}
+isOpenable TileSpeedup{isOpenableTab} = accessTab isOpenableTab
+
+-- | Whether a tile kind (specified by its id) has a CloseTo feature.
+isClosable :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isClosable #-}
+isClosable TileSpeedup{isClosableTab} = accessTab isClosableTab
+
 -- | Whether a tile is changable.
 isChangable :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isChangable #-}
@@ -187,7 +205,8 @@ isChangable TileSpeedup{isChangableTab} = accessTab isChangableTab
 -- | Whether a tile is modifiable with some items.
 isModifiableWith :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isModifiableWith #-}
-isModifiableWith TileSpeedup{isModifiableWithTab} = accessTab isModifiableWithTab
+isModifiableWith TileSpeedup{isModifiableWithTab} =
+  accessTab isModifiableWithTab
 
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
@@ -340,14 +359,6 @@ isEasyOpenKind tk =
       getTo TK.Walkable = True  -- very easy open
       getTo _ = False
   in TK.talter tk < 10 && any getTo (TK.tfeature tk)
-
--- | Whether a tile kind (specified by its id) has an OpenTo feature.
-isOpenable :: ContentData TileKind -> ContentId TileKind -> Bool
-isOpenable cotile t = TK.isOpenableKind $ okind cotile t
-
--- | Whether a tile kind (specified by its id) has a CloseTo feature.
-isClosable :: ContentData TileKind -> ContentId TileKind -> Bool
-isClosable cotile t = TK.isClosableKind $ okind cotile t
 
 isModifiable :: TileSpeedup -> ContentId TileKind -> Bool
 isModifiable coTileSpeedup t = isDoor coTileSpeedup t

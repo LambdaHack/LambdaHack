@@ -118,7 +118,7 @@ continueRunDir params = case params of
     let msgInterrupts = anyInReport interruptsRunning report
     if msgInterrupts then return $ Left "message shown"
     else do
-      cops@COps{cotile} <- getsState scops
+      cops@COps{coTileSpeedup} <- getsState scops
       rbody <- getsState $ getActorBody runLeader
       let rposHere = bpos rbody
           rposLast = fromMaybe (error $ "" `showFailure` (runLeader, rbody))
@@ -132,7 +132,8 @@ continueRunDir params = case params of
           posThere = posHere `shift` dir
           bigActorThere = occupiedBigLvl posThere lvl
           projsThere = occupiedProjLvl posThere lvl
-      let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
+      let openableLast =
+            Tile.isOpenable coTileSpeedup (lvl `at` (posHere `shift` dir))
           check
             | bigActorThere = return $ Left "actor in the way"
             | projsThere = return $ Left "projectile in the way"
@@ -158,14 +159,15 @@ walkableDir COps{coTileSpeedup} lvl spos dir =
 tryTurning :: MonadClientRead m
            => ActorId -> m (Either Text Vector)
 tryTurning aid = do
-  cops@COps{cotile} <- getsState scops
+  cops@COps{coTileSpeedup} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
   lvl <- getLevel lid
   let posHere = bpos body
       posLast = fromMaybe (error $ "" `showFailure` (aid, body)) (boldpos body)
       dirLast = posHere `vectorToFrom` posLast
-  let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
+  let openableDir dir =
+        Tile.isOpenable coTileSpeedup (lvl `at` (posHere `shift` dir))
       dirWalkable dir = walkableDir cops lvl posHere dir || openableDir dir
       dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 == 1
       -- Distance 2 could be useful, but surprising even to apt players.
