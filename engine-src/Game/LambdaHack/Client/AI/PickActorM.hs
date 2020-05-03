@@ -99,10 +99,10 @@ pickActorToMove maidToAvoid = do
             -- exploit that encourages ambush camping (with a non-leader),
             -- but it's also a rather fun exploit and a straightforward
             -- consequence of the game mechanics, so it's OK for now
+          goodGeneric ((_, b), Just TgtAndPath{tapTgt=TPoint TStash{} lid pos})
+            | lid == arena && pos == bpos b =
+              Nothing  -- guarding own hoard; no foes; ignore
           goodGeneric ((aid, b), Just tgt) = case maidToAvoid of
-            _ | Just (blid b, bpos b) == gstash fact -> Nothing
-                  -- standing over own stash; ignore unless chosen by
-                  -- @leadLevelSwitch@, which implies no choice on level
             Nothing | not (aid == oldAid && actorWaits b) ->
               -- Not the old leader that was stuck last turn
               -- because he is likely to be still stuck.
@@ -187,15 +187,15 @@ pickActorToMove maidToAvoid = do
           actorMeleeingCanDisplace _ = return False
       (oursMeleeingCanDisplace, oursMeleeing) <-
          partitionM actorMeleeingCanDisplace oursMeleeingRaw
-      let adjEnemyStash
+      let adjStash
             ( (_, b)
             , TgtAndPath{tapTgt=TPoint TStash{} lid pos} ) =
                 lid == arena
                 && adjacent pos (bpos b)
                 && isNothing (posToBigLvl pos lvl)
-          adjEnemyStash _ = False
+          adjStash _ = False
           (oursAdjStash, oursNotMeleeing) =
-            partition adjEnemyStash oursNotMeleeingRaw
+            partition adjStash oursNotMeleeingRaw
       (oursHearing, oursNotHearing) <- partitionM actorHearning oursNotMeleeing
       let actorRanged ((aid, body), _) =
             not $ actorCanMelee actorMaxSkills aid body

@@ -527,18 +527,16 @@ closestStashes aid = do
            in Ability.getSk Ability.SkMove actorMaxSk2 > 0
   oursExploring <- getsState $ filter f . EM.assocs . sactorD
   lvl <- getLevel (blid b)
-  -- The foes may be untargettable, but if so, will return to guarding
-  -- after one step off the stash and stay there until targetable foes appear.
-  allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
   let fact = factionD EM.! bfid b
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
+          -- The condition below is more strict that in @updateTgt@
+          -- to avoid loops by changing target of actor displacing
+          -- and walking over stash to @TStash@.
           if lid == blid b
              && (fid2 == bfid b
-                 && (pos == bpos b  -- guarded by me, so keep guarding
-                     && null allFoes  -- if no foes nearby
-                     || isNothing (posToBigLvl pos lvl))  -- or unguarded
+                 && isNothing (posToBigLvl pos lvl)  -- unguarded
                  && length oursExploring > 1  -- other actors able to explore
                  || isFoe (bfid b) fact fid2)
           then Just (fid2, pos)

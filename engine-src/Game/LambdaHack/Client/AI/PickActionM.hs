@@ -989,6 +989,7 @@ displaceTgt source tpos retry = do
       [] -> return reject
       [aid2] | Just aid2 /= mleader -> do
         b2 <- getsState $ getActorBody aid2
+        tfact <- getsState $ (EM.! bfid b2) . sfactionD
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         enemyTgt <- condAimEnemyOrRememberedM source
         enemyTgt2 <- condAimEnemyOrRememberedM aid2
@@ -1004,9 +1005,13 @@ displaceTgt source tpos retry = do
                  -- because, for heroes, he will never be a leader, so he can't
                  -- step aside himself
               return $! returN "displace friend" $ ReqDisplace aid2
-          Just _ | bwatch b2 `notElem` [WSleep, WWake] -> return reject
+          Just _ | bfid b == bfid b2
+                   && (boldpos b2 == Just (bpos b)  -- short loop risk
+                       || bwatch b2 `notElem` [WSleep, WWake]
+                          && Just (blid b2, bpos b2) /= gstash tfact) ->
+            -- A friend, but not sleeping nor guarding stash, don't loop.
+            return reject
           _ -> do  -- an enemy or ally or dozing or disoriented friend --- swap
-            tfact <- getsState $ (EM.! bfid b2) . sfactionD
             actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk
               -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
