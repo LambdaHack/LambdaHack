@@ -1233,11 +1233,16 @@ ppHearMsg hearMsg = case hearMsg of
           UpdDestroyActor{} -> "shriek"
           UpdCreateItem{} -> "clatter"
           UpdTrajectory{} -> "thud"  -- Something hits a non-walkable tile.
-          UpdAlterTile _ _ _ toTile -> if Tile.isDoor coTileSpeedup toTile
-                                       then "creaking sound"
-                                       else "rumble"
-          UpdAlterExplorable _ k -> if k > 0 then "grinding noise"
-                                             else "fizzing noise"
+          UpdAlterTile _ _ fromTile toTile ->
+            if | Tile.isOpenable coTileSpeedup fromTile
+                 && Tile.isClosable coTileSpeedup toTile
+                 || Tile.isClosable coTileSpeedup fromTile
+                    && Tile.isOpenable coTileSpeedup toTile -> "creaking sound"
+               | Tile.isWalkable coTileSpeedup fromTile
+                 && Tile.isWalkable coTileSpeedup toTile -> "splash"
+               | otherwise -> "rumble"
+          UpdAlterExplorable _ k ->
+            if k > 0 then "grinding noise" else "fizzing noise"
           _ -> error $ "" `showFailure` cmd
         distant = if local then [] else ["distant"]
         msg = makeSentence [ "you hear"
