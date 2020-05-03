@@ -574,8 +574,9 @@ lookAtMove aid = do
         && bfid body == side
         && isNothing aimMode) $ do  -- aiming does a more extensive look
     itemsBlurb <- lookAtItems True (bpos body) aid
+    stashBlurb <- lookAtStash (blid body) (bpos body)
     let msgClass = if Just aid == mleader then MsgAtFeetMajor else MsgAtFeet
-    msgAdd msgClass itemsBlurb
+    msgAdd msgClass $ itemsBlurb <+> stashBlurb
   fact <- getsState $ (EM.! bfid body) . sfactionD
   adjBigAssocs <- getsState $ adjacentBigAssocs body
   adjProjAssocs <- getsState $ adjacentProjAssocs body

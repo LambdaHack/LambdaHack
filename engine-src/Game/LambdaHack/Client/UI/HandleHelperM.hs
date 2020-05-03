@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.HandleHelperM
   , failSer, failMsg, weaveJust
   , memberCycle, memberBack, partyAfterLeader, pickLeader, pickLeaderWithPointer
   , itemOverlay, skillsOverlay, placesFromState, placesOverlay
-  , pickNumber, lookAtItems, lookAtPosition
+  , pickNumber, lookAtItems, lookAtStash, lookAtPosition
   , displayItemLore, viewLoreItems, cycleLore, spoilsBlurb
   , ppContainerWownW
 #ifdef EXPOSE_INTERNAL
@@ -580,27 +580,9 @@ lookAtItems canSee p aid = do
             then ""
             else makeSentence [MU.SubjectVerbSg subject verb, object]
 
--- | Produces a textual description of everything at the requested
--- level's position.
-lookAtPosition :: MonadClientUI m => LevelId -> Point -> m [(MsgClass, Text)]
-lookAtPosition lidV p = do
-  COps{cotile} <- getsState scops
+lookAtStash :: MonadClientUI m => LevelId -> Point -> m Text
+lookAtStash lidV p = do
   side <- getsClient sside
-  leader <- getLeaderUI
-  per <- getPerFid lidV
-  let canSee = ES.member p (totalVisible per)
-  -- Show general info about current position.
-  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
-  (actorsBlurb, actorsDesc) <- lookAtActors p lidV
-  itemsBlurb <- lookAtItems canSee p leader
-  lvl@Level{lsmell, ltime} <- getLevel lidV
-  let smellBlurb = case EM.lookup p lsmell of
-        Just sml | sml > ltime ->
-          let Delta t = smellTimeout `timeDeltaSubtract`
-                          (sml `timeDeltaToFrom` ltime)
-              seconds = t `timeFitUp` timeSecond
-          in "A smelly body passed here around" <+> tshow seconds <> "s ago."
-        _ -> ""
   factionD <- getsState sfactionD
   let locateStash (fid, fact) = case gstash fact of
         Just (lid, pos) | lid == lidV  && pos == p ->
@@ -609,7 +591,29 @@ lookAtPosition lidV p = do
                  else gname fact
                       <+> "set up their shared inventory stash there."
         _ -> Nothing
-      stashBlurb = T.intercalate " " $ mapMaybe locateStash $ EM.assocs factionD
+  return $! T.intercalate " " $ mapMaybe locateStash $ EM.assocs factionD
+
+-- | Produces a textual description of everything at the requested
+-- level's position.
+lookAtPosition :: MonadClientUI m => LevelId -> Point -> m [(MsgClass, Text)]
+lookAtPosition lidV p = do
+  COps{cotile} <- getsState scops
+  leader <- getLeaderUI
+  per <- getPerFid lidV
+  let canSee = ES.member p (totalVisible per)
+  -- Show general info about current position.
+  (tileBlurb, placeBlurb, embedsList) <- lookAtTile canSee p leader lidV
+  (actorsBlurb, actorsDesc) <- lookAtActors p lidV
+  itemsBlurb <- lookAtItems canSee p leader
+  stashBlurb <- lookAtStash lidV p
+  lvl@Level{lsmell, ltime} <- getLevel lidV
+  let smellBlurb = case EM.lookup p lsmell of
+        Just sml | sml > ltime ->
+          let Delta t = smellTimeout `timeDeltaSubtract`
+                          (sml `timeDeltaToFrom` ltime)
+              seconds = t `timeFitUp` timeSecond
+          in "A smelly body passed here around" <+> tshow seconds <> "s ago."
+        _ -> ""
   embeds <- getsState $ getEmbedBag lidV p
   getKind <- getsState $ flip getIidKind
   let embedKindList = map (\(iid, kit) -> (getKind iid, (iid, kit)))
