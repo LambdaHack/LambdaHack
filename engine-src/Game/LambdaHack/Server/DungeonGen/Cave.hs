@@ -342,9 +342,9 @@ pickOpening COps{cotile, coTileSpeedup}
     let hidden = Tile.buildAs cotile pl
     doorTrappedId <- Tile.revealAs cotile hidden
     let !_A = assert (Tile.buildAs cotile doorTrappedId == doorTrappedId) ()
-    -- Not all solid tiles can hide a door, so @doorTrappedId@ may in fact
-    -- not be a door at all, hence the check.
-    if Tile.isDoor coTileSpeedup doorTrappedId then do  -- door created
+    -- Not all solid tiles can hide a door (or any other openable tile),
+    -- so @doorTrappedId@ may in fact not be a door at all, hence the check.
+    if Tile.isOpenable coTileSpeedup doorTrappedId then do  -- door created
       ro <- chance copenChance
       if ro
       then Tile.openTo cotile doorTrappedId
@@ -352,6 +352,6 @@ pickOpening COps{cotile, coTileSpeedup}
            then return $! doorTrappedId  -- server will hide it
            else do
              doorOpenId <- Tile.openTo cotile doorTrappedId
-             Tile.closeTo cotile doorOpenId
+             Tile.closeTo cotile doorOpenId  -- mail do nothing; OK
     else return $! doorTrappedId  -- assume this is what content enforces
   else return $! nicerCorridor

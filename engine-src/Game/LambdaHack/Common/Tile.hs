@@ -75,18 +75,19 @@ speedupTile allClear cotile =
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
       isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
       isDoorTab = createTab cotile $ \tk ->
-        let getTo TK.OpenTo{} = True
-            getTo TK.CloseTo{} = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
-      isOpenableTab = createTab cotile $ \tk ->
-        let getTo TK.OpenTo{} = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
-      isClosableTab = createTab cotile $ \tk ->
-        let getTo TK.CloseTo{} = True
-            getTo _ = False
-        in any getTo $ TK.tfeature tk
+        let getTo (TK.OpenTo grp) acc = grp : acc
+            getTo _ acc = acc
+        in case foldr getTo [] $ TK.tfeature tk of
+          [grp] | oisSingletonGroup cotile grp ->
+            TK.isClosableKind $ okind cotile $ ouniqGroup cotile grp
+          _ -> let getTo2 (TK.CloseTo grp) acc = grp : acc
+                   getTo2 _ acc = acc
+               in case foldr getTo2 [] $ TK.tfeature tk of
+                 [grp] | oisSingletonGroup cotile grp ->
+                   TK.isOpenableKind $ okind cotile $ ouniqGroup cotile grp
+                 _ -> False
+      isOpenableTab = createTab cotile TK.isOpenableKind
+      isClosableTab = createTab cotile TK.isClosableKind
       isChangableTab = createTab cotile $ \tk ->
         let getTo TK.ChangeTo{} = True
             getTo _ = False
@@ -187,12 +188,12 @@ isDoor :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isDoor #-}
 isDoor TileSpeedup{isDoorTab} = accessTab isDoorTab
 
--- | Whether a tile kind (specified by its id) has an OpenTo feature.
+-- | Whether a tile kind (specified by its id) has an @OpenTo@ feature.
 isOpenable :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isOpenable #-}
 isOpenable TileSpeedup{isOpenableTab} = accessTab isOpenableTab
 
--- | Whether a tile kind (specified by its id) has a CloseTo feature.
+-- | Whether a tile kind (specified by its id) has a @CloseTo@ feature.
 isClosable :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isClosable #-}
 isClosable TileSpeedup{isClosableTab} = accessTab isClosableTab
@@ -225,9 +226,9 @@ consideredByAI TileSpeedup{consideredByAITab} = accessTab consideredByAITab
 -- | Whether one can easily explore a tile, possibly finding a treasure,
 -- either spawned there or dropped there by a (dying from poison) foe.
 -- Doors can't be explorable since revealing a secret tile
--- should not change it's (walkable and) explorable status.
--- Door status should not depend on whether they are open or not
--- so that a foe opening a door doesn't force us to backtrack to explore it.
+-- should not change it's explorable status. Also, door explorable status
+-- should not depend on whether they are open or not, so that
+-- a foe opening a door doesn't force us to backtrack to explore it.
 -- Still, a foe that digs through a wall will affect our exploration counter
 -- and if content lets walls contain threasure, such backtraking makes sense.
 isExplorable :: TileSpeedup -> ContentId TileKind -> Bool
@@ -361,7 +362,8 @@ isEasyOpenKind tk =
   in TK.talter tk < 10 && any getTo (TK.tfeature tk)
 
 isModifiable :: TileSpeedup -> ContentId TileKind -> Bool
-isModifiable coTileSpeedup t = isDoor coTileSpeedup t
+isModifiable coTileSpeedup t = isOpenable coTileSpeedup t
+                               || isClosable coTileSpeedup t
                                || isChangable coTileSpeedup t
                                || isModifiableWith coTileSpeedup t
                                || isSuspect coTileSpeedup t
