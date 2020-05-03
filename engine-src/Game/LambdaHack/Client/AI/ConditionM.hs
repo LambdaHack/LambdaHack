@@ -334,11 +334,11 @@ condSupport :: MonadClient m => Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
 condSupport param aid = do
   btarget <- getsClient $ getTarget aid
-  condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
-  getsState $ strongSupport param aid btarget condAimEnemyOrRemembered
+  condAimEnemyTargeted <- condAimEnemyTargetedM aid
+  getsState $ strongSupport param aid btarget condAimEnemyTargeted
 
 strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> State -> Bool
-strongSupport param aid btarget condAimEnemyRemembered s =
+strongSupport param aid btarget condAimEnemyTargeted s =
   -- The smaller the area scanned for friends, the lower number required.
   let actorMaxSkills = sactorMaxSkills s
       actorMaxSk = actorMaxSkills EM.! aid
@@ -346,11 +346,11 @@ strongSupport param aid btarget condAimEnemyRemembered s =
       b = getActorBody aid s
       mtgtPos = aidTgtToPos aid (blid b) btarget s
       approaching b2 = case mtgtPos of
-        Just tgtPos | condAimEnemyRemembered ->
-          chessDist (bpos b2) tgtPos <= 1 + param
+        Just tgtPos | condAimEnemyTargeted ->
+          chessDist (bpos b2) tgtPos <= 1 + param  -- will soon melee anyway
         _ -> False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist > 0 && (dist <= param || approaching b2)
+                       in dist > 0 && (dist <= max 2 param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMelee actorMaxSkills aid2 b2
       friends = friendRegularAssocs (bfid b) (blid b) s

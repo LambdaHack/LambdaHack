@@ -151,7 +151,7 @@ actionStrategy aid retry = do
       -- These are only melee threats.
       condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
       threatAdj = takeWhile ((== 1) . fst) threatDistL
-      condManyThreatAdj = length threatAdj >= 2
+      condManyThreatsAdj = length threatAdj >= 2
       condFastThreatAdj =
         any (\(_, (aid2, _)) ->
               let ar2 = actorMaxSkills EM.! aid2
@@ -216,7 +216,7 @@ actionStrategy aid retry = do
                     -- of whether our team melees (including the fleeing ones),
                     -- endangered actors should flee from very close foes.
                     not condCanMelee
-                    || condManyThreatAdj && not condSupport1 && not condSolo
+                    || condManyThreatsAdj && not condSupport1 && not condSolo
                   | case gstash fact of
                       Nothing -> False
                       Just (lid, pos) ->

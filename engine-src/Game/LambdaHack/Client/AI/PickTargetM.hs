@@ -396,7 +396,7 @@ computeTarget aid = do
             oursExploring <- getsState $ filter f . EM.assocs . sactorD
             -- Even if made peace with the faction, loot stash one last time.
             if gstash (factionD EM.! fid2) == Just (lid, pos)
-               -- The condision below is more lenient than in @closestStashes@
+               -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
                && (fid2 == bfid b
                    && (pos == bpos b  -- guarded by me, so keep guarding
