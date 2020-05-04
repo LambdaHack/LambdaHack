@@ -93,26 +93,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("o", replaceDesc "equip item into outfit of the pointman"
           $ moveItemTriple [CGround, CStash] CEqp "item" False)
 
-  -- Terrain exploration and modification
-  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir))
-  , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
-  , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
-  , ("semicolon", ( [CmdMove]
-                  , "go to crosshair for 25 steps"
-                  , Macro ["C-semicolon", "C-quotedbl", "C-v"] ))
-  , ("colon", ( [CmdMove]
-              , "run to crosshair collectively for 25 steps"
-              , Macro ["C-colon", "C-quotedbl", "C-v"] ))
-  , ("[", ( [CmdMove]
-          , "explore nearest unknown spot"
-          , autoexploreCmd ))
-  , ("]", ( [CmdMove]
-          , "autoexplore 25 times"
-          , autoexplore25Cmd ))
-  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-v"]))
-  , ("C-R", ( [CmdMove], "heed (lurk 0.1 turns 100 times)"
-            , Macro ["C-KP_Begin", "A-v"] ))
-
   -- Remaining @ChooseItemMenu@ instances
   , ("G", ( [CmdItem, CmdDashboard]
           , "manage items on the ground"
@@ -144,6 +124,26 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                 , "display place lore"
                 , ChooseItemMenu MPlaces) )
   , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
+
+  -- Terrain exploration and modification
+  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir))
+  , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
+  , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
+  , ("semicolon", ( [CmdMove]
+                  , "go to crosshair for 25 steps"
+                  , Macro ["C-semicolon", "C-quotedbl", "C-v"] ))
+  , ("colon", ( [CmdMove]
+              , "run to crosshair collectively for 25 steps"
+              , Macro ["C-colon", "C-quotedbl", "C-v"] ))
+  , ("[", ( [CmdMove]
+          , "explore nearest unknown spot"
+          , autoexploreCmd ))
+  , ("]", ( [CmdMove]
+          , "autoexplore 25 times"
+          , autoexplore25Cmd ))
+  , ("R", ([CmdMove], "rest (wait 25 times)", Macro ["KP_Begin", "C-v"]))
+  , ("C-R", ( [CmdMove], "heed (lurk 0.1 turns 100 times)"
+            , Macro ["C-KP_Begin", "A-v"] ))
 
   -- Aiming
   , ("+", ([CmdAim], "swerve the aiming line", EpsIncr True))
