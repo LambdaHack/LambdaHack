@@ -394,13 +394,16 @@ computeTarget aid = do
                   && let actorMaxSk2 = actorMaxSkills EM.! aid2
                      in Ability.getSk Ability.SkMove actorMaxSk2 > 0
             oursExploring <- getsState $ filter f . EM.assocs . sactorD
+            let oursExploringLid =
+                  filter (\(_, body) -> blid body == lid) oursExploring
             -- Even if made peace with the faction, loot stash one last time.
             if gstash (factionD EM.! fid2) == Just (lid, pos)
                -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
                && (fid2 == bfid b
                    && (pos == bpos b  -- guarded by me, so keep guarding
-                       && null nearbyFoes  -- if no foes nearby
+                       && (null nearbyFoes  -- if no foes nearby
+                           || length oursExploringLid > 1) -- or buddies nearby
                        || isNothing (posToBigLvl pos lvl))  -- or unguarded
                    && length oursExploring > 1  -- other actors able to explore
                    || isFoe (bfid b) fact fid2)
