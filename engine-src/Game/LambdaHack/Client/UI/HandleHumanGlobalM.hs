@@ -730,6 +730,7 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
               Right kChosen ->
                 let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
                 in moveItems cLegalRaw is destCStore
+    Just{} -> failWith "the selected item can't be so moved"
     _ -> do
       mis <- selectItemsToMove cLegal cLegalRaw destCStore mverb auto
       case mis of
@@ -1477,7 +1478,9 @@ itemMenuHuman cmdSemInCxtOfKM = do
                   sess {sitemSel = Just (iid, fromCStore, True)}
                 res <- cmdSemInCxtOfKM km cmd
                 modifySession $ \sess ->
-                  sess {sitemSel = Just (iid, fromCStore, False)}
+                  sess {sitemSel = case res of
+                          Left{} -> Nothing
+                          Right{} ->  Just (iid, fromCStore, False)}
                 return res
               Nothing -> weaveJust <$> failWith "never mind"
             Right _slot -> error $ "" `showFailure` ekm
