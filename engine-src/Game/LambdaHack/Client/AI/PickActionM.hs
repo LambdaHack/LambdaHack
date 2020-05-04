@@ -1010,7 +1010,8 @@ displaceTgt source tpos retry = do
                  -- step aside himself
               return $! returN "displace friend" $ ReqDisplace aid2
           Just _ | bfid b == bfid b2
-                   && (boldpos b2 == Just (bpos b)  -- short loop risk
+                   && (boldpos b2 == Just (bpos b)
+                       && boldpos b == Just (bpos b2)  -- short loop risk
                        || bwatch b2 `notElem` [WSleep, WWake]
                           && Just (blid b2, bpos b2) /= gstash tfact) ->
             -- A friend, but not sleeping nor guarding stash, don't loop.
