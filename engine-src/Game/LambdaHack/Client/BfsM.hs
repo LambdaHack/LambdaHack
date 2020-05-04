@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.BfsM
   , furthestKnown, closestUnknown, closestSmell
   , FleeViaStairsOrEscape(..)
   , embedBenefit, closestTriggers, condEnoughGearM, closestItems, closestFoes
-  , closestStashes
+  , closestStashes, oursExploringAssocs
 #ifdef EXPOSE_INTERNAL
   , unexploredDepth, updatePathFromBfs
 #endif
@@ -338,6 +338,9 @@ embedBenefit fleeVia aid pbags = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
+  oursExploring <- getsState $ oursExploringAssocs (bfid b)
+  let oursExploringLid =
+        filter (\(_, body) -> blid body == blid b) oursExploring
   actorSk <- if fleeVia `elem` [ViaAnything, ViaExit]
                   -- targeting, possibly when not a leader
              then getsState $ getActorMaxSkills aid
@@ -384,7 +387,13 @@ embedBenefit fleeVia aid pbags = do
               -- Prefer one direction of stairs, to team up
               -- and prefer embed (may, e.g., create loot) over stairs.
               v = if aiCond then if easier then 10 else 1 else 0
+              guardingStash = case gstash fact of
+                Nothing -> False
+                Just (lid, _) -> lid == blid b
+                                 && length oursExploring > 1
+                                 && length oursExploringLid == 1
           in case fleeVia of
+            _ | guardingStash -> 0
             ViaStairsUp | up -> 1
             ViaStairsDown | not up -> 1
             ViaStairs -> v
@@ -518,15 +527,9 @@ closestFoes foes aid =
 closestStashes :: MonadClient m => ActorId -> m [(Int, (FactionId, Point))]
 closestStashes aid = do
   factionD <- getsState sfactionD
-  actorMaxSkills <- getsState sactorMaxSkills
   b <- getsState $ getActorBody aid
-  let f (!aid2, !b2) =
-        bfid b2 == bfid b
-        && not (bproj b2)
-        && let actorMaxSk2 = actorMaxSkills EM.! aid2
-           in Ability.getSk Ability.SkMove actorMaxSk2 > 0
-  oursExploring <- getsState $ filter f . EM.assocs . sactorD
   lvl <- getLevel (blid b)
+  oursExploring <- getsState $ oursExploringAssocs (bfid b)
   let fact = factionD EM.! bfid b
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
@@ -547,3 +550,12 @@ closestStashes aid = do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\x@(_, pos) -> fmap (,x) (accessBfs bfs pos)) stashes
       return $! sortBy (comparing fst) ds
+
+oursExploringAssocs :: FactionId -> State -> [(ActorId, Actor)]
+oursExploringAssocs fid s =
+  let f (!aid, !b) = bfid b == fid
+                     && not (bproj b)
+                     && bhp b > 0  -- dead can stay forever on a frozen level
+                     && let actorMaxSk = sactorMaxSkills s EM.! aid
+                        in Ability.getSk Ability.SkMove actorMaxSk > 0
+  in filter f $ EM.assocs $ sactorD s

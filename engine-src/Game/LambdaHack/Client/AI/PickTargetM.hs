@@ -388,12 +388,7 @@ computeTarget aid = do
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
         TPoint tgoal lid pos -> case tgoal of
           TStash fid2 -> do
-            let f (!aid2, !b2) =
-                  bfid b2 == bfid b
-                  && not (bproj b2)
-                  && let actorMaxSk2 = actorMaxSkills EM.! aid2
-                     in Ability.getSk Ability.SkMove actorMaxSk2 > 0
-            oursExploring <- getsState $ filter f . EM.assocs . sactorD
+            oursExploring <- getsState $ oursExploringAssocs (bfid b)
             let oursExploringLid =
                   filter (\(_, body) -> blid body == lid) oursExploring
             -- Even if made peace with the faction, loot stash one last time.
