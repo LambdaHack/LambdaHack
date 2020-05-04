@@ -867,9 +867,9 @@ moveItems cLegalRaw (fromCStore, l) destCStore = do
             return []
           _ -> retRec destCStore
   l4 <- ret4 l 0
-  return $! if null l4
-            then error $ "" `showFailure` l
-            else Right $ ReqMoveItems l4
+  if | fromCStore == CEqp && not calmE -> failSer ItemNotCalm
+     | null l4 -> error $ "" `showFailure` l
+     | otherwise -> return $ Right $ ReqMoveItems l4
 
 -- * Project
 
