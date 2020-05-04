@@ -170,7 +170,8 @@ pickLeader verbose aid = do
           modifySession $ \sess -> sess {saimMode = Just $ AimMode $ blid body}
       -- Inform about items, etc.
       itemsBlurb <- lookAtItems True (bpos body) aid
-      when verbose $ msgAdd MsgAtFeet itemsBlurb
+      stashBlurb <- lookAtStash (blid body) (bpos body)
+      when verbose $ msgAdd MsgAtFeet $ itemsBlurb <+> stashBlurb
       return True
 
 pickLeaderWithPointer :: MonadClientUI m => m MError
