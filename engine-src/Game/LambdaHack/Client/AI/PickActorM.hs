@@ -112,7 +112,9 @@ pickActorToMove maidToAvoid = do
               Just ((aid, b), tgt)
             _ -> Nothing
           oursTgt = mapMaybe goodGeneric oursTgtRaw
-          -- This should be kept in sync with @actionStrategy@.
+          -- This should be kept in sync with @actionStrategy@,
+          -- because it's a part of the condition for @flee@ in @PickActionM@.
+          -- Comments are in the full copy.
           actorVulnerable ((aid, body), _) = do
             let actorMaxSk = actorMaxSkills EM.! aid
             condAnyHarmfulFoeAdj <-
@@ -121,8 +123,10 @@ pickActorToMove maidToAvoid = do
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
             condSupport3 <- condSupport 3 aid
-            condSolo <- condSoloM aid  -- solo fighters aggresive
+            condSolo <- condSoloM aid
             let condCanFlee = not (null fleeL)
+                heavilyDistressed =
+                  deltasSerious (bcalmDelta body)
                 speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
                 condCanMelee = actorCanMelee actorMaxSkills aid body
                 -- These are only melee threats.
@@ -131,15 +135,25 @@ pickActorToMove maidToAvoid = do
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
                   any (\(_, (aid2, _)) ->
-                    let actorMaxSk2 = actorMaxSkills EM.! aid2
-                    in gearSpeed actorMaxSk2 > speed1_5)
-                  threatAdj
-                heavilyDistressed =
-                  -- Actor hit by a projectile or similarly distressed.
-                  deltasSerious (bcalmDelta body)
+                        let actorMaxSk2 = actorMaxSkills EM.! aid2
+                        in gearSpeed actorMaxSk2 > speed1_5)
+                      threatAdj
+                allThreatsAdjAreStealthy =
+                  all (\(_, (aid2, b2)) ->
+                        let ar2 = actorMaxSkills EM.! aid2
+                        in Ability.getSk Ability.SkShine ar2 <= 0
+                           && not (isLit $ bpos b2))
+                      threatAdj
+                isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
+                fleeingMakesSense =
+                  not condCanMelee
+                  || (Ability.getSk Ability.SkSight actorMaxSk > 2
+                      || Ability.getSk Ability.SkNocto actorMaxSk > 2)
+                     && (Ability.getSk Ability.SkShine actorMaxSk > 2
+                         || not allThreatsAdjAreStealthy)
             return $!
-              -- This is a part of the condition for @flee@ in @PickActionM@.
               not condFastThreatAdj
+              && fleeingMakesSense
               && if | condAnyHarmfulFoeAdj ->
                       not condCanMelee
                       || condManyThreatAdj && not condSupport1 && not condSolo

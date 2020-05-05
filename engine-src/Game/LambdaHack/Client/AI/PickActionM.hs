@@ -156,12 +156,27 @@ actionStrategy aid retry = do
         any (\(_, (aid2, _)) ->
               let ar2 = actorMaxSkills EM.! aid2
               in gearSpeed ar2 > speed1_5)
-        threatAdj
-      actorShines = Ability.getSk SkShine actorMaxSk > 0
+            threatAdj
+      allThreatsAdjAreStealthy =
+        all (\(_, (aid2, b2)) ->
+              let ar2 = actorMaxSkills EM.! aid2
+              in Ability.getSk Ability.SkShine ar2 <= 0
+                 && not (isLit $ bpos b2))
+            threatAdj
+      actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
       isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
         -- solid tiles ignored, because not obvious if dark after removed
       canFleeIntoDark = not $ actorShines || all (isLit . snd) fleeL
       avoidAmbient = not condInMelee && heavilyDistressed && not actorShines
+      -- Fleeing makes sense, because either actor can't melee,
+      -- or at least won't flee without scoring a hit and return next turn,
+      -- due to threat no longer seen (due to blindness or dark).
+      fleeingMakesSense =
+        not condCanMelee
+        || (Ability.getSk Ability.SkSight actorMaxSk > 2
+            || Ability.getSk Ability.SkNocto actorMaxSk > 2)
+           && (Ability.getSk Ability.SkShine actorMaxSk > 2
+               || not allThreatsAdjAreStealthy)
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
@@ -211,6 +226,7 @@ actionStrategy aid retry = do
             -- do much except hide in darkness or take off light (elsewhere).
             -- Note: a part of this condition appears in @actorVulnerable@.
             not condFastThreatAdj
+            && fleeingMakesSense
             && if | condAnyHarmfulFoeAdj ->
                     -- Here we don't check @condInMelee@ because regardless
                     -- of whether our team melees (including the fleeing ones),
