@@ -805,16 +805,17 @@ destroyActorUI destroy aid b = do
   let baseColor = flavourToColor $ jflavour trunk
   unless (baseColor == Color.BrWhite) $  -- keep setup for heroes, etc.
     modifySession $ \sess -> sess {sactorUI = EM.delete aid $ sactorUI sess}
-  let affect tgt = case tgt of
+  let dummyTarget = TPoint TKnown (blid b) (bpos b)
+      affect tgt = case tgt of
         Just (TEnemy a) | a == aid -> Just $
           if destroy then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
-            TPoint TKnown (blid b) (bpos b)
+            dummyTarget
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
             TPoint (TEnemyPos a) (blid b) (bpos b)
-        Just (TNonEnemy a) | a == aid -> Just $ TPoint TKnown (blid b) (bpos b)
+        Just (TNonEnemy a) | a == aid -> Just dummyTarget
         _ -> tgt
   modifySession $ \sess -> sess {sxhair = affect $ sxhair sess}
   unless (bproj b) $

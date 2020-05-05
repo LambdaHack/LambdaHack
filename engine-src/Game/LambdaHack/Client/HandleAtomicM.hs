@@ -327,23 +327,30 @@ destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
-  let affect tgt = case tgt of
+  fleeD <- getsClient sfleeD
+  let dummyTarget = TPoint TKnown (blid b) (bpos b)
+      affect aid3 tgt = case tgt of
         TEnemy a | a == aid ->
-          if destroy then
+          if destroy || EM.member aid3 fleeD
+                          -- if fleeing, don't chase the enemy next turn;
+                          -- unfortunately, the enemy also won't be recorded
+                          -- to avoid when fleeing again, but all enemies
+                          -- should be recorded, not just one, so no big loss
+          then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.
-            TPoint TKnown (blid b) (bpos b)
+            dummyTarget
           else
             -- If enemy only hides (or we stepped behind obstacle) find him.
             TPoint (TEnemyPos a) (blid b) (bpos b)
-        TNonEnemy a | a == aid -> TPoint TKnown (blid b) (bpos b)
+        TNonEnemy a | a == aid -> dummyTarget
         _ -> tgt
-      affect3 TgtAndPath{..} =
+      affect3 aid3 TgtAndPath{..} =
         let newMPath = case tapPath of
               Just AndPath{pathGoal} | pathGoal /= bpos b -> Nothing
               _ -> tapPath  -- foe slow enough, so old path good
-        in TgtAndPath (affect tapTgt) newMPath
-  modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
+        in TgtAndPath (affect aid3 tapTgt) newMPath
+  modifyClient $ \cli -> cli {stargetD = EM.mapWithKey affect3 (stargetD cli)}
   unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
   invalidateInMelee (blid b)
 

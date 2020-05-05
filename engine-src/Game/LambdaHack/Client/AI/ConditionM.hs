@@ -385,6 +385,8 @@ fleeList aid = do
                        , tapTgt } -> case tapTgt of
           TEnemy{} -> Left pathGoal
           TPoint TEnemyPos{} _ _ -> Left pathGoal
+            -- this is too weak, because only one is recorded and sometimes
+            -- many are needed to decide to flee next turn as well
           _ -> Right pathList
         _ -> Right []
   fleeD <- getsClient sfleeD

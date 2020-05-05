@@ -614,7 +614,7 @@ drawLeaderStatus waitT = do
       actorMaxSk <- getsState $ getActorMaxSkills leader
       (hpCheckWarning, calmCheckWarning)
         <- getsState $ checkWarnings sUIOptions leader
-      bdark <- getsState $ \s -> not (actorInAmbient b s)
+      bdark <- getsState $ not . actorInAmbient b
       let showTrunc x = let t = show x
                         in if length t > 3
                            then if x > 0 then "***" else "---"
