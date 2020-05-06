@@ -139,7 +139,7 @@ getFull psuit prompt promptGeneric cLegalRaw cLegal
   leader <- getLeaderUI
   mpsuit <- psuit
   let psuitFun = case mpsuit of
-        SuitsEverything -> \_ _ -> True
+        SuitsEverything -> \_ _ _ -> True
         SuitsSomething f -> f
   -- Move the first store that is non-empty for suitable items for this actor
   -- to the front, if any.
@@ -162,7 +162,8 @@ getFull psuit prompt promptGeneric cLegalRaw cLegal
       itemToF <- getsState $ flip itemToFull
       let suitsThisActor store =
             let bag = getCStoreBag store
-            in any (\(iid, kit) -> psuitFun (itemToF iid) kit) $ EM.assocs bag
+            in any (\(iid, kit) -> psuitFun (Just store) (itemToF iid) kit)
+                   (EM.assocs bag)
           firstStore = fromMaybe headThisActor $ find suitsThisActor haveThis
           -- Don't display stores totally empty for all actors.
           breakStores cInit =
@@ -220,7 +221,7 @@ data DefItemKey m = DefItemKey
 
 data Suitability =
     SuitsEverything
-  | SuitsSomething (ItemFull -> ItemQuant -> Bool)
+  | SuitsSomething (Maybe CStore -> ItemFull -> ItemQuant -> Bool)
 
 transition :: forall m. MonadClientUI m
            => m Suitability
@@ -250,7 +251,7 @@ transition psuit prompt promptGeneric permitMulitple
   revCmd <- revCmdMap
   mpsuit <- psuit  -- when throwing, this sets eps and checks xhair validity
   psuitFun <- case mpsuit of
-    SuitsEverything -> return $ \_ _ -> True
+    SuitsEverything -> return $ \_ _ _ -> True
     SuitsSomething f -> return f  -- When throwing, this function takes
                                   -- missile range into accout.
   -- This is the only place slots are sorted. As a side-effect,
@@ -278,7 +279,10 @@ transition psuit prompt promptGeneric permitMulitple
                 -> ( Either Text ([ItemId], ItemBag, SingleItemSlots)
                    , (ItemDialogMode, Either K.KM SlotChar) )
       getResult ekm iids = (Right (iids, bagAll, bagItemSlotsAll), (cCur, ekm))
-      filterP iid = psuitFun (itemToF iid)
+      mstore = case cCur of
+        MStore store -> Just store
+        _ -> Nothing
+      filterP iid = psuitFun mstore (itemToF iid)
       bagAllSuit = EM.filterWithKey filterP bagAll
       bagItemSlotsAll = EM.filter (`EM.member` bagAll) lSlots
       -- Predicate for slot matching the current prefix, unless the prefix

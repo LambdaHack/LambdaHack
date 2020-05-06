@@ -21,6 +21,7 @@ import qualified Game.LambdaHack.Common.ItemAspect as IA
 import           Game.LambdaHack.Common.Time
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import qualified Game.LambdaHack.Definition.Ability as Ability
+import           Game.LambdaHack.Definition.Defs
 
 -- | Possible causes of failure of request.
 data ReqFailure =
@@ -157,7 +158,7 @@ showReqFailure reqFailure = case reqFailure of
   EqpOverfull -> "cannot equip any more items"
   EqpStackFull -> "cannot equip the whole item stack"
   ApplyUnskilled -> "too low item triggering stat"
-  ApplyFood -> "eating food requires trigger stat 2"
+  ApplyFood -> "trigger stat 1 is enough only to eat food from the ground"
   ApplyRead -> "activating cultural artifacts requires trigger stat 3"
   ApplyPeriodic -> "manually activating periodic items requires trigger stat 4"
   ApplyOutOfReach -> "cannot trigger an item out of reach"
@@ -217,12 +218,14 @@ permittedProjectAI skill calmE itemFull =
          && skill < 3 -> False
        | otherwise -> permittedPreciousAI calmE itemFull
 
-permittedApply :: Time -> Int -> Bool-> ItemFull -> ItemQuant
+permittedApply :: Time -> Int -> Bool -> Maybe CStore -> ItemFull -> ItemQuant
                -> Either ReqFailure Bool
-permittedApply localTime skill calmE
+permittedApply localTime skill calmE mstore
                itemFull@ItemFull{itemKind, itemSuspect} kit =
   if | skill < 1 -> Left ApplyUnskilled
-     | skill < 2 && IK.isymbol itemKind `notElem` [',', '"'] -> Left ApplyFood
+     | skill < 2
+       && (mstore /= Just CGround
+           || IK.isymbol itemKind `notElem` [',', '"']) -> Left ApplyFood
      | skill < 3 && IK.isymbol itemKind == '?' -> Left ApplyRead
      | skill < 4
        && let arItem = aspectRecordFull itemFull

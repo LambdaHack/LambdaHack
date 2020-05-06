@@ -392,7 +392,7 @@ chooseItemProjectHuman ts = do
               chooseItemProjectHuman ts
         Nothing -> do
           let psuit =
-                return $ SuitsSomething $ \itemFull _kit ->
+                return $ SuitsSomething $ \_ itemFull _kit ->
                   either (const False) snd (psuitReqFun itemFull)
                   && (null triggerSyms
                       || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
@@ -568,7 +568,8 @@ chooseItemApplyHuman ts = do
       bag <- getsState $ getBodyStoreBag b fromCStore
       mp <- permittedApplyClient
       case iid `EM.lookup` bag of
-        Just kit | either (const False) id (mp itemFull kit) ->
+        Just kit | either (const False) id
+                          (mp (Just fromCStore) itemFull kit) ->
           return Nothing
         _ -> do
           modifySession $ \sess -> sess {sitemSel = Nothing}
@@ -577,8 +578,8 @@ chooseItemApplyHuman ts = do
       let psuit :: m Suitability
           psuit = do
             mp <- permittedApplyClient
-            return $ SuitsSomething $ \itemFull kit ->
-              either (const False) id (mp itemFull kit)
+            return $ SuitsSomething $ \cstore itemFull kit ->
+              either (const False) id (mp cstore itemFull kit)
               && (null triggerSyms
                   || IK.isymbol (itemKind itemFull) `elem` triggerSyms)
       ggi <- getGroupItem psuit prompt promptGeneric verb "trigger"
@@ -592,7 +593,8 @@ chooseItemApplyHuman ts = do
         _ -> error $ "" `showFailure` ggi
 
 permittedApplyClient :: MonadClientUI m
-                     => m (ItemFull -> ItemQuant -> Either ReqFailure Bool)
+                     => m (Maybe CStore -> ItemFull -> ItemQuant
+                           -> Either ReqFailure Bool)
 permittedApplyClient = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader

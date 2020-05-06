@@ -811,9 +811,9 @@ applyItem aid applyGroup = do
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray condAimEnemyOrRemembered
                      heavilyDistressed condNotCalmEnough actorMaxSk
-      permittedActor itemFull kit =
+      permittedActor cstore itemFull kit =
         either (const False) id
-        $ permittedApply localTime skill calmE itemFull kit
+        $ permittedApply localTime skill calmE cstore itemFull kit
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
@@ -834,7 +834,7 @@ applyItem aid applyGroup = do
       disqualify durable (IK.SeqEffect effs) =
         or $ map (disqualify durable) effs
       disqualify _ _ = False
-      q (Benefit{benInEqp}, _, _, itemFull@ItemFull{itemKind}, kit) =
+      q (Benefit{benInEqp}, cstore, _, itemFull@ItemFull{itemKind}, kit) =
         let arItem = aspectRecordFull itemFull
             durable = IA.checkFlag Durable arItem
         in (not benInEqp  -- can't wear, so OK to break
@@ -842,7 +842,7 @@ applyItem aid applyGroup = do
             || not (IA.checkFlag Ability.Meleeable arItem)
                  -- anything else expendable
                && hind itemFull)  -- hinders now, so possibly often, so away!
-           && permittedActor itemFull kit
+           && permittedActor (Just cstore) itemFull kit
            && not (any (disqualify durable) $ IK.ieffects itemKind)
            && not (IA.isHumanTrinket itemKind)  -- hack for elixir of youth
       -- Organs are not taken into account, because usually they are either

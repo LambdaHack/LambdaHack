@@ -796,7 +796,7 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
           -- it to auto-store things, or equip first using the pruning
           -- and then pack/stash the rest selectively or en masse.
           if destCStore == CEqp
-          then (promptEqp, return $ SuitsSomething $ \itemFull _kit ->
+          then (promptEqp, return $ SuitsSomething $ \_ itemFull _kit ->
                  IA.goesIntoEqp $ aspectRecordFull itemFull)
           else (prompt, return SuitsEverything)
     ggi <-
@@ -963,7 +963,8 @@ applyItem (fromCStore, (iid, (itemFull, kit))) = do
       calmE = calmEnough b actorMaxSk
       arItem = aspectRecordFull itemFull
   if fromCStore == CEqp && not calmE then failSer ItemNotCalm
-  else case permittedApply localTime skill calmE itemFull kit of
+  else case permittedApply localTime skill calmE (Just fromCStore)
+                           itemFull kit of
     Left reqFail -> failSer reqFail
     Right _ -> do
       Benefit{benApply} <- getsClient $ (EM.! iid) . sdiscoBenefit
@@ -1426,7 +1427,8 @@ itemMenuHuman cmdSemInCxtOfKM = do
                 Apply{} ->
                   let skill = Ability.getSk Ability.SkApply actorSk
                   in not $ either (const False) id
-                     $ permittedApply localTime skill calmE itemFull kit
+                     $ permittedApply localTime skill calmE (Just fromCStore)
+                                      itemFull kit
                 Project{} ->
                   let skill = Ability.getSk Ability.SkProject actorSk
                   in not $ either (const False) id

@@ -678,7 +678,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
             -- See the note about no skill check when melee triggers effects.
-            legal = permittedApply localTime maxBound calmE itemFull kit
+            legal = permittedApply localTime maxBound calmE Nothing itemFull kit
         case legal of
           Left ApplyNoEffects -> return UseDud  -- pure flavour embed
           Left reqFail -> do
@@ -1052,7 +1052,8 @@ reqApply aid iid cstore = do
         actorSk <- currentSkillsServer aid
         localTime <- getsState $ getLocalTime (blid b)
         let skill = Ability.getSk Ability.SkApply actorSk
-            legal = permittedApply localTime skill calmE itemFull kit
+            legal = permittedApply localTime skill calmE (Just cstore)
+                                   itemFull kit
         case legal of
           Left reqFail -> execFailure aid req reqFail
           Right _ -> applyItem aid iid cstore
