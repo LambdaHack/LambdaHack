@@ -730,7 +730,7 @@ moveOrSelectItem cLegal cLegalRaw destCStore mverb auto = do
               Right kChosen ->
                 let is = (fromCStore, [(iid, (kChosen, take kChosen it))])
                 in moveItems cLegalRaw is destCStore
-    Just (_, CEqp, _) | CEqp `notElem` cLegal ->
+    Just (_, CEqp, _) | CEqp `notElem` cLegal && CEqp `elem` cLegalRaw ->
       failWith "neither the selected item nor any other can be unequipped"
     _ -> do
       mis <- selectItemsToMove cLegal cLegalRaw destCStore mverb auto
