@@ -867,7 +867,13 @@ spotItem verbose iid kit@(k, _) c = do
                 modifySession $ \sess ->
                   sess { sxhair = Just $ TPoint (TItem bag) lidV p
                        , sitemSel = Nothing }  -- reset flinging
-          itemVerbMU MsgItemMove iid kit "be located" c
+          factionD <- getsState sfactionD
+          let locatedWhere = ppContainer factionD c
+              beLocated = MU.Text $
+                "be located" <+> if locatedWhere == ppContainer EM.empty c
+                                 then ""  -- boring
+                                 else locatedWhere
+          itemVerbMU MsgItemMove iid kit beLocated c
         _ -> return ()
     _ -> return ()  -- this item or another with the same @iid@
                     -- seen already (has a slot assigned), so old news
