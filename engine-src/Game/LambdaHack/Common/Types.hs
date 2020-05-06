@@ -5,7 +5,7 @@
 -- among modules.
 module Game.LambdaHack.Common.Types
   ( ItemId, FactionId, LevelId, ActorId
-  , Container(..), ppContainer
+  , Container(..)
   ) where
 
 import Prelude ()
@@ -48,9 +48,3 @@ data Container =
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container
-
-ppContainer :: Container -> Text
-ppContainer CFloor{} = "nearby"
-ppContainer CEmbed{} = "embedded nearby"
-ppContainer (CActor _ cstore) = ppCStoreIn cstore
-ppContainer c@CTrunk{} = error $ "" `showFailure` c

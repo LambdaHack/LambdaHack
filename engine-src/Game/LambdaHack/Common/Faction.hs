@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Faction
   , tshowChallenge, gleader, isHorrorFact, noRunWithMulti, isAIFact
   , autoDungeonLevel, automatePlayer, isFoe, isFriend
   , difficultyBound, difficultyDefault, difficultyCoeff, difficultyInverse
-  , defaultChallenge, possibleActorFactions
+  , defaultChallenge, possibleActorFactions, ppContainer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
   , Dipl
@@ -191,3 +191,16 @@ possibleActorFactions itemKind factionD =
   in if null fidFactsRaw
      then filter (isHorrorFact . snd) $ EM.assocs factionD  -- fall back
      else fidFactsRaw
+
+ppContainer :: FactionDict -> Container -> Text
+ppContainer factionD (CFloor lid p) =
+  let f fact = case gstash fact of
+        Just (slid, sp) | slid == lid && sp == p -> Just $ gname fact
+        _ -> Nothing
+  in case mapMaybe f $ EM.elems factionD of
+    [] -> "nearby"
+    [t] -> "in the shared inventory stash of" <+> t
+    _ -> "in a shared zone of interests"
+ppContainer _ CEmbed{} = "embedded nearby"
+ppContainer _ (CActor _ cstore) = ppCStoreIn cstore
+ppContainer _ c@CTrunk{} = error $ "" `showFailure` c

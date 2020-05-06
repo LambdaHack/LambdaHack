@@ -140,8 +140,9 @@ displayRespUpdAtomicUI cmd = case cmd of
                        (MU.Text $ makePhrase $ "appear" : wown) c
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
+        factionD <- getsState sfactionD
         itemVerbMU MsgItemCreation iid kit
-                   (MU.Text $ "appear" <+> ppContainer c) c
+                   (MU.Text $ "appear" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
     else do
@@ -159,8 +160,9 @@ displayRespUpdAtomicUI cmd = case cmd of
           itemVerbMUShort MsgItemDestruction iid kit verb c
       CEmbed lid _ -> markDisplayNeeded lid
       CFloor lid _ -> do
+        factionD <- getsState sfactionD
         itemVerbMUShort MsgItemDestruction iid kit
-                        (MU.Text $ "break" <+> ppContainer c) c
+                        (MU.Text $ "break" <+> ppContainer factionD c) c
         markDisplayNeeded lid
       CTrunk{} -> return ()
     else do
