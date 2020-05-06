@@ -545,6 +545,14 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   -- otherwise HP is added to their enemies.
   -- If no UI factions, their role is taken by the escapees (for testing).
   let diffBonusCoeff = difficultyCoeff $ cdiff curChalSer
+      -- For most projectiles (exceptions are, e.g.,  maxHP boosting rings),
+      -- SkMaxHP is zero, which means they drop after one hit regardless
+      -- of extra bhp they have due to piercing. That is fine.
+      -- If we want armoured missiles, that should not be done via piercing,
+      -- but via SkMaxHP of the thrown items. Rings that are piercing
+      -- by coincidence are harmless, too. However, piercing should not be
+      -- added to missiles via SkMaxHP or equipping them would be beneficial
+      -- in a hard to balance way (e.g., one bullet adds 10 SkMaxHP).
       boostFact = not bproj
                   && if diffBonusCoeff > 0
                      then any (fhasUI . gplayer . snd)
@@ -556,11 +564,10 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
       finalHP | boostFact = min (xM 899)  -- no more than UI can stand
                                 (hp * 2 ^ abs diffBonusCoeff)
               | otherwise = hp
+      -- Prevent too high max HP resulting in panic when low HP/max HP ratio.
       maxHP = min (finalHP + xM 100) (2 * finalHP)
-        -- prevent too high max HP resulting in panic when low HP/max HP ratio
       bonusHP = fromEnum (maxHP `div` oneM) - trunkMaxHP
-      healthOrgans = [ (Just bonusHP, (IK.S_BONUS_HP, COrgan))
-                     | bonusHP /= 0 && not bproj ]
+      healthOrgans = [(Just bonusHP, (IK.S_BONUS_HP, COrgan)) | bonusHP /= 0]
       b = actorTemplate trunkId finalHP calm pos lid fid bproj
       withTrunk =
         b { bweapon = if IA.checkFlag Ability.Meleeable arItem then 1 else 0
@@ -571,20 +578,21 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   execUpdAtomic $ UpdCreateActor aid bodyTweaked [(trunkId, itemBase)]
-  -- Create, register and insert all initial actor items, including
-  -- the bonus health organs from difficulty setting.
-  forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
-        $ \(mk, (ikGrp, cstore)) -> do
-    let container = CActor aid cstore
-        itemFreq = [(ikGrp, 1)]
-    mIidEtc <- rollAndRegisterItem False lid itemFreq container mk
-    case mIidEtc of
-      Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
-      Just (iid, (itemFull2, _)) ->
-        when (cstore /= CGround) $
-          -- The items are created owned by actors, so won't be picked up,
-          -- so we have to discover them now, if eligible.
-          discoverIfMinorEffects container iid (itemKindId itemFull2)
+  unless bproj $
+    -- Create, register and insert all initial actor items, including
+    -- the bonus health organs from difficulty setting.
+    forM_ (healthOrgans ++ map (Nothing,) (IK.ikit itemKind))
+          $ \(mk, (ikGrp, cstore)) -> do
+      let container = CActor aid cstore
+          itemFreq = [(ikGrp, 1)]
+      mIidEtc <- rollAndRegisterItem False lid itemFreq container mk
+      case mIidEtc of
+        Nothing -> error $ "" `showFailure` (lid, itemFreq, container, mk)
+        Just (iid, (itemFull2, _)) ->
+          when (cstore /= CGround) $
+            -- The items are created owned by actors, so won't be picked up,
+            -- so we have to discover them now, if eligible.
+            discoverIfMinorEffects container iid (itemKindId itemFull2)
   return aid
 addActorIid _ _ _ _ _ _ _ = error "addActorIid: server ignorant about an item"
 
