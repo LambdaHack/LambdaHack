@@ -560,6 +560,7 @@ lookAtItems canSee p aid = do
   side <- getsClient sside
   factionD <- getsState sfactionD
   globalTime <- getsState stime
+  getKind <- getsState $ flip getIidKindId
   let standingOn = p == bpos b && lidV == blid b
       verb = MU.Text $ if | standingOn -> if bhp b > 0
                                           then "stand on"
@@ -572,7 +573,8 @@ lookAtItems canSee p aid = do
         ii : _ : _ : _ | standingOn && bfid b == side ->
           MU.Phrase [nWs ii, "and other items"]
           -- the actor is ours, so can see details with inventory commands
-        iis -> MU.WWandW $ map nWs iis
+        iis -> MU.WWandW $ map nWs $ map snd $ sortOn fst
+               $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
   -- Here @squashedWWandW@ is not needed, because identical items at the same
   -- position are already merged in the floor item bag and multiple identical
   -- messages concerning different positions are merged with <x7>

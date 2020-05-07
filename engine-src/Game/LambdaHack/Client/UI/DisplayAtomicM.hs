@@ -683,6 +683,7 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
   subject <- partActorLeader aid
   -- The item may no longer be in @c@, but it was.
   itemToF <- getsState $ flip itemToFull
+  getKind <- getsState $ flip getIidKindId
   let object (iid, (k, _)) =
         let itemFull = itemToF iid
         in case ekf k of
@@ -696,8 +697,10 @@ manyItemsAidVerbMU msgClass aid verb bag ekf = do
             let (name1, powers) =
                   partItemShort rwidth side factionD localTime itemFull fakeKit
             in MU.Phrase ["the", MU.Car1Ws n name1, powers]
+      sortItems iis = map snd $ sortOn fst
+                      $ map (\(iid, kit) -> (getKind iid, (iid, kit))) iis
       msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , MU.WWandW $ map object $ EM.assocs bag]
+                         , MU.WWandW $ map object $ sortItems $ EM.assocs bag]
   msgAdd msgClass msg
 
 createActorUI :: MonadClientUI m => Bool -> ActorId -> Actor -> m ()
