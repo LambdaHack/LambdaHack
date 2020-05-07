@@ -1035,9 +1035,9 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- Sync actor's items' timeouts with the new local time of the level.
   -- We need to sync organs and equipment due to periodic activations,
   -- but also due to timeouts after use, e.g., for some weapons
-  -- (they recharge also in the stash sometimes;
-  -- however, this doesn't encourage micromanagement for periodic
-  -- items, because the timeout is randomised upon move to equipment).
+  -- (they recharge also in the stash; however, this doesn't encourage
+  -- micromanagement for periodic items, because the timeout is randomised
+  -- upon move to equipment).
   --
   -- We don't rebase timeouts for items in stash, because they are
   -- used by many actors on levels with different local times,
@@ -1045,8 +1045,8 @@ switchLevels2 lidNew posNew (aid, bOld) mbtime_bOld mbtimeTraj_bOld mlead = do
   -- This is not a big problem: after a single use by an actor the timeout is
   -- set to his current local time, so further uses by that actor have
   -- not anomalously short or long recharge times. If the recharge time
-  -- is very long, the player has an option of moving the item from stash
-  -- to pack and back, to reset the timeout. An abuse is possible when recently
+  -- is very long, the player has an option of moving the item away from stash
+  -- and back, to reset the timeout. An abuse is possible when recently
   -- used item is put from equipment to stash and at once used on another level
   -- taking advantage of local time difference, but this only works once
   -- and using the item back again at the original level makes the recharge
@@ -1580,15 +1580,9 @@ chamber; beginners may struggle too, so this is trigered by difficulty.
 - AI heroes don't switch leader to the hero past laboratory to equip
 weapons from stash between the in-lab hero picks up the loot pile
 and himself enters the decontamination chamber
-- all consumables always end up in a pack and the whole pack
-is always left behind, because consumables are not shared among
-actors via shared stash (yet); we could pack consumables to stash
-by default, but it's too confusing and risky for beginner players
-and doesn't work for heroes that have not enough Calm ATM and AI
-would still need to learn to spread consumables from stash to packs afterwards
 - the items of the last actor would be lost anyway, unless AI
 is taught the foolproof solution of this puzzle, which is yet a bit more
-specific than the two general abilities described as desirable above
+specific than the two abilities above
 -}
        return UseUp
      | otherwise -> do

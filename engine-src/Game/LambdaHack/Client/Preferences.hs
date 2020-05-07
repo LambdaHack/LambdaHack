@@ -415,7 +415,7 @@ totalUsefulness cops fid factionD itemFull@ItemFull{itemKind, itemSuspect} =
       -- because we assume it's in equipment and then
       -- we can't effectively apply it, because it's never recharged,
       -- because it activates as soon as recharged.
-      -- We ignore the rare case of a periodic item kept in backpack
+      -- We ignore the rare case of a periodic item kept in stash
       -- to be applied manually. AI is too silly to choose it and we
       -- certainly don't want AI to destroy periodic items out of silliness.
       -- We don't assign a special bonus or malus due to being periodic,

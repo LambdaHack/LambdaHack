@@ -122,7 +122,7 @@ type DiscoveryKind = EM.EnumMap ItemKindIx (ContentId IK.ItemKind)
 type ItemIxMap = EM.EnumMap ItemKindIx (ES.EnumSet ItemId)
 
 -- | The fields are, in order:
--- 1. whether the item should be kept in equipment (not in pack nor stash)
+-- 1. whether the item should be kept in equipment (not in stash)
 -- 2. the total benefit from picking the item up (to use or to put in equipment)
 -- 3. the benefit of applying the item to self
 -- 4. the (usually negative, for him) value of hitting a foe in melee with it
@@ -144,6 +144,15 @@ type DiscoveryBenefit = EM.EnumMap ItemId Benefit
 -- operational again. Even if item is not identified and so its timeout
 -- unknown, it's enough to compare this to the local level time
 -- to learn whether an item is recharged.
+--
+-- This schema causes timeout jumps for items in stash, but timeout
+-- is reset when items move, so this is a minor problem.
+-- Global time can't be used even only for items in stash,
+-- or exploit would be possible when an actor on a desolate level waits
+-- to recharge items for actors on a busy level. It's probably
+-- impossible to avoid such exploits or, otherwise, timeout jumps,
+-- particularly for faction where many actors move on many levels
+-- and so an item in stash is not used by a single actor at a time.
 newtype ItemTimer = ItemTimer {itemTimer :: Time}
   deriving (Show, Eq, Binary)
 

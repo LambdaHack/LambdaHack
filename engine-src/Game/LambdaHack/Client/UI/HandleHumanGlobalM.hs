@@ -794,7 +794,7 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
           -- We prune item list only for eqp, because other stores don't have
           -- so clear cut heuristics. So when picking up a stash, either grab
           -- it to auto-store things, or equip first using the pruning
-          -- and then pack/stash the rest selectively or en masse.
+          -- and then stash the rest selectively or en masse.
           if destCStore == CEqp
           then (promptEqp, return $ SuitsSomething $ \_ itemFull _kit ->
                  IA.goesIntoEqp $ aspectRecordFull itemFull)

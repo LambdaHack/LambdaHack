@@ -936,7 +936,7 @@ displaceActorUI source target = do
   animate (blid sb) $ swapPlaces ps
 
 -- @UpdMoveItem@ is relatively rare (except within the player's faction),
--- but it ensure that even if only one of the stores is visible
+-- but it ensures that even if only one of the stores is visible
 -- (e.g., stash floor is not or actor posision is not), some messages
 -- will be printed (via verbose @UpdLoseItem@).
 moveItemUI :: MonadClientUI m
@@ -951,7 +951,7 @@ moveItemUI iid k aid cstore1 cstore2 = do
   ItemSlots itemSlots <- getsSession sslots
   case lookup iid $ map swap $ EM.assocs $ itemSlots EM.! SItem of
     Just _l ->
-      -- So far organs can't be put into backpack, so no need to call
+      -- So far organs can't be put into stash, so no need to call
       -- @updateItemSlot@ to add or reassign lore category.
       if cstore1 == CGround && Just aid == mleader && not underAI then
         itemAidVerbMU MsgItemMove aid verb iid (Right k)
