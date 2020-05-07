@@ -99,9 +99,6 @@ pickActorToMove maidToAvoid = do
             -- exploit that encourages ambush camping (with a non-leader),
             -- but it's also a rather fun exploit and a straightforward
             -- consequence of the game mechanics, so it's OK for now
-          goodGeneric ((_, b), Just TgtAndPath{tapTgt=TPoint TStash{} lid pos})
-            | lid == arena && pos == bpos b =
-              Nothing  -- guarding own hoard; no foes; ignore
           goodGeneric ((aid, b), Just tgt) = case maidToAvoid of
             Nothing | not (aid == oldAid && actorWaits b) ->
               -- Not the old leader that was stuck last turn
@@ -216,8 +213,9 @@ pickActorToMove maidToAvoid = do
           targetTEnemy (_, TgtAndPath{tapTgt=TEnemy _}) = True
           targetTEnemy (_, TgtAndPath{tapTgt=TPoint TEnemyPos{} lid _}) =
             lid == arena
-          targetTEnemy (_, TgtAndPath{tapTgt=TPoint TStash{} lid _}) =
-            lid == arena  -- stashes as crucial as enemies
+          targetTEnemy ((_, b), TgtAndPath{tapTgt=TPoint TStash{} lid pos}) =
+            lid == arena && pos /= bpos b
+              -- stashes as crucial as enemies. except when guarding them
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
             threatDistL <- getsState $ meleeThreatDistList aid
@@ -229,6 +227,9 @@ pickActorToMove maidToAvoid = do
             return $! condThreat 5 && not condSupport2
           (oursRanged, oursNotRanged) = partition actorRanged oursNotHearing
           (oursTEnemyAll, oursOther) = partition targetTEnemy oursNotRanged
+          notSwapReady ((_, b), TgtAndPath{tapTgt=TPoint TStash{} lid pos}) _ =
+            lid == arena && pos == bpos b
+              -- not ready to follow goal if already guarding the stash
           notSwapReady abt@((_, b), _)
                        (ab2, Just t2@TgtAndPath{tapPath=
                                        Just AndPath{pathList=q : _}}) =

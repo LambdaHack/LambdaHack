@@ -279,7 +279,9 @@ actionStrategy aid retry = do
         , ( [SkAlter]
           , trigger aid ViaNothing
           , not condInMelee  -- don't incur overhead
-            && condAdjTriggerable && not condAimEnemyOrStash )
+            && condAdjTriggerable
+            && not condAimEnemyTargeted )  -- targeting stash is OK, to unblock
+                                           -- dungeons if party has only one key
         , ( [SkDisplace]  -- prevents some looping movement
           , displaceBlocker aid retry  -- fires up only when path blocked
           , retry || not condDesirableFloorItem )
