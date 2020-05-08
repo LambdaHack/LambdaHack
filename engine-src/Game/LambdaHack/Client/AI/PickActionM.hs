@@ -303,6 +303,12 @@ actionStrategy aid retry = do
       -- good, and if not, the @chase@ in @suffix@ may fix that.
       -- The scaling values for @stratToFreq@ need to be so low-resolution
       -- or we get 32bit @Freqency@ overflows, which would bite us in JS.
+      --
+      -- Note that all monadic actions here are performed when the strategy
+      -- is being chosen so, e.g., none of them can be @flee@ or the actor
+      -- would be marked in state as fleeing even when the strategy is
+      -- not chosen. TODO: introduce @MonadClientRead@ and so ensure with types
+      -- that none of these actions modifie state.
       distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
@@ -390,25 +396,35 @@ actionStrategy aid retry = do
   let abInSkill sk = getSk sk actorSk > 0
       checkAction :: ([Skill], m a, Bool) -> Bool
       checkAction (abts, _, cond) = (null abts || any abInSkill abts) && cond
-      sumS abAction = do
+      sumS abAction =
         let as = filter checkAction abAction
-        strats <- mapM (\(_, m, _) -> m) as
-        return $! msum strats
+        in map (\(_, m, _) -> m) as
       sumF abFreq = do
         let as = filter checkAction abFreq
         strats <- mapM (\(_, m, _) -> m) as
         return $! msum strats
       combineWeighted as = liftFrequency <$> sumF as
-  sumPrefix <- sumS prefix
-  comDistant <- combineWeighted distant
-  sumSuffix <- sumS suffix
-  sumFallback <- sumS fallback
-  return $! if bwatch body == WSleep
-               && abInSkill SkWait
-               && mayContinueSleep
-                 -- no check of @canSleep@, because sight lowered by sleeping
-            then returN "sleep" ReqWait
-            else sumPrefix .| comDistant .| sumSuffix .| sumFallback
+      sumPrefix = sumS prefix
+      comDistant = combineWeighted distant
+      sumSuffix = sumS suffix
+      sumFallback = sumS fallback
+      -- TODO: should be: sumPrefix .| comDistant .| sumSuffix .| sumFallback
+      -- but then all side-effects have to be computed beforehand,
+      -- breaking the state, e.g., marking actor as fleeing, always.
+      sums = sumPrefix ++ [comDistant] ++ sumSuffix ++ sumFallback
+      tryStrategies :: [m (Strategy RequestTimed)] -> m (Strategy RequestTimed)
+      tryStrategies [] = return mzero
+      tryStrategies (m : rest) = do
+        str <- m
+        if nullStrategy str
+        then tryStrategies rest
+        else return str  -- don't perform the remaining monadic actions
+  if bwatch body == WSleep
+     && abInSkill SkWait
+     && mayContinueSleep
+       -- no check of @canSleep@, because sight lowered by sleeping
+  then return $! returN "sleep" ReqWait
+  else tryStrategies sums
 
 waitBlockNow :: MonadClient m => m (Strategy RequestTimed)
 waitBlockNow = return $! returN "wait" ReqWait
