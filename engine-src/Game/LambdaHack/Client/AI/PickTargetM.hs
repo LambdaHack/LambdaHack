@@ -231,7 +231,9 @@ computeTarget aid = do
             take7 TgtAndPath{tapPath=Just AndPath{..}} =
               -- Best path only followed 7 moves; then straight on. Cheaper.
               let path7 = take 7 pathList
-                  vOld = towards (bpos b) pathGoal
+                  vOld = if bpos b /= pathGoal
+                         then towards (bpos b) pathGoal
+                         else Vector 0 0
                   tapTgt = TVector vOld
                   tapPath=Just AndPath{pathList=path7, ..}
               in TgtAndPath{..}
