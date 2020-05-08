@@ -227,18 +227,13 @@ computeTarget aid = do
       setPath tgt = do
         let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
               tap  -- @TEnemy@ needed for projecting, even by roaming actors
-            take7 tap@TgtAndPath{tapPath=Just AndPath{..}} =
+            take7 TgtAndPath{tapPath=Just AndPath{..}} =
               -- Best path only followed 7 moves; then straight on. Cheaper.
               let path7 = take 7 pathList
                   vOld = towards (bpos b) pathGoal
-                  pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                  walkable = Tile.isWalkable coTileSpeedup $ lvl `at` pNew
                   tapTgt = TVector vOld
-              in if bpos b == pathGoal  -- goal reached, so better know the tgt
-                    || not walkable  -- can't walk, so don't chase a vector
-                 then tap
-                 else TgtAndPath{ tapTgt
-                                , tapPath=Just AndPath{pathList=path7, ..} }
+                  tapPath=Just AndPath{pathList=path7, ..}
+              in TgtAndPath{..}
             take7 tap = tap
         tgtpath <- createPath aid tgt
         return $ Just $ if slackDoctrine then take7 tgtpath else tgtpath
