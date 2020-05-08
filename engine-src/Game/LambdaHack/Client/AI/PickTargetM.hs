@@ -225,8 +225,9 @@ computeTarget aid = do
                  , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       setPath :: Target -> m (Maybe TgtAndPath)
       setPath tgt = do
-        let take7 tap@TgtAndPath{tapTgt=TEnemy{}} =
-              tap  -- @TEnemy@ needed for projecting, even by roaming actors
+        let take7 tap@TgtAndPath{tapTgt=TEnemy{}} = tap
+              -- @TEnemy@ needed for projecting, even by roaming actors;
+              -- however, CStash not as binding, so excursions possible
             take7 TgtAndPath{tapPath=Just AndPath{..}} =
               -- Best path only followed 7 moves; then straight on. Cheaper.
               let path7 = take 7 pathList
@@ -370,14 +371,17 @@ computeTarget aid = do
                  Just AndPath{pathList= q : _} ->
                    -- If in melee and path blocked by actors (even proj.)
                    -- change target for this turn due to urgency.
-                   -- Because of @condInMelee@ new target will be enemy,
-                   -- if any other is left, or empty target.
+                   -- Because of @condInMelee@ new target will be stash
+                   -- or enemy if any other is left, or empty target.
                    -- If not in melee, keep target and consider your options
-                   -- (wait until blocking actors move or displace or melee).
-                   -- We don't want to wander away in search of loot, only to
-                   -- turn around next turn when the enemy is again considered.
-                   if not condInMelee || not (occupiedBigLvl q lvl)
-                                         && not (occupiedProjLvl q lvl)
+                   -- (wait until blocking actors move or displace or melee
+                   -- or sidestep). We don't want to wander away
+                   -- in search of loot, only to turn around next turn
+                   -- when the enemy is again considered.
+                   if not condInMelee
+                      || q == bpos body  -- blocked by the enemy, great!
+                      || not (occupiedBigLvl q lvl)
+                         && not (occupiedProjLvl q lvl)
                    then return $ Just tap{tapPath=mpath}
                    else pickNewTargetIgnore (Just a)
         TPoint _ lid _ | lid /= blid b -> pickNewTarget  -- wrong level
