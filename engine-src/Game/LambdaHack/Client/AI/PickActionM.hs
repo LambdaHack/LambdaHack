@@ -142,6 +142,8 @@ actionStrategy aid retry = do
       condHpTooLow = hpTooLow body actorMaxSk
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltasSerious (bcalmDelta body)
+      heavilyDistressedThisTurn =  -- if far from melee, almost sure hit by proj
+        deltasSeriousThisTurn (bcalmDelta body)
       condNotCalmEnough = not (calmEnough body actorMaxSk)
       uneasy = heavilyDistressed || condNotCalmEnough
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
@@ -239,13 +241,15 @@ actionStrategy aid retry = do
                         lid == blid body
                         && chessDist pos (bpos body) <= 2 -> False
                   | condInMelee -> False
-                      -- No fleeing when others melee and melee target close
+                      -- No fleeing when others melee and no critical threat
                       -- (otherwise no target nor action would be possible).
-                  | heavilyDistressed
-                    && (not condCanMelee || canFleeIntoDark) -> True
-                      -- If hit by projectiles and can melee, no escape
-                      -- except into the dark. Note that when in dark,
-                      -- the hit might have been caused by dynamic light
+                  | heavilyDistressedThisTurn  -- and no adj melee
+                    || (heavilyDistressed && not (condThreat 2)) ->
+                    not condCanMelee || canFleeIntoDark
+                      -- Almost surely hit by projectile. So, if can melee,
+                      -- don't escape except into the dark.
+                      -- Note that even when in dark now, the projectile hit
+                      -- might have been enabled by dynamic light
                       -- or light from lying items, so fleeing still needed.
                       -- If heroes stay in the light when under fire,
                       -- they are pummeled by fast ranged foes and can neither
@@ -290,8 +294,10 @@ actionStrategy aid retry = do
           , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
-          , flee aid
-                 (heavilyDistressed  -- prefer bad but dark spots if under fire
+          , flee aid  -- rattlesnakes and hornets flee and return when charging
+                 ((heavilyDistressedThisTurn && not condAnyHarmfulFoeAdj
+                   || (heavilyDistressed && not (condThreat 2)))
+                     -- prefer bad but dark spots if under fire
                   && not actorShines)
                  panicFleeL  -- ultimate panic mode; open tiles, if needed
           , condAnyHarmfulFoeAdj )

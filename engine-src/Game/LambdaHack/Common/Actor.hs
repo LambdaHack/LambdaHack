@@ -3,7 +3,8 @@
 module Game.LambdaHack.Common.Actor
   ( -- * The@ Acto@r type, its components and operations on them
     Actor(..), ResDelta(..), ActorMaxSkills, Watchfulness(..)
-  , deltasSerious, deltasHears, deltaBenign, deltaWasBenign
+  , deltasSerious, deltasSeriousThisTurn
+  , deltasHears, deltaBenign, deltaWasBenign
   , actorCanMelee, actorCanMeleeToHarm, actorWorthChasing, actorWorthKilling
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
   , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
@@ -105,6 +106,9 @@ instance Binary Watchfulness
 deltasSerious :: ResDelta -> Bool
 deltasSerious ResDelta{..} = fst resCurrentTurn <= minusM2
                              || fst resPreviousTurn <= minusM2
+
+deltasSeriousThisTurn :: ResDelta -> Bool
+deltasSeriousThisTurn ResDelta{..} = fst resCurrentTurn <= minusM2
 
 deltasHears :: ResDelta -> Bool
 deltasHears ResDelta{..} = fst resCurrentTurn == minusM1
