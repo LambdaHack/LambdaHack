@@ -530,7 +530,10 @@ closestStashes aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
   oursExploring <- getsState $ oursExploringAssocs (bfid b)
-  let fact = factionD EM.! bfid b
+  actorMaxSkills <- getsState sactorMaxSkills
+  let actorMaxSk = actorMaxSkills EM.! aid
+      calmE = calmEnough b actorMaxSk
+      fact = factionD EM.! bfid b
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
@@ -539,6 +542,7 @@ closestStashes aid = do
           -- and walking over stash to @TStash@.
           if lid == blid b
              && (fid2 == bfid b
+                 && calmE  -- not in grave danger or risk of defecting
                  && isNothing (posToBigLvl pos lvl)  -- unguarded
                  && length oursExploring > 1  -- other actors able to explore
                  || isFoe (bfid b) fact fid2)

@@ -392,12 +392,14 @@ computeTarget aid = do
             oursExploring <- getsState $ oursExploringAssocs (bfid b)
             let oursExploringLid =
                   filter (\(_, body) -> blid body == lid) oursExploring
-            -- Even if made peace with the faction, loot stash one last time.
+                calmE = calmEnough b actorMaxSk
+           -- Even if made peace with the faction, loot stash one last time.
             if gstash (factionD EM.! fid2) == Just (lid, pos)
                -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
                && (fid2 == bfid b
                    && (pos == bpos b  -- guarded by me, so keep guarding
+                       && calmE  -- not in grave danger or risk of defecting
                        && (null nearbyFoes  -- if no foes nearby
                            || length oursExploringLid > 1) -- or buddies nearby
                        || isNothing (posToBigLvl pos lvl))  -- or unguarded
