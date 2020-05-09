@@ -275,35 +275,30 @@ computeTarget aid = do
                              else return []
                     case smpos of
                       [] -> do
-                        let vToTgt v0 = do
-                              let vFreq = toFreq "vFreq"
-                                          $ (20, v0) : map (1,) moves
-                              v <- rndToAction $ frequency vFreq
-                              -- Once the most pressing targets exhaused,
-                              -- wander around for 7 steps and only then,
-                              -- or if blocked or derailed, consider again
-                              -- the old and new targets.
-                              let pathSource = bpos b
-                                  tra = trajectoryToPathBounded
-                                          rXmax rYmax pathSource (replicate 7 v)
-                                  pathList = map head $ group tra
-                                  pathGoal = last pathList
-                                  pathLen = length pathList
-                              return $ Just $
-                                TgtAndPath
-                                  { tapTgt = TVector v
-                                  , tapPath = if pathLen == 0
-                                              then Nothing
-                                              else Just AndPath{..} }
-                            oldpos = fromMaybe (bpos b) (boldpos b)
+                        let oldpos = fromMaybe (bpos b) (boldpos b)
                             vOld = bpos b `vectorToFrom` oldpos
                             pNew = shiftBounded rXmax rYmax (bpos b) vOld
                         if slackDoctrine && not isStuck
                            && isUnit vOld && bpos b /= pNew
                                 -- both are needed, e.g., when just teleported
                                 -- or when the shift bounded by level borders
-                           && Tile.isWalkable coTileSpeedup (lvl `at` pNew)
-                        then vToTgt vOld
+                        then do
+                          let vFreq = toFreq "vFreq"
+                                      $ (20, vOld) : map (1,) moves
+                          v <- rndToAction $ frequency vFreq
+                          -- Once the most pressing targets exhaused,
+                          -- wander around for 7 steps and only then,
+                          -- or if blocked or derailed, consider again
+                          -- the old and new targets.
+                          let pathSource = bpos b
+                              tra = trajectoryToPathBounded
+                                      rXmax rYmax pathSource (replicate 7 v)
+                              pathList = map head $ group tra
+                              pathGoal = last pathList
+                              pathLen = length pathList
+                              tapTgt = TVector v
+                              tapPath = Just AndPath{..}
+                          return $ Just TgtAndPath {..}
                         else do
                           upos <- closestUnknown aid
                           case upos of
