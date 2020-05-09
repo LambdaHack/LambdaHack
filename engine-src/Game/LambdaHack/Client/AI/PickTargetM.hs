@@ -229,7 +229,8 @@ computeTarget aid = do
               -- @TEnemy@ needed for projecting, even by roaming actors;
               -- however, CStash not as binding, so excursions possible
             take7 TgtAndPath{tapPath=Just AndPath{..}} =
-              -- Best path only followed 7 moves; then straight on. Cheaper.
+              -- Path followed for 7 moves regardless if the target valid
+              -- and then target forgot and a new one picked.
               let path7 = take 7 pathList
                   vOld = if bpos b /= pathGoal
                          then towards (bpos b) pathGoal
@@ -278,8 +279,10 @@ computeTarget aid = do
                               let vFreq = toFreq "vFreq"
                                           $ (20, v0) : map (1,) moves
                               v <- rndToAction $ frequency vFreq
-                              -- Items and smells, etc. considered
-                              -- every 7 moves.
+                              -- Once the most pressing targets exhaused,
+                              -- wander around for 7 steps and only then,
+                              -- or if blocked or derailed, consider again
+                              -- the old and new targets.
                               let pathSource = bpos b
                                   tra = trajectoryToPathBounded
                                           rXmax rYmax pathSource (replicate 7 v)
