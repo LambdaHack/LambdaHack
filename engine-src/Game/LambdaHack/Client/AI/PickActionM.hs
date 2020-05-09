@@ -157,11 +157,11 @@ actionStrategy aid retry = do
               let ar2 = actorMaxSkills EM.! aid2
               in gearSpeed ar2 > speed1_5)
             threatAdj
-      allThreatsAdjAreStealthy =
-        all (\(_, (aid2, b2)) ->
+      condNonStealthyThreatAdj =
+        any (\(_, (aid2, b2)) ->
               let ar2 = actorMaxSkills EM.! aid2
-              in Ability.getSk Ability.SkShine ar2 <= 0
-                 && not (isLit $ bpos b2))
+              in Ability.getSk Ability.SkShine ar2 > 0
+                 || isLit (bpos b2))
             threatAdj
       actorShines = Ability.getSk Ability.SkShine actorMaxSk > 0
       isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
@@ -176,7 +176,7 @@ actionStrategy aid retry = do
         || (Ability.getSk Ability.SkSight actorMaxSk > 2
             || Ability.getSk Ability.SkNocto actorMaxSk > 2)
            && (Ability.getSk Ability.SkShine actorMaxSk > 2
-               || not allThreatsAdjAreStealthy)
+               || condNonStealthyThreatAdj || null threatAdj)
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
