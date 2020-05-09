@@ -1430,7 +1430,11 @@ displayRespSfxAtomicUI sfx = case sfx of
         IK.ConsumeItems{} -> return ()
         IK.DropItem _ _ COrgan _ -> return ()
         IK.DropItem{} -> aidVerbMU MsgEffect aid "be stripped"
-        IK.Discharge{} -> aidVerbMU MsgEffect aid "cool down"
+        IK.Discharge dice ->
+          aidVerbMU MsgEffect aid
+          $ case Dice.reduceDice dice of
+            Just 0 -> "heat up"
+            _ -> "cool down"
         IK.PolyItem -> do
           subject <- partActorLeader aid
           let ppstore = MU.Text $ ppCStoreIn CGround
