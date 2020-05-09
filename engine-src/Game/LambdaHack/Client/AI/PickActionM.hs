@@ -241,7 +241,8 @@ actionStrategy aid retry = do
                   | condInMelee -> False
                       -- No fleeing when others melee and melee target close
                       -- (otherwise no target nor action would be possible).
-                  | heavilyDistressed -> not condCanMelee || canFleeIntoDark
+                  | heavilyDistressed
+                    && (not condCanMelee || canFleeIntoDark) -> True
                       -- If hit by projectiles and can melee, no escape
                       -- except into the dark. Note that when in dark,
                       -- the hit might have been caused by dynamic light
