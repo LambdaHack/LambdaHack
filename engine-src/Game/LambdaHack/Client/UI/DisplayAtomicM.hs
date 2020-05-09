@@ -1737,20 +1737,20 @@ strike catch source target iid = assert (source /= target) $ do
           not $ IA.checkFlag Ability.Condition $ aspectRecordFull itemFullArmor
         isOrdinaryCond (_, (itemFullArmor, _)) =
           isJust $ lookup IK.CONDITION $ IK.ifreq $ itemKind itemFullArmor
+        relevantSkArmor =
+          if bproj sb then Ability.SkArmorRanged else Ability.SkArmorMelee
         rateArmor (iidArmor, (itemFullArmor, (k, _))) =
-          ( k * IA.getSkill Ability.SkArmorMelee
-                            (aspectRecordFull itemFullArmor)
+          ( k * IA.getSkill relevantSkArmor (aspectRecordFull itemFullArmor)
           , ( iidArmor
             , itemFullArmor ) )
         abs15 (v, _) = abs v >= 15
         condArmor = filter abs15 $ map rateArmor $ filter isOrdinaryCond orgKit
         fstGt0 (v, _) = v > 0
-        eqpAndOrgArmor = filter fstGt0 $ map rateArmor
-                         $ filter notCond eqpOrgKit
-    mblockArmor <- case eqpAndOrgArmor of
+        wornArmor = filter fstGt0 $ map rateArmor $ filter notCond eqpOrgKit
+    mblockArmor <- case wornArmor of
       [] -> return Nothing
       _ -> Just
-           <$> rndToActionUI (frequency $ toFreq "msg armor" eqpAndOrgArmor)
+           <$> rndToActionUI (frequency $ toFreq "msg armor" wornArmor)
     let (blockWithWhat, blockWithWeapon) = case mblockArmor of
           Just (iidArmor, itemFullArmor) | iidArmor /= btrunk tb ->
             let (object1, object2) =
