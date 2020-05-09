@@ -264,17 +264,19 @@ computeTarget aid = do
                 let citems = toFreq "closestItems"
                              $ filter desirableFloor citemsRaw
                 if nullFreq citems then do
-                  ctriggersRaw <- closestTriggers ViaAnything aid
-                  let ctriggers = toFreq "ctriggers" ctriggersRaw
-                  if nullFreq ctriggers then do
-                    -- Tracking enemies is more important than exploring,
-                    -- but smell is unreliable and may lead to allies,
-                    -- not foes, so avoid it.
-                    smpos <- if canSmell
-                             then closestSmell aid
-                             else return []
-                    case smpos of
-                      [] -> do
+                  -- Tracking enemies is more important than exploring,
+                  -- but smell is unreliable and may lead to allies,
+                  -- not foes, so avoid it. However, let's keep smell
+                  -- more imporant than getting to stairs, to let smelling
+                  -- monsters follow cues even on explored levels.
+                  smpos <- if canSmell
+                           then closestSmell aid
+                           else return []
+                  case smpos of
+                    [] -> do
+                      ctriggersRaw <- closestTriggers ViaAnything aid
+                      let ctriggers = toFreq "ctriggers" ctriggersRaw
+                      if nullFreq ctriggers then do
                         let oldpos = fromMaybe (bpos b) (boldpos b)
                             vOld = bpos b `vectorToFrom` oldpos
                             pNew = shiftBounded rXmax rYmax (bpos b) vOld
@@ -327,10 +329,10 @@ computeTarget aid = do
                                   rndToAction $ frequency ctriggers2
                                 setPath $ TPoint (TEmbed bag p0) (blid b) p
                             Just p -> setPath $ TPoint TUnknown (blid b) p
-                      (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
-                  else do
-                    (p, (p0, bag)) <- rndToAction $ frequency ctriggers
-                    setPath $ TPoint (TEmbed bag p0) (blid b) p
+                      else do
+                        (p, (p0, bag)) <- rndToAction $ frequency ctriggers
+                        setPath $ TPoint (TEmbed bag p0) (blid b) p
+                    (_, (p, _)) : _ -> setPath $ TPoint TSmell (blid b) p
                 else do
                   (p, bag) <- rndToAction $ frequency citems
                   setPath $ TPoint (TItem bag) (blid b) p
