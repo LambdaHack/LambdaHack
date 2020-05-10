@@ -554,10 +554,10 @@ effectExplode execSfx cgroup source target = do
       tryFlying k100 = do
         -- Explosion particles were placed among organs of the victim:
         bag2 <- getsState $ borgan . getActorBody target
-        -- We stop bouncing old particles when less than half remains,
+        -- We stop bouncing old particles when less than two thirds remain,
         -- to prevent hoarding explosives to use only in cramped spaces.
         case EM.lookup iid bag2 of
-          Just (n2, _) | n2 >= itemK `div` 2 -> do
+          Just (n2, _) | n2 * 2 >= itemK `div` 3 -> do
             projectN k100 n2
             tryFlying $ k100 - 1
           _ -> return ()
