@@ -475,8 +475,9 @@ armorHurtBonus source target s =
   in armorHurtCalculation (bproj sb) sMaxSk tMaxSk
 
 -- | Check if any non-dying foe is adjacent to any of our normal actors
--- and either is a projectile (can fly into them) or can harm them
--- via melee or can attack from a distance. Otherwise no point meleeing him.
+-- and either can harm them via melee or can attack from a distance.
+-- Otherwise no point meleeing him. Projectiles are ignored, because
+-- they are not actively attempted to melee, see @meleeAny@.
 -- This is regardless of whether our actor can melee or just needs to flee,
 -- in which case alert is needed so that he is not slowed down by others.
 -- However, if our actor can't move nor melee, no real combat is taking place.
@@ -486,6 +487,7 @@ inMelee !actorMaxSkills !fid !lid s =
   let fact = sfactionD s EM.! fid
       f (!aid, !b) =
         blid b == lid
+        && not (bproj b)
         && inline isFoe fid fact (bfid b)  -- costly
         && actorWorthKilling actorMaxSkills aid b
       allFoes = filter f $ EM.assocs $ sactorD s
