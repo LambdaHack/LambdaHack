@@ -69,9 +69,8 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
               | itemK == lenCh = "(all charging)"
               | otherwise = "(" <> tshow lenCh <+> "charging)"
       skipRecharging = detailLevel <= DetailLow && lenCh >= itemK
-      (orTs, powerTsRaw, rangedDamage) =
+      (orTs, powerTs, rangedDamage) =
         textAllPowers width detailLevel skipRecharging itemFull
-      powerTs = powerTsRaw ++ if ranged then rangedDamage else []
       lsource = case jfid itemBase of
         Just fid | IK.iname itemKind `elem` ["impressed"] ->
           ["by" <+> if fid == side
@@ -81,12 +80,17 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       powerTsBeginsWithAlpha = case map T.unpack powerTs of
         (c : _) : _ -> isAlpha c
         _ -> False
+      -- Ranged damage displayed even if lack of space, to prevent confusion
+      -- and ... when only ranged damage is missing from the description.
+      displayPowers = maxWordsToShow > 1 || powerTsBeginsWithAlpha
       ts = lsource
-           ++ (if maxWordsToShow > 1 || powerTsBeginsWithAlpha
+           ++ (if displayPowers
                then take maxWordsToShow powerTs
                else [])
-           ++ [ "(...)" | length powerTs > maxWordsToShow
+           ++ [ "(...)" | displayPowers
+                          && length powerTs > maxWordsToShow
                           && detailLevel > DetailLow ]
+           ++ (if displayPowers && ranged then rangedDamage else [])
            ++ [charges | maxWordsToShow > 1]
       name | temporary =
              let adj = if timeout == 0 then "temporarily" else "impermanent"
