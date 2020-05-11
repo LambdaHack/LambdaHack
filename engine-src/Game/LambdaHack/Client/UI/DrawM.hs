@@ -686,9 +686,12 @@ drawLeaderDamage width leader = do
       haNonDamagesEffect itemFull =
         any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
             (IK.ieffects $ itemKind itemFull)
-      ppDice :: (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
-      ppDice (nch, (itemFull, (k, _))) =
-        let tdice = show $ IK.idamage $ itemKind itemFull
+      ppDice :: Bool -> (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
+      ppDice showInBrief (nch, (itemFull, (k, _))) =
+        let dice = IK.idamage $ itemKind itemFull
+            tdice = case Dice.reduceDice dice of
+              Just d | showInBrief -> show d
+              _ -> show dice
             -- We ignore nested effects because they are, in general, avoidable.
             -- We also ignore repeated effect kinds for HUD simplicity.
             tBurn = maybe "" (('+' :) . show)  $ listToMaybe $ mapMaybe unBurn
@@ -707,11 +710,11 @@ drawLeaderDamage width leader = do
               in map (Color.attrChar2ToW32 cburn) tBurn
                  ++ map (Color.attrChar2ToW32 chp) tRefillHP
             possiblyHasTimeout = hasTimeout itemFull || itemSuspect itemFull
-           in if possiblyHasTimeout
-              then replicate (k - nch)
-                             (False, (ldice Color.Cyan, lBurnHP False))
-                   ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
-              else [(True, (ldice Color.BrBlue, lBurnHP True))]
+        in if possiblyHasTimeout
+           then replicate (k - nch)
+                          (False, (ldice Color.Cyan, lBurnHP False))
+                ++ replicate nch (True, (ldice Color.BrCyan, lBurnHP True))
+           else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =
         let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk
@@ -741,22 +744,26 @@ drawLeaderDamage width leader = do
       lT = filter possiblyHasTimeout strongest
       lSurelyNoTimeout = filter (not . possiblyHasTimeout) strongest
       strongestToDisplay = lT ++ take 1 lSurelyNoTimeout
-      lToDisplay = concatMap ppDice strongestToDisplay
-      (ldischarged, lrest) = span (not . fst) lToDisplay
-      lWithBonus = case map snd lrest of
-        [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
-        (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
-      displayDmgAndExtra (ldmg, lextra) =
-        if map Color.charFromW32 ldmg == "0"
-        then case lextra of
-          [] -> ldmg
-          _plus : lextraRest -> lextraRest
-        else ldmg ++ lextra
-      lFlat = intercalate [Color.spaceAttrW32]
-              $ map displayDmgAndExtra $ map snd ldischarged ++ lWithBonus
-      lFits = if length lFlat > width
-              then take (width - 3) lFlat ++ stringToAS "..."
-              else lFlat
+      showStrongest showInBrief l =
+        let lToDisplay = concatMap (ppDice showInBrief) l
+            (ldischarged, lrest) = span (not . fst) lToDisplay
+            lWithBonus = case map snd lrest of
+              [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
+              (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
+            displayDmgAndExtra (ldmg, lextra) =
+              if map Color.charFromW32 ldmg == "0"
+              then case lextra of
+                [] -> ldmg
+                _plus : lextraRest -> lextraRest
+              else ldmg ++ lextra
+        in intercalate [Color.spaceAttrW32]
+           $ map displayDmgAndExtra $ map snd ldischarged ++ lWithBonus
+      lFull = showStrongest False strongestToDisplay
+      lBrief = showStrongest True strongestToDisplay
+      lFits | length lFull <= width = lFull
+                -- the prevailing case, so optimized for this case only
+            | length lBrief <= width = lBrief
+            | otherwise = take (width - 3) lBrief ++ stringToAS "..."
   return $! lFits
 
 drawSelected :: MonadClientUI m
