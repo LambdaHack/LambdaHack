@@ -738,12 +738,13 @@ drawLeaderDamage width leader = do
     <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
   let possiblyHasTimeout (_, (itemFull, _)) =
         hasTimeout itemFull || itemSuspect itemFull
-      (lT, lSurelyNoTimeout) = span possiblyHasTimeout strongest
+      lT = filter possiblyHasTimeout strongest
+      lSurelyNoTimeout = filter (not . possiblyHasTimeout) strongest
       strongestToDisplay = lT ++ take 1 lSurelyNoTimeout
       lToDisplay = concatMap ppDice strongestToDisplay
       (ldischarged, lrest) = span (not . fst) lToDisplay
       lWithBonus = case map snd lrest of
-        [] -> []  -- unlikely; means no timeout-free organ
+        [] -> []  -- no timeout-free organ, e.g., rattlesnake or hornet
         (ldmg, lextra) : rest -> (ldmg ++ lbonus, lextra) : rest
       displayDmgAndExtra (ldmg, lextra) =
         if map Color.charFromW32 ldmg == "0"

@@ -2,7 +2,7 @@
 -- | The type of kinds of weapons, treasure, organs, blasts, etc.
 module Game.LambdaHack.Content.ItemKind
   ( pattern CONDITION, pattern COMMON_ITEM, pattern S_BONUS_HP, pattern S_BRACED, pattern S_ASLEEP, pattern S_IMPRESSED, pattern S_CURRENCY, pattern MOBILE
-  , pattern CRAWL_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern ANY_FLASK, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_FRAGRANCE
+  , pattern CRAWL_ITEM, pattern TREASURE, pattern ANY_SCROLL, pattern ANY_GLASS, pattern ANY_POTION, pattern ANY_FLASK, pattern EXPLOSIVE, pattern ANY_JEWELRY, pattern S_SINGLE_SPARK, pattern S_SPARK, pattern S_FRAGRANCE
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
@@ -67,11 +67,12 @@ pattern MOBILE = GroupName "mobile"
 
 -- * Optional item groups
 
-pattern S_SINGLE_SPARK, S_FRAGRANCE, CRAWL_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, ANY_FLASK, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY, AQUATIC, HORROR :: GroupName ItemKind
+pattern S_SINGLE_SPARK, S_SPARK, S_FRAGRANCE, CRAWL_ITEM, TREASURE, ANY_SCROLL, ANY_GLASS, ANY_POTION, ANY_FLASK, EXPLOSIVE, ANY_JEWELRY, VALUABLE, UNREPORTED_INVENTORY, AQUATIC, HORROR :: GroupName ItemKind
 
 -- Used in Preferences.hs
 
 pattern S_SINGLE_SPARK = GroupName "single spark"
+pattern S_SPARK = GroupName "spark"
 pattern S_FRAGRANCE = GroupName "fragrance"
 
 pattern CRAWL_ITEM = GroupName "curious item"

@@ -29,7 +29,7 @@ import Game.LambdaHack.Definition.Flavour
 
 groupNamesSingleton :: [GroupName ItemKind]
 groupNamesSingleton =
-       [S_FRAGRANCE, S_SINGLE_SPARK]
+       [S_FRAGRANCE, S_SINGLE_SPARK, S_SPARK]
     ++ [FLASK_UNKNOWN, POTION_UNKNOWN, EDIBLE_PLANT_UNKNOWN, SCROLL_UNKNOWN, NECKLACE_UNKNOWN, RING_UNKNOWN, HAMMER_UNKNOWN, GEM_UNKNOWN, CURRENCY_UNKNOWN]
     ++ organsGNSingleton ++ blastsGNSingleton ++ temporariesGNSingleton
 

@@ -51,6 +51,7 @@ effectToBenefit cops fid factionD eff =
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
     IK.Explode IK.S_SINGLE_SPARK -> delta (-1)
                                       -- hardwired; probing and flavour
+    IK.Explode IK.S_SPARK -> delta (-9)  -- small, to not affect weapon order
     IK.Explode IK.S_FRAGRANCE -> (1, -5)  -- hardwired; situational
     IK.Explode _ ->
       -- There is a risk the explosion is focused and harmful to self
