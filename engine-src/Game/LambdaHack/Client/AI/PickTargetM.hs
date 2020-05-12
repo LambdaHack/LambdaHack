@@ -236,7 +236,7 @@ computeTarget aid = do
                          then towards (bpos b) pathGoal
                          else Vector 0 0
                   tapTgt = TVector vOld
-                  tapPath=Just AndPath{pathList=path7, ..}
+                  tapPath = Just AndPath{pathList=path7, ..}
               in TgtAndPath{..}
             take7 tap = tap
         tgtpath <- createPath aid tgt
@@ -415,7 +415,7 @@ computeTarget aid = do
             | EM.member aid fleeD -> pickNewTarget
                 -- forget enemy positions to prevent attacking them again soon
             | otherwise -> do
-              -- Here pick the closer enemy, remembered or seen, to avoid
+              -- Here pick the closer enemy, the remembered or seen, to avoid
               -- loops when approaching new enemy obscures him behind obstacle
               -- but reveals the previously remembered one, etc.
               let remainingDist = chessDist (bpos b) pos

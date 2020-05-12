@@ -214,6 +214,10 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
                else return []
   let posUp Point{..} = Point (px - 1) py
       posDn Point{..} = Point (px + 1) py
+      -- This and other places ensure there is always a continuous
+      -- staircase from bottom to top. This makes moving between empty
+      -- level much less boring. For new levels, it may be blocked by enemies
+      -- or not offer enough cover, so other staircases may be preferable.
       lstair = ( map posUp $ pstairsDouble ++ pstairsSingleUp
                , map posDn $ pstairsDouble ++ pstairsSingleDown )
   cellSize <- castDiceXY ldepth totalDepth $ ccellSize kc
@@ -365,13 +369,21 @@ dungeonGen cops@COps{cocave} serverOptions caves = do
             -- and @maxStairsNumNext@, the difference is filled up
             -- with single downstairs. The computation below maximizes
             -- the number of stairs at the cost of breaking some long
-            -- staircases. Even so, sometimes @maxStairsNum@ is not reached.
+            -- staircases, except for the first one, which is always kept.
+            -- Even without this exception, sometimes @maxStairsNum@
+            -- could not be reached.
+            doubleKept =
+              minimum [1, nstairsFromUp, maxStairsNum, maxStairsNumNext]
+            nstairsFromUp1 = nstairsFromUp - doubleKept
+            maxStairsNum1 = maxStairsNum - doubleKept
+            maxStairsNumNext1 = maxStairsNumNext - doubleKept
             singleDownStairs =
-              min maxStairsNumNext $ maxStairsNum - nstairsFromUp
-            remainingNext = maxStairsNumNext - singleDownStairs
-            doubleDownStairs = min nstairsFromUp remainingNext
+              min maxStairsNumNext1 $ maxStairsNum1 - nstairsFromUp1
+            remainingNext = maxStairsNumNext1 - singleDownStairs
+            doubleDownStairs = doubleKept
+                               + min nstairsFromUp1 remainingNext
             !_A2 = assert (singleDownStairs >= 0) ()
-            !_A3 = assert (doubleDownStairs >= 0) ()
+            !_A3 = assert (doubleDownStairs >= doubleKept) ()
         in ( (nstairsFromUp, doubleDownStairs, singleDownStairs) : acc
            , doubleDownStairs + singleDownStairs )
       (caveStairs, nstairsFromUpLast) = foldl' placeStairs ([], 0) caveNumNexts
