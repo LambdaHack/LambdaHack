@@ -823,15 +823,15 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               let useResult = fromMaybe UseDud museResult
               -- Skill check for non-projectiles performed much earlier.
               -- All projectiles have 0 skill regardless of their trunk.
-              if sourceIsMist
-                 || bproj sb && tileMinSkill > 0  -- local skill check
+              if bproj sb && tileMinSkill > 0  -- local skill check
+                 || sourceIsMist
               then processTileActions (Just useResult) rest
               else do
                 triggered <- tryApplyEmbed (iid, kit)
                 processTileActions (Just $ max useResult triggered) rest
             Tile.ToAction tgroup ->
-              if maybe True (== UseUp) museResult
-                 && not (bproj sb && tileMinSkill > 0)  -- local skill check
+              if not (bproj sb && tileMinSkill > 0)  -- local skill check
+                 && maybe True (== UseUp) museResult
               then do
                 announceTileChange
                 changeTo tgroup
@@ -843,11 +843,11 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- but only if it managed to activate all previous embeds,
               -- (with mist, that means all such embeds were consumed earlier).
               if (not bumping || null grps)
-                 && (maybe True (== UseUp) museResult
-                     || effToUse == EffOnCombine  -- when crafting, lax check
-                     || bproj sb)  -- missiiles often ignore embeds; lax check;
-                                   -- this is fine, only big actors need risk
-                 && (voluntary || bproj sb)  -- no local skill check
+                 && (bproj sb  -- missiiles often ignore embeds; lax check;
+                               -- this is fine, only big actors need risk
+                     || voluntary  -- no local skill check
+                        && (maybe True (== UseUp) museResult
+                            || effToUse == EffOnCombine))  -- crafting; lax
                  && groundBag2 == groundBag  -- no crafting and so mix-up
               then do
                 -- Waste item only if voluntary or released as projectile.
