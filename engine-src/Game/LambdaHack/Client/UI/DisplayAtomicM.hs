@@ -797,8 +797,12 @@ createActorUI born aid body = do
       -- technically very hard to check aimability here, because we are
       -- in-between turns and, e.g., leader's move has not yet been taken
       -- into account.
-      modifySession $ \sess -> sess { sxhair = Just $ TEnemy aid
-                                    , sitemSel = Nothing }  -- reset flinging
+      xhair <- getsSession sxhair
+      case xhair of
+        Just (TVector _) -> return ()  -- explicitly set; keep it
+        _ -> modifySession $ \sess ->
+               sess { sxhair = Just $ TEnemy aid
+                    , sitemSel = Nothing } -- reset flinging totally
       foes <- getsState $ foeRegularList side (blid body)
       unless (ES.member aid lastLost || length foes > 1) $
         msgAdd0 MsgFirstEnemySpot "You are not alone!"
@@ -861,6 +865,7 @@ spotItem verbose iid kit@(k, _) c = do
             Just TEnemy{} -> return ()  -- probably too important to overwrite
             Just (TPoint TEnemyPos{} _ _) -> return ()
             Just (TPoint TStash{} _ _) -> return ()
+            Just (TVector _) -> return ()  -- explicitly set; keep it
             _ -> do
               -- Don't steal xhair if it's only an item on another level.
               -- For enemies, OTOH, capture xhair to alarm player.
@@ -869,7 +874,7 @@ spotItem verbose iid kit@(k, _) c = do
                 bag <- getsState $ getFloorBag lid p
                 modifySession $ \sess ->
                   sess { sxhair = Just $ TPoint (TItem bag) lidV p
-                       , sitemSel = Nothing }  -- reset flinging
+                       , sitemSel = Nothing }  -- reset flinging totally
           factionD <- getsState sfactionD
           let locatedWhere = ppContainer factionD c
               beLocated = MU.Text $
