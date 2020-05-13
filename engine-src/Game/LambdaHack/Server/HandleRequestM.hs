@@ -844,7 +844,9 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- (with mist, that means all such embeds were consumed earlier).
               if (not bumping || null grps)
                  && (maybe True (== UseUp) museResult
-                     || effToUse == EffOnCombine)  -- when crafting, lax check
+                     || effToUse == EffOnCombine  -- when crafting, lax check
+                     || bproj sb)  -- missiiles often ignore embeds; lax check;
+                                   -- this is fine, only big actors need risk
                  && (voluntary || bproj sb)  -- no local skill check
                  && groundBag2 == groundBag  -- no crafting and so mix-up
               then do
