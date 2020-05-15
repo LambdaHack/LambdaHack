@@ -1271,11 +1271,19 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
  if bproj tb && store == COrgan  -- other stores OK not to lose possible loot
  then return UseDud  -- don't make a projectile hungry, etc.
  else do
+  cops <- getsState scops
   sb <- getsState $ getActorBody source
   totalDepth <- getsState stotalDepth
-  Level{ldepth} <- getLevel (blid tb)
-  let fscale unit nDm = do
-        k0 <- rndToAction $ castDice ldepth totalDepth nDm
+  lvlTb <- getLevel (blid tb)
+  dungeon <- getsState sdungeon
+  let maxLidLvl = maximumBy (Ord.comparing (ldepth . snd)) $ EM.assocs dungeon
+      -- If the number of items independent of depth, make also the timer
+      -- the item kind choice and aspects independent of depth.
+      -- Prime example is crafting. TODO: base this on skill.
+      (lid, lvl) = if isJust mcount then maxLidLvl else (blid tb, lvlTb)
+      depth = ldepth lvl
+      fscale unit nDm = do
+        k0 <- rndToAction $ castDice depth totalDepth nDm
         let k = max 1 k0  -- KISS, don't freak out if dice permit 0
         return $! timeDeltaScale unit k
       fgame = fscale (Delta timeTurn)
@@ -1289,9 +1297,10 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store
   bagBefore <- getsState $ getBodyStoreBag tb store
-  -- Power depth of new items unaffected by number of spawned actors.
-  freq <- prepareItemKind 0 (blid tb) [(grp, 1)]
-  m2 <- rollItemAspect freq (blid tb)
+  uniqueSet <- getsServer suniqueSet
+  -- Power depth of new items unaffected by number of spawned actors, so 0.
+  let freq = newItemKind cops uniqueSet [(grp, 1)] depth totalDepth 0
+  m2 <- rollItemAspect freq lid
   case m2 of
     Nothing -> return UseDud  -- e.g., unique already generated
     Just (itemKnownRaw, (itemFullRaw, (kRaw, itRaw))) -> do
