@@ -144,6 +144,8 @@ computeTarget aid = do
                  -- based on the path to them, not LOS to them:
                  || Ability.getSk Ability.SkProject actorMaxSk > 0
       canAlter = Ability.getSk Ability.SkAlter actorMaxSk >= 4
+      canMoveItem = Ability.getSk Ability.SkMoveItem actorMaxSk > 0
+      calmE = calmEnough b actorMaxSk
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
@@ -207,7 +209,9 @@ computeTarget aid = do
   fleeD <- getsClient sfleeD
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
-  cstashes <- closestStashes aid
+  cstashes <- if canMove && calmE  -- not in grave danger or risk of defecting
+              then closestStashes aid
+              else return []
   let desirableIid (iid, (k, _)) =
         let Benefit{benPickup} = discoBenefit EM.! iid
         in desirableItem cops canEscape benPickup
@@ -260,7 +264,9 @@ computeTarget aid = do
                 -- to each other, they just wait and see and also shout
                 -- to the teammate to flee and lure foes into ambush
               [] -> do
-                citemsRaw <- closestItems aid
+                citemsRaw <- if canMoveItem && canMove
+                             then closestItems aid
+                             else return []
                 let citems = toFreq "closestItems"
                              $ filter desirableFloor citemsRaw
                 if nullFreq citems then do
@@ -302,7 +308,9 @@ computeTarget aid = do
                               tapPath = Just AndPath{..}
                           return $ Just TgtAndPath {..}
                         else do
-                          upos <- closestUnknown aid
+                          upos <- if canMove
+                                  then closestUnknown aid
+                                  else return Nothing
                           case upos of
                             Nothing -> do
                               -- If can't move (and so no BFS data),
@@ -392,14 +400,13 @@ computeTarget aid = do
             oursExploring <- getsState $ oursExploringAssocs (bfid b)
             let oursExploringLid =
                   filter (\(_, body) -> blid body == lid) oursExploring
-                calmE = calmEnough b actorMaxSk
            -- Even if made peace with the faction, loot stash one last time.
-            if gstash (factionD EM.! fid2) == Just (lid, pos)
+            if calmE  -- not in grave danger or risk of defecting
+               && gstash (factionD EM.! fid2) == Just (lid, pos)
                -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
                && (fid2 == bfid b
                    && (pos == bpos b  -- guarded by me, so keep guarding
-                       && calmE  -- not in grave danger or risk of defecting
                        && (null nearbyFoes  -- if no foes nearby
                            || length oursExploringLid > 1) -- or buddies nearby
                        || isNothing (posToBigLvl pos lvl))  -- or unguarded

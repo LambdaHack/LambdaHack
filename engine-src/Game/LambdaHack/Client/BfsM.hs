@@ -488,27 +488,24 @@ unexploredDepth !up !lidCurrent = do
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m [(Int, (Point, ItemBag))]
 closestItems aid = do
-  actorMaxSk <- getsState $ getActorMaxSkills aid
-  if Ability.getSk Ability.SkMoveItem actorMaxSk <= 0 then return []
-  else do
-    body <- getsState $ getActorBody aid
-    Level{lfloor} <- getLevel $ blid body
-    mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
-    -- Don't consider own stash an ordinary pile of items.
-    let lfloorBarStash = case mstash of
-          Just (lid, pos) | lid == blid body -> EM.delete pos lfloor
-          _ -> lfloor
-    if EM.null lfloorBarStash then return [] else do
-      bfs <- getCacheBfs aid
-      let mix pbag dist =
-            let maxd = subtractBfsDistance maxBfsDistance apartBfs
-                -- Beware of overflowing 32-bit integers.
-                -- Here distance is the only factor influencing frequency.
-                -- Whether item is desirable is checked later on.
-                v = (maxd * 10) `div` (dist + 1)
-            in (v, pbag)
-      return $! mapMaybe (\(p, bag) ->
-        mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloorBarStash)
+  body <- getsState $ getActorBody aid
+  Level{lfloor} <- getLevel $ blid body
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
+  -- Don't consider own stash an ordinary pile of items.
+  let lfloorBarStash = case mstash of
+        Just (lid, pos) | lid == blid body -> EM.delete pos lfloor
+        _ -> lfloor
+  if EM.null lfloorBarStash then return [] else do
+    bfs <- getCacheBfs aid
+    let mix pbag dist =
+          let maxd = subtractBfsDistance maxBfsDistance apartBfs
+              -- Beware of overflowing 32-bit integers.
+              -- Here distance is the only factor influencing frequency.
+              -- Whether item is desirable is checked later on.
+              v = (maxd * 10) `div` (dist + 1)
+          in (v, pbag)
+    return $! mapMaybe (\(p, bag) ->
+      mix (p, bag) <$> accessBfs bfs p) (EM.assocs lfloorBarStash)
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m
@@ -530,10 +527,7 @@ closestStashes aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
   oursExploring <- getsState $ oursExploringAssocs (bfid b)
-  actorMaxSkills <- getsState sactorMaxSkills
-  let actorMaxSk = actorMaxSkills EM.! aid
-      calmE = calmEnough b actorMaxSk
-      fact = factionD EM.! bfid b
+  let fact = factionD EM.! bfid b
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
@@ -542,7 +536,6 @@ closestStashes aid = do
           -- and walking over stash to @TStash@.
           if lid == blid b
              && (fid2 == bfid b
-                 && calmE  -- not in grave danger or risk of defecting
                  && isNothing (posToBigLvl pos lvl)  -- unguarded
                  && length oursExploring > 1  -- other actors able to explore
                  || isFoe (bfid b) fact fid2)
