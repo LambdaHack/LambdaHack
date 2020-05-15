@@ -1267,8 +1267,11 @@ effectCreateItem :: MonadServerAtomic m
                  -> Maybe ItemId -> CStore -> GroupName ItemKind -> IK.TimerDice
                  -> m UseResult
 effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
+ tb <- getsState $ getActorBody target
+ if bproj tb && store == COrgan  -- other stores OK not to lose possible loot
+ then return UseDud  -- don't make a projectile hungry, etc.
+ else do
   sb <- getsState $ getActorBody source
-  tb <- getsState $ getActorBody target
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   let fscale unit nDm = do
