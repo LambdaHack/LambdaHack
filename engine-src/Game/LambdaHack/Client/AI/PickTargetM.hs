@@ -137,13 +137,18 @@ computeTarget aid = do
   factionD <- getsState sfactionD
   seps <- getsClient seps
   let fact = factionD EM.! bfid b
+      slackDoctrine =
+        fdoctrine (gplayer fact)
+          `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
+                 , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       canMove = Ability.getSk Ability.SkMove actorMaxSk > 0
       canReach = canMove
                  || Ability.getSk Ability.SkDisplace actorMaxSk > 0
                  -- Needed for now, because AI targets and shoots enemies
                  -- based on the path to them, not LOS to them:
                  || Ability.getSk Ability.SkProject actorMaxSk > 0
-      canAlter = Ability.getSk Ability.SkAlter actorMaxSk >= 4
+      canAlter = Ability.getSk Ability.SkAlter actorMaxSk
+                 >= if slackDoctrine then 2 else 4
       canMoveItem = Ability.getSk Ability.SkMoveItem actorMaxSk > 0
       calmE = calmEnough b actorMaxSk
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
@@ -223,10 +228,6 @@ computeTarget aid = do
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
         in Ability.getSk Ability.SkMove actorSk > 0
       isStuck = actorWaits b && couldMoveLastTurn
-      slackDoctrine =
-        fdoctrine (gplayer fact)
-          `elem` [ Ability.TMeleeAndRanged, Ability.TMeleeAdjacent
-                 , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       setPath :: Target -> m (Maybe TgtAndPath)
       setPath tgt = do
         let take6 tap@TgtAndPath{tapTgt=TEnemy{}} = tap
@@ -302,9 +303,8 @@ computeTarget aid = do
                           -- Together with depending on heroes or aliens
                           -- to keep arean, sleepiness, inability to displace
                           -- and chasing random smells, this makes it very hard
-                          -- to fully explore and change levels for animals
-                          -- and, to a lesser extent, for robots. Heroes idly
-                          -- lingering on explored parts of a level help a lot.
+                          -- to fully explore and change levels for, e.g.,
+                          -- animals. Heroes idling on the level help a lot.
                           let pathSource = bpos b
                               traSlack7 = trajectoryToPathBounded
                                             rXmax rYmax pathSource
@@ -322,8 +322,8 @@ computeTarget aid = do
                           case upos of
                             Nothing -> do
                               -- If can't move (and so no BFS data),
-                              -- no info gained. Or if can't alter
-                              -- and possibly stuck among rubble.
+                              -- no info gained. Or if can't open doors.
+                              -- If stuck among ice pillars, we can't help it.
                               when (canReach && canAlter) $
                                 modifyClient $ \cli -> cli {sexplored =
                                   ES.insert (blid b) (sexplored cli)}
