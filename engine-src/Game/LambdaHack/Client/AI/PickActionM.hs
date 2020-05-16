@@ -979,22 +979,22 @@ displaceFoe aid = do
       adjFoes = filter foe adjBigAssocs
       walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
-      notLooping body p =  -- avoid displace loops
-        boldpos body /= Just p || actorWaits body
       nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
       nFrNew = nFriends b + 1
-      qualifyActor (aid2, body2) = do
-        let tpos = bpos body2
+      qualifyActor (aid2, b2) = do
+        let tpos = bpos b2
         case posToAidsLvl tpos lvl of
+          _ | not (walkable tpos)  -- DisplaceAccess
+              || boldpos b == Just tpos
+                 && boldpos b2 == Just (bpos b) ->  -- avoid short loops
+              return Nothing
           [_] -> do
             actorMaxSk <- getsState $ getActorMaxSkills aid2
             dEnemy <- getsState $ dispEnemy aid aid2 actorMaxSk
               -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
               -- DisplaceSupported
-            let nFrOld = nFriends body2
-            return $! if walkable (bpos body2)  -- DisplaceAccess
-                         && dEnemy && nFrOld < nFrNew
-                         && notLooping b (bpos body2)
+            let nFrOld = nFriends b2
+            return $! if dEnemy && nFrOld < nFrNew
                       then Just (nFrOld * nFrOld, ReqDisplace aid2)
                       else Nothing
           _ -> return Nothing  -- DisplaceProjectiles
@@ -1004,15 +1004,13 @@ displaceFoe aid = do
 displaceBlocker :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 displaceBlocker aid retry = do
   b <- getsState $ getActorBody aid
-  actorMaxSkills <- getsState sactorMaxSkills
-  let condCanMelee = actorCanMelee actorMaxSkills aid b
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
                    , tapPath=Just AndPath{pathList=q : _, pathGoal} }
-      | q == pathGoal  -- not a real blocker but goal; only displace if can't
-                       -- melee (e.g., followed leader) and desperate
-        && not (retry && condCanMelee) ->
+      | q == pathGoal  -- not a real blocker but goal; only try to displace
+                       -- if desperate (that is, already tried to melee it)
+        && not retry ->
         return reject
     Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
       | adjacent (bpos b) q ->  -- not veered off target too much
@@ -1028,47 +1026,44 @@ displaceTgt source tpos retry = do
   lvl <- getLevel $ blid b
   let walkable p =  -- DisplaceAccess
         Tile.isWalkable coTileSpeedup (lvl `at` p)
-      notLooping body p =  -- avoid displace loops
-        boldpos body /= Just p || actorWaits body
-  if walkable tpos && notLooping b tpos then do
-    mleader <- getsClient sleader
-    case posToAidsLvl tpos lvl of
-      [] -> return reject
-      [aid2] | Just aid2 /= mleader -> do
-        b2 <- getsState $ getActorBody aid2
-        tfact <- getsState $ (EM.! bfid b2) . sfactionD
-        mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
-        enemyTgt <- condAimEnemyOrRememberedM source
-        enemyTgt2 <- condAimEnemyOrRememberedM aid2
-        case mtgtMPath of
-          Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
-            | q == bpos b  -- friend wants to swap
-              || bwatch b2 `elem` [WSleep, WWake]  -- friend sleeps, not cares
-              || retry  -- desperate
-                 && not (boldpos b == Just tpos  -- and no displace loop
-                         && not (actorWaits b))
-              || enemyTgt && not enemyTgt2 ->
-                 -- he doesn't have Enemy target and I have, so push him aside,
-                 -- because, for heroes, he will never be a leader, so he can't
-                 -- step aside himself
-              return $! returN "displace friend" $ ReqDisplace aid2
-          Just _ | bfid b == bfid b2
-                   && (boldpos b2 == Just (bpos b)
-                       && boldpos b == Just (bpos b2)  -- short loop risk
-                       || bwatch b2 `notElem` [WSleep, WWake]
-                          && Just (blid b2, bpos b2) /= gstash tfact) ->
-            -- A friend, but not sleeping nor guarding stash, don't loop.
-            return reject
-          _ -> do  -- an enemy or ally or dozing or disoriented friend --- swap
-            actorMaxSk <- getsState $ getActorMaxSkills aid2
-            dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk
-              -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
-              -- DisplaceSupported
-            if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
-              return $! returN "displace other" $ ReqDisplace aid2
-            else return reject
-      _ -> return reject  -- DisplaceProjectiles or trying to displace leader
-  else return reject
+  case posToAidsLvl tpos lvl of
+    _ | not (walkable tpos) -> return reject  -- DisplaceAccess
+    [aid2] -> do
+      b2 <- getsState $ getActorBody aid2
+      mleader <- getsClient sleader
+      if | bwatch b2 `elem` [WSleep, WWake] ->
+             return $! returN "displace sleeping" $ ReqDisplace aid2
+         | Just aid2 == mleader -> return reject
+         | boldpos b == Just tpos
+           && boldpos b2 == Just (bpos b) ->
+             return reject  -- avoid short loops
+         | otherwise -> do
+           tfact <- getsState $ (EM.! bfid b2) . sfactionD
+           mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
+           enemyTgt <- condAimEnemyOrRememberedM source
+           enemyTgt2 <- condAimEnemyOrRememberedM aid2
+           case mtgtMPath of
+             -- I can see targets of only own team, so no check of @bfid@.
+             Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
+               | q == bpos b ->  -- teammate wants to swap
+                 return $! returN "displace mutual" $ ReqDisplace aid2
+             Just _  -- teammate possibly without path, for whatever reason
+               | retry  -- me desperate
+                 || Just (blid b2, bpos b2) == gstash tfact  -- guarding; lazy
+                 || enemyTgt && not enemyTgt2 ->
+                      -- he doesn't have Enemy target and I have, so push him
+                      -- aside, because, for heroes, he will never be a leader,
+                      -- so he can't step aside himself
+                 return $! returN "displace teammate" $ ReqDisplace aid2
+             _ -> do  -- an enemy or ally or disoriented teammate
+               actorMaxSk <- getsState $ getActorMaxSkills aid2
+               dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk
+                 -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
+                 -- DisplaceSupported
+               if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
+                 return $! returN "displace other" $ ReqDisplace aid2
+               else return reject
+    _ -> return reject  -- DisplaceProjectiles and no blocker at all
 
 chase :: MonadClient m => ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
 chase aid avoidAmbient retry = do
