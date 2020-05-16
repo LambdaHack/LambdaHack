@@ -147,7 +147,7 @@ effectToBenefit cops fid factionD eff =
     IK.DestroyItem{} -> delta (-10)  -- potentially harmful
     IK.ConsumeItems{} -> delta (-10)  -- potentially harmful
     IK.DropItem _ _ COrgan IK.CONDITION ->
-      delta 30  -- save for curing own bad conditions
+      (30, 0)  -- great for curing own bad conditions; mixed in a weapon
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
       -- (and none have yet run out, e.g., prompt curing of poisoning)
