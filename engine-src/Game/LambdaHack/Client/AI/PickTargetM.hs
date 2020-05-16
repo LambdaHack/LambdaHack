@@ -286,7 +286,7 @@ computeTarget aid = do
                         let oldpos = fromMaybe (bpos b) (boldpos b)
                             vOld = bpos b `vectorToFrom` oldpos
                             pNew = shiftBounded rXmax rYmax (bpos b) vOld
-                        if slackDoctrine && not isStuck
+                        if slackDoctrine && not isStuck && calmE && not focused
                            && isUnit vOld && bpos b /= pNew
                                 -- both are needed, e.g., when just teleported
                                 -- or when the shift bounded by level borders
