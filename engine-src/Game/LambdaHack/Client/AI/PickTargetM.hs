@@ -324,7 +324,7 @@ computeTarget aid = do
                               -- If can't move (and so no BFS data),
                               -- no info gained. Or if can't open doors.
                               -- If stuck among ice pillars, we can't help it.
-                              when (canReach && canAlter) $
+                              when (canMove && canAlter) $
                                 modifyClient $ \cli -> cli {sexplored =
                                   ES.insert (blid b) (sexplored cli)}
                               ctriggersRaw2 <- closestTriggers ViaExit aid
