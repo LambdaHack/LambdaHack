@@ -110,7 +110,7 @@ computeTarget aid = do
       mvalidPos <- getsState $ aidTgtToPos aid (blid b) (Just tapTgt)
       return $!
         if | isNothing mvalidPos -> Nothing  -- wrong level
-           | bpos b == pathGoal->
+           | bpos b == pathGoal ->
                mtgtMPath  -- goal reached; stay there picking up items
            | pathSource == bpos b ->  -- no move
                -- If next step not accessible, something serious happened,
@@ -510,7 +510,7 @@ computeTarget aid = do
               Nothing -> pickNewTarget
               Just AndPath{pathList=[]} -> pickNewTarget
               _ -> return $ Just tap{tapPath=mpath}
-        TVector{} -> if pathLen > 1
+        TVector{} -> if bpos b /= pathGoal
                      then return $ Just tap
                      else pickNewTarget
   if canReach
