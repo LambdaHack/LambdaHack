@@ -229,22 +229,22 @@ computeTarget aid = do
                  , Ability.TBlock, Ability.TRoam, Ability.TPatrol ]
       setPath :: Target -> m (Maybe TgtAndPath)
       setPath tgt = do
-        let take7 tap@TgtAndPath{tapTgt=TEnemy{}} = tap
+        let take6 tap@TgtAndPath{tapTgt=TEnemy{}} = tap
               -- @TEnemy@ needed for projecting, even by roaming actors;
               -- however, CStash not as binding, so excursions possible
-            take7 TgtAndPath{tapPath=Just AndPath{..}} =
-              -- Path followed for 7 moves regardless if the target valid
+            take6 TgtAndPath{tapPath=Just AndPath{..}} =
+              -- Path followed for up to 6 moves regardless if the target valid
               -- and then target forgot and a new one picked.
-              let path7 = take 7 pathList
+              let path6 = take 6 pathList
                   vOld = if bpos b /= pathGoal
                          then towards (bpos b) pathGoal
                          else Vector 0 0
                   tapTgt = TVector vOld
-                  tapPath = Just AndPath{pathList=path7, ..}
+                  tapPath = Just AndPath{pathList=path6, ..}
               in TgtAndPath{..}
-            take7 tap = tap
+            take6 tap = tap
         tgtpath <- createPath aid tgt
-        return $ Just $ if slackDoctrine then take7 tgtpath else tgtpath
+        return $ Just $ if slackDoctrine then take6 tgtpath else tgtpath
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
       pickNewTargetIgnore maidToIgnore = do
@@ -299,9 +299,10 @@ computeTarget aid = do
                           -- or if blocked or derailed, consider again
                           -- the old and new targets.
                           let pathSource = bpos b
-                              tra = trajectoryToPathBounded
-                                      rXmax rYmax pathSource (replicate 7 v)
-                              pathList = map head $ group tra
+                              traSlack7 = trajectoryToPathBounded
+                                            rXmax rYmax pathSource
+                                            (replicate 7 v)  -- > 6 from take6
+                              pathList = map head $ group traSlack7
                               pathGoal = last pathList
                               pathLen = length pathList
                               tapTgt = TVector v

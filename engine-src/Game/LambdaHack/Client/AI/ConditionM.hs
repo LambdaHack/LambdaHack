@@ -123,9 +123,10 @@ condAimCrucialM aid = do
       && (pathLen < 10  -- close enough to get there first
           || tgoal `notElem` [TUnknown, TKnown])
     Just TgtAndPath{tapTgt=TVector{}, tapPath=Just AndPath{pathLen}} ->
-      pathLen < 7  -- the constant in @vToTgt@, where only
-                   -- non-crucial targets are produced; this will also
-                   -- prevent animals from sleep close to cave edges
+      pathLen < 7  -- can't say if the target important, but the constants
+                   -- from @take6@ and @traSlack7@ ensure target is
+                   -- already approached or close to level edge
+                   -- or not a random @traSlack7@ wandering
     _ -> False  -- includes the case of target with no path
 
 -- | Check if the target is a nonmoving enemy.
