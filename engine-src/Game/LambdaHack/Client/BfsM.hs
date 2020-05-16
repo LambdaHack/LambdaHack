@@ -383,7 +383,8 @@ embedBenefit fleeVia aid pbags = do
               aiCond = if unexpForth
                        then easier && condEnoughGear
                             || (not unexpBack || easier) && lidExplored
-                       else easier && allExplored && null (lescape lvl)
+                       else not unexpBack && easier && allExplored
+                            && null (lescape lvl)
               -- Prefer one direction of stairs, to team up
               -- and prefer embed (may, e.g., create loot) over stairs.
               v = if aiCond then if easier then 10 else 1 else 0
