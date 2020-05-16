@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Actor
   , deltasHears, deltaBenign, deltaWasBenign
   , actorCanMelee, actorCanMeleeToHarm, actorWorthChasing, actorWorthKilling
   , gearSpeed, actorTemplate, actorWaits, actorWaitsOrSleeps, actorDying
-  , hpTooLow, calmEnough, hpEnough, hpFull, canSleep, prefersSleep
+  , hpTooLow, calmEnough, calmFull, hpEnough, hpFull, canSleep, prefersSleep
   , checkAdjacent, eqpOverfull, eqpFreeN
   , getCarriedIidsAndTrunk, getCarriedIidCStore
     -- * Assorted
@@ -217,6 +217,11 @@ calmEnough :: Actor -> Ability.Skills -> Bool
 calmEnough b actorMaxSk =
   let calmMax = max 1 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
   in 2 * xM calmMax <= 3 * bcalm b
+
+calmFull :: Actor -> Ability.Skills -> Bool
+calmFull b actorMaxSk =
+  let calmMax = max 1 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
+  in xM calmMax <= bcalm b
 
 hpEnough :: Actor -> Ability.Skills -> Bool
 hpEnough b actorMaxSk =

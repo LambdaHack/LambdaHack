@@ -535,9 +535,11 @@ addActorIid trunkId ItemFull{itemBase, itemKind, itemDisco=ItemDiscoFull arItem}
   -- Initial HP and Calm is based only on trunk and ignores organs.
   let trunkMaxHP = max 2 $ IA.getSkill Ability.SkMaxHP arItem
       hp = xM trunkMaxHP `div` 2
-      -- Hard to auto-id items that refill Calm, but reduced sight at game
-      -- start is more confusing and frustrating:
-      calm = xM (max 0 $ IA.getSkill Ability.SkMaxCalm arItem)
+      -- Slightly reduced starting Calm to auto-id items that refill Calm
+      -- and to let animals do some initial exploration before going to sleep.
+      -- Higher reduction would cause confusingly low sight range at game
+      -- start and even inability to handle equipment.
+      calm = xM (max 1 $ IA.getSkill Ability.SkMaxCalm arItem - 10)
   -- Create actor.
   factionD <- getsState sfactionD
   curChalSer <- getsServer $ scurChalSer . soptions

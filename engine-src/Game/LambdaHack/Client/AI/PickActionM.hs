@@ -124,6 +124,7 @@ actionStrategy aid retry = do
         WSleep -> Ability.getSk Ability.SkMoveItem actorMaxSk <= -10
         _ -> prefersSleep actorMaxSk  -- nm @WWake@
       mayFallAsleep = not condAimEnemyOrRemembered
+                      && calmFull body actorMaxSk  -- only when fully relaxed
                       && mayContinueSleep
                       && canSleep actorSk
       mayContinueSleep = not condAimEnemyOrStash
