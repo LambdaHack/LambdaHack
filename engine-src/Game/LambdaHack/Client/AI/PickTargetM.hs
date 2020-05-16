@@ -298,6 +298,13 @@ computeTarget aid = do
                           -- wander around for 7 steps and only then,
                           -- or if blocked or derailed, consider again
                           -- the old and new targets.
+                          --
+                          -- Together with depending on heroes or aliens
+                          -- to keep arean, sleepiness, inability to displace
+                          -- and chasing random smells, this makes it very hard
+                          -- to fully explore and change levels for animals
+                          -- and, to a lesser extent, for robots. Heroes idly
+                          -- lingering on explored parts of a level help a lot.
                           let pathSource = bpos b
                               traSlack7 = trajectoryToPathBounded
                                             rXmax rYmax pathSource
