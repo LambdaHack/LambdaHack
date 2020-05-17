@@ -554,6 +554,9 @@ oursExploringAssocs fid s =
   let f (!aid, !b) = bfid b == fid
                      && not (bproj b)
                      && bhp b > 0  -- dead can stay forever on a frozen level
-                     && let actorMaxSk = sactorMaxSkills s EM.! aid
-                        in Ability.getSk Ability.SkMove actorMaxSk > 0
+                     && (bwatch b `elem` [WSleep, WWake]
+                           -- if asleep, probably has walking skill normally;
+                           -- when left alone will wake up and guard or explore
+                        || let actorMaxSk = sactorMaxSkills s EM.! aid
+                           in Ability.getSk Ability.SkMove actorMaxSk > 0)
   in filter f $ EM.assocs $ sactorD s
