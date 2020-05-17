@@ -263,7 +263,7 @@ nose = ItemKind  -- depends solely on smell
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "No mouth, yet it devours everything around, constantly sniffing itself inward; pure movement structure, no constant point to focus one's maddened gaze on."
-  , ikit     = [ (S_NOSE_TIP, COrgan), (S_LIP, COrgan)
+  , ikit     = [ (S_TIP, COrgan), (S_LIP, COrgan)
                , (S_NOSTRIL, COrgan)
                , (S_SAPIENT_BRAIN, COrgan) ]  -- no sight nor hearing
   }
