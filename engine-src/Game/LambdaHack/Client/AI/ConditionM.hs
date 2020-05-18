@@ -235,6 +235,7 @@ projectList discoBenefit skill aid
       uneasy = condAimEnemyOrRemembered
                || not calmE
                || heavilyDistressed
+        -- don't take recent fleeing into account when item can be lost
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1000  -- must hinder currently (or be very potent);

@@ -482,6 +482,8 @@ equipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
+  localTime <- getsState $ getLocalTime (blid body)
+  fleeD <- getsClient sfleeD
   -- In general, AI always equips the best item in stash if it's better
   -- than the best in equipment. Additionally, if there is space left
   -- in equipment for a future good item, an item from stash may be
@@ -513,9 +515,12 @@ equipItems aid = do
       pluralCopiesOfBest [] = []
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
       uneasy = condAimEnemyOrRemembered
                || not calmE
                || heavilyDistressed
+               || recentlyFled
       canEsc = fcanEscape (gplayer fact)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip, so that the unneeded
@@ -546,6 +551,8 @@ yieldUnneeded aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
+  localTime <- getsState $ getLocalTime (blid body)
+  fleeD <- getsClient sfleeD
   -- Here and in @unEquipItems@ AI may hide from the human player,
   -- in shared stash, the Ring of Speed And Bleeding,
   -- which is a bit harsh, but fair. However any subsequent such
@@ -555,9 +562,12 @@ yieldUnneeded aid = do
   -- in play again.
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
       uneasy = condAimEnemyOrRemembered
                || not calmE
                || heavilyDistressed
+               || recentlyFled
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp  -- harmful not shared
              || hinders condShineWouldBetray uneasy actorMaxSk itemEqp ->
@@ -580,6 +590,8 @@ unEquipItems aid = do
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   discoBenefit <- getsClient sdiscoBenefit
+  localTime <- getsState $ getLocalTime (blid body)
+  fleeD <- getsClient sfleeD
   -- In general, AI unequips only if equipment is full and better stash item
   -- for another slot is likely to come or if the best (or second best)
   -- item in stash is worse than in equipment and at least one better
@@ -629,9 +641,12 @@ unEquipItems aid = do
       betterThanEqp _ [] = error "unEquipItems: betterThanEqp: []"
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
       uneasy = condAimEnemyOrRemembered
                || not calmE
                || heavilyDistressed
+               || recentlyFled
       -- Here we don't need to filter out items that hinder (except in stash)
       -- because they are moved to stash and will be equipped by another actor
       -- at another time, where hindering will be completely different.
@@ -841,6 +856,7 @@ applyItem aid applyGroup = do
       uneasy = condAimEnemyOrRemembered
                || not calmE
                || heavilyDistressed
+        -- don't take recent fleeing into account when item can be lost
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray uneasy actorMaxSk
