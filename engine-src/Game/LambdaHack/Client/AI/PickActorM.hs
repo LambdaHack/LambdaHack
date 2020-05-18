@@ -326,7 +326,8 @@ pickActorToMove maidToAvoid = do
                        , oursSupport
                        , oursNoSupport
                        , oursPos
-                       , oursFled  -- if just fled, keep him safe, out of action
+                       , oursFled  -- if just fled, but not vulnerable,
+                                   -- keep him passive and safe, out of action
                        , oursMeleeingCanDisplace
                            -- prefer melee actors displacing than blocked
                            -- actors trying to walk around them

@@ -155,8 +155,11 @@ computeTarget aid = do
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
+  fleeD <- getsClient sfleeD
   let condCanMelee = actorCanMelee actorMaxSkills aid b
       condHpTooLow = hpTooLow b actorMaxSk
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
       canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
@@ -210,9 +213,9 @@ computeTarget aid = do
                                             -- e.g., to flee if helpless
                                          || targetableMelee body
                                          || targetableRanged body)
-      nearbyFoes = filter targetableEnemy allFoes
+      nearbyFoes | recentlyFled = []  -- don't chase them yet
+                 | otherwise = filter targetableEnemy allFoes
   discoBenefit <- getsClient sdiscoBenefit
-  fleeD <- getsClient sfleeD
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
   cstashes <- if canMove && calmE  -- not in grave danger or risk of defecting
@@ -224,8 +227,6 @@ computeTarget aid = do
                          (getArItem iid) (getKind iid) k
       desirableBagFloor bag = any desirableIid $ EM.assocs bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
-      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
-                           (aid `EM.lookup` fleeD)
       focused = gearSpeed actorMaxSk < speedWalk || condHpTooLow
       couldMoveLastTurn =  -- approximated; could have changed
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
