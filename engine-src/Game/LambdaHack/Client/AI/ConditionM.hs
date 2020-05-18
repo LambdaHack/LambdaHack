@@ -230,17 +230,18 @@ projectList discoBenefit skill aid
   let b = getActorBody aid s
       actorMaxSk = getActorMaxSkills aid s
       calmE = calmEnough b actorMaxSk
-      condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
+      uneasy = condAimEnemyOrRemembered
+               || not calmE
+               || heavilyDistressed
       coeff CGround = 2  -- pickup turn saved
       coeff COrgan = error $ "" `showFailure` benList
       coeff CEqp = 1000  -- must hinder currently (or be very potent);
                          -- note: not larger, to avoid Int32 overflow
       coeff CStash = 1
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyOrRemembered
-                     heavilyDistressed condNotCalmEnough actorMaxSk
+      hind = hinders condShineWouldBetray uneasy actorMaxSk
       goodMissile (Benefit{benInEqp, benFling}, cstore, iid, itemFull, kit) =
         let arItem = aspectRecordFull itemFull
             benR = coeff cstore * benFling
@@ -270,12 +271,8 @@ benAvailableItems discoBenefit aid cstores s =
       benCStore cs = ben (getBodyStoreBag b cs s) cs
   in concatMap benCStore cstores
 
-hinders :: Bool -> Bool -> Bool -> Bool -> Ability.Skills -> ItemFull
-        -> Bool
-hinders condShineWouldBetray condAimEnemyOrRemembered
-        heavilyDistressed condNotCalmEnough
-          -- guess that enemies have projectiles and used them now or recently
-        actorMaxSk itemFull =
+hinders :: Bool -> Bool -> Ability.Skills -> ItemFull -> Bool
+hinders condShineWouldBetray uneasy actorMaxSk itemFull =
   let arItem = aspectRecordFull itemFull
       itemShine = 0 < IA.getSkill Ability.SkShine arItem
       -- @condAnyFoeAdj@ is not checked, because it's transient and also item
@@ -283,8 +280,7 @@ hinders condShineWouldBetray condAimEnemyOrRemembered
       itemShineBad = condShineWouldBetray && itemShine
   in -- In the presence of enemies (seen, remembered or unseen but distressing)
      -- actors want to hide in the dark.
-     (condAimEnemyOrRemembered || condNotCalmEnough || heavilyDistressed)
-     && itemShineBad  -- even if it's a weapon, take it off
+     uneasy && itemShineBad  -- even if it's a weapon, take it off
      -- Fast actors want to hit hard, because they hit much more often
      -- than receive hits.
      || gearSpeed actorMaxSk > speedWalk

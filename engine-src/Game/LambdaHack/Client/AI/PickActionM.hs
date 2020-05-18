@@ -513,6 +513,9 @@ equipItems aid = do
       pluralCopiesOfBest [] = []
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      uneasy = condAimEnemyOrRemembered
+               || not calmE
+               || heavilyDistressed
       canEsc = fcanEscape (gplayer fact)
       -- We filter out unneeded items. In particular, we ignore them in eqp
       -- when comparing to items we may want to equip, so that the unneeded
@@ -522,8 +525,7 @@ equipItems aid = do
       -- In other stores we need to filter, for otherwise we'd have
       -- a loop of equip/yield.
       filterNeeded (_, (itemFull, _)) =
-        not (hinders condShineWouldBetray condAimEnemyOrRemembered
-                     heavilyDistressed (not calmE) actorMaxSk itemFull
+        not (hinders condShineWouldBetray uneasy actorMaxSk itemFull
              || not canEsc && IA.isHumanTrinket (itemKind itemFull))
                   -- don't equip items that block progress, e.g., blowtorch
       bestTwo = bestByEqpSlot discoBenefit
@@ -553,10 +555,12 @@ yieldUnneeded aid = do
   -- in play again.
   let heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      uneasy = condAimEnemyOrRemembered
+               || not calmE
+               || heavilyDistressed
       yieldSingleUnneeded (iidEqp, (itemEqp, (itemK, _))) =
         if | harmful discoBenefit iidEqp  -- harmful not shared
-             || hinders condShineWouldBetray condAimEnemyOrRemembered
-                        heavilyDistressed (not calmE) actorMaxSk itemEqp ->
+             || hinders condShineWouldBetray uneasy actorMaxSk itemEqp ->
              [(iidEqp, itemK, CEqp, CStash)]
            | otherwise -> []
       yieldAllUnneeded = concatMap yieldSingleUnneeded eqpAssocs
@@ -625,14 +629,16 @@ unEquipItems aid = do
       betterThanEqp _ [] = error "unEquipItems: betterThanEqp: []"
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta body)
+      uneasy = condAimEnemyOrRemembered
+               || not calmE
+               || heavilyDistressed
       -- Here we don't need to filter out items that hinder (except in stash)
       -- because they are moved to stash and will be equipped by another actor
       -- at another time, where hindering will be completely different.
       -- If they hinder and we unequip them, all the better.
       -- We filter stash to consider only eligible items in @betterThanEqp@.
       filterNeeded (_, (itemFull, _)) =
-        not $ hinders condShineWouldBetray condAimEnemyOrRemembered
-                      heavilyDistressed (not calmE) actorMaxSk itemFull
+        not $ hinders condShineWouldBetray uneasy actorMaxSk itemFull
       bestTwo = bestByEqpSlot discoBenefit
                               (filter filterNeeded stashAssocs)
                               eqpAssocs
@@ -830,13 +836,14 @@ applyItem aid applyGroup = do
   localTime <- getsState $ getLocalTime (blid b)
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let calmE = calmEnough b actorMaxSk
-      condNotCalmEnough = not calmE
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
+      uneasy = condAimEnemyOrRemembered
+               || not calmE
+               || heavilyDistressed
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray condAimEnemyOrRemembered
-                     heavilyDistressed condNotCalmEnough actorMaxSk
+      hind = hinders condShineWouldBetray uneasy actorMaxSk
       permittedActor cstore itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE cstore itemFull kit
@@ -850,7 +857,7 @@ applyItem aid applyGroup = do
       disqualify _ IK.Identify = True
       -- This is usually the main effect of item and it's useless without Calm.
       disqualify durable IK.Summon{} =
-        durable && (bcalm b < xM 30 || condNotCalmEnough)
+        durable && (bcalm b < xM 30 || not calmE)
       disqualify durable (IK.OneOf l) = any (disqualify durable) l
       disqualify durable (IK.OnUser eff) = disqualify durable eff
       disqualify durable (IK.AndEffect eff1 eff2) =
