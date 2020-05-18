@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Types
 
 -- | Handle the move of an actor under AI control (regardless if the whole
@@ -46,9 +47,7 @@ queryAI aid = do
         -- or at least a non-waiting action. Undo state changes in @pickAction@:
         modifyClient $ \cli -> cli
           { _sleader = mleader
-          , sfleeD = case oldFlee of
-              Just p -> EM.insert aidToMove p $ sfleeD cli
-              Nothing -> EM.delete aidToMove $ sfleeD cli }
+          , sfleeD = EM.alter (const oldFlee) aidToMove $ sfleeD cli }
         (a, t, _) <- pickActorAndAction (Just aidToMove) aid
         return (a, t)
       _ -> return (aidToMove, treq)
@@ -59,7 +58,7 @@ queryAI aid = do
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
                    => Maybe ActorId -> ActorId
-                   -> m (ActorId, RequestTimed, Maybe Point)
+                   -> m (ActorId, RequestTimed, Maybe (Point, Time))
 -- This inline would speeds up execution by 15% and decreases allocation by 15%,
 -- but it'd bloat JS code without speeding it up.
 -- {-# INLINE pickActorAndAction #-}

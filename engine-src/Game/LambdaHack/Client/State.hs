@@ -29,6 +29,7 @@ import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Common.State
+import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
 import           Game.LambdaHack.Content.ModeKind (ModeKind)
@@ -41,8 +42,9 @@ data StateClient = StateClient
       -- ^ targets of our actors in the dungeon; this is only useful for AI
       --   and for directing non-pointmen, in particular with following
       --   doctrines, where non-pointmen go to the pointman's target
-  , sfleeD        :: EM.EnumMap ActorId Point
-                                    -- ^ the position when fleeing requested
+  , sfleeD        :: EM.EnumMap ActorId (Point, Time)
+                                    -- ^ the position and time of last fleeing
+                                    --   attempt (regardless if succeeded)
   , sexplored     :: ES.EnumSet LevelId
                                     -- ^ the set of fully explored levels
   , sbfsD         :: EM.EnumMap ActorId BfsAndPath

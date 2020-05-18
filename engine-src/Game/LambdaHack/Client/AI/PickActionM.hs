@@ -950,8 +950,10 @@ flee :: MonadClient m
 flee aid avoidAmbient fleeL = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
+  localTime <- getsState $ getLocalTime (blid b)
   -- Regardless if fleeing accomplished, mark the need.
-  modifyClient $ \cli -> cli {sfleeD = EM.insert aid (bpos b) (sfleeD cli)}
+  modifyClient $ \cli ->
+    cli {sfleeD = EM.insert aid (bpos b, localTime) (sfleeD cli)}
   lvl <- getLevel $ blid b
   let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
                       && Tile.isWalkable coTileSpeedup (lvl `at` pos)

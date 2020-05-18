@@ -394,7 +394,7 @@ fleeList aid = do
   -- But if fled previous turn, prefer even more fleeing further this turn.
   let eOldFleeOrTgt = case EM.lookup aid fleeD of
         Nothing -> etgtPath
-        Just p -> Left p
+        Just (p, _) -> Left p
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
