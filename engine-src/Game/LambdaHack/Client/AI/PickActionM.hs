@@ -145,7 +145,7 @@ actionStrategy aid retry = do
       heavilyDistressedThisTurn =  -- if far from melee, almost sure hit by proj
         deltasSeriousThisTurn (bcalmDelta body)
       condNotCalmEnough = not (calmEnough body actorMaxSk)
-      uneasy = heavilyDistressed || condNotCalmEnough
+      uneasy = heavilyDistressed || condNotCalmEnough || recentlyFled
       speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
@@ -169,7 +169,7 @@ actionStrategy aid retry = do
       isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
         -- solid tiles ignored, because not obvious if dark after removed
       canFleeIntoDark = not $ actorShines || all (isLit . snd) fleeL
-      avoidAmbient = not condInMelee && heavilyDistressed && not actorShines
+      avoidAmbient = not condInMelee && uneasy && not actorShines
       -- Fleeing makes sense, because either actor can't melee,
       -- or at least won't flee without scoring a hit and return next turn,
       -- due to threat no longer seen (due to blindness or dark).
