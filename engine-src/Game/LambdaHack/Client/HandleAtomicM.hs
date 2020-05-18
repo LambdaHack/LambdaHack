@@ -326,8 +326,11 @@ createActor aid b ais = do
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
-  when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
-  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
+  when destroy $  -- if vanishes for a moment only, keep target
+    modifyClient $ \cli -> cli {stargetD = EM.delete aid $ stargetD cli} -- gc
+  -- Here, among others, (local) flee time of an actor changing level is reset.
+  modifyClient $ \cli -> cli { sbfsD = EM.delete aid $ sbfsD cli
+                             , sfleeD = EM.delete aid $ sfleeD cli }
   localTime <- getsState $ getLocalTime $ blid b
   fleeD <- getsClient sfleeD
   let recentlyFled aid3 = maybe False (\(_, time) -> timeRecent5 localTime time)
