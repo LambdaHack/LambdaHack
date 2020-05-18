@@ -46,6 +46,7 @@ pickActorToMove maidToAvoid = do
   let side = bfid oldBody
       arena = blid oldBody
   lvl <- getLevel arena
+  localTime <- getsState $ getLocalTime arena
   condInMelee <- condInMeleeM arena
   fact <- getsState $ (EM.! side) . sfactionD
   -- Find our actors on the current level only.
@@ -82,7 +83,10 @@ pickActorToMove maidToAvoid = do
             return (aidBody, mtgt)
       oursTgtRaw <- mapM refresh oursNotSleeping
       oldFleeD <- getsClient sfleeD
-      let goodGeneric (_, Nothing) = Nothing
+      let recentlyFled aid = maybe False
+                                   (\(_, time) -> timeRecent5 localTime time)
+                                   (aid `EM.lookup` oldFleeD)
+          goodGeneric (_, Nothing) = Nothing
           goodGeneric (_, Just TgtAndPath{tapPath=Nothing}) = Nothing
             -- this case means melee-less heroes adjacent to foes, etc.
             -- will never flee if melee is happening; but this is rare;
@@ -160,14 +164,14 @@ pickActorToMove maidToAvoid = do
                         -- If under fire, do something quickly, always,
                         -- because the actor clearly vulnerable.
                     | condThreat 2
-                      || condThreat 5 && EM.member aid oldFleeD ->
+                      || condThreat 5 && recentlyFled aid ->
                       not condCanMelee
                       || not condSupport3
                          && not condSolo
                            -- simplified vs @PickActionM@
                     | otherwise -> False
               && condCanFlee
-          actorFled ((aid, _), _) = EM.member aid oldFleeD
+          actorFled ((aid, _), _) = recentlyFled aid
           actorHearning (_, TgtAndPath{ tapTgt=TPoint TEnemyPos{} _ _
                                       , tapPath=Nothing }) =
             return False

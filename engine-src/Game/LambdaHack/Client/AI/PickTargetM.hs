@@ -94,6 +94,7 @@ computeTarget aid = do
       actorMaxSk = actorMaxSkills EM.! aid
       alterSkill = Ability.getSk Ability.SkAlter actorMaxSk
   lvl <- getLevel $ blid b
+  localTime <- getsState $ getLocalTime (blid b)
   let stepAccesible :: [Point] -> Bool
       stepAccesible (q : _) =
         -- Effectively, only @alterMinWalk@ is checked, because real altering
@@ -223,6 +224,8 @@ computeTarget aid = do
                          (getArItem iid) (getKind iid) k
       desirableBagFloor bag = any desirableIid $ EM.assocs bag
       desirableFloor (_, (_, bag)) = desirableBagFloor bag
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
       focused = gearSpeed actorMaxSk < speedWalk || condHpTooLow
       couldMoveLastTurn =  -- approximated; could have changed
         let actorSk = if mleader == Just aid then actorMaxSk else actorMinSk
@@ -370,7 +373,7 @@ computeTarget aid = do
                || blid body /= blid b  -- wrong level
                || actorDying body  -- foe already dying
                || not (worthTargeting a body)
-               || EM.member aid fleeD ->
+               || recentlyFled ->
                     -- forget enemy positions to prevent attacking them
                     -- again soon after flight
                pickNewTarget
@@ -427,7 +430,7 @@ computeTarget aid = do
           _ | condInMelee || not (null cstashes) -> pickNewTarget
           TEnemyPos _  -- chase last position even if foe hides
             | bpos b == pos -> tellOthersNothingHere
-            | EM.member aid fleeD -> pickNewTarget
+            | recentlyFled -> pickNewTarget
                 -- forget enemy positions to prevent attacking them again soon
             | otherwise -> do
               -- Here pick the closer enemy, the remembered or seen, to avoid

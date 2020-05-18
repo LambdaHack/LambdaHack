@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Time
   ( Time, timeTicks
   , timeZero, timeEpsilon, timeClip, timeTurn, timeSecond, clipsInTurn
   , absoluteTimeAdd, absoluteTimeSubtract, absoluteTimeNegate
-  , timeFit, timeFitUp
+  , timeFit, timeFitUp, timeRecent5
   , Delta(..), timeShift, timeDeltaToFrom, timeDeltaAdd, timeDeltaSubtract
   , timeDeltaReverse, timeDeltaScale, timeDeltaPercent, timeDeltaDiv
   , timeDeltaToDigit, timeDeltaInSecondsText
@@ -103,6 +103,10 @@ timeFit (Time t1) (Time t2) = fromEnum $ t1 `div` t2
 timeFitUp :: Time -> Time -> Int
 {-# INLINE timeFitUp #-}
 timeFitUp (Time t1) (Time t2) = fromEnum $ t1 `divUp` t2
+
+timeRecent5 :: Time -> Time -> Bool
+timeRecent5 localTime time = timeDeltaToFrom localTime time
+                             < timeDeltaScale (Delta timeTurn) 5
 
 -- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
 -- as an absolute game time and as an increment.

@@ -40,6 +40,7 @@ import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.Perception
 import           Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ModeKind
@@ -327,15 +328,19 @@ destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
+  localTime <- getsState $ getLocalTime $ blid b
   fleeD <- getsClient sfleeD
-  let dummyTarget = TPoint TKnown (blid b) (bpos b)
+  let recentlyFled aid3 = maybe False (\(_, time) -> timeRecent5 localTime time)
+                                (aid3 `EM.lookup` fleeD)
+      dummyTarget = TPoint TKnown (blid b) (bpos b)
       affect aid3 tgt = case tgt of
         TEnemy a | a == aid ->
-          if destroy || EM.member aid3 fleeD
-                          -- if fleeing, don't chase the enemy next turn;
+          if destroy || recentlyFled aid3
+                          -- if fleeing, don't chase the enemy soon after;
                           -- unfortunately, the enemy also won't be recorded
-                          -- to avoid when fleeing again, but all enemies
-                          -- should be recorded, not just one, so no big loss
+                          -- in case he gets out of sight, in order to avoid
+                          -- him when fleeing again, but all enemies should be
+                          -- recorded in such a case, so not a big difference
           then
             -- If *really* nothing more interesting, the actor will
             -- go to last known location to perhaps find other foes.

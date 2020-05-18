@@ -390,13 +390,14 @@ fleeList aid = do
             -- many are needed to decide to flee next turn as well
           _ -> Right pathList
         _ -> Right []
-  fleeD <- getsClient sfleeD
-  -- But if fled previous turn, prefer even more fleeing further this turn.
-  let eOldFleeOrTgt = case EM.lookup aid fleeD of
-        Nothing -> etgtPath
-        Just (p, _) -> Left p
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
+  localTime <- getsState $ getLocalTime (blid b)
+  fleeD <- getsClient sfleeD
+  -- But if fled recently, prefer even more fleeing further this turn.
+  let eOldFleeOrTgt = case EM.lookup aid fleeD of
+        Just (p, time) | timeRecent5 localTime time -> Left p
+        _ -> etgtPath
   posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
   let myVic = vicinityUnsafe $ bpos b
       dist p | null posFoes = 100

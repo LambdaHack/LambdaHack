@@ -85,6 +85,7 @@ actionStrategy aid retry = do
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
   lvl <- getLevel (blid body)
+  localTime <- getsState $ getLocalTime (blid body)
   condInMelee <- condInMeleeM $ blid body
   condAimEnemyTargeted <- condAimEnemyTargetedM aid
   condAimEnemyOrStash <- condAimEnemyOrStashM aid
@@ -97,10 +98,6 @@ actionStrategy aid retry = do
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   oldFleeD <- getsClient sfleeD
-  -- Reset fleeing flag. May then be set in @flee@.
-  -- Because it's reset, the flag is subsumed by @heavilyDistressed@
-  -- and @TEnemyPos@ for the purpose of, e.g., not equipping light.
-  modifyClient $ \cli -> cli {sfleeD = EM.delete aid (sfleeD cli)}
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
   condSolo <- condSoloM aid  -- solo fighters aggresive
@@ -120,6 +117,8 @@ actionStrategy aid retry = do
   let anyFriendOnLevelAwake = any (\b ->
         bwatch b /= WSleep && bpos b /= bpos body) friends
       actorMaxSk = actorMaxSkills EM.! aid
+      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` oldFleeD)
       prefersSleepWhenAwake = case bwatch body of
         WSleep -> Ability.getSk Ability.SkMoveItem actorMaxSk <= -10
         _ -> prefersSleep actorMaxSk  -- nm @WWake@
@@ -260,7 +259,7 @@ actionStrategy aid retry = do
                       -- and melee-less ranged always fleeing when hit helps
                       -- and makes them evading ambushers, perfect for swarms.
                   | condThreat 2  -- melee enemies near
-                    || condThreat 5 && EM.member aid oldFleeD ->
+                    || condThreat 5 && recentlyFled ->
                          -- enemies not near but maintain fleeing hysteresis
                     not condCanMelee  -- can't melee, flee
                     || -- No support, not alone, either not aggressive
