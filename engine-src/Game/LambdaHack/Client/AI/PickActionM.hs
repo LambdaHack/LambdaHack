@@ -950,9 +950,15 @@ flee aid avoidAmbient fleeL = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
-  -- Regardless if fleeing accomplished, mark the need.
-  modifyClient $ \cli ->
-    cli {sfleeD = EM.insert aid (bpos b, localTime) (sfleeD cli)}
+  fleeD <- getsClient sfleeD
+  let recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
+                           (aid `EM.lookup` fleeD)
+  -- Regardless if fleeing accomplished, mark the need, but don't forget
+  -- the location of initial danger, in case enemies not seen any more,
+  -- if not too old.
+  unless recentlyFled $
+    modifyClient $ \cli ->
+      cli {sfleeD = EM.insert aid (bpos b, localTime) (sfleeD cli)}
   lvl <- getLevel $ blid b
   let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
                       && Tile.isWalkable coTileSpeedup (lvl `at` pos)

@@ -396,7 +396,7 @@ fleeList aid = do
   fleeD <- getsClient sfleeD
   -- But if fled recently, prefer even more fleeing further this turn.
   let eOldFleeOrTgt = case EM.lookup aid fleeD of
-        Just (p, time) | timeRecent5 localTime time -> Left p
+        Just (fleeStart, time) | timeRecent5 localTime time -> Left fleeStart
         _ -> etgtPath
   posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
   let myVic = vicinityUnsafe $ bpos b
