@@ -213,8 +213,11 @@ computeTarget aid = do
                                             -- e.g., to flee if helpless
                                          || targetableMelee body
                                          || targetableRanged body)
-      nearbyFoes | recentlyFled = []  -- don't chase them yet
-                 | otherwise = filter targetableEnemy allFoes
+      targetableFoes = filter targetableEnemy allFoes
+      canMeleeEnemy (aidE, body) = actorCanMeleeToHarm actorMaxSkills aidE body
+      nearbyFoes = if recentlyFled && not condInMelee
+                   then filter (not . canMeleeEnemy) targetableFoes
+                   else targetableFoes
   discoBenefit <- getsClient sdiscoBenefit
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
