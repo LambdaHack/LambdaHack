@@ -259,15 +259,17 @@ actionStrategy aid retry = do
                       -- and melee-less ranged always fleeing when hit helps
                       -- and makes them evading ambushers, perfect for swarms.
                   | condThreat 2  -- melee enemies near
-                    || condThreat 5 && recentlyFled ->
-                         -- enemies not near but maintain fleeing hysteresis
+                    || condThreat 5 && heavilyDistressed ->
+                         -- enemies not near but maintain fleeing hysteresis,
+                         -- but not if due to lack of support, which changes,
+                         -- hence @heavilyDistressed@ and not @recentlyFled@
                     not condCanMelee  -- can't melee, flee
                     || -- No support, not alone, either not aggressive
                        -- or can safely project from afar instead. Flee.
                        not condSupport3
                        && not condSolo
                        -- Extra random aggressiveness if can't project.
-                       -- This is hacky; randomness is outside @Strategy@.
+                       -- This is hacky; the randomness is outside @Strategy@.
                        && (condCanProject
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)

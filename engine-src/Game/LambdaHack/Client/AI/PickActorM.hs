@@ -164,7 +164,7 @@ pickActorToMove maidToAvoid = do
                         -- If under fire, do something quickly, always,
                         -- because the actor clearly vulnerable.
                     | condThreat 2
-                      || condThreat 5 && recentlyFled aid ->
+                      || condThreat 5 && heavilyDistressed ->
                       not condCanMelee
                       || not condSupport3
                          && not condSolo
