@@ -123,15 +123,12 @@ pickActorToMove maidToAvoid = do
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
-            condSupport3 <- condSupport 3 aid
             condSolo <- condSoloM aid
             let condCanFlee = not (null fleeL)
                 heavilyDistressed =
                   deltasSerious (bcalmDelta body)
                 speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
                 condCanMelee = actorCanMelee actorMaxSkills aid body
-                -- These are only melee threats.
-                condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
                 threatAdj = takeWhile ((== 1) . fst) threatDistL
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
@@ -162,13 +159,8 @@ pickActorToMove maidToAvoid = do
                     | heavilyDistressed -> True
                         -- Different from @PickActionM@:
                         -- If under fire, do something quickly, always,
-                        -- because the actor clearly vulnerable.
-                    | condThreat 2
-                      || condThreat 5 && heavilyDistressed ->
-                      not condCanMelee
-                      || not condSupport3
-                         && not condSolo
-                           -- simplified vs @PickActionM@
+                        -- because the actor clearly vulnerable,
+                        -- but don't make a leader only because threats close.
                     | otherwise -> False
               && condCanFlee
           actorFled ((aid, _), _) = recentlyFled aid
