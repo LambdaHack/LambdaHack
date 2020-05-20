@@ -82,6 +82,7 @@ speedupItem coitem =
 data TileSpeedup = TileSpeedup
   { isClearTab          :: Tab Bool
   , isLitTab            :: Tab Bool
+  , isHideoutTab        :: Tab Bool
   , isWalkableTab       :: Tab Bool
   , isDoorTab           :: Tab Bool
   , isOpenableTab       :: Tab Bool
@@ -116,7 +117,7 @@ emptyTileSpeedup = TileSpeedup emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
                                emptyTab emptyTab emptyTab emptyTab emptyTab
-                               emptyTab
+                               emptyTab emptyTab
 
 emptyTab :: U.Unbox a => Tab a
 emptyTab = Tab $! U.empty

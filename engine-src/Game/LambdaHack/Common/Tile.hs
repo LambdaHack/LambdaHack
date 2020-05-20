@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Tile
   ( -- * Construction of tile property lookup speedup tables
     speedupTile
     -- * Sped up property lookups
-  , isClear, isLit, isWalkable, isDoor, isChangable
+  , isClear, isLit, isHideout, isWalkable, isDoor, isChangable
   , isSuspect, isHideAs, consideredByAI, isExplorable
   , isVeryOftenItem, isCommonItem, isOftenActor, isNoItem, isNoActor
   , isEasyOpen, isEmbed, isAquatic, alterMinSkill, alterMinWalk
@@ -73,6 +73,9 @@ speedupTile allClear cotile =
                  | otherwise = createTab cotile
                                $ kindHasFeature TK.Clear
       isLitTab = createTab cotile $ not . kindHasFeature TK.Dark
+      isHideoutTab = createTab cotile $ \tk ->
+        kindHasFeature TK.Walkable tk  -- implies not unknown
+        && kindHasFeature TK.Dark tk
       isWalkableTab = createTab cotile $ kindHasFeature TK.Walkable
       isDoorTab = createTab cotile $ \tk ->
         let getTo (TK.OpenTo grp) acc = grp : acc
@@ -175,6 +178,11 @@ isClear TileSpeedup{isClearTab} = accessTab isClearTab
 isLit :: TileSpeedup -> ContentId TileKind -> Bool
 {-# INLINE isLit #-}
 isLit TileSpeedup{isLitTab} = accessTab isLitTab
+
+-- | Whether a tile is a good hideout: walkable and dark.
+isHideout :: TileSpeedup -> ContentId TileKind -> Bool
+{-# INLINE isHideout #-}
+isHideout TileSpeedup{isHideoutTab} = accessTab isHideoutTab
 
 -- | Whether actors can walk into a tile.
 -- Essential for efficiency of pathfinding, hence tabulated.
