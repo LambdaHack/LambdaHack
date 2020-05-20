@@ -113,6 +113,7 @@ computeTarget aid = do
         if | isNothing mvalidPos -> Nothing  -- wrong level
            | bpos b == pathGoal ->
                mtgtMPath  -- goal reached; stay there picking up items
+                          -- or hiding in ambush or in panic
            | pathSource == bpos b ->  -- no move
                -- If next step not accessible, something serious happened,
                -- so reconsider the target, not only path.
@@ -158,8 +159,12 @@ computeTarget aid = do
   fleeD <- getsClient sfleeD
   let condCanMelee = actorCanMelee actorMaxSkills aid b
       condHpTooLow = hpTooLow b actorMaxSk
-      recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
-                           (aid `EM.lookup` fleeD)
+      mfled = aid `EM.lookup` fleeD
+      recentlyFled =
+        maybe False (\(_, time) -> timeRecent5 localTime time) mfled
+      recentlyFled20 =
+        maybe False (\(_, time) -> timeRecent5 localTime time) mfled
+      actorTurn = (ticksPerMeter $ gearSpeed actorMaxSk)
   friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
       canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
@@ -263,15 +268,26 @@ computeTarget aid = do
                 notIgnoredFoes = maybe nearbyFoes f maidToIgnore
             cfoes <- closestFoes notIgnoredFoes aid
             case cfoes of
-              (_, (aid2, _)) : _ -> setPath $ TEnemy aid2
-              [] | condInMelee -> return Nothing  -- don't slow down fighters
-                -- this looks a bit strange, because teammates stop
-                -- in their tracks all around the map (unless very close
-                -- to the combatant), but the intuition is, not being able
-                -- to help immediately, and not being too friendly
-                -- to each other, they just wait and see and also shout
-                -- to the teammate to flee and lure foes into ambush
-              [] -> do
+             (_, (aid2, _)) : _ -> setPath $ TEnemy aid2
+             [] | condInMelee -> return Nothing  -- don't slow down fighters
+               -- this looks a bit strange, because teammates stop
+               -- in their tracks all around the map (unless very close
+               -- to the combatant), but the intuition is, not being able
+               -- to help immediately, and not being too friendly
+               -- to each other, they just wait and see and also shout
+               -- to the teammate to flee and lure foes into ambush
+             [] -> do
+              mhideout <- if recentlyFled20
+                          then closestHideout aid
+                          else return Nothing
+              case (mhideout, mfled) of
+               (Just (p, dist), Just (_, time))
+                 | timeDeltaToFrom localTime time
+                   <= timeDeltaScale actorTurn (20 - dist) ->
+                -- Only target if can reach the hideout 20 turns from fleeing
+                -- start, given the actor speed as a leader.
+                setPath $ TPoint THideout (blid b) p
+               _ -> do
                 citemsRaw <- if canMoveItem && canMove
                              then closestItems aid
                              else return []
@@ -508,6 +524,11 @@ computeTarget aid = do
                || alterSkill < fromEnum (lalter PointArray.! pos)
                     -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
+            else return $ Just tap
+          THideout -> do
+            -- Approach or stay in the hideout until 20 turns pass.
+            if not recentlyFled20
+            then pickNewTarget
             else return $ Just tap
         _ | condInMelee || not (null nearbyFoes && null cstashes) ->
             pickNewTarget

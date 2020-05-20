@@ -116,6 +116,7 @@ data TGoal =
             --   to be walkable or altered or searched)
   | TUnknown  -- ^ an unknown tile to be explored
   | TKnown  -- ^ a known tile to be patrolled
+  | THideout  -- ^ a hideout to flee to
   deriving (Show, Eq, Generic)
 
 instance Binary TGoal
