@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.BfsM
   , furthestKnown, closestUnknown, closestSmell
   , FleeViaStairsOrEscape(..)
   , embedBenefit, closestTriggers, condEnoughGearM, closestItems, closestFoes
-  , closestStashes, oursExploringAssocs
+  , closestStashes, oursExploringAssocs, closestHideout
 #ifdef EXPOSE_INTERNAL
   , unexploredDepth, updatePathFromBfs
 #endif
@@ -560,3 +560,24 @@ oursExploringAssocs fid s =
                         || let actorMaxSk = sactorMaxSkills s EM.! aid
                            in Ability.getSk Ability.SkMove actorMaxSk > 0)
   in filter f $ EM.assocs $ sactorD s
+
+-- | Find the nearest walkable position in dark, if any. Deterministic,
+-- to let all friends gather up and defend in the same shelter.
+-- Ignore position underfoot.
+closestHideout :: MonadClient m => ActorId -> m (Maybe (Point, Int))
+closestHideout aid = do
+  COps{coTileSpeedup} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel (blid b)
+  bfs <- getCacheBfs aid
+  let minHideout :: (Point, BfsDistance) -> Point -> BfsDistance
+                 -> (Point, BfsDistance)
+      minHideout (pMin, distMin) p dist =
+        if dist > minKnownBfs && dist < distMin
+           && Tile.isHideout coTileSpeedup (lvl `at` p)
+        then (p, dist)
+        else (pMin, distMin)
+      (p1, dist1) = PointArray.ifoldlA' minHideout (bpos b, maxBfsDistance) bfs
+  return $! if p1 == bpos b  -- possibly hideout underfoot; ignore
+            then Nothing
+            else Just (p1, subtractBfsDistance dist1 apartBfs)
