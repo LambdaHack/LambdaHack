@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.Bfs
   , AndPath(..), findPathBfs, accessBfs
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , succBfsDistance, predBfsDistance, abortedUnknownBfs
+  , succBfsDistance, predBfsDistance, abortedUnknownBfs, maskBfs, distanceBfs
 #endif
   ) where
 
@@ -74,6 +74,10 @@ maxBfsDistance = BfsDistance (maxBound :: Word8)
 -- It is also a true distance value for this tile.
 abortedUnknownBfs :: BfsDistance
 abortedUnknownBfs = predBfsDistance apartBfs
+
+maskBfs :: BfsDistance -> BfsDistance
+{-# INLINE maskBfs #-}
+maskBfs distance = distance .&. complement minKnownBfs
 
 -- | Create and fill a BFS array for the given level.
 -- Unsafe array operations are OK here, because the intermediate
@@ -159,7 +163,7 @@ fillBfsThawed !lalter !alterSkill !sourceI
                             !alter = lalter `PointArray.accessI` p
                         if | alterSkill < alter -> return acc2
                            | alter == 1 -> do
-                             let distCompl = distance .&. complement minKnownBfs
+                             let distCompl = maskBfs distance
                              unsafeWriteI p distCompl
                              return acc2
                            | otherwise -> do
@@ -264,7 +268,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
             !posP = toEnum pos
         in track newPos dist (posP : suffix)
       !goalDist = BfsDistance $ arr `PointArray.accessI` pathGoalI
-      pathLen = fromEnum $ bfsDistance $ goalDist .&. complement minKnownBfs
+      pathLen = fromEnum $ bfsDistance $ maskBfs goalDist
       pathList = track pathGoalI (goalDist .|. minKnownBfs) []
       andPath = AndPath{..}
   in assert (BfsDistance (arr `PointArray.accessI` pathSourceI)
@@ -276,8 +280,7 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
               f acc@(pAcc, dAcc, chessAcc, sumAcc) p d =
                 if d <= abortedUnknownBfs  -- works in visible secrets mode only
                    || d /= apartBfs && adjacent p pathGoal  -- works for stairs
-                then let dist = fromEnum $ bfsDistance
-                                $ d .&. complement minKnownBfs
+                then let dist = fromEnum $ bfsDistance $ maskBfs d
                          chessNew = chessDist p pathGoal
                          sumNew = dist + 2 * chessNew
                          resNew = (p, dist, chessNew, sumNew)
@@ -305,8 +308,12 @@ findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
 
 -- | Access a BFS array and interpret the looked up distance value.
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
-accessBfs bfs p =
-  let dist = bfs PointArray.! p
-  in if PointArray.axsize bfs == 0 || dist == apartBfs
-     then Nothing
-     else Just $ fromEnum $ bfsDistance $ dist .&. complement minKnownBfs
+accessBfs bfs p = if PointArray.axsize bfs == 0
+                  then Nothing
+                  else distanceBfs $ bfs PointArray.! p
+
+distanceBfs :: BfsDistance -> Maybe Int
+{-# INLINE distanceBfs #-}
+distanceBfs dist = if dist == apartBfs
+                   then Nothing
+                   else Just $ fromEnum $ bfsDistance $ maskBfs dist
