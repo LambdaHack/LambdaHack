@@ -153,6 +153,8 @@ computeTarget aid = do
                  >= if slackDoctrine then 2 else 4
       canMoveItem = Ability.getSk Ability.SkMoveItem actorMaxSk > 0
       calmE = calmEnough b actorMaxSk
+      heavilyDistressed =  -- actor hit by a proj or similarly distressed
+        deltasSerious (bcalmDelta b)
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
@@ -228,6 +230,7 @@ computeTarget aid = do
   getArItem <- getsState $ flip aspectRecordFromIid
   cstashes <- if canMove
                  && (calmE || null nearbyFoes) -- danger or risk of defecting
+                 && not heavilyDistressed
               then closestStashes aid
               else return []
   let desirableIid (iid, (k, _)) =
@@ -434,6 +437,7 @@ computeTarget aid = do
                   filter (\(_, body) -> blid body == lid) oursExploring
            -- Even if made peace with the faction, loot stash one last time.
             if (calmE || null nearbyFoes)  -- no risk or can't defend anyway
+               && not heavilyDistressed  -- not under heavy fire
                && gstash (factionD EM.! fid2) == Just (lid, pos)
                -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
