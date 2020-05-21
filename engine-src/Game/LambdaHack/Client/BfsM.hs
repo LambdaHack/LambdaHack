@@ -392,7 +392,8 @@ embedBenefit fleeVia aid pbags = do
                 Nothing -> False
                 Just (lid, _) -> lid == blid b
                                  && length oursExploring > 1
-                                 && length oursExploringLid == 1
+                                 && length oursExploringLid <= 1
+                                      -- not @==@ in case temporarily nonmoving
           in case fleeVia of
             _ | guardingStash -> 0
             ViaStairsUp | up -> 1
