@@ -340,6 +340,7 @@ dispEnemy source target actorMaxSk s =
         in any friend adjAssocs
       sb = getActorBody source s
       tb = getActorBody target s
+      tfact = sfactionD s EM.! bfid tb
   in bproj tb
      || not (actorDying tb
              || actorWaits tb
@@ -347,6 +348,7 @@ dispEnemy source target actorMaxSk s =
                   -- sometimes this comes from sleep, but it's transient
                   -- and if we made exception for sleep, we would displace
                   -- immobile sleeping actors
+             || Just (blid tb, bpos tb) == gstash tfact
              || hasBackup sb && hasBackup tb)  -- solo actors are flexible
 
 itemToFull :: ItemId -> State -> ItemFull
