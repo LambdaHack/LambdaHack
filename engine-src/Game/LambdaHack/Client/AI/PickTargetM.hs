@@ -461,6 +461,12 @@ computeTarget aid = do
                      nearbyFoes
               then pickNewTarget
               else return $ Just tap
+          -- Don't stop fleeing into hideout after 5 turns even if foes appear.
+          THideout -> do
+            -- Approach or stay in the hideout until 20 turns pass.
+            if not recentlyFled20
+            then pickNewTarget
+            else return $ Just tap
           -- Prefer close foes to anything else below.
           _ | not (null nearbyFoes) -> pickNewTarget
           -- Below we check the target could not be picked again in
@@ -524,11 +530,6 @@ computeTarget aid = do
                || alterSkill < fromEnum (lalter PointArray.! pos)
                     -- tile was searched or altered or skill lowered
             then pickNewTarget  -- others unconcerned
-            else return $ Just tap
-          THideout -> do
-            -- Approach or stay in the hideout until 20 turns pass.
-            if not recentlyFled20
-            then pickNewTarget
             else return $ Just tap
         _ | condInMelee || not (null nearbyFoes && null cstashes) ->
             pickNewTarget
