@@ -170,6 +170,10 @@ actionStrategy aid retry = do
         -- solid tiles ignored, because not obvious if dark after removed
       canFleeIntoDark = not $ actorShines || all (isLit . snd) fleeL
       avoidAmbient = not condInMelee && uneasy && not actorShines
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  let condGoalIsLit = case mtgtMPath of
+        Just TgtAndPath{tapPath=Just AndPath{pathGoal}} -> isLit pathGoal
+        _ -> False
       -- Fleeing makes sense, because either actor can't melee,
       -- or at least won't flee without scoring a hit and return next turn,
       -- due to threat no longer seen (due to blindness or dark).
@@ -321,31 +325,34 @@ actionStrategy aid retry = do
       distant :: [([Skill], m (Frequency RequestTimed), Bool)]
       distant =
         [ ( [SkMoveItem]
-          , stratToFreq (if condInMelee then 2 else 20000)
+          , stratToFreq (if condInMelee then 20 else 20000)
             $ yieldUnneeded aid  -- 20000 to unequip ASAP, unless is thrown
           , True )
         , ( [SkMoveItem]
-          , stratToFreq 1
+          , stratToFreq 10
             $ equipItems aid  -- doesn't take long, very useful if safe
           , not (condInMelee
                  || condDesirableFloorItem
                  || uneasy) )
         , ( [SkProject]
-          , stratToFreq (if condTgtNonmovingEnemy then 20 else 3)
+          , stratToFreq (if condTgtNonmovingEnemy then 100 else 30)
               -- not too common, to leave missiles for pre-melee dance
             $ projectItem aid  -- equivalent of @condCanProject@ called inside
           , condAimEnemyTargeted && not condInMelee )
         , ( [SkApply]
-          , stratToFreq 1
+          , stratToFreq 10
             $ applyItem aid ApplyAll  -- use any potion or scroll
           , condAimEnemyTargeted || condThreat 9 )  -- can affect enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
-                              400  -- friends pummeled by target, go to help
+                              4000  -- friends pummeled by target, go to help
                             | not condAimEnemyOrStash ->
-                              2  -- if enemy only remembered investigate anyway
+                              20  -- if enemy only remembered investigate anyway
+                            | not (isLit (bpos body))  -- would need to leave
+                              && not actorShines       -- dark, most probably
+                              && condGoalIsLit -> 1
                             | otherwise ->
-                              20)
+                              200)
             $ chase aid avoidAmbient retry
           , condCanMelee
             && Just (blid body, bpos body) /= gstash fact
