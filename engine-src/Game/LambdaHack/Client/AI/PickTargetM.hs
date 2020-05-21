@@ -226,7 +226,8 @@ computeTarget aid = do
   discoBenefit <- getsClient sdiscoBenefit
   getKind <- getsState $ flip getIidKind
   getArItem <- getsState $ flip aspectRecordFromIid
-  cstashes <- if canMove && calmE  -- not in grave danger or risk of defecting
+  cstashes <- if canMove
+                 && (calmE || null nearbyFoes) -- danger or risk of defecting
               then closestStashes aid
               else return []
   let desirableIid (iid, (k, _)) =
@@ -432,7 +433,7 @@ computeTarget aid = do
             let oursExploringLid =
                   filter (\(_, body) -> blid body == lid) oursExploring
            -- Even if made peace with the faction, loot stash one last time.
-            if calmE  -- not in grave danger or risk of defecting
+            if (calmE || null nearbyFoes)  -- no risk or can't defend anyway
                && gstash (factionD EM.! fid2) == Just (lid, pos)
                -- The condition below is more lenient than in @closestStashes@
                -- to avoid wasting time on guard's movement.
