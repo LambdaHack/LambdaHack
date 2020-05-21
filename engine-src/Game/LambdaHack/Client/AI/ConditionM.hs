@@ -331,21 +331,19 @@ desirableItem COps{corule=RuleContent{rsymbolProjectile}}
 condSupport :: MonadClient m => Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
 condSupport param aid = do
-  btarget <- getsClient $ getTarget aid
-  condAimEnemyTargeted <- condAimEnemyTargetedM aid
-  getsState $ strongSupport param aid btarget condAimEnemyTargeted
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  getsState $ strongSupport param aid mtgtMPath
 
-strongSupport :: Int -> ActorId -> Maybe Target -> Bool -> State -> Bool
-strongSupport param aid btarget condAimEnemyTargeted s =
+strongSupport :: Int -> ActorId -> Maybe TgtAndPath -> State -> Bool
+strongSupport param aid mtgtMPath s =
   -- The smaller the area scanned for friends, the lower number required.
   let actorMaxSkills = sactorMaxSkills s
       actorMaxSk = actorMaxSkills EM.! aid
       n = min 2 param - Ability.getSk Ability.SkAggression actorMaxSk
       b = getActorBody aid s
-      mtgtPos = aidTgtToPos aid (blid b) btarget s
-      approaching b2 = case mtgtPos of
-        Just tgtPos | condAimEnemyTargeted ->
-          chessDist (bpos b2) tgtPos <= 1 + param  -- will soon melee anyway
+      approaching b2 = case mtgtMPath of
+        Just TgtAndPath{tapTgt=TEnemy{},tapPath=Just AndPath{pathGoal}} ->
+            chessDist (bpos b2) pathGoal <= 1 + param  -- will soon melee anyway
         _ -> False
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= max 2 param || approaching b2)

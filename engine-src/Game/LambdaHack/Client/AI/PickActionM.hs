@@ -807,6 +807,9 @@ projectItem :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 projectItem aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
+  -- We query target, not path, because path is not needed for flinging.
+  -- Even if unknown tiles exist between us and the target, we assume
+  -- they are walkable and not just transparent and we happily try to shoot.
   mfpos <- getsState $ aidTgtToPos aid (blid b) btarget
   case (btarget, mfpos) of
     (_, Just fpos) | adjacent (bpos b) fpos -> return reject

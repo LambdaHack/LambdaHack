@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , chanFrontend, anyKeyPressed, discardPressedKey, resetPressedKeys
   , addPressedControlEsc, revCmdMap
   , getReportUI, getLeaderUI, getArenaUI, viewedLevelUI
-  , leaderTgtToPos, xhairToPos, clearAimMode
+  , xhairToPos, clearAimMode
   , getFontSetup, scoreToSlideshow, defaultHistory
   , tellAllClipPS, tellGameClipPS, elapsedSessionTimeGT
   , resetSessionStart, resetGameStart, partActorLeader, partPronounLeader
@@ -230,16 +230,6 @@ viewedLevelUI = do
   arena <- getArenaUI
   saimMode <- getsSession saimMode
   return $! maybe arena aimLevelId saimMode
-
-leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
-leaderTgtToPos = do
-  lidV <- viewedLevelUI
-  mleader <- getsClient sleader
-  case mleader of
-    Nothing -> return Nothing
-    Just aid -> do
-      mtgt <- getsClient $ getTarget aid
-      getsState $ aidTgtToPos aid lidV mtgt
 
 xhairToPos :: MonadClientUI m => m (Maybe Point)
 xhairToPos = do

@@ -124,10 +124,10 @@ targetDesc mtarget = do
       case mleader of
         Nothing -> return (Just "a relative shift", Nothing)
         Just aid -> do
-          tgtPos <- getsState $ aidTgtToPos aid lidV mtarget
+          mtgtPos <- getsState $ aidTgtToPos aid lidV mtarget
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> tshow p
-          return (Just $ maybe invalidMsg validMsg tgtPos, Nothing)
+          return (Just $ maybe invalidMsg validMsg mtgtPos, Nothing)
     Nothing -> return (Nothing, Nothing)
 
 targetDescXhair :: MonadClientUI m

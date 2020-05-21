@@ -44,6 +44,7 @@ getPerFid lid = do
   return $! EM.findWithDefault assFail lid fper
 
 -- | Calculate the position of an actor's target.
+-- This matches @pathGoal@, but sometimes path is not defined.
 aidTgtToPos :: ActorId -> LevelId -> Maybe Target -> State -> Maybe Point
 aidTgtToPos _ _ Nothing _ = Nothing
 aidTgtToPos aid lidV (Just tgt) s = case tgt of
