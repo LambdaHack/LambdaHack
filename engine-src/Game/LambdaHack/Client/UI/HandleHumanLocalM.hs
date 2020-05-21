@@ -829,7 +829,7 @@ eitherHistory showAll = do
                   $ indentSplitAttrString rwidth timeReport
             prompt = makeSentence
               [ "the", MU.Ordinal $ histSlot + 1
-              , "record of all history follows" ]
+              , "most recent record follows" ]
             keys = [K.spaceKM, K.escKM]
                    ++ [K.upKM | histSlot /= 0]
                    ++ [K.downKM | histSlot /= histBound - 1]
