@@ -390,10 +390,13 @@ embedBenefit fleeVia aid pbags = do
               v = if aiCond then if easier then 10 else 1 else 0
               guardingStash = case gstash fact of
                 Nothing -> False
-                Just (lid, _) -> lid == blid b
-                                 && length oursExploring > 1
-                                 && length oursExploringLid <= 1
-                                      -- not @==@ in case temporarily nonmoving
+                Just (lid, p) ->
+                  lid == blid b
+                  && length oursExploring > 1
+                  && (length oursExploringLid <= 1
+                        -- not @==@ in case guard temporarily nonmoving
+                      || p == bpos b)
+                           -- don't leave the post; let the others explore
           in case fleeVia of
             _ | guardingStash -> 0
             ViaStairsUp | up -> 1
