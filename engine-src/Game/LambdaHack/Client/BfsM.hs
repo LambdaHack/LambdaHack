@@ -559,7 +559,9 @@ oursExploringAssocs fid s =
                            -- if asleep, probably has walking skill normally;
                            -- when left alone will wake up and guard or explore
                         || let actorMaxSk = sactorMaxSkills s EM.! aid
-                           in Ability.getSk Ability.SkMove actorMaxSk > 0)
+                           in Ability.getSk Ability.SkMove actorMaxSk > 0
+                              || Ability.getSk Ability.SkMove actorMaxSk < -50)
+                                   -- a hacky way to rule out tmp immobile
   in filter f $ EM.assocs $ sactorD s
 
 -- | Find the nearest walkable position in dark, if any. Deterministic,
