@@ -387,7 +387,10 @@ actionStrategy aid retry = do
           , not dozes
             && if condInMelee
                then condCanMelee && condAimEnemyOrStash
-               else not (condThreat 2) || not condMeleeBad )
+               else (not (condThreat 2) || not condMeleeBad)
+                    && (Just (blid body, bpos body) /= gstash fact
+                        || heavilyDistressed  -- guard strictly, until harmed
+                        || bcalm body < 10) )  -- break loop, avoid domination
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.
                   -- Also, this is what non-leader heroes do, unless they melee.
