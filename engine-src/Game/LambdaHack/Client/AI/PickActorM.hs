@@ -133,14 +133,14 @@ pickActorToMove maidToAvoid = do
                 condManyThreatAdj = length threatAdj >= 2
                 condFastThreatAdj =
                   any (\(_, (aid2, _)) ->
-                        let actorMaxSk2 = actorMaxSkills EM.! aid2
-                        in gearSpeed actorMaxSk2 > speed1_5)
-                      threatAdj
-                allThreatsAdjAreStealthy =
-                  all (\(_, (aid2, b2)) ->
                         let ar2 = actorMaxSkills EM.! aid2
-                        in Ability.getSk Ability.SkShine ar2 <= 0
-                           && not (isLit $ bpos b2))
+                        in gearSpeed ar2 > speed1_5)
+                      threatAdj
+                condNonStealthyThreatAdj =
+                  any (\(_, (aid2, b2)) ->
+                        let ar2 = actorMaxSkills EM.! aid2
+                        in Ability.getSk Ability.SkShine ar2 > 0
+                           || isLit (bpos b2))
                       threatAdj
                 isLit pos = Tile.isLit coTileSpeedup (lvl `at` pos)
                 fleeingMakesSense =
@@ -148,7 +148,7 @@ pickActorToMove maidToAvoid = do
                   || (Ability.getSk Ability.SkSight actorMaxSk > 2
                       || Ability.getSk Ability.SkNocto actorMaxSk > 2)
                      && (Ability.getSk Ability.SkShine actorMaxSk > 2
-                         || not allThreatsAdjAreStealthy)
+                         || condNonStealthyThreatAdj || null threatAdj)
             return $!
               not condFastThreatAdj
               && fleeingMakesSense
