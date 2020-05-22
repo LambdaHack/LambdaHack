@@ -1618,9 +1618,9 @@ effectDischarge execSfx iidOriginal nDm target = do
   getKind <- getsState $ flip getIidKindServer
   let power = max 0 power0
       t = createItemTimer localTime $ timeDeltaScale (Delta timeClip) power
-      c = CActor target CEqp
       eqpAss = EM.assocs $ beqp tb
-      resetTimeout (iid, (k, itemTimers)) = do
+      organAss = EM.assocs $ borgan tb
+      resetTimeout store (iid, (k, itemTimers)) = do
         let itemKind = getKind iid
             it2 = filter (charging localTime) $ replicate k t
         if iid == iidOriginal
@@ -1628,12 +1628,14 @@ effectDischarge execSfx iidOriginal nDm target = do
            || itemTimers == it2
         then return UseDud
         else do
+          let c = CActor target store
           execUpdAtomic $ UpdTimeItem iid c itemTimers it2
           return UseUp
-  urs <- mapM resetTimeout eqpAss
-  let ur = case urs of
+  ursEqp <- mapM (resetTimeout CEqp) eqpAss
+  ursOrgan <- mapM (resetTimeout COrgan) organAss
+  let ur = case ursEqp ++ ursOrgan of
         [] -> UseDud  -- there was no effects
-        _ -> maximum urs
+        urs -> maximum urs
   case ur of
     UseDud -> return UseDud
     _ -> do
