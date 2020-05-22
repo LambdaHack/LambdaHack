@@ -97,6 +97,7 @@ actionStrategy aid retry = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   condOurAdj <- getsState $ any (\(_, b) -> isFriend (bfid body) fact (bfid b))
                             . adjacentBigAssocs body
+  oursExploring <- getsState $ oursExploringAssocs (bfid body)
   condAnyHarmfulFoeAdj <- getsState $ anyHarmfulFoeAdj actorMaxSkills aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
@@ -392,6 +393,7 @@ actionStrategy aid retry = do
                else (not (condThreat 2) || not condMeleeBad)
                     && (Just (blid body, bpos body) /= gstash fact
                         || heavilyDistressed  -- guard strictly, until harmed
+                        || length oursExploring <= 1
                         || condOurAdj  -- or if teammates adjacent
                         || bcalm body < 10) )  -- break loop, avoid domination
         ]
