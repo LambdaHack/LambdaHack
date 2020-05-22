@@ -94,6 +94,9 @@ actionStrategy aid retry = do
   condAimCrucial <- condAimCrucialM aid
   actorMaxSkills <- getsState sactorMaxSkills
   condAnyFoeAdj <- getsState $ anyFoeAdj aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  condOurAdj <- getsState $ any (\(_, b) -> isFriend (bfid body) fact (bfid b))
+                            . adjacentBigAssocs body
   condAnyHarmfulFoeAdj <- getsState $ anyHarmfulFoeAdj actorMaxSkills aid
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
@@ -113,7 +116,6 @@ actionStrategy aid retry = do
   randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
   friends <- getsState $ friendRegularList (bfid body) (blid body)
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   let anyFriendOnLevelAwake = any (\b ->
         bwatch b /= WSleep && bpos b /= bpos body) friends
       actorMaxSk = actorMaxSkills EM.! aid
@@ -390,6 +392,7 @@ actionStrategy aid retry = do
                else (not (condThreat 2) || not condMeleeBad)
                     && (Just (blid body, bpos body) /= gstash fact
                         || heavilyDistressed  -- guard strictly, until harmed
+                        || condOurAdj  -- or if teammates adjacent
                         || bcalm body < 10) )  -- break loop, avoid domination
         ]
       fallback =  -- Wait until friends sidestep; ensures strategy never empty.

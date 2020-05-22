@@ -347,6 +347,8 @@ embedBenefit fleeVia aid pbags = do
              else currentSkillsClient aid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
   fact <- getsState $ (EM.! bfid b) . sfactionD
+  condOurAdj <- getsState $ any (\(_, b2) -> isFriend (bfid b) fact (bfid b2))
+                            . adjacentBigAssocs b
   lvl <- getLevel (blid b)
   unexploredTrue <- unexploredDepth True (blid b)
   unexploredFalse <- unexploredDepth False (blid b)
@@ -395,7 +397,7 @@ embedBenefit fleeVia aid pbags = do
                   && length oursExploring > 1
                   && (length oursExploringLid <= 1
                         -- not @==@ in case guard temporarily nonmoving
-                      || p == bpos b)
+                      || p == bpos b && not condOurAdj)
                            -- don't leave the post; let the others explore
           in case fleeVia of
             _ | guardingStash -> 0
