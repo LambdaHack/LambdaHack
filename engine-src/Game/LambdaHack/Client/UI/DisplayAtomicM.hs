@@ -1112,11 +1112,14 @@ displayGameOverLoot (heldBag, total) generationAn = do
                       "You don't have the only hypothesized specimen:"
                     | max 0 k == 0 && n == 0 ->
                       "No such specimen was recorded:"
-                    | otherwise -> makePhrase [ "You hold"
-                                              , MU.CardinalAWs (max 0 k) "piece"
-                                              , "out of"
-                                              , MU.Car n
-                                              , "scattered:" ]
+                    | otherwise ->
+                        makePhrase [ "You hold"
+                                   , if k == n
+                                     then "all pieces"
+                                     else MU.CardinalAWs (max 0 k) "piece"
+                                   , "out of"
+                                   , MU.Car n
+                                   , "scattered:" ]
         in lootMsg <+> holdsMsg
   dungeonTotal <- getsState sgold
   let promptGold = spoilsBlurb currencyName total dungeonTotal
