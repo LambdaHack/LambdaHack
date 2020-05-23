@@ -1754,6 +1754,10 @@ effectDupItem execSfx iidOriginal target = do
            let c = CActor target cstore
            execSfx
            identifyIid iid c itemKindId itemKind
+           let slore = IA.loreFromContainer arItem c
+           modifyServer $ \ser ->
+             ser {sgenerationAn = EM.adjust (EM.insertWith (+) iid 1) slore
+                                            (sgenerationAn ser)}
            execUpdAtomic $ UpdCreateItem True iid (itemBase itemFull) (1, []) c
            return UseUp
 
