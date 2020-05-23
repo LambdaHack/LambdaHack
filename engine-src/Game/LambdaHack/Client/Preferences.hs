@@ -32,7 +32,7 @@ import           Game.LambdaHack.Definition.Flavour
 
 -- | How much AI benefits from applying the effect.
 -- The first component is benefit when applied to self, the second
--- is benefit (preferably negative) when applied to enemy.
+-- is benefit (preferably negative) when applied to enemy (via melee).
 -- This represents benefit from using the effect every @avgItemDelay@ turns,
 -- so if the item is not durable, the value is adjusted down elsewhere.
 -- The benefit includes the drawback of having to use the actor's turn,
@@ -49,10 +49,9 @@ effectToBenefit cops fid factionD eff =
   in case eff of
     IK.Burn d -> delta $ -(min 1500 $ 15 * Dice.meanDice d)
       -- often splash damage, armor doesn't block (but HurtMelee doesn't boost)
-    IK.Explode IK.S_SINGLE_SPARK -> delta (-1)
-                                      -- hardwired; probing and flavour
+    IK.Explode IK.S_SINGLE_SPARK -> delta (-1)  -- probing and flavour
     IK.Explode IK.S_SPARK -> delta (-9)  -- small, to not affect weapon order
-    IK.Explode IK.S_FRAGRANCE -> (1, -5)  -- hardwired; situational
+    IK.Explode IK.S_FRAGRANCE -> (1, -5)  -- situational
     IK.Explode _ ->
       -- There is a risk the explosion is focused and harmful to self
       -- or not focused and beneficial to nearby foes, but not to self.
@@ -61,7 +60,7 @@ effectToBenefit cops fid factionD eff =
       -- Due to this assumption, healing explosives should be wrapped
       -- in @OnSmash@, or else they are counted as an incentive for throwing
       -- an item at foes, which in that case is counterproductive.
-      delta (-100)
+      delta (-50)  -- not too low so that S_INK_SAC used by AI
     IK.RefillHP p ->
       delta $ if p > 0
               then min 2000 (20 * fromIntegral p)
@@ -90,7 +89,7 @@ effectToBenefit cops fid factionD eff =
                               -- divided by 3, because impression needed first
     IK.Impress -> (0, -20)  -- this causes heroes to waste a crucial resource
                             -- but makes aliens more aggresive than defensive
-    IK.PutToSleep -> (10, -50)  -- can affect friends, but more often enemies
+    IK.PutToSleep -> (-10, -50)  -- can affect friends, but more often enemies
     IK.Yell -> (-1, -2)  -- usually uncontrollably wakes up enemies, so bad
     IK.Summon grp d ->  -- contrived by not checking if enemies also control
                         -- that group; safe for normal dungeon crawl content;
@@ -173,9 +172,10 @@ effectToBenefit cops fid factionD eff =
     IK.Detect IK.DetectLoot radius -> (fromIntegral radius * 2, 0)
     IK.Detect IK.DetectExit radius -> (fromIntegral radius / 2, 0)
     IK.Detect _ radius -> (fromIntegral radius, 0)
-    IK.SendFlying _ -> (0, -100)  -- very context dependent, but lack of control
-    IK.PushActor _ -> (0, -100)   -- is deadly on some maps, leading to harm;
-    IK.PullActor _ -> (0, -100)   -- pushing others may crush them against wall
+    IK.SendFlying _ -> (0, -1)   -- very context dependent, but lack of control
+    IK.PullActor _ -> (0, -1)    -- is deadly on some maps, leading to harm;
+    IK.PushActor _ -> (0, -100)  -- pushing others may crush them against wall
+                                 -- and give us time to fling at them
     IK.DropBestWeapon -> delta $ -50  -- often a whole turn wasted == InsertMove
     IK.ApplyPerfume -> delta 0  -- depends on smell sense of friends and foes
     IK.OneOf effs ->
@@ -187,8 +187,8 @@ effectToBenefit cops fid factionD eff =
       -- can be beneficial; we'd need to analyze explosions, range, etc.
     IK.OnCombine eff1 -> effectToBenefit cops fid factionD eff1
     IK.OnUser eff1 ->
-      let (effSelf, effFoe) = effectToBenefit cops fid factionD eff1
-      in (effSelf, - effFoe)
+      let (effSelf, _) = effectToBenefit cops fid factionD eff1
+      in delta effSelf  -- in both cases just applies the effect to itself
     IK.AndEffect eff1 _ -> effectToBenefit cops fid factionD eff1
       -- for simplicity; so in content make sure to place initial animations
       -- among normal effects, not at the start of composite effect
