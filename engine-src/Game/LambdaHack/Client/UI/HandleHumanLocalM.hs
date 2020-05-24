@@ -549,8 +549,9 @@ chooseItemApplyHuman ts = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
       calmE = calmEnough b actorMaxSk
-      cLegalRaw = [CGround, CStash, CEqp]
-      cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
+      cLegalRaw = [CGround, CStash, CEqp, COrgan]
+      cLegal = [CGround | not overStash] ++ [CStash]
+               ++ [CEqp | calmE] ++ [COrgan]
       (verb1, object1) = case ts of
         [] -> ("trigger", "item")
         tr : _ -> (HumanCmd.tiverb tr, HumanCmd.tiobject tr)

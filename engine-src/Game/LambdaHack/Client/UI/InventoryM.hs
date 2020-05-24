@@ -102,6 +102,8 @@ getStoreItem :: MonadClientUI m
                   , (ItemDialogMode, Either K.KM SlotChar) )
 getStoreItem prompt cInitial = do
   let itemCs = map MStore [CStash, CEqp, CGround]
+        -- No @COrgan@, because triggerable organs are rare and,
+        -- if really needed, accessible directly from the trigger menu.
       loreCs = map MLore [minBound..maxBound] ++ [MPlaces]
       allCs = case cInitial of
         MLore{} -> loreCs

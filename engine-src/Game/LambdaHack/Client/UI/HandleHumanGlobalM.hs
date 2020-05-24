@@ -882,6 +882,7 @@ projectHuman = do
   else do
     itemSel <- getsSession sitemSel
     case itemSel of
+      Just (_, COrgan, _) -> failWith "can't fling an organ"
       Just (iid, fromCStore, _) -> do
         leader <- getLeaderUI
         b <- getsState $ getActorBody leader
