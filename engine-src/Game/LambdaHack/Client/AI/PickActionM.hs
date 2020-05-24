@@ -914,10 +914,7 @@ applyItem aid applyGroup = do
            && permittedActor (Just cstore) itemFull kit
            && not (any (disqualify durable) $ IK.ieffects itemKind)
            && not (IA.isHumanTrinket itemKind)  -- hack for elixir of youth
-      -- Organs are not taken into account, because usually they are either
-      -- melee items, so harmful, or periodic, so charging between activations.
-      -- The case of a weak weapon curing poison is too rare to incur overhead.
-      stores = [CStash, CGround] ++ [CEqp | calmE]
+      stores = [CStash, CGround, COrgan] ++ [CEqp | calmE]
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
   getKind <- getsState $ flip getIidKind
@@ -929,10 +926,6 @@ applyItem aid applyGroup = do
                          -- conveniently, @iname@ matches @ifreq@
                        else Left $ GroupName $ IK.iname itemKind
            else Nothing) (EM.keys $ borgan b)
-      coeff CGround = 2  -- pickup turn saved
-      coeff COrgan = error $ "" `showFailure` benList
-      coeff CEqp = 1
-      coeff CStash = 1
       fTool benAv@( Benefit{benApply}, cstore, iid
                   , itemFull@ItemFull{itemKind}, _ ) =
         let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
@@ -966,10 +959,12 @@ applyItem aid applyGroup = do
                                      else benApply + 20
                  | wastesDrop || wastesHP -> benApply - 10
                  | otherwise -> benApply
-            benR = ceiling situationalBenApply
-                   * if cstore == CEqp && not durable
-                     then 1000  -- must hinder currently (or be very potent)
-                     else coeff cstore
+            coeff CGround = 2  -- pickup turn saved
+            coeff COrgan = if durable then 1 else 1000
+              -- if not durable, must hinder currently or be very potent
+            coeff CEqp = if durable then 1 else 1000
+            coeff CStash = 1
+            benR = ceiling situationalBenApply * coeff cstore
             canApply = situationalBenApply > 0 && case applyGroup of
               ApplyFirstAid -> q benAv && (heals || dropsImpressed)
                 -- when low HP, Calm easy to deplete, so impressed crucial
