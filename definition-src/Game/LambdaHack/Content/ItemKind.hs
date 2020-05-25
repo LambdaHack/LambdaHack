@@ -198,10 +198,14 @@ data Effect =
   | Recharge Int Dice.Dice
       -- ^ reduce the cooldown period of this number of discharged items
       --   in the victim's equipment and organs by this dice of game clips;
-      --   if the result is negative, set to 0, instantly recharging the item
+      --   if the result is negative, set to 0, instantly recharging the item;
+      --   starts with weapons with highest raw damage in equipment,
+      --   then among organs, then non-weapons in equipment and among organs
   | Discharge Int Dice.Dice
       -- ^ increase the cooldown period of this number of fully recharged items
-      --   in the victim's equipment and organs by this dice of game clips
+      --   in the victim's equipment and organs by this dice of game clips;
+      --   starts with weapons with highest raw damage in equipment,
+      --   then among organs, then non-weapons in equipment and among organs
   | PolyItem
       -- ^ get a suitable (i.e., numerous enough) non-unique common item stack
       --   on the floor and polymorph it to a stack of random common items,

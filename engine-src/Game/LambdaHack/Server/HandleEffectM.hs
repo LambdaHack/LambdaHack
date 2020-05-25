@@ -1616,17 +1616,16 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  discoAspect <- getsState sdiscoAspect
   power <- rndToAction $ castDice ldepth totalDepth dice
   let timeUnit = if reducingCooldown
                  then absoluteTimeNegate timeClip
                  else timeClip
       delta = timeDeltaScale (Delta timeUnit) power
       localTimer = createItemTimer localTime (Delta timeZero)
-      addToCooldown :: CStore -> (Int, UseResult) -> (ItemId, ItemQuant)
+      addToCooldown :: CStore -> (Int, UseResult) -> (ItemId, ItemFullKit)
                     -> m (Int, UseResult)
       addToCooldown _ (0, ur) _ = return (0, ur)
-      addToCooldown store (n, ur) (iid, (k0, itemTimers0)) = do
+      addToCooldown store (n, ur) (iid, (_, (k0, itemTimers0))) = do
         let itemTimers = filter (charging localTime) itemTimers0
             kt = length itemTimers
             lenToShift = min n $ if reducingCooldown then kt else k0 - kt
@@ -1641,13 +1640,32 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
           let c = CActor target store
           execUpdAtomic $ UpdTimeItem iid c itemTimers0 it2
           return (n - lenToShift, UseUp)
-      isLegal (iid, _) = let arItem = discoAspect EM.! iid
-                         in IA.aTimeout arItem /= 0 && iid /= iidOriginal
-      eqpAss = filter isLegal $ EM.assocs $ beqp tb
-      organAss = filter isLegal $ EM.assocs $ borgan tb
-  (nEqp, urEqp) <- foldM (addToCooldown CEqp) (n0, UseDud) eqpAss
-  (_nOrgan, urOrgan) <- foldM (addToCooldown COrgan) (nEqp, urEqp) organAss
-  if urOrgan == UseDud
+      selectWeapon i@(iid, (itemFull, _)) (weapons, others) =
+        let arItem = aspectRecordFull itemFull
+        in if | IA.aTimeout arItem == 0
+                || iid == iidOriginal -> (weapons, others)
+              | IA.checkFlag Ability.Meleeable arItem -> (i : weapons, others)
+              | otherwise -> (weapons, i : others)
+      partitionWeapon = foldr selectWeapon ([],[])
+      ignoreCharges = True  -- handled above depending on @reducingCooldown@
+      benefits = Nothing  -- only raw damage counts (client knows benefits)
+      sortWeapons ass = map (\(_, _, iid, itemFullKit) -> (iid, itemFullKit))
+                        $ strongestMelee ignoreCharges benefits localTime ass
+  eqpAss <- getsState $ kitAssocs target [CEqp]
+  let (eqpAssWeapons, eqpAssOthers) = partitionWeapon eqpAss
+  organAss <- getsState $ kitAssocs target [COrgan]
+  let (organAssWeapons, organAssOthers) = partitionWeapon organAss
+  (nEqpWeapons, urEqpWeapons) <-
+    foldM (addToCooldown CEqp) (n0, UseDud)
+    $ sortWeapons eqpAssWeapons
+  (nOrganWeapons, urOrganWeapons) <-
+    foldM (addToCooldown COrgan) (nEqpWeapons, urEqpWeapons)
+    $ sortWeapons organAssWeapons
+  (nEqpOthers, urEqpOthers) <-
+    foldM (addToCooldown CEqp) (nOrganWeapons, urOrganWeapons) eqpAssOthers
+  (_nOrganOthers, urOrganOthers) <-
+    foldM (addToCooldown COrgan) (nEqpOthers, urEqpOthers) organAssOthers
+  if urOrganOthers == UseDud
   then return UseDud
   else do
     execSfx
