@@ -348,7 +348,7 @@ strongSupport param aid mtgtMPath s =
       closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
                        in dist > 0 && (dist <= max 2 param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
-                                  && actorCanMelee actorMaxSkills aid2 b2
+                                  && actorCanMeleeToHarm actorMaxSkills aid2 b2
       friends = friendRegularAssocs (bfid b) (blid b) s
       closeAndStrongFriends = filter closeAndStrong friends
   in n <= 0 || not (null (drop (n - 1) closeAndStrongFriends))
