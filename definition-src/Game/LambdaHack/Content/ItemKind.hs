@@ -225,7 +225,6 @@ data Effect =
   | SendFlying ThrowMod   -- ^ send an actor flying (push or pull, depending)
   | PushActor ThrowMod    -- ^ push an actor
   | PullActor ThrowMod    -- ^ pull an actor
-  | DropBestWeapon        -- ^ make the actor drop its best weapon
   | ApplyPerfume          -- ^ remove all smell on the level
   | OneOf [Effect]        -- ^ trigger one of the effects with equal probability
   | OnSmash Effect

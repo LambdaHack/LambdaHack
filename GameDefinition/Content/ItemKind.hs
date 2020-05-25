@@ -240,8 +240,8 @@ paralizingProj = ItemKind
   , iweight  = 500
   , idamage  = 1 `d` 1
   , iaspects = [AddSkill SkHurtMelee $ -14 * 5]
-  , ieffects = [Paralyze 15, DropBestWeapon]
-  , idesc    = "Wood balls tied with hemp rope. The target enemy is tripped and bound to drop the main weapon, while fighting for balance."
+  , ieffects = [Paralyze 15, Discharge 1 100]
+  , idesc    = "Wood balls tied with hemp rope. The foe is unlikely to use its main weapon while fighting for balance."
   , ikit     = []
   }
 harpoon = ItemKind
@@ -1516,8 +1516,8 @@ daggerDropBestWeapon = knife
   , irarity  = [(1, 3), (10, 3)]
   , iaspects = [SetFlag Unique]
                ++ iaspects knife
-  , ieffects = [DropBestWeapon, Yell]  -- powerful and low timeout, but makes
-                                       -- noise and useless against stupid foes
+  , ieffects = [Discharge 1 50, Yell]  -- powerful and low timeout, but noisy
+                                       -- and no effect if no weapons charged
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade."
   }
 hammerTemplate = ItemKind

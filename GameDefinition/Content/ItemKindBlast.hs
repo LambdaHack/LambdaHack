@@ -148,7 +148,7 @@ firecracker n = ItemKind
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine $ intToDice $ 1 + n `div` 2 ]
   , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
-               ++ [DropBestWeapon | n >= 4]
+               ++ [Discharge 1 30 | n >= 3]
                ++ [OnSmash $ Explode $ firecrackerAt (n - 1) | n >= 2]
   , idesc    = "Scraps of burnt paper, covering little pockets of black powder, buffeted by colorful explosions."
   , ikit     = []

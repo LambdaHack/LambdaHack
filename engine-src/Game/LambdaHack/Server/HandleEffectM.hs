@@ -15,11 +15,10 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectSummon, effectAscend, findStairExit, switchLevels1, switchLevels2
   , effectEscape, effectParalyze, paralyze, effectParalyzeInWater
   , effectInsertMove, effectTeleport, effectCreateItem
-  , effectDestroyItem, dropCStoreItem, effectDropItem
-  , effectConsumeItems
+  , effectDestroyItem, dropCStoreItem, effectDropItem, effectConsumeItems
   , effectRecharge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
-  , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
+  , sendFlyingVector, effectApplyPerfume, effectOneOf
   , effectAndEffect, effectOrEffect, effectSeqEffect
   , effectVerbNoLonger, effectVerbMsg, effectVerbMsgFail
 #endif
@@ -453,7 +452,6 @@ effectSem effApplyFlags0@EffApplyFlags{..}
       effectSendFlying execSfx tmod source target c (Just True)
     IK.PullActor tmod ->
       effectSendFlying execSfx tmod source target c (Just False)
-    IK.DropBestWeapon -> effectDropBestWeapon execSfx iid target
     IK.ApplyPerfume -> effectApplyPerfume execSfx target
     IK.OneOf l -> effectOneOf recursiveCall l
     IK.OnSmash _ -> return UseDud  -- ignored under normal circumstances
@@ -1606,7 +1604,7 @@ specific than the two abilities above
          [] -> UseDud  -- there was no effects
          _ -> maximum urs
 
--- ** Discharge
+-- ** Recharge and Discharge
 
 effectRecharge :: forall m. MonadServerAtomic m
                => Bool -> m () -> ItemId -> Int -> Dice.Dice -> ActorId
@@ -2051,33 +2049,6 @@ sendFlyingVector source target modePush = do
                 Just False -> pullV
                 Nothing | adjacent (bpos sb) (bpos tb) -> pushV
                 Nothing -> pullV
-
--- ** DropBestWeapon
-
--- | Make the target actor drop his best weapon.
--- The item itself is immune (any copies).
-effectDropBestWeapon :: MonadServerAtomic m
-                     => m () -> ItemId -> ActorId -> m UseResult
-effectDropBestWeapon execSfx iidOriginal target = do
-  tb <- getsState $ getActorBody target
-  if bproj tb then return UseDud else do
-    localTime <- getsState $ getLocalTime (blid tb)
-    kitAssRaw <- getsState $ kitAssocs target [CEqp]
-    let kitAss = filter (\(iid, (i, _)) ->
-                          IA.checkFlag Ability.Meleeable (aspectRecordFull i)
-                          && iid /= iidOriginal) kitAssRaw
-        ignoreCharges = True
-    -- Weapons with burning or wounding are undervalued to avoid
-    -- leaking info about unidentified effects (in the unlikely case
-    -- that an equipped weapon is not identified). Also, KISS.
-    case strongestMelee ignoreCharges Nothing localTime kitAss of
-      (_, _, iid, _) : _ -> do
-        execSfx
-        let kit = beqp tb EM.! iid
-        dropCStoreItem True False CEqp target tb 1 iid kit
-          -- not the whole stack
-      [] ->
-        return UseDud
 
 -- ** ApplyPerfume
 

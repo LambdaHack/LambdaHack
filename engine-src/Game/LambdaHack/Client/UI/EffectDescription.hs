@@ -133,7 +133,6 @@ effectToSuffix detailLevel effect =
     SendFlying tmod -> "of impact" <+> tmodToSuff "" tmod
     PushActor tmod -> "of pushing" <+> tmodToSuff "" tmod
     PullActor tmod -> "of pulling" <+> tmodToSuff "" tmod
-    DropBestWeapon -> "of disarming"
     OneOf effs ->
       let ts = filter (/= "") $ map (effectToSuffix detailLevel) effs
           subject = if length ts <= 5 then "marvel" else "wonder"
