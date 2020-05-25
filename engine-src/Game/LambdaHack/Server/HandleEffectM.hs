@@ -17,7 +17,7 @@ module Game.LambdaHack.Server.HandleEffectM
   , effectInsertMove, effectTeleport, effectCreateItem
   , effectDestroyItem, dropCStoreItem, effectDropItem
   , effectConsumeItems
-  , effectDischarge, effectPolyItem, effectRerollItem, effectDupItem
+  , effectRecharge, effectPolyItem, effectRerollItem, effectDupItem
   , effectIdentify, identifyIid, effectDetect, effectDetectX, effectSendFlying
   , sendFlyingVector, effectDropBestWeapon, effectApplyPerfume, effectOneOf
   , effectAndEffect, effectOrEffect, effectSeqEffect
@@ -440,7 +440,8 @@ effectSem effApplyFlags0@EffApplyFlags{..}
       effectDestroyItem execSfx n k store target grp
     IK.ConsumeItems tools raw -> effectConsumeItems execSfx iid target tools raw
     IK.DropItem n k store grp -> effectDropItem execSfx iid n k store grp target
-    IK.Discharge nDm -> effectDischarge execSfx iid nDm target
+    IK.Recharge n dice -> effectRecharge True execSfx iid n dice target
+    IK.Discharge n dice -> effectRecharge False execSfx iid n dice target
     IK.PolyItem -> effectPolyItem execSfx iid target
     IK.RerollItem -> effectRerollItem execSfx iid target
     IK.DupItem -> effectDupItem execSfx iid target
@@ -1607,40 +1608,50 @@ specific than the two abilities above
 
 -- ** Discharge
 
-effectDischarge :: MonadServerAtomic m
-                => m () -> ItemId -> Dice.Dice -> ActorId -> m UseResult
-effectDischarge execSfx iidOriginal nDm target = do
+effectRecharge :: forall m. MonadServerAtomic m
+               => Bool -> m () -> ItemId -> Int -> Dice.Dice -> ActorId
+               -> m UseResult
+effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
   tb <- getsState $ getActorBody target
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
-  power0 <- rndToAction $ castDice ldepth totalDepth nDm
   discoAspect <- getsState sdiscoAspect
-  let power = max 0 power0
-      t = createItemTimer localTime $ timeDeltaScale (Delta timeClip) power
-      eqpAss = EM.assocs $ beqp tb
-      organAss = EM.assocs $ borgan tb
-      resetTimeout store (iid, (k, itemTimers)) = do
-        let arItem = discoAspect EM.! iid
-            it2 = filter (charging localTime) $ replicate k t
-        if iid == iidOriginal
-           || IA.aTimeout arItem == 0
-           || itemTimers == it2
-        then return UseDud
+  power <- rndToAction $ castDice ldepth totalDepth dice
+  let timeUnit = if reducingCooldown
+                 then absoluteTimeNegate timeClip
+                 else timeClip
+      delta = timeDeltaScale (Delta timeUnit) power
+      localTimer = createItemTimer localTime (Delta timeZero)
+      addToCooldown :: CStore -> (Int, UseResult) -> (ItemId, ItemQuant)
+                    -> m (Int, UseResult)
+      addToCooldown _ (0, ur) _ = return (0, ur)
+      addToCooldown store (n, ur) (iid, (k0, itemTimers0)) = do
+        let itemTimers = filter (charging localTime) itemTimers0
+            kt = length itemTimers
+            lenToShift = min n $ if reducingCooldown then kt else k0 - kt
+            (itToShift, itToKeep) =
+              if reducingCooldown
+              then splitAt lenToShift itemTimers
+              else (replicate lenToShift localTimer, itemTimers)
+            it2 = map (shiftItemTimer delta) itToShift ++ itToKeep
+        if itemTimers0 == it2
+        then return (n, ur)
         else do
           let c = CActor target store
-          execUpdAtomic $ UpdTimeItem iid c itemTimers it2
-          return UseUp
-  ursEqp <- mapM (resetTimeout CEqp) eqpAss
-  ursOrgan <- mapM (resetTimeout COrgan) organAss
-  let ur = case ursEqp ++ ursOrgan of
-        [] -> UseDud  -- there was no effects
-        urs -> maximum urs
-  case ur of
-    UseDud -> return UseDud
-    _ -> do
-      execSfx
-      return UseUp
+          execUpdAtomic $ UpdTimeItem iid c itemTimers0 it2
+          return (n - lenToShift, UseUp)
+      isLegal (iid, _) = let arItem = discoAspect EM.! iid
+                         in IA.aTimeout arItem /= 0 && iid /= iidOriginal
+      eqpAss = filter isLegal $ EM.assocs $ beqp tb
+      organAss = filter isLegal $ EM.assocs $ borgan tb
+  (nEqp, urEqp) <- foldM (addToCooldown CEqp) (n0, UseDud) eqpAss
+  (_nOrgan, urOrgan) <- foldM (addToCooldown COrgan) (nEqp, urEqp) organAss
+  if urOrgan == UseDud
+  then return UseDud
+  else do
+    execSfx
+    return UseUp
 
 -- ** PolyItem
 
@@ -2037,7 +2048,7 @@ effectDropBestWeapon execSfx iidOriginal target = do
                           && iid /= iidOriginal) kitAssRaw
         ignoreCharges = True
     -- Weapons with burning or wounding are undervalued to avoid
-    -- leaving info about unidentified effects (in the unlikely case
+    -- leaking info about unidentified effects (in the unlikely case
     -- that an equipped weapon is not identified). Also, KISS.
     case strongestMelee ignoreCharges Nothing localTime kitAss of
       (_, _, iid, _) : _ -> do

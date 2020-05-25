@@ -195,11 +195,13 @@ data Effect =
       --   how many copies of each kind to drop;
       --   for non-organs, beware of not dropping all kinds, or cluttering
       --   store with rubbish becomes beneficial
-  | Discharge Dice.Dice
-      -- ^ set the cooldown of all items with a timeout in the victim's
-      --   equipment and organs
-      --   to this number of game clips; if 0, this instantly recharges all;
-      --   this won't lead to micromanagement, because equipping resets cooldown
+  | Recharge Int Dice.Dice
+      -- ^ reduce the cooldown period of this number of discharged items
+      --   in the victim's equipment and organs by this dice of game clips;
+      --   if the result is negative, set to 0, instantly recharging the item
+  | Discharge Int Dice.Dice
+      -- ^ increase the cooldown period of this number of fully recharged items
+      --   in the victim's equipment and organs by this dice of game clips
   | PolyItem
       -- ^ get a suitable (i.e., numerous enough) non-unique common item stack
       --   on the floor and polymorph it to a stack of random common items,
@@ -552,11 +554,14 @@ validateSingle ik@ItemKind{..} =
             | Dice.infDice d <= 0 = True
           nonPositiveEffect (CreateItem _ _ _ (TimerActorTurn d))
             | Dice.infDice d <= 0 = True
-          nonPositiveEffect (Discharge d) | Dice.infDice d < 0 = True
+          nonPositiveEffect (Recharge n d)
+            | n <= 0 || Dice.infDice d <= 0 = True
+          nonPositiveEffect (Discharge n d)
+            | n <= 0 || Dice.infDice d <= 0 = True
           nonPositiveEffect _ = False
           containingNonPositiveEffect =
             filter (checkSubEffectProp nonPositiveEffect) ieffects
-      in [ "effects with forbidden potentially non-positive or negative dice:"
+      in [ "effects with forbidden potentially non-positive or negative number or dice:"
            <+> tshow containingNonPositiveEffect
          | not $ null containingNonPositiveEffect ])
 
