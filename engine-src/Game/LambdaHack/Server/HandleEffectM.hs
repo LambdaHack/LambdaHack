@@ -1615,16 +1615,16 @@ effectDischarge execSfx iidOriginal nDm target = do
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
   power0 <- rndToAction $ castDice ldepth totalDepth nDm
-  getKind <- getsState $ flip getIidKindServer
+  discoAspect <- getsState sdiscoAspect
   let power = max 0 power0
       t = createItemTimer localTime $ timeDeltaScale (Delta timeClip) power
       eqpAss = EM.assocs $ beqp tb
       organAss = EM.assocs $ borgan tb
       resetTimeout store (iid, (k, itemTimers)) = do
-        let itemKind = getKind iid
+        let arItem = discoAspect EM.! iid
             it2 = filter (charging localTime) $ replicate k t
         if iid == iidOriginal
-           || null (IK.ieffects itemKind) && IK.idamage itemKind == 0
+           || IA.aTimeout arItem == 0
            || itemTimers == it2
         then return UseDud
         else do

@@ -196,7 +196,8 @@ data Effect =
       --   for non-organs, beware of not dropping all kinds, or cluttering
       --   store with rubbish becomes beneficial
   | Discharge Dice.Dice
-      -- ^ set the cooldown of all items in the victim's equipment and organs
+      -- ^ set the cooldown of all items with a timeout in the victim's
+      --   equipment and organs
       --   to this number of game clips; if 0, this instantly recharges all;
       --   this won't lead to micromanagement, because equipping resets cooldown
   | PolyItem

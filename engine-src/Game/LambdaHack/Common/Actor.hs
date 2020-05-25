@@ -123,6 +123,7 @@ deltaWasBenign ResDelta{resPreviousTurn} =
   fst resPreviousTurn >= 0  -- only the previous one
 
 actorCanMelee :: ActorMaxSkills -> ActorId -> Actor -> Bool
+{-# INLINE actorCanMelee #-}
 actorCanMelee actorMaxSkills aid b =
   let actorMaxSk = actorMaxSkills EM.! aid
       condUsableWeapon = bweapon b > 0
