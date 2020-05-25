@@ -1612,7 +1612,8 @@ effectRecharge :: forall m. MonadServerAtomic m
                => Bool -> m () -> ItemId -> Int -> Dice.Dice -> ActorId
                -> m UseResult
 effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
-  tb <- getsState $ getActorBody target
+ tb <- getsState $ getActorBody target
+ if bproj tb then return UseDud else do  -- slows down, but rarely any effect
   localTime <- getsState $ getLocalTime (blid tb)
   totalDepth <- getsState stotalDepth
   Level{ldepth} <- getLevel (blid tb)
@@ -1633,6 +1634,7 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
               if reducingCooldown
               then splitAt lenToShift itemTimers
               else (replicate lenToShift localTimer, itemTimers)
+            -- No problem if this overcharges; equivalent to pruned timer.
             it2 = map (shiftItemTimer delta) itToShift ++ itToKeep
         if itemTimers0 == it2
         then return (n, ur)
