@@ -300,7 +300,7 @@ install:
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
-  - (cd .. && ${CABAL} new-install $WITHCOMPILER cabal-plan)
+  - (cd .. && ${CABAL} new-install --constraint='cabal-plan +exe' $WITHCOMPILER cabal-plan)
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   # Packaging...
   - ${CABAL} v2-sdist all
