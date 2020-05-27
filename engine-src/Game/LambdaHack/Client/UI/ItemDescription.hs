@@ -58,13 +58,17 @@ partItemN3 width side factionD ranged detailLevel maxWordsToShow localTime
       temporary = IA.checkFlag Ability.Fragile arItem
                   && IA.checkFlag Ability.Periodic arItem
       lenCh = itemK - ncharges localTime (itemK, itemTimers)
-      charges | lenCh == 0 = ""
-              | temporary = case itemTimers of
-                  [] -> error $ "partItemN3: charges with null timer"
-                                `showFailure`
-                                (side, itemFull, itemK, itemTimers)
-                  t : _ -> let total = deltaOfItemTimer localTime t
-                           in "for" <+> timeDeltaInSecondsText total
+      charges | temporary = case itemTimers of
+                  [] -> if lenCh == 0
+                        then ""
+                        else error $ "partItemN3: charges with null timer"
+                                     `showFailure`
+                                     (side, itemFull, itemK, itemTimers)
+                  t : _ -> if lenCh == 0
+                           then "(ready to expire)"
+                           else let total = deltaOfItemTimer localTime t
+                                in "for" <+> timeDeltaInSecondsText total
+              | lenCh == 0 = ""
               | itemK == 1 && lenCh == 1 = "(charging)"
               | itemK == lenCh = "(all charging)"
               | otherwise = "(" <> tshow lenCh <+> "charging)"

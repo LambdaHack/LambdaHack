@@ -297,7 +297,8 @@ endClip updatePerFid = do
       2 ->
         -- Periodic activation only once per turn, for speed,
         -- but on all active arenas. Calm updates and domination
-        -- happen there as well.
+        -- happen there as well. Once per turn is too rare for accurate
+        -- expiration of short conditions, e.g., 1-turn haste. TODO.
         applyPeriodicLevel
       4 ->
         -- Add monsters each turn, not each clip.
