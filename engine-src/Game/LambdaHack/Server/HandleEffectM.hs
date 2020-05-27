@@ -1288,8 +1288,9 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
       fgame = fscale (Delta timeTurn)
       factor nDm = do
         actorMaxSk <- getsState $ getActorMaxSkills target
-        -- A tiny bit added to make sure length 1 effect doesn't end before
-        -- the end of first turn, which would make, e.g., speed, useless.
+        -- A tiny bit added to make sure length 1 effect doesn't randomly
+        -- end, or not, before the end of first turn, which would make,
+        -- e.g., hasting, useless.
         let actorTurn =
               timeDeltaPercent (ticksPerMeter $ gearSpeed actorMaxSk) 101
         fscale actorTurn nDm

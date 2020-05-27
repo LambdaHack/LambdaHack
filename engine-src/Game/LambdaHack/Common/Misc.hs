@@ -79,7 +79,7 @@ tenthM = 100000
 
 show64With2 :: Int64 -> Text
 show64With2 n =
-  let k = 100 * n `div` oneM
+  let k = 100 * n `divUp` oneM
       l = k `div` 100
       x = k - l * 100
       y = x `div` 10
