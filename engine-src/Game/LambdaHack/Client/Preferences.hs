@@ -88,7 +88,8 @@ effectToBenefit cops fid factionD eff =
                               -- worth 200, and enemy lost him, another 100;
                               -- divided by 3, because impression needed first
     IK.Impress -> (0, -20)  -- this causes heroes to waste a crucial resource
-                            -- but makes aliens more aggresive than defensive
+                            -- but makes aliens more aggresive than defensive;
+                            -- also, smart use is hardcoded in AI action choice
     IK.PutToSleep -> (-10, -50)  -- can affect friends, but more often enemies
     IK.Yell -> (-1, -2)  -- usually uncontrollably wakes up enemies, so bad
     IK.Summon grp d ->  -- contrived by not checking if enemies also control
@@ -118,10 +119,8 @@ effectToBenefit cops fid factionD eff =
     IK.Paralyze d -> delta $ -20 * Dice.meanDice d  -- clips
     IK.ParalyzeInWater d -> delta $ -10 * Dice.meanDice d  -- clips; resistable
     IK.InsertMove d -> delta $ 10 * Dice.meanDice d  -- turns
-    IK.Teleport d -> if Dice.meanDice d <= 8
-                     then (0, 0)    -- annoying either way
-                     else (-9, -1)  -- for self, don't derail exploration
-                                    -- for foes, fight with one less at a time
+    IK.Teleport{} -> (-9, -1)  -- for self, don't derail exploration
+                               -- for foes, fight with one less at a time
     IK.CreateItem _ COrgan IK.CONDITION _ ->
       (1, -1)  -- varied, big bunch, but try to create it anyway
     IK.CreateItem _ COrgan grp timer ->  -- assumed temporary
@@ -146,7 +145,8 @@ effectToBenefit cops fid factionD eff =
     IK.DestroyItem{} -> delta (-10)  -- potentially harmful
     IK.ConsumeItems{} -> delta (-10)  -- potentially harmful
     IK.DropItem _ _ COrgan IK.CONDITION ->
-      (30, 0)  -- great for curing own bad conditions; mixed in a weapon
+      (0, -1)  -- negative value necessary to collect such items;
+               -- smart use on self is hardcoded in AI action choice
     IK.DropItem ngroup kcopy COrgan grp ->  -- assumed temporary
       -- Simplified: we assume actor has an average number of copies
       -- (and none have yet run out, e.g., prompt curing of poisoning)
