@@ -1288,11 +1288,12 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
       fgame = fscale (Delta timeTurn)
       factor nDm = do
         actorMaxSk <- getsState $ getActorMaxSkills target
-        -- A tiny bit added to make sure length 1 effect doesn't randomly
+        -- A bit added to make sure length 1 effect doesn't randomly
         -- end, or not, before the end of first turn, which would make,
-        -- e.g., hasting, useless.
+        -- e.g., hasting, useless. This needs to be higher than 10%
+        -- to compensate for overhead of animals, etc. (no leaders).
         let actorTurn =
-              timeDeltaPercent (ticksPerMeter $ gearSpeed actorMaxSk) 101
+              timeDeltaPercent (ticksPerMeter $ gearSpeed actorMaxSk) 111
         fscale actorTurn nDm
   delta <- IK.foldTimer (return $ Delta timeZero) fgame factor tim
   let c = CActor target store
