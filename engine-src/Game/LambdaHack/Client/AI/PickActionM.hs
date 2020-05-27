@@ -149,7 +149,8 @@ actionStrategy aid retry = do
         deltasSeriousThisTurn (bcalmDelta body)
       condNotCalmEnough = not (calmEnough body actorMaxSk)
       uneasy = heavilyDistressed || condNotCalmEnough || recentlyFled
-      speed1_5 = speedScale (3%2) (gearSpeed actorMaxSk)
+      speed = gearSpeed actorMaxSk
+      speed1_5 = speedScale (3%2) speed
       -- Max skills used, because we need to know if can melee as leader.
       condCanMelee = actorCanMelee actorMaxSkills aid body
       condMeleeBad = not ((condSolo || condSupport1) && condCanMelee)
@@ -364,6 +365,8 @@ actionStrategy aid retry = do
                       || condAimNonEnemyPresent)
                      && (not (condThreat 2)
                          || heavilyDistressed  -- if under fire, do something!
+                         || speed >= speedAdd speedWalk speedWalk
+                              -- low risk of getting hit first
                          || not condMeleeBad)
                        -- this results in animals in corridor never attacking
                        -- (unless distressed by, e.g., being hit by missiles),

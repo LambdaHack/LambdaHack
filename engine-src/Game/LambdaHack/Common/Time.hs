@@ -267,7 +267,7 @@ modifyDamageBySpeed dmg (Speed s) =
                  / fromIntegral sThrust ^ (2 :: Int) :: Double)
                     -- Double, because overflows Int64
 
--- | Scale speed by an @Int@ scalar value.
+-- | Scale speed by a scalar value.
 speedScale :: Rational -> Speed -> Speed
 {-# INLINE speedScale #-}
 speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
