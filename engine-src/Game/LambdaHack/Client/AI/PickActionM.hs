@@ -276,6 +276,9 @@ actionStrategy aid retry = do
                        -- or can safely project from afar instead. Flee.
                        not condSupport3
                        && not condSolo
+                       -- Don't flee if can spend time productively, killing
+                       -- an enemy that blocks projecting or walking.
+                       && not condAnyFoeAdj
                        -- Extra random aggressiveness if can't project.
                        -- This is hacky; the randomness is outside @Strategy@.
                        && (condCanProject
