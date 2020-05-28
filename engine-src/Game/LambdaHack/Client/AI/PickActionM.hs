@@ -872,6 +872,7 @@ applyItem :: MonadClient m
 applyItem aid applyGroup = do
   actorSk <- currentSkillsClient aid
   b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   localTime <- getsState $ getLocalTime (blid b)
@@ -886,17 +887,19 @@ applyItem aid applyGroup = do
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
       hind = hinders condShineWouldBetray uneasy actorMaxSk
+      canEsc = fcanEscape (gplayer fact)
       permittedActor cstore itemFull kit =
         either (const False) id
         $ permittedApply localTime skill calmE cstore itemFull kit
       disqualify :: Bool -> IK.Effect -> Bool
       -- These effects tweak items, which is only situationally beneficial
       -- and not really the best idea while in combat.
-      disqualify _ IK.Discharge{} = True
       disqualify _ IK.PolyItem = True
       disqualify _ IK.RerollItem = True
       disqualify _ IK.DupItem = True
       disqualify _ IK.Identify = True
+      -- This is hard to use and would be wasted recharging stomach.
+      disqualify _ IK.Recharge{} = True
       -- This is usually the main effect of item and it's useless without Calm.
       disqualify durable IK.Summon{} =
         durable && (bcalm b < xM 30 || not calmE)
@@ -919,7 +922,9 @@ applyItem aid applyGroup = do
                && hind itemFull)  -- hinders now, so possibly often, so away!
            && permittedActor (Just cstore) itemFull kit
            && not (any (disqualify durable) $ IK.ieffects itemKind)
-           && not (IA.isHumanTrinket itemKind)  -- hack for elixir of youth
+           && (canEsc || not (IA.isHumanTrinket itemKind))
+                -- A hack to prevent monsters from using up treasure
+                -- meant for heroes.
       stores = [CStash, CGround, COrgan] ++ [CEqp | calmE]
   discoBenefit <- getsClient sdiscoBenefit
   benList <- getsState $ benAvailableItems discoBenefit aid stores
