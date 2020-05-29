@@ -173,7 +173,7 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
                    , ComposeUnlessError ClearTargetIfItemClear ItemClear))
 
   -- Assorted (first few cloned from main menu)
-  , ("C-s", ([CmdMeta], "start new game", GameRestart))
+  , ("C-g", ([CmdMeta], "start new game", GameRestart))
   , ("C-x", ([CmdMeta], "save and exit to desktop", GameExit))
   , ("C-q", ([CmdMeta], "quit game and start autoplay", GameQuit))
   , ("C-c", ([CmdMeta], "exit to desktop without saving", GameDrop))
