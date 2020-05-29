@@ -187,7 +187,8 @@ permittedPrecious forced calmE itemFull@ItemFull{itemDisco} =
      else Right $ IA.checkFlag Ability.Durable arItem
                   || case itemDisco of
                        ItemDiscoFull{} -> True
-                       _ -> not isPrecious
+                       ItemDiscoMean itemAspectMean ->
+                         IA.kmConst itemAspectMean || not isPrecious
 
 -- Simplified, faster version, for inner AI loop.
 permittedPreciousAI :: Bool -> ItemFull -> Bool
@@ -198,7 +199,8 @@ permittedPreciousAI calmE itemFull@ItemFull{itemDisco} =
      && IA.checkFlag Ability.Durable arItem
         || case itemDisco of
              ItemDiscoFull{} -> True
-             _ -> not isPrecious
+             ItemDiscoMean itemAspectMean ->
+               IA.kmConst itemAspectMean || not isPrecious
 
 permittedProject :: Bool -> Int -> Bool -> ItemFull -> Either ReqFailure Bool
 permittedProject forced skill calmE itemFull =
