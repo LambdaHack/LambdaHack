@@ -1920,7 +1920,8 @@ strike catch source target iid = assert (source /= target) $ do
        | kineticDmg >= -1000  -- -1/1000 HP
          -- We ignore nested effects, because they are, in general, avoidable.
          && burnDmg >= 0 && hpDmg >= 0 -> do
-         let adverb | itemSuspect itemFullWeapon = "tentatively"
+         let adverb | itemSuspect itemFullWeapon && bfid sb == side =
+                        "tentatively"  -- we didn't identify the weapon before
                     | bproj sb = "lightly"
                     | otherwise = "delicately"
              msg = makeSentence $
