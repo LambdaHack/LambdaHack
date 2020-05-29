@@ -939,16 +939,7 @@ applyItem aid applyGroup = do
            else Nothing) (EM.keys $ borgan b)
       fTool benAv@( Benefit{benApply}, cstore, iid
                   , itemFull@ItemFull{itemKind}, _ ) =
-        let -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
-            -- Don't include @OneOf@ because other effects may kill you.
-            getHP (IK.RefillHP p) | p > 0 = True
-            getHP (IK.OnUser eff) = getHP eff
-            getHP (IK.AndEffect eff1 eff2) = getHP eff1 || getHP eff2
-            getHP (IK.OrEffect eff1 eff2) = getHP eff1 || getHP eff2
-            getHP (IK.SeqEffect effs) = or $ map getHP effs
-            getHP _ = False
-            heals = any getHP $ IK.ieffects itemKind
-            dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included
+        let dropsGrps = IK.getDropOrgans itemKind  -- @Impress@ effect included
             dropsBadOrgans =
               not (null myBadGrps)
               && (IK.CONDITION `elem` dropsGrps
@@ -962,7 +953,17 @@ applyItem aid applyGroup = do
               && (IK.CONDITION `elem` dropsGrps
                   || not (null (dropsGrps `intersect` myGoodGrps)))
             wastesDrop = not dropsBadOrgans && not (null dropsGrps)
-            wastesHP = hpEnough b actorMaxSk && heals
+            -- Don't include @Ascend@ nor @Teleport@, because maybe no foe near.
+            -- Don't include @OneOf@ because other effects may kill you.
+            getHP (IK.RefillHP p) = max 0 p
+            getHP (IK.OnUser eff) = getHP eff
+            getHP (IK.AndEffect eff1 eff2) = getHP eff1 + getHP eff2
+            getHP (IK.OrEffect eff1 _) = getHP eff1
+            getHP (IK.SeqEffect effs) = sum $ map getHP effs
+            getHP _ = 0
+            healPower = sum $ map getHP $ IK.ieffects itemKind
+            wastesHP = xM healPower
+                       > xM (Ability.getSk Ability.SkMaxHP actorMaxSk) - bhp b
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull
             situationalBenApply =
               if | dropsBadOrgans -> if dropsImpressed
@@ -976,14 +977,16 @@ applyItem aid applyGroup = do
             coeff CEqp = if durable then 1 else 1000
             coeff CStash = 1
             benR = ceiling situationalBenApply * coeff cstore
-            canApply = situationalBenApply > 0 && case applyGroup of
-              ApplyFirstAid -> q benAv && (heals || dropsImpressed)
-                -- when low HP, Calm easy to deplete, so impressed crucial
-              ApplyAll -> q benAv
-                          && not dropsGoodOrgans
-                          && (dropsImpressed || not wastesHP)
-                               -- waste healing only if it drops impressed;
-                               -- otherwise apply anything beneficial at will
+            canApply =
+              situationalBenApply > 0
+              && (dropsImpressed || not wastesHP)
+                -- waste healing only if it drops impressed;
+                -- otherwise apply anything beneficial at will
+              && case applyGroup of
+                ApplyFirstAid -> q benAv && (healPower > 0 || dropsImpressed)
+                  -- when low HP, Calm easy to deplete, so impressed crucial
+                ApplyAll -> q benAv && not dropsGoodOrgans
+                  -- not an emergency, so don't sacrifice own good conditions
         in if canApply
            then Just (benR, ReqApply iid cstore)
            else Nothing
