@@ -131,35 +131,44 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
             maxLen = if wipeAdjacent then max lenPrev lenNext else 0
-        in (p, truncateAttrLine width fillL xstart layerLine maxLen)
+            fillFromStart = max fillL (1 + maxLen) - xstart
+            available = width - xstart
+        in (p, truncateAttrLine available fillFromStart layerLine)
       rightExtentOfLine (PointUI xstartRaw _, al) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
         in min (width - 1) (xstart + length (attrLine al))
       lens = map (maximum . map rightExtentOfLine) ovTop
-  in concat $ zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
+      f2 = map g2
+      g2 (p@(PointUI xstartRaw _), layerLine) =
+        let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
+            available = width - xstart
+        in (p, truncateAttrLine available 0 layerLine)
+  in concat $ if onBlank
+              then map f2 ovTop
+              else zipWith3 f (0 : lens) (drop 1 lens ++ [0]) ovTop
 
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
-truncateAttrLine :: Int -> Int -> Int -> AttrLine -> Int -> AttrLine
-truncateAttrLine width fillLen xstart aLine lenMax =
+truncateAttrLine :: Int -> Int -> AttrLine -> AttrLine
+truncateAttrLine available fillFromStart aLine =
   let al = attrLine aLine
-  in attrStringToAL $ case compare width (xstart + length al) of
-    LT -> let discarded = drop (width - xstart) al
-          in if all (== Color.spaceAttrW32) discarded
-             then take (width - xstart) al
-             else take (width - xstart - 1) al ++ [Color.trimmedLineAttrW32]
-    EQ -> al
-    GT -> let alSpace =
-                if | null al -> al
-                   | last al == Color.spaceAttrW32
-                     || xstart + length al == width - 1 ->
-                     -- No space for more:
-                     al ++ [Color.spaceAttrW32]
-                   | otherwise -> al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
-              whiteN = max fillLen (1 + lenMax)
-                       - xstart - length alSpace
-          in alSpace ++ replicate whiteN Color.spaceAttrW32
+      len = length al
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+      !_A = assert (len == 0 || last al /= Color.spaceAttrW32
+                    `blame` map Color.charFromW32 al) ()
+        -- only expensive for menus, but often violated by changes, so disabled
+#endif
+  in if | len == 0 -> aLine
+        | len == available - 1 -> attrStringToAL $ al ++ [Color.spaceAttrW32]
+        | otherwise -> attrStringToAL $ case compare available len of
+            LT -> take (available - 1) al ++ [Color.trimmedLineAttrW32]
+            EQ -> al
+            GT -> let alSpace = al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
+                      whiteN = fillFromStart - len - 2
+                  in if whiteN <= 0  -- speedup (supposedly) for menus
+                     then alSpace
+                     else alSpace ++ replicate whiteN Color.spaceAttrW32
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.

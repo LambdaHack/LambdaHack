@@ -82,7 +82,7 @@ breakAtSpace lRev =
 -- * AttrLine
 
 -- | Line of colourful text. End of line characters forbidden.
-newtype AttrLine = AttrLine {attrLine :: [Color.AttrCharW32]}
+newtype AttrLine = AttrLine {attrLine :: AttrString}
   deriving (Show, Eq)
 
 emptyAttrLine :: AttrLine
