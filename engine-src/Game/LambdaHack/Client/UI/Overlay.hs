@@ -89,8 +89,11 @@ emptyAttrLine :: AttrLine
 emptyAttrLine = AttrLine []
 
 attrStringToAL :: AttrString -> AttrLine
-attrStringToAL s = assert (all (\ac -> Color.charFromW32 ac /= '\n') s)
-                   $ AttrLine s
+attrStringToAL s =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (all (\ac -> Color.charFromW32 ac /= '\n') s) $  -- expensive in menus
+#endif
+    AttrLine s
 
 paragraph1OfAS :: AttrString -> AttrLine
 paragraph1OfAS s = case linesAttr s of
@@ -115,8 +118,11 @@ textFgToAL !fg !t =
   in AttrLine $ T.foldr f [] t
 
 stringToAL :: String -> AttrLine
-stringToAL s = assert (all (/= '\n') s)
-               $ AttrLine $ map Color.attrChar1ToW32 s
+stringToAL s =
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (all (/= '\n') s) $
+#endif
+    AttrLine $ map Color.attrChar1ToW32 s
 
 linesAttr :: AttrString -> [AttrLine]
 linesAttr l | null l = []
