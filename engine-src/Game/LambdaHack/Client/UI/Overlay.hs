@@ -166,8 +166,7 @@ splitAttrPhrase w (AttrLine xs)
                        && not (isPrefixOfNonbreakable preRev) ->
               (([], preRev), rest)
             _ -> (breakAtSpace preRev, postRaw)
-          testPost = dropWhileEnd (== Color.spaceAttrW32) ppost
-      in if null testPost
+      in if all (== Color.spaceAttrW32) ppost
          then AttrLine pre :
               splitAttrPhrase w (AttrLine post)
          else AttrLine (reverse ppost)
