@@ -106,7 +106,10 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
       ovTopFiltered = filter (\(PointUI _ y, _) -> y < trimmedY) ov
       trimmedAlert = ( PointUI 0 trimmedY
                      , stringToAL "--a portion of the text trimmed--" )
-      extraLine | supHeight < 3 || supHeight >= trimmedY || not wipeAdjacent= []
+      extraLine | supHeight < 3
+                  || supHeight >= trimmedY
+                  || not wipeAdjacent
+                  || onBlank = []
                 | otherwise =
         case find (\(PointUI _ y, _) -> y == supHeight) ov of
           Nothing -> []
@@ -159,8 +162,7 @@ truncateAttrLine available fillFromStart aLine =
                     `blame` map Color.charFromW32 al) ()
         -- only expensive for menus, but often violated by changes, so disabled
 #endif
-  in if | len == 0 -> aLine
-        | len == available - 1 -> attrStringToAL $ al ++ [Color.spaceAttrW32]
+  in if | len == available - 1 -> attrStringToAL $ al ++ [Color.spaceAttrW32]
         | otherwise -> attrStringToAL $ case compare available len of
             LT -> take (available - 1) al ++ [Color.trimmedLineAttrW32]
             EQ -> al
