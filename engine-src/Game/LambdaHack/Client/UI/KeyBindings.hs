@@ -33,7 +33,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
   let
     movBlurb1 =
       [ "Walk throughout a level with mouse or numeric keypad (right diagram below)"
-      , "or the Vi editor keys (middle) or the left-hand movement keys (left). Run until "
+      , "or the Vi editor keys (middle) or the left-hand movement keys (left). Run until"
       , "disturbed with Shift or Control. Go-to a position with LMB (left mouse button)."
       ]
     movSchema =
@@ -59,7 +59,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       , "let you accomplish anything in the game, though not necessarily"
       , "with the fewest keystrokes. You can also play the game exclusively"
       , "with a mouse, or both mouse and keyboard (e.g., mouse for go-to"
-      , "and terrain inspection and keyboard for everything else). Lastly, "
+      , "and terrain inspection and keyboard for everything else). Lastly,"
       , "you can select a command with arrows or mouse directly from the help"
       , "screen or the dashboard and execute it on the spot."
       ]
@@ -301,7 +301,7 @@ okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
       -> ([Text], [Text]) -> ([Text], [Text]) -> OKX
 okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       (headerProp, headerMono) (footerMono, footerProp) =
-  let fmt k h = (" " <> T.justifyLeft n ' ' k <> " ", h)
+  let fmt k h = (" " <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
@@ -319,11 +319,10 @@ okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
              , cat `elem` cats
              , desc /= "" || CmdInternal `elem` cats]
       spLen = textSize keyFont " "
-      f (ks, (_, (t1, t2))) y =
+      f (ks, (_, (_, t2))) y =
         (ks, ( K.PointUI spLen y
-             , ButtonWidth keyFont (T.length t1 + T.length t2 - 1)))
-      kxs = zipWith f keys
-                    [offset + length headerProp + length headerMono ..]
+             , ButtonWidth keyFont (n + 2 + T.length t2 - 1)))
+      kxs = zipWith f keys [offset + length headerProp + length headerMono ..]
       renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
       ts = map (\t -> (False, ("", t))) headerProp
            ++ map (\t -> (False, (t, ""))) headerMono
@@ -333,10 +332,11 @@ okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       greyToAL (b, (t1, t2)) =
         if b
         then let al1 = textFgToAL Color.BrBlack t1
-             in (al1, ( textSize keyFont $ attrLine al1
+             in (al1, ( if T.null t1 then 0 else n + 2
                       , textFgToAL Color.BrBlack t2 ))
         else let al1 = textToAL t1
-             in (al1, (textSize keyFont $ attrLine al1, textToAL t2))
+             in (al1, ( if T.null t1 then 0 else n + 2
+                      , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
          $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
