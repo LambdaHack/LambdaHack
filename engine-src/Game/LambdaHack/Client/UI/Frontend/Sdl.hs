@@ -64,6 +64,7 @@ data FrontendSession = FrontendSession
   , smonoFont        :: Maybe TTF.Font
   , squareAtlas      :: IORef FontAtlas
   , smonoAtlas       :: IORef FontAtlas
+  , sbasicTexture    :: IORef SDL.Texture
   , stexture         :: IORef SDL.Texture
   , spreviousFrame   :: IORef (SingleFrame, U.Vector Int)
   , sforcedShutdown  :: IORef Bool
@@ -174,15 +175,15 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         SDL.rendererDrawBlendMode srenderer SDL.$= SDL.BlendNone
         SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
         SDL.clear srenderer  -- clear the texture
-        SDL.rendererRenderTarget srenderer SDL.$= Nothing
-        SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
         return texture
+  basicTexture <- initTexture
+  sbasicTexture <- newIORef basicTexture
   texture <- initTexture
+  stexture <- newIORef texture
   squareAtlas <- newIORef EM.empty
   smonoAtlas <- newIORef EM.empty
-  stexture <- newIORef texture
   let emptyArea = U.replicate (rheight coscreen) 0
-  spreviousFrame <- newIORef (blankSingleFrame coscreen, emptyArea )
+  spreviousFrame <- newIORef (blankSingleFrame coscreen, emptyArea)
   sforcedShutdown <- newIORef False
   scontinueSdlLoop <- newIORef True
   sframeQueue <- newEmptyMVar
@@ -201,11 +202,15 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         writeIORef squareAtlas EM.empty
         monoAtlas <- readIORef smonoAtlas
         writeIORef smonoAtlas EM.empty
+        oldBasicTexture <- readIORef sbasicTexture
+        newBasicTexture <- initTexture
         oldTexture <- readIORef stexture
         newTexture <- initTexture
         mapM_ SDL.destroyTexture $ EM.elems atlas
         mapM_ SDL.destroyTexture $ EM.elems monoAtlas
+        SDL.destroyTexture oldBasicTexture
         SDL.destroyTexture oldTexture
+        writeIORef sbasicTexture newBasicTexture
         writeIORef stexture newTexture
         (prevFrame, _) <- readIORef spreviousFrame
         writeIORef spreviousFrame (blankSingleFrame coscreen, emptyArea)
@@ -336,7 +341,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
       sdlSizeAdd = fromJust $ if isBitmapFont
                               then sdlBitmapSizeAdd
                               else sdlScalableSizeAdd
-  (prevFrame, prevArea) <- readIORef spreviousFrame
+  (prevFrame, _) <- readIORef spreviousFrame
   squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
@@ -414,11 +419,10 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
       setChar :: PointI -> (Word32, Word32) -> IO Int
       setChar !i (!w, !wPrev) = do
-        let Point{..} = toEnum i
-            outOfArea xbound = px * boxSize > xbound
-        if w == wPrev && outOfArea (U.unsafeIndex prevArea py)
+        if w == wPrev
         then return $! i + 1
         else do
+          let Point{..} = toEnum i
           atlas <- readIORef squareAtlas
           let Color.AttrChar{ acAttr=Color.Attr{fg=fgRaw, bg}
                             , acChar=acCharRaw } =
@@ -522,11 +526,13 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         SDL.destroyTexture textTexture
         return width
-  texture <- readIORef stexture
-  SDL.rendererRenderTarget srenderer SDL.$= Just texture
-  SDL.rendererDrawColor srenderer SDL.$= colorToRGBA Color.Black
+  basicTexture <- readIORef sbasicTexture  -- previous content still present
+  SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
   U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
                               (PointArray.avector $ singleArray prevFrame)
+  texture <- readIORef stexture
+  SDL.rendererRenderTarget srenderer SDL.$= Just texture
+  SDL.copy srenderer basicTexture Nothing Nothing  -- clear previous content
   rawAreaMono <- drawMonoOverlay $ singleMonoOverlay curFrame
   rawAreaProp <- drawPropOverlay $ singlePropOverlay curFrame
   let areaMap = IM.fromListWith max $ rawAreaProp ++ rawAreaMono
