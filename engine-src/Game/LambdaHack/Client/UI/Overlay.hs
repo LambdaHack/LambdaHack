@@ -110,7 +110,12 @@ textToAL !t =
   let f '\n' _ = error $ "illegal end of line in: " ++ T.unpack t
       f c l = let !ac = Color.attrChar1ToW32 c
               in ac : l
-  in AttrLine $ T.foldr f [] t
+      s = T.foldr f [] t
+  in AttrLine $
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t) $
+#endif
+    s
 
 textFgToAL :: Color.Color -> Text -> AttrLine
 textFgToAL !fg !t =
@@ -120,18 +125,21 @@ textFgToAL !fg !t =
                   -- we always keep the space @White@
       f c l = let !ac = Color.attrChar2ToW32 fg c
               in ac : l
-  in AttrLine $ T.foldr f [] t
+      s = T.foldr f [] t
+  in AttrLine $
+#ifdef WITH_EXPENSIVE_ASSERTIONS
+  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t) $
+#endif
+    s
 
 stringToAL :: String -> AttrLine
-stringToAL s =
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (all (/= '\n') s) $
-#endif
-    AttrLine $ map Color.attrChar1ToW32 s
+stringToAL s = attrStringToAL $ map Color.attrChar1ToW32 s
 
 linesAttr :: AttrString -> [AttrLine]
 linesAttr l | null l = []
-            | otherwise = AttrLine h : if null t then [] else linesAttr (tail t)
+            | otherwise = attrStringToAL h : if null t
+                                             then []
+                                             else linesAttr (tail t)
  where (h, t) = span (\ac -> Color.charFromW32 ac /= '\n') l
 
 -- | Split a string into lines. Avoids breaking the line at a character
