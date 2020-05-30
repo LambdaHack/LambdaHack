@@ -130,10 +130,10 @@ toSlideshow FontSetup{..} okxs = Slideshow $ addFooters False okxsNotNull
        : addFooters True rest
 
 moreMsg :: String
-moreMsg = "--more--  "
+moreMsg = "--more--"
 
 endMsg :: String
-endMsg = "--back to top--  "
+endMsg = "--back to top--"
 
 maxYofOverlay :: Overlay -> Int
 maxYofOverlay ov = let yOfOverlay (PointUI _ y, _) = y
