@@ -363,7 +363,9 @@ scrapRepetition History{ newReport = Report newMsgs
     RepMsgN s1 n1 : rest1 ->
       let commutative s = not $ bindsPronouns $ msgClass s
           butLastEOL [] = []
-          butLastEOL s = if last s == Color.attrChar1ToW32 '\n' then init s else s
+          butLastEOL s = if last s == Color.attrChar1ToW32 '\n'
+                         then init s
+                         else s
           f (RepMsgN s2 _) = butLastEOL (msgLine s1) == butLastEOL (msgLine s2)
       in case break f rest1 of
         (_, []) | commutative s1 -> case break f oldMsgs of

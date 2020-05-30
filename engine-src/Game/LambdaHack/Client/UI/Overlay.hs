@@ -54,7 +54,9 @@ infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrString -> AttrString -> AttrString
 (<+:>) [] l2 = l2
 (<+:>) l1 [] = l1
-(<+:>) l1 l2 = l1 ++ [Color.spaceAttrW32] ++ l2
+(<+:>) l1 l2@(c2 : _) = if Color.charFromW32 c2 == '\n'
+                        then l1 ++ l2
+                        else l1 ++ [Color.spaceAttrW32] ++ l2
 
 -- We consider only these, because they are short and form a closed category.
 nonbreakableRev :: [AttrString]
@@ -129,9 +131,9 @@ linesAttr l | null l = []
             | otherwise = AttrLine h : if null t then [] else linesAttr (tail t)
  where (h, t) = span (\ac -> Color.charFromW32 ac /= '\n') l
 
--- | Split a string into lines. Avoids ending the line with
--- a character other than space. Space characters are removed
--- from the start, but never from the end of lines. Newlines are respected.
+-- | Split a string into lines. Avoids breaking the line at a character
+-- other than space. Remove space characters from the starts and ends
+-- of created lines. Newlines are respected.
 --
 -- Note that we only split wrt @White@ space, nothing else,
 -- and the width, in the first argument, is calculated in characters,
