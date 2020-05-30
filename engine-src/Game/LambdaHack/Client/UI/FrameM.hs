@@ -61,7 +61,7 @@ drawOverlay dm onBlank ovs lid = do
                then truncateOverlay False (4 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] propFont ovs
                else if isTeletype  -- hack for debug output
-                    then concat $ EM.elems ovs
+                    then map (second attrLine) $ concat $ EM.elems ovs
                     else []
       ovMono = if multiFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
@@ -84,17 +84,16 @@ drawOverlay dm onBlank ovs lid = do
                  monoOutline =
                    truncateOverlay False (2 * rwidth) rheight True 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
-                 g x al Nothing = Just (x, x + length (attrLine al) - 1)
+                 g x al Nothing = Just (x, x + length al - 1)
                  g x al (Just (xmin, xmax)) =
-                   Just (min xmin x, max xmax (x + length (attrLine al) - 1))
+                   Just (min xmin x, max xmax (x + length al - 1))
                  f em (K.PointUI x y, al) = EM.alter (g x al) y em
                  extentMap = foldl' f EM.empty $ propOutline ++ monoOutline
                  listBackdrop (y, (xmin, xmax)) =
                    ( K.PointUI (2 * (xmin `div` 2)) y
-                   , attrStringToAL
-                     $ blankAttrString
-                       $ min (rwidth - 2 * (xmin `div` 2))
-                             (1 + xmax `divUp` 2 - xmin `div` 2) )
+                   , blankAttrString
+                     $ min (rwidth - 2 * (xmin `div` 2))
+                           (1 + xmax `divUp` 2 - xmin `div` 2) )
              in map listBackdrop $ EM.assocs extentMap
         else []
       overlayedFrame = overlayFrame rwidth ovOther

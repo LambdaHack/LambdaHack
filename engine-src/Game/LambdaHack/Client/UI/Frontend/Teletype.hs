@@ -16,7 +16,6 @@ import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
-import           Game.LambdaHack.Client.UI.Overlay
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)
 import qualified Game.LambdaHack.Definition.Color as Color
@@ -61,7 +60,7 @@ display coscreen SingleFrame{..} = do
                 in ch : chunk r
   SIO.hPutStrLn SIO.stderr $ unlines levelChar
   mapM_ (SIO.hPutStrLn SIO.stderr) $
-    map (map Color.charFromW32 . attrLine . snd) singlePropOverlay
+    map (map Color.charFromW32 . snd) singlePropOverlay
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM modifier key) $

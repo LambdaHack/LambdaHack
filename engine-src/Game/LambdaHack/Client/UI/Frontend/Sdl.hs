@@ -443,10 +443,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      drawMonoOverlay :: Overlay -> IO ()
+      drawMonoOverlay :: OverlaySpace -> IO ()
       drawMonoOverlay ov =
         mapM_ (\(K.PointUI x y, al) ->
-                 let lineCut = take (2 * (rwidth coscreen) - x) $ attrLine al
+                 let lineCut = take (2 * (rwidth coscreen) - x) al
                  in drawMonoLine (x * halfSize) y lineCut)
               ov
       drawMonoLine :: Int -> Int -> AttrString -> IO ()
@@ -476,10 +476,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
             tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
-      drawPropOverlay :: Overlay -> IO ()
+      drawPropOverlay :: OverlaySpace -> IO ()
       drawPropOverlay ov =
         mapM_ (\(K.PointUI x y, al) ->
-                 drawPropLine (x * halfSize) y $ attrLine al)
+                 drawPropLine (x * halfSize) y al)
               ov
       drawPropLine :: Int -> Int -> AttrString -> IO ()
       drawPropLine _ _ [] = return ()

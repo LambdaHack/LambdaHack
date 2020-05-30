@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Frame
   ( ColorMode(..)
   , FrameST, FrameForall(..), FrameBase(..), Frame
   , PreFrame3, PreFrames3, PreFrame, PreFrames
-  , SingleFrame(..)
+  , SingleFrame(..), OverlaySpace
   , blankSingleFrame, truncateOverlay, overlayFrame
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
@@ -47,11 +47,11 @@ newtype FrameBase = FrameBase
   {unFrameBase :: forall s. ST s (G.Mutable U.Vector s Word32)}
 
 -- | A frame, that is, a base frame and all its modifications.
-type Frame = ((FrameBase, FrameForall), (Overlay, Overlay))
+type Frame = ((FrameBase, FrameForall), (OverlaySpace, OverlaySpace))
 
 -- | Components of a frame, before it's decided if the first can be overwritten
 -- in-place or needs to be copied.
-type PreFrame3 = (PreFrame, (Overlay, Overlay))
+type PreFrame3 = (PreFrame, (OverlaySpace, OverlaySpace))
 
 -- | Sequence of screen frames, including delays. Potentially based on a single
 -- base frame.
@@ -65,14 +65,14 @@ type PreFrames = [Maybe PreFrame]
 
 -- | Representation of an operation of overwriting a frame with a single line
 -- at the given row.
-writeLine :: Int -> AttrLine -> FrameForall
+writeLine :: Int -> AttrString -> FrameForall
 {-# INLINE writeLine #-}
 writeLine offset al = FrameForall $ \v -> do
   let writeAt _ [] = return ()
       writeAt off (ac32 : rest) = do
         VM.write v off (Color.attrCharW32 ac32)
         writeAt (off + 1) rest
-  writeAt offset $ attrLine al
+  writeAt offset al
 
 -- | A frame that is padded to fill the whole screen with an optional
 -- overlay to display in proportional font.
@@ -82,9 +82,11 @@ writeLine offset al = FrameForall $ \v -> do
 -- but the highlights as well, so highlights need to be included earlier.
 data SingleFrame = SingleFrame
   { singleArray       :: PointArray.Array Color.AttrCharW32
-  , singlePropOverlay :: Overlay
-  , singleMonoOverlay :: Overlay }
+  , singlePropOverlay :: OverlaySpace
+  , singleMonoOverlay :: OverlaySpace }
   deriving (Eq, Show)
+
+type OverlaySpace = [(PointUI, AttrString)]
 
 blankSingleFrame :: ScreenContent -> SingleFrame
 blankSingleFrame ScreenContent{rwidth, rheight} =
@@ -98,7 +100,7 @@ blankSingleFrame ScreenContent{rwidth, rheight} =
 -- not in UI (mono font) coordinates, so that taking and dropping characters
 -- is performed correctly.
 truncateOverlay :: Bool -> Int -> Int -> Bool -> Int -> Bool -> Overlay
-                -> Overlay
+                -> OverlaySpace
 truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
   let canvasLength = if onBlank then rheight else rheight - 2
       supHeight = maximum $ 0 : map (\(PointUI _ y, _) -> y) ov
@@ -153,12 +155,12 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
 -- | Add a space at the message end, for display overlayed over the level map.
 -- Also trim (do not wrap!) too long lines. Also add many spaces when under
 -- longer lines.
-truncateAttrLine :: Int -> Int -> AttrLine -> AttrLine
+truncateAttrLine :: Int -> Int -> AttrLine -> AttrString
 truncateAttrLine available fillFromStart aLine =
   let al = attrLine aLine
       len = length al
-  in if | len == available - 1 -> attrStringToAL $ al ++ [Color.spaceAttrW32]
-        | otherwise -> attrStringToAL $ case compare available len of
+  in if | len == available - 1 -> al ++ [Color.spaceAttrW32]
+        | otherwise -> case compare available len of
             LT -> take (available - 1) al ++ [Color.trimmedLineAttrW32]
             EQ -> al
             GT -> let alSpace = al ++ [Color.spaceAttrW32, Color.spaceAttrW32]
@@ -169,7 +171,7 @@ truncateAttrLine available fillFromStart aLine =
 
 -- | Overlays either the game map only or the whole empty screen frame.
 -- We assume the lines of the overlay are not too long nor too many.
-overlayFrame :: Int -> Overlay -> PreFrame -> PreFrame
+overlayFrame :: Int -> OverlaySpace -> PreFrame -> PreFrame
 overlayFrame width ov (m, ff) =
   ( m
   , FrameForall $ \v -> do
