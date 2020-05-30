@@ -77,7 +77,7 @@ drawOverlay dm onBlank ovs lid = do
                             -- 20 needed not to leave gaps in skills menu
                             -- in the absence of backdrop
       ovBackdrop =
-        if multiFont
+        if multiFont && not onBlank
         then let propOutline =
                    truncateOverlay False (4 * rwidth) rheight True 0 onBlank
                    $ EM.findWithDefault [] propFont ovs
