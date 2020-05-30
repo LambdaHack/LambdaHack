@@ -222,17 +222,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
             mfr <- tryTakeMVar sframeQueue
             case mfr of
               Just fr -> do
-                -- Don't present an unchanged backbuffer.
-                -- This doesn't improve FPS; probably equal frames happen
-                -- very rarely, if at all, which is actually very good.
-                prevFrame <- readIORef spreviousFrame
-                unless (prevFrame == fr) $ do
-                  -- Some SDL2 (OpenGL) backends are very thread-unsafe,
-                  -- so we need to ensure we draw on the same (bound) OS thread
-                  -- that initialized SDL, hence we have to poll frames.
-                  drawFrame coscreen soptions sess fr
-                  -- We can't print screen in @display@ due to thread-unsafety.
-                  when sprintEachScreen $ printScreen sess
+                -- Some SDL2 (OpenGL) backends are very thread-unsafe,
+                -- so we need to ensure we draw on the same (bound) OS thread
+                -- that initialized SDL, hence we have to poll frames.
+                drawFrame coscreen soptions sess fr
                 putMVar sframeDrawn ()  -- signal that drawing ended
               Nothing -> threadDelay $ if sbenchmark then 150 else 15000
                            -- 60 polls per second, so keyboard snappy enough;
@@ -334,7 +327,7 @@ drawFrame :: ScreenContent    -- ^ e.g., game screen size
           -> FrontendSession  -- ^ frontend session data
           -> SingleFrame      -- ^ the screen frame to draw
           -> IO ()
-drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
+drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   let isBitmapFont = isBitmapFile $ T.unpack (fromJust sdlSquareFontFile)
       sdlSizeAdd = fromJust $ if isBitmapFont
                               then sdlBitmapSizeAdd
@@ -524,19 +517,27 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         SDL.copy srenderer textTexture Nothing (Just tgtR)
         SDL.destroyTexture textTexture
         return width
+  let arraysEqual = singleArray curFrame == singleArray prevFrame
+      overlaysEqual =
+        singleMonoOverlay curFrame == singleMonoOverlay prevFrame
+        && singlePropOverlay curFrame == singlePropOverlay prevFrame
   basicTexture <- readIORef sbasicTexture  -- previous content still present
-  SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
-  U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
-                              (PointArray.avector $ singleArray prevFrame)
-  texture <- readIORef stexture
-  SDL.rendererRenderTarget srenderer SDL.$= Just texture
-  SDL.copy srenderer basicTexture Nothing Nothing  -- clear previous content
-  drawMonoOverlay $ singleMonoOverlay curFrame
-  drawPropOverlay $ singlePropOverlay curFrame
-  writeIORef spreviousFrame curFrame
-  SDL.rendererRenderTarget srenderer SDL.$= Nothing
-  SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
-  SDL.present srenderer
+  unless arraysEqual $ do
+    SDL.rendererRenderTarget srenderer SDL.$= Just basicTexture
+    U.foldM'_ setChar 0 $ U.zip (PointArray.avector $ singleArray curFrame)
+                                (PointArray.avector $ singleArray prevFrame)
+  unless (arraysEqual && overlaysEqual) $ do
+    texture <- readIORef stexture
+    SDL.rendererRenderTarget srenderer SDL.$= Just texture
+    SDL.copy srenderer basicTexture Nothing Nothing  -- clear previous content
+    drawMonoOverlay $ singleMonoOverlay curFrame
+    drawPropOverlay $ singlePropOverlay curFrame
+    writeIORef spreviousFrame curFrame
+    SDL.rendererRenderTarget srenderer SDL.$= Nothing
+    SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
+    SDL.present srenderer
+    -- We can't print screen in @display@ due to thread-unsafety.
+    when sprintEachScreen $ printScreen sess
 
 -- It can't seem to cope with SDL_PIXELFORMAT_INDEX8, so we are stuck
 -- with huge bitmaps.
