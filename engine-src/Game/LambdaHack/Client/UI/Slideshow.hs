@@ -204,7 +204,7 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
         else case reverse reportParagraphs of
           [] -> ([], emptyAttrLine)
           l : rest ->
-            (reverse rest, attrStringToAL $ attrLine l ++ [Color.spaceAttrW32])
+            (reverse rest, attrStringToAL $ attrLine l ++ [Color.nbspAttrW32])
       msgWidth = if msgLong && not (isSquareFont propFont)
                  then 2 * width
                  else width
