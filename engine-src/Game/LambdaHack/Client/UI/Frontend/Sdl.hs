@@ -15,7 +15,6 @@ import Game.LambdaHack.Core.Prelude
 import           Control.Concurrent
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import qualified Data.Text as T
 import           Data.Time.Clock.POSIX
@@ -66,7 +65,7 @@ data FrontendSession = FrontendSession
   , smonoAtlas       :: IORef FontAtlas
   , sbasicTexture    :: IORef SDL.Texture
   , stexture         :: IORef SDL.Texture
-  , spreviousFrame   :: IORef (SingleFrame, U.Vector Int)
+  , spreviousFrame   :: IORef SingleFrame
   , sforcedShutdown  :: IORef Bool
   , scontinueSdlLoop :: IORef Bool
   , sframeQueue      :: MVar SingleFrame
@@ -182,8 +181,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
   stexture <- newIORef texture
   squareAtlas <- newIORef EM.empty
   smonoAtlas <- newIORef EM.empty
-  let emptyArea = U.replicate (rheight coscreen) 0
-  spreviousFrame <- newIORef (blankSingleFrame coscreen, emptyArea)
+  spreviousFrame <- newIORef $ blankSingleFrame coscreen
   sforcedShutdown <- newIORef False
   scontinueSdlLoop <- newIORef True
   sframeQueue <- newEmptyMVar
@@ -212,8 +210,8 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         SDL.destroyTexture oldTexture
         writeIORef sbasicTexture newBasicTexture
         writeIORef stexture newTexture
-        (prevFrame, _) <- readIORef spreviousFrame
-        writeIORef spreviousFrame (blankSingleFrame coscreen, emptyArea)
+        prevFrame <- readIORef spreviousFrame
+        writeIORef spreviousFrame $ blankSingleFrame coscreen
           -- to overwrite each char
         drawFrame coscreen soptions sess prevFrame
       loopSDL :: IO ()
@@ -227,7 +225,7 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
                 -- Don't present an unchanged backbuffer.
                 -- This doesn't improve FPS; probably equal frames happen
                 -- very rarely, if at all, which is actually very good.
-                (prevFrame, _) <- readIORef spreviousFrame
+                prevFrame <- readIORef spreviousFrame
                 unless (prevFrame == fr) $ do
                   -- Some SDL2 (OpenGL) backends are very thread-unsafe,
                   -- so we need to ensure we draw on the same (bound) OS thread
@@ -341,7 +339,7 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
       sdlSizeAdd = fromJust $ if isBitmapFont
                               then sdlBitmapSizeAdd
                               else sdlScalableSizeAdd
-  (prevFrame, _) <- readIORef spreviousFrame
+  prevFrame <- readIORef spreviousFrame
   squareFontSize <- (+ sdlSizeAdd) <$> TTF.height squareFont
   let halfSize = squareFontSize `div` 2
       boxSize = 2 * halfSize
@@ -452,14 +450,14 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
           -- Potentially overwrite a portion of the glyph.
           chooseAndDrawHighlight px py bg
           return $! i + 1
-      drawMonoOverlay :: Overlay -> IO [(Int, Int)]
+      drawMonoOverlay :: Overlay -> IO ()
       drawMonoOverlay ov =
-        mapM (\(K.PointUI x y, al) ->
-                let lineCut = take (2 * (rwidth coscreen) - x) $ attrLine al
-                in drawMonoLine (x * halfSize) y lineCut)
-             ov
-      drawMonoLine :: Int -> Int -> AttrString -> IO (Int, Int)
-      drawMonoLine x row [] = return (row, x)
+        mapM_ (\(K.PointUI x y, al) ->
+                 let lineCut = take (2 * (rwidth coscreen) - x) $ attrLine al
+                 in drawMonoLine (x * halfSize) y lineCut)
+              ov
+      drawMonoLine :: Int -> Int -> AttrString -> IO ()
+      drawMonoLine _ _ [] = return ()
       drawMonoLine x row (w : rest) = do
         setMonoChar x row w
         drawMonoLine (x + halfSize) row rest
@@ -485,16 +483,16 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
         let tt2Mono = Vect.V2 (toEnum halfSize) (toEnum boxSize)
             tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
-      drawPropOverlay :: Overlay -> IO [(Int, Int)]
+      drawPropOverlay :: Overlay -> IO ()
       drawPropOverlay ov =
-        mapM (\(K.PointUI x y, al) ->
-                drawPropLine (x * halfSize) y $ attrLine al)
-             ov
-      drawPropLine :: Int -> Int -> AttrString -> IO (Int, Int)
-      drawPropLine x row [] = return (row, x)
-      drawPropLine x row _ | x >= (rwidth coscreen - 1) * boxSize =
+        mapM_ (\(K.PointUI x y, al) ->
+                 drawPropLine (x * halfSize) y $ attrLine al)
+              ov
+      drawPropLine :: Int -> Int -> AttrString -> IO ()
+      drawPropLine _ _ [] = return ()
+      drawPropLine x _ _ | x >= (rwidth coscreen - 1) * boxSize =
         -- This chunk starts at $ sign or beyond so, for KISS, reject it.
-        return (row, maxBound)
+        return ()
       drawPropLine x row (w : rest) = do
         let isSpace = (`elem` [Color.spaceAttrW32, Color.spaceCursorAttrW32])
             Color.AttrChar{acAttr=Color.Attr{fg=fgRaw, bg}} =
@@ -533,11 +531,9 @@ drawFrame coscreen ClientOptions{..} FrontendSession{..} curFrame = do
   texture <- readIORef stexture
   SDL.rendererRenderTarget srenderer SDL.$= Just texture
   SDL.copy srenderer basicTexture Nothing Nothing  -- clear previous content
-  rawAreaMono <- drawMonoOverlay $ singleMonoOverlay curFrame
-  rawAreaProp <- drawPropOverlay $ singlePropOverlay curFrame
-  let areaMap = IM.fromListWith max $ rawAreaProp ++ rawAreaMono
-      curArea = U.replicate (rheight coscreen) 0 U.// IM.assocs areaMap
-  writeIORef spreviousFrame (curFrame, curArea)
+  drawMonoOverlay $ singleMonoOverlay curFrame
+  drawPropOverlay $ singlePropOverlay curFrame
+  writeIORef spreviousFrame curFrame
   SDL.rendererRenderTarget srenderer SDL.$= Nothing
   SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
   SDL.present srenderer
