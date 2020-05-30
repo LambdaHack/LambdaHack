@@ -157,11 +157,6 @@ truncateAttrLine :: Int -> Int -> AttrLine -> AttrLine
 truncateAttrLine available fillFromStart aLine =
   let al = attrLine aLine
       len = length al
-#ifdef WITH_EXPENSIVE_ASSERTIONS
-      !_A = assert (len == 0 || last al /= Color.spaceAttrW32
-                    `blame` map Color.charFromW32 al) ()
-        -- only expensive for menus, but often violated by changes, so disabled
-#endif
   in if | len == available - 1 -> attrStringToAL $ al ++ [Color.spaceAttrW32]
         | otherwise -> attrStringToAL $ case compare available len of
             LT -> take (available - 1) al ++ [Color.trimmedLineAttrW32]
