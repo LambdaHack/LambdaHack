@@ -167,9 +167,9 @@ splitAttrPhrase w (AttrLine xs)
               (([], preRev), rest)
             _ -> (breakAtSpace preRev, postRaw)
       in if all (== Color.spaceAttrW32) ppost
-         then AttrLine pre :
+         then AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) preRev) :
               splitAttrPhrase w (AttrLine post)
-         else AttrLine (reverse ppost)
+         else AttrLine (reverse $ dropWhile (== Color.spaceAttrW32) ppost)
               : splitAttrPhrase w (AttrLine $ reverse ppre ++ post)
 
 -- * Overlay
