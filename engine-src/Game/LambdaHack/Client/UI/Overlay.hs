@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.UI.Overlay
   ( -- * AttrString
     AttrString, blankAttrString, textToAS, textFgToAS, stringToAS, (<+:>)
     -- * AttrLine
-  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, paragraph1OfAS, linesAttr
+  , AttrLine, attrLine, emptyAttrLine, attrStringToAL, firstParagraph, linesAttr
   , textToAL, textFgToAL, stringToAL, splitAttrString, indentSplitAttrString
     -- * Overlay
   , Overlay, offsetOverlay, offsetOverlayX, updateLine
@@ -100,8 +100,8 @@ attrStringToAL s =
 #endif
     AttrLine s
 
-paragraph1OfAS :: AttrString -> AttrLine
-paragraph1OfAS s = case linesAttr s of
+firstParagraph :: AttrString -> AttrLine
+firstParagraph s = case linesAttr s of
   [] -> emptyAttrLine
   l : _ -> l
 

@@ -244,7 +244,7 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
            else let (preX, postX) = span (\(_, pa) -> ltOffset pa) kxs
                 in (prependHdr $ lineRenumber pre, rk ++ keyRenumber preX)
                    : splitO yoffsetNew (hdrPrep, hdrMono, rk) (post, postX)
-      hdrShortened = ( [(PointUI 0 0, paragraph1OfAS reportAS)]
+      hdrShortened = ( [(PointUI 0 0, firstParagraph reportAS)]
                          -- shortened for the main slides; in full beforehand
                      , take 3 lX1  -- 3 lines ought to be enough for everyone
                      , keysX1 )
