@@ -338,7 +338,7 @@ install:
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 all
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -j2 all
 script:
-  - (cd .. && ${CABAL} new-install --constraint='cabal-plan +exe' $WITHCOMPILER cabal-plan)
+  - (cd .. && ${CABAL} new-install -w ${HC} -j2 --constraint='cabal-plan +exe' $WITHCOMPILER cabal-plan)
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   # Packaging...
   - ${CABAL} v2-sdist all
