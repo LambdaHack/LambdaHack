@@ -229,7 +229,6 @@ filterHear pos as = do
 sendPer :: (MonadServerAtomic m, MonadServerComm m)
         => FactionId -> LevelId -> Perception -> Perception -> Perception
         -> m ()
-{-# INLINE sendPer #-}
 sendPer fid lid outPer inPer perNew = do
   knowEvents <- getsServer $ sknowEvents . soptions
   unless knowEvents $ do  -- inconsistencies would quickly manifest

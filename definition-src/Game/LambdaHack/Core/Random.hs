@@ -36,18 +36,19 @@ type Rnd a = St.State SM.SMGen a
 randomR :: Integral a => (a, a) -> Rnd a
 {-# INLINE randomR #-}
 randomR (0, h) = St.state $ nextRandom h
-randomR (l, h) | l > h = randomR (h, l)
+randomR (l, h) | l > h = error "randomR: empty range"
 randomR (l, h) = St.state $ \g ->
   let (x, g') = nextRandom (h - l) g
   in (x + l, g')
 
 -- | Generate random 'Integral' in @[0, x]@ range.
 randomR0 :: Integral a => a -> Rnd a
-randomR0 h = St.state $ nextRandom h
 {-# INLINE randomR0 #-}
+randomR0 h = St.state $ nextRandom h
 
 -- | Generate random 'Integral' in @[0, x]@ range, where @x@ is within @Int32@.
 nextRandom :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
+{-# INLINE nextRandom #-}
 nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
   let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
       x = fromIntegral w32
@@ -56,12 +57,11 @@ nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
                   `showFailure`
                     (fromIntegral x :: Integer, fromIntegral h :: Integer, w32)
      else (x, g')
-{-# INLINE nextRandom #-}
 
 -- | Get a random 'Word32' using full range
 randomWord32 :: Rnd Word32
-randomWord32 = St.state SM.nextWord32
 {-# INLINE randomWord32 #-}
+randomWord32 = St.state SM.nextWord32
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
