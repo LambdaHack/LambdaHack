@@ -352,6 +352,7 @@ script:
   - cd LambdaHack-*
 
   - cp $ROOTDIR/cabal.project .
+  - cp $ROOTDIR/cabal.project.local .
   - cp $ROOTDIR/Makefile .
   - cat cabal.project || true
   - cat cabal.project.local || true
