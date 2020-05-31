@@ -315,7 +315,6 @@ before_install:
     echo "repository hackage.haskell.org"               >> $CABALHOME/config
     echo "  url: http://hackage.haskell.org/"           >> $CABALHOME/config
 install:
-  - ROOTDIR=$(pwd)
   - ${CABAL} --version
   - echo "$(${HC} --version) [$(${HC} --print-project-git-commit-id 2> /dev/null || echo '?')]"
   - |
@@ -350,9 +349,9 @@ script:
 
   - cd LambdaHack-*
 
-  - cp $ROOTDIR/cabal.project .
-  - cp $ROOTDIR/cabal.project.local .
-  - cp $ROOTDIR/Makefile .
+  - cp $TOP/cabal.project .
+  - cp $TOP/cabal.project.local .
+  - cp $TOP/Makefile .
   - cat cabal.project || true
   - cat cabal.project.local || true
 
