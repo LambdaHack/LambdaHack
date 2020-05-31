@@ -330,11 +330,12 @@ install:
   - cat cabal.project || true
   - cat cabal.project.local || true
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
-  - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH}
-  - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
-  - rm  cabal.project.freeze
-# Can't build deps here, the flags that determine them are not provided.
+# Can't freeze nor build deps here, because the flags that determine
+# the deps are not provided.
 # TODO: in GTKVTY given the exact flags instead of a keyword
+#  - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH}
+#  - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
+#  - rm  cabal.project.freeze
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 all
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -j2 all
 script:
