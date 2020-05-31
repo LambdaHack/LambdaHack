@@ -201,7 +201,7 @@ buildCave cops@COps{cocave, coplace, cotile, coTileSpeedup}
                     return ( EM.unions [qmap place, qfence place, m]
                            , EM.insert i (place, ar) qls
                            , qstairs )
-                SpecialFixed p@Point{..} placeFreq ar -> do
+                SpecialFixed p placeFreq ar -> do
                   -- Reserved for corridors and the global fence.
                   let innerArea = fromMaybe (error $ "" `showFailure` (i, ar))
                                   $ shrink ar

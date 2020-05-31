@@ -221,8 +221,7 @@ findPathBfs :: ES.EnumSet Point -> PointArray.Array Word8 -> (PointI -> Bool)
             -> PointArray.Array BfsDistance
             -> Maybe AndPath
 {-# INLINE findPathBfs #-}
-findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw
-            arr@PointArray.Array{..} =
+findPathBfs lbig lalter fovLit pathSource pathGoal sepsRaw arr =
   let !pathGoalI = fromEnum pathGoal
       !pathSourceI = fromEnum pathSource
       eps = sepsRaw `mod` 4

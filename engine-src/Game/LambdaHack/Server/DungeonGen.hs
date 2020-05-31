@@ -73,7 +73,7 @@ convertTileMaps COps{corule=RuleContent{rXmax, rYmax}, cotile, coTileSpeedup}
     _ | areAllWalkable -> return converted1  -- all walkable; passes OK
     Nothing -> return converted1  -- no walkable tiles for filling the map
     Just pickPassable -> do  -- some tiles walkable, so ensure connectivity
-      let passes p@Point{..} array =
+      let passes p array =
             Tile.isWalkable coTileSpeedup (array PointArray.! p)
           -- If no point blocks on both ends, then I can eventually go
           -- from bottom to top of the map and from left to right
