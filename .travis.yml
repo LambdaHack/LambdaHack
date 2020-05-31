@@ -325,6 +325,9 @@ install:
   - travis_retry ${CABAL} v2-update -v
   - |
   - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(LambdaHack)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
+  - echo $HC
+  - echo $HCPKG
+  - echo ${HCPKG}
   - cat cabal.project || true
   - cat cabal.project.local || true
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
@@ -350,7 +353,7 @@ script:
   - cd LambdaHack-*
 
   - cp $TOP/cabal.project .
-  - cp $TOP/cabal.project.local .
+  - cp $TOP/cabal.project.local . || true
   - cp $TOP/Makefile .
   - cat cabal.project || true
   - cat cabal.project.local || true
