@@ -33,7 +33,6 @@ before_cache:
   - rm -fv $CABALHOME/packages/hackage.haskell.org/01-index.tar.idx
   - rm -rfv $CABALHOME/packages/head.hackage
 
-
 jobs:
   include:
     - env: GTKVTY=vty_opt2_lint
@@ -359,11 +358,9 @@ script:
 
   - |
     if [ $GTKVTY = "vty_opt2_lint" ]; then
-      ${CABAL} new-configure $WITHCOMPILER -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -j1
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j1 .;
       ${CABAL} new-build $WITHCOMPILER -fvty --ghc-options="-O2 -fno-ignore-asserts -dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses_asserts_lint" ]; then
-      ${CABAL} new-configure $WITHCOMPILER -fcurses --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -j1
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} -j1 .;
       ${CABAL} new-build $WITHCOMPILER -fcurses -fwith_expensive_assertions --ghc-options="-dcore-lint -dstg-lint -dcmm-lint" -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "gtk" ]; then
