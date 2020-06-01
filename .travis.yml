@@ -352,8 +352,6 @@ script:
   - cp $TOP/cabal.project .
   - cp $TOP/cabal.project.local .
   - cp $TOP/Makefile .
-  - cat cabal.project || true
-  - cat cabal.project.local || true
 
   - |
     if [ $GTKVTY = "vty_opt2_lint" ]; then
