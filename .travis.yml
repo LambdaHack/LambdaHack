@@ -67,10 +67,6 @@ jobs:
       compiler: ghc-8.8.3
       addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.8.3","cabal-install-3.2"]}}
       os: osx
-    - env: GTKVTY=brew-sdl2-osx
-      compiler: ghc-8.8.3
-      addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.8.3","cabal-install-3.2"]}}
-      os: osx
     - env: GTKVTY=asserts-osx
       compiler: ghc-8.10.1
       addons: {"apt":{"sources":[{"sourceline":"deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main","key_url":"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x063dab2bdc0b3f9fcebc378bff3aeacef6f88286"}],"packages":["ghc-8.10.1","cabal-install-3.2"]}}
@@ -314,6 +310,7 @@ before_install:
     echo "  prefix: $CABALHOME"                         >> $CABALHOME/config
     echo "repository hackage.haskell.org"               >> $CABALHOME/config
     echo "  url: http://hackage.haskell.org/"           >> $CABALHOME/config
+
 install:
   - ${CABAL} --version
   - echo "$(${HC} --version) [$(${HC} --print-project-git-commit-id 2> /dev/null || echo '?')]"
@@ -336,6 +333,7 @@ install:
 #  - rm  cabal.project.freeze
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 all
 #  - travis_wait 40 ${CABAL} v2-build $WITHCOMPILER --disable-tests --disable-benchmarks --dep -j2 all
+
 script:
   - (cd .. && ${CABAL} new-install -w ${HC} -j2 --constraint='cabal-plan +exe' $WITHCOMPILER cabal-plan)
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
@@ -374,7 +372,7 @@ script:
       ${CABAL} new-build $WITHCOMPILER -v2 -fsdl -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "vty" ]; then
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fvty -w ${HC} ${TEST} ${BENCH} -j2 .;
-      ${CABAL} new-build -fvty -w ${HC} ${TEST} ${BENCH} -j1 .;
+      ${CABAL} new-build $WITHCOMPILER -fvty -w ${HC} ${TEST} ${BENCH} -j1 .;
     elif [ $GTKVTY = "curses" ]; then
       ${CABAL} new-build $WITHCOMPILER --only-dependencies -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j2 .;
       ${CABAL} new-build $WITHCOMPILER -fcurses -f-release -w ${HC} ${TEST} ${BENCH} -j1 .;
