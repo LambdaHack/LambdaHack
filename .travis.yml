@@ -405,8 +405,8 @@ script:
     fi
 
   - touch /tmp/teletypetest.log;
-  - "if [[ $GTKVTY != \"brew-sdl2-osx\" ]] ; then ((find dist-newstyle -wholename '*/build/test/test' -exec '{}' '+') || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
-  - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" && $GTKVTY != \"brew-sdl2-osx\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
+  - "(find dist-newstyle -wholename '*/build/test/test' -exec '{}' '+') || (tail -n 2000 /tmp/teletypetest.log ; exit 77)"
+  - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make test-travis || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make test-travis2 || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
@@ -415,7 +415,7 @@ script:
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
   - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
-  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
+  - "if [[ \"$(uname)\" != \"Darwin\" && $GTKVTY != \"noopt\" && $GTKVTY != \"asserts_noopt\" && $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); else if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testCrawl-medium-double); fi; fi"
   - "if [[ $GTKVTY != \"vty_opt2_lint\" && $GTKVTY != \"curses_asserts_lint\" ]] ; then (make testDefense-medium || (tail -n 2000 /tmp/teletypetest.log ; exit 77)); fi"
 
 # REGENDATA ("0.10.1",["cabal.project","--osx","8.6.5","--osx","8.8.3","--osx","8.10.1","--output",".travis2.yml"])
