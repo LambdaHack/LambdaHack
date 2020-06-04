@@ -1652,10 +1652,15 @@ challengesMenuHuman :: MonadClientUI m
 challengesMenuHuman cmdSemInCxtOfKM = do
   cops <- getsState scops
   FontSetup{propFont} <- getFontSetup
+  svictories <- getsClient svictories
   snxtScenario <- getsClient snxtScenario
   nxtChal <- getsClient snxtChal
-  let gameMode = nxtGameMode cops snxtScenario
-      tnextScenario = "scenario:" <+> mname gameMode
+  let (gameModeId, gameMode) = nxtGameMode cops snxtScenario
+      victories = case EM.lookup gameModeId svictories of
+        Nothing -> 0
+        Just cm -> fromMaybe 0 (M.lookup nxtChal cm)
+      star t = if victories > 0 then "*" <> t else t
+      tnextScenario = "scenario:" <+> star (mname gameMode)
       offOn b = if b then "on" else "off"
       tnextDiff = "difficulty (lower easier):" <+> tshow (cdiff nxtChal)
       tnextWolf = "lone wolf (very hard):"
@@ -1669,9 +1674,8 @@ challengesMenuHuman cmdSemInCxtOfKM = do
             , (K.mkKM "f", (tnextFish, GameFishToggle))
             , (K.mkKM "g", ("start new game", GameRestart))
             , (K.mkKM "Escape", ("back to main menu", MainMenu)) ]
-      gameInfo = map T.unpack
-                   [ "Setup and start new game:"
-                   , "" ]
+      gameInfo = map T.unpack [ "Setup and start new game:"
+                              , "" ]
       width = if isSquareFont propFont then 42 else 84
       duplicateEOL '\n' = "\n\n"
       duplicateEOL c = T.singleton c
@@ -1721,7 +1725,7 @@ gameRestartHuman = do
   isNoConfirms <- isNoConfirmsGame
   gameMode <- getGameMode
   snxtScenario <- getsClient snxtScenario
-  let nxtGameName = mname $ nxtGameMode cops snxtScenario
+  let nxtGameName = mname $ snd $ nxtGameMode cops snxtScenario
   b <- if isNoConfirms
        then return True
        else displayYesNo ColorBW
@@ -1742,9 +1746,9 @@ gameRestartHuman = do
               , "yea, a shame to get your team stranded" ]
     failWith msg2
 
-nxtGameMode :: COps -> Int -> ModeKind
+nxtGameMode :: COps -> Int -> (ContentId ModeKind, ModeKind)
 nxtGameMode COps{comode} snxtScenario =
-  let f !acc _p _i !a = a : acc
+  let f !acc _p !i !a = (i, a) : acc
       campaignModes = ofoldlGroup' comode CAMPAIGN_SCENARIO f []
   in campaignModes !! (snxtScenario `mod` length campaignModes)
 
