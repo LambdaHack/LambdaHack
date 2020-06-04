@@ -476,7 +476,8 @@ registerActor summoned (ItemKnown kindIx ar _) (itemFullRaw, kit)
         && not condAnyFoeAdj
         && not summoned
         && not (fhasGender (gplayer fact))) $ do  -- heroes never start asleep
-    let sleepOdds = if prefersSleep actorMaxSk then 9%10 else 1%2
+    -- A lot of actors will wake up at once anyway, so let most start sleeping.
+    let sleepOdds = if prefersSleep actorMaxSk then 19%20 else 2%3
     sleeps <- rndToAction $ chance sleepOdds
     when sleeps $ addSleep aid
   return aid

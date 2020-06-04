@@ -236,11 +236,12 @@ canSleep :: Ability.Skills -> Bool
 canSleep actorMaxSk = Ability.getSk Ability.SkWait actorMaxSk >= 3
                       && (Ability.getSk Ability.SkSight actorMaxSk > 0
                           || Ability.getSk Ability.SkHearing actorMaxSk > 0)
-                      && Ability.getSk Ability.SkAggression actorMaxSk < 2
 
--- | Can't loot, so sometimes prefers to sleep instead of exploring.
+-- | Can't loot, not too aggresive, so sometimes prefers to sleep
+-- instead of exploring.
 prefersSleep :: Ability.Skills -> Bool
 prefersSleep actorMaxSk = Ability.getSk Ability.SkMoveItem actorMaxSk <= 0
+                          && Ability.getSk Ability.SkAggression actorMaxSk < 2
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
