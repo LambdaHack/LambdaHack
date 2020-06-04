@@ -167,6 +167,10 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
         }
   swindow <- SDL.createWindow title windowConfig
   srenderer <- SDL.createRenderer swindow (-1) rendererConfig
+  -- Display black screen ASAP to hide any garbage.
+  SDL.rendererRenderTarget srenderer SDL.$= Nothing
+  SDL.clear srenderer  -- clear the backbuffer
+  SDL.present srenderer
   let initTexture = do
         texture <- SDL.createTexture srenderer SDL.ARGB8888
                                      SDL.TextureAccessTarget screenV2
@@ -529,12 +533,12 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
   unless (arraysEqual && overlaysEqual) $ do
     texture <- readIORef stexture
     SDL.rendererRenderTarget srenderer SDL.$= Just texture
-    SDL.copy srenderer basicTexture Nothing Nothing  -- clear previous content
+    SDL.copy srenderer basicTexture Nothing Nothing  -- overwrite last content
     drawMonoOverlay $ singleMonoOverlay curFrame
     drawPropOverlay $ singlePropOverlay curFrame
     writeIORef spreviousFrame curFrame
     SDL.rendererRenderTarget srenderer SDL.$= Nothing
-    SDL.copy srenderer texture Nothing Nothing  -- clear the backbuffer
+    SDL.copy srenderer texture Nothing Nothing  -- overwrite the backbuffer
     SDL.present srenderer
     -- We can't print screen in @display@ due to thread-unsafety.
     when sprintEachScreen $ printScreen sess
