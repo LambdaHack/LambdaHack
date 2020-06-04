@@ -143,7 +143,7 @@ promptGetKey dm ovs onBlank frontKeyKeys = do
       resetPressedKeys
       FontSetup{propFont} <- getFontSetup
       let ovWarn = [ ( K.PointUI 0 0
-                     , textFgToAL Color.BrYellow "*interrupted*  " )
+                     , textFgToAL Color.BrYellow "*interrupted*" )
                    | keyPressed ]
           ovs2 = EM.insertWith (++) propFont ovWarn ovs
       frontKeyFrame <- drawOverlay dm onBlank ovs2 lidV
