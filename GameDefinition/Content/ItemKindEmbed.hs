@@ -100,7 +100,7 @@ obscenePictogram = ItemKind
   , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , OneOf [ toOrganGood S_STRENGTHENED (3 + 1 `d` 2)
-                       , CreateItem Nothing CStash SANDSTONE_ROCK timerNone ] ]
+                       , CreateItem Nothing CGround SANDSTONE_ROCK timerNone ] ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -202,7 +202,7 @@ fireBig = fireSmall
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
-               , CreateItem Nothing CStash WOODEN_TORCH timerNone
+               , CreateItem Nothing CGround WOODEN_TORCH timerNone
                , Explode S_SPARK ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []
