@@ -636,6 +636,11 @@ validateAll content coitem =
 makeData :: [ItemKind] -> [GroupName ItemKind] -> [GroupName ItemKind]
          -> ContentData ItemKind
 makeData content groupNamesSingleton groupNames =
-  makeContentData "ItemKind" iname ifreq validateSingle validateAll content
-                  (mandatoryGroupsSingleton ++ groupNamesSingleton)
-                  (mandatoryGroups ++ groupNames)
+  let allGroupNamesTooLong = filter ((> 23) . T.length . fromGroupName)
+                             $ groupNamesSingleton ++ groupNames
+  in assert (null allGroupNamesTooLong
+             `blame` "ItemKind: some item group names too long"
+             `swith` allGroupNamesTooLong) $
+     makeContentData "ItemKind" iname ifreq validateSingle validateAll content
+                     (mandatoryGroupsSingleton ++ groupNamesSingleton)
+                     (mandatoryGroups ++ groupNames)
