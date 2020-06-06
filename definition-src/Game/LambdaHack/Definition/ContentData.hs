@@ -99,6 +99,8 @@ makeContentData contentName getName getFreq validateSingle validateAll
       freqsOffenders = filter (not . validFreqs . getFreq) content
       allGroupNamesEmpty = filter (T.null . fromGroupName)
                            $ groupNamesSingleton ++ groupNames
+      allGroupNamesTooLong = filter ((> 30) . T.length . fromGroupName)
+                             $ groupNamesSingleton ++ groupNames
       allGroupNamesSorted = sort $ groupNamesSingleton ++ groupNames
       allGroupNamesUnique = nub allGroupNamesSorted
       allGroupNamesNonUnique = allGroupNamesSorted \\ allGroupNamesUnique
@@ -112,6 +114,9 @@ makeContentData contentName getName getFreq validateSingle validateAll
   in assert (null allGroupNamesEmpty
              `blame` contentName ++ ": some group names empty"
              `swith` allGroupNamesEmpty) $
+     assert (null allGroupNamesTooLong
+             `blame` contentName ++ ": some group names too long"
+             `swith` allGroupNamesTooLong) $
      assert (null allGroupNamesNonUnique
              `blame` contentName ++ ": some group names duplicated"
              `swith` allGroupNamesNonUnique) $
