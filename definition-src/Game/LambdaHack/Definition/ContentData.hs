@@ -97,6 +97,8 @@ makeContentData contentName getName getFreq validateSingle validateAll
                         , not (null offences) ]
       allOffences = validateAll content contentData
       freqsOffenders = filter (not . validFreqs . getFreq) content
+      allGroupNamesEmpty = filter (T.null . fromGroupName)
+                           $ groupNamesSingleton ++ groupNames
       allGroupNamesSorted = sort $ groupNamesSingleton ++ groupNames
       allGroupNamesUnique = nub allGroupNamesSorted
       allGroupNamesNonUnique = allGroupNamesSorted \\ allGroupNamesUnique
@@ -107,7 +109,10 @@ makeContentData contentName getName getFreq validateSingle validateAll
       groupsDeclaredSet = S.fromAscList allGroupNamesUnique
       groupsNotDeclared = filter (`S.notMember` groupsDeclaredSet)
                           $ M.keys groupFreq
-  in assert (null allGroupNamesNonUnique
+  in assert (null allGroupNamesEmpty
+             `blame` contentName ++ ": some group names empty"
+             `swith` allGroupNamesEmpty) $
+     assert (null allGroupNamesNonUnique
              `blame` contentName ++ ": some group names duplicated"
              `swith` allGroupNamesNonUnique) $
      assert (null missingGroups
