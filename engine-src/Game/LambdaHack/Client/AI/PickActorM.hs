@@ -123,7 +123,7 @@ pickActorToMove maidToAvoid = do
             threatDistL <- getsState $ meleeThreatDistList aid
             (fleeL, _) <- fleeList aid
             condSupport1 <- condSupport 1 aid
-            condSolo <- condSoloM aid
+            condSolo <- condAloneM aid
             let condCanFlee = not (null fleeL)
                 heavilyDistressed =
                   deltasSerious (bcalmDelta body)

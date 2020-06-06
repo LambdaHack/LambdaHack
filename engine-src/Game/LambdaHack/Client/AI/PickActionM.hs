@@ -104,7 +104,7 @@ actionStrategy aid retry = do
   oldFleeD <- getsClient sfleeD
   condSupport1 <- condSupport 1 aid
   condSupport3 <- condSupport 3 aid
-  condSolo <- condSoloM aid  -- solo fighters aggresive
+  condSolo <- condAloneM aid  -- solo fighters aggresive
   actorSk <- currentSkillsClient aid
   condCanProject <- condCanProjectM (getSk SkProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid

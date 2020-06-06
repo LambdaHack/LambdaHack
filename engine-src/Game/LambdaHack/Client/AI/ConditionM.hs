@@ -20,7 +20,7 @@ module Game.LambdaHack.Client.AI.ConditionM
   , benGroundItems
   , desirableItem
   , condSupport
-  , condSoloM
+  , condAloneM
   , condShineWouldBetrayM
   , fleeList
   ) where
@@ -354,12 +354,18 @@ strongSupport param aid mtgtMPath s =
   in n <= 0 || not (null (drop (n - 1) closeAndStrongFriends))
        -- optimized: length closeAndStrongFriends >= n
 
-condSoloM :: MonadClient m => ActorId -> m Bool
-condSoloM aid = do
+-- The numbers reflect feeling AI conditions for non-aggresive actors
+-- so that actors don't wait for support it's not possible due to not
+-- enough friends on the level, even counting sleeping ones.
+condAloneM :: MonadClient m => ActorId -> m Bool
+condAloneM aid = do
   b <- getsState $ getActorBody aid
-  let isSingleton [_] = True
-      isSingleton _ = False
-  isSingleton <$> getsState (friendRegularList (bfid b) (blid b))
+  friends <- getsState $ friendRegularList (bfid b) (blid b)
+  mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
+  let onStashLevel = case mstash of
+        Nothing -> False
+        Just (lid, _) -> lid == blid b
+  return $! length friends <= if onStashLevel then 3 else 2
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,
