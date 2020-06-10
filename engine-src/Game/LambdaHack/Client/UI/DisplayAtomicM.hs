@@ -275,7 +275,14 @@ displayRespUpdAtomicUI cmd = case cmd of
     side <- getsClient sside
     b <- getsState $ getActorBody aid
     when (bfid b == side && not (bproj b)) $ do
-      if | calmDelta > 0 ->  -- regeneration or effect
+      if | calmDelta > 0 -> do  -- regeneration or effect
+           mleader <- getsClient sleader
+           when (Just aid == mleader) $ do
+             actorMaxSk <- getsState $ getActorMaxSkills aid
+             let bPrev = b {bcalm = bcalm b - calmDelta}
+             when (calmEnough b actorMaxSk
+                   && not (calmEnough bPrev actorMaxSk)) $
+               msgAdd MsgRare "You are again calm enough to manage your equipment outfit."
            markDisplayNeeded (blid b)
          | calmDelta == minusM1 -> do
            fact <- getsState $ (EM.! side) . sfactionD
