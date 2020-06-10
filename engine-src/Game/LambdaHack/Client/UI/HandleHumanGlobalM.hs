@@ -353,12 +353,13 @@ moveRunHuman initialStep finalGoal run runAhead dir = do
       failWith "by bumping"
     (target, tb) : _ | not run
                        && initialStep && finalGoal
-                       && (bfid tb /= bfid sb || bproj tb)
-                       && Ability.getSk Ability.SkMelee actorSk > 0 -> do
+                       && (bfid tb /= bfid sb || bproj tb) -> do
       stopPlayBack  -- don't ever auto-repeat melee
-      -- No problem if there are many projectiles at the spot. We just
-      -- attack the first one.
-      meleeAid target
+      if Ability.getSk Ability.SkMelee actorSk > 0
+      then -- No problem if there are many projectiles at the spot. We just
+           -- attack the first one.
+           meleeAid target
+      else failSer MeleeUnskilled
     _ : _ -> failWith "actor in the way"
 
 -- | Actor attacks an enemy actor or his own projectile.
