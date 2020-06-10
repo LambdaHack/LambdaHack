@@ -654,14 +654,19 @@ drawLeaderStatus waitT = do
                    <> (if not bdark then slashPick else "/")
                    <> showTrunc maxHP
           justifyRight n t = replicate (n - length t) ' ' ++ t
-          colorWarning w full | w = addColor Color.Red
-                              | full = addColor Color.Magenta
-                              | otherwise = stringToAS
+          colorWarning w enough full | w = addColor Color.Red
+                                     | not enough = addColor Color.Brown
+                                     | full = addColor Color.Magenta
+                                     | otherwise = stringToAS
       return $! calmHeader
-                <> colorWarning calmCheckWarning (bcalm b > xM maxCalm)
+                <> colorWarning calmCheckWarning
+                                (calmEnough b actorMaxSk)
+                                (bcalm b > xM maxCalm)
                                 (justifyRight 7 calmText)
                 <+:> hpHeader
-                <> colorWarning hpCheckWarning (bhp b > xM maxHP)
+                <> colorWarning hpCheckWarning
+                                True
+                                (bhp b > xM maxHP)
                                 (justifyRight 7 hpText)
     Nothing -> do
       -- This is a valuable feedback for passing of time while faction

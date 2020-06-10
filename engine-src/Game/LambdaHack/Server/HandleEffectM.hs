@@ -856,8 +856,9 @@ effectSummon grp nDm iid source target periodic = do
   -- out of hand. I don't verify Calm otherwise, to prevent an exploit
   -- via draining one's calm on purpose when an item with good activation
   -- has a nasty summoning side-effect (the exploit still works on durables).
-  if | source /= target && not (isFoe (bfid sb) fact (bfid tb)) ->
-       return UseDud  -- hitting friends to summon is too cheap
+  if | bproj tb
+       || source /= target && not (isFoe (bfid sb) fact (bfid tb)) ->
+       return UseDud  -- hitting friends or projectiles to summon is too cheap
      | (periodic || durable) && not (bproj sb)
        && (bcalm sb < - deltaCalm || not (calmEnough sb sMaxSk)) -> do
        warnBothActors $ SfxSummonLackCalm source
