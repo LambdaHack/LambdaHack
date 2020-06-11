@@ -96,6 +96,7 @@ data MsgClass =
   | MsgEffect
   | MsgEffectMinor
   | MsgMisc
+  | MsgHeardElsewhere
   | MsgHeardClose
   | MsgHeard
   | MsgFocus
@@ -157,8 +158,9 @@ isDisplayed MsgStopPlayback = False
 isDisplayed _ = True
 
 interruptsRunning :: MsgClass -> Bool
-interruptsRunning MsgHeard = False
+interruptsRunning MsgHeardElsewhere = False
   -- MsgHeardClose interrupts, even if running started while hearing close
+interruptsRunning MsgHeard = False
 interruptsRunning MsgEffectMinor = False
 interruptsRunning MsgItemDisco = False
 interruptsRunning MsgItemMove = False
@@ -178,8 +180,9 @@ interruptsRunning MsgPromptItem = False
 interruptsRunning _ = True
 
 disturbsResting :: MsgClass -> Bool
-disturbsResting MsgHeard = False
+disturbsResting MsgHeardElsewhere = False
 disturbsResting MsgHeardClose = False -- handled separately
+disturbsResting MsgHeard = False
 disturbsResting MsgLeader = False -- handled separately
 disturbsResting MsgEffectMinor = False
 disturbsResting MsgItemDisco = False
@@ -242,6 +245,7 @@ msgColor MsgEffectMajor = Color.BrCyan
 msgColor MsgEffect = Color.Cyan
 msgColor MsgEffectMinor = Color.White
 msgColor MsgMisc = Color.White
+msgColor MsgHeardElsewhere = Color.White
 msgColor MsgHeardClose = Color.BrYellow
 msgColor MsgHeard = Color.Brown
 msgColor MsgFocus = Color.Green

@@ -553,7 +553,11 @@ displayRespUpdAtomicUI cmd = case cmd of
         markDisplayNeeded lidV
         recordHistory
     msg <- ppHearMsg distance hearMsg
-    msgAdd MsgHeard msg
+    let msgClass = case distance of
+          Nothing -> MsgHeardElsewhere
+          Just 0 -> MsgHeardClose
+          Just _ -> MsgHeard
+    msgAdd msgClass msg
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
 updateItemSlot c iid = do
