@@ -129,24 +129,27 @@ handleAndBroadcast ps atomicBroken atomic = do
                                      $ HearUpd cmd
                     Nothing -> return ()
                     Just pos -> do
-                      distance <- leaderDistance pos
                       aids <- filterHear pos as
                       if null aids && not profound
                       then return ()
                       else do
-                        sendUpdate fid $ UpdHearFid fid distance
-                                       $ HearUpd cmd
+                        distance <- if null aids
+                                    then return Nothing
+                                    else leaderDistance pos
+                        sendUpdate fid $ UpdHearFid fid distance $ HearUpd cmd
                         mapM_ drainCalmOnce aids
                 SfxAtomic cmd -> do
                   mhear <- hearSfxAtomic cmd
                   case mhear of
                     Nothing -> return ()
                     Just (hearMsg, profound, pos) -> do
-                      distance <- leaderDistance pos
                       aids <- filterHear pos as
                       if null aids && not profound
                       then return ()
                       else do
+                        distance <- if null aids
+                                    then return Nothing
+                                    else leaderDistance pos
                         sendUpdate fid $ UpdHearFid fid distance hearMsg
                         mapM_ drainCalmOnce aids
       -- We assume players perceive perception change before the action,
