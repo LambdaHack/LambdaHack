@@ -112,22 +112,33 @@ handleAndBroadcast ps atomicBroken atomic = do
               as <- getsState $ fidActorRegularAssocs fid lidOriginal
               case atomic of
                 UpdAtomic cmd -> do
-                  maids <- hearUpdAtomic as cmd
-                  case maids of
-                    Nothing -> return ()
-                    Just aids -> do
-                      let distance = Nothing
-                      sendUpdate fid $ UpdHearFid fid distance
+                  (profound, mpos) <- hearUpdAtomic cmd
+                  case mpos of
+                    Nothing | profound ->
+                      sendUpdate fid $ UpdHearFid fid Nothing
                                      $ HearUpd cmd
-                      mapM_ drainCalmOnce aids
+                    Nothing -> return ()
+                    Just pos -> do
+                      let distance = Nothing
+                      aids <- filterHear pos as
+                      if null aids && not profound
+                      then return ()
+                      else do
+                        sendUpdate fid $ UpdHearFid fid distance
+                                       $ HearUpd cmd
+                        mapM_ drainCalmOnce aids
                 SfxAtomic cmd -> do
-                  mhear <- hearSfxAtomic as cmd
+                  mhear <- hearSfxAtomic cmd
                   case mhear of
                     Nothing -> return ()
-                    Just (hearMsg, aids) -> do
+                    Just (hearMsg, profound, pos) -> do
                       let distance = Nothing
-                      sendUpdate fid $ UpdHearFid fid distance hearMsg
-                      mapM_ drainCalmOnce aids
+                      aids <- filterHear pos as
+                      if null aids && not profound
+                      then return ()
+                      else do
+                        sendUpdate fid $ UpdHearFid fid distance hearMsg
+                        mapM_ drainCalmOnce aids
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,
       -- even though the new perception depends on the action's outcome
@@ -150,14 +161,12 @@ cmdItemsFromIids iids sClient s =
 
 -- | Messages for some unseen atomic commands.
 hearUpdAtomic :: MonadStateRead m
-              => [(ActorId, Actor)] -> UpdAtomic
-              -> m (Maybe [ActorId])
-hearUpdAtomic as cmd = do
+              => UpdAtomic -> m (Bool, Maybe Point)
+hearUpdAtomic cmd = do
   COps{coTileSpeedup} <- getsState scops
   case cmd of
-    UpdDestroyActor _ body _ | not $ bproj body -> do
-      aids <- filterHear (bpos body) as
-      return $ Just aids  -- profound
+    UpdDestroyActor _ body _ | not $ bproj body ->
+      return (True, Just $ bpos body)
     UpdCreateItem True iid item _ (CActor aid cstore) -> do
       -- Kinetic damage implies the explosion is loud enough to cause noise.
       itemKind <- getsState $ getItemKindServer item
@@ -167,54 +176,43 @@ hearUpdAtomic as cmd = do
          || IA.checkFlag Ability.Blast arItem
             && Dice.supDice (IK.idamage itemKind) > 0 then do
         body <- getsState $ getActorBody aid
-        aids <- filterHear (bpos body) as
-        return $ Just aids  -- profound
-      else return Nothing
+        return (True, Just $ bpos body)
+      else return (False, Nothing)
     UpdTrajectory aid (Just (l, _)) Nothing | not (null l) -> do
       -- Non-blast actor hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-      aids <- filterHear (bpos b) as
-      return $! if bproj b && IA.checkFlag Ability.Blast arTrunk || null aids
-                then Nothing
-                else Just aids
-    UpdAlterTile _ p _ toTile -> do
-      aids <- filterHear p as
-      return $! if Tile.isDoor coTileSpeedup toTile && null aids
-                then Nothing
-                else Just aids  -- profound
-    UpdAlterExplorable{} -> return $ Just []  -- profound
-    _ -> return Nothing
+      return $! ( False, if bproj b && IA.checkFlag Ability.Blast arTrunk
+                         then Nothing
+                         else Just $ bpos b )
+    UpdAlterTile _ p _ toTile ->
+      return (not $ Tile.isDoor coTileSpeedup toTile, Just p)
+    UpdAlterExplorable{} -> return (True, Nothing)
+    _ -> return (False, Nothing)
 
 -- | Messages for some unseen sfx.
 hearSfxAtomic :: MonadServer m
-              => [(ActorId, Actor)] -> SfxAtomic
-              -> m (Maybe (HearMsg, [ActorId]))
-hearSfxAtomic as cmd =
+              => SfxAtomic -> m (Maybe (HearMsg, Bool, Point))
+hearSfxAtomic cmd =
   case cmd of
     SfxStrike aid _ iid -> do
       -- Only the attacker position considered, for simplicity.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arItem = discoAspect EM.! iid
-      aids <- filterHear (bpos b) as
       itemKindId <- getsState $ getIidKindIdServer iid
       -- Loud explosions cause enough noise, so ignoring particle hit spam.
-      return $! if IA.checkFlag Ability.Blast arItem || null aids
+      return $! if IA.checkFlag Ability.Blast arItem
                 then Nothing
-                else Just (HearStrike itemKindId, aids)
+                else Just (HearStrike itemKindId, False, bpos b)
     SfxEffect _ aid (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
-      aids <- filterHear (bpos b) as
-      return $! if null aids
-                then Nothing
-                else Just (HearSummon (bproj b) grp p, aids)
+      return $ Just (HearSummon (bproj b) grp p, False, bpos b)
     SfxTaunt voluntary aid -> do
       b <- getsState $ getActorBody aid
-      aids <- filterHear (bpos b) as
       (subject, verb) <- displayTaunt voluntary rndToAction aid
-      return $ Just (HearTaunt $ subject <+> verb, aids)  -- intentional
+      return $ Just (HearTaunt $ subject <+> verb, True, bpos b)  -- intentional
     _ -> return Nothing
 
 filterHear :: MonadStateRead m => Point -> [(ActorId, Actor)] -> m [ActorId]
