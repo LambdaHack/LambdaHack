@@ -1294,6 +1294,9 @@ ppHearMsg distance hearMsg = case hearMsg of
                  then MU.Text $ fromGroupName grp
                  else MU.Ws $ MU.Text $ fromGroupName grp
     return $! makeSentence ["you", adverb, "hear", verb, object]
+  HearCollideTile -> do
+    let adverb = MU.Text $ ppHearDistanceAdverb distance
+    return $! makeSentence ["you", adverb, "hear someone crash into something"]
   HearTaunt t -> do
     let adverb = MU.Text $ ppHearDistanceAdverb distance
     return $! makeSentence ["you", adverb, "overhear", MU.Text t]

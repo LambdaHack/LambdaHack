@@ -219,6 +219,8 @@ hearSfxAtomic cmd =
     SfxEffect _ aid (IK.Summon grp p) _ -> do
       b <- getsState $ getActorBody aid
       return $ Just (HearSummon (bproj b) grp p, False, bpos b)
+    SfxCollideTile _ p ->
+      return $ Just (HearCollideTile, False, p)
     SfxTaunt voluntary aid -> do
       b <- getsState $ getActorBody aid
       (subject, verb) <- displayTaunt voluntary rndToAction aid

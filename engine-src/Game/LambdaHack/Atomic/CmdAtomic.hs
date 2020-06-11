@@ -141,6 +141,7 @@ data HearMsg =
     HearUpd UpdAtomic
   | HearStrike (ContentId ItemKind)
   | HearSummon Bool (GroupName ItemKind) Dice.Dice
+  | HearCollideTile
   | HearTaunt Text
   deriving Show
 
