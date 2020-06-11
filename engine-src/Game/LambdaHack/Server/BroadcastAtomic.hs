@@ -189,11 +189,11 @@ hearUpdAtomic cmd = do
         return (True, Just $ bpos body)
       else return (False, Nothing)
     UpdTrajectory aid (Just (l, _)) Nothing | not (null l) -> do
-      -- Non-blast actor hits a non-walkable tile.
+      -- Non-blast projectile hits a non-walkable tile.
       b <- getsState $ getActorBody aid
       discoAspect <- getsState sdiscoAspect
       let arTrunk = discoAspect EM.! btrunk b
-      return $! ( False, if bproj b && IA.checkFlag Ability.Blast arTrunk
+      return $! ( False, if not (bproj b) || IA.checkFlag Ability.Blast arTrunk
                          then Nothing
                          else Just $ bpos b )
     UpdAlterTile _ p _ toTile ->

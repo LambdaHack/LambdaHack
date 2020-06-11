@@ -1265,7 +1265,7 @@ ppHearMsg distance hearMsg = case hearMsg of
     let sound = case cmd of
           UpdDestroyActor{} -> "shriek"
           UpdCreateItem{} -> "clatter"
-          UpdTrajectory{} -> "thud"  -- Something hits a non-walkable tile.
+          UpdTrajectory{} -> "thud"  -- A non-blast projectle hits a tile.
           UpdAlterTile _ _ fromTile toTile ->
             if | Tile.isOpenable coTileSpeedup fromTile
                  && Tile.isClosable coTileSpeedup toTile
