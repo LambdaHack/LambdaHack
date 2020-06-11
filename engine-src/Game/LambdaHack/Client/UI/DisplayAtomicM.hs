@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.UI.DisplayAtomicM
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
+  , ppHearMsg, ppHearDistanceAdjective, ppHearDistanceAdverb
   , updateItemSlot, markDisplayNeeded, lookAtMove
   , aidVerbMU, aidVerbMU0, aidVerbDuplicateMU
   , itemVerbMU, itemAidVerbMU, manyItemsAidVerbMU
@@ -543,7 +544,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."
-  UpdHearFid _ _distance hearMsg -> do
+  UpdHearFid _ distance hearMsg -> do
     mleader <- getsClient sleader
     case mleader of
       Just{} -> return ()  -- will display stuff when leader moves
@@ -551,7 +552,7 @@ displayRespUpdAtomicUI cmd = case cmd of
         lidV <- viewedLevelUI
         markDisplayNeeded lidV
         recordHistory
-    msg <- ppHearMsg hearMsg
+    msg <- ppHearMsg distance hearMsg
     msgAdd MsgHeard msg
 
 updateItemSlot :: MonadClientUI m => Container -> ItemId -> m ()
@@ -1253,8 +1254,8 @@ discover c iid = do
   unless (noMsg || globalTime == timeZero) $  -- no spam about initial equipment
     msgAdd MsgItemDisco msg
 
-ppHearMsg :: MonadClientUI m => HearMsg -> m Text
-ppHearMsg hearMsg = case hearMsg of
+ppHearMsg :: MonadClientUI m => (Maybe Int) -> HearMsg -> m Text
+ppHearMsg distance hearMsg = case hearMsg of
   HearUpd cmd -> do
     COps{coTileSpeedup} <- getsState scops
     let sound = case cmd of
@@ -1272,21 +1273,44 @@ ppHearMsg hearMsg = case hearMsg of
           UpdAlterExplorable _ k ->
             if k > 0 then "grinding noise" else "fizzing noise"
           _ -> error $ "" `showFailure` cmd
-        msg = makeSentence ["you hear", MU.AW $ MU.Phrase [sound]]
+        adjective = MU.Text $ ppHearDistanceAdjective distance
+        msg = makeSentence ["you hear", MU.AW $ MU.Phrase $ [adjective, sound]]
     return $! msg
   HearStrike ik -> do
     COps{coitem} <- getsState scops
     let verb = IK.iverbHit $ okind coitem ik
-        msg = makeSentence [ "you hear something", MU.Text verb, "someone"]
+        adverb = MU.Text $ ppHearDistanceAdverb distance
+        msg = makeSentence [ "you", adverb, "hear something"
+                           , MU.Text verb, "someone" ]
     return $! msg
   HearSummon isProj grp p -> do
     let verb = if isProj then "something lure" else "somebody summon"
+        adverb = MU.Text $ ppHearDistanceAdverb distance
         object = if p == 1  -- works, because exact number sent, not dice
                  then MU.Text $ fromGroupName grp
                  else MU.Ws $ MU.Text $ fromGroupName grp
-    return $! makeSentence ["you hear", verb, object]
-  HearTaunt t ->
-    return $! makeSentence ["you overhear", MU.Text t]
+    return $! makeSentence ["you", adverb, "hear", verb, object]
+  HearTaunt t -> do
+    let adverb = MU.Text $ ppHearDistanceAdverb distance
+    return $! makeSentence ["you", adverb, "overhear", MU.Text t]
+
+ppHearDistanceAdjective :: Maybe Int -> Text
+ppHearDistanceAdjective Nothing = "indistinct"
+ppHearDistanceAdjective (Just 0) = "very close"
+ppHearDistanceAdjective (Just 1) = "close"
+ppHearDistanceAdjective (Just 2) = ""
+ppHearDistanceAdjective (Just 3) = "remote"
+ppHearDistanceAdjective (Just 4) = "distant"
+ppHearDistanceAdjective (Just _) = "far-off"
+
+ppHearDistanceAdverb :: Maybe Int -> Text
+ppHearDistanceAdverb Nothing = "indistinctly"
+ppHearDistanceAdverb (Just 0) = "very clearly"
+ppHearDistanceAdverb (Just 1) = "clearly"
+ppHearDistanceAdverb (Just 2) = ""
+ppHearDistanceAdverb (Just 3) = "remotely"
+ppHearDistanceAdverb (Just 4) = "distantly"
+ppHearDistanceAdverb (Just _) = "barely"
 
 -- * RespSfxAtomicUI
 
