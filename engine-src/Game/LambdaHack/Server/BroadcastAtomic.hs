@@ -106,6 +106,16 @@ handleAndBroadcast ps atomicBroken atomic = do
                     b <- getsState $ getActorBody aid
                     when (deltaBenign $ bcalmDelta b) $
                       execUpdAtomic $ UpdRefillCalm aid minusM
+                  leaderDistance pos = do
+                    mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+                    case mleader of
+                      Nothing -> return Nothing
+                      Just leader -> do
+                        b <- getsState $ getActorBody leader
+                        -- Leader's hearing irrelevant, which prevents
+                        -- changing leader just to get hearing intel.
+                        -- However, leader's position affects accuracy.
+                        return $ Just $ min 5 $ chessDist pos (bpos b) `div` 10
               -- Projectiles never hear, for speed and simplicity,
               -- even though they sometimes see. There are flying cameras,
               -- but no microphones --- drones make too much noise themselves.
@@ -119,7 +129,7 @@ handleAndBroadcast ps atomicBroken atomic = do
                                      $ HearUpd cmd
                     Nothing -> return ()
                     Just pos -> do
-                      let distance = Nothing
+                      distance <- leaderDistance pos
                       aids <- filterHear pos as
                       if null aids && not profound
                       then return ()
@@ -132,7 +142,7 @@ handleAndBroadcast ps atomicBroken atomic = do
                   case mhear of
                     Nothing -> return ()
                     Just (hearMsg, profound, pos) -> do
-                      let distance = Nothing
+                      distance <- leaderDistance pos
                       aids <- filterHear pos as
                       if null aids && not profound
                       then return ()
