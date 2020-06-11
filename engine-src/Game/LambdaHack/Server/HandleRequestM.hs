@@ -661,11 +661,13 @@ reqAlterFail bumping effToUse voluntary source tpos = do
         execUpdAtomic $ UpdSpotItemBag (CEmbed lid tpos) embeds
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
+      sbItemKind = getKind $ btrunk sb
       sourceIsMist = IA.checkFlag Ability.Blast sar
-                     && Dice.infDice (IK.idamage $ getKind $ btrunk sb) <= 0
+                     && Dice.infDice (IK.idamage sbItemKind) <= 0
+                     && not (any IK.forDamageEffect $ IK.ieffects sbItemKind)
       -- Prevent embeds triggering each other via feeble mists, in the worst
       -- case in a loop. However, if a tile can be changed with an item
-      -- (e.g., the mist trunk) but without embeds, mists do fine.
+      -- (e.g., the mist trunk) but without activating embeds, mists do fine.
       tryApplyEmbeds =
         if sourceIsMist
         then return UseDud
