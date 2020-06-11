@@ -116,15 +116,17 @@ handleAndBroadcast ps atomicBroken atomic = do
                   case maids of
                     Nothing -> return ()
                     Just aids -> do
-                      sendUpdate fid $ UpdHearFid fid
-                                     $ HearUpd (not $ null aids) cmd
+                      let distance = Nothing
+                      sendUpdate fid $ UpdHearFid fid distance
+                                     $ HearUpd cmd
                       mapM_ drainCalmOnce aids
                 SfxAtomic cmd -> do
                   mhear <- hearSfxAtomic as cmd
                   case mhear of
                     Nothing -> return ()
                     Just (hearMsg, aids) -> do
-                      sendUpdate fid $ UpdHearFid fid hearMsg
+                      let distance = Nothing
+                      sendUpdate fid $ UpdHearFid fid distance hearMsg
                       mapM_ drainCalmOnce aids
       -- We assume players perceive perception change before the action,
       -- so the action is perceived in the new perception,

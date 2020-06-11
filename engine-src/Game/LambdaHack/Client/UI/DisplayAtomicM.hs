@@ -543,7 +543,7 @@ displayRespUpdAtomicUI cmd = case cmd of
   UpdResumeServer{} -> return ()
   UpdKillExit{} -> frontendShutdown
   UpdWriteSave -> msgAdd MsgSpam "Saving backup."
-  UpdHearFid _ hearMsg -> do
+  UpdHearFid _ _distance hearMsg -> do
     mleader <- getsClient sleader
     case mleader of
       Just{} -> return ()  -- will display stuff when leader moves
@@ -1255,7 +1255,7 @@ discover c iid = do
 
 ppHearMsg :: MonadClientUI m => HearMsg -> m Text
 ppHearMsg hearMsg = case hearMsg of
-  HearUpd local cmd -> do
+  HearUpd cmd -> do
     COps{coTileSpeedup} <- getsState scops
     let sound = case cmd of
           UpdDestroyActor{} -> "shriek"
@@ -1272,9 +1272,7 @@ ppHearMsg hearMsg = case hearMsg of
           UpdAlterExplorable _ k ->
             if k > 0 then "grinding noise" else "fizzing noise"
           _ -> error $ "" `showFailure` cmd
-        distant = if local then [] else ["distant"]
-        msg = makeSentence [ "you hear"
-                           , MU.AW $ MU.Phrase $ distant ++ [sound] ]
+        msg = makeSentence ["you hear", MU.AW $ MU.Phrase [sound]]
     return $! msg
   HearStrike ik -> do
     COps{coitem} <- getsState scops

@@ -131,13 +131,14 @@ data UpdAtomic =
   | UpdResumeServer State
   | UpdKillExit FactionId
   | UpdWriteSave
-  | UpdHearFid FactionId HearMsg  -- in @UpdAtomic@ to let AI analyze and count
+  | UpdHearFid FactionId (Maybe Int) HearMsg
+      -- in @UpdAtomic@ to let AI analyze and count
   deriving Show
 
 -- | Symbolic representation of text messages about heard noises,
 -- sent by server to clients and shown to players and used by AI.
 data HearMsg =
-    HearUpd Bool UpdAtomic
+    HearUpd UpdAtomic
   | HearStrike (ContentId ItemKind)
   | HearSummon Bool (GroupName ItemKind) Dice.Dice
   | HearTaunt Text
