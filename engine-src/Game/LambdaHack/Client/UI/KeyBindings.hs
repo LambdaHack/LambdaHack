@@ -8,6 +8,7 @@ import Prelude ()
 
 import Game.LambdaHack.Core.Prelude
 
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -301,7 +302,7 @@ okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
       -> ([Text], [Text]) -> ([Text], [Text]) -> OKX
 okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       (headerProp, headerMono) (footerMono, footerProp) =
-  let fmt k h = (" " <> k, h)
+  let fmt k h = (T.singleton (Char.chr 160) <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
       disp = T.intercalate " or " . map (T.pack . K.showKM)
