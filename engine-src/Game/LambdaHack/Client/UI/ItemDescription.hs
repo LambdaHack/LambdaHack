@@ -466,7 +466,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
         , MU.Text $ T.intercalate ", " ikitNames ]
       colorSymbol = viewItem itemFull
       blurb =
-        ((" "
+       (((" "
           <> npowers
           <> (if markParagraphs then "\n\n" else " ")
           <> T.intercalate "\n\n" orTs
@@ -479,7 +479,7 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
               else ""))
         <+> aspectSentences
         <+> sourceDesc
-        <+> damageAnalysis
-        <> (if markParagraphs && not (T.null ikitDesc) then "\n\n" else "\n")
-        <> ikitDesc
+        <+> damageAnalysis)
+       <> (if markParagraphs && not (T.null ikitDesc) then "\n\n" else "\n")
+       <> ikitDesc
   in colorSymbol : textToAS blurb
