@@ -550,9 +550,11 @@ drawFrameStatus drawnLevelId = do
                                                - selectedStatusWidth
                                                - length speedStatus)
       status = arenaStatus
-               <+:> xhairStatus
+               <> [Color.spaceAttrW32]
+               <> xhairStatus
                <> selectedStatus ++ selectedGap ++ speedStatus ++ leaderStatus
-               <+:> (textToAS leaderBottom ++ damageGap ++ damageStatus)
+               <> [Color.spaceAttrW32]
+               <> (textToAS leaderBottom ++ damageGap ++ damageStatus)
   -- Keep it at least partially lazy, to avoid allocating the whole list:
   return
 #ifdef WITH_EXPENSIVE_ASSERTIONS

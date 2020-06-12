@@ -50,13 +50,15 @@ textFgToAS !fg !t =
 stringToAS :: String -> AttrString
 stringToAS = map Color.attrChar1ToW32
 
+-- Follows minimorph.<+>.
 infixr 6 <+:>  -- matches Monoid.<>
 (<+:>) :: AttrString -> AttrString -> AttrString
 (<+:>) [] l2 = l2
 (<+:>) l1 [] = l1
-(<+:>) l1 l2@(c2 : _) = if Color.charFromW32 c2 == '\n'
-                        then l1 ++ l2
-                        else l1 ++ [Color.spaceAttrW32] ++ l2
+(<+:>) l1 l2@(c2 : _) =
+  if isSpace (Color.charFromW32 c2) || isSpace (Color.charFromW32 (last l1))
+  then l1 ++ l2
+  else l1 ++ [Color.spaceAttrW32] ++ l2
 
 -- We consider only these, because they are short and form a closed category.
 nonbreakableRev :: [AttrString]
