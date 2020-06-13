@@ -83,7 +83,7 @@ drawOverlay dm onBlank ovs lid = do
                    $ EM.findWithDefault [] propFont ovs
                  monoOutline =
                    truncateOverlay False (2 * rwidth) rheight True 0 onBlank
-                    $ EM.findWithDefault [] monoFont ovs
+                   $ EM.findWithDefault [] monoFont ovs
                  g x al Nothing = Just (x, x + length al - 1)
                  g x al (Just (xmin, xmax)) =
                    Just (min xmin x, max xmax (x + length al - 1))

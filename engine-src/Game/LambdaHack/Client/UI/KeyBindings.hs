@@ -340,5 +340,5 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
-         $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
+       $ EM.singleton keyFont $ renumberOv $ offsetOverlay greyLab
      , kxs )
