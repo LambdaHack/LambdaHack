@@ -1332,9 +1332,9 @@ dashboardHuman :: MonadClientUI m
 dashboardHuman cmdSemInCxtOfKM = do
   CCUI{coinput, coscreen=ScreenContent{rwidth, rheight}} <- getsSession sccui
   fontSetup@FontSetup{..} <- getFontSetup
-  let keyL = 2
-      (ov0, kxs0) = okxsN coinput monoFont propFont 0 keyL (const False) False
-                          CmdDashboard ([], []) ([], [])
+  let offsetCol2 = 2
+      (ov0, kxs0) = okxsN coinput monoFont propFont 0 offsetCol2 (const False)
+                          False CmdDashboard ([], []) ([], [])
       al1 = textToAS "Dashboard"
   let splitHelp (al, okx) = splitOKX fontSetup False rwidth (rheight - 2) al
                                      [K.escKM] okx
@@ -1436,11 +1436,11 @@ itemMenuHuman cmdSemInCxtOfKM = do
                   in not $ either (const False) id
                      $ permittedProject False skill calmE itemFull
                 _ -> False
-              fmt n k h = " " <> T.justifyLeft n ' ' k <+> h
-              keyL = 11
-              keyCaption = fmt keyL "keys" "command"
+              fmt n k h = " " <> T.justifyLeft n ' ' k <> " " <> h
+              offsetCol2 = 11
+              keyCaption = fmt offsetCol2 "keys" "command"
               offset = 1 + maxYofOverlay (descBlurb ++ ovFound)
-              (ov0, kxs0) = okxsN coinput monoFont propFont offset keyL
+              (ov0, kxs0) = okxsN coinput monoFont propFont offset offsetCol2
                                   greyedOut True CmdItemMenu
                                   ([], ["", keyCaption]) ([], [])
               t0 = makeSentence [ MU.SubjectVerbSg (partActor bUI) "choose"

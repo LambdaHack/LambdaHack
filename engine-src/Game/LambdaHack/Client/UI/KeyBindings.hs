@@ -91,9 +91,10 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     movTextEnd = "Press SPACE or PGDN to advance or ESC to see the map again."
     lastHelpEnd = "Use mouse wheel or PGUP to go back and ESC to see the map again."
     seeAlso = "For more playing instructions see file PLAYING.md."
-    keyL = 12
+    offsetCol2 = 12
     pickLeaderDescription =
-      [ fmt keyL "0, 1 ... 9" "pick a particular actor as the new pointman"
+      [ fmt offsetCol2 "0, 1 ... 9"
+                       "pick a particular actor as the new pointman"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
     fmt0 n k h = T.justifyLeft n ' ' k <> " " <> h
@@ -105,14 +106,13 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     minimalText = map fmts minimalBlurb
     itemAllEnd = map fmts itemAllEnding
     mouseBasicsText = map fmts mouseBasicsBlurb
-    keyCaptionN n = fmt n "keys" "command"
-    keyCaption = keyCaptionN keyL
+    keyCaption = fmt offsetCol2 "keys" "command"
     spLen = textSize monoFont " "
     pamoveRight :: Int -> (K.PointUI, a) -> (K.PointUI, a)
     pamoveRight xoff (K.PointUI x y, a) = (K.PointUI (x + xoff) y, a)
     okxs cat headers footers =
-      let (ovs, kyx) = okxsN coinput monoFont propFont 0 keyL (const False) True
-                             cat headers footers
+      let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
+                             (const False) True cat headers footers
       in ( EM.map (map (pamoveRight spLen)) ovs
          , map (\(ekm, pa) -> (ekm, pamoveRight spLen pa)) kyx )
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
@@ -300,8 +300,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
 okxsN :: InputContent -> DisplayFont -> DisplayFont -> Int -> Int
       -> (HumanCmd -> Bool) -> Bool -> CmdCategory
       -> ([Text], [Text]) -> ([Text], [Text]) -> OKX
-okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
-      (headerProp, headerMono) (footerMono, footerProp) =
+okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
+      showManyKeys cat (headerProp, headerMono) (footerMono, footerProp) =
   let fmt k h = (T.singleton (Char.chr 160) <> k, h)
       coImage :: HumanCmd -> [K.KM]
       coImage cmd = M.findWithDefault (error $ "" `showFailure` cmd) cmd brevMap
@@ -322,7 +322,7 @@ okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       spLen = textSize keyFont " "
       f (ks, (_, (_, t2))) y =
         (ks, ( K.PointUI spLen y
-             , ButtonWidth keyFont (n + 2 + T.length t2 - 1)))
+             , ButtonWidth keyFont (offsetCol2 + 2 + T.length t2 - 1)))
       kxs = zipWith f keys [offset + length headerProp + length headerMono ..]
       renumberOv = map (\(K.PointUI x y, al) -> (K.PointUI x (y + offset), al))
       ts = map (\t -> (False, ("", t))) headerProp
@@ -333,10 +333,10 @@ okxsN InputContent{..} keyFont descFont offset n greyedOut showManyKeys cat
       greyToAL (b, (t1, t2)) =
         if b
         then let al1 = textFgToAL Color.BrBlack t1
-             in (al1, ( if T.null t1 then 0 else n + 2
+             in (al1, ( if T.null t1 then 0 else offsetCol2 + 2
                       , textFgToAL Color.BrBlack t2 ))
         else let al1 = textToAL t1
-             in (al1, ( if T.null t1 then 0 else n + 2
+             in (al1, ( if T.null t1 then 0 else offsetCol2 + 2
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
