@@ -96,7 +96,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       [ fmt keyL "0, 1 ... 9" "pick a particular actor as the new pointman"
       ]
     casualDescription = "Minimal cheat sheet for casual play"
-    fmt0 n k h = T.justifyLeft n ' ' k <+> h
+    fmt0 n k h = T.justifyLeft n ' ' k <> " " <> h
     fmt n k h = " " <> fmt0 n k h
     fmts s = s
     movText1 = map fmts movBlurb1
