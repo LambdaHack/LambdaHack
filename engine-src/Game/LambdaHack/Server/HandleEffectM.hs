@@ -411,7 +411,6 @@ effectSem effApplyFlags0@EffApplyFlags{..}
           source target iid c effect = do
   let recursiveCall = effectSem effApplyFlags0 source target iid c
   sb <- getsState $ getActorBody source
-  pos <- getsState $ posFromC c
   -- @execSfx@ usually comes last in effect semantics, but not always
   -- and we are likely to introduce more variety.
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect 0
@@ -426,7 +425,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.PutToSleep -> effectPutToSleep execSfx target
     IK.Yell -> effectYell execSfx target
     IK.Summon grp nDm -> effectSummon grp nDm iid source target effPeriodic
-    IK.Ascend p -> effectAscend recursiveCall execSfx p source target pos
+    IK.Ascend p -> effectAscend recursiveCall execSfx p source target c
     IK.Escape{} -> effectEscape execSfx source target
     IK.Paralyze nDm -> effectParalyze execSfx nDm source target
     IK.ParalyzeInWater nDm -> effectParalyzeInWater execSfx nDm source target
@@ -445,7 +444,7 @@ effectSem effApplyFlags0@EffApplyFlags{..}
     IK.RerollItem -> effectRerollItem execSfx iid target
     IK.DupItem -> effectDupItem execSfx iid target
     IK.Identify -> effectIdentify execSfx iid target
-    IK.Detect d radius -> effectDetect execSfx d radius target pos
+    IK.Detect d radius -> effectDetect execSfx d radius target c
     IK.SendFlying tmod ->
       effectSendFlying execSfx tmod source target c Nothing
     IK.PushActor tmod ->
@@ -914,10 +913,11 @@ effectSummon grp nDm iid source target periodic = do
 -- Note that projectiles can be teleported, too, for extra fun.
 effectAscend :: MonadServerAtomic m
              => (IK.Effect -> m UseResult)
-             -> m () -> Bool -> ActorId -> ActorId -> Point
+             -> m () -> Bool -> ActorId -> ActorId -> Container
              -> m UseResult
-effectAscend recursiveCall execSfx up source target pos = do
+effectAscend recursiveCall execSfx up source target container = do
   b1 <- getsState $ getActorBody target
+  pos <- getsState $ posFromC container
   let lid1 = blid b1
   destinations <- getsState $ whereTo lid1 pos up . sdungeon
   sb <- getsState $ getActorBody source
@@ -1861,8 +1861,9 @@ identifyIid iid c itemKindId itemKind =
 -- ** Detect
 
 effectDetect :: MonadServerAtomic m
-             => m () -> IK.DetectKind -> Int -> ActorId -> Point -> m UseResult
-effectDetect execSfx d radius target pos = do
+             => m () -> IK.DetectKind -> Int -> ActorId -> Container
+             -> m UseResult
+effectDetect execSfx d radius target container = do
   COps{coitem, coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody target
   lvl <- getLevel $ blid b
@@ -1911,6 +1912,7 @@ effectDetect execSfx d radius target pos = do
                 unless (EM.null embeds) $
                   execUpdAtomic $ UpdSpotItemBag (CEmbed (blid b) p) embeds
               actionH l = do
+                pos <- getsState $ posFromC container
                 let f p = when (p /= pos) $ do
                       let t = lvl `at` p
                       execUpdAtomic $ UpdSearchTile target p t
@@ -1972,13 +1974,13 @@ effectSendFlying :: MonadServerAtomic m
                  => m () -> IK.ThrowMod -> ActorId -> ActorId -> Container
                  -> Maybe Bool
                  -> m UseResult
-effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
-  v <- sendFlyingVector source target modePush
+effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
+  v <- sendFlyingVector source target container modePush
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let eps = 0
       fpos = bpos tb `shift` v
-      isEmbed = case c of
+      isEmbed = case container of
         CEmbed{} -> True
         _ -> False
   if bhp tb <= 0  -- avoid dragging around corpses
@@ -2040,21 +2042,25 @@ effectSendFlying execSfx IK.ThrowMod{..} source target c modePush = do
         return UseUp
 
 sendFlyingVector :: MonadServerAtomic m
-                 => ActorId -> ActorId -> Maybe Bool -> m Vector
-sendFlyingVector source target modePush = do
+                 => ActorId -> ActorId -> Container -> Maybe Bool -> m Vector
+sendFlyingVector source target container modePush = do
   sb <- getsState $ getActorBody source
   if source == target then do
-    let boldpos_sb = fromMaybe (bpos sb) (boldpos sb)
-    if boldpos_sb == bpos sb then rndToAction $ do
+    pos <- getsState $ posFromC container
+    let (start, end) =
+          if bpos sb /= pos
+          then (bpos sb, pos)
+          else (fromMaybe (bpos sb) (boldpos sb), bpos sb)
+    if start == end then rndToAction $ do
       z <- randomR (-10, 10)
       oneOf [Vector 10 z, Vector (-10) z, Vector z 10, Vector z (-10)]
     else do
-      let pushV = vectorToFrom (bpos sb) boldpos_sb
-          pullV = vectorToFrom boldpos_sb (bpos sb)
+      let pushV = vectorToFrom end start
+          pullV = vectorToFrom start end
       return $! case modePush of
-                Just True -> pushV
-                Just False -> pullV
-                Nothing -> pushV
+                  Just True -> pushV
+                  Just False -> pullV
+                  Nothing -> pushV
   else do
     tb <- getsState $ getActorBody target
     let pushV = vectorToFrom (bpos tb) (bpos sb)
