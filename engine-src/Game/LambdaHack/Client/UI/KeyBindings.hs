@@ -333,10 +333,10 @@ okxsN InputContent{..} keyFont descFont offset offsetCol2 greyedOut
       greyToAL (b, (t1, t2)) =
         if b
         then let al1 = textFgToAL Color.BrBlack t1
-             in (al1, ( if T.null t1 then 0 else offsetCol2 + 2
+             in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textFgToAL Color.BrBlack t2 ))
         else let al1 = textToAL t1
-             in (al1, ( if T.null t1 then 0 else offsetCol2 + 2
+             in (al1, ( if T.null t1 then 0 else spLen * (offsetCol2 + 2)
                       , textToAL t2 ))
       (greyLab, greyDesc) = unzip $ map greyToAL ts
   in ( EM.insertWith (++) descFont (renumberOv (offsetOverlayX greyDesc))
