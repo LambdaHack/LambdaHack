@@ -461,8 +461,11 @@ lookAtActors p lidV = do
                 WWait _ -> "brace for impact"
                 WSleep -> "sleep here"
                 WWake -> "be waking up"
+              flyVerb = if isJust $ btrajectory body
+                        then "move through here"
+                        else resideVerb
               guardVerbs = guardItemVerbs body bfact s
-              verbs = resideVerb : guardVerbs
+              verbs = flyVerb : guardVerbs
               projDesc | not $ bproj body = ""
                        | otherwise =
                 let kit = beqp body EM.! btrunk body
