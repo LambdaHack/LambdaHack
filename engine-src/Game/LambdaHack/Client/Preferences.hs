@@ -376,7 +376,7 @@ aspectToBenefit asp =
     IK.AddSkill Ability.SkHurtMelee p -> Dice.meanDice p  -- offence favoured
     IK.AddSkill Ability.SkArmorMelee p -> Dice.meanDice p / 4
                                               -- only partial protection
-    IK.AddSkill Ability.SkArmorRanged p -> Dice.meanDice p / 8
+    IK.AddSkill Ability.SkArmorRanged p -> Dice.meanDice p / 4
     IK.AddSkill Ability.SkMaxHP p -> Dice.meanDice p
     IK.AddSkill Ability.SkMaxCalm p -> Dice.meanDice p / 5
     IK.AddSkill Ability.SkSpeed p -> Dice.meanDice p * 25
@@ -389,7 +389,8 @@ aspectToBenefit asp =
                                        -- > sight + light; stealth, slots
     IK.AddSkill Ability.SkHearing p -> Dice.meanDice p
     IK.AddSkill Ability.SkAggression _ -> 0  -- dunno
-    IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p  -- makes one trackable
+    IK.AddSkill Ability.SkOdor p -> - Dice.meanDice p / 4
+      -- rarely, if big enough, determines if one is trackable
     IK.SetFlag{} -> 0
     IK.ELabel{} -> 0
     IK.ToThrow{} -> 0  -- counted elsewhere
