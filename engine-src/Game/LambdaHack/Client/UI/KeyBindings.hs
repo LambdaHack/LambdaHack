@@ -99,13 +99,6 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     casualDescription = "Minimal cheat sheet for casual play"
     fmt0 n k h = T.justifyLeft n ' ' k <> " " <> h
     fmt n k h = " " <> fmt0 n k h
-    fmts s = s
-    movText1 = map fmts movBlurb1
-    movTextS = map fmts movSchema
-    movText2 = map fmts movBlurb2
-    minimalText = map fmts minimalBlurb
-    itemAllEnd = map fmts itemAllEnding
-    mouseBasicsText = map fmts mouseBasicsBlurb
     keyCaption = fmt offsetCol2 "keys" "command"
     spLen = textSize monoFont " "
     pamoveRight :: Int -> (K.PointUI, a) -> (K.PointUI, a)
@@ -194,20 +187,20 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     sideBySide l = l
   in sideBySide $ concat
     [ if catLength CmdMinimal
-         + length movText1 + length movTextS + length movText2
-         + length minimalText
+         + length movBlurb1 + length movSchema + length movBlurb2
+         + length minimalBlurb
          + 6 > rheight then
         [ ( movTextEnd
           , mergeOKX
               (mergeOKX (typesetInProp
                          $ ["", casualDescription <+> "(1/2)", ""]
-                           ++ movText1, [])
-                        (typesetInSquare $ [""] ++ movTextS, []))
-              (typesetInProp $ [""] ++ movText2, []) )
+                           ++ movBlurb1, [])
+                        (typesetInSquare $ [""] ++ movSchema, []))
+              (typesetInProp $ [""] ++ movBlurb2, []) )
         , ( movTextEnd
           , okxs CmdMinimal
                  ( ["", casualDescription <+> "(2/2)", ""]
-                   ++ minimalText ++ [""]
+                   ++ minimalBlurb ++ [""]
                  , [keyCaption] )
                  ([], []) ) ]
       else
@@ -215,18 +208,18 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , mergeOKX
               (mergeOKX (typesetInProp
                          $ ["", casualDescription, ""]
-                           ++ movText1, [])
-                        (typesetInSquare $ [""] ++ movTextS, []))
+                           ++ movBlurb1, [])
+                        (typesetInSquare $ [""] ++ movSchema, []))
               (okxs CmdMinimal
-                    ( [""] ++ movText2 ++ [""]
-                       ++ minimalText ++ [""]
+                    ( [""] ++ movBlurb2 ++ [""]
+                       ++ minimalBlurb ++ [""]
                     , [keyCaption] )
                     ([], [""])) ) ]
     , if 45 > rheight then
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
-                                 ++ mouseBasicsText++ [""]
+                                 ++ mouseBasicsBlurb ++ [""]
                                , [keyCaption] )
                                ([], [])
             in (ls, []) )  -- don't capture mouse wheel, etc.
@@ -242,7 +235,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
-                                 ++ mouseBasicsText ++ [""]
+                                 ++ mouseBasicsBlurb ++ [""]
                                , [keyCaption] )
                                ([], [])
                 okx0 = (ls, [])  -- don't capture mouse wheel, etc.
@@ -259,7 +252,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , okxs CmdItem
                  (["", categoryDescription CmdItem], ["", keyCaption])
-                 ([], [""] ++ itemAllEnd) )
+                 ([], [""] ++ itemAllEnding) )
         , ( movTextEnd
           , okxs CmdMove
                  (["", categoryDescription CmdMove], ["", keyCaption])
@@ -269,7 +262,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , mergeOKX
               (okxs CmdItem
                     (["", categoryDescription CmdItem], ["", keyCaption])
-                    ([], [""] ++ itemAllEnd))
+                    ([], [""] ++ itemAllEnding))
               (okxs CmdMove
                     (["", "", categoryDescription CmdMove], ["", keyCaption])
                     (pickLeaderDescription, [""])) ) ]
