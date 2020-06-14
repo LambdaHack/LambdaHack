@@ -394,9 +394,9 @@ parseTileAction bproj underFeet embedKindList feat = case feat of
     in case find f embedKindList of
       Nothing -> Nothing
       Just (_, iidkit) -> Just $ EmbedAction iidkit
-  TK.OpenTo tgroup | not underFeet -> Just $ ToAction tgroup
-  TK.CloseTo tgroup | not underFeet -> Just $ ToAction tgroup
-  TK.ChangeTo tgroup -> Just $ ToAction tgroup
+  TK.OpenTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
+  TK.CloseTo tgroup | not (underFeet || bproj) -> Just $ ToAction tgroup
+  TK.ChangeTo tgroup | not bproj -> Just $ ToAction tgroup
   TK.OpenWith proj grps tgroup | not underFeet ->
     if proj == TK.ProjNo && bproj
     then Nothing

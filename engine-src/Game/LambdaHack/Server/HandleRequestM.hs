@@ -831,9 +831,10 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               else do
                 triggered <- tryApplyEmbed (iid, kit)
                 processTileActions (Just $ max useResult triggered) rest
-            Tile.ToAction tgroup ->
-              if not (bproj sb && tileMinSkill > 0)  -- local skill check
-                 && maybe True (== UseUp) museResult
+            Tile.ToAction tgroup -> assert (not (bproj sb)) $
+              -- @parseTileAction@ ensures the above assertion
+              -- so that projectiles never cause normal transitions.
+              if maybe True (== UseUp) museResult
               then do
                 announceTileChange
                 changeTo tgroup
