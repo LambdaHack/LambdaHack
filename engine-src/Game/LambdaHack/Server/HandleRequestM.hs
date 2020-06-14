@@ -847,8 +847,12 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                  && (maybe True (== UseUp) museResult
                        -- even mist can transform a tile but only if no embeds,
                        -- e.g., all were consumed in previous turns
+                     || bproj sb && not sourceIsMist
+                          -- non-mists projectiles may fly over tiles and so
+                          -- not got slowed or pushed, but they still change
+                          -- the tile when they land; TODO: simplify
                      || effToUse == EffOnCombine)  -- crafting; lax
-                 && groundBag2 == groundBag  -- no crafting and so mix-up
+                 && groundBag2 == groundBag  -- no mix-up from crafting
               then do
                 -- Use even unidentified items --- one more way to id by use.
                 kitAssG <- getsState $ kitAssocs source [CGround]
