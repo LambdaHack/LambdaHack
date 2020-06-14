@@ -2047,8 +2047,10 @@ sendFlyingVector source target container modePush = do
   sb <- getsState $ getActorBody source
   if source == target then do
     pos <- getsState $ posFromC container
+    lid <- getsState $ lidFromC container
     let (start, end) =
-          if bpos sb /= pos
+          -- Without the level the pushing stair trap moved actor back upstairs.
+          if bpos sb /= pos && blid sb == lid
           then (bpos sb, pos)
           else (fromMaybe (bpos sb) (boldpos sb), bpos sb)
     if start == end then rndToAction $ do

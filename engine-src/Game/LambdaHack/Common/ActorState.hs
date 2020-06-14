@@ -409,8 +409,9 @@ tileAlterable lid pos s =
                         (EM.keys embeds)
   in Tile.isModifiable coTileSpeedup t || triggerable
 
--- | Determine the dungeon level of the container. If the item is in a shared
--- stash, the level depends on which actor asks.
+-- | Determine the dungeon level of the container. If the item is in
+-- the shared stash, the level depends on which actor asks, not where
+-- the stash is located physically.
 lidFromC :: Container -> State -> LevelId
 lidFromC (CFloor lid _) _ = lid
 lidFromC (CEmbed lid _) _ = lid
