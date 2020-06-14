@@ -45,7 +45,8 @@ data TileKind = TileKind
   , tcolor   :: Color        -- ^ map color
   , tcolor2  :: Color        -- ^ map color when not in FOV
   , talter   :: Word8        -- ^ minimal skill needed to activate embeds
-                             --   and to alter the tile without using a tool
+                             --   and, in case of big actors not standing on
+                             --   the tile, to alter the tile in any way
   , tfeature :: [Feature]    -- ^ properties; order matters
   }
   deriving Show  -- No Eq and Ord to make extending logically sound

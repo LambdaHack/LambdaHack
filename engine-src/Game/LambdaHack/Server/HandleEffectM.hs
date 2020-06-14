@@ -1984,7 +1984,7 @@ effectSendFlying execSfx IK.ThrowMod{..} source target container modePush = do
         CEmbed{} -> True
         _ -> False
   if bhp tb <= 0  -- avoid dragging around corpses
-     || bproj tb && isEmbed then  -- fyling projectiles can't slip on the floor
+     || bproj tb && isEmbed then  -- flying projectiles can't slip on the floor
     return UseDud  -- the impact never manifested
   else if actorWaits tb
           && source /= target

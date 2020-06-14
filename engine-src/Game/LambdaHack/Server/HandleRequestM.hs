@@ -639,9 +639,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
   cops@COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   actorMaxSk <- getsState $ getActorMaxSkills source
-  discoAspect <- getsState sdiscoAspect
-  let sar = discoAspect EM.! btrunk sb
-      calmE = calmEnough sb actorMaxSk
+  let calmE = calmEnough sb actorMaxSk
       lid = blid sb
   sClient <- getsServer $ (EM.! bfid sb) . sclientStates
   itemToF <- getsState $ flip itemToFull
@@ -662,20 +660,13 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       embedKindList =
         map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       sbItemKind = getKind $ btrunk sb
-      sourceIsMist = IA.checkFlag Ability.Blast sar
+      -- Prevent embeds triggering each other's exploding embeds
+      -- via feeble mists, in the worst case, in a loop. However,
+      -- if a tile can be changed with an item (e.g., the mist trunk)
+      -- but without activating embeds, mists do fine.
+      projNoDamage = bproj sb
                      && Dice.infDice (IK.idamage sbItemKind) <= 0
                      && not (any IK.forDamageEffect $ IK.ieffects sbItemKind)
-      -- Prevent embeds triggering each other via feeble mists, in the worst
-      -- case in a loop. However, if a tile can be changed with an item
-      -- (e.g., the mist trunk) but without activating embeds, mists do fine.
-      tryApplyEmbeds =
-        if sourceIsMist
-        then return UseDud
-        else do
-          urs <- mapM tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
-          return $! case urs of
-            [] -> UseDud  -- there was no effects
-            _ -> maximum urs
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.
@@ -723,8 +714,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       -- (just invisible to the client), so they need to be triggered.
       -- The exception is changable tiles, because they are not so easy
       -- to trigger; they need previous or subsequent altering.
-      unless (Tile.isModifiable coTileSpeedup serverTile) $
-        void tryApplyEmbeds
+      unless (Tile.isModifiable coTileSpeedup serverTile || projNoDamage) $
+        mapM_ tryApplyEmbed (sortEmbeds cops serverTile embedKindList)
       return Nothing  -- searching is always success
   else
     -- Here either @clientTile == serverTile@ or the client
@@ -821,19 +812,37 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- and never after the tile is changed.
               -- If any embedded item was present and processed,
               -- but none was triggered, both free and item-consuming terrain
-              -- alteration is disabled.
-              let useResult = fromMaybe UseDud museResult
-              -- Skill check for non-projectiles performed much earlier.
-              -- All projectiles have 0 skill regardless of their trunk.
-              if bproj sb && tileMinSkill > 0  -- local skill check
-                 || sourceIsMist
-              then processTileActions (Just useResult) rest
-              else do
-                triggered <- tryApplyEmbed (iid, kit)
-                processTileActions (Just $ max useResult triggered) rest
+              -- alteration is disabled. The exception is projectiles
+              -- not being able to process embeds due to skill required,
+              -- which does not block future terrain alteration.
+              -- Skill check for non-projectiles is performed much earlier.
+              -- All projectiles have 0 skill for the purpose of embed
+              -- activation, regardless of their trunk.
+              if | bproj sb && tileMinSkill > 0 ->  -- local skill check
+                   processTileActions museResult rest
+                     -- not blocking future terrain altering, e.g., oil mist
+                     -- not slowed over water tile that has @talter@ equal to 2,
+                     -- but able to change it into oil spill soon after
+                 | projNoDamage ->
+                   processTileActions (Just UseDud) rest
+                     -- projectiles having enough skill, but no damage,
+                     -- not only can't activate embeds, but block future
+                     -- terrain altering, e.g., oil mist not puncturing
+                     -- a barrel and causing explosion, and so also
+                     -- not causing it to disappear later on
+                 | otherwise -> do
+                     -- here falls the case of fragmentation blast puncturing
+                     -- a barrel and so causing an explosion
+                     triggered <- tryApplyEmbed (iid, kit)
+                     let useResult = fromMaybe UseDud museResult
+                     processTileActions (Just $ max useResult triggered) rest
+                       -- max means that even one activated embed is enough
+                       -- to alter terrain in a future action
             Tile.ToAction tgroup -> assert (not (bproj sb)) $
               -- @parseTileAction@ ensures the above assertion
-              -- so that projectiles never cause normal transitions.
+              -- so that projectiles never cause normal transitions and,
+              -- e.g., mists douse fires or two flames thrown, first ignites,
+              -- second douses immediately afterwards
               if maybe True (== UseUp) museResult
               then do
                 announceTileChange
@@ -841,18 +850,16 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                 return True
               else processTileActions museResult rest
             Tile.WithAction grps tgroup -> do
+              -- Note that there is no skill check if the source actors
+              -- is a projectile. Permission is conveyed in @ProjYes@ instead.
               groundBag2 <- getsState $ getBodyStoreBag sb CGround
               if (not bumping || null grps)
-                 && (bproj sb || voluntary)  -- no local skill check
-                       -- waste item only if voluntary or released as projectile
+                   -- <M> confirmation needed to consume items, bump not enough
+                 && (bproj sb || voluntary || null grps)
+                       -- consume only if voluntary or released as projectile
                  && (maybe True (== UseUp) museResult
-                       -- even mist can transform a tile but only if no embeds,
-                       -- e.g., all were consumed in previous turns
-                     || bproj sb && not sourceIsMist
-                          -- non-mists projectiles may fly over tiles and so
-                          -- not got slowed or pushed, but they still change
-                          -- the tile when they land; TODO: simplify
-                     || effToUse == EffOnCombine)  -- crafting; lax
+                     || effToUse == EffOnCombine)
+                          -- crafting: lax, to make sure terrain used up
                  && groundBag2 == groundBag  -- no mix-up from crafting
               then do
                 -- Use even unidentified items --- one more way to id by use.
