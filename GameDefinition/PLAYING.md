@@ -482,6 +482,13 @@ It would be, if all squaddies had cameras, with a few drones overhead
 for best effect, and a team of off-site coordinators would analyze
 the situation and micromanage them all. This is not the case here.
 
+Q: Why is the noise I'm hearing "indistinct"?
+A: That's because it's out of direct hearing range of each teammate
+on the level, but ponderous enough to be perceived by all as vibrations
+and echos from afar. Any other noise adjective tells that the noise
+is heard by at least one of teammates and how far it is from the pointman
+(who may or may not hear it directly, as shown in Calm drop, if any).
+
 Q: Why are there two 'weakened' conditions in the organ menu of my hero?
 A: Each teams has a differen recipe for their weakness brew, so multiple
 affliction by the concoction from a single team prolongs the malady,
