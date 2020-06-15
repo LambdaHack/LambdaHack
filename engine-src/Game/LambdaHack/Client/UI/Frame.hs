@@ -159,7 +159,7 @@ truncateAttrLine :: Int -> Int -> AttrLine -> AttrString
 truncateAttrLine available fillFromStart aLine =
   let al = attrLine aLine
       len = length al
-  in if | null al -> al
+  in if | null al -> replicate fillFromStart Color.spaceAttrW32
         | len == available - 1 -> al ++ [Color.spaceAttrW32]
         | otherwise -> case compare available len of
             LT -> take (available - 1) al ++ [Color.trimmedLineAttrW32]
