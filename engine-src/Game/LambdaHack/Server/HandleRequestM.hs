@@ -646,7 +646,6 @@ reqAlterFail bumping effToUse voluntary source tpos = do
   actorSk <- currentSkillsServer source
   localTime <- getsState $ getLocalTime lid
   embeds <- getsState $ getEmbedBag lid tpos
-  groundBag <- getsState $ getBodyStoreBag sb CGround
   lvl <- getLevel lid
   getKind <- getsState $ flip getIidKindServer
   let serverTile = lvl `at` tpos
@@ -727,7 +726,17 @@ reqAlterFail bumping effToUse voluntary source tpos = do
        && alterSkill < tileMinSkill
     then return $ Just AlterUnskilled  -- don't leak about altering
     else do
-      let announceTileChange =
+      -- Save the original content of ground and eqp to abort transformations
+      -- if any item is removed, possibly an item intended as the fuel.
+      groundBag <- getsState $ getBodyStoreBag sb CGround
+      eqpBag <- getsState $ getBodyStoreBag sb CEqp
+      -- Compute items to use for transformation early, before any extra
+      -- items added by activated embeds, to use only intended items as fuel.
+      -- Use even unidentified items --- one more way to id by use.
+      kitAssG <- getsState $ kitAssocs source [CGround]
+      kitAssE <- getsState $ kitAssocs source [CEqp]
+      let kitAss = listToolsToConsume kitAssG kitAssE
+          announceTileChange =
             -- If no embeds and the only thing that happens is the change
             -- of the tile, don't display a message, because the change
             -- is visible on the map (unless it changes into itself)
@@ -782,9 +791,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               embedItemOnPos lid tpos toTile
           tryChangeWith :: ( [(Int, GroupName IK.ItemKind)]
                            , (GroupName TK.TileKind) )
-                        -> [((CStore, Bool), (ItemId, ItemFullKit))]
                         -> m Bool
-          tryChangeWith (tools0, tgroup) kitAss = do
+          tryChangeWith (tools0, tgroup) = do
             let grps0 = map (\(x, y) -> (False, x, y)) tools0
                   -- apply if durable
                 (bagsToLose, iidsToApply, grps) =
@@ -853,20 +861,22 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- Note that there is no skill check if the source actors
               -- is a projectile. Permission is conveyed in @ProjYes@ instead.
               groundBag2 <- getsState $ getBodyStoreBag sb CGround
+              eqpBag2 <- getsState $ getBodyStoreBag sb CEqp
               if (not bumping || null grps)
                    -- <M> confirmation needed to consume items, bump not enough
                  && (bproj sb || voluntary || null grps)
                        -- consume only if voluntary or released as projectile
                  && (maybe True (== UseUp) museResult
                      || effToUse == EffOnCombine)
-                          -- crafting: lax, to make sure terrain used up
-                 && groundBag2 == groundBag  -- no mix-up from crafting
+                          -- unwanted crafting shouldn't block transformations
+                 && let f (k1, _) (k2, _) = k1 <= k2
+                    in EM.isSubmapOfBy f groundBag groundBag2
+                       && EM.isSubmapOfBy f eqpBag eqpBag2
+                      -- don't transform if items, possibly intended for
+                      -- transformation, removed; also when only crafting
+                      -- was intended, which almost always removes some items
               then do
-                -- Use even unidentified items --- one more way to id by use.
-                kitAssG <- getsState $ kitAssocs source [CGround]
-                kitAssE <- getsState $ kitAssocs source [CEqp]
-                let kitAss = listToolsToConsume kitAssG kitAssE
-                altered <- tryChangeWith (grps, tgroup) kitAss
+                altered <- tryChangeWith (grps, tgroup)
                 if altered
                 then return True
                 else processTileActions museResult rest
