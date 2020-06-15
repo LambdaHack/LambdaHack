@@ -294,9 +294,11 @@ integrationTests = testGroup "integrationTests"
       tieKnot serverOptions
   , testCase "SDL fronted; init only" $
       when (frontendName == "sdl") $ do
+        -- This test only works when run from the same directory that
+        -- the .cabal files is in. And this is what Debian needs, so OK.
         -- The hacky log priority 0 tells SDL frontend to init and quit at once,
         -- for testing on CIs without graphics access.
-        let args2 = words "--dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 50 --automateAll --keepAutomated --gameMode battle" ++ ["--setDungeonRng", "SMGen 125 125", "--setMainRng", "SMGen 125 125"]
+        let args2 = words "--fontDir GameDefinition/fonts --dbgMsgSer --logPriority 0 --newGame 3 --maxFps 100000 --benchmark --stopAfterFrames 50 --automateAll --keepAutomated --gameMode battle" ++ ["--setDungeonRng", "SMGen 125 125", "--setMainRng", "SMGen 125 125"]
         serverOptions2 <- handleParseResult $ execParserPure defaultPrefs serverOptionsPI args2
         tieKnot serverOptions2
   ]
