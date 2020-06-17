@@ -5,7 +5,8 @@ module Game.LambdaHack.Client.Preferences
     -- * Internal operations
   , effectToBenefit
   , averageTurnValue, avgItemDelay, avgItemLife, durabilityMult
-  , organBenefit, recBenefit, fakeItem, aspectToBenefit, aspectRecordToBenefit
+  , organBenefit, recBenefit, fakeItem
+  , aspectToBenefit, capStat, aspectRecordToBenefit
 #endif
   ) where
 
@@ -363,14 +364,14 @@ aspectToBenefit :: IK.Aspect -> Double
 aspectToBenefit asp =
   case asp of
     IK.Timeout{} -> 0
-    IK.AddSkill Ability.SkMove p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkMelee p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkDisplace p -> Dice.meanDice p
-    IK.AddSkill Ability.SkAlter p -> Dice.meanDice p
-    IK.AddSkill Ability.SkWait p -> Dice.meanDice p
-    IK.AddSkill Ability.SkMoveItem p -> Dice.meanDice p
-    IK.AddSkill Ability.SkProject p -> Dice.meanDice p * 2
-    IK.AddSkill Ability.SkApply p -> Dice.meanDice p * 2
+    IK.AddSkill Ability.SkMove p -> capStat (Dice.meanDice p) * 5
+    IK.AddSkill Ability.SkMelee p -> capStat (Dice.meanDice p) * 5
+    IK.AddSkill Ability.SkDisplace p -> capStat (Dice.meanDice p)
+    IK.AddSkill Ability.SkAlter p -> capStat (Dice.meanDice p)
+    IK.AddSkill Ability.SkWait p -> capStat (Dice.meanDice p)
+    IK.AddSkill Ability.SkMoveItem p -> capStat (Dice.meanDice p)
+    IK.AddSkill Ability.SkProject p -> capStat (Dice.meanDice p) * 2
+    IK.AddSkill Ability.SkApply p -> capStat (Dice.meanDice p) * 2
     IK.AddSkill Ability.SkSwimming p -> Dice.meanDice p
     IK.AddSkill Ability.SkFlying p -> Dice.meanDice p
     IK.AddSkill Ability.SkHurtMelee p -> Dice.meanDice p  -- offence favoured
@@ -402,6 +403,11 @@ aspectToBenefit asp =
       -- would be ignored, so they should be avoided under @Odds@
       -- in not fully-identified items, because they are so crucial
       -- for evaluation.
+
+-- We simplify, assuming stats are unlikely to be higher than 10
+-- and to be affected by more than one non-organ item at a time.
+capStat :: Double -> Double
+capStat x = max (-10) $ min 10 x
 
 aspectRecordToBenefit :: IA.AspectRecord -> [Double]
 aspectRecordToBenefit arItem =
