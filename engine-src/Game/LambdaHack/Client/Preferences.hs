@@ -365,12 +365,12 @@ aspectToBenefit asp =
     IK.Timeout{} -> 0
     IK.AddSkill Ability.SkMove p -> Dice.meanDice p * 5
     IK.AddSkill Ability.SkMelee p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkDisplace p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkAlter p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkWait p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkMoveItem p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkProject p -> Dice.meanDice p * 5
-    IK.AddSkill Ability.SkApply p -> Dice.meanDice p * 5
+    IK.AddSkill Ability.SkDisplace p -> Dice.meanDice p
+    IK.AddSkill Ability.SkAlter p -> Dice.meanDice p
+    IK.AddSkill Ability.SkWait p -> Dice.meanDice p
+    IK.AddSkill Ability.SkMoveItem p -> Dice.meanDice p
+    IK.AddSkill Ability.SkProject p -> Dice.meanDice p * 2
+    IK.AddSkill Ability.SkApply p -> Dice.meanDice p * 2
     IK.AddSkill Ability.SkSwimming p -> Dice.meanDice p
     IK.AddSkill Ability.SkFlying p -> Dice.meanDice p
     IK.AddSkill Ability.SkHurtMelee p -> Dice.meanDice p  -- offence favoured
