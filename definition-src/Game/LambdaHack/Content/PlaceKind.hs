@@ -72,10 +72,9 @@ validateOverride :: [(Char, GroupName TileKind)] -> [Text]
 validateOverride ov =
   let symbols = sort $ map fst ov
       duplicated = filter (uncurry (==)) $ zip symbols (chr 0 : symbols)
-  in if null duplicated
-     then []
-     else [ "duplicated override symbols:"
-            <+> T.pack (intersperse ' ' $ map fst duplicated) ]
+  in [ "duplicated override symbols:"
+        <+> T.pack (intersperse ' ' $ map fst duplicated)
+     | not (null duplicated) ]
 
 -- | Catch invalid place kind definitions. In particular, verify that
 -- the top-left corner map is rectangular and not empty.
@@ -97,5 +96,4 @@ validateAll _ _ = []  -- so far, always valid
 
 makeData :: [PlaceKind] -> [GroupName PlaceKind] -> [GroupName PlaceKind]
          -> ContentData PlaceKind
-makeData content =
-  makeContentData "PlaceKind" pname pfreq validateSingle validateAll content
+makeData = makeContentData "PlaceKind" pname pfreq validateSingle validateAll

@@ -170,7 +170,7 @@ cmdItemsFromIids :: [ItemId] -> State -> State -> [UpdAtomic]
 cmdItemsFromIids iids sClient s =
   let iidsUnknown = filter (\iid -> EM.notMember iid $ sitemD sClient) iids
       items = map (\iid -> (iid, sitemD s EM.! iid)) iidsUnknown
-  in if null items then [] else [UpdRegisterItems items]
+  in [UpdRegisterItems items | not $ null items]
 
 -- | Messages for some unseen atomic commands.
 hearUpdAtomic :: MonadStateRead m
@@ -377,10 +377,10 @@ atomicRemember lid inPer sClient s =
       -- For now clients act as if this was the case, not peeking into old.
       inSmellFov = ES.elems $ totalSmelled inPer
       inSm = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvlClient)) inSmellFov
-      inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
+      inSmell = [UpdLoseSmell lid inSm | not $ null inSm]
       -- Spot smells.
       inSm2 = mapMaybe (\p -> (p,) <$> EM.lookup p (lsmell lvl)) inSmellFov
-      atomicSmell = if null inSm2 then [] else [UpdSpotSmell lid inSm2]
+      atomicSmell = [UpdSpotSmell lid inSm2 | not $ null inSm2]
       -- Actors come last to report the environment they land on.
       inAssocs = concatMap (\p -> posToAidAssocs p lid s) inFov
       -- Here, the actor may be already visible, e.g., when teleporting,

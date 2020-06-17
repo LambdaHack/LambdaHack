@@ -270,7 +270,7 @@ splitOKX FontSetup{..} msgLong width height reportAS keys (ls0, kxs0) =
                    else splitO 0 ([], [], []) (lsInit, kxsInit)
       -- If @ls0@ is not empty, we still want to display the report,
       -- one way or another.
-      mainSlides = if EM.null ls0 && (not $ EM.null lsInit)
+      mainSlides = if EM.null ls0 && not (EM.null lsInit)
                    then assert (null kxs0) []
                    else splitO 0 (headerProp, headerMono, rkxs) (ls0, kxs0)
   in initSlides ++ mainSlides

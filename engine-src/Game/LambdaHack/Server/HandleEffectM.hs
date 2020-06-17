@@ -811,7 +811,7 @@ effectYell execSfx target = do
   if bhp tb <= 0 then  -- avoid yelling corpses
     return UseDud  -- the yell never manifested
   else do
-    when (not (bproj tb)) $
+    when (not (bproj tb))
       execSfx
     execSfxAtomic $ SfxTaunt False target
     when (not (bproj tb) && deltaBenign (bcalmDelta tb)) $
@@ -2143,7 +2143,7 @@ effectVerbNoLonger :: MonadServerAtomic m
 effectVerbNoLonger effUseAllCopies execSfx source = do
   b <- getsState $ getActorBody source
   when (effUseAllCopies  -- @UseUp@ ensures that if all used, all destroyed
-        && not (bproj b)) $  -- no spam when projectiles activate
+        && not (bproj b))  -- no spam when projectiles activate
     execSfx  -- announce that all copies have run out (or whatever message)
   return UseUp  -- help to destroy the copy, even if not all used up
 

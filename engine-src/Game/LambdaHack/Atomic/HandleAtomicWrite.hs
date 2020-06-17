@@ -276,7 +276,7 @@ updLoseItem iid kit@(k, _) c = assert (k > 0) $ do
     _ -> return ()
 
 updSpotItemBag :: MonadStateWrite m => Container -> ItemBag -> m ()
-updSpotItemBag c bag = do
+updSpotItemBag c bag =
   -- The case of empty bag is for a hack to help identifying sample items.
   when (not $ EM.null bag) $ do
     insertBagContainer bag c

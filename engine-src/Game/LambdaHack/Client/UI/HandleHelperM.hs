@@ -250,9 +250,7 @@ itemOverlay lSlots lid bag displayRanged = do
                                     DetailMedium k localTime itemFull kit]
                 al1 = attrStringToAL
                       $ textToAS (markEqp iid $ slotLabel l)
-                        ++ (if isSquareFont propFont
-                           then [Color.spaceAttrW32]
-                           else [])
+                        ++ [Color.spaceAttrW32 | isSquareFont propFont]
                         ++ [colorSymbol]
                 xal2 = ( textSize squareFont $ attrLine al1
                        , attrStringToAL $ Color.spaceAttrW32 : textToAS phrase )
@@ -778,7 +776,7 @@ ppContainerWownW ownerFun addPrepositions c = case c of
     let (preposition, noun) = ppCStore store
         prep = [MU.Text preposition | addPrepositions]
     return $! prep ++ case store of
-      CGround -> [MU.Text noun] ++ if bproj b then [] else ["under", owner]
+      CGround -> MU.Text noun : if bproj b then [] else ["under", owner]
       CStash -> if bfid b /= side
                 then [MU.WownW (MU.Text fidName) (MU.Text noun)]
                 else [MU.Text noun]

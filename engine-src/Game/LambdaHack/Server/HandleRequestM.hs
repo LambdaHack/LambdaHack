@@ -179,7 +179,7 @@ affectStash :: MonadServerAtomic m => Actor -> m ()
 affectStash b = do
   let locateStash (fid, fact) = case gstash fact of
         Just (lidS, posS)
-          | lidS == blid b && posS == (bpos b) && fid /= bfid b ->
+          | lidS == blid b && posS == bpos b && fid /= bfid b ->
             execUpdAtomic $ UpdLoseStashFaction True fid lidS posS
         _ -> return ()
   factionD <- getsState sfactionD
@@ -382,7 +382,7 @@ reqMoveGeneric voluntary mayAttack source dir = do
           -- through which a projectile could cook its only item,
           -- but retain the old raw name and which would spam water
           -- slowness every time a projectile flies over water.
-          unless (bproj sb) $ do
+          unless (bproj sb) $
             -- Counts as bumping, because terrain transformation probably
             -- not intended, because the goal was probably just to move
             -- and then modifying the terrain is an unwelcome side effect.
@@ -790,7 +790,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- and so its embedded items are always visible.
               embedItemOnPos lid tpos toTile
           tryChangeWith :: ( [(Int, GroupName IK.ItemKind)]
-                           , (GroupName TK.TileKind) )
+                           , GroupName TK.TileKind )
                         -> m Bool
           tryChangeWith (tools0, tgroup) = do
             let grps0 = map (\(x, y) -> (False, x, y)) tools0
@@ -815,7 +815,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
           processTileActions museResult [] =
             return $! maybe False (/= UseDud) museResult
           processTileActions museResult (ta : rest) = case ta of
-            Tile.EmbedAction (iid, kit) -> do
+            Tile.EmbedAction (iid, kit) ->
               -- Embeds are activated in the order in tile definition
               -- and never after the tile is changed.
               -- If any embedded item was present and processed,
@@ -1093,8 +1093,7 @@ reqGameRestart aid groupName scurChalSer = do
   factionD <- getsState sfactionD
   let fidsUI = map fst $ filter (\(_, fact) -> fhasUI (gplayer fact))
                                 (EM.assocs factionD)
-  unless isNoConfirms $
-    mapM_ (\fid -> revealItems fid) fidsUI
+  unless isNoConfirms $ mapM_ revealItems fidsUI
   -- Announcing end of game, we send lore, because game is over.
   b <- getsState $ getActorBody aid
   oldSt <- getsState $ gquit . (EM.! bfid b) . sfactionD

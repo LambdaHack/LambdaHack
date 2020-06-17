@@ -149,7 +149,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     else do
       lid <- getsState $ lidFromC c
       markDisplayNeeded lid
-  UpdDestroyItem verbose iid _ kit c -> do
+  UpdDestroyItem verbose iid _ kit c ->
     if verbose then case c of
       CActor aid _  -> do
         b <- getsState $ getActorBody aid
@@ -235,7 +235,7 @@ displayRespUpdAtomicUI cmd = case cmd of
                       | otherwise = MsgDeath
          if bfid b == side && not (bproj b)
          then do
-           msgAdd msgClass $ msgDie
+           msgAdd msgClass msgDie
            displayMore ColorBW "Alas!"
          else
            msgAdd msgClass $ msgDie <> if bproj b then "" else "\n"
@@ -365,7 +365,7 @@ displayRespUpdAtomicUI cmd = case cmd of
       lookAtMove target
   UpdLeadFaction _ Nothing mtgt@(Just target) -> do
     mleader <- getsClient sleader
-    when (mtgt /= mleader) $ do
+    when (mtgt /= mleader) $
       lookAtMove target
   UpdLeadFaction{} -> return ()
   UpdDiplFaction fid1 fid2 _ toDipl -> do
@@ -383,7 +383,7 @@ displayRespUpdAtomicUI cmd = case cmd of
     lidV <- viewedLevelUI
     markDisplayNeeded lidV
     when (fid == side) $ do
-      unless b $ addPressedControlEsc  -- sets @swasAutomated@, enters main menu
+      unless b addPressedControlEsc  -- sets @swasAutomated@, enters main menu
       setFrontAutoYes b  -- now can stop auto-accepting prompts
   UpdRecordKill{} -> return ()
   -- Alter map.
@@ -1258,7 +1258,7 @@ discover c iid = do
   unless (noMsg || globalTime == timeZero) $  -- no spam about initial equipment
     msgAdd MsgItemDisco msg
 
-ppHearMsg :: MonadClientUI m => (Maybe Int) -> HearMsg -> m Text
+ppHearMsg :: MonadClientUI m => Maybe Int -> HearMsg -> m Text
 ppHearMsg distance hearMsg = case hearMsg of
   HearUpd cmd -> do
     COps{coTileSpeedup} <- getsState scops
@@ -1278,7 +1278,7 @@ ppHearMsg distance hearMsg = case hearMsg of
             if k > 0 then "grinding noise" else "fizzing noise"
           _ -> error $ "" `showFailure` cmd
         adjective = MU.Text $ ppHearDistanceAdjective distance
-        msg = makeSentence ["you hear", MU.AW $ MU.Phrase $ [adjective, sound]]
+        msg = makeSentence ["you hear", MU.AW $ MU.Phrase [adjective, sound]]
     return $! msg
   HearStrike ik -> do
     COps{coitem} <- getsState scops

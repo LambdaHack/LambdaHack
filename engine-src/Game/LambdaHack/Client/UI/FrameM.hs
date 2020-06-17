@@ -57,25 +57,26 @@ drawOverlay dm onBlank ovs lid = do
   FontSetup{..} <- getFontSetup
   soptions <- getsClient soptions
   let isTeletype = Frontend.frontendName soptions == "teletype"
-      ovProp = if multiFont
-               then truncateOverlay False (4 * rwidth) rheight False 0 onBlank
-                    $ EM.findWithDefault [] propFont ovs
-               else if isTeletype  -- hack for debug output
-                    then map (second attrLine) $ concat $ EM.elems ovs
-                    else []
+      ovProp | multiFont
+             = truncateOverlay False (4 * rwidth) rheight False 0 onBlank
+               $ EM.findWithDefault [] propFont ovs
+             | isTeletype  -- hack for debug output
+             = map (second attrLine) $ concat $ EM.elems ovs
+             | otherwise = []
       ovMono = if multiFont
                then truncateOverlay False (2 * rwidth) rheight False 0 onBlank
                     $ EM.findWithDefault [] monoFont ovs
                else []
-      ovOther = if multiFont
-                then truncateOverlay True rwidth rheight False 0 onBlank
-                     $ EM.findWithDefault [] squareFont ovs
-                else if isTeletype  -- hack for debug output
-                     then []
-                     else truncateOverlay True rwidth rheight True 20 onBlank
-                          $ concat $ EM.elems ovs
-                            -- 20 needed not to leave gaps in skills menu
-                            -- in the absence of backdrop
+      ovOther | multiFont
+              = truncateOverlay True rwidth rheight False 0 onBlank
+                $ EM.findWithDefault [] squareFont ovs
+              | isTeletype  -- hack for debug output
+              = []
+              | otherwise
+              = truncateOverlay True rwidth rheight True 20 onBlank
+                $ concat $ EM.elems ovs
+                    -- 20 needed not to leave gaps in skills menu
+                    -- in the absence of backdrop
       ovBackdrop =
         if multiFont && not onBlank
         then let propOutline =

@@ -143,7 +143,6 @@ tieKnot serverOptions = do
   -- Run a (possibly void) workaround. It's needed for OSes/frontends
   -- that need to perform some actions on the main thread
   -- (not just any bound thread), e.g., newer OS X drawing with SDL2.
-  workaround <- takeMVar workaroundOnMainThreadMVar
-  workaround
+  join (takeMVar workaroundOnMainThreadMVar)
   wait a
 #endif

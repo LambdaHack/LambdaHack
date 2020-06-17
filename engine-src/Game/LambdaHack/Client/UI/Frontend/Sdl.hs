@@ -413,7 +413,7 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
         return (width, textTexture)
       -- <https://www.libsdl.org/projects/SDL_ttf/docs/SDL_ttf_42.html#SEC42>
       setChar :: PointI -> (Word32, Word32) -> IO Int
-      setChar !i (!w, !wPrev) = do
+      setChar !i (!w, !wPrev) =
         if w == wPrev
         then return $! i + 1
         else do
@@ -448,11 +448,10 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
           chooseAndDrawHighlight px py bg
           return $! i + 1
       drawMonoOverlay :: OverlaySpace -> IO ()
-      drawMonoOverlay ov =
+      drawMonoOverlay =
         mapM_ (\(K.PointUI x y, al) ->
-                 let lineCut = take (2 * (rwidth coscreen) - x) al
+                 let lineCut = take (2 * rwidth coscreen - x) al
                  in drawMonoLine (x * halfSize) y lineCut)
-              ov
       drawMonoLine :: Int -> Int -> AttrString -> IO ()
       drawMonoLine _ _ [] = return ()
       drawMonoLine x row (w : rest) = do
@@ -481,10 +480,9 @@ drawFrame coscreen ClientOptions{..} sess@FrontendSession{..} curFrame = do
             tgtR = SDL.Rectangle (vp x (row * boxSize)) tt2Mono
         SDL.copy srenderer textTexture Nothing (Just tgtR)
       drawPropOverlay :: OverlaySpace -> IO ()
-      drawPropOverlay ov =
+      drawPropOverlay =
         mapM_ (\(K.PointUI x y, al) ->
                  drawPropLine (x * halfSize) y al)
-              ov
       drawPropLine :: Int -> Int -> AttrString -> IO ()
       drawPropLine _ _ [] = return ()
       drawPropLine x _ _ | x >= (rwidth coscreen - 1) * boxSize =

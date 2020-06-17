@@ -222,8 +222,8 @@ largeJaw = fist
   , icount   = 1
   , iverbHit = "crush"
   , idamage  = 10 `d` 1
-  , iaspects = [Timeout $ 2 + 1 `d` 2]  -- no effect, but limit raw damage
-               ++ iaspects fist
+  , iaspects = Timeout (2 + 1 `d` 2)  -- no effect, but limit raw damage
+               : iaspects fist
   , idesc    = "Enough to swallow anything in a single gulp."
   }
 

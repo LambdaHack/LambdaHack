@@ -143,7 +143,7 @@ targetDescXhair = do
     Nothing -> return (mhairDesc, mxhairHP, Nothing)
     Just aid -> do
       watchfulness <- bwatch <$> getsState (getActorBody aid)
-      return $ (mhairDesc, mxhairHP, Just watchfulness)
+      return (mhairDesc, mxhairHP, Just watchfulness)
 
 drawFrameTerrain :: forall m. MonadClientUI m => LevelId -> m (U.Vector Word32)
 drawFrameTerrain drawnLevelId = do

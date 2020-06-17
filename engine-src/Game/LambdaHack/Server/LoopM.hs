@@ -488,7 +488,7 @@ advanceTrajectory aid b1 = do
   COps{coTileSpeedup} <- getsState scops
   lvl <- getLevel $ blid b1
   arTrunk <- getsState $ (EM.! btrunk b1) . sdiscoAspect
-  let registerKill killHow = do
+  let registerKill killHow =
         -- Kill counts for each blast particle is TMI.
         when (bproj b1
               && not (IA.checkFlag Ability.Blast arTrunk)) $ do
@@ -534,12 +534,12 @@ advanceTrajectory aid b1 = do
            let tpos2 = bpos b2 `shift` d  -- possibly another level and/or bpos
            lvl2 <- getLevel $ blid b2
            case mfail of
-             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos2 -> do
+             Nothing | Tile.isWalkable coTileSpeedup $ lvl2 `at` tpos2 ->
                -- Too late to announce anything, but given that the way
                -- is opened, continue flight. Don't even normally lose any HP,
                -- because it's not a hard collision, but altering.
                -- However, if embed was possibly triggered/removed, lose HP.
-               if embedsPre /= embedsPost && not (EM.null embedsPre) then do
+               if embedsPre /= embedsPost && not (EM.null embedsPre) then
                  if bhp b2 > oneM then do
                    execUpdAtomic $ UpdRefillHP aid minusM
                    b3 <- getsState $ getActorBody aid

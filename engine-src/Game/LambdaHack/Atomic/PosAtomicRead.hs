@@ -302,7 +302,7 @@ singleContainer (CActor aid cstore) = do
   b <- getsState $ getActorBody aid
   mlidPos <- lidPosOfStash b cstore
   return $! maybe (posProjBody b)
-                  (\lidPos -> PosSightLevels $ [lidPos, (blid b, bpos b)])
+                  (\lidPos -> PosSightLevels [lidPos, (blid b, bpos b)])
                   mlidPos
 singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
@@ -370,7 +370,7 @@ breakUpdAtomic cmd = case cmd of
     b <- getsState $ getActorBody aid
     bag <- getsState $ getBodyStoreBag b CStash
     let (k1, it1) = bag EM.! iid
-        kit = assert (k <= k1) $ (k, take k it1)
+        kit = assert (k <= k1) (k, take k it1)
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [ UpdLoseItem True iid kit (CFloor lid pos)
@@ -380,7 +380,7 @@ breakUpdAtomic cmd = case cmd of
     b <- getsState $ getActorBody aid
     bag <- getsState $ getBodyStoreBag b store1
     let (k1, it1) = bag EM.! iid
-        kit = assert (k <= k1) $ (k, take k it1)
+        kit = assert (k <= k1) (k, take k it1)
     mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
     case mstash of
       Just (lid, pos) -> return [ UpdLoseItem True iid kit (CActor aid store1)

@@ -450,10 +450,10 @@ describeCrafting tools raw eff =
       unCreate _ = []
       grpsCreate = unCreate eff
       tcraft = makePhrase $
-        ["of crafting"]
-        ++ (if null grpsCreate
-            then ["nothing"]
-            else [describeTools grpsCreate])
+        "of crafting"
+        : (if null grpsCreate
+           then ["nothing"]
+           else [describeTools grpsCreate])
       traw = makePhrase $
         if null raw
         then []

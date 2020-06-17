@@ -107,7 +107,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       let (ovs, kyx) = okxsN coinput monoFont propFont 0 offsetCol2
                              (const False) True cat headers footers
       in ( EM.map (map (pamoveRight spLen)) ovs
-         , map (\(ekm, pa) -> (ekm, pamoveRight spLen pa)) kyx )
+         , map (second $ pamoveRight spLen) kyx )
     renumber dy (km, (K.PointUI x y, len)) = (km, (K.PointUI x (y + dy), len))
     renumberOv dy = map (\(K.PointUI x y, al) -> (K.PointUI x (y + dy), al))
     mergeOKX :: OKX -> OKX -> OKX
@@ -181,8 +181,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       | not $ isSquareFont propFont =
         (t2, ( EM.unionWith (++) ovs1 (EM.map (map (pamoveRight rwidth)) ovs2)
              , sortOn (\(_, (K.PointUI x y, _)) -> (y, x))
-               $ kyx1 ++ map (\(ekm, pa) ->
-                                (ekm, pamoveRight rwidth pa)) kyx2 ))
+               $ kyx1 ++ map (second $ pamoveRight rwidth) kyx2 ))
         : sideBySide rest
     sideBySide l = l
   in sideBySide $ concat
@@ -195,8 +194,8 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
               (mergeOKX (typesetInProp
                          $ ["", casualDescription <+> "(1/2)", ""]
                            ++ movBlurb1, [])
-                        (typesetInSquare $ [""] ++ movSchema, []))
-              (typesetInProp $ [""] ++ movBlurb2, []) )
+                        (typesetInSquare $ "" : movSchema, []))
+              (typesetInProp $ "" : movBlurb2, []) )
         , ( movTextEnd
           , okxs CmdMinimal
                  ( ["", casualDescription <+> "(2/2)", ""]
@@ -209,7 +208,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
               (mergeOKX (typesetInProp
                          $ ["", casualDescription, ""]
                            ++ movBlurb1, [])
-                        (typesetInSquare $ [""] ++ movSchema, []))
+                        (typesetInSquare $ "" : movSchema, []))
               (okxs CmdMinimal
                     ( [""] ++ movBlurb2 ++ [""]
                        ++ minimalBlurb ++ [""]
@@ -252,7 +251,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
         [ ( movTextEnd
           , okxs CmdItem
                  (["", categoryDescription CmdItem], ["", keyCaption])
-                 ([], [""] ++ itemAllEnding) )
+                 ([], "" : itemAllEnding) )
         , ( movTextEnd
           , okxs CmdMove
                  (["", categoryDescription CmdMove], ["", keyCaption])
@@ -262,7 +261,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , mergeOKX
               (okxs CmdItem
                     (["", categoryDescription CmdItem], ["", keyCaption])
-                    ([], [""] ++ itemAllEnding))
+                    ([], "" : itemAllEnding))
               (okxs CmdMove
                     (["", "", categoryDescription CmdMove], ["", keyCaption])
                     (pickLeaderDescription, [""])) ) ]

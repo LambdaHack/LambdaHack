@@ -518,7 +518,7 @@ alterCommon bumping tpos = do
      | chessDist tpos (bpos sb) > 1 ->
          -- Checked late to give useful info about distant tiles.
          failSer AlterDistant
-     | not underFeet && (EM.member tpos $ lfloor lvl) ->
+     | not underFeet && EM.member tpos (lfloor lvl) ->
          failSer AlterBlockItem
      | not underFeet
        && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl) ->
@@ -1410,7 +1410,7 @@ itemMenuHuman cmdSemInCxtOfKM = do
               ovFound = alPrefix ++ ovFoundRaw
           report <- getReportUI
           CCUI{coinput} <- getsSession sccui
-          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! (bfid b)
+          mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
           actorSk <- leaderSkillsClientUI
           let calmE = calmEnough b actorMaxSk
               greyedOut cmd = not calmE && fromCStore == CEqp
@@ -1542,8 +1542,7 @@ generateMenu cmdSemInCxtOfKM blurb kds gameInfo menuName = do
       kyxs = catMaybes mkyxs
       introLen = length blurb
       introMaxLen = maximum $ 30 : map (textSize monoFont . attrLine) blurb
-      introOv = map (\(y, al) ->
-                       (K.PointUI (2 * rwidth - introMaxLen - offset) y, al))
+      introOv = map (first $ K.PointUI (2 * rwidth - introMaxLen - offset))
                 $ zip [max 0 (rheight - introLen - 1) ..] blurb
       ov = EM.insertWith (++) propFont introOv
            $ EM.singleton squareFont $ offsetOverlayX menuOvLines

@@ -426,9 +426,8 @@ renderTimeReport :: Time -> Report -> [AttrString]
 renderTimeReport !t (Report r) =
   let turns = t `timeFitUp` timeTurn
       rep = Report $ filter (isSavedToHistory . msgClass . repMsg) r
-  in if nullReport rep
-     then []
-     else [stringToAS (show turns ++ ": ") ++ renderReport rep]
+  in [ stringToAS (show turns ++ ": ") ++ renderReport rep
+     | not $ nullReport rep ]
 
 lengthHistory :: History -> Int
 lengthHistory History{oldReport, archivedHistory} =

@@ -115,7 +115,7 @@ textToAL !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t) $
+  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -130,7 +130,7 @@ textFgToAL !fg !t =
       s = T.foldr f [] t
   in AttrLine $
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t) $
+  assert (length s == 0 || last s /= Color.spaceAttrW32 `blame` t)
 #endif
     s
 
@@ -198,7 +198,7 @@ splitAttrPhrase w (AttrLine xs)
 type Overlay = [(PointUI, AttrLine)]
 
 offsetOverlay :: [AttrLine] -> Overlay
-offsetOverlay l = map (\(y, al) -> (PointUI 0 y, al)) $ zip [0..] l
+offsetOverlay l = map (first  $PointUI 0) $ zip [0..] l
 
 offsetOverlayX :: [(Int, AttrLine)] -> Overlay
 offsetOverlayX l =

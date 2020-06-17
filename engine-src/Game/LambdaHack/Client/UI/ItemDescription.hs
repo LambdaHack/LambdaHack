@@ -241,9 +241,8 @@ textAllPowers width detailLevel skipRecharging
       IK.ThrowMod{IK.throwVelocity} = IA.aToThrow arItem
       speed = speedFromWeight (IK.iweight itemKind) throwVelocity
       pdeltaHP = modifyDamageBySpeed rawDeltaHP speed
-      rangedDamageDesc = if pdeltaHP <= 0
-                         then []
-                         else ["{avg" <+> show64With2 pdeltaHP <+> "ranged}"]
+      rangedDamageDesc = [ "{avg" <+> show64With2 pdeltaHP <+> "ranged}"
+                         | pdeltaHP > 0 ]
         -- Note that avg melee damage would be too complex to display here,
         -- because in case of @MOwned@ the owner is different than leader,
         -- so the value would be different than when viewing the item.

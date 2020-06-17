@@ -1513,8 +1513,8 @@ daggerDropBestWeapon = knife
   { iname    = "Double Dagger"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(1, 3), (10, 3)]
-  , iaspects = [SetFlag Unique]
-               ++ iaspects knife
+  , iaspects = SetFlag Unique
+               : iaspects knife
   , ieffects = [Discharge 1 50, Yell]  -- powerful and low timeout, but noisy
                                        -- and no effect if no weapons charged
   , idesc    = "A double dagger that a focused fencer can use to catch and twist away an opponent's blade."
@@ -1609,8 +1609,8 @@ swordImpress = sword
   { iname    = "Master's Sword"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(5, 1), (8, 6)]
-  , iaspects = [SetFlag Unique]
-               ++ iaspects sword
+  , iaspects = SetFlag Unique
+               : iaspects sword
   , ieffects = [Impress]
   , idesc    = "A particularly well-balance blade, lending itself to impressive shows of fencing skill."
   }
@@ -1651,11 +1651,11 @@ halberd2 = halberd
   { iname    = "halberd"
   , ifreq    = [(COMMON_ITEM, 3 * 2), (STARTING_WEAPON, 1)]
   , iweight  = 4000
-  , iaspects = [AddSkill SkHurtMelee $ (-6 + 1 `dL` 4) * 10]
+  , iaspects = AddSkill SkHurtMelee ((-6 + 1 `dL` 4) * 10)
                  -- balance, or @DupItem@ would break the game;
                  -- together with @RerollItem@, it's allowed to, though
-               ++ (iaspects halberd
-                   \\ [AddSkill SkHurtMelee $ (-6 + 1 `dL` 4) * 5])
+               : (iaspects halberd
+                  \\ [AddSkill SkHurtMelee $ (-6 + 1 `dL` 4) * 5])
   , idamage  = 18 `d` 1
   , idesc    = "A long haft with a sharp blade. Designed and refined for war."
   }
@@ -1671,8 +1671,8 @@ halberdPushActor = halberd
   { iname    = "Swiss Halberd"
   , ifreq    = [(TREASURE, 20)]
   , irarity  = [(7, 0), (9, 15)]
-  , iaspects = [SetFlag Unique]
-               ++ iaspects halberd
+  , iaspects = SetFlag Unique
+               : iaspects halberd
   , ieffects = [PushActor (ThrowMod 200 100 1)]  -- 2 steps, slow
   , idesc    = "A versatile polearm, with great reach and leverage. Foes are held at a distance."
   }

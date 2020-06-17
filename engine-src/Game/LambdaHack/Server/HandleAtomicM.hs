@@ -142,7 +142,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdSpotItemBag (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
+    when (any (itemAffectsShineRadius discoAspect) iids) $
       invalidateLucidAid aid
     when (any (itemAffectsPerRadius discoAspect) iids) $
       reconsiderPerActor aid
@@ -157,7 +157,7 @@ cmdAtomicSemSer oldState cmd = case cmd of
   UpdLoseItemBag (CActor aid _) bag -> do
     discoAspect <- getsState sdiscoAspect
     let iids = EM.keys bag
-    when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
+    when (any (itemAffectsShineRadius discoAspect) iids) $
       invalidateLucidAid aid
     when (any (itemAffectsPerRadius discoAspect) iids) $
       reconsiderPerActor aid
@@ -244,7 +244,7 @@ validateFloorBag :: MonadServer m => ItemBag -> LevelId -> m ()
 validateFloorBag bag lid = do
   discoAspect <- getsState sdiscoAspect
   let iids = EM.keys bag
-  when (any (\iid -> itemAffectsShineRadius discoAspect iid) iids) $
+  when (any (itemAffectsShineRadius discoAspect) iids) $
     invalidateLucidLid lid
 
 levelOfStash :: MonadStateRead m => ActorId -> m LevelId

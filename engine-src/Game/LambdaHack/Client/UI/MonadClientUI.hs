@@ -131,7 +131,7 @@ displayFrames lid frs = do
   -- e.g., when our actor is attacked on a remote level,
   -- then pad with tripple delay to give more time to see the remote frames(s).
   lidV <- viewedLevelUI
-  frames <- if (lidV == lid)
+  frames <- if lidV == lid
             then do
               modifySession $ \sess -> sess { sdisplayNeeded = False
                                             , sturnDisplayed = True }

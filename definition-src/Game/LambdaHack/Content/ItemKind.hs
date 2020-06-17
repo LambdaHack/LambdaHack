@@ -521,7 +521,7 @@ validateSingle ik@ItemKind{..} =
           f VerbMsgFail{} = True
           f _ = False
       in validateOnlyOne ieffects "VerbMsgFail" f)  -- may be duped if nested
-  ++ (validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect)
+  ++ validateNotNested ieffects "OnSmash or OnCombine" onSmashOrCombineEffect
        -- but duplicates permitted
   ++ let nonPositiveBurn :: Effect -> Bool
          nonPositiveBurn (Burn d) = Dice.infDice d <= 0

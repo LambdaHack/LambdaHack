@@ -264,7 +264,7 @@ computeTarget aid = do
         return $ Just $ if slackDoctrine then take6 tgtpath else tgtpath
       pickNewTarget = pickNewTargetIgnore Nothing
       pickNewTargetIgnore :: Maybe ActorId -> m (Maybe TgtAndPath)
-      pickNewTargetIgnore maidToIgnore = do
+      pickNewTargetIgnore maidToIgnore =
         case cstashes of
           (_, (fid2, pos2)) : _ -> setPath $ TPoint (TStash fid2) (blid b) pos2
           [] -> do
@@ -467,7 +467,7 @@ computeTarget aid = do
               then pickNewTarget
               else return $ Just tap
           -- Don't stop fleeing into hideout after 5 turns even if foes appear.
-          THideout -> do
+          THideout ->
             -- Approach or stay in the hideout until 20 turns pass.
             if not recentlyFled20
             then pickNewTarget
@@ -555,7 +555,5 @@ computeTarget aid = do
                      then return $ Just tap
                      else pickNewTarget
   if canReach
-  then case oldTgtUpdatedPath of
-    Nothing -> pickNewTarget
-    Just tap -> updateTgt tap
+  then maybe pickNewTarget updateTgt oldTgtUpdatedPath
   else return Nothing

@@ -116,7 +116,7 @@ mkUIOptions COps{corule} benchmark = do
 
 -- | Modify client options with UI options.
 applyUIOptions :: COps -> UIOptions -> ClientOptions -> ClientOptions
-applyUIOptions COps{corule} uioptions soptions =
+applyUIOptions COps{corule} uioptions =
      (\opts -> opts {sgtkFontFamily =
         sgtkFontFamily opts `mplus` Just (uGtkFontFamily uioptions)}) .
      (\opts -> opts {sdlSquareFontFile =
@@ -143,4 +143,3 @@ applyUIOptions COps{corule} uioptions soptions =
         stitle opts `mplus` Just (rtitle corule)}) .
      (\opts -> opts {sfontDir =
         sfontDir opts `mplus` Just (rfontDir corule)})
-     $ soptions

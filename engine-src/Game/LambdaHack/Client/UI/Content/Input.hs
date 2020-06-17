@@ -54,10 +54,10 @@ makeData muiOptions (InputContentRaw copsClient) =
                                                    , aiming = MoveXhair v n }
       isMainMenu (_, ([CmdMainMenu], _, _)) = True
       isMainMenu _ = False
-      rawConent = copsClient ++ uCommands0
-      (rawConentMainMenu, rawConentNoMainMenu) = partition isMainMenu rawConent
+      rawContent = copsClient ++ uCommands0
+      (rawContentMainMenu, rawContentNoMainMenu) = partition isMainMenu rawContent
       filteredContent =
-        rawConentMainMenu
+        rawContentMainMenu
         ++ ((if uVi0
              then filter (\(k, _) ->
                     k `notElem` [K.mkKM "period", K.mkKM "C-period"])
@@ -75,14 +75,14 @@ makeData muiOptions (InputContentRaw copsClient) =
                              ++ map (K.KM K.Shift) K.dirRunShift
                              ++ map K.mkKM [ "KP_Begin", "C-KP_Begin"
                                            , "KP_5", "C-KP_5" ])
-             $ rawConentNoMainMenu)
+             $ rawContentNoMainMenu)
       bcmdList =
         -- Users are free to overwrite commands, but at the defaults should be
         -- non-overlapping with the movement keys.
 #ifdef WITH_EXPENSIVE_ASSERTIONS
-        assert (rawConentMainMenu ++ rawConentNoMainMenu == filteredContent
+        assert (rawContentMainMenu ++ rawContentNoMainMenu == filteredContent
                 `blame` "duplicate keys"
-                `swith` (rawConentMainMenu ++ rawConentNoMainMenu)
+                `swith` (rawContentMainMenu ++ rawContentNoMainMenu)
                         \\ filteredContent) $
 #endif
           filteredContent

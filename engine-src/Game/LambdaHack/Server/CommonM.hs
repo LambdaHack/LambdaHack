@@ -316,7 +316,7 @@ electLeader fid lid aidToReplace = do
     let candidates = filter (\(_, b) -> bwatch b /= WSleep) onThisLevel
                      ++ awake ++ sleeping ++ negative
         mleaderNew =
-          listToMaybe $ filter (/= aidToReplace) $ map fst $ candidates
+          listToMaybe $ filter (/= aidToReplace) $ map fst candidates
     execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 setFreshLeader :: MonadServerAtomic m => FactionId -> ActorId -> m ()

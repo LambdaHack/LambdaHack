@@ -169,7 +169,7 @@ gameModeP = optional $ toGameMode <$>
   toGameMode :: String -> GroupName ModeKind
   toGameMode = GroupName . head . T.words . T.pack
   nonEmptyStr :: ReadM String
-  nonEmptyStr = eitherReader $ \s -> case s of
+  nonEmptyStr = eitherReader $ \case
     "" -> Left "name of game mode cannot be empty"
     ns -> Right ns
 
@@ -322,10 +322,10 @@ logPriorityP = optional $
            ++ "CIs without graphics access; setting priority to 0 causes "
            ++ "SDL frontend to init and quit at once" )
   where
-    verifyLogPriority n = do
-      if (n >= 0 && n <= 5)
+    verifyLogPriority n =
+      if n >= 0 && n <= 5
       then return n
-      else readerError $ "N has to be 0 or a positive integer not larger than 5"
+      else readerError "N has to be 0 or a positive integer not larger than 5"
 
 disableAutoYesP :: Parser Bool
 disableAutoYesP =

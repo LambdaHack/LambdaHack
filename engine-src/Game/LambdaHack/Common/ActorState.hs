@@ -451,8 +451,7 @@ anyFoeAdj :: ActorId -> State -> Bool
 anyFoeAdj = vicinityFoeAdj (const True)
 
 anyHarmfulFoeAdj :: ActorMaxSkills -> ActorId -> State -> Bool
-anyHarmfulFoeAdj actorMaxSkills =
-  vicinityFoeAdj (\(aid2, b2) -> actorWorthKilling actorMaxSkills aid2 b2)
+anyHarmfulFoeAdj = vicinityFoeAdj . uncurry . actorWorthKilling
 
 adjacentBigAssocs :: Actor -> State -> [(ActorId, Actor)]
 {-# INLINE adjacentBigAssocs #-}
