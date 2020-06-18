@@ -43,6 +43,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
@@ -334,22 +335,25 @@ embedBenefit :: MonadClientRead m
              -> [(Point, ItemBag)]
              -> m [(Double, (Point, ItemBag))]
 embedBenefit fleeVia aid pbags = do
-  COps{coTileSpeedup} <- getsState scops
+  COps{cocave, coTileSpeedup} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  lvl <- getLevel (blid b)
   oursExploring <- getsState $ oursExploringAssocs (bfid b)
   let oursExploringLid =
         filter (\(_, body) -> blid body == blid b) oursExploring
+      spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
+      hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
+      lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
   actorSk <- if fleeVia `elem` [ViaAnything, ViaExit]
                   -- targeting, possibly when not a leader
              then getsState $ getActorMaxSkills aid
              else currentSkillsClient aid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
-  fact <- getsState $ (EM.! bfid b) . sfactionD
   condOurAdj <- getsState $ any (\(_, b2) -> isFriend (bfid b) fact (bfid b2))
                             . adjacentBigAssocs b
-  lvl <- getLevel (blid b)
   unexploredTrue <- unexploredDepth True (blid b)
   unexploredFalse <- unexploredDepth False (blid b)
   condEnoughGear <- condEnoughGearM aid
@@ -394,7 +398,8 @@ embedBenefit fleeVia aid pbags = do
                 Nothing -> False
                 Just (lid, p) ->
                   lid == blid b
-                  && length oursExploring > 1
+                  && (length oursExploring > 1
+                      || lvlSpawnsUs)
                   && (length oursExploringLid <= 1
                         -- not @==@ in case guard temporarily nonmoving
                       || p == bpos b && not condOurAdj)
@@ -530,11 +535,15 @@ closestFoes foes aid =
 -- not chased to avoid loops of bloodless takeovers.
 closestStashes :: MonadClient m => ActorId -> m [(Int, (FactionId, Point))]
 closestStashes aid = do
+  COps{cocave} <- getsState scops
   factionD <- getsState sfactionD
   b <- getsState $ getActorBody aid
   lvl <- getLevel (blid b)
   oursExploring <- getsState $ oursExploringAssocs (bfid b)
   let fact = factionD EM.! bfid b
+      spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
+      hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
+      lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
       qualifyStash (fid2, Faction{gstash}) = case gstash of
         Nothing -> Nothing
         Just (lid, pos) ->
@@ -544,7 +553,8 @@ closestStashes aid = do
           if lid == blid b
              && (fid2 == bfid b
                  && isNothing (posToBigLvl pos lvl)  -- unguarded
-                 && length oursExploring > 1  -- other actors able to explore
+                 && (length oursExploring > 1  -- other actors able to explore
+                     || lvlSpawnsUs)  -- or future spawned will be able
                  || isFoe (bfid b) fact fid2)
           then Just (fid2, pos)
           else Nothing

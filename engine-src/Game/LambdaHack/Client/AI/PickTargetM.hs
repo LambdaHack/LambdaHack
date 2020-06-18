@@ -35,6 +35,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import           Game.LambdaHack.Common.Time
 import           Game.LambdaHack.Common.Types
 import           Game.LambdaHack.Common.Vector
+import qualified Game.LambdaHack.Content.CaveKind as CK
 import           Game.LambdaHack.Content.ModeKind
 import           Game.LambdaHack.Content.RuleKind
 import           Game.LambdaHack.Content.TileKind (isUknownSpace)
@@ -81,7 +82,7 @@ refreshTarget (aid, body) = do
 computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
 {-# INLINE computeTarget #-}
 computeTarget aid = do
-  cops@COps{corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
+  cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
   mleader <- getsClient sleader
@@ -435,6 +436,9 @@ computeTarget aid = do
             oursExploring <- getsState $ oursExploringAssocs (bfid b)
             let oursExploringLid =
                   filter (\(_, body) -> blid body == lid) oursExploring
+                spawnFreqs = CK.cactorFreq $ okind cocave $ lkind lvl
+                hasGroup grp = fromMaybe 0 (lookup grp spawnFreqs) > 0
+                lvlSpawnsUs = any hasGroup $ fgroups (gplayer fact)
            -- Even if made peace with the faction, loot stash one last time.
             if (calmE || null nearbyFoes)  -- no risk or can't defend anyway
                && not heavilyDistressed  -- not under heavy fire
@@ -446,7 +450,8 @@ computeTarget aid = do
                        && (null nearbyFoes  -- if no foes nearby
                            || length oursExploringLid > 1) -- or buddies nearby
                        || isNothing (posToBigLvl pos lvl))  -- or unguarded
-                   && length oursExploring > 1  -- other actors able to explore
+                   && (length oursExploring > 1  -- other actors able to explore
+                       || lvlSpawnsUs)  -- or future spawned will be able
                    || isFoe (bfid b) fact fid2)
             then return $ Just tap
             else pickNewTarget
