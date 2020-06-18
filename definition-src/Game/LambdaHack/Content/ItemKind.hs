@@ -258,6 +258,7 @@ data DetectKind =
   | DetectExit
   | DetectHidden
   | DetectEmbed
+  | DetectStash
   deriving (Show, Eq, Generic)
 
 -- | Specification of how to randomly roll a timer at item creation

@@ -1869,13 +1869,13 @@ effectDetect execSfx d radius target container = do
   lvl <- getLevel $ blid b
   s <- getState
   getKind <- getsState $ flip getIidKindServer
+  factionD <- getsState sfactionD
   let lootPredicate p =
         p `EM.member` lfloor lvl
         || (case posToBigAssoc p (blid b) s of
               Nothing -> False
               Just (_, body) ->
-                let belongings = EM.keys (beqp body)
-                      -- shared stash ignored, because hard to get
+                let belongings = EM.keys (beqp body)  -- shared stash ignored
                 in any belongingIsLoot belongings)
         || any embedHasLoot (EM.keys $ getEmbedBag (blid b) p s)
       itemKindIsLoot = isNothing . lookup IK.UNREPORTED_INVENTORY . IK.ifreq
@@ -1898,6 +1898,10 @@ effectDetect execSfx d radius target container = do
       effectHasLoot (IK.SeqEffect effs) =
         or $ map effectHasLoot effs
       effectHasLoot _ = False
+      stashPredicate p = any (onStash p) $ EM.assocs factionD
+      onStash p (fid, fact) = case gstash fact of
+        Just (lid, pos) -> pos == p && lid == blid b && fid /= bfid b
+        Nothing -> False
       (predicate, action) = case d of
         IK.DetectAll -> (const True, const $ return False)
         IK.DetectActor -> ((`EM.member` lbig lvl), const $ return False)
@@ -1927,8 +1931,11 @@ effectDetect execSfx d radius target container = do
                 return $! not $ null l  -- KISS, even if client knows all
           in (predicateH, actionH)
         IK.DetectEmbed -> ((`EM.member` lembed lvl), const $ return False)
+        IK.DetectStash -> (stashPredicate, const $ return False)
   effectDetectX d predicate action execSfx radius target
 
+-- This is not efficient at all, so optimize iff detection is added
+-- to periodic organs or common periodic items or often activated embeds.
 effectDetectX :: MonadServerAtomic m
               => IK.DetectKind -> (Point -> Bool) -> ([Point] -> m Bool)
               -> m () -> Int -> ActorId -> m UseResult

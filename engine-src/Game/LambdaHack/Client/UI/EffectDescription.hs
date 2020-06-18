@@ -180,6 +180,7 @@ detectToObject d = case d of
   DetectExit -> "exit"
   DetectHidden -> "secret"
   DetectEmbed -> "feature"
+  DetectStash -> "stash"
 
 detectToVerb :: DetectKind -> Text
 detectToVerb d = case d of
@@ -189,6 +190,7 @@ detectToVerb d = case d of
   DetectExit -> "learn nearby"
   DetectHidden -> "uncover nearby"
   DetectEmbed -> "notice nearby"
+  DetectStash -> "locate"
 
 slotToSentence :: EqpSlot -> Text
 slotToSentence es = case es of
