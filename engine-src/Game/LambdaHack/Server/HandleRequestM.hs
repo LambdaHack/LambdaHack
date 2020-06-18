@@ -684,6 +684,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                  -- may be removed safely, without adverse effects
                  -- by crafting, even any silly crafting as an exploit; OK
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
+      blockedByItem = EM.member tpos (lfloor lvl)
   if chessDist tpos (bpos sb) > 1
   then return $ Just AlterDistant
   else if Just clientTile == hiddenTile then  -- searches
@@ -805,7 +806,10 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             else return False
           feats = TK.tfeature $ okind cotile serverTile
           tileActions =
-            mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
+            mapMaybe (Tile.parseTileAction
+                        (bproj sb)
+                        (underFeet || blockedByItem)  -- avoids AlterBlockItem
+                        embedKindList)
                      feats
           groupWithFromAction action = case action of
             Tile.WithAction grps _ | not bumping -> Just grps
@@ -884,24 +888,26 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       -- Note that stray embedded items (not from tile content definition)
       -- are never activated.
       if null tileActions then
-        return $ Just AlterNothing  -- no altering possible; silly client; fail
+        return $! if blockedByItem
+                     && not underFeet
+                     && Tile.isModifiable coTileSpeedup serverTile
+                  then Just AlterBlockItem  -- likely cause
+                  else Just AlterNothing  -- can't do; silly client; fail
       else
-        if underFeet || EM.notMember tpos (lfloor lvl) then
-          if underFeet || not (occupiedBigLvl tpos lvl)
-                          && not (occupiedProjLvl tpos lvl) then do
-            -- The items are first revealed for the sake of clients that
-            -- may see the tile as hidden. Note that the tile is not revealed
-            -- (unless it's altered later on, in which case the new one is).
-            revealEmbeds
-            tileTriggered <- processTileActions Nothing tileActions
-            let potentiallyMissing = filter (not . null) groupsToAlterWith
-            when (not tileTriggered && not underFeet && voluntary
-                  && not (null potentiallyMissing)) $
-              execSfxAtomic $ SfxMsgFid (bfid sb)
-                            $ SfxNoItemsForTile potentiallyMissing
-            return Nothing  -- altered as much as items allowed; success
-          else return $ Just AlterBlockActor
-        else return $ Just AlterBlockItem
+        if underFeet || not (occupiedBigLvl tpos lvl)
+                        && not (occupiedProjLvl tpos lvl) then do
+          -- The items are first revealed for the sake of clients that
+          -- may see the tile as hidden. Note that the tile is not revealed
+          -- (unless it's altered later on, in which case the new one is).
+          revealEmbeds
+          tileTriggered <- processTileActions Nothing tileActions
+          let potentiallyMissing = filter (not . null) groupsToAlterWith
+          when (not tileTriggered && not underFeet && voluntary
+                && not (null potentiallyMissing)) $
+            execSfxAtomic $ SfxMsgFid (bfid sb)
+                          $ SfxNoItemsForTile potentiallyMissing
+          return Nothing  -- altered as much as items allowed; success
+        else return $ Just AlterBlockActor
 
 -- * ReqWait
 

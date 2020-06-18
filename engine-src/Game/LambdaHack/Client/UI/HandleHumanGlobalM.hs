@@ -518,8 +518,6 @@ alterCommon bumping tpos = do
      | chessDist tpos (bpos sb) > 1 ->
          -- Checked late to give useful info about distant tiles.
          failSer AlterDistant
-     | not underFeet && EM.member tpos (lfloor lvl) ->
-         failSer AlterBlockItem
      | not underFeet
        && (occupiedBigLvl tpos lvl || occupiedProjLvl tpos lvl) ->
          -- Don't mislead describing terrain, if other actor is to blame.
@@ -1013,7 +1011,7 @@ alterTileAtPos = alterCommon False
 verifyAlters :: forall m. MonadClientUI m
              => Bool -> ActorId -> Point -> m (FailOrCmd ())
 verifyAlters bumping source tpos = do
-  COps{cotile} <- getsState scops
+  COps{cotile, coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
   arItem <- getsState $ aspectRecordFromIid $ btrunk sb
   embeds <- getsState $ getEmbedBag (blid sb) tpos
@@ -1024,11 +1022,21 @@ verifyAlters bumping source tpos = do
         then []  -- prevent embeds triggering each other in a loop
         else map (\(iid, kit) -> (getKind iid, (iid, kit))) (EM.assocs embeds)
       underFeet = tpos == bpos sb  -- if enter and alter, be more permissive
-      feats = TK.tfeature $ okind cotile $ lvl `at` tpos
+      blockedByItem = EM.member tpos (lfloor lvl)
+      tile = lvl `at` tpos
+      feats = TK.tfeature $ okind cotile tile
       tileActions =
-        mapMaybe (Tile.parseTileAction (bproj sb) underFeet embedKindList)
+        mapMaybe (Tile.parseTileAction
+                    (bproj sb)
+                    (underFeet || blockedByItem)  -- avoids AlterBlockItem
+                    embedKindList)
                  feats
-  processTileActions bumping source tpos tileActions
+  if null tileActions
+     && blockedByItem
+     && not underFeet
+     && Tile.isModifiable coTileSpeedup tile
+  then failSer AlterBlockItem
+  else processTileActions bumping source tpos tileActions
 
 processTileActions :: forall m. MonadClientUI m
                    => Bool -> ActorId -> Point -> [Tile.TileAction]
