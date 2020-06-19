@@ -747,11 +747,10 @@ reqAlterFail bumping effToUse voluntary source tpos = do
             unless (underFeet || EM.null embeds) $
               execSfxAtomic $ SfxTrigger source lid tpos serverTile
           changeTo tgroup = do
-            lvl2 <- getLevel lid
             -- No @SfxAlter@, because the effect is obvious (e.g., opened door).
             let nightCond kt = not (Tile.kindHasFeature TK.Walkable kt
                                     && Tile.kindHasFeature TK.Clear kt)
-                               || (if lnight lvl2 then id else not)
+                               || (if lnight lvl then id else not)
                                     (Tile.kindHasFeature TK.Dark kt)
             -- Sometimes the tile is determined precisely by the ambient light
             -- of the source tiles. If not, default to cave day/night condition.
@@ -761,9 +760,14 @@ reqAlterFail bumping effToUse voluntary source tpos = do
                                <$> opick cotile tgroup (const True))
                             return
                             mtoTile
-            unless (toTile == serverTile) $ do  -- don't regenerate same tile
+            embeds2 <- getsState $ getEmbedBag lid tpos
+            let newHasEmbeds = Tile.isEmbed coTileSpeedup toTile
+            -- Don't regenerate same tile, unless it had embeds, but all spent.
+            when (serverTile /= toTile
+                  || EM.null embeds2 && newHasEmbeds) $ do
               -- At most one of these two will be accepted on any given client.
-              execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
+              when (serverTile /= toTile) $
+                execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
               -- This case happens when a client does not see a searching
               -- action by another faction, but sees the subsequent altering
               -- or if another altering takes place in between.
@@ -784,9 +788,8 @@ reqAlterFail bumping effToUse voluntary source tpos = do
               -- on a client, in which case the command would be ignored
               -- on the client, without causing any problems. Otherwise,
               -- if the position is in view, client has accurate info.
-              case EM.lookup tpos (lembed lvl2) of
-                Just bag -> execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) bag
-                Nothing -> return ()
+              unless (EM.null embeds2) $
+                execUpdAtomic $ UpdLoseItemBag (CEmbed lid tpos) embeds2
               -- Altering always reveals the outcome tile, so it's not hidden
               -- and so its embedded items are always visible.
               embedItemOnPos lid tpos toTile
