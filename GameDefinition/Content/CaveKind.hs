@@ -63,9 +63,9 @@ pattern CAVE_SAFARI_3 = GroupName "caveSafari3"
 
 content :: [CaveKind]
 content =
-  [rogue, arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
+  [rogue, arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3]
 
-rogue,    arena, smoking, laboratory, noise, mine, empty, shallowRogue, outermost, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
+rogue,    arena, smoking, laboratory, noise, mine, empty, outermost, shallowRogue, raid, brawl, shootout, hunt, escape, zoo, ambush, battle, safari1, safari2, safari3 :: CaveKind
 
 -- * Underground caves; most of mediocre height and size
 
@@ -90,6 +90,8 @@ rogue = CaveKind
   , cactorFreq    = [(MONSTER, 60), (ANIMAL, 40)]
   , citemNum      = 6 `d` 5 + 10 - 10 `dL` 1  -- deep down quality over quantity
   , citemFreq     = [(IK.COMMON_ITEM, 40), (IK.TREASURE, 60)]
+    -- note that the groups are flattened; e.g., if an item is moved to another
+    -- group included here with the same weight, the outcome wouldn't change
   , cplaceFreq    = [(ROGUE, 1)]
   , cpassable     = False
   , labyrinth     = False
@@ -263,13 +265,6 @@ empty = rogue
                     , (TINY_STAIRCASE, 1) ]
   , cdesc         = "Swirls of warm fog fill the air, the hiss of geysers sounding all around."
   }
-shallowRogue = rogue
-  { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
-  , cXminSize     = 60
-  , cYminSize     = 21
-  , cmaxStairsNum = 1  -- ensure heroes meet initial monsters and their loot
-  , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
-  }
 outermost = shallowRogue
   { csymbol       = 'B'
   , cname         = "Cave entrance"
@@ -285,6 +280,13 @@ outermost = shallowRogue
   , cmaxStairsNum = 1
   , cescapeFreq   = [(INDOOR_ESCAPE_UP, 1)]
   , cdesc         = "This close to the surface, the sunlight still illuminates the dungeon."
+  }
+shallowRogue = rogue
+  { cfreq         = [(CAVE_SHALLOW_ROGUE, 100)]
+  , cXminSize     = 60
+  , cYminSize     = 21
+  , cmaxStairsNum = 1  -- ensure heroes meet initial monsters and their loot
+  , cdesc         = "The snorts and grunts of savage beasts can be clearly heard."
   }
 
 -- * Overground "caves"; no story-wise limits wrt height and size
@@ -462,7 +464,7 @@ zoo = rogue  -- few lights and many solids, to help the less numerous heroes
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 7 `d` 8
-  , citemFreq     = [ (IK.COMMON_ITEM, 100), (LIGHT_MANIPULATION, 1000)
+  , citemFreq     = [ (IK.COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 1000)
                     , (STARTING_WEAPON, 1000) ]
   , cplaceFreq    = [(ZOO, 1)]
   , cpassable     = True
@@ -532,7 +534,7 @@ battle = rogue  -- few lights and many solids, to help the less numerous heroes
   , chidden       = 0
   , cactorFreq    = []
   , citemNum      = 5 `d` 8
-  , citemFreq     = [(IK.COMMON_ITEM, 100), (LIGHT_MANIPULATION, 200)]
+  , citemFreq     = [(IK.COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 200)]
   , cplaceFreq    = [(BATTLE, 50), (ROGUE, 50)]
   , cpassable     = True
   , cdefTile      = BATTLE_SET_DARK

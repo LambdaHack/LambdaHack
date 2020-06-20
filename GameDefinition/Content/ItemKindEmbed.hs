@@ -202,7 +202,7 @@ fireBig = fireSmall
   , iname    = "big fire"
   , ifreq    = [(BIG_FIRE, 1)]
   , ieffects = [ Burn 2
-               , CreateItem Nothing CGround WOODEN_TORCH timerNone
+               , CreateItem Nothing CGround S_WOODEN_TORCH timerNone
                , Explode S_SPARK ]
   , idesc    = "Glowing with light and warmth."
   , ikit     = []

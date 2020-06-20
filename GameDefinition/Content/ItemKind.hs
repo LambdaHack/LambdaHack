@@ -339,7 +339,7 @@ flashBomb = fragmentationBomb
   , idamage  = 0
   , iaspects = [ SetFlag Lobable, SetFlag Fragile
                , toVelocity 70 ]  -- bad shape for throwing
-  , ieffects = [Explode S_FOCUSED_fLASH, OnSmash (Explode S_VIOLENT_FLASH)]
+  , ieffects = [Explode S_FOCUSED_FLASH, OnSmash (Explode S_VIOLENT_FLASH)]
   , idesc    = "For dramatic entrances and urgent exits."
   }
 firecrackerBomb = fragmentationBomb
@@ -895,8 +895,8 @@ ediblePlant7 = ediblePlantTemplate
 light1 = ItemKind
   { isymbol  = symbolLight
   , iname    = "wooden torch"
-  , ifreq    = [ (COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)
-               , (WOODEN_TORCH, 1) ]
+  , ifreq    = [ (COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 100)
+               , (S_WOODEN_TORCH, 1) ]
   , iflavour = zipPlain [Brown]
   , icount   = 1 `dL` 4
   , irarity  = [(1, 40), (4, 1)]
@@ -916,7 +916,7 @@ light1 = ItemKind
 light2 = ItemKind
   { isymbol  = symbolLight
   , iname    = "oil lamp"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 100)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1 `dL` 2
   , irarity  = [(4, 10)]
@@ -935,7 +935,7 @@ light2 = ItemKind
 light3 = ItemKind
   { isymbol  = symbolLight
   , iname    = "brass lantern"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100)]
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 100)]
   , iflavour = zipPlain [Red]
   , icount   = 1
   , irarity  = [(10, 6)]
@@ -954,7 +954,7 @@ light3 = ItemKind
 blanket = ItemKind
   { isymbol  = symbolLight
   , iname    = "wool blanket"
-  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_MANIPULATION, 100), (BLANKET, 1)]
+  , ifreq    = [(COMMON_ITEM, 100), (LIGHT_ATTENUATOR, 100), (BLANKET, 1)]
   , iflavour = zipPlain [BrBlack]
   , icount   = 1
   , irarity  = [(1, 1)]  -- not every playthrough needs one

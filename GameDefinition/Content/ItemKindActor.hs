@@ -1,9 +1,10 @@
 -- | Actor (or rather actor body trunk) definitions.
 module Content.ItemKindActor
   ( -- * Group name patterns
-    pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL
-  , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_MANIPULATION, pattern WOODEN_TORCH, pattern BLANKET, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_WEAPON, pattern GEM
-  , actorsGN
+    pattern S_WOODEN_TORCH
+  , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL
+  , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern BLANKET, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_WEAPON, pattern GEM
+  , actorsGN, actorsGNSingleton
   , -- * Content
     actors
   ) where
@@ -21,14 +22,20 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
+actorsGNSingleton :: [GroupName ItemKind]
+actorsGNSingleton =
+       [S_WOODEN_TORCH]
+
+pattern S_WOODEN_TORCH :: GroupName ItemKind
+
 actorsGN :: [GroupName ItemKind]
 actorsGN =
        [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL]
-    ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_MANIPULATION, WOODEN_TORCH, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM]
+    ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM]
 
 pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL :: GroupName ItemKind
 
-pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_MANIPULATION, WOODEN_TORCH, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM :: GroupName ItemKind
+pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM :: GroupName ItemKind
 
 pattern HERO = GroupName "hero"
 pattern SCOUT_HERO = GroupName "scout hero"
@@ -45,12 +52,13 @@ pattern ANIMAL = GroupName "animal"
 pattern MOBILE_ANIMAL = GroupName "mobile animal"
 pattern IMMOBILE_ANIMAL = GroupName "immobile animal"
 
+pattern S_WOODEN_TORCH = GroupName "wooden torch"
+
 pattern ADD_SIGHT = GroupName "sight improvement"
-pattern ARMOR_RANGED = GroupName "armor ranged"
+pattern ARMOR_RANGED = GroupName "ranged armor"
 pattern ADD_NOCTO_1 = GroupName "noctovision improvement"
 pattern WEAK_ARROW = GroupName "weak arrow"
-pattern LIGHT_MANIPULATION = GroupName "light manipulator"
-pattern WOODEN_TORCH = GroupName "wooden torch"
+pattern LIGHT_ATTENUATOR = GroupName "light attenuator"
 pattern BLANKET = GroupName "blanket"
 pattern RING_OF_OPPORTUNITY_SNIPER = GroupName "ring of sniper"
 pattern ANY_ARROW = GroupName "arrow"
@@ -77,6 +85,10 @@ geyserBoiling, geyserArsenic, geyserSulfur :: ItemKind
 
 -- * Hunams
 
+humanOrgans :: [(GroupName ItemKind, CStore)]
+humanOrgans = [ (S_FIST, COrgan), (S_FOOT, COrgan)
+              , (S_EYE_6, COrgan), (S_EAR_3, COrgan)
+              , (S_SAPIENT_BRAIN, COrgan) ]
 warrior = ItemKind
   { isymbol  = '@'
   , iname    = "warrior"  -- modified if initial actors in hero faction
@@ -98,9 +110,7 @@ warrior = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = ""  -- "A hardened veteran of combat."
-  , ikit     = [ (S_FIST, COrgan), (S_FOOT, COrgan)
-               , (S_EYE_6, COrgan), (S_EAR_3, COrgan)
-               , (S_SAPIENT_BRAIN, COrgan) ]
+  , ikit     = humanOrgans
   }
 warrior2 = warrior
   { iname    = "adventurer"
@@ -122,7 +132,7 @@ warrior5 = warrior
 scout = warrior
   { iname    = "scout"
   , ifreq    = [(SCOUT_HERO, 100), (MOBILE, 1)]
-  , ikit     = ikit warrior
+  , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (ARMOR_RANGED, CEqp)
                   , (ADD_NOCTO_1, CStash) ]
@@ -131,7 +141,7 @@ scout = warrior
 ranger = warrior
   { iname    = "ranger"
   , ifreq    = [(RANGER_HERO, 100), (MOBILE, 1)]
-  , ikit     = ikit warrior
+  , ikit     = humanOrgans
                ++ [ (ARMOR_RANGED, CEqp)
                   , (WEAK_ARROW, CStash) ]
   -- , idesc    = ""
@@ -139,31 +149,31 @@ ranger = warrior
 escapist = warrior
   { iname    = "escapist"
   , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
-  , ikit     = ikit warrior
+  , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
                   , (ARMOR_RANGED, CEqp)
                   , (WEAK_ARROW, CStash)  -- mostly for probing
-                  , (LIGHT_MANIPULATION, CStash)
-                  , (WOODEN_TORCH, CStash)
+                  , (LIGHT_ATTENUATOR, CStash)
+                  , (S_WOODEN_TORCH, CStash)
                   , (BLANKET, CStash) ]
   -- , idesc    = ""
   }
 ambusher = warrior
   { iname    = "ambusher"
   , ifreq    = [(AMBUSHER_HERO, 100), (MOBILE, 1)]
-  , ikit     = ikit warrior  -- dark and numerous, so more kit without exploring
+  , ikit     = humanOrgans  -- dark and numerous, so more kit without exploring
                ++ [ (RING_OF_OPPORTUNITY_SNIPER, CEqp)
                   , (ANY_ARROW, CStash)
                   , (WEAK_ARROW, CStash)
                   , (EXPLOSIVE, CStash)
-                  , (LIGHT_MANIPULATION, CEqp)
-                  , (WOODEN_TORCH, CStash) ]
+                  , (LIGHT_ATTENUATOR, CEqp)
+                  , (S_WOODEN_TORCH, CStash) ]
   -- , idesc    = ""
   }
 brawler = warrior
   { iname    = "brawler"
   , ifreq    = [(BRAWLER_HERO, 100), (MOBILE, 1)]
-  , ikit     = ikit warrior
+  , ikit     = humanOrgans
                ++ [(STARTING_WEAPON, CEqp)]
   -- , idesc    = ""
   }
@@ -330,7 +340,7 @@ torsor = ItemKind
 -- They need rather strong melee, because they don't use items.
 -- They have dull colors, except for yellow, because there is no dull variant.
 
-goldenJackal = ItemKind  -- basically a much smaller and slower hyena
+goldenJackal = ItemKind  -- basically a much smaller, slower and nosy hyena
   { isymbol  = 'j'
   , iname    = "golden jackal"
   , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
@@ -350,7 +360,7 @@ goldenJackal = ItemKind  -- basically a much smaller and slower hyena
                , (S_EYE_6, COrgan), (S_NOSTRIL, COrgan), (S_EAR_8, COrgan)
                , (S_ANIMAL_BRAIN, COrgan) ]
   }
-griffonVulture = ItemKind
+griffonVulture = ItemKind  -- keep it boring and weak, because it summons
   { isymbol  = 'v'
   , iname    = "griffon vulture"
   , ifreq    = [ (ANIMAL, 100), (MOBILE, 1), (MOBILE_ANIMAL, 100)
@@ -370,8 +380,7 @@ griffonVulture = ItemKind
                , SetFlag Durable ]
       -- Animals don't have leader, usually, so even if only one on level,
       -- it pays the communication overhead, so the speed is higher to get
-      -- them on par with human leaders moving solo. Common random double moves,
-      -- on either side, are just too bothersome.
+      -- them on par with human leaders moving solo.
   , ieffects = []
   , idesc    = "It soars high above, searching for vulnerable prey."
   , ikit     = [ (S_SCREECHING_BEAK, COrgan)  -- in reality it grunts and hisses
@@ -455,11 +464,12 @@ rattlesnake = ItemKind
   , idamage  = 0
   , iaspects = [ AddSkill SkMaxHP 28, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 16, AddSkill SkNocto 2
+               , AddSkill SkAggression 2  -- often discharged. so flees anyway
                , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "Beware its rattle - it serves as a warning of an agonising death."
-  , ikit     = [ (S_VENOM_FANG, COrgan)  -- when on cooldown, it's weaponless
+  , ikit     = [ (S_VENOM_FANG, COrgan)  -- when discharged, it's weaponless
                , (S_RATLLE, COrgan)
                , (S_EYE_3, COrgan), (S_NOSTRIL, COrgan), (S_EAR_6, COrgan)
                , (S_ANIMAL_BRAIN, COrgan) ]
@@ -494,7 +504,7 @@ komodoDragon = ItemKind
   , iverbHit = "thud"
   , iweight  = 80000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 40, AddSkill SkMaxCalm 60
+  , iaspects = [ AddSkill SkMaxHP 40, AddSkill SkMaxCalm 60  -- regens
                , AddSkill SkSpeed 17, AddSkill SkNocto 2
                , AddSkill SkAggression 1  -- match the description
                , SetFlag Durable ]
@@ -522,7 +532,8 @@ alligator = ItemKind
                , SetFlag Durable ]
   , ieffects = []
   , idesc    = "An armored predator from the dawn of time. You better not get within its reach."
-  , ikit     = [ (S_HUGE_TAIL, COrgan), (S_LARGE_JAW, COrgan)
+  , ikit     = [ (S_HUGE_TAIL, COrgan)  -- the special trick, breaking frontline
+               , (S_LARGE_JAW, COrgan)
                , (S_SMALL_CLAW, COrgan)
                , (S_ARMORED_SKIN, COrgan)
                , (S_EYE_6, COrgan), (S_EAR_8, COrgan)
@@ -565,7 +576,7 @@ beeSwarm = ItemKind
   , iverbHit = "buzz"
   , iweight  = 1000
   , idamage  = 0
-  , iaspects = [ AddSkill SkMaxHP 8, AddSkill SkMaxCalm 60
+  , iaspects = [ AddSkill SkMaxHP 10, AddSkill SkMaxCalm 60
                , AddSkill SkSpeed 30, AddSkill SkNocto 2  -- armor in sting
                , AddSkill SkAlter (-2)  -- can't use normal stairs nor doors
                , AddSkill SkWait (-2)  -- can't brace, sleep and lurk
