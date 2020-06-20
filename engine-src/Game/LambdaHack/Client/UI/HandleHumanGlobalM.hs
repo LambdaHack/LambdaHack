@@ -772,6 +772,9 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
           _ -> cLegal
         prompt = "What to"
         promptEqp = "What consumable to"
+        eqpItemsN body =
+          let n = sum $ map fst $ EM.elems $ beqp body
+          in "(" <> makePhrase [MU.CarWs n "item"]
         ppItemDialogBody body actorSk cCur = case cCur of
           MStore CEqp | not $ calmEnough body actorSk ->
             "distractedly paw at" <+> ppItemDialogModeIn cCur
@@ -784,11 +787,13 @@ selectItemsToMove cLegal cLegalRaw destCStore mverb auto = do
               "attempt to fit into equipment" <+> ppItemDialogModeFrom cCur
             CGround | mstash == Just (blid body, bpos body) ->
               "greedily attempt to" <+> verb <+> ppItemDialogModeFrom cCur
-            CEqp -> let n = sum $ map fst $ EM.elems $ beqp body
-                    in verb
-                       <+> "(" <> makePhrase [MU.CarWs n "item"] <+> "so far)"
-                       <+> ppItemDialogModeFrom cCur
+            CEqp -> verb
+                    <+> eqpItemsN body <+> "so far)"
+                    <+> ppItemDialogModeFrom cCur
             _ -> verb <+> ppItemDialogModeFrom cCur
+                 <+> if cCur == MStore CEqp
+                     then eqpItemsN body <+> "now)"
+                     else ""
         (promptGeneric, psuit) =
           -- We prune item list only for eqp, because other stores don't have
           -- so clear cut heuristics. So when picking up a stash, either grab
