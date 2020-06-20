@@ -498,3 +498,10 @@ The exceptions are the conditions that activate each turn, e.g., healing
 (regeneration, various resistances that effectively cure each turn)
 or wounding (poison). These are similar regardless of the team and so
 the condition is always only prolonged.
+
+Q: Why is a harpoon in my shared inventory stash charging for hundreds of turns?
+A: This is an artifact of time running independently on each level.
+Any ideas on how to improve this are welcome. A workaround is to drop and then
+pick up the item on the level you want to use it. It gets recharged after,
+randomly, from one to two times the normal cooldown period of the item
+and then recharges normally for as long as it's used only on this level.
