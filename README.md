@@ -10,9 +10,9 @@ games of arbitrary theme, size and complexity, with optional
 tactical squad combat. It's packaged together with a sample
 dungeon crawler in a quirky fantasy setting. The sample game can be
 tried out in the browser at http://lambdahack.github.io.
-The browser version runs fastest on Chrome. Keyboard commands
-and savefiles are supported only on recent enough versions of browsers,
-but mouse should work everywhere.
+The browser version runs fastest on Chrome, keyboard commands
+and savefiles are supported only on recent enough versions
+of browsers, but mouse should work everywhere.
 
 As an example of the engine's capabilities, here is a showcase
 of shooting down explosive projectiles. A couple were shot down close
@@ -22,8 +22,8 @@ and took out of the air the projectiles that would otherwise harm them.
 ![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/allureofthestars.com.shooting.down.explosives.gif)
 
 This was a semi-automatic stealthy speedrun of the escape scenario
-of the sample game that comes with the engine, native binary, SDL2 frontend,
-single tiny bitmap font. The enemy gang has a huge numerical and equipment
+of the sample game, native binary, SDL2 frontend, single tiny
+bitmap font. The enemy gang has a huge numerical and equipment
 superiority. Our team loots the area on auto-pilot until the first foe
 is spotted. Then they scout out enemy positions. Then hero 1 draws
 enemies and unfortunately enemy fire as well, which is when he valiantly
@@ -61,7 +61,7 @@ Other games known to use the LambdaHack library:
 * Allure of the Stars[6], a near-future Sci-Fi game
 * Space Privateers[8], an adventure game set in far future
 
-Note: the engine and the example game are bundled together in a single
+Note: the engine and the sample game are bundled together in a single
 Hackage[3] package released under the permissive `BSD3` license.
 You are welcome to create your own games by forking and modifying
 the single package, but please consider eventually splitting your changes
@@ -69,10 +69,10 @@ into a separate content-only package that depends on the upstream
 engine library. This will help us exchange ideas and share improvements
 to the common codebase. Alternatively, you can already start the development
 in separation by cloning and rewriting Allure of the Stars[10]
-and mix and merge with the example LambdaHack game rules at will.
+and mix and merge with the sample LambdaHack game rules at will.
 Note that the LambdaHack sample game derives from the Hack/Nethack visual
 and narrative tradition[9], while Allure of the Stars uses the more free-form
-Moria/Angband style (it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
+Moria/Angband style (it also uses the AGPL license, and BSD3 + AGPL = AGPL,
 so make sure you want to liberate your code and content to such an extent).
 
 
@@ -163,7 +163,7 @@ and optionally the Google Closure Compiler[16].
 The latest official version of the LambdaHack library can be downloaded,
 compiled for SDL2 and installed automatically using the Cabal tool,
 which is already a part of your OS distribution, or available within
-The Haskell Platform[7]. Get the game from Hackage[3] as follows
+The Haskell Platform[7]. Get the library from Hackage[3] as follows
 
     cabal update
     cabal install LambdaHack
@@ -178,6 +178,7 @@ with one of the less rudimentary terminal frontends (in which case you are
 on your own regarding font choice and color setup and you won't have
 the spiffy colorful squares outlining special positions that exist in SDL2
 frontend, but only crude cursor highlights), use Cabal flags, e.g,
+to switch to the vty console frontend optimized for screen readers, run
 
     cabal install -fvty
 
@@ -209,8 +210,8 @@ to HPC version).
     hpc report --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
     hpc markup --hpcdir=dist/hpc/dyn/mix/LambdaHack --hpcdir=dist/hpc/dyn/mix/LambdaHack-xxx/ LambdaHack
 
-A quick manual playing session after the automated tests would be in order,
-as well, since the tests don't touch the topmost UI layer.
+A quick manual playing session, after the automated tests, would be
+in order as well, since the tests don't touch the topmost UI layer.
 Note that a debug option of the form `--stopAfter*` is required to cleanly
 terminate any automated test. This is needed to gather any HPC info,
 because HPC requires a clean exit to save data files.
@@ -228,7 +229,7 @@ Generally, relax and try to stick to the style apparent in a file
 you are editing. Put big formatting changes in separate commits.
 
 Haddocks are provided for all module headers and for all functions and types
-from major modules, in particular the modules that are interfaces
+from major modules, in particular for the modules that are interfaces
 for a whole directory of modules. Apart of that, only very important
 functions and types are distinguished by having a haddock.
 If minor ones have comments, they should not be haddocks
