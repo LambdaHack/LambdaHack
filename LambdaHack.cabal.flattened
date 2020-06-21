@@ -1,5 +1,5 @@
 cabal-version: 2.2
-name:           LambdaHack
+name:          LambdaHack
 -- The package version. See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
 -- http://www.haskell.org/haskellwiki/Package_versioning_policy
@@ -8,49 +8,49 @@ name:           LambdaHack
 --             | |  | +--- code changes with no API change
 version:       0.10.0.0
 synopsis:      A game engine library for tactical squad ASCII roguelike dungeon crawlers
-description:   LambdaHack is a Haskell game engine library for ASCII roguelike
-               games of arbitrary theme, size and complexity, with optional
-               tactical squad combat. It's packaged together with a sample
-               dungeon crawler in fantasy setting that can be tried out
-               in the browser at <http://lambdahack.github.io>.
-               (It runs fastest on Chrome. Keyboard commands and savefiles
-               are supported only on recent enough versions of browsers.
-               Mouse should work everywhere.)
-               .
-               Please see the changelog file for recent improvements
-               and the issue tracker for short-term plans. Long term goals
-               include multiplayer tactical squad combat, in-game content
-               creation, auto-balancing and persistent content modification
-               based on player behaviour. Contributions are welcome.
-               .
-               Games known to use the LambdaHack library:
-               .
-               * Allure of the Stars, a near-future Sci-Fi game,
-               <http://hackage.haskell.org/package/Allure>
-               .
-               * Space Privateers, an adventure game set in far future,
-               <http://hackage.haskell.org/package/SpacePrivateers>
-               .
-               Note: All modules in this library are kept visible,
-               to let games override and reuse them.
-               OTOH, to reflect that some modules are implementation details
-               relative to others, the source code adheres to the following
-               convention. If a module has the same name as a directory,
-               the module is the exclusive interface to the directory.
-               No references to the modules in the directory are allowed
-               except from the interface module. This policy is only binding
-               when developing the library --- library users are free
-               to access any modules, since the library authors are in
-               no position to guess their particular needs.
-               .
-               This is a workaround .cabal file, flattened to eliminated
-               internal libraries until generating haddocks for them
-               is fixed. The original .cabal file is stored in the github repo.
+description: LambdaHack is a Haskell game engine library for ASCII roguelike
+             games of arbitrary theme, size and complexity, with optional
+             tactical squad combat. It's packaged together with a sample
+             dungeon crawler in a quirky fantasy setting. The sample game can be
+             tried out in the browser at <http://lambdahack.github.io>.
+             The browser version runs fastest on Chrome, keyboard commands
+             and savefiles are supported only on recent enough versions
+             of browsers, but mouse should work everywhere.
+             .
+             Please see the changelog file for recent improvements
+             and the issue tracker for short-term plans. Long term goals
+             include multiplayer tactical squad combat, in-game content
+             creation, auto-balancing and persistent content modification
+             based on player behaviour. Contributions are welcome.
+             .
+             Other games known to use the LambdaHack library:
+             .
+             * Allure of the Stars, a near-future Sci-Fi game,
+             <http://hackage.haskell.org/package/Allure>
+             .
+             * Space Privateers, an adventure game set in far future,
+             <http://hackage.haskell.org/package/SpacePrivateers>
+             .
+             Note: All modules in this library are kept visible,
+             to let games override and reuse them.
+             OTOH, to reflect that some modules are implementation details
+             relative to others, the source code adheres to the following
+             convention. If a module has the same name as a directory,
+             the module is the exclusive interface to the directory.
+             No references to the modules in the directory are allowed
+             except from the interface module. This policy is only binding
+             when developing the library --- library users are free
+             to access any modules, since the library authors are in
+             no position to guess their particular needs.
+             .
+             This is a workaround .cabal file, flattened to eliminated
+             internal libraries until generating haddocks for them
+             is fixed. The original .cabal file is stored in the github repo.
 homepage:      https://lambdahack.github.io
 bug-reports:   http://github.com/LambdaHack/LambdaHack/issues
 license:       BSD-3-Clause
 license-file:  COPYLEFT
-tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5
+tested-with:   GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.3, GHC==8.10.1
 data-files:    GameDefinition/config.ui.default,
                GameDefinition/fonts/16x16xw.woff,
                GameDefinition/fonts/16x16xw.bdf,
@@ -126,7 +126,7 @@ common options
   default-extensions: MonoLocalBinds, ScopedTypeVariables, OverloadedStrings
                       BangPatterns, RecordWildCards, NamedFieldPuns, MultiWayIf,
                       LambdaCase, DefaultSignatures, InstanceSigs,
-                      PatternSynonyms, MonadFailDesugaring, StrictData, CPP
+                      PatternSynonyms, StrictData, CPP
   other-extensions:   TemplateHaskell, MultiParamTypeClasses, RankNTypes,
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
