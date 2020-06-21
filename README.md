@@ -8,17 +8,28 @@ LambdaHack
 LambdaHack is a Haskell[1] game engine library for ASCII roguelike[2]
 games of arbitrary theme, size and complexity, with optional
 tactical squad combat. It's packaged together with a sample
-dungeon crawler in wierd fantasy setting that can also be tried out
-in the browser at http://lambdahack.github.io.
-(It runs fastest on Chrome. Keyboard commands and savefiles
-are supported only on recent enough versions of browsers.
-Mouse should work everywhere.)
+dungeon crawler in a quirky fantasy setting. The sample game can be
+tried out in the browser at http://lambdahack.github.io.
+The browser version runs fastest on Chrome. Keyboard commands
+and savefiles are supported only on recent enough versions of browsers,
+but mouse should work everywhere.
 
-As an example of the engine's capabilities, here is a showcase of shooting down explosive projectiles. A couple were shot down close enough to enemies to harm them. Others exploded closer to our party members and took out of the air the projectiles that would otherwise harm them.
+As an example of the engine's capabilities, here is a showcase
+of shooting down explosive projectiles. A couple were shot down close
+enough to enemies to harm them. Others exploded closer to our party members
+and took out of the air the projectiles that would otherwise harm them.
 
 ![gameplay screenshot](https://raw.githubusercontent.com/LambdaHack/media/master/screenshot/allureofthestars.com.shooting.down.explosives.gif)
 
-This was a semi-automatic stealthy speedrun of the escape scenario of the sample game that comes with the engine. Small bitmap font. The enemy gang has a huge numerical and equipment superiority. Our team loots the area on auto-pilot until the first foe is spotted. Then they scout out enemy positions. Then hero 1 draws enemies and unfortunately enemy fire as well, which is when he valiantly shoots down explosives to avoid the worst damage. Then heroine 2 sneaks behind enemy lines to reach the remaining treasure. That accomplished, the captain signals retreat and leaves for the next area (the zoo).
+This was a semi-automatic stealthy speedrun of the escape scenario
+of the sample game that comes with the engine, native binary, SDL2 frontend,
+single tiny bitmap font. The enemy gang has a huge numerical and equipment
+superiority. Our team loots the area on auto-pilot until the first foe
+is spotted. Then they scout out enemy positions. Then hero 1 draws
+enemies and unfortunately enemy fire as well, which is when he valiantly
+shoots down explosives to avoid the worst damage. Then heroine 2 sneaks
+behind enemy lines to reach the remaining treasure. That accomplished,
+the captain signals retreat and leaves for the next area (the zoo).
 
 
 Using the engine
@@ -43,7 +54,7 @@ include multiplayer tactical squad combat, in-game content
 creation, auto-balancing and persistent content modification
 based on player behaviour. Contributions are welcome.
 Please offer feedback to mikolaj.konarski@funktory.com or, preferably,
-at any of the public forums.
+on any of the public forums.
 
 Other games known to use the LambdaHack library:
 
@@ -64,20 +75,12 @@ and narrative tradition[9], while Allure of the Stars uses the more free-form
 Moria/Angband style (it also uses the `AGPL` license, and `BSD3 + AGPL = AGPL`,
 so make sure you want to liberate your code and content to such an extent).
 
-When creating a new game based on LambdaHack I've found it useful to place
-completely new content at the end of the content files to distinguish from
-merely modified original LambdaHack content and thus help merging with new
-releases. Removals of LambdaHack content merge reasonably well, so there are
-no special considerations. When modifying individual content items,
-it makes sense to keep their Haskell identifier names and change only
-in-game names and possibly frequency group names.
-
 
 Installation of the sample game from binary archives
 ----------------------------------------------------
 
-The game runs rather slowly in the browser (fastest on Chrome)
-and you are limited to only one font, though it's scalable.
+The game runs rather slowly in the browser (fastest on Chrome) and you are
+limited to the square font for all purposes, though it's scalable.
 Also, savefiles are prone to corruption on the browser,
 e.g., when it's closed while the game is still saving progress
 (which takes a long time). Hence, after trying out the game,
@@ -90,7 +93,7 @@ in the unpacked directory or use program shortcuts from the installer,
 if available. On Linux, make sure you have the SDL2 libraries installed
 on your system (e.g., libsdl2-2.0-0 and libsdl2-ttf-2.0-0 on Ubuntu).
 For Windows (XP no longer supported), the SDL2 and all other needed libraries
-are already contained in the game's binary archive.
+are included in the game's binary archive.
 
 
 Screen and keyboard configuration
@@ -100,75 +103,73 @@ The game UI can be configured via a config file.
 The default settings, the same that are built into the binary,
 are in [GameDefinition/config.ui.default](https://github.com/LambdaHack/LambdaHack/blob/master/GameDefinition/config.ui.default).
 When the game is run for the first time, the file is copied to the default
-user data folder, which is `~/.LambdaHack/` on Linux,
+user data location, which is `~/.LambdaHack/` on Linux,
 `C:\Users\<username>\AppData\Roaming\LambdaHack\`
 (or `C:\Documents And Settings\user\Application Data\LambdaHack\`
-or something else altogether) on Windows, and in RMB menu, under
-`Inspect/Application/Local Storage` when run inside the Chrome browser.
+or something else altogether) on Windows
+and `Inspect/Application/Local Storage` under RMB menu
+when run inside the Chrome browser.
 
-Screen font and consequently window size can be changed by editing
+Screen font and, consequently, window size can be changed by editing
 the config file in the user data folder. The default bitmap font
 `16x16xw.bdf` covers most national characters in the Latin alphabet
 (e.g. to give custom names to player characters) and results
-in a game window of exactly 720p (standard HD) dimensions. The `8x8xb.fnt`
+in a game window of exactly 720p HD dimensions. The `8x8xb.fnt`
 bitmap font results in a tiny window and covers latin-1 characters only.
 The scalable `16x16xw.woff` font results in window sizes dependent
 on the `scalableFontSize` parameter in the config file.
 With `scalableFontSize = 16` it should look almost the same
-as the pixel-perfect `16x16xw.bdf`.
+as the pixel-perfect `16x16xw.bdf`, with `scalableFontSize = 24`
+it's 1080p Full HD (you'd also need `sdlPropFontSize = 22`
+and `sdlMonoFontSize = 21`).
 
-If you don't have a numeric keypad, you can use the left hand movement
+If you don't have a numeric keypad, you can use the left-hand movement
 key setup (axwdqezc) or Vi editor keys (aka roguelike keys) or mouse.
 If numeric keypad doesn't work, toggling the Num Lock key sometimes helps.
 If running with the Shift key and keypad keys doesn't work,
 try the Control key instead. The game is fully playable with mouse only,
 as well as with keyboard only, but the most efficient combination
-for some players is mouse for go-to, inspecting the map, and aiming
-at distant positions and keyboard for everything else.
+may be mouse for menus, go-to, inspecting the map, and aiming at distant
+positions and keyboard for everything else.
 
 If you are using a terminal frontend, e.g. the best supported vty frontend,
-numeric keypad (e.g., keypad '*' and '/') may not work correctly
-depending on versions of the libraries, terminfo and terminal emulators.
-Toggling the Num Lock key may help or make issues worse. As a workaround
-for the vty frontend, numbers are used for movement, which sadly prevents
+then numeric keypad (especially keypad '*' and '/') may not work correctly,
+depending on versions of libraries, terminfo and terminal emulators.
+Toggling the Num Lock key may help or make issues worse. As a workaround,
+in the vty frontend, numbers are used for movement, which sadly prevents
 the number keys from selecting heroes. The commands that require pressing
 Control and Shift together won't work either, but fortunately they are
 not crucial to gameplay.
 
-Some effort has been put to help using the vty frontend with screen readers,
+Some effort went into making the vty frontend usable with screen readers,
 but without feedback it's hard to say how accessible that setup is.
 As a side effect of screen reader support, there is no aiming line
-nor path in vty frontend and some of the map positions highlighting
+nor path in vty frontend and some of map position highlighting
 is performed using the terminal cursor. Screen readers may also work
-better with animations turned off using `--noAnim` or the corresponding
+better with animations turned off, using `--noAnim` or the corresponding
 config file option.
 
 
 Compilation of the library and sample game from source
 ------------------------------------------------------
 
-If you want to compile native binaries from the source code,
-use Cabal (already a part of your OS distribution, or available within
-The Haskell Platform[7]), which also takes care of all the dependencies.
-
 The recommended frontend is based on SDL2, so you need the SDL2 libraries
 for your OS. On Linux, remember to install the -dev versions as well,
 e.g., libsdl2-dev and libsdl2-ttf-dev on Ubuntu Linux 16.04.
-(Compilation to JavaScript for the browser is more complicated
-and requires the ghcjs[15] compiler and optionally the Google Closure
-Compiler[16] as well.)
+Other frontends are compiled similarly, but compilation to JavaScript
+for the browser is more complicated and requires the ghcjs[15] compiler
+and optionally the Google Closure Compiler[16].
 
 The latest official version of the LambdaHack library can be downloaded,
-compiled for SDL2 and installed automatically by Cabal from Hackage[3]
-as follows
+compiled for SDL2 and installed automatically using the Cabal tool,
+which is already a part of your OS distribution, or available within
+The Haskell Platform[7]. Get the game from Hackage[3] as follows
 
     cabal update
     cabal install LambdaHack
 
 For a newer snapshot, clone the source code from github[5]
-and run Cabal from the main directory
-
-    cabal install
+and run `cabal install` from the main directory.
 
 There is a built-in black and white line terminal frontend, suitable
 for teletype terminals or a keyboard and a printer (but it's going to use
@@ -232,7 +233,7 @@ for a whole directory of modules. Apart of that, only very important
 functions and types are distinguished by having a haddock.
 If minor ones have comments, they should not be haddocks
 and they are permitted to describe implementation details and be out of date.
-Prefer assertions to comments, unless too verbose.
+Prefer assertions instead of comments, unless too verbose.
 
 
 Further information
