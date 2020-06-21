@@ -28,7 +28,6 @@ import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.Request
 import           Game.LambdaHack.Client.State
@@ -51,6 +50,7 @@ import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Client.UI.UIOptionsParse
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.MonadStateRead
 import           Game.LambdaHack.Common.State

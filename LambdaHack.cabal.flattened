@@ -202,7 +202,6 @@ library
                       Game.LambdaHack.Client.AI.Strategy
                       Game.LambdaHack.Client.Bfs
                       Game.LambdaHack.Client.BfsM
-                      Game.LambdaHack.Client.ClientOptions
                       Game.LambdaHack.Client.CommonM
                       Game.LambdaHack.Client.HandleAtomicM
                       Game.LambdaHack.Client.HandleResponseM
@@ -251,6 +250,7 @@ library
                       Game.LambdaHack.Common.Area
                       Game.LambdaHack.Common.Actor
                       Game.LambdaHack.Common.ActorState
+                      Game.LambdaHack.Common.ClientOptions
                       Game.LambdaHack.Common.Faction
                       Game.LambdaHack.Common.File
                       Game.LambdaHack.Common.HighScore

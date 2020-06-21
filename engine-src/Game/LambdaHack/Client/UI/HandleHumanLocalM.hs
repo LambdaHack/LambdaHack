@@ -44,7 +44,6 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import           Game.LambdaHack.Client.BfsM
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -70,6 +69,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.SlideshowM
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA

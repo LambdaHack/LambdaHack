@@ -21,34 +21,52 @@ import GHCJS.DOM.CSSStyleDeclaration (setProperty)
 import GHCJS.DOM.Document (createElement, getBodyUnchecked)
 import GHCJS.DOM.Element (Element (Element), setInnerHTML)
 import GHCJS.DOM.ElementCSSInlineStyle (getStyle)
-import GHCJS.DOM.EventM (EventM, mouseAltKey, mouseButton, mouseCtrlKey,
-                         mouseMetaKey, mouseShiftKey, on, preventDefault,
-                         stopPropagation)
-import GHCJS.DOM.GlobalEventHandlers (contextMenu, keyDown, mouseDown, mouseUp,
-                                      wheel)
+import GHCJS.DOM.EventM
+  ( EventM
+  , mouseAltKey
+  , mouseButton
+  , mouseCtrlKey
+  , mouseMetaKey
+  , mouseShiftKey
+  , on
+  , preventDefault
+  , stopPropagation
+  )
+import GHCJS.DOM.GlobalEventHandlers
+  (contextMenu, keyDown, mouseDown, mouseUp, wheel)
 import GHCJS.DOM.HTMLCollection (itemUnsafe)
-import GHCJS.DOM.HTMLTableElement (HTMLTableElement (HTMLTableElement), getRows,
-                                   setCellPadding, setCellSpacing)
-import GHCJS.DOM.HTMLTableRowElement (HTMLTableRowElement (HTMLTableRowElement),
-                                      getCells)
-import GHCJS.DOM.KeyboardEvent (getAltGraphKey, getAltKey, getCtrlKey, getKey,
-                                getMetaKey, getShiftKey)
+import GHCJS.DOM.HTMLTableElement
+  ( HTMLTableElement (HTMLTableElement)
+  , getRows
+  , setCellPadding
+  , setCellSpacing
+  )
+import GHCJS.DOM.HTMLTableRowElement
+  (HTMLTableRowElement (HTMLTableRowElement), getCells)
+import GHCJS.DOM.KeyboardEvent
+  (getAltGraphKey, getAltKey, getCtrlKey, getKey, getMetaKey, getShiftKey)
 import GHCJS.DOM.Node (appendChild_, replaceChild_, setTextContent)
 import GHCJS.DOM.NonElementParentNode (getElementByIdUnsafe)
 import GHCJS.DOM.RequestAnimationFrameCallback
-import GHCJS.DOM.Types (CSSStyleDeclaration, DOM,
-                        HTMLDivElement (HTMLDivElement),
-                        HTMLTableCellElement (HTMLTableCellElement),
-                        IsMouseEvent, Window, runDOM, unsafeCastTo)
+import GHCJS.DOM.Types
+  ( CSSStyleDeclaration
+  , DOM
+  , HTMLDivElement (HTMLDivElement)
+  , HTMLTableCellElement (HTMLTableCellElement)
+  , IsMouseEvent
+  , Window
+  , runDOM
+  , unsafeCastTo
+  )
 import GHCJS.DOM.WheelEvent (getDeltaY)
 import GHCJS.DOM.Window (requestAnimationFrame_)
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Common.Area
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Game.LambdaHack.Content.TileKind (floorSymbol)

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Options that affect the behaviour of the client.
-module Game.LambdaHack.Client.ClientOptions
+module Game.LambdaHack.Common.ClientOptions
   ( ClientOptions(..), defClientOptions
   ) where
 

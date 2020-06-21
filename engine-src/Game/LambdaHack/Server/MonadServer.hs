@@ -33,8 +33,8 @@ import           System.IO (hFlush, stdout)
 import qualified System.Random.SplitMix32 as SM
 
 import           Game.LambdaHack.Atomic
-import           Game.LambdaHack.Client (sbenchmark)
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions (sbenchmark)
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore

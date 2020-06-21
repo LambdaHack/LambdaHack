@@ -19,10 +19,10 @@ import qualified Data.Map.Strict as M
 import           System.FilePath
 import           Text.Read
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.UIOptions
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc

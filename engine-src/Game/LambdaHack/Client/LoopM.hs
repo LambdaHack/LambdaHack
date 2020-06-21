@@ -15,13 +15,13 @@ import Prelude ()
 import Game.LambdaHack.Core.Prelude
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.HandleAtomicM
 import Game.LambdaHack.Client.HandleResponseM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Response
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Common.ClientOptions
 
 -- | Client monad in which one can receive responses from the server.
 class MonadClient m => MonadClientReadResponse m where

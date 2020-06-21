@@ -19,11 +19,11 @@ import qualified Game.LambdaHack.Common.PointArray as PointArray
 import           Graphics.UI.Gtk
 import           System.Exit (exitFailure)
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
+import           Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Definition.Color as Color
 import           Game.LambdaHack.Definition.Defs
 

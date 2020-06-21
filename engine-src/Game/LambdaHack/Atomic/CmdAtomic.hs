@@ -28,9 +28,9 @@ import qualified System.Random.SplitMix32 as SM
 -- remaining commandline should be passed and parsed by the client to extract
 -- client and ui options from and singnal an error if anything was left.
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.Analytics
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.ItemAspect as IA

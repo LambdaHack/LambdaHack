@@ -12,8 +12,6 @@ module Game.LambdaHack.Client
   , RequestAI, ReqAI(..), RequestUI, ReqUI(..), RequestTimed(..)
     -- * Re-exported from "Game.LambdaHack.Client.Response"
   , Response (..)
-    -- * Re-exported from "Game.LambdaHack.Client.ClientOptions"
-  , ClientOptions(..), defClientOptions
     -- * Re-exported from "Game.LambdaHack.Client.UI"
   , CCUI
   , UIOptions, applyUIOptions, uCmdline, mkUIOptions
@@ -21,7 +19,6 @@ module Game.LambdaHack.Client
 
 import Prelude ()
 
-import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.LoopM
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.Response

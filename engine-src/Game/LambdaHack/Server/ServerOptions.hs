@@ -10,7 +10,7 @@ import Game.LambdaHack.Core.Prelude
 import           Data.Binary
 import qualified System.Random.SplitMix32 as SM
 
-import Game.LambdaHack.Client (ClientOptions (..), defClientOptions)
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Definition.Defs

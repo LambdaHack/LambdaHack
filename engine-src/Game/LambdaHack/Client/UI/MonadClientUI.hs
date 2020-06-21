@@ -42,7 +42,6 @@ import           System.FilePath
 import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Client.Bfs
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
@@ -60,6 +59,7 @@ import           Game.LambdaHack.Client.UI.Slideshow
 import           Game.LambdaHack.Client.UI.UIOptions
 import           Game.LambdaHack.Common.Actor
 import           Game.LambdaHack.Common.ActorState
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.Faction
 import           Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore

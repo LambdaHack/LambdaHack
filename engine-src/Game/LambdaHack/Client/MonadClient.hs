@@ -20,8 +20,8 @@ import qualified Data.Primitive.PrimArray as PA
 import qualified Data.Text.IO as T
 import           System.IO (hFlush, stdout)
 
-import Game.LambdaHack.Client.ClientOptions
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point

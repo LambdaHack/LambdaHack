@@ -19,14 +19,15 @@ import qualified Control.Monad.IO.Class as IO
 import           Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text.IO as T
-import           Options.Applicative (defaultPrefs, execParserPure,
-                                      handleParseResult)
+import           Options.Applicative
+  (defaultPrefs, execParserPure, handleParseResult)
 import           System.Exit (ExitCode (ExitSuccess))
 import           System.FilePath
 import           System.IO (hFlush, stdout)
 
 import           Game.LambdaHack.Atomic
 import           Game.LambdaHack.Client
+import           Game.LambdaHack.Common.ClientOptions (sbenchmark)
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Kind
 import           Game.LambdaHack.Common.Misc

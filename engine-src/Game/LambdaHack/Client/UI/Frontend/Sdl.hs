@@ -39,12 +39,12 @@ import qualified SDL.Raw.Types
 import qualified SDL.Raw.Video
 import qualified SDL.Vect as Vect
 
-import           Game.LambdaHack.Client.ClientOptions
 import           Game.LambdaHack.Client.UI.Content.Screen
 import           Game.LambdaHack.Client.UI.Frame
 import           Game.LambdaHack.Client.UI.Frontend.Common
 import qualified Game.LambdaHack.Client.UI.Key as K
 import           Game.LambdaHack.Client.UI.Overlay
+import           Game.LambdaHack.Common.ClientOptions
 import           Game.LambdaHack.Common.File
 import           Game.LambdaHack.Common.Misc
 import           Game.LambdaHack.Common.Point
