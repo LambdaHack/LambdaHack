@@ -114,7 +114,7 @@ tooth, lash, torsionRight, torsionLeft, pupil :: ItemKind
 thorn = fist
   { iname    = "thorn"
   , ifreq    = [(S_THORN, 1)]
-  , icount   = 2 + 1 `d` 3
+  , icount   = 2 + 1 `d` 2  -- unrealistic, but not boring
   , iverbHit = "puncture"
   , idamage  = 2 `d` 1
   , iaspects = [SetFlag Meleeable]  -- not Durable
@@ -127,17 +127,6 @@ tip = fist
   , icount   = 1
   , iverbHit = "poke"
   , idamage  = 2 `d` 1
-  , idesc    = ""
-  }
-lip = fist
-  { iname    = "lip"
-  , ifreq    = [(S_LIP, 1)]
-  , icount   = 1
-  , iverbHit = "lap"
-  , idamage  = 1 `d` 1
-  , iaspects = Timeout (3 + 1 `d` 2)
-               : iaspects fist
-  , ieffects = [toOrganBad S_WEAKENED (2 + 1 `dL` 3)]
   , idesc    = ""
   }
 fist = ItemKind
@@ -186,29 +175,31 @@ smallJaw = fist
   , idamage  = 3 `d` 1
   , idesc    = "Filled with small, even teeth."
   }
-tentacle = fist
-  { iname    = "tentacle"
-  , ifreq    = [(S_TENTACLE, 1)]
-  , icount   = 4
-  , iverbHit = "slap"
-  , idamage  = 4 `d` 1
-  , idesc    = "Damp and dextrous."
-  }
 
 -- * Cooldown melee damage organs without effects
 
+tentacle = fist  -- two copies only
+  { iname    = "tentacle"
+  , ifreq    = [(S_TENTACLE, 1)]
+  , iverbHit = "slap"
+  , idamage  = 4 `d` 1
+  , iaspects = Timeout 3  -- minimal timeout that lets other organs show
+               : iaspects fist
+  , idesc    = "Damp and dextrous."
+  }
 jaw = fist
   { iname    = "jaw"
   , ifreq    = [(S_JAW, 1)]
   , icount   = 1
   , iverbHit = "rip"
   , idamage  = 5 `d` 1
+  , iaspects = Timeout (2 + 1 `d` 2)  -- no effect, but limit raw damage
+               : iaspects fist
   , idesc    = "Delivers a powerful bite."
   }
 horn = fist
   { iname    = "horn"
   , ifreq    = [(S_HORN, 1)]
-  , icount   = 2
   , iverbHit = "impale"
   , idamage  = 5 `d` 1
   , iaspects = [ AddSkill SkHurtMelee 10
@@ -252,10 +243,20 @@ sting = fist
   , ieffects = [toOrganBad S_RETAINING (3 + 1 `d` 3)]
   , idesc    = "Painful, debilitating and harmful."
   }
+lip = fist
+  { iname    = "lip"
+  , ifreq    = [(S_LIP, 1)]
+  , icount   = 1
+  , iverbHit = "lap"
+  , idamage  = 1 `d` 1
+  , iaspects = Timeout (3 + 1 `d` 2)
+               : iaspects fist
+  , ieffects = [toOrganBad S_WEAKENED (2 + 1 `dL` 3)]
+  , idesc    = ""
+  }
 venomTooth = fist
   { iname    = "venom tooth"
   , ifreq    = [(S_VENOM_TOOTH, 1)]
-  , icount   = 2
   , iverbHit = "bite"
   , idamage  = 1 `d` 1
   , iaspects = Timeout (7 - 1 `dL` 3)
@@ -288,7 +289,6 @@ screechingBeak = fist
 antler = fist
   { iname    = "antler"
   , ifreq    = [(S_ANTLER, 1)]
-  , icount   = 2
   , iverbHit = "ram"
   , idamage  = 4 `d` 1
   , iaspects = [ Timeout $ 3 + (1 `d` 3) * 3
@@ -336,7 +336,6 @@ hugeTail = largeTail
 venomFang = fist
   { iname    = "venom fang"
   , ifreq    = [(S_VENOM_FANG, 1)]
-  , icount   = 2
   , iverbHit = "bite"
   , idamage  = 0
   , iaspects = Timeout (10 - 1 `dL` 5)
@@ -602,7 +601,7 @@ asleep = armoredSkin
   }
 impressed = armoredSkin
   { isymbol  = 'I'
-  , iname    = "impressed"
+  , iname    = "impressed"  -- keep the same as in @ifreq@, to simplify code
   , ifreq    = [(S_IMPRESSED, 1), (CONDITION, 1)]
   , iflavour = zipPlain [BrRed]
   , iverbHit = "confuse"

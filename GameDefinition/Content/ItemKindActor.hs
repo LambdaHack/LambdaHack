@@ -3,7 +3,7 @@ module Content.ItemKindActor
   ( -- * Group name patterns
     pattern S_WOODEN_TORCH
   , pattern HERO, pattern SCOUT_HERO, pattern RANGER_HERO, pattern ESCAPIST_HERO, pattern AMBUSHER_HERO, pattern BRAWLER_HERO, pattern SOLDIER_HERO, pattern CIVILIAN, pattern MONSTER, pattern MOBILE_MONSTER, pattern SCOUT_MONSTER, pattern ANIMAL, pattern MOBILE_ANIMAL, pattern IMMOBILE_ANIMAL
-  , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern BLANKET, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_WEAPON, pattern GEM
+  , pattern ADD_SIGHT, pattern ARMOR_RANGED, pattern ADD_NOCTO_1, pattern WEAK_ARROW, pattern LIGHT_ATTENUATOR, pattern FIREPROOF_CLOTH, pattern RING_OF_OPPORTUNITY_SNIPER, pattern ANY_ARROW, pattern STARTING_ARMOR, pattern STARTING_WEAPON, pattern GEM
   , actorsGN, actorsGNSingleton
   , -- * Content
     actors
@@ -31,11 +31,11 @@ pattern S_WOODEN_TORCH :: GroupName ItemKind
 actorsGN :: [GroupName ItemKind]
 actorsGN =
        [HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL]
-    ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM]
+    ++ [ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM]
 
 pattern HERO, SCOUT_HERO, RANGER_HERO, ESCAPIST_HERO, AMBUSHER_HERO, BRAWLER_HERO, SOLDIER_HERO, CIVILIAN, MONSTER, MOBILE_MONSTER, SCOUT_MONSTER, ANIMAL, MOBILE_ANIMAL, IMMOBILE_ANIMAL :: GroupName ItemKind
 
-pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, BLANKET, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_WEAPON, GEM :: GroupName ItemKind
+pattern ADD_SIGHT, ARMOR_RANGED, ADD_NOCTO_1, WEAK_ARROW, LIGHT_ATTENUATOR, FIREPROOF_CLOTH, RING_OF_OPPORTUNITY_SNIPER, ANY_ARROW, STARTING_ARMOR, STARTING_WEAPON, GEM :: GroupName ItemKind
 
 pattern HERO = GroupName "hero"
 pattern SCOUT_HERO = GroupName "scout hero"
@@ -59,9 +59,10 @@ pattern ARMOR_RANGED = GroupName "ranged armor"
 pattern ADD_NOCTO_1 = GroupName "noctovision improvement"
 pattern WEAK_ARROW = GroupName "weak arrow"
 pattern LIGHT_ATTENUATOR = GroupName "light attenuator"
-pattern BLANKET = GroupName "blanket"
+pattern FIREPROOF_CLOTH = GroupName "fireproof cloth"
 pattern RING_OF_OPPORTUNITY_SNIPER = GroupName "ring of sniper"
 pattern ANY_ARROW = GroupName "arrow"
+pattern STARTING_ARMOR = GroupName "starting armor"
 pattern STARTING_WEAPON = GroupName "starting weapon"
 pattern GEM = GroupName "gem"
 
@@ -151,11 +152,11 @@ escapist = warrior
   , ifreq    = [(ESCAPIST_HERO, 100), (MOBILE, 1)]
   , ikit     = humanOrgans
                ++ [ (ADD_SIGHT, CEqp)
-                  , (ARMOR_RANGED, CEqp)
+                  , (STARTING_ARMOR, CEqp)
                   , (WEAK_ARROW, CStash)  -- mostly for probing
                   , (LIGHT_ATTENUATOR, CStash)
                   , (S_WOODEN_TORCH, CStash)
-                  , (BLANKET, CStash) ]
+                  , (FIREPROOF_CLOTH, CStash) ]
   -- , idesc    = ""
   }
 ambusher = warrior

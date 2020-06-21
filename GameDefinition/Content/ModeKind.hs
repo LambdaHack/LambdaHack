@@ -225,7 +225,7 @@ crawlEmpty = ModeKind
   , mname   = "crawl empty"
   , mfreq   = [(CRAWL_EMPTY, 1)]
   , mroster = rosterCrawlEmpty
-  , mcaves  = cavesCrawl
+  , mcaves  = cavesCrawlEmpty
   , mendMsg = []
   , mdesc   = "Enjoy the free space."
   , mnote   = ""
@@ -302,7 +302,7 @@ defenseEmpty = ModeKind
   , mname   = "defense empty"
   , mfreq   = [(DEFENSE_EMPTY, 1)]
   , mroster = rosterDefenseEmpty
-  , mcaves  = cavesCrawl
+  , mcaves  = cavesCrawlEmpty
   , mendMsg = []
   , mdesc   = "Lord over."
   , mnote   = ""
@@ -596,7 +596,7 @@ rosterDefenseEmpty = rosterCrawl
   , rosterEnemy = []
   , rosterAlly = [] }
 
-cavesRaid, cavesBrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
+cavesRaid, cavesBrawl, cavesShootout, cavesHunt, cavesEscape, cavesZoo, cavesAmbush, cavesCrawl, cavesCrawlEmpty, cavesDig, cavesSee, cavesSafari, cavesBattle :: Caves
 
 cavesRaid = [([-2], [CAVE_RAID])]
 
@@ -623,6 +623,8 @@ listCrawl =
   , ([-10], [CAVE_MINE]) ]
 
 cavesCrawl = listCrawl
+
+cavesCrawlEmpty = cavesCrawl
 
 renumberCaves :: Int -> ([Int], [GroupName CaveKind])
               -> ([Int], [GroupName CaveKind])

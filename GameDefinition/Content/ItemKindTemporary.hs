@@ -137,26 +137,27 @@ tmpResolute = tmpAspects S_RESOLUTE [AddSkill SkMaxCalm 60]
 tmpFast20 = tmpAspects S_HASTED [AddSkill SkSpeed 20]
 tmpSlow10 = tmpAspects S_SLOWED [AddSkill SkSpeed (-10)]
 tmpFarSighted = tmpAspects S_FAR_SIGHTED [AddSkill SkSight 5]
-tmpBlind = tmpAspects S_BLIND [AddSkill SkSight (-99)]
+tmpBlind = tmpAspects S_BLIND [ AddSkill SkSight (-99)
+                              , AddSkill SkArmorMelee (-30) ]
 tmpKeenSmelling = tmpAspects S_KEEN_SMELLING [AddSkill SkSmell 2]
 tmpFoulSmelling = tmpAspects S_FOUL_SMELLING [AddSkill SkOdor 2]
 tmpRoseSmelling = tmpAspects S_ROSE_SMELLING [AddSkill SkOdor (-4)]
 tmpNoctovision = tmpAspects S_SHINY_EYED [AddSkill SkNocto 2]
-tmpDeafened = tmpAspects S_DEAFENED [AddSkill SkHearing (-10)]
-tmpDeaf = tmpAspects S_DEAF [AddSkill SkHearing (-99)]
+tmpDeafened = tmpAspects S_DEAFENED [AddSkill SkHearing (-6)]
+tmpDeaf = tmpAspects S_DEAF [ AddSkill SkHearing (-99)
+                            , AddSkill SkArmorMelee (-30) ]
 tmpDrunk = tmpAspects S_DRUNK [ AddSkill SkHurtMelee 30  -- fury
-                              , AddSkill SkArmorMelee (-20)
-                              , AddSkill SkArmorRanged (-20)
-                              , AddSkill SkSight (-8)
-                              ]
+                              , AddSkill SkArmorRanged (-30)
+                              , AddSkill SkSight (-8) ]
 
 tmpBonusSkAggresion =
-  tmpAspects S_FRENZIED [AddSkill SkAggression 5]
+  tmpAspects S_FRENZIED [ AddSkill SkAggression 5
+                        , AddSkill SkArmorMelee (-30) ]
 
 tmpRegenerating =
   tmpEffects S_REGENERATING (4 + 1 `d` 2) [RefillHP 1]
 tmpPoisoned =
-  tmpEffects S_POISONED (4 + 1 `d` 2) [RefillHP (-1)]
+  tmpEffects S_POISONED (3 + 1 `d` 2) [RefillHP (-1)]
 tmpSlow10Resistant =
   tmpEffects S_SLOW_RESISTANT (8 + 1 `d` 4)
              [DropItem 1 1 COrgan S_SLOWED]

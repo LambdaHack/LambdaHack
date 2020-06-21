@@ -2,7 +2,7 @@
 module Content.TileKind
   ( -- * Group name patterns
     -- ** Used in CaveKind and perhaps elsewhere.
-    pattern FILLER_WALL, pattern FLOOR_CORRIDOR_LIT, pattern FLOOR_CORRIDOR_DARK, pattern TRAIL_LIT, pattern SAFE_TRAIL_LIT, pattern LAB_TRAIL_LIT, pattern DAMP_FLOOR_LIT, pattern DAMP_FLOOR_DARK, pattern OUTDOOR_OUTER_FENCE, pattern DIRT_LIT, pattern FLOOR_ARENA_LIT, pattern FLOOR_ARENA_DARK
+    pattern FILLER_WALL, pattern FLOOR_CORRIDOR_LIT, pattern FLOOR_CORRIDOR_DARK, pattern TRAIL_LIT, pattern SAFE_TRAIL_LIT, pattern LAB_TRAIL_LIT, pattern DAMP_FLOOR_LIT, pattern DAMP_FLOOR_DARK, pattern OUTDOOR_OUTER_FENCE, pattern DIRT_LIT, pattern DIRT_DARK, pattern FLOOR_ARENA_LIT, pattern FLOOR_ARENA_DARK
   , pattern EMPTY_SET_LIT, pattern EMPTY_SET_DARK, pattern NOISE_SET_LIT, pattern POWER_SET_LIT, pattern POWER_SET_DARK, pattern BATTLE_SET_LIT, pattern BATTLE_SET_DARK, pattern BRAWL_SET_LIT, pattern SHOOTOUT_SET_LIT, pattern ZOO_SET_LIT, pattern ZOO_SET_DARK, pattern ESCAPE_SET_LIT, pattern ESCAPE_SET_DARK, pattern AMBUSH_SET_LIT, pattern AMBUSH_SET_DARK, pattern ARENA_SET_LIT, pattern ARENA_SET_DARK
     -- ** Used in PlaceKind, but not in CaveKind.
   , pattern RECT_WINDOWS_VERTICAL_LIT, pattern RECT_WINDOWS_VERTICAL_DARK, pattern RECT_WINDOWS_HORIZONTAL_LIT, pattern RECT_WINDOWS_HORIZONTAL_DARK, pattern TREE_SHADE_WALKABLE_LIT, pattern TREE_SHADE_WALKABLE_DARK, pattern SMOKE_CLUMP_LIT, pattern SMOKE_CLUMP_DARK, pattern GLASSHOUSE_VERTICAL_LIT, pattern GLASSHOUSE_VERTICAL_DARK, pattern GLASSHOUSE_HORIZONTAL_LIT, pattern GLASSHOUSE_HORIZONTAL_DARK, pattern BUSH_CLUMP_LIT, pattern BUSH_CLUMP_DARK, pattern FOG_CLUMP_LIT, pattern FOG_CLUMP_DARK, pattern STAIR_TERMINAL_LIT, pattern STAIR_TERMINAL_DARK, pattern CACHE, pattern SIGNBOARD, pattern STAIRCASE_UP, pattern ORDINARY_STAIRCASE_UP, pattern STAIRCASE_OUTDOOR_UP, pattern GATED_STAIRCASE_UP, pattern STAIRCASE_DOWN, pattern ORDINARY_STAIRCASE_DOWN, pattern STAIRCASE_OUTDOOR_DOWN, pattern GATED_STAIRCASE_DOWN, pattern ESCAPE_UP, pattern ESCAPE_DOWN, pattern ESCAPE_OUTDOOR_DOWN
@@ -46,13 +46,13 @@ pattern S_BUSH_DARK, S_CLOSED_HORIZONTAL_DOOR_DARK, S_CLOSED_VERTICAL_DOOR_DARK,
 -- group names, let's also add the generated group names to @groupNames@.
 groupNames :: [GroupName TileKind]
 groupNames =
-       [FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK]
+       [FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, DIRT_DARK, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK]
     ++ [EMPTY_SET_LIT, EMPTY_SET_DARK, NOISE_SET_LIT, POWER_SET_LIT, POWER_SET_DARK, BATTLE_SET_LIT, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_LIT, ZOO_SET_DARK, ESCAPE_SET_LIT, ESCAPE_SET_DARK, AMBUSH_SET_LIT, AMBUSH_SET_DARK, ARENA_SET_LIT, ARENA_SET_DARK]
     ++ [RECT_WINDOWS_VERTICAL_LIT, RECT_WINDOWS_VERTICAL_DARK, RECT_WINDOWS_HORIZONTAL_LIT, RECT_WINDOWS_HORIZONTAL_DARK, TREE_SHADE_WALKABLE_LIT, TREE_SHADE_WALKABLE_DARK, SMOKE_CLUMP_LIT, SMOKE_CLUMP_DARK, GLASSHOUSE_VERTICAL_LIT, GLASSHOUSE_VERTICAL_DARK, GLASSHOUSE_HORIZONTAL_LIT, GLASSHOUSE_HORIZONTAL_DARK, BUSH_CLUMP_LIT, BUSH_CLUMP_DARK, FOG_CLUMP_LIT, FOG_CLUMP_DARK, STAIR_TERMINAL_LIT, STAIR_TERMINAL_DARK, CACHE, SIGNBOARD, STAIRCASE_UP, ORDINARY_STAIRCASE_UP, STAIRCASE_OUTDOOR_UP, GATED_STAIRCASE_UP, STAIRCASE_DOWN, ORDINARY_STAIRCASE_DOWN, STAIRCASE_OUTDOOR_DOWN, GATED_STAIRCASE_DOWN, ESCAPE_UP, ESCAPE_DOWN, ESCAPE_OUTDOOR_DOWN]
     ++ [OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_BURNING_OR_NOT, BUSH_BURNING_OR_NOT, CACHE_OR_NOT]
-    ++ [BRAWL_SET_DARK, DIRT_DARK, NOISE_SET_DARK, OBSCURED_HORIZONTAL_WALL_DARK, OBSCURED_VERTICAL_WALL_DARK, SHOOTOUT_SET_DARK, TRAPPED_HORIZONAL_DOOR_DARK, TRAPPED_VERTICAL_DOOR_DARK]
+    ++ [BRAWL_SET_DARK, NOISE_SET_DARK, OBSCURED_HORIZONTAL_WALL_DARK, OBSCURED_VERTICAL_WALL_DARK, SHOOTOUT_SET_DARK, TRAPPED_HORIZONAL_DOOR_DARK, TRAPPED_VERTICAL_DOOR_DARK]
 
-pattern FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK :: GroupName TileKind
+pattern FILLER_WALL, FLOOR_CORRIDOR_LIT, FLOOR_CORRIDOR_DARK, TRAIL_LIT, SAFE_TRAIL_LIT, LAB_TRAIL_LIT, DAMP_FLOOR_LIT, DAMP_FLOOR_DARK, OUTDOOR_OUTER_FENCE, DIRT_LIT, DIRT_DARK, FLOOR_ARENA_LIT, FLOOR_ARENA_DARK :: GroupName TileKind
 
 pattern EMPTY_SET_LIT, EMPTY_SET_DARK, NOISE_SET_LIT, POWER_SET_LIT, POWER_SET_DARK, BATTLE_SET_LIT, BATTLE_SET_DARK, BRAWL_SET_LIT, SHOOTOUT_SET_LIT, ZOO_SET_LIT, ZOO_SET_DARK, ESCAPE_SET_LIT, ESCAPE_SET_DARK, AMBUSH_SET_LIT, AMBUSH_SET_DARK, ARENA_SET_LIT, ARENA_SET_DARK :: GroupName TileKind
 
@@ -63,7 +63,7 @@ pattern RECT_WINDOWS_VERTICAL_LIT, RECT_WINDOWS_VERTICAL_DARK, RECT_WINDOWS_HORI
 pattern OBSCURED_VERTICAL_WALL_LIT, OBSCURED_HORIZONTAL_WALL_LIT, TRAPPED_VERTICAL_DOOR_LIT, TRAPPED_HORIZONAL_DOOR_LIT, TREE_BURNING_OR_NOT, BUSH_BURNING_OR_NOT, CACHE_OR_NOT :: GroupName TileKind
 
 -- * Not used, but needed, because auto-generated. Not singletons.
-pattern BRAWL_SET_DARK, DIRT_DARK, NOISE_SET_DARK, OBSCURED_HORIZONTAL_WALL_DARK, OBSCURED_VERTICAL_WALL_DARK, SHOOTOUT_SET_DARK, TRAPPED_HORIZONAL_DOOR_DARK, TRAPPED_VERTICAL_DOOR_DARK :: GroupName TileKind
+pattern BRAWL_SET_DARK, NOISE_SET_DARK, OBSCURED_HORIZONTAL_WALL_DARK, OBSCURED_VERTICAL_WALL_DARK, SHOOTOUT_SET_DARK, TRAPPED_HORIZONAL_DOOR_DARK, TRAPPED_VERTICAL_DOOR_DARK :: GroupName TileKind
 
 -- ** Used in CaveKind and perhaps elsewhere (or a dark/lit version thereof).
 pattern FILLER_WALL = GroupName "fillerWall"
@@ -72,10 +72,14 @@ pattern FLOOR_CORRIDOR_DARK = GroupName "floorCorridorDark"
 pattern TRAIL_LIT = GroupName "trailLit"
 pattern SAFE_TRAIL_LIT = GroupName "safeTrailLit"
 pattern LAB_TRAIL_LIT = GroupName "labTrailLit"
+  -- these three would work without @_LIT@, but it will be needed when
+  -- in the future a lit trail is made from terrain that has an autogenerated
+  -- dark variant
 pattern DAMP_FLOOR_LIT = GroupName "damp floor Lit"
 pattern DAMP_FLOOR_DARK = GroupName "damp floor Dark"
 pattern OUTDOOR_OUTER_FENCE = GroupName "outdoor outer fence"
 pattern DIRT_LIT = GroupName "dirt Lit"
+pattern DIRT_DARK = GroupName "dirt Dark"
 pattern FLOOR_ARENA_LIT = GroupName "floorArenaLit"
 pattern FLOOR_ARENA_DARK = GroupName "floorArenaDark"
 
@@ -171,7 +175,6 @@ pattern S_SIGNBOARD_UNREAD = GroupName "signboard unread"
 -- This is a rotten compromise, because these are synthesized below,
 -- so typos can happen. Similarly below
 pattern BRAWL_SET_DARK = GroupName "brawlSetDark"
-pattern DIRT_DARK = GroupName "dirt Dark"
 pattern NOISE_SET_DARK = GroupName "noiseSetDark"
 pattern OBSCURED_HORIZONTAL_WALL_DARK =
   GroupName "obscured horizontal wall Dark"
@@ -834,24 +837,27 @@ outdoorFence = TileKind
   , tfeature = [Dark]
   }
 
+-- * Helper functions
+
 makeDark :: TileKind -> TileKind
-makeDark k = let darkText :: GroupName TileKind -> GroupName TileKind
-                 darkText t = maybe t (GroupName . (<> "Dark"))
+makeDark k = let darkenText :: GroupName TileKind -> GroupName TileKind
+                 darkenText t = maybe t (GroupName . (<> "Dark"))
                               $ T.stripSuffix "Lit" $ fromGroupName t
-                 darkFrequency = map (first darkText) $ tfreq k
-                 darkFeat (OpenTo t) = Just $ OpenTo $ darkText t
-                 darkFeat (CloseTo t) = Just $ CloseTo $ darkText t
-                 darkFeat (ChangeTo t) = Just $ ChangeTo $ darkText t
+                 darkFrequency :: Freqs TileKind
+                 darkFrequency = map (first darkenText) $ tfreq k
+                 darkFeat (OpenTo t) = Just $ OpenTo $ darkenText t
+                 darkFeat (CloseTo t) = Just $ CloseTo $ darkenText t
+                 darkFeat (ChangeTo t) = Just $ ChangeTo $ darkenText t
                  darkFeat (OpenWith proj grps t) =
-                   Just $ OpenWith proj grps $ darkText t
+                   Just $ OpenWith proj grps $ darkenText t
                  darkFeat (CloseWith proj grps t) =
-                   Just $ CloseWith proj grps $ darkText t
+                   Just $ CloseWith proj grps $ darkenText t
                  darkFeat (ChangeWith proj grps t) =
-                   Just $ ChangeWith proj grps $ darkText t
-                 darkFeat (HideAs t) = Just $ HideAs $ darkText t
-                 darkFeat (BuildAs t) = Just $ BuildAs $ darkText t
-                 darkFeat (RevealAs t) = Just $ RevealAs $ darkText t
-                 darkFeat (ObscureAs t) = Just $ ObscureAs $ darkText t
+                   Just $ ChangeWith proj grps $ darkenText t
+                 darkFeat (HideAs t) = Just $ HideAs $ darkenText t
+                 darkFeat (BuildAs t) = Just $ BuildAs $ darkenText t
+                 darkFeat (RevealAs t) = Just $ RevealAs $ darkenText t
+                 darkFeat (ObscureAs t) = Just $ ObscureAs $ darkenText t
                  darkFeat VeryOftenItem = Just OftenItem
                  darkFeat OftenItem = Nothing  -- items not common in the dark
                  darkFeat feat = Just feat

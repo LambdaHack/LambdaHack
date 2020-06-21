@@ -182,7 +182,7 @@ firecracker n = ItemKind
   , iverbHit = if n >= 4 then "singe" else "crack"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toVelocity 5
+  , iaspects = [ toVelocity 5  -- 1 step, 1 turn
                , SetFlag Fragile, SetFlag Blast
                , AddSkill SkShine $ intToDice $ 1 + n `div` 2 ]
   , ieffects = [if n >= 4 then Burn 1 else RefillCalm (-2)]
@@ -218,8 +218,7 @@ spreadFragmentation = ItemKind
   , ikit     = []
   }
 spreadFragmentation8 = spreadFragmentation
-  { iname    = "fragmentation burst"
-  , ifreq    = [(S_FRAGMENTATION, 1)]
+  { ifreq    = [(S_FRAGMENTATION, 1)]
   , icount   = 8
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
@@ -270,8 +269,7 @@ spreadConcussion = ItemKind
   , ikit     = []
   }
 spreadConcussion8 = spreadConcussion
-  { iname    = "concussion blast"
-  , ifreq    = [(S_CONCUSSION, 1)]
+  { ifreq    = [(S_CONCUSSION, 1)]
   , icount   = 8
   , iaspects = [ ToThrow $ ThrowMod 100 10 2  -- 2 steps, 1 turn
                , SetFlag Lobable, SetFlag Fragile, SetFlag Blast
@@ -376,7 +374,7 @@ focusedGlass = glassPiece  -- when blowing up windows
   , ieffects = [OnSmash $ Explode S_GLASS_HAIL]
   }
 
--- * Assorted blasts don't induce conditions or not mainly so
+-- * Assorted blasts that don't induce conditions or not used mainly for them
 
 fragrance = ItemKind
   { isymbol  = '`'
@@ -388,7 +386,7 @@ fragrance = ItemKind
   , iverbHit = "engulf"
   , iweight  = 1
   , idamage  = 0
-  , iaspects = [ toLinger 10  -- 2 steps, 1 turn
+  , iaspects = [ ToThrow $ ThrowMod 200 5 1  -- 2 steps, .5 turn (necklaces)
                , SetFlag Fragile, SetFlag Blast ]
   , ieffects = [Impress, toOrganGood S_ROSE_SMELLING 45]
   -- Linger 10, because sometimes it takes 2 turns due to starting just
@@ -770,7 +768,7 @@ eyeDrop = ItemKind
   , idesc    = "Not to be taken orally."
   , ikit     = []
   }
-ironFiling = ItemKind
+ironFiling = ItemKind  -- fast, short, strongly blinding blast
   { isymbol  = '`'
   , iname    = "iron filing"
   , ifreq    = [(S_IRON_FILING, 1)]
@@ -854,7 +852,7 @@ poisonCloud = ItemKind
   , icount   = 16
   , irarity  = [(1, 1)]
   , iverbHit = "poison"
-  , iweight  = 0
+  , iweight  = 0  -- lingers, blocking path
   , idamage  = 0
   , iaspects = [ ToThrow $ ThrowMod 10 100 2  -- 2 steps, 2 turns
                , SetFlag Fragile, SetFlag Blast ]

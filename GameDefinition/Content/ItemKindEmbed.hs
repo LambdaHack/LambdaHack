@@ -2,8 +2,8 @@
 module Content.ItemKindEmbed
   ( -- * Group name patterns
     pattern SCRATCH_ON_WALL, pattern OBSCENE_PICTOGRAM, pattern SUBTLE_FRESCO, pattern TREASURE_CACHE, pattern TREASURE_CACHE_TRAP, pattern SIGNAGE, pattern SMALL_FIRE, pattern BIG_FIRE, pattern FROST, pattern RUBBLE, pattern DOORWAY_TRAP_UNKNOWN, pattern DOORWAY_TRAP, pattern STAIRS_UP, pattern STAIRS_DOWN, pattern ESCAPE, pattern STAIRS_TRAP_UP, pattern STAIRS_TRAP_DOWN, pattern LECTERN, pattern SHALLOW_WATER, pattern STRAIGHT_PATH, pattern FROZEN_GROUND
-  , pattern SANDSTONE_ROCK
-  , embedsGN
+  , pattern S_SANDSTONE_ROCK
+  , embedsGNSingleton, embedsGN
   , -- * Content
     embeds
   ) where
@@ -24,11 +24,16 @@ import Game.LambdaHack.Definition.Flavour
 
 -- * Group name patterns
 
+embedsGNSingleton :: [GroupName ItemKind]
+embedsGNSingleton = [S_SANDSTONE_ROCK]
+
+pattern S_SANDSTONE_ROCK :: GroupName ItemKind
+
 embedsGN :: [GroupName ItemKind]
 embedsGN =
-       [SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND, SANDSTONE_ROCK]
+       [SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND]
 
-pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND, SANDSTONE_ROCK :: GroupName ItemKind
+pattern SCRATCH_ON_WALL, OBSCENE_PICTOGRAM, SUBTLE_FRESCO, TREASURE_CACHE, TREASURE_CACHE_TRAP, SIGNAGE, SMALL_FIRE, BIG_FIRE, FROST, RUBBLE, DOORWAY_TRAP_UNKNOWN, DOORWAY_TRAP, STAIRS_UP, STAIRS_DOWN, ESCAPE, STAIRS_TRAP_UP, STAIRS_TRAP_DOWN, LECTERN, SHALLOW_WATER, STRAIGHT_PATH, FROZEN_GROUND :: GroupName ItemKind
 
 pattern SCRATCH_ON_WALL = GroupName "scratch on wall"
 pattern OBSCENE_PICTOGRAM = GroupName "obscene pictogram"
@@ -52,7 +57,7 @@ pattern SHALLOW_WATER = GroupName "shallow water"
 pattern STRAIGHT_PATH = GroupName "straight path"
 pattern FROZEN_GROUND = GroupName "frozen ground"
 
-pattern SANDSTONE_ROCK = GroupName "sandstone rock"
+pattern S_SANDSTONE_ROCK = GroupName "sandstone rock"
 
 -- * Content
 
@@ -100,7 +105,8 @@ obscenePictogram = ItemKind
   , ieffects = [ VerbMsg "enter destructive rage at the sight of an obscene pictogram"
                , RefillCalm (-20)
                , OneOf [ toOrganGood S_STRENGTHENED (3 + 1 `d` 2)
-                       , CreateItem Nothing CGround SANDSTONE_ROCK timerNone ] ]
+                       , CreateItem Nothing CGround S_SANDSTONE_ROCK timerNone ]
+               ]
   , idesc    = "It's not even anatomically possible."
   , ikit     = []
   }
@@ -123,7 +129,7 @@ subtleFresco = ItemKind
   , ikit     = []
   }
 treasureCache = ItemKind
-  { isymbol  = '0'
+  { isymbol  = 'o'
   , iname    = "treasure cache"
   , ifreq    = [(TREASURE_CACHE, 1)]
   , iflavour = zipPlain [BrBlue]
@@ -137,6 +143,8 @@ treasureCache = ItemKind
   , idesc    = "Glittering treasure, just waiting to be taken."
   , ikit     = []
   }
+reliefMsg :: Effect
+reliefMsg = VerbMsg "sigh with relief when nothing explodes in your face"
 treasureCacheTrap = ItemKind
   { isymbol  = '^'
   , iname    = "cache trap"
@@ -151,7 +159,7 @@ treasureCacheTrap = ItemKind
   , ieffects = [OneOf [ toOrganBad S_BLIND (10 + 1 `d` 10)
                       , RefillCalm (-99)
                       , Explode S_FOCUSED_CONCUSSION
-                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
+                      , reliefMsg, reliefMsg ]]
   , idesc    = "It's a trap!"
   , ikit     = []
   }
@@ -183,7 +191,7 @@ signageMerchandise = signageExit
   , idesc    = "In equal parts cryptic and promising."
   }
 fireSmall = ItemKind
-  { isymbol  = '%'
+  { isymbol  = 'o'
   , iname    = "small fire"
   , ifreq    = [(SMALL_FIRE, 1)]
   , iflavour = zipPlain [BrRed]
@@ -238,9 +246,10 @@ rubble = ItemKind
   , ieffects = [OneOf [ Explode S_FOCUSED_GLASS_HAIL
                       , Summon MOBILE_ANIMAL $ 1 `dL` 2
                       , toOrganNoTimer S_POISONED
-                      , CreateItem Nothing CGround COMMON_ITEM timerNone
-                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1)
-                      , RefillCalm (-1), RefillCalm (-1), RefillCalm (-1) ]]
+                      , CreateItem Nothing CGround ANY_ARROW timerNone
+                      , CreateItem Nothing CGround STARTING_WEAPON timerNone
+                      , reliefMsg, reliefMsg, reliefMsg
+                      , reliefMsg, reliefMsg, reliefMsg ]]
   , idesc    = "Broken chunks of rock and glass."
   , ikit     = []
   }
@@ -307,6 +316,8 @@ escape = stairsUp
   , iaspects = [SetFlag Durable]
   , ieffects = [Escape]
   , idesc    = "May this nightmare have an end?"
+                 -- generic escape, so the text should be too;
+                 -- for moon outdoors, spaceship, everywhere
   }
 stairsTrapUp = ItemKind
   { isymbol  = '^'
@@ -388,7 +399,7 @@ frozenGround = ItemKind
   , iname    = "shade"
   , ifreq    = [(FROZEN_GROUND, 1)]
   , iflavour = zipFancy [BrBlue]
-  , icount   = 50  -- very thick ice and refreezes
+  , icount   = 10  -- very thick ice and refreezes, but not too large and boring
   , irarity  = [(1, 1)]
   , iverbHit = "betray"
   , iweight  = 10000

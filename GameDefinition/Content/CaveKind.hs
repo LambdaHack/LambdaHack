@@ -16,7 +16,6 @@ import Data.Ratio
 import           Content.ItemKind hiding
   (content, groupNames, groupNamesSingleton)
 import           Content.ItemKindActor
-import           Content.ItemKindBlast
 import           Content.PlaceKind hiding
   (content, groupNames, groupNamesSingleton)
 import           Content.TileKind hiding
@@ -331,7 +330,7 @@ brawl = rogue  -- many random solid tiles, to break LOS, since it's a day
   , cactorFreq    = []
   , citemNum      = 4 `d` 6
   , citemFreq     = [ (IK.COMMON_ITEM, 50), (STARTING_WEAPON, 100)
-                    , (TORSO_ARMOR, 400), (ARMOR_MISC, 200) ]
+                    , (STARTING_ARMOR, 100) ]
   , cplaceFreq    = [(BRAWL, 1)]
   , cpassable     = True
   , cdefTile      = BRAWL_SET_LIT
