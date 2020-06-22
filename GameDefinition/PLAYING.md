@@ -1,7 +1,7 @@
 Playing LambdaHack
 ==================
 
-The following backstory blurb is a copy of the sample game intro screen.
+The following backstory blurb is a copy of the sample game intro screen:
 
  LambdaHack is a small dungeon crawler
  illustrating the roguelike game engine
@@ -28,7 +28,7 @@ What to expect
 
 LambdaHack is a turn-based game. You issue a command.
 Then you watch its results unfold on the screen, without you being able
-to intervene. Then all settles down and you have as much time
+to intervene. Then the dust settles down and you have as much time
 as you want to inspect the battlefield and think about your next move.
 
 Once the few basic command keys and on-screen symbols are learned,
@@ -66,7 +66,7 @@ other technical issues, please consult
 [README.md](https://github.com/LambdaHack/LambdaHack/blob/master/README.md)
 or describe your problem on gitter or the issue tracker.
 Contributions of all kinds are welcome. Please offer feedback
-to mikolaj.konarski@funktory.com or, preferably, at any of the public forums.
+to mikolaj.konarski@funktory.com or, preferably, on any of the public forums.
 
 
 Starting your adventure
@@ -109,11 +109,11 @@ game features and tactics and prevent the player from missing half the fun
 by trying to play the crawl just like a normal roguelike with spare heroes.
 The extra scenarios continue the plotline from the initial tutorial scenarios
 in the form of flashbacks and eventually lead up to the events that start
-the main crawl adventure. The training they provide is focused, drilling
-a particular skill set, even as exotic as opportunity fire management,
-a frantic race to the exit and big asymmetric melee battle. The challenge
-in the scenarios may be, accordingly, quite tough, particularly at the higher
-difficulty levels.
+the main crawl adventure. The training they provide has narrow focus,
+drilling a particular skill set, even as exotic as opportunity fire
+management, a frantic race to the exit and big asymmetric melee battle.
+The challenge in the scenarios may be, accordingly, quite tough,
+particularly at the higher difficulty levels.
 
 The main scenario, the long crawl, is the only one that takes
 place in a multi-floor setting, requiring lots of time to beat,
@@ -126,18 +126,18 @@ and loot with a single scout eluding most opponents. On others he may be
 forced to change the pace and perform a complete exterminatory sweep
 involving his whole party. On yet others, his best course of action may be
 to defend a key location until the first wave of attackers is broken.
-The size of the game arena calls for strategic thinking, including
-resource management, area denial and unavoidable temporary retreats
-to other levels. Thus, the crawl game mode is the most replayable one,
-but even the small scenarios can be refreshed by ramping up difficulty
-settings and striving to beat a high score.
+The large game arena calls for strategic thinking, including resource
+management, area denial and unavoidable temporary retreats to other levels.
+Thus, the crawl game mode is the most replayable one, but even the small
+scenarios can be refreshed by ramping up difficulty settings and striving
+to beat a high score.
 
 
 Exploring the world
 -------------------
 
 The map of any particular scenario consists of one or many
-levels and a level has a large number of tiles with a particular
+levels and a level consists of a number of tiles with a particular
 terrain kind on each. The game world is persistent, i.e., every time
 the player visits a level during a single game, its layout is the same
 (unless modified by other actors).
@@ -147,7 +147,7 @@ On the other hand, terrain is depicted with non-letter and non-digit
 characters and with zero `0`. Blocky solid symbols are likely to be
 non-passable and/or not translucent terrain. White, cyan and green terrain
 is usually inert, red is burning or trapped, blue activable or trapped,
-magenta searchable or activable.
+magenta activable or searchable.
 
 Items lying on the ground are represented with non-letter and non-digit
 characters, just as terrain, though rarely with blocky symbols.
@@ -210,7 +210,9 @@ The heroes are displayed on the map with bright white color (red if they are
 extremely weakened) and symbols `@` and `1` through `9` (never `0`).
 The currently chosen party pointman is highlighted on the map with yellow.
 The easiest way to control your team is to run a short distance
-with your pointman using Shift or LMB, switch the pointman with Tab, repeat.
+with your pointman using Shift-direction or LMB, switch the pointman
+with Tab, repeat.
+
 In open terrain, if you keep consistent distance between teammates,
 this resembles the leap frog infantry tactics, in which the immobile
 team members cover the movement of the others. For best effects,
@@ -226,10 +228,11 @@ The line starts with the list of party members, with the current pointman
 highlighted in yellow. Most commands involve only the pointman, including
 movement with keyboard or keypad or `LMB` (left mouse button).
 If more heroes are selected (highlighted in blue), they run together
-whenever `:` or `S-LMB` (while holding Shift) over map area is pressed,
-though that's usually not a precise enough method of controlling a team.
-Any sleeping hero is highlighted in green and can be woken up
-by yelling with `%`, which also taunts or stresses up nearby enemies.
+whenever `:` or `S-LMB` (LMB while holding down Shift) over map area
+is pressed, though that's usually not a precise enough method
+of controlling a team. Any sleeping hero is highlighted in green
+and can be woken up by yelling with `%`, which also taunts
+or stresses up nearby enemies.
 
 Next on the bottom-most status line is the pointman's current and maximum
 Calm (morale, composure, focus, attentiveness), then his current
@@ -272,7 +275,7 @@ at a dire basilisk monster with its hit points drawn as a half-full bar.
 Instead of a monster, the aiming crosshair status area may describe
 a position on the map, a recently spotted item on the floor or an item
 in inventory selected for further action or, if none are available,
-a summary of the team status. For example, this form
+a summary of the team composition. For example, this form
 
     5  Lofty hall    [33% seen] exact spot (71,12)    p15 l10
 
@@ -350,8 +353,8 @@ C-RMB or C-S-LMB.
     WHEEL-UP     swerve the aiming line
     WHEEL-DN     unswerve the aiming line
 
-Note that mouse is totally optional. Keyboard suffices, at worst requiring
-the more obscure commands listed in the help screens.
+Note that mouse is totally optional. Keyboard suffices, occasionally
+requiring a key lookup for some obscure command in the help screens.
 
 
 Battling monsters
@@ -397,7 +400,7 @@ in the organ menu, invoked by `@`.
 
 In ranged combat, the projectile is assumed to be attacking the defender
 in melee, using itself as the weapon, with the usual dice and damage bonus.
-This time, the ranged armor skill of the defender is taken into account
+This time, the *ranged* armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
 (by default you are offered only the appropriate items; press `+` to open
@@ -438,7 +441,10 @@ on the floor. You can move crosshair with direction keys and assign
 a personal target to the pointman with a `RET` key (Return, Enter).
 The details of the shared crosshair mark are displayed in a status
 line close to the bottom of the screen, as explained in section
-[Leading your heroes](#Leading-your-heroes) above.
+[Leading your heroes](#Leading-your-heroes) above. You cycle aiming
+mode from foe to spot to vector with the ``\`` key, which is useful
+when a monster vanishes but you still want to fling at its last
+known position.
 
 
 Winning and dying
