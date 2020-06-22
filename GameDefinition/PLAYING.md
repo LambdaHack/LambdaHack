@@ -46,15 +46,16 @@ The game differs from classic roguelikes in a few ways:
   fly gradually over time with varying speeds and can be sidestepped
   or shot down; less so explosions that are swarms of projectile particles
   (turn-based just the same)
-* time passes and factions pursue their goals on a few levels simultaneously,
-  while other levels are frozen (but all are persistent)
+* time passes and factions pursue their goals on a few levels
+  simultaneously, while other levels are frozen (but all are persistent)
 * the same laws of simulated world apply to all factions and all actors,
   whether player-controlled or AI-controlled; e.g., the same field of view
-  and pathfinding algorithms, skill checks, equipment and item use rules
-* combat mechanics is deterministic; randomness comes only from AI decisions
-  and procedurally generated terrain
+  calculation, skill checks, equipment limitations, rules for item
+  and terrain use
+* combat mechanics is deterministic; randomness comes only from AI
+  decisions and procedurally generated terrain
 * there's (almost) no HP regeneration; attrition ensures all past (silly)
-  decisions matter; HP starts at around half max
+  decisions matter; HP of every actor starts at around half max
 * each character has 10 uniform equipment slots, which fill quickly given
   that most melee weapons have cooldowns
 * each faction has a single shared inventory of unlimited size,
@@ -135,10 +136,11 @@ settings and striving to beat a high score.
 Exploring the world
 -------------------
 
-The map of any particular scenario consists of one or many levels
-and each level has a large number of tiles with a particular
+The map of any particular scenario consists of one or many
+levels and a level has a large number of tiles with a particular
 terrain kind on each. The game world is persistent, i.e., every time
-the player visits a level during a single game, its layout is the same.
+the player visits a level during a single game, its layout is the same
+(unless modified by other actors).
 
 Letters and digits on the game screen are likely to represent actors.
 On the other hand, terrain is depicted with non-letter and non-digit
@@ -212,7 +214,8 @@ with your pointman using Shift or LMB, switch the pointman with Tab, repeat.
 In open terrain, if you keep consistent distance between teammates,
 this resembles the leap frog infantry tactics, in which the immobile
 team members cover the movement of the others. For best effects,
-try to end each sprint behind a cover or concealment.
+try to end each sprint behind a cover or concealment (note that a thin pillar
+is neither, but a single shadowed position may be enough to hide in the dark).
 
 Pointman hero's attributes are displayed at the bottom-most status line which,
 in its most complex form, looks as follows.
@@ -234,7 +237,7 @@ and maximum HP (hit points, health). The colon after "Calm" turning
 into a dot signifies that the pointman is in a position without ambient
 illumination, making stealthy conduct easier. A brace sign instead
 of a colon after "HP" means the pointman is braced for combat
-(see section [Basic Commands](#basic-commands)).
+(see section [Moving and acting](#basic-commands)).
 
 In the second half of the bottom-most status line, the pointman's name
 is shown. Then come damage dice of the pointman's melee weapons and pointman's
@@ -251,33 +254,33 @@ the dice notation `xdy`, which denotes `x` rolls of `y`-sided dice.
 A variant written `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
 always one, then it grows up to full rolled value at the last level).
-Section [Monsters](#monsters) below describes combat resolution in detail,
-including the role of the percentage bonuses.
+Section [Battling monsters](#monsters) below describes combat resolution
+in detail, including the role of the percentage bonuses.
 
 The second, the upper status line describes the current level in relation
 to the party.
 
-    5  Lofty hall    [33% seen] X-hair: dire basilisk    [__**]
+    5  Lofty hall    [33% seen] dire basilisk    [__**]
 
 First comes the depth of the current level and its name.
 Then the percentage of its explorable tiles already seen by the heroes.
-The `X-hair` (aiming crosshair) is the common focus of the whole party,
+Then the common focus of the whole party, know as the aiming crosshair,
 marked on the map with a red box and manipulated with mouse
 or movement keys in aiming mode. In this example, the crosshair points
-at a dire basilisk monster with its hit points drawn as a bar.
+at a dire basilisk monster with its hit points drawn as a half-full bar.
 
-Instead of a monster, the `X-hair` area may describe a position on the map,
-a recently spotted item on the floor or an item in inventory selected
-for further action or, if none are available, a summary of the team status.
-For example, this form
+Instead of a monster, the aiming crosshair status area may describe
+a position on the map, a recently spotted item on the floor or an item
+in inventory selected for further action or, if none are available,
+a summary of the team status. For example, this form
 
-    5  Lofty hall    [33% seen] X-hair: exact spot (71,12)    p15 l10
+    5  Lofty hall    [33% seen] exact spot (71,12)    p15 l10
 
 indicates that the party is aiming at an exact spot on the map.
 At the end of this example status line comes the length of the shortest
-path from the pointman's position to the spot and the straight-line
-distance between the two points, one that a flung projectile would travel
-if there were no obstacles.
+path from the pointman's position to the spot in crosshair and
+the straight-line distance between the two points, one that a flung
+projectile would travel if there were no obstacles.
 
 
 Moving and acting
@@ -311,7 +314,7 @@ The best, not on cooldown, melee weapon is automatically chosen from your
 equipment and from among your body parts.
 
 The following few commands, joined with the movement and running keys,
-let you accomplish anything in the game, though not necessarily
+let you accomplish almost anything in the game, though not necessarily
 with the fewest keystrokes. You can also play the game exclusively
 with a mouse, or both mouse and keyboard (e.g., mouse for go-to
 and terrain inspection and keyboard for everything else). Lastly,
@@ -327,7 +330,7 @@ screen or the dashboard and execute it on the spot.
     S-TAB        cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
-    m            modify door by closing it
+    M            modify any admissible terrain
     %            yell/yawn and stop sleeping
 
 Screen area and UI mode (exploration/aiming) determine mouse click
@@ -338,7 +341,7 @@ which is also used over menus, to page-scroll them. For mice without RMB,
 one can use Control key with LMB and for mice without MMB, one can use
 C-RMB or C-S-LMB.
 
-    keys         command
+    keys         command (exploration/aiming)
     LMB          go to pointer for 25 steps/fling at enemy
     S-LMB        run to pointer collectively for 25 steps/fling at enemy
     RMB or C-LMB start aiming at enemy under pointer
@@ -358,7 +361,7 @@ The life of the heroes is full of dangers. Monstrosities, natural
 and out of this world, roam the dark corridors and crawl from damp holes
 day and night. While heroes pay attention to all other party members
 and take care to move one at a time, monsters don't care about each other
-and all move at once, sometimes brutally colliding by accident.
+and crowd and stampede all at once, sometimes brutally colliding by accident.
 
 Monsters are depicted on the map with letters. Upper case letters
 are unique monsters, often guardians of special floors, and lower case
@@ -368,7 +371,7 @@ they are marked with `@` and `1` through `9` in other colours than white.
 When a hero walks and bumps into a monster or a monster attacks
 the hero, melee combat occurs. Hero *running* into and displacing
 a monster (with the `Shift` key and, in case of keypad movement,
-also possibly a `Control` key), does not involve inflicting a damage,
+alternatively a `Control` key), does not involve inflicting a damage,
 but only causes an exchange of places. This gives the opponent
 a free blow, but can improve the tactical situation or aid escape.
 In some circumstances actors are immune to the displacing,
@@ -397,7 +400,7 @@ in melee, using itself as the weapon, with the usual dice and damage bonus.
 This time, the ranged armor skill of the defender is taken into account
 and, additionally, the speed of the missile (based on shape and weight)
 figures in the calculation. You may propel any item from your inventory
-(by default you are offered only the appropriate items; press `+` open
+(by default you are offered only the appropriate items; press `+` to open
 all choices). Only items of a few kinds inflict any damage, but some
 have other effects, beneficial, detrimental or mixed.
 
@@ -405,7 +408,7 @@ In-game detailed item descriptions contain melee and ranged damage estimates.
 They do not take into account damage from effects and, if bonuses are not
 known, guesses are based on averages for the item kind in question.
 The displayed figures are rounded, but the game internally keeps track
-of minute fractions of HP for all actors and in all calculcations.
+of minute fractions of HP for all actors in all calculcations.
 
 The combat stress drains Calm, gradually limiting viewing radius and,
 if Calm reaches zero and the actor is sufficiently impressed by his foes,
@@ -423,18 +426,19 @@ because crosshair is set automatically as soon as a monster comes into view
 and can still be adjusted for as long as the missile to fling is not chosen.
 However, sometimes you want to examine the level map tile by tile
 or assign persistent personal targets to party members.
-The latter is essential in the rare cases when your non-pointmen
+The latter is essential in the rare cases when your henchmen
 (non-pointman characters) can move autonomously or fire opportunistically
-(via innate skills or rare equipment). Also, if your non-pointman is adjacent
-to more than one enemy, setting his target makes him melee a particular foe.
+(via innate skills or rare equipment). Also, if your non-pointman character
+is adjacent to more than one enemy, setting his target makes him melee
+a particular foe.
 
 You can enter the aiming mode with the `*` and keypad `*` keys that
 select enemies or the `/` and keypad `/` keys that cycle among items
-on the floor and mark a tile underneath an item. You can move crosshair
-with direction keys and assign a personal target to the pointman
-with a `RET` key (Return, Enter). The details of the shared crosshair mark
-are displayed in a status line close to the bottom of the screen,
-as explained in section [Heroes](#heroes) above.
+on the floor. You can move crosshair with direction keys and assign
+a personal target to the pointman with a `RET` key (Return, Enter).
+The details of the shared crosshair mark are displayed in a status
+line close to the bottom of the screen, as explained in section
+[Leading your heroes](#heroes) above.
 
 
 Winning and dying
@@ -463,12 +467,15 @@ FAQ
 ---
 
 Q: Why does the percentage of explored tiles turns from 100% to 99%?
+
 A: Apparently enemies transformed a tile from unexplorable terrain kind
 to explorable. The new tile has never been seen by the player,
 so the percentage is no longer at 100%.
 
+
 Q: Why when a single hero gets ambushed and is fighting at close quarters,
 his distant teammates don't jointly come to his rescue.
+
 A; The teammates wait for him to come back into the formation instead
 so that they may assume a frontline and then melee their foes together.
 The immobile heroes are assumed to be pinned to their positions
@@ -482,14 +489,18 @@ It would be, if all squaddies had cameras, with a few drones overhead
 for best effect, and a team of off-site coordinators would analyze
 the situation and micromanage them all. This is not the case here.
 
+
 Q: Why is the noise I'm hearing "indistinct"?
+
 A: That's because it's out of direct hearing range of each teammate
 on the level, but ponderous enough to be perceived by all as vibrations
 and echos from afar. Any other noise adjective tells that the noise
 is heard by at least one of teammates and how far it is from the pointman
 (who may or may not hear it directly, as shown in Calm drop, if any).
 
+
 Q: Why are there two 'weakened' conditions in the organ menu of my hero?
+
 A: Each teams has a differen recipe for their weakness brew, so multiple
 affliction by the concoction from a single team prolongs the malady,
 but from many teams, compounds the concurrently occuring harm.
@@ -499,7 +510,9 @@ The exceptions are the conditions that activate each turn, e.g., healing
 or wounding (poison). These are similar regardless of the team and so
 the condition is always only prolonged.
 
+
 Q: Why is a harpoon in my shared inventory stash charging for hundreds of turns?
+
 A: This is an artifact of time running independently on each level.
 Any ideas on how to improve this are welcome. A workaround is to drop and then
 pick up the item on the level you want to use it. It gets recharged after,

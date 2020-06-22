@@ -133,7 +133,7 @@ may be mouse for menus, go-to, inspecting the map, and aiming at distant
 positions and keyboard for everything else.
 
 If you are using a terminal frontend, e.g. the best supported vty frontend,
-then numeric keypad (especially keypad '*' and '/') may not work correctly,
+then numeric keypad (especially keypad `*` and `/`) may not work correctly,
 depending on versions of libraries, terminfo and terminal emulators.
 Toggling the Num Lock key may help or make issues worse. As a workaround,
 in the vty frontend, numbers are used for movement, which sadly prevents

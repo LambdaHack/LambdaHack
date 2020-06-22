@@ -26,7 +26,7 @@ The best, not on cooldown, melee weapon is automatically chosen from your
 equipment and from among your body parts.
 
 The following few commands, joined with the movement and running keys,
-let you accomplish anything in the game, though not necessarily
+let you accomplish almost anything in the game, though not necessarily
 with the fewest keystrokes. You can also play the game exclusively
 with a mouse, or both mouse and keyboard (e.g., mouse for go-to
 and terrain inspection and keyboard for everything else). Lastly,
@@ -42,7 +42,7 @@ screen or the dashboard and execute it on the spot.
     S-TAB        cycle among all party members
     *            cycle crosshair among enemies
     /            cycle crosshair among items
-    m            modify door by closing it
+    M            modify any admissible terrain
     %            yell/yawn and stop sleeping
 
 
@@ -56,7 +56,7 @@ which is also used over menus, to page-scroll them. For mice without RMB,
 one can use Control key with LMB and for mice without MMB, one can use
 C-RMB or C-S-LMB.
 
-    keys         command
+    keys         command (exploration/aiming)
     LMB          go to pointer for 25 steps/fling at enemy
     S-LMB        run to pointer collectively for 25 steps/fling at enemy
     RMB or C-LMB start aiming at enemy under pointer
