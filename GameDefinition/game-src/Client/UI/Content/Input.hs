@@ -73,9 +73,8 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
           , "cycle crosshair among enemies"
           , AimEnemy ))
   , ("/", ([CmdMinimal, CmdAim], "cycle crosshair among items", AimItem))
-  , ("m", ( [CmdMinimal, CmdMove]
-          , "modify door by closing it"
-          , CloseDir ))
+  , ("m", ([CmdMove], "modify door by closing it", CloseDir))
+  , ("M", ([CmdMinimal, CmdMove], "modify any admissible terrain", AlterDir))
   , ("%", ([CmdMinimal, CmdMeta], "yell/yawn and stop sleeping", Yell))
 
   -- Item menu, first part of item use commands
@@ -126,7 +125,6 @@ standardKeysAndMouse = InputContentRaw $ map evalKeyDef $
   , ("safeD99", ([CmdInternal, CmdDashboard], "", Cancel))  -- blank line
 
   -- Terrain exploration and modification
-  , ("M", ([CmdMove], "modify any admissible terrain", AlterDir))
   , ("=", ( [CmdMove], "select (or deselect) party member", SelectActor) )
   , ("_", ([CmdMove], "deselect (or select) all on the level", SelectNone))
   , ("semicolon", ( [CmdMove]

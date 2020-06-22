@@ -57,7 +57,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
       ]
     minimalBlurb =
       [ "The following few commands, joined with the movement and running keys,"
-      , "let you accomplish anything in the game, though not necessarily"
+      , "let you accomplish almost anything in the game, though not necessarily"
       , "with the fewest keystrokes. You can also play the game exclusively"
       , "with a mouse, or both mouse and keyboard (e.g., mouse for go-to"
       , "and terrain inspection and keyboard for everything else). Lastly,"
@@ -100,6 +100,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
     fmt0 n k h = T.justifyLeft n ' ' k <> " " <> h
     fmt n k h = " " <> fmt0 n k h
     keyCaption = fmt offsetCol2 "keys" "command"
+    mouseOverviewCaption = fmt offsetCol2 "keys" "command (exploration/aiming)"
     spLen = textSize monoFont " "
     pamoveRight :: Int -> (K.PointUI, a) -> (K.PointUI, a)
     pamoveRight xoff (K.PointUI x y, a) = (K.PointUI (x + xoff) y, a)
@@ -219,7 +220,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
                                  ++ mouseBasicsBlurb ++ [""]
-                               , [keyCaption] )
+                               , [mouseOverviewCaption] )
                                ([], [])
             in (ls, []) )  -- don't capture mouse wheel, etc.
         , ( movTextEnd
@@ -235,7 +236,7 @@ keyHelp CCUI{ coinput=coinput@InputContent{..}
           , let (ls, _) = okxs CmdMouse
                                ( ["", "Optional mouse commands", ""]
                                  ++ mouseBasicsBlurb ++ [""]
-                               , [keyCaption] )
+                               , [mouseOverviewCaption] )
                                ([], [])
                 okx0 = (ls, [])  -- don't capture mouse wheel, etc.
             in mergeOKX
