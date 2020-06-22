@@ -472,14 +472,13 @@ Lead the new hopeful explorers with wisdom and fortitude!
 FAQ
 ---
 
-Q: Why does the percentage of explored tiles turns from 100% to 99%?
+- Q: Why does the percentage of explored tiles turns from 100% to 99%?
 
 A: Apparently enemies transformed a tile from unexplorable terrain kind
 to explorable. The new tile has never been seen by the player,
 so the percentage is no longer at 100%.
 
-
-Q: Why when a single hero gets ambushed and is fighting at close quarters,
+- Q: Why when a single hero gets ambushed and is fighting at close quarters,
 his distant teammates don't jointly come to his rescue.
 
 A; The teammates wait for him to come back into the formation instead
@@ -492,35 +491,36 @@ and revealing their position or leaving a vantage point from which
 they can observe and relay enemy movement. For untrained teams,
 optimal simultaneous synchronized squad movement is not feasible.
 It would be, if all squaddies had cameras, with a few drones overhead
-for best effect, and a team of off-site coordinators would analyze
+for best effect, and if a team of off-site coordinators would analyze
 the situation and micromanage them all. This is not the case here.
 
-
-Q: Why is the noise I'm hearing "indistinct"?
+- Q: Why is the noise I'm hearing "indistinct"?
 
 A: That's because it's out of direct hearing range of each teammate
 on the level, but ponderous enough to be perceived by all as vibrations
 and echos from afar. Any other noise adjective tells that the noise
 is heard by at least one of teammates and how far it is from the pointman
-(who may or may not hear it directly, as shown in Calm drop, if any).
+(who may or may not hear it directly, as indicated by Calm drop).
 
+- Q: Why are there two 'weakened' conditions in the organ menu of my hero?
 
-Q: Why are there two 'weakened' conditions in the organ menu of my hero?
-
-A: Each teams has a different recipe for their weakness brew, so multiple
-affliction by the concoction from a single team prolongs the malady,
-but from many teams, compounds the concurrently occurring harm.
-The benefit is that it's possible to tell the perpetrator team of the ailment.
+A: Each teams has a different recipe for their weakness brew.
+Consequently, multiple affliction by the concoction from a single team
+prolongs a single malady, but affliction by concotions from many teams
+causes concurrent ailments, with compounded effects, but independent
+and short durations. The benefit of the mechanism is that
+it's possible to tell the perpetrator team of the ailment.
 The exceptions are the conditions that activate each turn, e.g., healing
 (regeneration, various resistances that effectively cure each turn)
 or wounding (poison). These are similar regardless of the team and so
 the condition is always only prolonged.
 
-
-Q: Why is a harpoon in my shared inventory stash charging for hundreds of turns?
+- Q: Why is a harpoon in my shared inventory stash charging for hundreds
+of turns?
 
 A: This is an artifact of time running independently on each level.
 Any ideas on how to improve this are welcome. A workaround is to drop and then
-pick up the item on the level you want to use it. It gets recharged after,
-randomly, from one to two times the normal cooldown period of the item
-and then recharges normally for as long as it's used only on this level.
+pick up the item on the level you want to use it. When picked up,
+it gets recharged after, randomly, from one to two times the normal
+cooldown period of the item and then recharges normally for as long
+as it's used only on this level.
