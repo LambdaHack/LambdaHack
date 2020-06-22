@@ -237,7 +237,7 @@ and maximum HP (hit points, health). The colon after "Calm" turning
 into a dot signifies that the pointman is in a position without ambient
 illumination, making stealthy conduct easier. A brace sign instead
 of a colon after "HP" means the pointman is braced for combat
-(see section [Moving and acting](#basic-commands)).
+(see section [Moving and acting](#Moving-and-acting)).
 
 In the second half of the bottom-most status line, the pointman's name
 is shown. Then come damage dice of the pointman's melee weapons and pointman's
@@ -254,8 +254,8 @@ the dice notation `xdy`, which denotes `x` rolls of `y`-sided dice.
 A variant written `xdLy` is additionally scaled by the level depth
 in proportion to the maximal level depth (at the first level it's
 always one, then it grows up to full rolled value at the last level).
-Section [Battling monsters](#monsters) below describes combat resolution
-in detail, including the role of the percentage bonuses.
+Section [Battling monsters](#Battling-monsters) below describes combat
+resolution in detail, including the role of the percentage bonuses.
 
 The second, the upper status line describes the current level in relation
 to the party.
@@ -438,7 +438,7 @@ on the floor. You can move crosshair with direction keys and assign
 a personal target to the pointman with a `RET` key (Return, Enter).
 The details of the shared crosshair mark are displayed in a status
 line close to the bottom of the screen, as explained in section
-[Leading your heroes](#heroes) above.
+[Leading your heroes](#Leading-your-heroes) above.
 
 
 Winning and dying
