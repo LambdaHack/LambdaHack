@@ -90,10 +90,11 @@ newtype AbsDepth = AbsDepth Int
   deriving (Show, Eq, Ord, Hashable, Binary)
 
 -- | Cast dice scaled with current level depth. When scaling, we round up,
--- so that the value of @1 `dL` 1@ is 1 even at the lowest level.
+-- so that the value of @1 `dL` 1@ is @1@ even at the lowest level,
+-- but so is the value of @1 `dL` depth@.
 --
 -- The implementation calls RNG as many times as there are dice rolls,
--- which is costly, so content should prefer to case fewer dice
+-- which is costly, so content should prefer to cast fewer dice
 -- and then multiply them by a constant. If rounded results are not desired
 -- (often they are, to limit the number of distinct item varieties
 -- in inventory), another dice may be added to the result.
@@ -150,19 +151,19 @@ d :: Int -> Int -> Dice
 d n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
         $ DiceD n k
 
--- | A die rolled the given number of times, with the result scaled
--- with dungeon level depth.
+-- | A die rolled the given number of times,
+-- with the result scaled with dungeon level depth.
 dL :: Int -> Int -> Dice
 dL n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
          $ DiceDL n k
 
--- | A die, starting from zero, ending at one less than the bound,
+-- | A die, starting from zero, ending at one less than second argument,
 -- rolled the given number of times. E.g., @1 `z` 1@ always rolls zero.
 z :: Int -> Int -> Dice
 z n k = assert (n > 0 && k > 0 `blame` "die must be positive" `swith` (n, k))
         $ DiceZ n k
 
--- | A die, starting from zero, ending at one less than the bound,
+-- | A die, starting from zero, ending at one less than second argument,
 -- rolled the given number of times,
 -- with the result scaled with dungeon level depth.
 zL :: Int -> Int -> Dice
@@ -226,7 +227,10 @@ supDice = snd . infsupDice
 infDice :: Dice -> Int
 infDice = fst . infsupDice
 
--- | Mean value of dice. The scaled part taken assuming median level.
+-- | Mean value of dice. The scaled part taken assuming median level,
+-- but not taking into account rounding up, and so too low, especially
+-- for dice small compared to depth. To fix this, depth would need
+-- to be taken as argument.
 meanDice :: Dice -> Double
 meanDice dice1 = case dice1 of
   DiceI k -> fromIntegral k

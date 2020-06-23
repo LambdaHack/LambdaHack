@@ -114,7 +114,6 @@ chance r = do
   return (k <= n)
 
 -- | Cast dice scaled with current level depth.
--- Note that at the first level, the scaled dice are always ignored.
 castDice :: Dice.AbsDepth -> Dice.AbsDepth -> Dice.Dice -> Rnd Int
 castDice = Dice.castDice randomR
 
