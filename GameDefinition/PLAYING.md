@@ -481,7 +481,7 @@ so the percentage is no longer at 100%.
 - Q: Why when a single hero gets ambushed and is fighting at close quarters,
 his distant teammates don't jointly come to his rescue.
 
-A; The teammates wait for him to come back into the formation instead
+A: The teammates wait for him to come back into the formation instead
 so that they may assume a frontline and then melee their foes together.
 The immobile heroes are assumed to be pinned to their positions
 by fear and shock, but also by their imperative to hold formation,
@@ -504,7 +504,7 @@ is heard by at least one of teammates and how far it is from the pointman
 
 - Q: Why are there two 'weakened' conditions in the organ menu of my hero?
 
-A: Each teams has a different recipe for their weakness brew.
+A: Each team has a different recipe for their weakness brew.
 Consequently, multiple affliction by the concoction from a single team
 prolongs a single malady, but affliction by concotions from many teams
 causes concurrent ailments, with compounded effects, but independent
