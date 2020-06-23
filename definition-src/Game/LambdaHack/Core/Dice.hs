@@ -106,6 +106,7 @@ newtype AbsDepth = AbsDepth Int
 castDice :: forall m. Monad m
          => ((Int, Int) -> m Int)
          -> AbsDepth -> AbsDepth -> Dice -> m Int
+{-# INLINE castDice #-}
 castDice randomR (AbsDepth lvlDepth) (AbsDepth maxDepth) dice = do
   let !_A = assert (lvlDepth >= 0 && lvlDepth <= maxDepth
                     `blame` "invalid depth for dice rolls"

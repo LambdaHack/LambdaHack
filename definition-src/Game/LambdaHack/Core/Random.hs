@@ -47,10 +47,14 @@ randomR0 :: Integral a => a -> Rnd a
 randomR0 h = St.state $ nextRandom h
 
 -- | Generate random 'Integral' in @[0, x]@ range, where @x@ is within @Int32@.
+--
+-- The limitation to @Int32@ values is needed to keep it working on signed
+-- types. In package @random@, a much more complex scheme is used
+-- to keep it working for arbitrary fixed number of bits.
 nextRandom :: Integral a => a -> SM.SMGen -> (a, SM.SMGen)
 {-# INLINE nextRandom #-}
 nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
-  let (w32, g') = SM.bitmaskWithRejection32 (succ (fromIntegral h)) g
+  let (w32, g') = SM.bitmaskWithRejection32' (fromIntegral h) g
       x = fromIntegral w32
   in if x > h
      then error $ "nextRandom internal error"
