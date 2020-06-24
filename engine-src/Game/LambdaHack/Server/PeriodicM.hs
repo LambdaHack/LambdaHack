@@ -361,6 +361,7 @@ leadLevelSwitch = do
 endOrLoop :: (MonadServerAtomic m, MonadServerComm m)
           => m () -> (Maybe (GroupName ModeKind) -> m ())
           -> m ()
+{-# INLINE endOrLoop #-}
 endOrLoop loop restart = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of

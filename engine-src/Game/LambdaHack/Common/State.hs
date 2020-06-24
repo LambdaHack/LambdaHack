@@ -240,10 +240,12 @@ updateDepth f s = s {_stotalDepth = f (_stotalDepth s)}
 
 -- | Update the actor dictionary.
 updateActorD :: (ActorDict -> ActorDict) -> State -> State
+{-# INLINE updateActorD #-}  -- just in case inliner goes hiwire
 updateActorD f s = s {_sactorD = f (_sactorD s)}
 
 -- | Update the item dictionary.
 updateItemD :: (ItemDict -> ItemDict) -> State -> State
+{-# INLINE updateItemD #-}
 updateItemD f s = s {_sitemD = f (_sitemD s)}
 
 -- | Update the item kind index map.
@@ -256,6 +258,7 @@ updateFactionD f s = s {_sfactionD = f (_sfactionD s)}
 
 -- | Update global time within state.
 updateTime :: (Time -> Time) -> State -> State
+{-# INLINE updateTime #-}
 updateTime f s = s {_stime = f (_stime s)}
 
 -- | Update content data within state and recompute the cached data.

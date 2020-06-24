@@ -181,6 +181,8 @@ skillsToList (Skills sk) = EM.assocs sk
 zeroSkills :: Skills
 zeroSkills = Skills EM.empty
 
+-- This is surprisingly expensive, but comparison without normal form
+-- is even more costly and it's compared often.
 compactSkills :: EM.EnumMap Skill Int -> EM.EnumMap Skill Int
 compactSkills = EM.filter (/= 0)
 

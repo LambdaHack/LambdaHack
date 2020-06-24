@@ -155,6 +155,7 @@ assertSparseProjectiles m =
           `blame` "null projectile lists found" `swith` m) m
 
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
+{-# INLINE updateFloor #-}  -- just in case inliner goes hiwire
 updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 
 updateEmbed :: (ItemFloor -> ItemFloor) -> Level -> Level
@@ -164,6 +165,7 @@ updateBigMap :: (BigActorMap -> BigActorMap) -> Level -> Level
 updateBigMap f lvl = lvl {lbig = f (lbig lvl)}
 
 updateProjMap :: (ProjectileMap -> ProjectileMap) -> Level -> Level
+{-# INLINE updateProjMap #-}
 updateProjMap f lvl = lvl {lproj = f (lproj lvl)}
 
 updateTile :: (TileMap -> TileMap) -> Level -> Level

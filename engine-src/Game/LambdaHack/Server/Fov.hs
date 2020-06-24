@@ -185,17 +185,27 @@ cacheBeforeLucidFromActor clearPs body actorMaxSk =
 
 totalFromPerActor :: PerActor -> CacheBeforeLucid
 totalFromPerActor perActor =
-  let as = map (\case
-                   FovValid x -> x
-                   FovInvalid -> error $ "" `showFailure` perActor)
-           $ EM.elems perActor
-  in CacheBeforeLucid
-       { creachable = PerReachable
-                      $ ES.unions $ map (preachable . creachable) as
-       , cnocto = PerVisible
-                  $ ES.unions $ map (pvisible . cnocto) as
-       , csmell = PerSmelled
-                  $ ES.unions $ map (psmelled . csmell) as }
+  let fromValid = \case
+        FovValid x -> x
+        FovInvalid -> error $ "" `showFailure` perActor
+      addCacheBeforeLucid x cbl1 =
+        let cbl2 = fromValid x
+        in CacheBeforeLucid
+          { creachable = PerReachable
+                         $ ES.union (preachable $ creachable cbl1)
+                                    (preachable $ creachable cbl2)
+          , cnocto = PerVisible
+                     $ ES.union (pvisible $ cnocto cbl1)
+                                (pvisible $ cnocto cbl2)
+          , csmell = PerSmelled
+                     $ ES.union (psmelled $ csmell cbl1)
+                                (psmelled $ csmell cbl2)
+          }
+      emptyCacheBeforeLucid = CacheBeforeLucid
+        { creachable = PerReachable ES.empty
+        , cnocto = PerVisible ES.empty
+        , csmell = PerSmelled ES.empty }
+  in foldr addCacheBeforeLucid emptyCacheBeforeLucid $ EM.elems perActor
 
 -- | Update lights on the level. This is needed every (even enemy)
 -- actor move to show thrown torches.

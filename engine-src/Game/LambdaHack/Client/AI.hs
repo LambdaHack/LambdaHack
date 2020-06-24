@@ -59,7 +59,7 @@ queryAI aid = do
 pickActorAndAction :: MonadClient m
                    => Maybe ActorId -> ActorId
                    -> m (ActorId, RequestTimed, Maybe (Point, Time))
--- This inline would speeds up execution by 15% and decreases allocation by 15%,
+-- This inline would slightly decrease allocation,
 -- but it'd bloat JS code without speeding it up.
 -- {-# INLINE pickActorAndAction #-}
 pickActorAndAction maid aid = do

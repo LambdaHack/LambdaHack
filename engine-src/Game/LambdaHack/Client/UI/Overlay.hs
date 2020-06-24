@@ -137,12 +137,15 @@ textFgToAL !fg !t =
 stringToAL :: String -> AttrLine
 stringToAL s = attrStringToAL $ map Color.attrChar1ToW32 s
 
+-- Mimics @lines@.
 linesAttr :: AttrString -> [AttrLine]
-linesAttr l | null l = []
-            | otherwise = attrStringToAL h : if null t
-                                             then []
-                                             else linesAttr (tail t)
- where (h, t) = span (\ac -> Color.charFromW32 ac /= '\n') l
+linesAttr [] = []
+linesAttr l = cons (case break (\ac -> Color.charFromW32 ac == '\n') l of
+  (h, t) -> (attrStringToAL h, case t of
+                                 [] -> []
+                                 _ : tt -> linesAttr tt))
+ where
+  cons ~(h, t) = h : t
 
 -- | Split a string into lines. Avoids breaking the line at a character
 -- other than space. Remove space characters from the starts and ends
