@@ -66,7 +66,7 @@ updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
 -- INLIning doesn't help despite probably canceling the alt indirection.
--- perhaps it's applied automatically due to INLINABLE.
+-- perhaps it's applied automatically.
 updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
 updateActor aid f = do
   let alt Nothing = error $ "no body to update" `showFailure` aid

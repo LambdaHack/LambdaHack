@@ -54,7 +54,8 @@ import           Game.LambdaHack.Definition.Defs
 
 invalidateBfsAid :: MonadClient m => ActorId -> m ()
 invalidateBfsAid aid =
-  modifyClient $ \cli -> cli {sbfsD = EM.insert aid BfsInvalid (sbfsD cli)}
+  modifyClient $ \cli ->
+    cli {sbfsD = EM.adjust (const BfsInvalid) aid (sbfsD cli)}
 
 invalidateBfsPathAid :: MonadClient m => ActorId -> m ()
 invalidateBfsPathAid aid = do
@@ -62,20 +63,27 @@ invalidateBfsPathAid aid = do
       f (BfsAndPath bfsArr _) = BfsAndPath bfsArr EM.empty
   modifyClient $ \cli -> cli {sbfsD = EM.adjust f aid (sbfsD cli)}
 
+-- Even very distant actors affected, e.g., when a hidden door found in a wall.
 invalidateBfsLid :: MonadClient m => LevelId -> m ()
 invalidateBfsLid lid = do
-  side <- getsClient sside
-  let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
-  as <- getsState $ filter f . EM.assocs . sactorD
-  mapM_ (invalidateBfsAid . fst) as
+  lvl <- getLevel lid
+  -- No need to filter, because foes won't be in our BFS map and looking up
+  -- in our BFS map is faster than in all actors map.
+  mapM_ invalidateBfsAid $ EM.elems $ lbig lvl
 
-invalidateBfsPathLid :: MonadClient m => LevelId -> Point -> m ()
-invalidateBfsPathLid lid pos = do
-  side <- getsClient sside
-  let f (_, b) = blid b == lid && bfid b == side && not (bproj b)
-                 && chessDist pos (bpos b) < 10  -- heuristic
-  as <- getsState $ filter f . EM.assocs . sactorD
-  mapM_ (invalidateBfsPathAid . fst) as
+-- We invalidate, but not when actors move, since they are likely to move
+-- out of the way in time. We only do, when they appear or disappear,
+-- because they may be immobile or too close to move away before we get there.
+-- We also don't consider far actors, since they are likely to disappear
+-- again or to be far from our path. If they close enough to be lit
+-- by our light, or one step further, that's worth taking seriously.
+invalidateBfsPathLid :: MonadClient m => Actor -> m ()
+invalidateBfsPathLid body = do
+  lvl <- getLevel $ blid body
+  let close (p, _) = chessDist p (bpos body) <= 3  -- heuristic
+  -- No need to filter more, because foes won't be in our BFS map and looking up
+  -- in our BFS map is faster than in all actors map.
+  mapM_ (invalidateBfsPathAid . snd) $ filter close $ EM.assocs $ lbig lvl
 
 invalidateBfsAll :: MonadClient m => m ()
 invalidateBfsAll =

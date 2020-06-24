@@ -96,11 +96,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
   UpdMoveActor aid _ _ -> do
     invalidateBfsAid aid
     b <- getsState $ getActorBody aid
-    -- Too costly to take projectiles into account. If blocked by them,
-    -- instead we wait for them to move aside or we hit them.
-    -- They are still considered whenever an actor moves himself
-    -- and so his whole BFS data is invalidated.
-    unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
+    -- BFS not invalidated, because distant actors may still move out
+    -- of the way and close actors are considered when attempting to move
+    -- and then BFS is invalidated, if needed.
     invalidateInMelee (blid b)
   UpdWaitActor aid _fromW toW ->
     -- So that we can later ignore such actors when updating targets
@@ -111,9 +109,9 @@ cmdAtomicSemCli oldState cmd = case cmd of
     invalidateBfsAid source
     invalidateBfsAid target
     b <- getsState $ getActorBody source
-    unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
-    tb <- getsState $ getActorBody target
-    unless (bproj tb) $ invalidateBfsPathLid (blid tb) $ bpos tb
+    -- BFS not invalidated, because distant actors may still move out
+    -- of the way and close actors are considered when attempting to move
+    -- and then BFS is invalidated, if needed.
     invalidateInMelee (blid b)
   UpdMoveItem _ _ aid s1 s2 -> do
     wipeBfsIfItemAffectsSkills [s1, s2] aid
@@ -321,7 +319,7 @@ createActor aid b ais = do
         _ -> tap
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   mapM_ (addItemToDiscoBenefit . fst) ais
-  unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
+  unless (bproj b) $ invalidateBfsPathLid b
   invalidateInMelee (blid b)
 
 destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
@@ -359,7 +357,7 @@ destroyActor aid b destroy = do
               _ -> tapPath  -- foe slow enough, so old path good
         in TgtAndPath (affect aid3 tapTgt) newMPath
   modifyClient $ \cli -> cli {stargetD = EM.mapWithKey affect3 (stargetD cli)}
-  unless (bproj b) $ invalidateBfsPathLid (blid b) $ bpos b
+  unless (bproj b) $ invalidateBfsPathLid b
   invalidateInMelee (blid b)
 
 addItemToDiscoBenefit :: MonadClient m => ItemId -> m ()
