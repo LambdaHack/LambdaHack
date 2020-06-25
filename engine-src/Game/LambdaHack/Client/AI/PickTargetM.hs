@@ -46,8 +46,9 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
-              => [(ActorId, Actor)] -> (ActorId, Actor) -> m (Maybe TgtAndPath)
-refreshTarget friendAssocs (aid, body) = do
+              => [(ActorId, Actor)] -> [(ActorId, Actor)] -> (ActorId, Actor)
+              -> m (Maybe TgtAndPath)
+refreshTarget foeAssocs friendAssocs (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
@@ -55,7 +56,7 @@ refreshTarget friendAssocs (aid, body) = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, body, side)) ()
-  mtarget <- computeTarget friendAssocs aid
+  mtarget <- computeTarget foeAssocs friendAssocs aid
   case mtarget of
     Nothing -> do
       -- Melee in progress and the actor can't contribute
@@ -78,8 +79,9 @@ refreshTarget friendAssocs (aid, body) = do
       -- trace _debug $ return $ Just tgtMPath
 
 computeTarget :: forall m. MonadClient m
-              => [(ActorId, Actor)] -> ActorId -> m (Maybe TgtAndPath)
-computeTarget friendAssocs aid = do
+              => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId
+              -> m (Maybe TgtAndPath)
+computeTarget foeAssocs friendAssocs aid = do
   cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
@@ -134,7 +136,6 @@ computeTarget friendAssocs aid = do
                                    -- by enemy or congestion, so serious,
                                    -- so reconsider target, not only path
     Nothing -> return Nothing  -- no target assigned yet
-  allFoes <- getsState $ foeRegularAssocs (bfid b) (blid b)
   factionD <- getsState sfactionD
   seps <- getsClient seps
   let fact = factionD EM.! bfid b
@@ -221,7 +222,7 @@ computeTarget friendAssocs aid = do
                                             -- e.g., to flee if helpless
                                          || targetableMelee body
                                          || targetableRanged body)
-      targetableFoes = filter targetableEnemy allFoes
+      targetableFoes = filter targetableEnemy foeAssocs
       canMeleeEnemy (aidE, body) = actorCanMeleeToHarm actorMaxSkills aidE body
       nearbyFoes = if recentlyFled && not condInMelee
                    then filter (not . canMeleeEnemy) targetableFoes
@@ -359,7 +360,8 @@ computeTarget friendAssocs aid = do
                               let ctriggers2 = toFreq "ctriggers2" ctriggersRaw2
                               if nullFreq ctriggers2 then do
                                 let toKill = actorWorthKilling actorMaxSkills
-                                    worthyFoes = filter (uncurry toKill) allFoes
+                                    worthyFoes = filter (uncurry toKill)
+                                                        foeAssocs
                                 afoes <- closestFoes worthyFoes aid
                                 case afoes of
                                   (_, (aid2, _)) : _ ->

@@ -34,16 +34,17 @@ queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI aid = do
   -- @sleader@ may be different from @gleader@ due to @stopPlayBack@,
   -- but only leaders may change faction leader, so we fix that beforehand:
-  side <- getsClient sside
   body <- getsState $ getActorBody aid
+  foeAssocs <- getsState $ foeRegularAssocs (bfid body) (blid body)
   friendAssocs <- getsState $ friendRegularAssocs (bfid body) (blid body)
-  mleader <- getsState $ gleader . (EM.! side) . sfactionD
+  mleader <- getsState $ gleader . (EM.! bfid body) . sfactionD
   mleaderCli <- getsClient sleader
   unless (Just aid == mleader || mleader == mleaderCli) $
     -- @aid@ is not the leader, so he can't change leader later on,
     -- so we match the leaders here
     modifyClient $ \cli -> cli {_sleader = mleader}
-  (aidToMove, treq, oldFlee) <- pickActorAndAction friendAssocs Nothing aid
+  (aidToMove, treq, oldFlee) <- pickActorAndAction foeAssocs friendAssocs
+                                                   Nothing aid
   (aidToMove2, treq2) <-
     case treq of
       ReqWait | mleader == Just aid -> do
@@ -52,7 +53,8 @@ queryAI aid = do
         modifyClient $ \cli -> cli
           { _sleader = mleader
           , sfleeD = EM.alter (const oldFlee) aidToMove $ sfleeD cli }
-        (a, t, _) <- pickActorAndAction friendAssocs (Just aidToMove) aid
+        (a, t, _) <- pickActorAndAction foeAssocs friendAssocs
+                                        (Just aidToMove) aid
         return (a, t)
       _ -> return (aidToMove, treq)
   return ( ReqAITimed treq2
@@ -61,15 +63,16 @@ queryAI aid = do
 -- | Pick an actor to move and an action for him to perform, given an optional
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
-                   => [(ActorId, Actor)] -> Maybe ActorId -> ActorId
+                   => [(ActorId, Actor)] -> [(ActorId, Actor)]
+                   -> Maybe ActorId -> ActorId
                    -> m (ActorId, RequestTimed, Maybe (Point, Time))
-pickActorAndAction friendAssocs maid aid = do
+pickActorAndAction foeAssocs friendAssocs maid aid = do
   mleader <- getsClient sleader
   aidToMove <-
     if mleader == Just aid
-    then pickActorToMove friendAssocs maid
+    then pickActorToMove foeAssocs friendAssocs maid
     else do
-      setTargetFromDoctrines friendAssocs aid
+      setTargetFromDoctrines foeAssocs friendAssocs aid
       return aid
   oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
   -- Trying harder (@retry@) whenever no better leader found and so at least
@@ -77,5 +80,5 @@ pickActorAndAction friendAssocs maid aid = do
   -- If a new leader found, there is hope (but we don't check)
   -- that he gets a non-waiting action without any desperate measures.
   let retry = maybe False (aidToMove ==) maid
-  treq <- pickAction friendAssocs aidToMove retry
+  treq <- pickAction foeAssocs friendAssocs aidToMove retry
   return (aidToMove, treq, oldFlee)

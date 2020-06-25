@@ -57,8 +57,9 @@ import           Game.LambdaHack.Definition.Defs
 
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m
-           => [(ActorId, Actor)] -> ActorId -> Bool -> m RequestTimed
-pickAction friendAssocs aid retry = do
+           => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId -> Bool
+           -> m RequestTimed
+pickAction foeAssocs friendAssocs aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
@@ -67,7 +68,7 @@ pickAction friendAssocs aid retry = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
-  stratAction <- actionStrategy friendAssocs aid retry
+  stratAction <- actionStrategy foeAssocs friendAssocs aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
@@ -78,9 +79,9 @@ pickAction friendAssocs aid retry = do
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => [(ActorId, Actor)] -> ActorId -> Bool
+               => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId -> Bool
                -> m (Strategy RequestTimed)
-actionStrategy friendAssocs aid retry = do
+actionStrategy foeAssocs friendAssocs aid retry = do
   COps{coTileSpeedup} <- getsState scops
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
@@ -99,8 +100,8 @@ actionStrategy friendAssocs aid retry = do
                             . adjacentBigAssocs body
   oursExploring <- getsState $ oursExploringAssocs (bfid body)
   condAnyHarmfulFoeAdj <- getsState $ anyHarmfulFoeAdj actorMaxSkills aid
-  threatDistL <- getsState $ meleeThreatDistList aid
-  (fleeL, badVic) <- fleeList aid
+  threatDistL <- getsState $ meleeThreatDistList foeAssocs aid
+  (fleeL, badVic) <- fleeList foeAssocs aid
   oldFleeD <- getsClient sfleeD
   condSupport1 <- condSupport friendAssocs 1 aid
   condSupport3 <- condSupport friendAssocs 3 aid

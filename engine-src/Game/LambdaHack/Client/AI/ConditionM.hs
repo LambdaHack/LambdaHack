@@ -163,17 +163,18 @@ condAdjTriggerableM actorSk aid = do
 -- because they can't chase us and also because they can't be aggresive
 -- so to resolve the stalemate, the opposing AI has to be aggresive
 -- by ignoring them and closing in to melee distance.
-meleeThreatDistList :: ActorId -> State -> [(Int, (ActorId, Actor))]
-meleeThreatDistList aid s =
+meleeThreatDistList :: [(ActorId, Actor)] -> ActorId -> State
+                    -> [(Int, (ActorId, Actor))]
+meleeThreatDistList foeAssocs aid s =
   let actorMaxSkills = sactorMaxSkills s
       b = getActorBody aid s
-      allAtWar = foeRegularAssocs (bfid b) (blid b) s
+
       strongActor (aid2, b2) =
         let actorMaxSk = actorMaxSkills EM.! aid2
             nonmoving = Ability.getSk Ability.SkMove actorMaxSk <= 0
         in not (hpTooLow b2 actorMaxSk || nonmoving)
            && actorCanMeleeToHarm actorMaxSkills aid2 b2
-      allThreats = filter strongActor allAtWar
+      allThreats = filter strongActor foeAssocs
       addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   in sortBy (comparing fst) $ map addDist allThreats
 
@@ -374,8 +375,9 @@ condShineWouldBetrayM aid = do
   return $ not aInAmbient  -- tile is dark, so actor could hide
 
 -- | Produce a list of acceptable adjacent points to flee to.
-fleeList :: MonadClient m => ActorId -> m ([(Int, Point)], [(Int, Point)])
-fleeList aid = do
+fleeList :: MonadClient m
+         => [(ActorId, Actor)] -> ActorId -> m ([(Int, Point)], [(Int, Point)])
+fleeList foeAssocs aid = do
   COps{coTileSpeedup} <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   -- Prefer fleeing along the path to target, unless the target is a foe,
@@ -397,10 +399,9 @@ fleeList aid = do
   let eOldFleeOrTgt = case EM.lookup aid fleeD of
         Just (fleeStart, time) | timeRecent5 localTime time -> Left fleeStart
         _ -> etgtPath
-  posFoes <- getsState $ map bpos . foeRegularList (bfid b) (blid b)
-  let myVic = vicinityUnsafe $ bpos b
-      dist p | null posFoes = 100
-             | otherwise = minimum $ map (chessDist p) posFoes
+      myVic = vicinityUnsafe $ bpos b
+      dist p | null foeAssocs = 100
+             | otherwise = minimum $ map (chessDist p . bpos . snd) foeAssocs
       dVic = map (dist &&& id) myVic
       -- Flee, if possible. Direct access required; not enough time to open.
       -- Can't be occupied.

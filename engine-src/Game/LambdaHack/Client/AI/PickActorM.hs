@@ -36,8 +36,9 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- | Pick a new leader from among the actors on the current level.
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
-                => [(ActorId, Actor)] -> Maybe ActorId -> m ActorId
-pickActorToMove friendAssocs maidToAvoid = do
+                => [(ActorId, Actor)] -> [(ActorId, Actor)] -> Maybe ActorId
+                -> m ActorId
+pickActorToMove foeAssocs friendAssocs maidToAvoid = do
   COps{coTileSpeedup} <- getsState scops
   actorMaxSkills <- getsState sactorMaxSkills
   mleader <- getsClient sleader
@@ -52,7 +53,7 @@ pickActorToMove friendAssocs maidToAvoid = do
   -- Find our actors on the current level only.
   ours <- getsState $ fidActorRegularAssocs side arena
   let pickOld = do
-        void $ refreshTarget friendAssocs (oldAid, oldBody)
+        void $ refreshTarget foeAssocs friendAssocs (oldAid, oldBody)
         return oldAid
       oursNotSleeping = filter (\(_, b) -> bwatch b /= WSleep) ours
   case oursNotSleeping of
@@ -70,7 +71,7 @@ pickActorToMove friendAssocs maidToAvoid = do
     [(aidNotSleeping, bNotSleeping)] -> do
       -- Target of asleep actors won't change unless foe adjacent,
       -- which is caught without recourse to targeting.
-      void $ refreshTarget friendAssocs (aidNotSleeping, bNotSleeping)
+      void $ refreshTarget foeAssocs friendAssocs (aidNotSleeping, bNotSleeping)
       return aidNotSleeping
     _ -> do
       -- At this point we almost forget who the old leader was
@@ -79,7 +80,7 @@ pickActorToMove friendAssocs maidToAvoid = do
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like and easier to observe).
       let refresh aidBody = do
-            mtgt <- refreshTarget friendAssocs aidBody
+            mtgt <- refreshTarget foeAssocs friendAssocs aidBody
             return (aidBody, mtgt)
       oursTgtRaw <- mapM refresh oursNotSleeping
       oldFleeD <- getsClient sfleeD
@@ -120,8 +121,8 @@ pickActorToMove friendAssocs maidToAvoid = do
             let actorMaxSk = actorMaxSkills EM.! aid
             condAnyHarmfulFoeAdj <-
               getsState $ anyHarmfulFoeAdj actorMaxSkills aid
-            threatDistL <- getsState $ meleeThreatDistList aid
-            (fleeL, _) <- fleeList aid
+            threatDistL <- getsState $ meleeThreatDistList foeAssocs aid
+            (fleeL, _) <- fleeList foeAssocs aid
             condSupport1 <- condSupport friendAssocs 1 aid
             condSolo <- condAloneM friendAssocs aid
             let condCanFlee = not (null fleeL)
@@ -172,8 +173,8 @@ pickActorToMove friendAssocs maidToAvoid = do
             | pathLen <= 2 =
             return False  -- noise probably due to fleeing target
           actorHearning ((_aid, b), _) = do
-            allFoes <- getsState $ foeRegularList side arena
-            let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
+            let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos . snd)
+                                   foeAssocs
                 actorHears = deltasHears (bcalmDelta b)
             return $! actorHears  -- e.g., actor hears an enemy
                       && null closeFoes  -- the enemy not visible; a trap!
@@ -214,7 +215,7 @@ pickActorToMove friendAssocs maidToAvoid = do
               -- stashes as crucial as enemies. except when guarding them
           targetTEnemy _ = False
           actorNoSupport ((aid, _), _) = do
-            threatDistL <- getsState $ meleeThreatDistList aid
+            threatDistL <- getsState $ meleeThreatDistList foeAssocs aid
             condSupport2 <- condSupport friendAssocs 2 aid
             let condThreat n = not $ null $ takeWhile ((<= n) . fst) threatDistL
             -- If foes far, friends may still come, so we let him move.
@@ -342,13 +343,15 @@ pickActorToMove friendAssocs maidToAvoid = do
           when (fdoctrine (gplayer fact)
                 `elem` [Ability.TFollow, Ability.TFollowNoItems]
                 && not condInMelee) $
-            void $ refreshTarget friendAssocs (aid, b)
+            void $ refreshTarget foeAssocs friendAssocs (aid, b)
           return aid
         _ -> return oldAid
 
 -- | Inspect the doctrines of the actor and set his target according to it.
-setTargetFromDoctrines :: MonadClient m => [(ActorId, Actor)] -> ActorId -> m ()
-setTargetFromDoctrines friendAssocs oldAid = do
+setTargetFromDoctrines :: MonadClient m
+                        => [(ActorId, Actor)] -> [(ActorId, Actor)] -> ActorId
+                        -> m ()
+setTargetFromDoctrines foeAssocs friendAssocs oldAid = do
   mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()
   oldBody <- getsState $ getActorBody oldAid
@@ -356,14 +359,14 @@ setTargetFromDoctrines friendAssocs oldAid = do
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ (EM.! side) . sfactionD
-  let explore = void $ refreshTarget friendAssocs (oldAid, oldBody)
+  let explore = void $ refreshTarget foeAssocs friendAssocs (oldAid, oldBody)
       setPath mtgt = case (mtgt, moldTgt) of
         (Nothing, _) -> return False
         ( Just TgtAndPath{tapTgt=leaderTapTgt},
           Just TgtAndPath{tapTgt=oldTapTgt,tapPath=Just oldTapPath} )
           | leaderTapTgt == oldTapTgt  -- targets agree
             && bpos oldBody == pathSource oldTapPath -> do  -- nominal path
-            void $ refreshTarget friendAssocs (oldAid, oldBody)
+            void $ refreshTarget foeAssocs friendAssocs (oldAid, oldBody)
             return True  -- already on target
         (Just TgtAndPath{tapTgt=leaderTapTgt}, _) -> do
             tap <- createPath oldAid leaderTapTgt
