@@ -1014,14 +1014,13 @@ flee actorSk aid avoidAmbient fleeL = do
   let isAmbient pos = Tile.isLit coTileSpeedup (lvl `at` pos)
                       && Tile.isWalkable coTileSpeedup (lvl `at` pos)
                         -- if solid, will be altered and perhaps darkened
-      fleeAmbient | avoidAmbient = filter (not . isAmbient . snd) fleeL
-                  | otherwise = fleeL
-  if avoidAmbient && null fleeAmbient
-  then flee actorSk aid False fleeL
-  else do
-    let vVic = map (second (`vectorToFrom` bpos b)) fleeAmbient
-        str = liftFrequency $ toFreq "flee" vVic
-    mapStrategyM (moveOrRunAid actorSk aid) str
+      fleeAmbientAvoided = filter (not . isAmbient . snd) fleeL
+      fleeAmbient = if avoidAmbient && not (null fleeAmbientAvoided)
+                    then fleeAmbientAvoided
+                    else fleeL
+  let vVic = map (second (`vectorToFrom` bpos b)) fleeAmbient
+      str = liftFrequency $ toFreq "flee" vVic
+  mapStrategyM (moveOrRunAid actorSk aid) str
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
@@ -1131,15 +1130,17 @@ chase actorSk aid avoidAmbient retry = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let -- With no leader, the goal is vague, so permit arbitrary detours.
       relaxed = fleaderMode (gplayer fact) == LeaderNull
-  str <- case mtgtMPath of
-    Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
-      if pathGoal == bpos body
-      then return reject  -- done; picking up items, etc.
-      else moveTowards actorSk aid avoidAmbient q pathGoal (relaxed || retry)
-    _ -> return reject  -- goal reached or banned ambient lit tile
-  if avoidAmbient && nullStrategy str
-  then chase actorSk aid False retry
-  else mapStrategyM (moveOrRunAid actorSk aid) str
+      strAmbient avoid = case mtgtMPath of
+        Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
+          if pathGoal == bpos body
+          then return reject  -- done; picking up items, etc.
+          else moveTowards actorSk aid avoid q pathGoal (relaxed || retry)
+        _ -> return reject  -- goal reached or banned ambient lit tile
+  strAvoided <- strAmbient avoidAmbient
+  str <- if avoidAmbient && nullStrategy strAvoided
+         then strAmbient False
+         else return strAvoided
+  mapStrategyM (moveOrRunAid actorSk aid) str
 
 moveTowards :: MonadClient m
             => Ability.Skills -> ActorId -> Bool -> Point -> Point -> Bool
