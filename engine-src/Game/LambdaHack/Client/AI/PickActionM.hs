@@ -107,7 +107,7 @@ actionStrategy friendAssocs aid retry = do
   condSolo <- condAloneM friendAssocs aid  -- solo fighters aggresive
   actorSk <- currentSkillsClient aid
   condCanProject <- condCanProjectM (getSk SkProject actorSk) aid
-  condAdjTriggerable <- condAdjTriggerableM aid
+  condAdjTriggerable <- condAdjTriggerableM actorSk aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoEqpWeapon <- condNoEqpWeaponM aid
   condEnoughGear <- condEnoughGearM aid
@@ -186,6 +186,7 @@ actionStrategy friendAssocs aid retry = do
             || Ability.getSk Ability.SkNocto actorMaxSk > 2)
            && (Ability.getSk Ability.SkShine actorMaxSk > 2
                || condNonStealthyThreatAdj || null threatAdj)
+      abInSkill sk = getSk sk actorSk > 0
       abInMaxSkill sk = getSk sk actorMaxSk > 0
       runSkills = [SkMove, SkDisplace]  -- not @SkAlter@, to ground sleepers
       stratToFreq :: Int
@@ -202,7 +203,7 @@ actionStrategy friendAssocs aid retry = do
       prefix, suffix:: [([Skill], m (Strategy RequestTimed), Bool)]
       prefix =
         [ ( [SkApply]
-          , applyItem aid ApplyFirstAid
+          , applyItem actorSk aid ApplyFirstAid
           , not condAnyHarmfulFoeAdj && condHpTooLow)
         , ( [SkAlter]
           , trigger aid ViaStairs
@@ -227,7 +228,7 @@ actionStrategy friendAssocs aid retry = do
           , condAdjTriggerable && not condAimEnemyOrStash
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
-          , flee aid (not actorShines) fleeL
+          , flee actorSk aid (not actorShines) fleeL
           , -- Flee either from melee, if our melee is bad and enemy close,
             -- or from missiles, if we can hide in the dark in one step.
             -- Note that we don't know how far ranged threats are or if,
@@ -285,10 +286,10 @@ actionStrategy friendAssocs aid retry = do
                               < randomAggressionThreshold)
                   | otherwise -> False )  -- melee threats too far
         , ( runSkills  -- no blockers if can't move right now
-          , meleeBlocker aid  -- only melee blocker
-          , getSk SkMelee actorSk > 0
+          , meleeBlocker actorSk aid  -- only melee blocker
+          , abInSkill SkMelee
             && (condAnyFoeAdj  -- if foes, don't displace, otherwise friends:
-                || not (abInMaxSkill SkDisplace)  -- displace friends, if can
+                || not (abInSkill SkDisplace)  -- displace friends, if can
                    && condAimEnemyOrStash) )  -- excited
                         -- So that animals block each other until hero comes
                         -- and then the stronger makes a show for him
@@ -306,7 +307,8 @@ actionStrategy friendAssocs aid retry = do
           , meleeAny aid
           , condAnyFoeAdj )  -- won't flee nor displace, so let it melee
         , ( runSkills
-          , flee aid  -- rattlesnakes and hornets flee and return when charging
+          , flee actorSk
+                 aid  -- rattlesnakes and hornets flee and return when charging
                  ((heavilyDistressedThisTurn && not condAnyHarmfulFoeAdj
                    || (heavilyDistressed && not (condThreat 2)))
                      -- prefer bad but dark spots if under fire
@@ -343,11 +345,12 @@ actionStrategy friendAssocs aid retry = do
         , ( [SkProject]
           , stratToFreq (if condTgtNonmovingEnemy then 100 else 30)
               -- not too common, to leave missiles for pre-melee dance
-            $ projectItem aid  -- equivalent of @condCanProject@ called inside
+            $ projectItem actorSk aid
+                -- equivalent of @condCanProject@ called inside
           , condAimEnemyTargeted && not condInMelee )
         , ( [SkApply]
           , stratToFreq 10
-            $ applyItem aid ApplyAll  -- use any potion or scroll
+            $ applyItem actorSk aid ApplyAll  -- use any potion or scroll
           , condAimEnemyTargeted || condThreat 9 )  -- can affect enemies
         , ( runSkills
           , stratToFreq (if | condInMelee ->
@@ -359,7 +362,7 @@ actionStrategy friendAssocs aid retry = do
                               && condGoalIsLit -> 1
                             | otherwise ->
                               200)
-            $ chase aid avoidAmbient retry
+            $ chase actorSk aid avoidAmbient retry
           , condCanMelee
             && Just (blid body, bpos body) /= gstash fact
             && (if condInMelee then condAimEnemyOrStash
@@ -391,7 +394,7 @@ actionStrategy friendAssocs aid retry = do
             && prefersSleep actorMaxSk
             && not condAimCrucial)
         , ( runSkills
-          , chase aid avoidAmbient retry
+          , chase actorSk aid avoidAmbient retry
           , not dozes
             && if condInMelee
                then condCanMelee && condAimEnemyOrStash
@@ -411,7 +414,7 @@ actionStrategy friendAssocs aid retry = do
               _ -> waitBlockNow  -- block, etc.
           , True )
         , ( runSkills  -- if can't block, at least change something
-          , chase aid avoidAmbient True
+          , chase actorSk aid avoidAmbient True
           , not condInMelee || condCanMelee && condAimEnemyOrStash )
         , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
@@ -422,8 +425,7 @@ actionStrategy friendAssocs aid retry = do
        ]
   -- Check current, not maximal skills, since this can be a leader as well
   -- as non-leader action.
-  let abInSkill sk = getSk sk actorSk > 0
-      checkAction :: ([Skill], m a, Bool) -> Bool
+  let checkAction :: ([Skill], m a, Bool) -> Bool
       checkAction (abts, _, cond) = (null abts || any abInSkill abts) && cond
       sumS abAction =
         let as = filter checkAction abAction
@@ -717,12 +719,12 @@ harmful discoBenefit iid =
 
 -- If enemy (or even a friend) blocks the way, sometimes melee him
 -- even though normally you wouldn't.
-meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-meleeBlocker aid = do
+meleeBlocker :: MonadClient m
+             => Ability.Skills -> ActorId -> m (Strategy RequestTimed)
+meleeBlocker actorSk aid = do
   b <- getsState $ getActorBody aid
   actorMaxSk <- getsState $ getActorMaxSkills aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  actorSk <- currentSkillsClient aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just TgtAndPath{ tapTgt=TEnemy{}
@@ -815,8 +817,9 @@ trigger aid fleeVia = do
     [ (ceiling benefit, ReqAlter pos)
     | (benefit, (pos, _)) <- efeat ]
 
-projectItem :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-projectItem aid = do
+projectItem :: MonadClient m
+            => Ability.Skills -> ActorId -> m (Strategy RequestTimed)
+projectItem actorSk aid = do
   btarget <- getsClient $ getTarget aid
   b <- getsState $ getActorBody aid
   -- We query target, not path, because path is not needed for flinging.
@@ -834,7 +837,6 @@ projectItem aid = do
         seps <- getsClient seps
         case makeLine False b fpos seps cops lvl of
           Just newEps -> do
-            actorSk <- currentSkillsClient aid
             let skill = getSk SkProject actorSk
             -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
             -- and no actors or obstacles along the path.
@@ -866,16 +868,15 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid
   deriving Eq
 
 applyItem :: MonadClient m
-          => ActorId -> ApplyItemGroup -> m (Strategy RequestTimed)
-applyItem aid applyGroup = do
-  actorSk <- currentSkillsClient aid
+          => Ability.Skills -> ActorId -> ApplyItemGroup
+          -> m (Strategy RequestTimed)
+applyItem actorSk aid applyGroup = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   condShineWouldBetray <- condShineWouldBetrayM aid
   condAimEnemyOrRemembered <- condAimEnemyOrRememberedM aid
   localTime <- getsState $ getLocalTime (blid b)
-  actorMaxSk <- getsState $ getActorMaxSkills aid
-  let calmE = calmEnough b actorMaxSk
+  let calmE = calmEnough b actorSk
       heavilyDistressed =  -- Actor hit by a projectile or similarly distressed.
         deltasSerious (bcalmDelta b)
       uneasy = condAimEnemyOrRemembered
@@ -884,7 +885,7 @@ applyItem aid applyGroup = do
         -- don't take recent fleeing into account when item can be lost
       skill = getSk SkApply actorSk
       -- This detects if the value of keeping the item in eqp is in fact < 0.
-      hind = hinders condShineWouldBetray uneasy actorMaxSk
+      hind = hinders condShineWouldBetray uneasy actorSk
       canEsc = fcanEscape (gplayer fact)
       permittedActor cstore itemFull kit =
         either (const False) id
@@ -960,7 +961,7 @@ applyItem aid applyGroup = do
             getHP _ = 0
             healPower = sum $ map getHP $ IK.ieffects itemKind
             wastesHP = xM healPower
-                       > xM (Ability.getSk Ability.SkMaxHP actorMaxSk) - bhp b
+                       > xM (Ability.getSk Ability.SkMaxHP actorSk) - bhp b
             durable = IA.checkFlag Durable $ aspectRecordFull itemFull
             situationalBenApply =
               if | dropsBadOrgans -> if dropsImpressed
@@ -994,8 +995,9 @@ applyItem aid applyGroup = do
 -- and as far from the attackers, as possible. Usually fleeing from
 -- foes will lead towards friends, but we don't insist on that.
 flee :: MonadClient m
-     => ActorId -> Bool -> [(Int, Point)] -> m (Strategy RequestTimed)
-flee aid avoidAmbient fleeL = do
+     => Ability.Skills -> ActorId -> Bool -> [(Int, Point)]
+     -> m (Strategy RequestTimed)
+flee actorSk aid avoidAmbient fleeL = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   localTime <- getsState $ getLocalTime (blid b)
@@ -1015,11 +1017,11 @@ flee aid avoidAmbient fleeL = do
       fleeAmbient | avoidAmbient = filter (not . isAmbient . snd) fleeL
                   | otherwise = fleeL
   if avoidAmbient && null fleeAmbient
-  then flee aid False fleeL
+  then flee actorSk aid False fleeL
   else do
     let vVic = map (second (`vectorToFrom` bpos b)) fleeAmbient
         str = liftFrequency $ toFreq "flee" vVic
-    mapStrategyM (moveOrRunAid aid) str
+    mapStrategyM (moveOrRunAid actorSk aid) str
 
 -- The result of all these conditions is that AI displaces rarely,
 -- but it can't be helped as long as the enemy is smart enough to form fronts.
@@ -1121,8 +1123,9 @@ displaceTgt source tpos retry = do
                else return reject
     _ -> return reject  -- DisplaceProjectiles and no blocker at all
 
-chase :: MonadClient m => ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
-chase aid avoidAmbient retry = do
+chase :: MonadClient m
+      => Ability.Skills -> ActorId -> Bool -> Bool -> m (Strategy RequestTimed)
+chase actorSk aid avoidAmbient retry = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -1132,19 +1135,19 @@ chase aid avoidAmbient retry = do
     Just TgtAndPath{tapPath=Just AndPath{pathList=q : _, ..}} ->
       if pathGoal == bpos body
       then return reject  -- done; picking up items, etc.
-      else moveTowards aid avoidAmbient q pathGoal (relaxed || retry)
+      else moveTowards actorSk aid avoidAmbient q pathGoal (relaxed || retry)
     _ -> return reject  -- goal reached or banned ambient lit tile
   if avoidAmbient && nullStrategy str
-  then chase aid False retry
-  else mapStrategyM (moveOrRunAid aid) str
+  then chase actorSk aid False retry
+  else mapStrategyM (moveOrRunAid actorSk aid) str
 
 moveTowards :: MonadClient m
-            => ActorId -> Bool -> Point -> Point -> Bool -> m (Strategy Vector)
-moveTowards aid avoidAmbient target goal relaxed = do
+            => Ability.Skills -> ActorId -> Bool -> Point -> Point -> Bool
+            -> m (Strategy Vector)
+moveTowards actorSk aid avoidAmbient target goal relaxed = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  actorSk <- currentSkillsClient aid
   let source = bpos b
       alterSkill = getSk SkAlter actorSk
       !_A = assert (adjacent source target
@@ -1192,11 +1195,11 @@ moveTowards aid avoidAmbient target goal relaxed = do
 -- Actor moves or searches or alters or attacks.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
-moveOrRunAid :: MonadClient m => ActorId -> Vector -> m (Maybe RequestTimed)
-moveOrRunAid source dir = do
+moveOrRunAid :: MonadClient m
+             => Ability.Skills -> ActorId -> Vector -> m (Maybe RequestTimed)
+moveOrRunAid actorSk source dir = do
   COps{coTileSpeedup} <- getsState scops
   sb <- getsState $ getActorBody source
-  actorSk <- currentSkillsClient source
   let lid = blid sb
   lvl <- getLevel lid
   let walkable =  -- DisplaceAccess

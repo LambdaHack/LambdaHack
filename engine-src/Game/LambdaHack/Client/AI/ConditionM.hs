@@ -33,7 +33,6 @@ import qualified Data.EnumMap.Strict as EM
 import           Data.Ord
 
 import           Game.LambdaHack.Client.Bfs
-import           Game.LambdaHack.Client.CommonM
 import           Game.LambdaHack.Client.MonadClient
 import           Game.LambdaHack.Client.State
 import           Game.LambdaHack.Common.Actor
@@ -141,12 +140,11 @@ condTgtNonmovingEnemyM aid = do
 
 -- | Require the actor stands on or adjacent to a triggerable tile
 -- (e.g., stairs).
-condAdjTriggerableM :: MonadClient m => ActorId -> m Bool
-condAdjTriggerableM aid = do
+condAdjTriggerableM :: MonadClient m => Ability.Skills -> ActorId -> m Bool
+condAdjTriggerableM actorSk aid = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  actorSk <- currentSkillsClient aid
   let alterSkill = Ability.getSk Ability.SkAlter actorSk
       alterMinSkill p = Tile.alterMinSkill coTileSpeedup $ lvl `at` p
       underFeet p = p == bpos b  -- if enter and alter, be more permissive

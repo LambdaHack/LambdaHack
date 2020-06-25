@@ -154,6 +154,7 @@ computeTarget friendAssocs aid = do
       calmE = calmEnough b actorMaxSk
       heavilyDistressed =  -- actor hit by a proj or similarly distressed
         deltasSerious (bcalmDelta b)
+  -- Speedup compared to @currentSkillsClient@.
   actorMinSk <- getsState $ actorCurrentSkills Nothing aid
   condCanProject <-
     condCanProjectM (Ability.getSk Ability.SkProject actorMaxSk) aid
