@@ -8,7 +8,7 @@ module Game.LambdaHack.Definition.Ability
   , blockOnly, meleeAdjacent, meleeAndRanged, ignoreItems
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , compactSkills, scaleSkills
+  , scaleSkills
 #endif
   ) where
 
@@ -181,21 +181,21 @@ skillsToList (Skills sk) = EM.assocs sk
 zeroSkills :: Skills
 zeroSkills = Skills EM.empty
 
--- This is surprisingly expensive, but comparison without normal form
--- is even more costly and it's compared often.
-compactSkills :: EM.EnumMap Skill Int -> EM.EnumMap Skill Int
-compactSkills = EM.filter (/= 0)
-
+-- This avoids costly compaction (required for Eq) even in case of adding
+-- empty skills, etc. This function is used a lot.
 addSkills :: Skills -> Skills -> Skills
 addSkills (Skills sk1) (Skills sk2) =
-  Skills $ compactSkills $ EM.unionWith (+) sk1 sk2
+  let combine _ s1 s2 = case s1 + s2 of
+        0 -> Nothing
+        s -> Just s
+  in Skills $ EM.mergeWithKey combine id id sk1 sk2
 
-scaleSkills :: Int -> EM.EnumMap Skill Int -> EM.EnumMap Skill Int
-scaleSkills n = EM.map (n *)
+scaleSkills :: Skills -> Int -> Skills
+scaleSkills _ 0 = zeroSkills
+scaleSkills (Skills sk) n = Skills $ EM.map (n *) sk
 
 sumScaledSkills :: [(Skills, Int)] -> Skills
-sumScaledSkills l = Skills $ compactSkills $ EM.unionsWith (+)
-                           $ map (\(Skills sk, k) -> scaleSkills k sk) l
+sumScaledSkills = foldr addSkills zeroSkills . map (uncurry scaleSkills)
 
 nameDoctrine :: Doctrine -> Text
 nameDoctrine TExplore        = "explore"
