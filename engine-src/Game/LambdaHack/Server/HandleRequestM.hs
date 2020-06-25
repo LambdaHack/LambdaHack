@@ -124,24 +124,13 @@ processWatchfulness mwait aid = do
   actorMaxSk <- getsState $ getActorMaxSkills aid
   let uneasy = deltasSerious (bcalmDelta b) || not (calmEnough b actorMaxSk)
   case bwatch b of
-    WSleep ->
-      if mwait /= Just False  -- lurk can't wake up regardless; too short
-         && (not (isJust mwait)  -- not a wait
-             || uneasy  -- spooked
-             || not (deltaBenign $ bhpDelta b))  -- any HP lost
-      then execUpdAtomic $ UpdWaitActor aid WSleep WWake
-      else execUpdAtomic $ UpdRefillHP aid 10000
-             -- no @xM@, so slow, but each turn HP gauge green;
-             -- this is 1HP per 100 turns, so it's 10 times slower
-             -- than a necklace that gives 1HP per 10 turns;
-             -- so if an actor sleeps for the duration of a 1000 turns,
-             -- which may be the time it takes to fully explore a level,
-             -- 10HP would be gained, so weak actors would wake up twice over,
-             -- which is fine: sleeping long enough to sidestep them at will,
-             -- but attacking, e.g., a group with explosives, is good choice
-             -- as well; so both stealth and mayhem fun correct tactically
-    WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
-      removeSleepSingle aid
+    WWatch ->
+      when (mwait == Just True) $  -- only long wait switches to wait state
+        if Ability.getSk Ability.SkWait actorMaxSk >= 2 then do
+          addCondition False IK.S_BRACED aid
+          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
+        else
+          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
     WWait 0 -> case mwait of  -- actor couldn't brace last time
       Just True -> return ()  -- if he still waits, keep him stuck unbraced
       _ -> execUpdAtomic $ UpdWaitActor aid (WWait 0) WWatch
@@ -164,13 +153,24 @@ processWatchfulness mwait aid = do
         nAll <- removeConditionSingle IK.S_BRACED aid
         let !_A = assert (nAll == 0) ()
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
-    WWatch ->
-      when (mwait == Just True) $  -- only long wait switches to wait state
-        if Ability.getSk Ability.SkWait actorMaxSk >= 2 then do
-          addCondition False IK.S_BRACED aid
-          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 1)
-        else
-          execUpdAtomic $ UpdWaitActor aid WWatch (WWait 0)
+    WSleep ->
+      if mwait /= Just False  -- lurk can't wake up regardless; too short
+         && (not (isJust mwait)  -- not a wait
+             || uneasy  -- spooked
+             || not (deltaBenign $ bhpDelta b))  -- any HP lost
+      then execUpdAtomic $ UpdWaitActor aid WSleep WWake
+      else execUpdAtomic $ UpdRefillHP aid 10000
+             -- no @xM@, so slow, but each turn HP gauge green;
+             -- this is 1HP per 100 turns, so it's 10 times slower
+             -- than a necklace that gives 1HP per 10 turns;
+             -- so if an actor sleeps for the duration of a 1000 turns,
+             -- which may be the time it takes to fully explore a level,
+             -- 10HP would be gained, so weak actors would wake up twice over,
+             -- which is fine: sleeping long enough to sidestep them at will,
+             -- but attacking, e.g., a group with explosives, is good choice
+             -- as well; so both stealth and mayhem fun correct tactically
+    WWake -> unless (mwait == Just False) $  -- lurk can't wake up; too fast
+      removeSleepSingle aid
 
 -- Even very primitive actors that can't pick up items can take over stash,
 -- to prevent them inadvertedly protecting enemy stash from skilled ones
