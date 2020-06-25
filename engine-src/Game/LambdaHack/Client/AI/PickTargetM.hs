@@ -47,9 +47,6 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- updates the target in the client state and returns the new target explicitly.
 refreshTarget :: MonadClient m
               => [(ActorId, Actor)] -> (ActorId, Actor) -> m (Maybe TgtAndPath)
--- This inline would speeds up execution by 5% and decreases allocation by 10%,
--- but it'd bloat JS code without speeding it up.
--- {-# INLINE refreshTarget #-}
 refreshTarget friendAssocs (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
@@ -82,7 +79,6 @@ refreshTarget friendAssocs (aid, body) = do
 
 computeTarget :: forall m. MonadClient m
               => [(ActorId, Actor)] -> ActorId -> m (Maybe TgtAndPath)
-{-# INLINE computeTarget #-}
 computeTarget friendAssocs aid = do
   cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
     <- getsState scops

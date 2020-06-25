@@ -37,7 +37,6 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 -- Refresh the target of the new leader, even if unchanged.
 pickActorToMove :: MonadClient m
                 => [(ActorId, Actor)] -> Maybe ActorId -> m ActorId
-{-# INLINE pickActorToMove #-}
 pickActorToMove friendAssocs maidToAvoid = do
   COps{coTileSpeedup} <- getsState scops
   actorMaxSkills <- getsState sactorMaxSkills
@@ -349,7 +348,6 @@ pickActorToMove friendAssocs maidToAvoid = do
 
 -- | Inspect the doctrines of the actor and set his target according to it.
 setTargetFromDoctrines :: MonadClient m => [(ActorId, Actor)] -> ActorId -> m ()
-{-# INLINE setTargetFromDoctrines #-}
 setTargetFromDoctrines friendAssocs oldAid = do
   mleader <- getsClient sleader
   let !_A = assert (mleader /= Just oldAid) ()

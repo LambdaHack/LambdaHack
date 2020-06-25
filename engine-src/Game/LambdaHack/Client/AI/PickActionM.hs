@@ -58,7 +58,6 @@ import           Game.LambdaHack.Definition.Defs
 -- | Pick the most desirable AI ation for the actor.
 pickAction :: MonadClient m
            => [(ActorId, Actor)] -> ActorId -> Bool -> m RequestTimed
-{-# INLINE pickAction #-}
 pickAction friendAssocs aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
@@ -81,7 +80,6 @@ pickAction friendAssocs aid retry = do
 actionStrategy :: forall m. MonadClient m
                => [(ActorId, Actor)] -> ActorId -> Bool
                -> m (Strategy RequestTimed)
-{-# INLINE actionStrategy #-}
 actionStrategy friendAssocs aid retry = do
   COps{coTileSpeedup} <- getsState scops
   mleader <- getsClient sleader
