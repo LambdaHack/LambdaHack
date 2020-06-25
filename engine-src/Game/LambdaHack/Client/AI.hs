@@ -19,6 +19,8 @@ import Game.LambdaHack.Client.AI.PickActorM
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Request
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
@@ -33,13 +35,15 @@ queryAI aid = do
   -- @sleader@ may be different from @gleader@ due to @stopPlayBack@,
   -- but only leaders may change faction leader, so we fix that beforehand:
   side <- getsClient sside
+  body <- getsState $ getActorBody aid
+  friendAssocs <- getsState $ friendRegularAssocs (bfid body) (blid body)
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   mleaderCli <- getsClient sleader
   unless (Just aid == mleader || mleader == mleaderCli) $
     -- @aid@ is not the leader, so he can't change leader later on,
     -- so we match the leaders here
     modifyClient $ \cli -> cli {_sleader = mleader}
-  (aidToMove, treq, oldFlee) <- pickActorAndAction Nothing aid
+  (aidToMove, treq, oldFlee) <- pickActorAndAction friendAssocs Nothing aid
   (aidToMove2, treq2) <-
     case treq of
       ReqWait | mleader == Just aid -> do
@@ -48,7 +52,7 @@ queryAI aid = do
         modifyClient $ \cli -> cli
           { _sleader = mleader
           , sfleeD = EM.alter (const oldFlee) aidToMove $ sfleeD cli }
-        (a, t, _) <- pickActorAndAction (Just aidToMove) aid
+        (a, t, _) <- pickActorAndAction friendAssocs (Just aidToMove) aid
         return (a, t)
       _ -> return (aidToMove, treq)
   return ( ReqAITimed treq2
@@ -57,18 +61,18 @@ queryAI aid = do
 -- | Pick an actor to move and an action for him to perform, given an optional
 -- previous candidate actor and action and the server-proposed actor.
 pickActorAndAction :: MonadClient m
-                   => Maybe ActorId -> ActorId
+                   => [(ActorId, Actor)] -> Maybe ActorId -> ActorId
                    -> m (ActorId, RequestTimed, Maybe (Point, Time))
 -- This inline would slightly decrease allocation,
 -- but it'd bloat JS code without speeding it up.
 -- {-# INLINE pickActorAndAction #-}
-pickActorAndAction maid aid = do
+pickActorAndAction friendAssocs maid aid = do
   mleader <- getsClient sleader
   aidToMove <-
     if mleader == Just aid
-    then pickActorToMove maid
+    then pickActorToMove friendAssocs maid
     else do
-      setTargetFromDoctrines aid
+      setTargetFromDoctrines friendAssocs aid
       return aid
   oldFlee <- getsClient $ EM.lookup aidToMove . sfleeD
   -- Trying harder (@retry@) whenever no better leader found and so at least
@@ -76,5 +80,5 @@ pickActorAndAction maid aid = do
   -- If a new leader found, there is hope (but we don't check)
   -- that he gets a non-waiting action without any desperate measures.
   let retry = maybe False (aidToMove ==) maid
-  treq <- pickAction aidToMove retry
+  treq <- pickAction friendAssocs aidToMove retry
   return (aidToMove, treq, oldFlee)

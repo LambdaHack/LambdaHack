@@ -328,14 +328,16 @@ desirableItem COps{corule=RuleContent{rsymbolProjectile}}
                  in benPickup > 0 && not preciousNotUseful
   in useful && not loneProjectile
 
-condSupport :: MonadClient m => Int -> ActorId -> m Bool
+condSupport :: MonadClient m => [(ActorId, Actor)] -> Int -> ActorId -> m Bool
 {-# INLINE condSupport #-}
-condSupport param aid = do
+condSupport friendAssocs param aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  getsState $ strongSupport param aid mtgtMPath
+  getsState $ strongSupport friendAssocs param aid mtgtMPath
 
-strongSupport :: Int -> ActorId -> Maybe TgtAndPath -> State -> Bool
-strongSupport param aid mtgtMPath s =
+strongSupport :: [(ActorId, Actor)]
+              -> Int -> ActorId -> Maybe TgtAndPath -> State
+              -> Bool
+strongSupport friendAssocs param aid mtgtMPath s =
   -- The smaller the area scanned for friends, the lower number required.
   let actorMaxSkills = sactorMaxSkills s
       actorMaxSk = actorMaxSkills EM.! aid
@@ -349,23 +351,21 @@ strongSupport param aid mtgtMPath s =
                        in dist > 0 && (dist <= max 2 param || approaching b2)
       closeAndStrong (aid2, b2) = closeEnough b2
                                   && actorCanMeleeToHarm actorMaxSkills aid2 b2
-      friends = friendRegularAssocs (bfid b) (blid b) s
-      closeAndStrongFriends = filter closeAndStrong friends
+      closeAndStrongFriends = filter closeAndStrong friendAssocs
   in n <= 0 || not (null (drop (n - 1) closeAndStrongFriends))
        -- optimized: length closeAndStrongFriends >= n
 
--- The numbers reflect feeling AI conditions for non-aggresive actors
--- so that actors don't wait for support it's not possible due to not
+-- The numbers reflect fleeing AI conditions for non-aggresive actors
+-- so that actors don't wait for support that is not possible due to not
 -- enough friends on the level, even counting sleeping ones.
-condAloneM :: MonadClient m => ActorId -> m Bool
-condAloneM aid = do
+condAloneM :: MonadClient m => [(ActorId, Actor)] -> ActorId -> m Bool
+condAloneM friendAssocs aid = do
   b <- getsState $ getActorBody aid
-  friends <- getsState $ friendRegularList (bfid b) (blid b)
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let onStashLevel = case mstash of
         Nothing -> False
         Just (lid, _) -> lid == blid b
-  return $! length friends <= if onStashLevel then 3 else 2
+  return $! length friendAssocs <= if onStashLevel then 3 else 2
 
 -- | Require that the actor stands in the dark and so would be betrayed
 -- by his own equipped light,

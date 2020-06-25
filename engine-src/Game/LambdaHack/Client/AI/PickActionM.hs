@@ -56,9 +56,10 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 
 -- | Pick the most desirable AI ation for the actor.
-pickAction :: MonadClient m => ActorId -> Bool -> m RequestTimed
+pickAction :: MonadClient m
+           => [(ActorId, Actor)] -> ActorId -> Bool -> m RequestTimed
 {-# INLINE pickAction #-}
-pickAction aid retry = do
+pickAction friendAssocs aid retry = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   let !_A = assert (bfid body == side
@@ -67,7 +68,7 @@ pickAction aid retry = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, bfid body, side)) ()
-  stratAction <- actionStrategy aid retry
+  stratAction <- actionStrategy friendAssocs aid retry
   let bestAction = bestVariant stratAction
       !_A = assert (not (nullFreq bestAction)  -- equiv to nullStrategy
                     `blame` "no AI action for actor"
@@ -78,9 +79,10 @@ pickAction aid retry = do
 -- AI strategy based on actor's sight, smell, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> Bool -> m (Strategy RequestTimed)
+               => [(ActorId, Actor)] -> ActorId -> Bool
+               -> m (Strategy RequestTimed)
 {-# INLINE actionStrategy #-}
-actionStrategy aid retry = do
+actionStrategy friendAssocs aid retry = do
   COps{coTileSpeedup} <- getsState scops
   mleader <- getsClient sleader
   body <- getsState $ getActorBody aid
@@ -102,9 +104,9 @@ actionStrategy aid retry = do
   threatDistL <- getsState $ meleeThreatDistList aid
   (fleeL, badVic) <- fleeList aid
   oldFleeD <- getsClient sfleeD
-  condSupport1 <- condSupport 1 aid
-  condSupport3 <- condSupport 3 aid
-  condSolo <- condAloneM aid  -- solo fighters aggresive
+  condSupport1 <- condSupport friendAssocs 1 aid
+  condSupport3 <- condSupport friendAssocs 3 aid
+  condSolo <- condAloneM friendAssocs aid  -- solo fighters aggresive
   actorSk <- currentSkillsClient aid
   condCanProject <- condCanProjectM (getSk SkProject actorSk) aid
   condAdjTriggerable <- condAdjTriggerableM aid
@@ -116,9 +118,8 @@ actionStrategy aid retry = do
   condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
   randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
-  friends <- getsState $ friendRegularList (bfid body) (blid body)
-  let anyFriendOnLevelAwake = any (\b ->
-        bwatch b /= WSleep && bpos b /= bpos body) friends
+  let anyFriendOnLevelAwake = any (\(_, b) ->
+        bwatch b /= WSleep && bpos b /= bpos body) friendAssocs
       actorMaxSk = actorMaxSkills EM.! aid
       recentlyFled = maybe False (\(_, time) -> timeRecent5 localTime time)
                            (aid `EM.lookup` oldFleeD)

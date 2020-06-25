@@ -45,11 +45,12 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 
 -- | Verify and possibly change the target of an actor. This function both
 -- updates the target in the client state and returns the new target explicitly.
-refreshTarget :: MonadClient m => (ActorId, Actor) -> m (Maybe TgtAndPath)
+refreshTarget :: MonadClient m
+              => [(ActorId, Actor)] -> (ActorId, Actor) -> m (Maybe TgtAndPath)
 -- This inline would speeds up execution by 5% and decreases allocation by 10%,
 -- but it'd bloat JS code without speeding it up.
 -- {-# INLINE refreshTarget #-}
-refreshTarget (aid, body) = do
+refreshTarget friendAssocs (aid, body) = do
   side <- getsClient sside
   let !_A = assert (bfid body == side
                     `blame` "AI tries to move an enemy actor"
@@ -57,7 +58,7 @@ refreshTarget (aid, body) = do
   let !_A = assert (not (bproj body)
                     `blame` "AI gets to manually move its projectiles"
                     `swith` (aid, body, side)) ()
-  mtarget <- computeTarget aid
+  mtarget <- computeTarget friendAssocs aid
   case mtarget of
     Nothing -> do
       -- Melee in progress and the actor can't contribute
@@ -79,9 +80,10 @@ refreshTarget (aid, body) = do
       --       <> "\nHandleAI target:"   <+> tshow tgtMPath
       -- trace _debug $ return $ Just tgtMPath
 
-computeTarget :: forall m. MonadClient m => ActorId -> m (Maybe TgtAndPath)
+computeTarget :: forall m. MonadClient m
+              => [(ActorId, Actor)] -> ActorId -> m (Maybe TgtAndPath)
 {-# INLINE computeTarget #-}
-computeTarget aid = do
+computeTarget friendAssocs aid = do
   cops@COps{cocave, corule=RuleContent{rXmax, rYmax, rnearby}, coTileSpeedup}
     <- getsState scops
   b <- getsState $ getActorBody aid
@@ -168,7 +170,6 @@ computeTarget aid = do
       recentlyFled20 =
         maybe False (\(_, time) -> timeRecent5 localTime time) mfled
       actorTurn = (ticksPerMeter $ gearSpeed actorMaxSk)
-  friends <- getsState $ friendRegularList (bfid b) (blid b)
   let canEscape = fcanEscape (gplayer fact)
       canSmell = Ability.getSk Ability.SkSmell actorMaxSk > 0
       meleeNearby | canEscape = rnearby `div` 2
@@ -178,13 +179,15 @@ computeTarget aid = do
       -- We assume benign weapons run out if they are the sole cause
       -- of targeting, to avoid stalemate.
       worthTargeting aidE body =
-        let attacksFriends = any (adjacent (bpos body) . bpos) friends
-                             && actorCanMeleeToHarm actorMaxSkills aidE body
+        let attacksFriends =
+              any (adjacent (bpos body) . bpos . snd) friendAssocs
+              && actorCanMeleeToHarm actorMaxSkills aidE body
         in attacksFriends
            || bweapBenign body > 0
            || actorWorthChasing actorMaxSkills aidE body
       targetableMelee body =
-        let attacksFriends = any (adjacent (bpos body) . bpos) friends
+        let attacksFriends =
+              any (adjacent (bpos body) . bpos . snd) friendAssocs
             -- 3 is
             -- 1 from condSupport1
             -- + 2 from foe being 2 away from friend before he closed in
