@@ -373,7 +373,8 @@ itemDesc :: Int -> Bool -> FactionId -> FactionDict -> Int -> CStore -> Time
          -> LevelId -> ItemFull -> ItemQuant
          -> AttrString
 itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
-         jlid itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect} kit =
+         jlid itemFull@ItemFull{itemBase, itemKind, itemDisco, itemSuspect}
+         kit =
   let (orTs, name, powers) =
         partItemHigh width side factionD localTime itemFull kit
       arItem = aspectRecordFull itemFull
@@ -417,25 +418,26 @@ itemDesc width markParagraphs side factionD aHurtMeleeOfOwner store localTime
                   minDeltaHP = 5 * percentDeltaHP
                   mDeltaHP = modifyDamageBySpeed minDeltaHP speed
               in
-                if pdeltaHP <= 0 then "" else
-                 "Against defenceless foes you'd inflict around"
-                   -- rounding and non-id items
-                 <+> tshow meanDmg
-                 <> "*" <> tshow mult <> "%"
-                 <> "=" <> show64With2 rawDeltaHP
-                 <+> "melee damage (min" <+> show64With2 minDeltaHP
-                 <> ") and"
-                 <+> tshow meanDmg
-                 <> "*" <> tshow pmult <> "%"
-                 <> "*" <> "speed^2"
-                 <> "/" <> tshow (fromSpeed speedThrust `divUp` 10) <> "^2"
-                 <> "=" <> show64With2 pdeltaHP
-                 <+> "ranged damage (min" <+> show64With2 mDeltaHP
-                 <> ") with it"
-                 <> if Dice.infDice (IK.idamage itemKind)
-                       == Dice.supDice (IK.idamage itemKind)
-                    then "."
-                    else "on average."
+                "Against defenceless foes you'd inflict around"
+                  -- rounding and non-id items
+                <+> tshow meanDmg
+                <> "*" <> tshow mult <> "%"
+                <> "=" <> show64With2 rawDeltaHP
+                <+> "melee damage (min" <+> show64With2 minDeltaHP <> ")"
+                <+> (if pdeltaHP <= 0 then "" else
+                       "and"
+                       <+> tshow meanDmg
+                       <> "*" <> tshow pmult <> "%"
+                       <> "*" <> "speed^2"
+                       <> "/" <> tshow (fromSpeed speedThrust
+                                        `divUp` 10) <> "^2"
+                       <> "=" <> show64With2 pdeltaHP
+                       <+> "ranged damage (min" <+> show64With2 mDeltaHP <> ")")
+                <+> "with it"
+                <> if Dice.infDice (IK.idamage itemKind)
+                      == Dice.supDice (IK.idamage itemKind)
+                   then "."
+                   else "on average."
         in (IK.idesc itemKind, T.intercalate " " sentences, tspeed <+> dmgAn)
       weight = IK.iweight itemKind
       (scaledWeight, unitWeight)
