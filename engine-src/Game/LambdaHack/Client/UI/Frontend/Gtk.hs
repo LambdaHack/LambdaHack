@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
 
 import Prelude ()
 
-import Game.LambdaHack.Core.Prelude hiding (Alt)
+import Game.LambdaHack.Core.Prelude
 
 import           Control.Concurrent
 import qualified Control.Monad.IO.Class as IO
@@ -45,7 +45,7 @@ startup :: ScreenContent -> ClientOptions -> IO RawFrontend
 startup coscreen soptions = startupBound $ startupFun coscreen soptions
 
 startupFun :: ScreenContent -> ClientOptions -> MVar RawFrontend -> IO ()
-startupFun coscreen soptions@ClientOptions{..} rfMVar = do
+startupFun coscreen ClientOptions{..} rfMVar = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -106,7 +106,6 @@ startupFun coscreen soptions@ClientOptions{..} rfMVar = do
     n <- eventKeyName
     mods <- eventModifier
     let key = K.keyTranslate $ T.unpack n
-        md = modTranslate mods
         modifier = case modifier of  -- to prevent S-!, etc.
           K.Shift -> K.NoModifier
           K.ControlShift -> K.Control
