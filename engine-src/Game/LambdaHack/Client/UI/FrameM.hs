@@ -68,8 +68,10 @@ drawOverlay dm onBlank ovs lid = do
                     $ EM.findWithDefault [] monoFont ovs
                else []
       ovOther | multiFont
-              = truncateOverlay True rwidth rheight False 0 onBlank
+              = truncateOverlay True rwidth rheight True 0 onBlank
                 $ EM.findWithDefault [] squareFont ovs
+                  -- no backdrop for square font, so @wipeAdjacent@
+                  -- needs to be @True@ or the extra blank line starts too late
               | isTeletype  -- hack for debug output
               = []
               | otherwise
