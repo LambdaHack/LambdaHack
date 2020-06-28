@@ -8,7 +8,8 @@ module Game.LambdaHack.Atomic.PosAtomicRead
   , breakUpdAtomic, lidOfPos, seenAtomicCli, seenAtomicSer
 #ifdef EXPOSE_INTERNAL
     -- * Internal operations
-  , pointsProjBody, posProjBody, singleAid, doubleAid, singleContainer
+  , pointsProjBody, posProjBody, singleAid, doubleAid
+  , singleContainerStash, singleContainerActor
 #endif
   ) where
 
@@ -81,14 +82,14 @@ posUpdAtomic cmd = case cmd of
   UpdRegisterItems{} -> return PosNone
   UpdCreateActor _ body _ -> return $! posProjBody body
   UpdDestroyActor _ body _ -> return $! posProjBody body
-  UpdCreateItem _ _ _ _ c -> singleContainer c
-  UpdDestroyItem _ _ _ _ c -> singleContainer c
+  UpdCreateItem _ _ _ _ c -> singleContainerStash c
+  UpdDestroyItem _ _ _ _ c -> singleContainerStash c
   UpdSpotActor _ body -> return $! posProjBody body
   UpdLoseActor _ body -> return $! posProjBody body
-  UpdSpotItem _ _ _ c -> singleContainer c
-  UpdLoseItem _ _ _ c -> singleContainer c
-  UpdSpotItemBag c _ -> singleContainer c
-  UpdLoseItemBag c _ -> singleContainer c
+  UpdSpotItem _ _ _ c -> singleContainerStash c
+  UpdLoseItem _ _ _ c -> singleContainerStash c
+  UpdSpotItemBag c _ -> singleContainerStash c
+  UpdLoseItemBag c _ -> singleContainerStash c
   UpdMoveActor aid fromP toP -> do
     b <- getsState $ getActorBody aid
     -- Non-projectile actors are never totally isolated from environment;
@@ -145,19 +146,19 @@ posUpdAtomic cmd = case cmd of
   UpdLoseSmell lid sms -> do
     let ps = map fst sms
     return $! PosSmell lid ps
-  UpdTimeItem _ c _ _ -> singleContainer c
+  UpdTimeItem _ c _ _ -> singleContainerStash c
   UpdAgeGame _ -> return PosAll
   UpdUnAgeGame _ -> return PosAll
-  UpdDiscover c _ _ _ -> singleContainer c
+  UpdDiscover c _ _ _ -> singleContainerActor c
     -- This implies other factions applying items from their inventory,
     -- when we can't see the position of the stash, won't Id the item
     -- for us, even when notice item usage. Thrown items will Id, though,
     -- just as triggering items from the floor or embedded items.
-  UpdCover c _ _ _ -> singleContainer c
-  UpdDiscoverKind c _ _ -> singleContainer c
-  UpdCoverKind c _ _ -> singleContainer c
-  UpdDiscoverAspect c _ _ -> singleContainer c
-  UpdCoverAspect c _ _ -> singleContainer c
+  UpdCover c _ _ _ -> singleContainerActor c
+  UpdDiscoverKind c _ _ -> singleContainerActor c
+  UpdCoverKind c _ _ -> singleContainerActor c
+  UpdDiscoverAspect c _ _ -> singleContainerActor c
+  UpdCoverAspect c _ _ -> singleContainerActor c
   UpdDiscoverServer{} -> return PosSer
   UpdCoverServer{} -> return PosSer
   UpdPerception{} -> return PosNone
@@ -295,16 +296,30 @@ doubleAid source target = do
   -- need to be seen to have the enemy actor in client's state.
   return $! assert (blid sb == blid tb) $ PosSight (blid sb) [bpos sb, bpos tb]
 
-singleContainer :: MonadStateRead m => Container -> m PosAtomic
-singleContainer (CFloor lid p) = return $! PosSight lid [p]
-singleContainer (CEmbed lid p) = return $! PosSight lid [p]
-singleContainer (CActor aid cstore) = do
+singleContainerStash :: MonadStateRead m => Container -> m PosAtomic
+singleContainerStash (CFloor lid p) = return $! PosSight lid [p]
+singleContainerStash (CEmbed lid p) = return $! PosSight lid [p]
+singleContainerStash (CActor aid cstore) = do
   b <- getsState $ getActorBody aid
   mlidPos <- lidPosOfStash b cstore
   return $! maybe (posProjBody b)
                   (\lidPos -> PosSightLevels [lidPos, (blid b, bpos b)])
+                    -- the actor's position is needed so that a message
+                    -- about the actor is not sent to a client that doesn't
+                    -- know the actor; actor's faction is ignored, because
+                    -- for these operations actor doesn't vanish
                   mlidPos
-singleContainer (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
+singleContainerStash (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
+
+singleContainerActor :: MonadStateRead m => Container -> m PosAtomic
+singleContainerActor (CFloor lid p) = return $! PosSight lid [p]
+singleContainerActor (CEmbed lid p) = return $! PosSight lid [p]
+singleContainerActor (CActor aid _) = do
+  b <- getsState $ getActorBody aid
+  return $! posProjBody b
+    -- stash position is ignored, because for these operations, nothing
+    -- is added to that position; the store name is only used for flavour text
+singleContainerActor (CTrunk fid lid p) = return $! PosFidAndSight fid lid [p]
 
 lidPosOfStash :: MonadStateRead m
               => Actor -> CStore -> m (Maybe (LevelId, Point))
