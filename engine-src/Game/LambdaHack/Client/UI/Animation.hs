@@ -218,6 +218,7 @@ fadeout ScreenContent{rwidth, rheight} out step = do
       ybound = rheight - 1
       margin = (rwidth - 2 * rheight) `div` 2 - 2
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
+      fadeChar :: Int -> Int -> Int -> Int -> Char
       fadeChar !r !n !x !y =
         let d = x - 2 * y
             ndy = n - d - 2 * ybound
@@ -234,7 +235,8 @@ fadeout ScreenContent{rwidth, rheight} out step = do
         in EM.findWithDefault ' ' k edge
       rollFrame !n = do
         w <- randomWord32
-        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar (fromEnum w) n x y
+        -- @fromIntegral@ is potentially costly, but arch-independent.
+        let fadeAttr !y !x = attrChar1ToW32 $ fadeChar (fromIntegral w) n x y
             fadeLine !y =
               let x1 :: Int
                   {-# INLINE x1 #-}

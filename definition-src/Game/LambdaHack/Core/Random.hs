@@ -62,7 +62,7 @@ nextRandom h g = assert (h <= fromIntegral (maxBound :: Int32)) $
                     (fromIntegral x :: Integer, fromIntegral h :: Integer, w32)
      else (x, g')
 
--- | Get a random 'Word32' using full range
+-- | Get a random 'Word32' using full range.
 randomWord32 :: Rnd Word32
 {-# INLINE randomWord32 #-}
 randomWord32 = St.state SM.nextWord32
