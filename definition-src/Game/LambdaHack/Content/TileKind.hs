@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | The type of kinds of terrain tiles.
+-- | The type of tile kinds. Every terrain tile in the game is
+-- an instantiated tile kind.
 module Game.LambdaHack.Content.TileKind
   ( pattern S_UNKNOWN_SPACE, pattern LEGEND_LIT, pattern LEGEND_DARK, pattern S_UNKNOWN_OUTER_FENCE, pattern S_BASIC_OUTER_FENCE, pattern AQUATIC
   , TileKind(..), ProjectileTriggers(..), Feature(..)

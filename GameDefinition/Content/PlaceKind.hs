@@ -1,4 +1,5 @@
--- | Room, hall and passage definitions.
+-- | Definitions of place kinds. Every room in the game is an instantiated
+-- place kind.
 module Content.PlaceKind
   ( -- * Group name patterns
     pattern ROGUE, pattern LABORATORY, pattern ZOO, pattern BRAWL, pattern SHOOTOUT, pattern ARENA, pattern ESCAPE, pattern AMBUSH, pattern BATTLE, pattern NOISE, pattern MINE, pattern EMPTY

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | The type of kinds of rooms, halls and passages.
+-- | The type of place kinds. Every room in the game is an instantiated
+-- place kind.
 module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), makeData
   , Cover(..), Fence(..)

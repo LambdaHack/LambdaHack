@@ -1,4 +1,5 @@
--- | Terrain tile definitions.
+-- | Definitions of tile kinds. Every terrain tile in the game is
+-- an instantiated tile kind.
 module Content.TileKind
   ( -- * Group name patterns
     -- ** Used in CaveKind and perhaps elsewhere.

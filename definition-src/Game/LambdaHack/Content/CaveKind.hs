@@ -1,4 +1,5 @@
--- | The type of cave kinds.
+-- | The type of cave kinds. Every level in the game is an instantiated
+-- cave kind.
 module Game.LambdaHack.Content.CaveKind
   ( pattern DEFAULT_RANDOM
   , CaveKind(..), makeData
