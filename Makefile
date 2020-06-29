@@ -24,7 +24,7 @@ configure-prof:
 	cabal configure --enable-profiling --profiling-detail=exported-functions
 
 ghcjs-new-build:
-	cabal new-build -j1 --ghcjs --disable-library-profiling --disable-profiling .
+	cabal new-build --ghcjs .
 
 chrome-log:
 	google-chrome --enable-logging --v=1 file:///home/mikolaj/r/lambdahack.github.io/index.html &
@@ -294,6 +294,3 @@ build-binary-macosx: build-binary-common
 	LH_VERSION=$$(cat ~/.LambdaHack/stdout.txt); \
 	OS_VERSION=$$(sw_vers -productVersion); \
 	tar -czf LambdaHack_$${LH_VERSION}_macosx-$${OS_VERSION}-amd64.tar.gz LambdaHackTheGame
-
-new-build-dev:
-	cabal new-build --datadir=. --disable-optimization -j1
