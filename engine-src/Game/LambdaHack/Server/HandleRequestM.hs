@@ -52,7 +52,6 @@ import           Game.LambdaHack.Common.Vector
 import qualified Game.LambdaHack.Content.ItemKind as IK
 import           Game.LambdaHack.Content.ModeKind
 import qualified Game.LambdaHack.Content.TileKind as TK
-import qualified Game.LambdaHack.Core.Dice as Dice
 import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
@@ -339,9 +338,8 @@ reqMoveGeneric voluntary mayAttack source dir = do
         tbursting = bursting tar
         -- Such projectiles, even if not bursting themselves, can cause
         -- another projectile to burst.
-        damaging itemKind = IK.idamage itemKind /= 0
-        sdamaging = damaging sitemKind
-        tdamaging = damaging titemKind
+        sdamaging = IK.isDamagingKind sitemKind
+        tdamaging = IK.isDamagingKind titemKind
         -- Avoid explosion extinguishing itself via its own particles colliding.
         sameBlast = IA.checkFlag Ability.Blast sar
                     && getIidKindIdServer (btrunk sb) s
@@ -663,9 +661,7 @@ reqAlterFail bumping effToUse voluntary source tpos = do
       -- via feeble mists, in the worst case, in a loop. However,
       -- if a tile can be changed with an item (e.g., the mist trunk)
       -- but without activating embeds, mists do fine.
-      projNoDamage = bproj sb
-                     && Dice.infDice (IK.idamage sbItemKind) <= 0
-                     && not (any IK.forDamageEffect $ IK.ieffects sbItemKind)
+      projNoDamage = bproj sb && not (IK.isDamagingKind sbItemKind)
       tryApplyEmbed (iid, kit) = do
         let itemFull = itemToF iid
             -- Let even completely apply-unskilled actors trigger basic embeds.

@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ItemKind
   , pattern HORROR, pattern VALUABLE, pattern UNREPORTED_INVENTORY, pattern AQUATIC
   , ItemKind(..), makeData
   , Aspect(..), Effect(..), DetectKind(..), TimerDice, ThrowMod(..)
-  , boostItemKindList, forApplyEffect, forDamageEffect
+  , boostItemKindList, forApplyEffect, forDamageEffect, isDamagingKind
   , strengthOnCombine, strengthOnSmash, getDropOrgans
   , getMandatoryPresentAsFromKind, isEffEscape, isEffEscapeOrAscend
   , timeoutAspect, orEffect, onSmashEffect, onCombineEffect, damageUsefulness
@@ -336,6 +336,12 @@ forDamageEffect eff = case eff of
   Burn{} -> True
   RefillHP n | n < 0 -> True
   _ -> False
+
+-- | Whether an item is damaging. Such items may trigger embedded items
+-- and may collide with bursting items mid-air.
+isDamagingKind :: ItemKind -> Bool
+isDamagingKind itemKind = Dice.infDice (idamage itemKind) > 0
+                          || any forDamageEffect (ieffects itemKind)
 
 isEffEscape :: Effect -> Bool
 isEffEscape Escape{} = True
