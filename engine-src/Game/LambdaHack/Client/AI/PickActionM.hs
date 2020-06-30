@@ -1105,22 +1105,27 @@ displaceTgt source tpos retry = do
              Just TgtAndPath{tapPath=Just AndPath{pathList=q : _}}
                | q == bpos b ->  -- teammate wants to swap
                  return $! returN "displace mutual" $ ReqDisplace aid2
-             Just _  -- teammate possibly without path, for whatever reason
-               | retry  -- me desperate
-                 || Just (blid b2, bpos b2) == gstash tfact  -- guarding; lazy
-                 || enemyTgt && not enemyTgt2 ->
-                      -- he doesn't have Enemy target and I have, so push him
-                      -- aside, because, for heroes, he will never be a leader,
-                      -- so he can't step aside himself
-                 return $! returN "displace teammate" $ ReqDisplace aid2
+             Just _ -> return $!
+               -- Teammate, possibly without path, for whatever reason.
+               if retry  -- me desperate
+                  || Just (blid b2, bpos b2) == gstash tfact  -- guarding; lazy
+                  || enemyTgt && not enemyTgt2
+                       -- he doesn't have Enemy target and I have, so push him
+                       -- aside, because, for heroes, he will never be a leader,
+                       -- so he can't step aside himself
+               then returN "displace teammate" $ ReqDisplace aid2
+               else reject
              _ -> do  -- an enemy or ally or disoriented teammate
                actorMaxSk <- getsState $ getActorMaxSkills aid2
                dEnemy <- getsState $ dispEnemy source aid2 actorMaxSk
                  -- DisplaceDying, DisplaceBraced, DisplaceImmobile,
                  -- DisplaceSupported
-               if not (isFoe (bfid b2) tfact (bfid b)) || dEnemy then
-                 return $! returN "displace other" $ ReqDisplace aid2
-               else return reject
+               return $!
+                 if bfid b == bfid b2  -- disoriented teammate; doesn't care
+                    || isFoe (bfid b2) tfact (bfid b) && dEnemy  -- foe
+                    || retry  -- ally, I need to be desperate, as above
+                 then returN "displace other" $ ReqDisplace aid2
+                 else reject
     _ -> return reject  -- DisplaceProjectiles and no blocker at all
 
 chase :: MonadClient m
