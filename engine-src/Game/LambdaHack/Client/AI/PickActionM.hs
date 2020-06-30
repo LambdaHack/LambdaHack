@@ -117,6 +117,8 @@ actionStrategy foeAssocs friendAssocs aid retry = do
   condTgtNonmovingEnemy <- condTgtNonmovingEnemyM aid
   randomAggressionThreshold <- rndToAction $ randomR0 10
   explored <- getsClient sexplored
+  -- This doesn't treat actors guarding stash specially, so on such levels
+  -- man sleeping actors may reside for a long time. Variety, OK.
   let anyFriendOnLevelAwake = any (\(_, b) ->
         bwatch b /= WSleep && bpos b /= bpos body) friendAssocs
       actorMaxSk = actorMaxSkills EM.! aid
