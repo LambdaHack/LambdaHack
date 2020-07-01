@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, MagicHash,
-             TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, MagicHash #-}
 -- | Colours and text attributes.
 module Game.LambdaHack.Definition.Color
   ( -- * Colours

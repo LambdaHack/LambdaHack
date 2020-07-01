@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
 -- | Screen frames.
 module Game.LambdaHack.Client.UI.Frame
   ( ColorMode(..)

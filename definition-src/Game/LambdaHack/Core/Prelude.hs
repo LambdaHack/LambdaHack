@@ -18,14 +18,14 @@ module Game.LambdaHack.Core.Prelude
 
 import Prelude ()
 
-import Prelude.Compat hiding (appendFile, foldl, foldl1, length, null, readFile,
-                       sum, writeFile, (<>))
+import Prelude.Compat hiding
+  (appendFile, foldl, foldl1, length, null, readFile, sum, writeFile, (<>))
 
 import           Control.Applicative
 import           Control.Arrow (first, second, (&&&), (***))
 import           Control.DeepSeq
-import           Control.Exception.Assert.Sugar (allB, assert, blame,
-                                                 showFailure, swith)
+import           Control.Exception.Assert.Sugar
+  (allB, assert, blame, showFailure, swith)
 import           Control.Monad.Compat
 import           Data.Binary
 import qualified Data.EnumMap.Strict as EM

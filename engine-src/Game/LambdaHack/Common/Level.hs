@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
