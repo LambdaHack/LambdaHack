@@ -282,9 +282,11 @@ actionStrategy foeAssocs friendAssocs aid retry = do
                        -- Don't flee if can spend time productively, killing
                        -- an enemy that blocks projecting or walking.
                        && not condAnyFoeAdj
-                       -- Extra random aggressiveness if can't project.
+                       -- Extra random aggressiveness if can't project
+                       -- and didn't flee recently and so undecided.
                        -- This is hacky; the randomness is outside @Strategy@.
                        && (condCanProject
+                           || recentlyFled  -- still no support, keep fleeing
                            || Ability.getSk Ability.SkAggression actorMaxSk
                               < randomAggressionThreshold)
                   | otherwise -> False )  -- melee threats too far
