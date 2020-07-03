@@ -381,7 +381,7 @@ populateDungeon = do
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. Place as many of the factions, as possible,
--- over stairs. Place the last factions over escapes
+-- over stairs. Place the last faction(s) over escape(s)
 -- (we assume they are guardians of the escapes).
 -- This implies the inital factions (if any) start far from escapes.
 findEntryPoss :: COps -> LevelId -> Level -> Int -> Rnd [Point]
@@ -419,7 +419,7 @@ findEntryPoss COps{coTileSpeedup}
       onEscapes = reverse $ take (k - length onStairs) lescape
       nk = k - length onStairs - length onEscapes
   -- Starting in the middle is too easy.
-  found <- tryFind (middlePoint larea : onStairs) nk
+  found <- tryFind (middlePoint larea : onStairs ++ onEscapes) nk
   return $! onStairs ++ found ++ onEscapes
 
 -- | Apply options that don't need a new game.
