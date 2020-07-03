@@ -512,6 +512,9 @@ closestItems aid = do
   Level{lfloor} <- getLevel $ blid body
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid body
   -- Don't consider own stash an ordinary pile of items.
+  -- Allied stashes are fair game, though. Even when guarded by allies,
+  -- they are circled for some time and then more or less subtly highjacked,
+  -- which is fun and makes the stronger allied factions even stronger.
   let lfloorBarStash = case mstash of
         Just (lid, pos) | lid == blid body -> EM.delete pos lfloor
         _ -> lfloor
