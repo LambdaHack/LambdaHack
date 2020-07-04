@@ -228,7 +228,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
             && abInMaxSkill SkMelee )
         , ( [SkAlter]
           , trigger aid ViaEscape
-          , condAdjTriggerable && not condAimEnemyOrStash
+          , condAdjTriggerable && not condAimEnemyTargeted
             && not condDesirableFloorItem )  -- collect the last loot
         , ( runSkills
           , flee actorSk aid (not actorShines) fleeL
@@ -420,7 +420,7 @@ actionStrategy foeAssocs friendAssocs aid retry = do
           , True )
         , ( runSkills  -- if can't block, at least change something
           , chase actorSk aid avoidAmbient True
-          , not condInMelee || condCanMelee && condAimEnemyOrStash )
+          , not condInMelee || condCanMelee && condAimEnemyTargeted )
         , ( [SkDisplace]  -- if can't brace, at least change something
           , displaceBlocker aid True
           , True )
