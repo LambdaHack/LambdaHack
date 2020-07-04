@@ -76,8 +76,8 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
     _ -> do
       -- At this point we almost forget who the old leader was
       -- and treat all party actors the same, eliminating candidates
-      -- until we can't distinguish them any more, at which point we prefer
-      -- the old leader, if he is among the best candidates
+      -- until we can't distinguish them any more, at which point we slightly
+      -- prefer the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like and easier to observe).
       let refresh aidBody = do
             mtgt <- refreshTarget foeAssocs friendAssocs aidBody
@@ -309,8 +309,8 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
                       -- prevent others from trying to occupy the tile;
                       -- TStash that may obscure a foe correctly handled here
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
-               + (if aid == oldAid then 1 else 0)
-               + (if stepsIntoLight then 10 else 0)
+               + (if aid == oldAid then 0 else 10)
+               + (if stepsIntoLight then 30 else 0)
           positiveOverhead sk =
             let ov = 200 - overheadOurs sk
             in if ov <= 0 then 1 else ov
