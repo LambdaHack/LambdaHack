@@ -1084,6 +1084,7 @@ displaceTgt :: MonadClient m
 displaceTgt source tpos retry = do
   COps{coTileSpeedup} <- getsState scops
   b <- getsState $ getActorBody source
+  actorMaxSkills <- getsState sactorMaxSkills
   let !_A = assert (adjacent (bpos b) tpos) ()
   lvl <- getLevel $ blid b
   let walkable p =  -- DisplaceAccess
@@ -1113,6 +1114,8 @@ displaceTgt source tpos retry = do
                -- Teammate, possibly without path, for whatever reason.
                if retry  -- me desperate
                   || Just (blid b2, bpos b2) == gstash tfact  -- guarding; lazy
+                  || getSk SkDisplace (actorMaxSkills EM.! aid2) <= 0
+                       -- can't displace back
                   || enemyTgt && not enemyTgt2
                        -- he doesn't have Enemy target and I have, so push him
                        -- aside, because, for heroes, he will never be a leader,
