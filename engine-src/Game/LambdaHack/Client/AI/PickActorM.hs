@@ -261,22 +261,30 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
             else (oursNoSupportRaw, oursSupportRaw)
           (oursBlocked, oursPos) =
             partition targetBlocked $ oursRanged ++ oursOther
+          guarding ((_, b), Just TgtAndPath{tapTgt=TPoint TStash{} lid pos}) =
+            lid == arena && pos == bpos b
+          guarding _ = False
+          -- Don't try to include a stash guard in formation, even if attacking
+          -- or being attacked. Attackers would be targetted anyway.
+          oursNotSleepingNorGuarding = filter (not . guarding) oursTgtRaw
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), TgtAndPath) -> Int
           overheadOurs (_, TgtAndPath{tapPath=Nothing}) = 100
-          overheadOurs
-            abt@( (aid, b)
-                , TgtAndPath{tapPath=Just AndPath{pathLen=d, ..}} ) =
+          overheadOurs ((_, b), TgtAndPath{tapTgt=TPoint TStash{} lid pos})
+            | lid == arena && pos == bpos b = 200  -- guarding, poor choice
+          overheadOurs abt@( (aid, b)
+                           , TgtAndPath{tapPath=Just AndPath{pathLen=d, ..}} ) =
             -- Keep proper formation. Too dense and exploration takes
             -- too long; too sparse and actors fight alone.
             -- Note that right now, while we set targets separately for each
             -- hero, perhaps on opposite borders of the map,
             -- we can't help that sometimes heroes are separated.
-            let maxSpread = 3 + length oursNotSleeping
+            let maxSpread = 3 + length oursNotSleepingNorGuarding
                 lDist p = [ chessDist (bpos b2) p
-                          | (aid2, b2) <- oursNotSleeping, aid2 /= aid]
+                          | ((aid2, b2), _) <- oursNotSleepingNorGuarding
+                          , aid2 /= aid ]
                 pDist p = let ld = lDist p
-                          in assert (not $ null ld) $ minimum ld
+                          in if null ld then 0 else minimum ld
                 aidDist = pDist (bpos b)
                 -- Negative, if the goal gets us closer to the party.
                 diffDist = pDist pathGoal - aidDist
@@ -302,17 +310,18 @@ pickActorToMove foeAssocs friendAssocs maidToAvoid = do
                     q : _ -> isLit q
                       -- shortest path is through light even though may
                       -- sidestep through dark in @chase@ or @flee@
-            in formationValue `div` 3 + fightValue
+            in formationValue `div` 3
+               + fightValue
                + (case d of
                     0 -> -400  -- do your thing ASAP and retarget
                     1 | not targetsEnemy -> -200
                       -- prevent others from trying to occupy the tile;
-                      -- TStash that may obscure a foe correctly handled here
+                      -- TStash that obscures a foe correctly handled here
                     _ -> if d < 8 then d `div` 4 else 2 + d `div` 10)
                + (if aid == oldAid then 0 else 10)
                + (if stepsIntoLight then 30 else 0)
-          positiveOverhead sk =
-            let ov = 200 - overheadOurs sk
+          positiveOverhead abt =
+            let ov = 200 - overheadOurs abt
             in if ov <= 0 then 1 else ov
           candidates = [ oursAdjStash
                        , oursVulnerable
