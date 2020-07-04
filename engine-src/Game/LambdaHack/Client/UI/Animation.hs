@@ -76,12 +76,12 @@ pushAndDelay = Animation [[]]
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
-  [ (blank           , cSym BrCyan '\'')
-  , (blank           , cSym BrYellow '\'')
-  , (blank           , cSym BrYellow '^')
-  , (cSym c1      '\\',cSym BrCyan '^')
-  , (cSym c1      '|', cSym BrCyan '^')
-  , (cSym c1      '%', blank)
+  [ (blank           , cSym BrCyan '&')
+  , (blank           , cSym BrCyan '&')
+  , (blank           , blank)
+  , (cSym c1      '\\',blank)
+  , (cSym c1      '|', cSym BrCyan '&')
+  , (cSym c1      '%', cSym BrCyan '&')
   , (cSym c1      '/', blank)
   , (cSym c1      '-', blank)
   , (cSym c1      '\\',blank)
@@ -92,13 +92,12 @@ twirlSplash poss c1 c2 = Animation $ map (mzipPairs poss)
 -- | Attack that hits through a block.
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
-  [ (blank           , cSym BrCyan '\'')
-  , (blank           , cSym BrYellow '\'')
-  , (blank           , cSym BrYellow '^')
-  , (blank           , cSym BrCyan '^')
-  , (cSym BrBlue  '{', cSym BrCyan '\'')
-  , (cSym BrBlue  '{', cSym BrYellow '\'')
-  , (cSym BrBlue  '{', cSym BrYellow '\'')
+  [ (blank           , cSym BrCyan '&')
+  , (blank           , cSym BrCyan '&')
+  , (blank           , blank)
+  , (cSym BrBlue  '{', blank)
+  , (cSym BrBlue  '{', cSym BrCyan '&')
+  , (cSym BrBlue  '{', cSym BrCyan '&')
   , (cSym BrBlue  '}', blank)
   , (cSym BrBlue  '}', blank)
   , (cSym BrBlue  '}', blank)
@@ -114,11 +113,12 @@ blockHit poss c1 c2 = Animation $ map (mzipPairs poss)
 -- | Attack that is blocked.
 blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (mzipPairs poss)
-  [ (blank           , cSym BrCyan '\'')
-  , (blank           , cSym BrYellow '^')
-  , (cSym BrBlue  '{', cSym BrYellow '\'')
-  , (cSym BrBlue  '{', cSym BrCyan '\'')
+  [ (blank           , cSym BrCyan '&')
+  , (blank           , cSym BrCyan '&')
+  , (blank           , blank)
   , (cSym BrBlue  '{', blank)
+  , (cSym BrBlue  '{', cSym BrCyan '&')
+  , (cSym BrBlue  '{', cSym BrCyan '&')
   , (cSym BrBlue  '}', blank)
   , (cSym BrBlue  '}', blank)
   , (cSym Blue    '}', blank)
@@ -128,11 +128,13 @@ blockMiss poss = Animation $ map (mzipPairs poss)
 -- | Attack that is subtle (e.g., damage dice 0).
 subtleHit :: Point -> Animation
 subtleHit pos = Animation $ map (mzipSingleton pos)
-  [ cSym BrCyan '\''
-  , cSym BrYellow '\''
-  , cSym BrYellow '^'
-  , cSym BrCyan '^'
-  , cSym BrCyan '\''
+  [ cSym BrCyan '&'
+  , blank
+  , cSym BrYellow '&'
+  , blank
+  , cSym BrYellow '&'
+  , blank
+  , blank
   ]
 
 -- | Death animation for an organic body.
