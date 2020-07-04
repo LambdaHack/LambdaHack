@@ -45,9 +45,7 @@ queryAI aid = do
     modifyClient $ \cli -> cli {_sleader = mleader}
   (aidToMove, treq, oldFlee) <- pickActorAndAction foeAssocs friendAssocs
                                                    Nothing aid
-  (aidToMove2, treq2) <-
-    case treq of
-      ReqWait | mleader == Just aid -> do
+  let tryAgain = do
         -- Leader waits; a waste; try once to pick a yet different leader
         -- or at least a non-waiting action. Undo state changes in @pickAction@:
         modifyClient $ \cli -> cli
@@ -56,6 +54,12 @@ queryAI aid = do
         (a, t, _) <- pickActorAndAction foeAssocs friendAssocs
                                         (Just aidToMove) aid
         return (a, t)
+  (aidToMove2, treq2) <-
+    if mleader /= Just aid
+    then return (aidToMove, treq)
+    else case treq of
+      ReqWait -> tryAgain
+      ReqYell -> tryAgain
       _ -> return (aidToMove, treq)
   return ( ReqAITimed treq2
          , if aidToMove2 /= aid then Just aidToMove2 else Nothing )

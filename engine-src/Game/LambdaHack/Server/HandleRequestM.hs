@@ -943,26 +943,30 @@ reqWait10 source = do
 --
 -- This is similar to the effect @Yell@, but always voluntary.
 reqYell :: MonadServerAtomic m => ActorId -> m ()
-reqYell source = do
-  actorSk <- currentSkillsServer source
+reqYell aid = do
+  actorSk <- currentSkillsServer aid
   if | Ability.getSk Ability.SkWait actorSk > 0 ->
        -- Last yawn before waking up is displayed as a yell, but that's fine.
        -- To fix that, we'd need to move the @SfxTaunt@
        -- to @processWatchfulness@.
-       execSfxAtomic $ SfxTaunt True source
+       execSfxAtomic $ SfxTaunt True aid
      | Ability.getSk Ability.SkMove actorSk <= 0
        || Ability.getSk Ability.SkDisplace actorSk <= 0
        || Ability.getSk Ability.SkMelee actorSk <= 0 ->
        -- Potentially, only waiting is possible, so given that it's drained,
        -- don't let the actor be stuck nor alarm about server failure.
-       execSfxAtomic $ SfxTaunt False source
-     | otherwise ->
+       execSfxAtomic $ SfxTaunt False aid
+     | otherwise -> do
        -- In most situation one of the 3 actions above
        -- can be performed and waiting skill is not needed for that,
-       -- so given the 3 skills are available, waste turn
-       -- but don't alarm, because it does happen sometimes in crowds.
-       --   execFailure source ReqYell YellUnskilled
-       return ()
+       -- so given the 3 skills are available, waste turn, waiting until
+       -- they can be performed, but don't alarm, because it does happen
+       -- sometimes in crowds. No bracing granted, either, but mark
+       -- waiting so that AI knows to change leader.
+       --   execFailure aid ReqYell YellUnskilled
+       b <- getsState $ getActorBody aid
+       unless (bwatch b == WWait 0) $
+         execUpdAtomic $ UpdWaitActor aid (bwatch b) (WWait 0)
 
 -- * ReqMoveItems
 
