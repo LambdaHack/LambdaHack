@@ -514,12 +514,11 @@ displayRespUpdAtomicUI cmd = case cmd of
       msgAdd MsgWarning "Being a lone wolf, you begin without companions."
     when (lengthHistory history > 1) $ fadeOutOrIn False
     setFrontAutoYes $ isAIFact fact
-    when (isAIFact fact) $ do
-      -- Prod the frontend to flush frames and start showing them continuously.
-      slides <- reportToSlideshow []
-      void $ getConfirms ColorFull [K.spaceKM, K.escKM] slides
     -- Forget the furious keypresses when dying in the previous game.
     resetPressedKeys
+    -- Help newbies when actors obscured by text and no obvious key to press:
+    displayMore ColorFull "\nAre you up for the challenge?"
+    promptAdd0 "A grand story starts right here!"
   UpdRestartServer{} -> return ()
   UpdResume fid _ -> do
     COps{cocave} <- getsState scops
