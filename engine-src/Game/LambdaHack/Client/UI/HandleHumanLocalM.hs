@@ -129,7 +129,7 @@ chooseItemDialogMode c = do
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! side
   let prompt :: Actor -> ActorUI -> Ability.Skills -> ItemDialogMode -> State
              -> Text
-      prompt body bodyUI actorMaxSk c2 s =
+      prompt body bodyUI actorCurAndMaxSk c2 s =
         let (tIn, t) = ppItemDialogMode c2
             subject = partActor bodyUI
             f (k, _) acc = k + acc
@@ -149,7 +149,8 @@ chooseItemDialogMode c = do
           let n = countItems CEqp
               (verbEqp, nItems) =
                 if | n == 0 -> ("find nothing", "")
-                   | calmEnough body actorMaxSk -> ("find", MU.CarAWs n "item")
+                   | calmEnough body actorCurAndMaxSk ->
+                       ("find", MU.CarAWs n "item")
                    | otherwise -> ("paw distractedly at", MU.CarAWs n "item")
           in makePhrase
                [ MU.Capitalize $ MU.SubjectVerbSg subject verbEqp
@@ -207,8 +208,8 @@ chooseItemDialogMode c = do
   ggi <- getStoreItem prompt c
   recordHistory  -- item chosen, wipe out already shown msgs
   leader <- getLeaderUI
-  actorMaxSk <- getsState $ getActorMaxSkills leader
-  let meleeSkill = Ability.getSk Ability.SkHurtMelee actorMaxSk
+  actorCurAndMaxSk <- leaderSkillsClientUI
+  let meleeSkill = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
   bUI <- getsSession $ getActorUI leader
   case ggi of
     (Right (iid, itemBag, lSlots), (c2, _)) ->
@@ -267,8 +268,8 @@ chooseItemDialogMode c = do
               let slot = allSlots !! slotIndex
                   skill = skillSlots !! fromMaybe (error $ show slot)
                                                   (elemIndex slot allSlots)
-                  valueText =
-                    skillToDecorator skill b $ Ability.getSk skill actorMaxSk
+                  valueText = skillToDecorator skill b
+                              $ Ability.getSk skill actorCurAndMaxSk
                   prompt2 = makeSentence
                     [ MU.WownW (partActor bUI) (MU.Text $ skillName skill)
                     , "is", MU.Text valueText ]
@@ -359,11 +360,11 @@ chooseItemProjectHuman :: forall m. (MonadClient m, MonadClientUI m)
                        => [HumanCmd.TriggerItem] -> m MError
 chooseItemProjectHuman ts = do
   leader <- getLeaderUI
+  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
-      calmE = calmEnough b actorMaxSk
+      calmE = calmEnough b actorCurAndMaxSk
       cLegalRaw = [CGround, CStash, CEqp]
       cLegal = [CGround | not overStash] ++ [CStash] ++ [CEqp | calmE]
       (verb1, object1) = case ts of
@@ -412,11 +413,10 @@ permittedProjectClient :: MonadClientUI m
                        => m (ItemFull -> Either ReqFailure Bool)
 permittedProjectClient = do
   leader <- getLeaderUI
+  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
-  actorSk <- leaderSkillsClientUI
-  let skill = Ability.getSk Ability.SkProject actorSk
-      calmE = calmEnough b actorMaxSk
+  let skill = Ability.getSk Ability.SkProject actorCurAndMaxSk
+      calmE = calmEnough b actorCurAndMaxSk
   return $ permittedProject False skill calmE
 
 projectCheck :: MonadClientUI m => Point -> m (Maybe ReqFailure)
@@ -544,11 +544,11 @@ chooseItemApplyHuman :: forall m. MonadClientUI m
                      => [HumanCmd.TriggerItem] -> m MError
 chooseItemApplyHuman ts = do
   leader <- getLeaderUI
+  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
   mstash <- getsState $ \s -> gstash $ sfactionD s EM.! bfid b
   let overStash = mstash == Just (blid b, bpos b)
-      calmE = calmEnough b actorMaxSk
+      calmE = calmEnough b actorCurAndMaxSk
       cLegalRaw = [CGround, CStash, CEqp, COrgan]
       cLegal = [CGround | not overStash] ++ [CStash]
                ++ [CEqp | calmE] ++ [COrgan]
@@ -598,11 +598,10 @@ permittedApplyClient :: MonadClientUI m
                            -> Either ReqFailure Bool)
 permittedApplyClient = do
   leader <- getLeaderUI
+  actorCurAndMaxSk <- leaderSkillsClientUI
   b <- getsState $ getActorBody leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
-  actorSk <- leaderSkillsClientUI
-  let skill = Ability.getSk Ability.SkApply actorSk
-      calmE = calmEnough b actorMaxSk
+  let skill = Ability.getSk Ability.SkApply actorCurAndMaxSk
+      calmE = calmEnough b actorCurAndMaxSk
   localTime <- getsState $ getLocalTime (blid b)
   return $ permittedApply localTime skill calmE
 

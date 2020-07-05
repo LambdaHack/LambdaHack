@@ -420,7 +420,9 @@ tryRestore = do
     liftIO $ tryWriteFile (dataDir </> cfgUIName) content
     return res
 
+-- For a leader, the skills are both current and max skills.
 leaderSkillsClientUI :: MonadClientUI m => m Ability.Skills
+{-# INLINE leaderSkillsClientUI #-}
 leaderSkillsClientUI = do
   leader <- getLeaderUI
   getsState $ getActorMaxSkills leader

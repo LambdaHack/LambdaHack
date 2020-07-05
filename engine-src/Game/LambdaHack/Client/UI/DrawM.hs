@@ -448,9 +448,9 @@ drawFrameStatus drawnLevelId = do
   speedDisplay <- case mleader of
     Nothing -> return []
     Just leader -> do
-      actorMaxSk <- getsState $ getActorMaxSkills leader
+      actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
       kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
-      let speed = Ability.getSk Ability.SkSpeed actorMaxSk
+      let speed = Ability.getSk Ability.SkSpeed actorCurAndMaxSk
           unknownBonus = unknownSpeedBonus $ map (fst . snd) kitAssRaw
           speedString = displaySpeed speed ++ if unknownBonus then "?" else ""
           conditionBonus = conditionSpeedBonus $ map snd kitAssRaw
@@ -613,7 +613,7 @@ drawLeaderStatus waitT = do
   case mleader of
     Just leader -> do
       b <- getsState $ getActorBody leader
-      actorMaxSk <- getsState $ getActorMaxSkills leader
+      actorCurAndMaxSk <- getsState $ getActorMaxSkills leader
       (hpCheckWarning, calmCheckWarning)
         <- getsState $ checkWarnings sUIOptions leader
       bdark <- getsState $ not . actorInAmbient b
@@ -643,7 +643,7 @@ drawLeaderStatus waitT = do
           darkPick | bdark = "."
                    | otherwise = ":"
           calmHeader = calmAddAttr $ calmHeaderText <> darkPick
-          maxCalm = max 0 $ Ability.getSk Ability.SkMaxCalm actorMaxSk
+          maxCalm = max 0 $ Ability.getSk Ability.SkMaxCalm actorCurAndMaxSk
           calmText = showTrunc (bcalm b `divUp` oneM)
                      <> (if bdark then slashPick else "/")
                      <> showTrunc maxCalm
@@ -651,7 +651,7 @@ drawLeaderStatus waitT = do
                     | otherwise = ":"
           hpAddAttr = checkDelta $ bhpDelta b
           hpHeader = hpAddAttr $ hpHeaderText <> bracePick
-          maxHP = max 0 $ Ability.getSk Ability.SkMaxHP actorMaxSk
+          maxHP = max 0 $ Ability.getSk Ability.SkMaxHP actorCurAndMaxSk
           hpText = showTrunc (bhp b `divUp` oneM)
                    <> (if not bdark then slashPick else "/")
                    <> showTrunc maxHP
@@ -662,7 +662,7 @@ drawLeaderStatus waitT = do
                                      | otherwise = stringToAS
       return $! calmHeader
                 <> colorWarning calmCheckWarning
-                                (calmEnough b actorMaxSk)
+                                (calmEnough b actorCurAndMaxSk)
                                 (bcalm b > xM maxCalm)
                                 (justifyRight 7 calmText)
                 <+:> hpHeader
@@ -680,8 +680,7 @@ drawLeaderStatus waitT = do
 drawLeaderDamage :: MonadClientUI m => Int -> ActorId -> m AttrString
 drawLeaderDamage width leader = do
   kitAssRaw <- getsState $ kitAssocs leader [CEqp, COrgan]
-  actorSk <- leaderSkillsClientUI
-  actorMaxSk <- getsState $ getActorMaxSkills leader
+  actorCurAndMaxSk <- leaderSkillsClientUI
   let unBurn (IK.Burn d) = Just d
       unBurn _ = Nothing
       unRefillHP (IK.RefillHP n) = Just n
@@ -724,7 +723,7 @@ drawLeaderDamage width leader = do
            else [(True, (ldice Color.BrBlue, lBurnHP True))]
       lbonus :: AttrString
       lbonus =
-        let bonusRaw = Ability.getSk Ability.SkHurtMelee actorMaxSk
+        let bonusRaw = Ability.getSk Ability.SkHurtMelee actorCurAndMaxSk
             bonus = min 200 $ max (-200) bonusRaw
             unknownBonus = unknownMeleeBonus $ map (fst . snd) kitAssRaw
             tbonus = if bonus == 0
@@ -745,7 +744,8 @@ drawLeaderDamage width leader = do
   discoBenefit <- getsClient sdiscoBenefit
   strongest <-
     map (\(_, ncha, _, itemFullKit) -> (ncha, itemFullKit))
-    <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons actorSk leader
+    <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons
+                    actorCurAndMaxSk leader
   let possiblyHasTimeout (_, (itemFull, _)) =
         hasTimeout itemFull || itemSuspect itemFull
       lT = filter possiblyHasTimeout strongest
@@ -808,18 +808,18 @@ drawSelected drawnLevelId width selected = do
 
 checkWarningHP :: UIOptions -> ActorId -> Int64 -> State -> Bool
 checkWarningHP UIOptions{uhpWarningPercent} leader hp s =
-  let actorMaxSk = getActorMaxSkills leader s
-      maxHp = Ability.getSk Ability.SkMaxHP actorMaxSk
+  let actorCurAndMaxSk = getActorMaxSkills leader s
+      maxHp = Ability.getSk Ability.SkMaxHP actorCurAndMaxSk
   in hp <= xM (uhpWarningPercent * maxHp `div` 100)
 
 checkWarningCalm :: UIOptions -> ActorId -> Int64 -> State -> Bool
 checkWarningCalm UIOptions{uhpWarningPercent} leader calm s =
   let b = getActorBody leader s
-      actorMaxSk = getActorMaxSkills leader s
+      actorCurAndMaxSk = getActorMaxSkills leader s
       isImpression iid =
         maybe False (> 0) $ lookup IK.S_IMPRESSED $ IK.ifreq $ getIidKind iid s
       isImpressed = any isImpression $ EM.keys $ borgan b
-      maxCalm = Ability.getSk Ability.SkMaxCalm actorMaxSk
+      maxCalm = Ability.getSk Ability.SkMaxCalm actorCurAndMaxSk
   in calm <= xM (uhpWarningPercent * maxCalm `div` 100)
      && isImpressed
 

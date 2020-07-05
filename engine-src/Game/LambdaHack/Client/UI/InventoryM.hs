@@ -243,9 +243,9 @@ transition psuit prompt promptGeneric permitMulitple
   let recCall = transition psuit prompt promptGeneric permitMulitple
   ItemSlots itemSlotsPre <- getsSession sslots
   leader <- getLeaderUI
+  actorCurAndMaxSk <- leaderSkillsClientUI
   body <- getsState $ getActorBody leader
   bodyUI <- getsSession $ getActorUI leader
-  actorMaxSk <- getsState $ getActorMaxSkills leader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   hs <- partyAfterLeader leader
   bagAll <- getsState $ \s -> accessModeBag leader s cCur
@@ -311,8 +311,8 @@ transition psuit prompt promptGeneric permitMulitple
                                  [] -> error $ "" `showFailure` cRest
   (bagFiltered, promptChosen) <- getsState $ \s ->
     case itemDialogState of
-      ISuitable -> (bagSuit, prompt body bodyUI actorMaxSk cCur s <> ":")
-      IAll      -> (bag, promptGeneric body bodyUI actorMaxSk cCur s <> ":")
+      ISuitable -> (bagSuit, prompt body bodyUI actorCurAndMaxSk cCur s <> ":")
+      IAll -> (bag, promptGeneric body bodyUI actorCurAndMaxSk cCur s <> ":")
   let (autoDun, _) = autoDungeonLevel fact
       multipleSlots = if itemDialogState == IAll
                       then bagItemSlotsAll
