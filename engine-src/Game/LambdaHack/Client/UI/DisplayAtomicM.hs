@@ -1908,7 +1908,9 @@ strike catch source target iid = assert (source /= target) $ do
         ps = (bpos tb, bpos sb)
         basicAnim
           | hurtMult > 70 = twirlSplash ps Color.BrRed Color.Red
-          | hurtMult > 1 = blockHit ps Color.BrRed Color.Red
+          | hurtMult > 1 = if burnDmg >= 0 && hpDmg >= 0  -- no extra anim
+                           then blockHit ps Color.BrRed Color.Red
+                           else blockMiss ps
           | otherwise = blockMiss ps
         targetIsFoe = bfid sb == side  -- no big news if others hit our foes
                       && isFoe (bfid tb) tfact side
