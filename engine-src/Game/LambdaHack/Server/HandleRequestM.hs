@@ -150,7 +150,7 @@ processWatchfulness mwait aid = do
           execUpdAtomic $ UpdWaitActor aid (WWait n) (WWait $ n + 1)
       _ -> do
         nAll <- removeConditionSingle IK.S_BRACED aid
-        let !_A = assert (nAll == 0) ()
+        let !_A = assert (nAll == 0 `blame` nAll) ()
         execUpdAtomic $ UpdWaitActor aid (WWait n) WWatch
     WSleep ->
       if mwait /= Just False  -- lurk can't wake up regardless; too short
@@ -965,8 +965,9 @@ reqYell aid = do
        -- waiting so that AI knows to change leader.
        --   execFailure aid ReqYell YellUnskilled
        b <- getsState $ getActorBody aid
-       unless (bwatch b == WWait 0) $
-         execUpdAtomic $ UpdWaitActor aid (bwatch b) (WWait 0)
+       case bwatch b of
+         WWait _ -> return ()
+         _ -> execUpdAtomic $ UpdWaitActor aid (bwatch b) (WWait 0)
 
 -- * ReqMoveItems
 
