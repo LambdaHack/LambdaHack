@@ -148,9 +148,16 @@ pickWeaponClient source target = do
   strongest <- pickWeaponM False (Just discoBenefit) kitAss actorSk source
   case strongest of
     [] -> return Nothing
-    iis@((minS, _, _, _) : _) -> do
+    iis@(iiFirst@(minS, _, _, (itemFull, _)) : _) -> do
       let minIis = takeWhile (\(value, _, _, _) -> value == minS) iis
-      (_, _, iid, _) <- rndToAction $ oneOf minIis
+          hasTimeout = let arItem = aspectRecordFull itemFull
+                           timeout = IA.aTimeout arItem
+                       in timeout > 0
+      -- Randomize only the no-timeout items. Others need to activate
+      -- in the order shown in HUD and also not risk of only one always used.
+      (_, _, iid, _) <- if hasTimeout || itemSuspect itemFull
+                        then return iiFirst
+                        else rndToAction $ oneOf minIis
       -- Prefer COrgan, to hint to the player to trash the equivalent CEqp item.
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just $ ReqMelee target iid cstore
