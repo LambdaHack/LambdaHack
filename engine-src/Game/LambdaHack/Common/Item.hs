@@ -281,7 +281,7 @@ hasCharge localTime kit = ncharges localTime kit > 0
 
 strongestMelee :: Bool -> Maybe DiscoveryBenefit -> Time
                -> [(ItemId, ItemFullKit)]
-               -> [(Double, Int, ItemId, ItemFullKit)]
+               -> [(Double, Int, Int, ItemId, ItemFullKit)]
 strongestMelee _ _ _ [] = []
 strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
   -- For fighting, as opposed to equipping, we value weapon only for
@@ -295,14 +295,21 @@ strongestMelee ignoreCharges mdiscoBenefit localTime kitAss =
                 let Benefit{benMelee} = discoBenefit EM.! iid
                 in benMelee - unIDedBonus
               Nothing -> - rawDmg  -- special case: not interested about ID
+            arItem = aspectRecordFull itemFull
+            timeout = IA.aTimeout arItem
             ncha = ncharges localTime kit
         in if ignoreCharges || ncha > 0
-           then Just (totalValue, ncha, iid, (itemFull, kit))
+           then Just (totalValue, timeout, ncha, iid, (itemFull, kit))
            else Nothing
   -- We can't filter out weapons that are not harmful to victim
   -- (@benMelee >= 0), because actors use them if nothing else available,
   -- e.g., geysers, bees. This is intended and fun.
-  in sortOn (\(value, _, _, _) -> value) $ mapMaybe f kitAss
+  in sortOn (\(value, timeout, _, _, (itemFull, _)) ->
+                -- Weapon with higher timeout activated first to increase
+                -- the chance of using it again during this fight.
+                -- Optimal packing problem: start with the biggest.
+                (value, - timeout, itemKindId itemFull))
+            (mapMaybe f kitAss)
 
 unknownAspect :: (IK.Aspect -> [Dice.Dice]) -> ItemFull -> Bool
 unknownAspect f ItemFull{itemKind=IK.ItemKind{iaspects}, ..} =

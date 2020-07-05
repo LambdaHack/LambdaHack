@@ -1664,7 +1664,7 @@ effectRecharge reducingCooldown execSfx iidOriginal n0 dice target = do
       partitionWeapon = foldr selectWeapon ([],[])
       ignoreCharges = True  -- handled above depending on @reducingCooldown@
       benefits = Nothing  -- only raw damage counts (client knows benefits)
-      sortWeapons ass = map (\(_, _, iid, itemFullKit) -> (iid, itemFullKit))
+      sortWeapons ass = map (\(_, _, _, iid, itemFullKit) -> (iid, itemFullKit))
                         $ strongestMelee ignoreCharges benefits localTime ass
   eqpAss <- getsState $ kitAssocs target [CEqp]
   let (eqpAssWeapons, eqpAssOthers) = partitionWeapon eqpAss

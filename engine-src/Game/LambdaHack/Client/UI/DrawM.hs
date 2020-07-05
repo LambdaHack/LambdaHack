@@ -685,15 +685,12 @@ drawLeaderDamage width leader = do
       unBurn _ = Nothing
       unRefillHP (IK.RefillHP n) = Just n
       unRefillHP _ = Nothing
-      hasTimeout itemFull =
-        let arItem = aspectRecordFull itemFull
-            timeout = IA.aTimeout arItem
-        in timeout > 0
       haNonDamagesEffect itemFull =
         any (\eff -> IK.forApplyEffect eff && not (IK.forDamageEffect eff))
             (IK.ieffects $ itemKind itemFull)
-      ppDice :: Bool -> (Int, ItemFullKit) -> [(Bool, (AttrString, AttrString))]
-      ppDice showInBrief (nch, (itemFull, (k, _))) =
+      ppDice :: Bool -> (Int, Int, ItemFullKit)
+             -> [(Bool, (AttrString, AttrString))]
+      ppDice showInBrief (timeout, nch, (itemFull, (k, _))) =
         let dice = IK.idamage $ itemKind itemFull
             tdice = case Dice.reduceDice dice of
               Just d | showInBrief -> show d
@@ -715,7 +712,7 @@ drawLeaderDamage width leader = do
                   chp = if charged then Color.BrMagenta else Color.Magenta
               in map (Color.attrChar2ToW32 cburn) tBurn
                  ++ map (Color.attrChar2ToW32 chp) tRefillHP
-            possiblyHasTimeout = hasTimeout itemFull || itemSuspect itemFull
+            possiblyHasTimeout = timeout > 0 || itemSuspect itemFull
         in if possiblyHasTimeout
            then replicate (k - nch)
                           (False, (ldice Color.Cyan, lBurnHP False))
@@ -743,11 +740,11 @@ drawLeaderDamage width leader = do
                 . aspectRecordFull . fst . snd) kitAssRaw
   discoBenefit <- getsClient sdiscoBenefit
   strongest <-
-    map (\(_, ncha, _, itemFullKit) -> (ncha, itemFullKit))
+    map (\(_, timeout, ncha, _, itemFullKit) -> (timeout, ncha, itemFullKit))
     <$> pickWeaponM True (Just discoBenefit) kitAssOnlyWeapons
                     actorCurAndMaxSk leader
-  let possiblyHasTimeout (_, (itemFull, _)) =
-        hasTimeout itemFull || itemSuspect itemFull
+  let possiblyHasTimeout (timeout, _, (itemFull, _)) =
+        timeout > 0 || itemSuspect itemFull
       lT = filter possiblyHasTimeout strongest
       lSurelyNoTimeout = filter (not . possiblyHasTimeout) strongest
       strongestToDisplay = lT ++ take 1 lSurelyNoTimeout

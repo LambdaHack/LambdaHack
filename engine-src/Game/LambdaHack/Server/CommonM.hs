@@ -631,9 +631,11 @@ pickWeaponServer source = do
   strongest <- pickWeaponM False Nothing kitAss actorSk source
   case strongest of
     [] -> return Nothing
-    iis@((minS, _, _, _) : _) -> do
-      let minIis = takeWhile (\(value, _, _, _) -> value == minS) iis
-      (_, _, iid, _) <- rndToAction $ oneOf minIis
+    iis@((value1, timeout1, _, _, _) : _) -> do
+      let minIis = takeWhile (\(value, timeout, _, _, _) ->
+                                 value == value1 && timeout == timeout1)
+                             iis
+      (_, _, _, iid, _) <- rndToAction $ oneOf minIis
       let cstore = if isJust (lookup iid bodyAssocs) then COrgan else CEqp
       return $ Just (iid, cstore)
 
