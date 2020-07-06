@@ -139,7 +139,7 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
       -- Simple rule for now: level @lid@ has depth (difficulty) @abs lid@.
       ldepth = Dice.AbsDepth $ abs $ fromEnum lid
       darea =
-        let (lxPrev, lyPrev) = unzip $ map (px . fst &&& py . fst) stairsFromUp
+        let (lxPrev, lyPrev) = unzip $ map ((px &&& py) . fst) stairsFromUp
             -- Stairs take some space, hence the additions.
             lxMin = max 0
                     $ -4 - d + minimum (rXmax - 1 : lxPrev)
@@ -227,7 +227,8 @@ buildLevel cops@COps{coplace, corule=RuleContent{..}} serverOptions
   dsecret <- randomWord32
   cave <- buildCave cops ldepth totalDepth darea dsecret dkind lgr gs bootExtra
   cmap <- buildTileMap cops cave
-  let lvl = levelFromCave cops cave ldepth cmap lstair pescape
+  -- The bang is needed to prevent caves memory drag until levels used.
+  let !lvl = levelFromCave cops cave ldepth cmap lstair pescape
       stairCarried p0 =
         let Place{qkind} = dstairs cave EM.! p0
             freq = map (first $ T.words . tshow)
