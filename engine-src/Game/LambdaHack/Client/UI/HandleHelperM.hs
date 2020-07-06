@@ -295,12 +295,16 @@ placesFromState :: ContentData PK.PlaceKind -> ClientOptions -> State
                 -> EM.EnumMap (ContentId PK.PlaceKind)
                               (ES.EnumSet LevelId, Int, Int, Int)
 placesFromState coplace ClientOptions{sexposePlaces} s =
-  let addEntries (es1, ne1, na1, nd1) (es2, ne2, na2, nd2) =
-        (ES.union es1 es2, ne1 + ne2, na1 + na2, nd1 + nd2)
+  let addEntries (!es1, !ne1, !na1, !nd1) (!es2, !ne2, !na2, !nd2) =
+        let !es = ES.union es1 es2
+            !ne = ne1 + ne2
+            !na = na1 + na2
+            !nd = nd1 + nd2
+        in (es, ne, na, nd)
       placesFromLevel :: (LevelId, Level)
                       -> EM.EnumMap (ContentId PK.PlaceKind)
                                     (ES.EnumSet LevelId, Int, Int, Int)
-      placesFromLevel (lid, Level{lentry}) =
+      placesFromLevel (!lid, Level{lentry}) =
         let f (PK.PEntry pk) em =
               EM.insertWith addEntries pk (ES.singleton lid, 1, 0, 0) em
             f (PK.PAround pk) em =
