@@ -453,8 +453,9 @@ addActorFromGroup actorGroup bfid pos lid time = do
   freq <- prepareItemKind 0 lid [(actorGroup, 1)]
   m2 <- rollItemAspect freq lid
   case m2 of
-    Nothing -> return Nothing
-    Just (itemKnown, itemFullKit) ->
+    NoNewItem -> return Nothing
+    NewItem itemKnown itemFull itemK itemTimer -> do
+      let itemFullKit = (itemFull, (itemK, itemTimer))
       Just <$> registerActor False itemKnown itemFullKit bfid pos lid time
 
 registerActor :: MonadServerAtomic m

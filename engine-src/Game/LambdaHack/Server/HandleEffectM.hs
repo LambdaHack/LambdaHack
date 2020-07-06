@@ -1316,8 +1316,8 @@ effectCreateItem jfidRaw mcount source target miidOriginal store grp tim = do
   let freq = newItemKind cops uniqueSet [(grp, 1)] depth totalDepth 0
   m2 <- rollItemAspect freq lid
   case m2 of
-    Nothing -> return UseDud  -- e.g., unique already generated
-    Just (itemKnownRaw, (itemFullRaw, (kRaw, itRaw))) -> do
+    NoNewItem -> return UseDud  -- e.g., unique already generated
+    NewItem itemKnownRaw itemFullRaw kRaw itRaw -> do
       -- Avoid too many different item identifiers (one for each faction)
       -- for blasts or common item generating tiles. Conditions are
       -- allowed to be duplicated, because they provide really useful info
@@ -1756,17 +1756,17 @@ effectRerollItem execSfx iidOriginal target = do
            dungeon <- getsState sdungeon
            let maxLid = fst $ maximumBy (Ord.comparing (ldepth . snd))
                             $ EM.assocs dungeon
-               roll100 :: Int -> m (ItemKnown, ItemFullKit)
+               roll100 :: Int -> m (ItemKnown, ItemFull)
                roll100 n = do
                  m2 <- rollItemAspect freq maxLid
                  case m2 of
-                   Nothing ->
+                   NoNewItem ->
                      error "effectRerollItem: can't create rerolled item"
-                   Just i2@(ItemKnown _ ar2 _, _) ->
+                   NewItem itemKnown@(ItemKnown _ ar2 _) itemFull _ _ ->
                      if ar2 == itemAspect && n > 0
                      then roll100 (n - 1)
-                     else return i2
-           (itemKnown, (itemFull, _)) <- roll100 100
+                     else return (itemKnown, itemFull)
+           (itemKnown, itemFull) <- roll100 100
            void $ registerItem True (itemFull, kit) itemKnown c
            return UseUp
     _ -> error "effectRerollItem: server ignorant about an item"

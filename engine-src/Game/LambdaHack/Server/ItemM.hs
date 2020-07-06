@@ -204,7 +204,7 @@ prepareItemKind lvlSpawned lid itemFreq = do
 
 rollItemAspect :: MonadServerAtomic m
                => Frequency (ContentId IK.ItemKind, ItemKind) -> LevelId
-               -> m (Maybe (ItemKnown, ItemFullKit))
+               -> m NewItem
 rollItemAspect freq lid = do
   cops <- getsState scops
   flavour <- getsServer sflavour
@@ -213,13 +213,12 @@ rollItemAspect freq lid = do
   Level{ldepth} <- getLevel lid
   m2 <- rndToAction $ newItem cops freq flavour discoRev ldepth totalDepth
   case m2 of
-    Just (itemKnown, ifk@(itemFull@ItemFull{itemKindId}, _)) -> do
-      let arItem = aspectRecordFull itemFull
+    NewItem (ItemKnown _ arItem _) ItemFull{itemKindId} _ _ -> do
       when (IA.checkFlag Ability.Unique arItem) $
         modifyServer $ \ser ->
           ser {suniqueSet = ES.insert itemKindId (suniqueSet ser)}
-      return $ Just (itemKnown, ifk)
-    Nothing -> return Nothing
+    NoNewItem -> return ()
+  return m2
 
 rollAndRegisterItem :: MonadServerAtomic m
                     => Bool -> LevelId -> Freqs ItemKind -> Container
@@ -230,9 +229,9 @@ rollAndRegisterItem verbose lid itemFreq container mk = do
   freq <- prepareItemKind 0 lid itemFreq
   m2 <- rollItemAspect freq lid
   case m2 of
-    Nothing -> return Nothing
-    Just (itemKnown, (itemFull, kit)) -> do
-      let kit2 = (fromMaybe (fst kit) mk, snd kit)
+    NoNewItem -> return Nothing
+    NewItem itemKnown itemFull itemK itemTimer -> do
+      let kit2 = (fromMaybe itemK mk, itemTimer)
       iid <- registerItem verbose (itemFull, kit2) itemKnown container
       return $ Just (iid, (itemFull, kit2))
 

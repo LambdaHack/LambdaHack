@@ -2,7 +2,8 @@
 -- | Creation of items on the server. Types and operations that don't involve
 -- server state nor our custom monads.
 module Game.LambdaHack.Server.ItemRev
-  ( ItemKnown(..), ItemRev, UniqueSet, buildItem, newItemKind, newItem
+  ( ItemKnown(..), NewItem(..), ItemRev, UniqueSet
+  , buildItem, newItemKind, newItem
     -- * Item discovery types
   , DiscoveryKindRev, emptyDiscoveryKindRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -48,6 +49,10 @@ data ItemKnown = ItemKnown ItemIdentity IA.AspectRecord (Maybe FactionId)
 instance Binary ItemKnown
 
 instance Hashable ItemKnown
+
+data NewItem =
+    NewItem ItemKnown ItemFull Int ItemTimers
+  | NoNewItem
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -104,15 +109,14 @@ newItemKind COps{coitem, coItemSpeedup} uniqueSet itemFreq
 newItem :: COps -> Frequency (ContentId IK.ItemKind, ItemKind)
         -> FlavourMap -> DiscoveryKindRev
         -> Dice.AbsDepth -> Dice.AbsDepth
-        -> Rnd (Maybe (ItemKnown, ItemFullKit))
+        -> Rnd NewItem
 newItem cops freq flavourMap discoRev levelDepth totalDepth =
-  if nullFreq freq then return Nothing
+  if nullFreq freq then return NoNewItem
   else do
     (itemKindId, itemKind) <- frequency freq
     -- Number of new items/actors unaffected by number of spawned actors.
     itemN <- castDice levelDepth totalDepth (IK.icount itemKind)
-    arItem <-
-      IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
+    arItem <- IA.rollAspectRecord (IK.iaspects itemKind) levelDepth totalDepth
     let itemBase = buildItem cops arItem flavourMap discoRev itemKindId
         itemIdentity = jkind itemBase
         itemK = max 1 itemN
@@ -120,10 +124,10 @@ newItem cops freq flavourMap discoRev levelDepth totalDepth =
           -- enable optimization in @applyPeriodicLevel@
         itemSuspect = False
         -- Bonuses on items/actors unaffected by number of spawned actors.
-    let itemDisco = ItemDiscoFull arItem
+        itemDisco = ItemDiscoFull arItem
         itemFull = ItemFull {..}
-    return $ Just ( ItemKnown itemIdentity arItem (jfid itemBase)
-                  , (itemFull, (itemK, itemTimer)) )
+        itemKnown = ItemKnown itemIdentity arItem (jfid itemBase)
+    return $! NewItem itemKnown itemFull itemK itemTimer
 
 -- | The reverse map to @DiscoveryKind@, needed for item creation.
 -- This is total and never changes, hence implemented as vector.

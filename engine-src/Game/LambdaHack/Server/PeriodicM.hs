@@ -46,6 +46,7 @@ import qualified Game.LambdaHack.Definition.Ability as Ability
 import           Game.LambdaHack.Definition.Defs
 import           Game.LambdaHack.Server.CommonM
 import           Game.LambdaHack.Server.ItemM
+import           Game.LambdaHack.Server.ItemRev
 import           Game.LambdaHack.Server.MonadServer
 import           Game.LambdaHack.Server.ProtocolM
 import           Game.LambdaHack.Server.ServerOptions
@@ -98,10 +99,10 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
   freq <- prepareItemKind lvlSpawned lid actorFreq
   m2 <- rollItemAspect freq lid
   case m2 of
-    Nothing -> do
+    NoNewItem -> do
       debugPossiblyPrint "Server: addAnyActor: trunk failed to roll"
       return Nothing
-    Just (itemKnownRaw, (itemFullRaw, kit)) -> do
+    NewItem itemKnownRaw itemFullRaw itemK itemTimer -> do
       (fid, _) <- rndToAction $ oneOf $
                     possibleActorFactions (itemKind itemFullRaw) factionD
       pers <- getsServer sperFid
@@ -119,7 +120,8 @@ addAnyActor summoned lvlSpawned actorFreq lid time mpos = do
             getsState $ rollSpawnPos cops allPers mobile aquatic lid lvl fid
           rndToAction rollPos
       case mrolledPos of
-        Just pos ->
+        Just pos -> do
+          let kit = (itemK, itemTimer)
           Just <$> registerActor summoned itemKnownRaw (itemFullRaw, kit)
                                  fid pos lid time
         Nothing -> do

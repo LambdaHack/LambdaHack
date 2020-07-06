@@ -139,11 +139,12 @@ sampleTrunks dungeon = do
                 jfid = Just fid
             m2 <- rollItemAspect freq minLid
             case m2 of
-              Nothing -> error "sampleTrunks: can't create actor trunk"
-              Just (ItemKnown kindIx ar _, (itemFullRaw, kit)) -> do
+              NoNewItem -> error "sampleTrunks: can't create actor trunk"
+              NewItem (ItemKnown kindIx ar _) itemFullRaw itemK itemTimer -> do
                 let itemKnown = ItemKnown kindIx ar jfid
                     itemFull =
                       itemFullRaw {itemBase = (itemBase itemFullRaw) {jfid}}
+                    kit = (itemK, itemTimer)
                 Just <$> registerItem False (itemFull, kit) itemKnown c
   miids <- mapM regItem trunkKindIds
   return $! EM.singleton STrunk
@@ -168,8 +169,8 @@ sampleItems dungeon = do
             c = CFloor minLid originPoint
         m2 <- rollItemAspect freq minLid
         case m2 of
-          Nothing -> error "sampleItems: can't create sample item"
-          Just (itemKnown, (itemFull, _kit)) ->
+          NoNewItem -> error "sampleItems: can't create sample item"
+          NewItem itemKnown itemFull _ _ ->
             Just <$> registerItem False (itemFull, (0, [])) itemKnown c
   miids <- mapM regItem itemKindIds
   return $! EM.singleton SItem
