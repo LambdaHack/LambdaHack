@@ -321,24 +321,29 @@ placesOverlay = do
   FontSetup{..} <- getFontSetup
   let prSlot :: (Int, SlotChar)
              -> (ContentId PK.PlaceKind, (ES.EnumSet LevelId, Int, Int, Int))
-             -> (Text, KYX)
+             -> (AttrLine, (Int, AttrLine), KYX)
       prSlot (y, c) (pk, (es, _, _, _)) =
         let placeName = PK.pname $ okind coplace pk
             markPlace t = if ES.null es
                           then T.snoc (T.init t) '>'
                           else t
-            ft = makePhrase [ MU.Text (markPlace $ slotLabel c)
-                            , MU.Text placeName
-                            , if ES.null es
-                              then ""
-                              else "(" <> MU.CarWs (ES.size es) "level" <> ")" ]
-        in (ft, (Right c, ( K.PointUI 0 y
-                          , ButtonWidth propFont (2 + T.length ft) )))
-      (ts, kxs) = unzip $ zipWith prSlot (zip [0..] allSlots) $ EM.assocs places
-      splitRow al = let (spNo, spYes) = span (/= Color.spaceAttrW32) al
-                    in ( attrStringToAL spNo
-                       , (textSize squareFont spNo, attrStringToAL spYes) )
-      (plLab, plDesc) = unzip $ map splitRow $ map textToAS ts
+            !tSlot = markPlace $ slotLabel c  -- free @places@ as you go
+            !lenSlot = 2 * T.length tSlot
+            !tBlurb = " "
+                      <> placeName
+                      <+> if ES.null es
+                          then ""
+                          else "("
+                               <> makePhrase [MU.CarWs (ES.size es) "level"]
+                               <> ")"
+            !lenButton = lenSlot + T.length tBlurb
+            !pButton = K.PointUI 0 y
+            !widthButton = ButtonWidth propFont lenButton
+        in ( textToAL tSlot
+           , (lenSlot, textToAL tBlurb)
+           , (Right c, (pButton, widthButton)) )
+      (plLab, plDesc, kxs) = unzip3 $ zipWith prSlot (zip [0..] allSlots)
+                                    $ EM.assocs places
       placeLab = EM.singleton squareFont $ offsetOverlay plLab
       placeDesc = EM.singleton propFont $ offsetOverlayX plDesc
   return (EM.unionWith (++) placeLab placeDesc, kxs)
