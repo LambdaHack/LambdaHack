@@ -265,9 +265,7 @@ chooseItemDialogMode c = do
         let slotListBound = length skillSlots - 1
             displayOneSlot slotIndex = do
               b <- getsState $ getActorBody leader
-              let slot = allSlots !! slotIndex
-                  skill = skillSlots !! fromMaybe (error $ show slot)
-                                                  (elemIndex slot allSlots)
+              let skill = skillSlots !! slotIndex
                   valueText = skillToDecorator skill b
                               $ Ability.getSk skill actorCurAndMaxSk
                   prompt2 = makeSentence
@@ -300,10 +298,7 @@ chooseItemDialogMode c = do
         places <- getsState $ EM.assocs . placesFromState coplace soptions
         let slotListBound = length places - 1
             displayOneSlot slotIndex = do
-              let slot = allSlots !! slotIndex
-                  (pk, (es, ne, na, _)) =
-                    places !! fromMaybe (error $ show slot)
-                                        (elemIndex slot allSlots)
+              let (pk, (es, ne, na, _)) = places !! slotIndex
                   pkind = okind coplace pk
                   prompt2 = makeSentence
                     [ MU.SubjectVerbSg (partActor bUI) "remember"
