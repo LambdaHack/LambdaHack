@@ -18,6 +18,7 @@ import Game.LambdaHack.Core.Prelude
 
 import           Control.Monad.ST.Strict
 import qualified Data.IntMap.Strict as IM
+import           Data.Ord (comparing)
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Data.Vector.Unboxed.Mutable as VM
@@ -113,10 +114,12 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
                   || not wipeAdjacent
                   || onBlank = []
                 | otherwise =
-        case find (\(PointUI _ y, _) -> y == supHeight) ov of
-          Nothing -> []
-          Just (PointUI xLast yLast, _) ->
-            [(PointUI xLast (yLast + 1), emptyAttrLine)]
+        let supHs = filter (\(PointUI _ y, _) -> y == supHeight) ov
+        in if null supHs
+           then []
+           else let (PointUI xLast yLast, _) =
+                      minimumBy (comparing $ \(PointUI x _, _) -> x) supHs
+                in [(PointUI xLast (yLast + 1), emptyAttrLine)]
       ovTop = IM.elems $ IM.fromListWith (++)
               $ map (\pal@(PointUI _ y, _) -> (y, [pal]))
               $ if supHeight >= canvasLength
@@ -130,8 +133,8 @@ truncateOverlay halveXstart width rheight wipeAdjacent fillLen onBlank ov =
         -- This is crude, because an al at lower x may be longer, but KISS.
         case sortOn (\(PointUI x _, _) -> x) lal of
           [] -> error "empty list of overlay lines at the given row"
-          maxAl : rest ->
-            g lenPrev lenNext fillLen maxAl
+          minAl : rest ->
+            g lenPrev lenNext fillLen minAl
             : map (g 0 0 0) rest
       g lenPrev lenNext fillL (p@(PointUI xstartRaw _), layerLine) =
         let xstart = if halveXstart then xstartRaw `div` 2 else xstartRaw
